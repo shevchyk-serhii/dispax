@@ -1,5 +1,5 @@
 package com.shevchyk.domain
 
-import java.util.UUID
+import zio.json.*
 
-case class Location(id: UUID)
+case class Location(lat: Double, lon: Double, address: Option[String] = None) derives JsonCodec

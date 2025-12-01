@@ -1,3 +1,5 @@
 package com.shevchyk.domain
 
-case class Person(name: String)
+import zio.json.*
+
+case class Person(id: Long, name: String, age: Int) derives JsonCodec

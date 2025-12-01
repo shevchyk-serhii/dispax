@@ -17,6 +17,10 @@ lazy val root = (project in file("api"))
     fork := true,
     Compile / run / javaOptions ++= Seq(
       "-Djava.util.logging.config.file=logging.properties",
-      "-Dcom.sun.management.jmxremote=false"
+      "-Dcom.sun.management.jmxremote=false",
+      "-Djava.rmi.server.randomIDs=true",
+      "-Dsun.rmi.transport.tcp.localHostnameTimeOut=2000",
+      "-XX:+DisableAttachMechanism",
+      "-Djdk.attach.allowAttachSelf=false"
     )
   )
