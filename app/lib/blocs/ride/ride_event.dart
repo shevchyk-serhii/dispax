@@ -53,3 +53,12 @@ class RideUpdated extends RideEvent {
   @override
   List<Object> get props => [ride];
 }
+
+class RideCreateRequested extends RideEvent {
+  final Ride ride;
+
+  const RideCreateRequested({required this.ride});
+
+  @override
+  List<Object> get props => [ride];
+}

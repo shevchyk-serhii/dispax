@@ -20,7 +20,7 @@ case class Ride(
     flightNumber: Option[String] = None,
     flightTime: Option[LocalDateTime] = None,
     isAirportTransfer: Boolean = false,
-    isArrival: Boolean = false, // true = прилет, false = отлет
+    isArrival: Boolean = false,         // true = прилет, false = отлет
     gate: Option[String] = None,
     terminal: Option[String] = None,
     flightStatus: Option[String] = None // "On Time", "Delayed", "Cancelled", etc.

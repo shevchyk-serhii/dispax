@@ -57,52 +57,65 @@ case class RideServiceImpl() extends RideService {
   }
 
   override def deleteRide(id: Long): Task[Boolean] = ZIO.succeed(RideService.mockRides.contains(id))
-  
-  override def enrichWithFlightInfo(ride: Ride): Task[Ride] = 
+
+  override def enrichWithFlightInfo(ride: Ride): Task[Ride] =
     if (ride.isAirportTransfer && ride.flightNumber.isDefined) {
       (for {
         flightService <- ZIO.service[FlightService]
-        currentTime   = java.lang.System.currentTimeMillis() / 1000
+        currentTime    = java.lang.System.currentTimeMillis() / 1000
         // Search for flights in ±6 hours window
-        beginTime     = currentTime - 6 * 3600
-        endTime       = currentTime + 6 * 3600
-        arrivals     <- flightService.getMunichArrivals(beginTime, endTime)
-        departures   <- flightService.getMunichDepartures(beginTime, endTime)
-        allFlights    = arrivals ++ departures
-        flightInfo   <- ZIO.succeed {
-          allFlights.find(_.callsign.trim == ride.flightNumber.getOrElse("").trim)
-        }
-        enrichedRide <- ZIO.succeed {
-          flightInfo match {
-            case Some(flight) =>
-              // Determine if it's arrival or departure based on location
-              val isFromAirport = ride.from.address.toLowerCase.contains("airport")
-              val isArrival = !isFromAirport // если начинаем не в аэропорту - значит прилет
-              val flightTime = if (isFromAirport) {
-                // Departure flight
-                java.time.LocalDateTime.ofEpochSecond(flight.firstSeen, 0, java.time.ZoneOffset.UTC)
-              } else {
-                // Arrival flight  
-                java.time.LocalDateTime.ofEpochSecond(flight.lastSeen, 0, java.time.ZoneOffset.UTC)
-              }
-              // Mock data for gate and terminal
-              val gate = Some(s"${('A' + scala.util.Random.nextInt(6)).toChar}${scala.util.Random.nextInt(20) + 1}")
-              val terminal = Some(if (scala.util.Random.nextBoolean()) "1" else "2")
-              val status = if (scala.util.Random.nextDouble() > 0.8) Some("Delayed") else Some("On Time")
-              
-              ride.copy(
-                flightTime = Some(flightTime),
-                isArrival = isArrival,
-                gate = gate,
-                terminal = terminal,
-                flightStatus = status
-              )
-            case None =>
-              ride
-          }
-        }
+        beginTime      = currentTime - 6 * 3600
+        endTime        = currentTime + 6 * 3600
+        arrivals      <- flightService.getMunichArrivals(beginTime, endTime)
+        departures    <- flightService.getMunichDepartures(beginTime, endTime)
+        allFlights     = arrivals ++ departures
+        flightInfo    <- ZIO.succeed {
+                           allFlights.find(_.callsign.trim == ride.flightNumber.getOrElse("").trim)
+                         }
+        enrichedRide  <- ZIO.succeed {
+                           flightInfo match {
+                             case Some(flight) =>
+                               // Determine if it's arrival or departure based on location
+                               val isFromAirport = ride.from.address.toLowerCase.contains("airport")
+                               val isArrival     = !isFromAirport // если начинаем не в аэропорту - значит прилет
+                               val flightTime    =
+                                 if (isFromAirport) {
+                                   // Departure flight
+                                   java.time.LocalDateTime.ofEpochSecond(flight.firstSeen, 0, java.time.ZoneOffset.UTC)
+                                 }
+                                 else {
+                                   // Arrival flight
+                                   java.time.LocalDateTime.ofEpochSecond(flight.lastSeen, 0, java.time.ZoneOffset.UTC)
+                                 }
+                               // Mock data for gate and terminal
+                               val gate          = Some(
+                                 s"${('A' + scala.util.Random.nextInt(6)).toChar}${scala.util.Random.nextInt(20) + 1}"
+                               )
+                               val terminal      = Some(
+                                 if (scala.util.Random.nextBoolean())
+                                   "1"
+                                 else
+                                   "2"
+                               )
+                               val status        =
+                                 if (scala.util.Random.nextDouble() > 0.8)
+                                   Some("Delayed")
+                                 else
+                                   Some("On Time")
+
+                               ride.copy(
+                                 flightTime = Some(flightTime),
+                                 isArrival = isArrival,
+                                 gate = gate,
+                                 terminal = terminal,
+                                 flightStatus = status
+                               )
+                             case None         => ride
+                           }
+                         }
       } yield enrichedRide).provideSomeLayer(FlightService.live)
-    } else {
+    }
+    else {
       ZIO.succeed(ride)
     }
 }
@@ -125,7 +138,7 @@ object RideService {
       status = RideStatus.Assigned,
       flightNumber = Some("LH123"),
       isAirportTransfer = true,
-      isArrival = false, // отлет
+      isArrival = false,  // отлет
       gate = Some("A12"),
       terminal = Some("2"),
       flightStatus = Some("On Time")
@@ -175,7 +188,7 @@ object RideService {
       status = RideStatus.Assigned,
       flightNumber = Some("BA456"),
       isAirportTransfer = true,
-      isArrival = true, // прилет
+      isArrival = true,   // прилет
       gate = Some("B7"),
       terminal = Some("1"),
       flightStatus = Some("Delayed")

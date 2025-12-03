@@ -15,6 +15,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     on<RideDeleteRequested>(onDeleteRequested);
     on<RideAdded>(onRideAdded);
     on<RideUpdated>(onRideUpdated);
+    on<RideCreateRequested>(onCreateRequested);
   }
 
   Future<void> onLoadRequested(
@@ -95,6 +96,31 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       return ride.id == event.ride.id ? event.ride : ride;
     }).toList();
     emit(RideState.loaded(updatedRides));
+  }
+
+  Future<void> onCreateRequested(
+    RideCreateRequested event,
+    Emitter<RideState> emit,
+  ) async {
+    // Set loading state with current rides still visible
+    emit(state.copyWith(
+      status: RideStateStatus.loading,
+      errorMessage: null,
+    ));
+
+    try {
+      final createdRide = await privateRideService.createRide(event.ride);
+      
+      // Add the new ride to the existing list
+      final updatedRides = List<Ride>.from(state.rides)..add(createdRide);
+      
+      emit(RideState.loaded(updatedRides));
+    } catch (e) {
+      emit(state.copyWith(
+        status: RideStateStatus.error,
+        errorMessage: 'Failed to create ride: $e',
+      ));
+    }
   }
 
   @override
