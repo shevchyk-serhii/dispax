@@ -82,3 +82,6 @@ app/windows/flutter/
 
 ### Flutter Linux ###
 app/linux/flutter/
+
+### Server logs ###
+server.log

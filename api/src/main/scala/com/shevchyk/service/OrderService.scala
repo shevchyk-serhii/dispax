@@ -10,20 +10,7 @@ trait OrderService:
 
 class OrderServiceImpl extends OrderService:
 
-  private val orders = Ref.make(List(
-    Order(
-      id = 1, 
-      customer = Person(1, "John Doe", 30),
-      pickup = Location(37.7749, -122.4194, Some("San Francisco")),
-      destination = Location(37.7849, -122.4094, Some("Downtown SF"))
-    ),
-    Order(
-      id = 2,
-      customer = Person(2, "Jane Smith", 25), 
-      pickup = Location(34.0522, -118.2437, Some("Los Angeles")),
-      destination = Location(34.0622, -118.2337, Some("Hollywood"))
-    )
-  ))
+  private val orders = Ref.make(List.empty[Order])
 
   override def getAllOrders: Task[List[Order]] =
     for

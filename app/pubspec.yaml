@@ -1,4 +1,4 @@
-name: web
+name: oktopus
 description: "A new Flutter project."
 publish_to: 'none'
 
@@ -13,10 +13,26 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
+  http: ^1.2.2
+  shared_preferences: ^2.3.4
+  table_calendar: ^3.1.2
+  intl: ^0.19.0
+  mapbox_maps_flutter: ^2.3.0
+  geolocator: ^13.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.1
 flutter:
   uses-material-design: true
+  assets:
+    - assets/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/oktopus_icon.svg"
+  adaptive_icon_background: "#4A90E2"
+  adaptive_icon_foreground: "assets/oktopus_icon.svg"

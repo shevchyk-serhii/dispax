@@ -1,0 +1,218 @@
+import 'package:flutter/material.dart';
+import '../models/ride.dart';
+import '../models/location.dart';
+import '../services/mock_ride_service.dart';
+import '../widgets/ride/location_field.dart';
+import '../widgets/ride/date_time_picker.dart';
+import '../widgets/map/ride_map_widget.dart';
+
+class RideFormScreen extends StatefulWidget {
+  final Ride? ride;
+
+  const RideFormScreen({super.key, this.ride});
+
+  @override
+  State<RideFormScreen> createState() => _RideFormScreenState();
+}
+
+class _RideFormScreenState extends State<RideFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+  // Using mock service (without external API)
+  final MockRideService _rideService = MockRideService();
+
+  late TextEditingController _fromAddressController;
+  late TextEditingController _toAddressController;
+
+  DateTime? _selectedDateTime;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final ride = widget.ride;
+    _fromAddressController = TextEditingController(
+      text: ride?.from.address ?? '',
+    );
+    _toAddressController = TextEditingController(text: ride?.to.address ?? '');
+
+    _selectedDateTime =
+        ride?.pickupDateTime ?? DateTime.now().add(const Duration(hours: 1));
+  }
+
+  @override
+  void dispose() {
+    _fromAddressController.dispose();
+    _toAddressController.dispose();
+    _rideService.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.ride == null ? 'Новая поездка' : 'Редактировать поездку',
+        ),
+        actions: [
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Откуда',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      LocationField(
+                        controller: _fromAddressController,
+                        hint: 'Адрес отправления',
+                        onChanged: () => setState(() {}),
+                      ),
+                      const SizedBox(height: 24),
+
+                      Text(
+                        'Куда',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      LocationField(
+                        controller: _toAddressController,
+                        hint: 'Адрес назначения',
+                        onChanged: () => setState(() {}),
+                      ),
+                      const SizedBox(height: 24),
+
+                      Text(
+                        'Время поездки',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      DateTimePicker(
+                        selectedDateTime: _selectedDateTime,
+                        onDateTimeSelected: (dateTime) {
+                          setState(() {
+                            _selectedDateTime = dateTime;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      Text(
+                        'Маршрут на карте',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      RideMapWidget(
+                        fromLocation: _fromAddressController.text.isNotEmpty
+                            ? Location(address: _fromAddressController.text)
+                            : null,
+                        toLocation: _toAddressController.text.isNotEmpty
+                            ? Location(address: _toAddressController.text)
+                            : null,
+                        height: 200,
+                        showRoute:
+                            _fromAddressController.text.isNotEmpty &&
+                            _toAddressController.text.isNotEmpty,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveRide,
+                  child: Text(
+                    widget.ride == null
+                        ? 'Создать поездку'
+                        : 'Сохранить изменения',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveRide() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedDateTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Пожалуйста, выберите время поездки')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final from = Location(address: _fromAddressController.text);
+
+      final to = Location(address: _toAddressController.text);
+
+      final ride = Ride(
+        id: widget.ride?.id ?? 0,
+        clientId: widget.ride?.clientId ?? 2, // Default to Anna Client for now
+        creatorId: widget.ride?.creatorId ?? 3, // Default to Maria Secretary
+        driverId: widget.ride?.driverId,
+        companyId: widget.ride?.companyId ?? 1, // Default company
+        scheduleDayId: widget.ride?.scheduleDayId,
+        pickupDateTime: _selectedDateTime!,
+        from: from,
+        to: to,
+        status: widget.ride?.status ?? RideStatus.requested,
+        clientName: widget.ride?.clientName ?? 'Unknown Client',
+      );
+
+      if (widget.ride == null) {
+        await _rideService.createRide(ride);
+      } else {
+        await _rideService.updateRide(widget.ride!.id, ride);
+      }
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка сохранения: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+}

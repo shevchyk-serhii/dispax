@@ -10,11 +10,7 @@ trait UserService:
 
 class UserServiceImpl extends UserService:
 
-  private val users = Ref.make(List(
-    Person(1, "John Doe", 30),
-    Person(2, "Jane Smith", 25),
-    Person(3, "Bob Johnson", 35)
-  ))
+  private val users = Ref.make(List.empty[Person])
 
   override def getAllUsers: Task[List[Person]] =
     for

@@ -1,61 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'counter_bloc.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'blocs/blocs.dart';
+import 'auth/login_screen.dart';
+import 'dashboard/dashboard_screen.dart';
+import 'services/ride_service.dart';
+import 'services/mapbox_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Mapbox
+  MapboxOptions.setAccessToken(MapboxService.accessToken);
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: BlocProvider(
-        create: (context) => CounterBloc(),
-        child: const MyHomePage(title: 'Flutter Demo Home Page'),
-      ),
-    );
-  }
-}
-
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            BlocBuilder<CounterBloc, CounterState>(
-              builder: (context, state) {
-                return Text(
-                  '${state.count}',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                );
-              },
+    return BlocProvider<AuthBloc>(
+      create: (context) => AuthBloc()..add(const AuthInitializeRequested()),
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, authState) {
+          return BlocProvider<RideBloc>(
+            key: ValueKey(authState.isAuthenticated),
+            create: (context) {
+              final authBloc = context.read<AuthBloc>();
+              return RideBloc(
+                rideService: RideService(apiClient: authBloc.apiClient),
+              );
+            },
+            child: MaterialApp(
+              title: 'Oktopus Taxi',
+              theme: ThemeData(
+                colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+                useMaterial3: true,
+              ),
+              home: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, authState) {
+                  if (authState.isLoading) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  return authState.isAuthenticated
+                      ? const DashboardScreen()
+                      : const LoginScreen();
+                },
+              ),
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.read<CounterBloc>().add(CounterIncremented());
+          );
         },
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
