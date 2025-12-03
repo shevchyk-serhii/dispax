@@ -30,6 +30,13 @@ class Ride {
   final Location to;
   final RideStatus status;
   final String clientName;
+  final String? flightNumber;
+  final DateTime? flightTime;
+  final bool isAirportTransfer;
+  final bool isArrival; // true = прилет, false = отлет
+  final String? gate;
+  final String? terminal;
+  final String? flightStatus; // "On Time", "Delayed", "Cancelled"
 
   const Ride({
     required this.id,
@@ -43,6 +50,13 @@ class Ride {
     required this.to,
     this.status = RideStatus.requested,
     required this.clientName,
+    this.flightNumber,
+    this.flightTime,
+    this.isAirportTransfer = false,
+    this.isArrival = false,
+    this.gate,
+    this.terminal,
+    this.flightStatus,
   });
 
   factory Ride.fromJson(Map<String, dynamic> json) {
@@ -58,6 +72,13 @@ class Ride {
       to: Location.fromJson(json['to']),
       status: RideStatus.fromString(json['status'] ?? 'Requested'),
       clientName: json['clientName'] ?? 'Unknown Client',
+      flightNumber: json['flightNumber'],
+      flightTime: json['flightTime'] != null ? DateTime.parse(json['flightTime']) : null,
+      isAirportTransfer: json['isAirportTransfer'] ?? false,
+      isArrival: json['isArrival'] ?? false,
+      gate: json['gate'],
+      terminal: json['terminal'],
+      flightStatus: json['flightStatus'],
     );
   }
 
@@ -74,6 +95,13 @@ class Ride {
       'to': to.toJson(),
       'status': status.value,
       'clientName': clientName,
+      'flightNumber': flightNumber,
+      'flightTime': flightTime?.toIso8601String(),
+      'isAirportTransfer': isAirportTransfer,
+      'isArrival': isArrival,
+      'gate': gate,
+      'terminal': terminal,
+      'flightStatus': flightStatus,
     };
   }
 
@@ -89,6 +117,13 @@ class Ride {
     Location? to,
     RideStatus? status,
     String? clientName,
+    String? flightNumber,
+    DateTime? flightTime,
+    bool? isAirportTransfer,
+    bool? isArrival,
+    String? gate,
+    String? terminal,
+    String? flightStatus,
   }) {
     return Ride(
       id: id ?? this.id,
@@ -102,6 +137,13 @@ class Ride {
       to: to ?? this.to,
       status: status ?? this.status,
       clientName: clientName ?? this.clientName,
+      flightNumber: flightNumber ?? this.flightNumber,
+      flightTime: flightTime ?? this.flightTime,
+      isAirportTransfer: isAirportTransfer ?? this.isAirportTransfer,
+      isArrival: isArrival ?? this.isArrival,
+      gate: gate ?? this.gate,
+      terminal: terminal ?? this.terminal,
+      flightStatus: flightStatus ?? this.flightStatus,
     );
   }
 
@@ -129,7 +171,7 @@ class Ride {
 
   @override
   String toString() {
-    return 'Ride(id: $id, from: $from, to: $to, status: ${status.value}, pickupDateTime: $pickupDateTime)';
+    return 'Ride(id: $id, from: $from, to: $to, status: ${status.value}, pickupDateTime: $pickupDateTime, flightNumber: $flightNumber, gate: $gate, isArrival: $isArrival, flightStatus: $flightStatus)';
   }
 
   String get statusDisplayName {
@@ -145,5 +187,51 @@ class Ride {
       case RideStatus.cancelled:
         return 'Cancelled';
     }
+  }
+
+  // Helper methods for flight display
+  String get flightIcon {
+    if (!isAirportTransfer) return '';
+    return isArrival ? '✈️↓' : '✈️↑';
+  }
+
+  String get flightTypeText {
+    if (!isAirportTransfer) return '';
+    return isArrival ? 'Arrival' : 'Departure';
+  }
+
+  String get flightStatusIcon {
+    if (flightStatus == null) return '';
+    switch (flightStatus!.toLowerCase()) {
+      case 'on time':
+        return '✅';
+      case 'delayed':
+        return '⏰';
+      case 'cancelled':
+        return '❌';
+      default:
+        return '❓';
+    }
+  }
+
+  String get fullFlightInfo {
+    if (!isAirportTransfer || flightNumber == null) return '';
+    
+    List<String> parts = [];
+    parts.add('$flightIcon $flightNumber');
+    
+    if (gate != null && terminal != null) {
+      parts.add('Gate $gate (Terminal $terminal)');
+    } else if (gate != null) {
+      parts.add('Gate $gate');
+    } else if (terminal != null) {
+      parts.add('Terminal $terminal');
+    }
+    
+    if (flightStatus != null) {
+      parts.add('$flightStatusIcon $flightStatus');
+    }
+    
+    return parts.join(' • ');
   }
 }

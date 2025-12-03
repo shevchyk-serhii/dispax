@@ -5,6 +5,7 @@ import '../../blocs/blocs.dart';
 import '../../models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../utils/navigation_helper.dart';
+import '../../screens/ride_details_screen.dart';
 
 class TodayRidesScreen extends StatelessWidget {
   const TodayRidesScreen({super.key});
@@ -274,7 +275,16 @@ class TodayRidesScreen extends StatelessWidget {
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Container(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => RideDetailsScreen(ride: ride),
+              ),
+            );
+          },
+          child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: statusColor.withAlpha(77), width: 1),
@@ -361,13 +371,37 @@ class TodayRidesScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     buildRideInfo(Icons.flag, ride.to.address, 'Destination'),
+                    if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      buildRideInfo(Icons.flight, ride.fullFlightInfo, 'Flight'),
+                    ],
                     const SizedBox(height: 16),
-                    buildQuickActions(ride),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: buildQuickActions(ride)),
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => RideDetailsScreen(ride: ride),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.info_outline, size: 16),
+                          label: const Text('Details'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -407,48 +441,39 @@ class TodayRidesScreen extends StatelessWidget {
 
   Widget buildQuickActions(Ride ride) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: () {}, // TODO: Implement call client
-              icon: const Icon(Icons.phone),
-              color: Colors.green,
-              tooltip: 'Call Client',
-            ),
-            IconButton(
-              onPressed: () {}, // TODO: Implement navigation
-              icon: const Icon(Icons.navigation),
-              color: Colors.blue,
-              tooltip: 'Navigate',
-            ),
-            IconButton(
-              onPressed: () {}, // TODO: Implement message client
-              icon: const Icon(Icons.message),
-              color: Colors.orange,
-              tooltip: 'Message',
-            ),
-          ],
+        IconButton(
+          onPressed: () {}, // TODO: Implement call client
+          icon: const Icon(Icons.phone),
+          color: Colors.green,
+          tooltip: 'Call Client',
+        ),
+        IconButton(
+          onPressed: () {}, // TODO: Implement navigation
+          icon: const Icon(Icons.navigation),
+          color: Colors.blue,
+          tooltip: 'Navigate',
         ),
         if (ride.status == RideStatus.assigned)
           ElevatedButton.icon(
             onPressed: () {}, // TODO: Implement start ride
-            icon: const Icon(Icons.play_arrow, size: 18),
-            label: const Text('Start Ride'),
+            icon: const Icon(Icons.play_arrow, size: 16),
+            label: const Text('Start'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           )
         else if (ride.status == RideStatus.inProgress)
           ElevatedButton.icon(
             onPressed: () {}, // TODO: Implement complete ride
-            icon: const Icon(Icons.check, size: 18),
+            icon: const Icon(Icons.check, size: 16),
             label: const Text('Complete'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           ),
       ],

@@ -22,21 +22,27 @@ object RideRoutes {
                          }
           rideService <- ZIO.service[RideService]
           rides       <- rideService.getRidesForUser(user)
-        yield jsonResponse(rides)
+          enrichedRides <- ZIO.foreach(rides)(rideService.enrichWithFlightInfo)
+        yield jsonResponse(enrichedRides)
       },
     Method.GET / "api" / "rides" / "all"         ->
       safeEndpoint {
         for
           rideService <- ZIO.service[RideService]
           rides       <- rideService.getAllRides
-        yield jsonResponse(rides)
+          enrichedRides <- ZIO.foreach(rides)(rideService.enrichWithFlightInfo)
+        yield jsonResponse(enrichedRides)
       },
     Method.GET / "api" / "rides" / long("id")    ->
       endpointWithParams { (id: Long, req: Request) =>
         for
           rideService <- ZIO.service[RideService]
           ride        <- rideService.getRideById(id)
-        yield handleOptionalResult(ride)
+          enrichedRide <- ride match {
+                           case Some(r) => rideService.enrichWithFlightInfo(r).map(Some(_))
+                           case None    => ZIO.succeed(None)
+                         }
+        yield handleOptionalResult(enrichedRide)
       },
     Method.POST / "api" / "rides"                ->
       badRequestEndpoint("Invalid ride data") { req =>
@@ -45,7 +51,8 @@ object RideRoutes {
           rideData    <- ZIO.fromEither(body.fromJson[Ride])
           rideService <- ZIO.service[RideService]
           newRide     <- rideService.createRide(rideData)
-        yield jsonResponseWithStatus(newRide, Status.Created)
+          enrichedRide <- rideService.enrichWithFlightInfo(newRide)
+        yield jsonResponseWithStatus(enrichedRide, Status.Created)
       },
     Method.PUT / "api" / "rides" / long("id")    ->
       badRequestEndpointWithParams("Invalid ride data") { (id: Long, req: Request) =>
@@ -54,7 +61,11 @@ object RideRoutes {
           rideData    <- ZIO.fromEither(body.fromJson[Ride])
           rideService <- ZIO.service[RideService]
           updatedRide <- rideService.updateRide(id, rideData)
-        yield handleOptionalResult(updatedRide)
+          enrichedRide <- updatedRide match {
+                           case Some(r) => rideService.enrichWithFlightInfo(r).map(Some(_))
+                           case None    => ZIO.succeed(None)
+                         }
+        yield handleOptionalResult(enrichedRide)
       },
     Method.DELETE / "api" / "rides" / long("id") ->
       endpointWithParams { (id: Long, req: Request) =>
