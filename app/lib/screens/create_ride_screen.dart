@@ -303,7 +303,14 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                 children: [
                   Expanded(
                     child: RadioListTile<bool>(
-                      title: const Text('Departure ✈️↑'),
+                      title: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.flight_takeoff, size: 16, color: Colors.blue),
+                          const SizedBox(width: 4),
+                          const Text('Departure'),
+                        ],
+                      ),
                       subtitle: const Text('To airport'),
                       value: false,
                       groupValue: _isArrival,
@@ -316,7 +323,14 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                   ),
                   Expanded(
                     child: RadioListTile<bool>(
-                      title: const Text('Arrival ✈️↓'),
+                      title: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.flight_land, size: 16, color: Colors.green),
+                          const SizedBox(width: 4),
+                          const Text('Arrival'),
+                        ],
+                      ),
                       subtitle: const Text('From airport'),
                       value: true,
                       groupValue: _isArrival,
@@ -335,7 +349,10 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                 decoration: InputDecoration(
                   labelText: 'Flight Number',
                   hintText: 'e.g. LH123, BA456',
-                  prefixIcon: Icon(Icons.flight_takeoff, color: AppColors.secretaryColor),
+                  prefixIcon: Icon(
+                    _isArrival ? Icons.flight_land : Icons.flight_takeoff, 
+                    color: AppColors.secretaryColor
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                   ),

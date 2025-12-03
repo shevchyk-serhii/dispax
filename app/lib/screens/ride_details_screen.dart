@@ -218,10 +218,12 @@ class RideDetailsScreen extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  ride.flightIcon,
-                  style: const TextStyle(fontSize: 20),
-                ),
+                if (ride.flightIconData != null)
+                  Icon(
+                    ride.flightIconData,
+                    size: 20,
+                    color: ride.isArrival ? Colors.green : Colors.blue,
+                  ),
               ],
             ),
             const SizedBox(height: 12),
