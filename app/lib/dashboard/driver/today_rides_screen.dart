@@ -5,6 +5,7 @@ import '../../blocs/blocs.dart';
 import '../../models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../utils/navigation_helper.dart';
+import '../../utils/navigation_utils.dart';
 import '../../screens/ride_details_screen.dart';
 
 class TodayRidesScreen extends StatelessWidget {
@@ -444,40 +445,113 @@ class TodayRidesScreen extends StatelessWidget {
       children: [
         IconButton(
           onPressed: () {}, // TODO: Implement call client
-          icon: const Icon(Icons.phone),
+          icon: const Icon(Icons.phone, size: 20),
           color: Colors.green,
           tooltip: 'Call Client',
+          padding: const EdgeInsets.all(8),
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
         ),
-        IconButton(
-          onPressed: () {}, // TODO: Implement navigation
-          icon: const Icon(Icons.navigation),
-          color: Colors.blue,
-          tooltip: 'Navigate',
-        ),
-        if (ride.status == RideStatus.assigned)
-          ElevatedButton.icon(
-            onPressed: () {}, // TODO: Implement start ride
-            icon: const Icon(Icons.play_arrow, size: 16),
-            label: const Text('Start'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-          )
-        else if (ride.status == RideStatus.inProgress)
-          ElevatedButton.icon(
-            onPressed: () {}, // TODO: Implement complete ride
-            icon: const Icon(Icons.check, size: 16),
-            label: const Text('Complete'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
+        Builder(
+          builder: (context) => IconButton(
+            onPressed: () => _handleNavigation(context, ride),
+            icon: const Icon(Icons.navigation, size: 20),
+            color: Colors.blue,
+            tooltip: 'Navigate',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
+        ),
+        Expanded(
+          child: Container(
+            alignment: Alignment.centerRight,
+            child: _buildStatusButton(ride),
+          ),
+        ),
       ],
     );
+  }
+
+  Widget _buildStatusButton(Ride ride) {
+    if (ride.status == RideStatus.assigned) {
+      return ElevatedButton.icon(
+        onPressed: () {}, // TODO: Implement start ride
+        icon: const Icon(Icons.play_arrow, size: 14),
+        label: const Text('Start', style: TextStyle(fontSize: 12)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          minimumSize: const Size(60, 32),
+        ),
+      );
+    } else if (ride.status == RideStatus.inProgress) {
+      return ElevatedButton.icon(
+        onPressed: () {}, // TODO: Implement complete ride
+        icon: const Icon(Icons.check, size: 14),
+        label: const Text('Done', style: TextStyle(fontSize: 12)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          minimumSize: const Size(60, 32),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  static void _handleNavigation(BuildContext context, Ride ride) async {
+    try {
+      // Показать диалог выбора навигации
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Navigate to'),
+            content: const Text('Choose navigation destination:'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop('pickup'),
+                child: Text('Pickup: ${ride.from.address}'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop('destination'),
+                child: Text('Drop-off: ${ride.to.address}'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(null),
+                child: const Text('Cancel'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (choice == null) return;
+
+      // Открыть навигацию в зависимости от выбора
+      if (choice == 'pickup') {
+        await NavigationUtils.openGoogleMapsNavigation(ride.from);
+      } else if (choice == 'destination') {
+        await NavigationUtils.openGoogleMapsNavigation(ride.to);
+      }
+      
+      if (context.mounted) {
+        NavigationHelper.showSnackBar(
+          context,
+          'Opening navigation in Google Maps...',
+          isError: false,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        NavigationHelper.showSnackBar(
+          context,
+          'Could not open navigation: $e',
+          isError: true,
+        );
+      }
+    }
   }
 
   List<Ride> getTodayRides(List<Ride> rides) {

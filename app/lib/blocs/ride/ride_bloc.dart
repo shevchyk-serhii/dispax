@@ -16,6 +16,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     on<RideAdded>(onRideAdded);
     on<RideUpdated>(onRideUpdated);
     on<RideCreateRequested>(onCreateRequested);
+    on<RideStatusUpdateRequested>(onStatusUpdateRequested);
   }
 
   Future<void> onLoadRequested(
@@ -119,6 +120,43 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       emit(state.copyWith(
         status: RideStateStatus.error,
         errorMessage: 'Failed to create ride: $e',
+      ));
+    }
+  }
+
+  Future<void> onStatusUpdateRequested(
+    RideStatusUpdateRequested event,
+    Emitter<RideState> emit,
+  ) async {
+    // Set loading state
+    emit(state.copyWith(
+      status: RideStateStatus.loading,
+      errorMessage: null,
+    ));
+
+    try {
+      final success = await privateRideService.updateRideStatus(event.rideId, event.status);
+      
+      if (success) {
+        // Update the ride status in the existing list
+        final updatedRides = state.rides.map((ride) {
+          if (ride.id == event.rideId) {
+            return ride.copyWith(status: event.status);
+          }
+          return ride;
+        }).toList();
+        
+        emit(RideState.loaded(updatedRides));
+      } else {
+        emit(state.copyWith(
+          status: RideStateStatus.error,
+          errorMessage: 'Failed to update ride status',
+        ));
+      }
+    } catch (e) {
+      emit(state.copyWith(
+        status: RideStateStatus.error,
+        errorMessage: 'Failed to update ride status: $e',
       ));
     }
   }

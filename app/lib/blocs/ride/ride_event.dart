@@ -62,3 +62,16 @@ class RideCreateRequested extends RideEvent {
   @override
   List<Object> get props => [ride];
 }
+
+class RideStatusUpdateRequested extends RideEvent {
+  final int rideId;
+  final RideStatus status;
+
+  const RideStatusUpdateRequested({
+    required this.rideId,
+    required this.status,
+  });
+
+  @override
+  List<Object> get props => [rideId, status];
+}

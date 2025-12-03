@@ -31,6 +31,9 @@ lazy val root = (project in file("."))
       "-Djava.rmi.server.randomIDs=true",
       "-Dsun.rmi.transport.tcp.localHostnameTimeOut=2000",
       "-XX:+DisableAttachMechanism",
-      "-Djdk.attach.allowAttachSelf=false"
+      "-Djdk.attach.allowAttachSelf=false",
+      // Fix for Netty kqueue issues on macOS
+      "-Dio.netty.transport.noNative=true",
+      "-Dio.netty.noUnsafe=true"
     )
   )

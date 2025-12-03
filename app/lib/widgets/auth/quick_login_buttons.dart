@@ -7,73 +7,96 @@ class QuickLoginButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 2.2,
       children: [
-        Text(
-          'Quick Test Login:',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
-          ),
+        _buildQuickLoginButton(
+          'Driver', 
+          'driver@test.com', 
+          Icons.drive_eta, 
+          Colors.blue
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => onQuickLogin('driver@test.com'),
-                icon: const Icon(Icons.drive_eta, size: 18),
-                label: const Text('Driver'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[100],
-                  foregroundColor: Colors.blue[800],
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => onQuickLogin('client@test.com'),
-                icon: const Icon(Icons.person, size: 18),
-                label: const Text('Client'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[100],
-                  foregroundColor: Colors.green[800],
-                ),
-              ),
-            ),
-          ],
+        _buildQuickLoginButton(
+          'Client', 
+          'client@test.com', 
+          Icons.person, 
+          Colors.green
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => onQuickLogin('secretary@test.com'),
-                icon: const Icon(Icons.admin_panel_settings, size: 18),
-                label: const Text('Secretary'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange[100],
-                  foregroundColor: Colors.orange[800],
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => onQuickLogin('dispatcher@test.com'),
-                icon: const Icon(Icons.assignment_ind, size: 18),
-                label: const Text('Dispatcher'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple[100],
-                  foregroundColor: Colors.purple[800],
-                ),
-              ),
-            ),
-          ],
+        _buildQuickLoginButton(
+          'Secretary', 
+          'secretary@test.com', 
+          Icons.business_center, 
+          Colors.purple
+        ),
+        _buildQuickLoginButton(
+          'Dispatcher', 
+          'dispatcher@test.com', 
+          Icons.dashboard, 
+          Colors.orange
         ),
       ],
+    );
+  }
+
+  Widget _buildQuickLoginButton(
+    String role, 
+    String email, 
+    IconData icon, 
+    MaterialColor color
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color[400]!,
+            color[600]!,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color[300]!.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onQuickLogin(email),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  role,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

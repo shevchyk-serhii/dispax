@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.shevchyk.web"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -42,3 +42,6 @@ android {
 flutter {
     source = "src"
 }
+
+// Temporary fix for Flutter 3.32.5 native assets crash
+android.buildFeatures.buildConfig = false

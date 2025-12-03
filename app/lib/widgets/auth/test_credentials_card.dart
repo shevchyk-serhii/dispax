@@ -7,29 +7,45 @@ class TestCredentialsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.blue[50],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Test Accounts:',
+              'Test Accounts',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.blue[800],
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 16,
               ),
             ),
-            const SizedBox(height: 8),
-            buildCredentialRow('Driver', 'driver@test.com'),
-            buildCredentialRow('Client', 'client@test.com'),
-            buildCredentialRow('Secretary', 'secretary@test.com'),
-            buildCredentialRow('Dispatcher', 'dispatcher@test.com'),
-            const SizedBox(height: 8),
-            Text(
-              'Password for all: test123',
-              style: TextStyle(fontSize: 12, color: Colors.blue[600]),
+            const SizedBox(height: 12),
+            buildCredentialRow('👤 Driver', 'driver@test.com', Icons.drive_eta),
+            buildCredentialRow('🚗 Client', 'client@test.com', Icons.person),
+            buildCredentialRow('📝 Secretary', 'secretary@test.com', Icons.business_center),
+            buildCredentialRow('📊 Dispatcher', 'dispatcher@test.com', Icons.dashboard),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '🔑 Password for all: test123',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
         ),
@@ -37,17 +53,53 @@ class TestCredentialsCard extends StatelessWidget {
     );
   }
 
-  Widget buildCredentialRow(String role, String email) {
+  Widget buildCredentialRow(String role, String email, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: GestureDetector(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: InkWell(
         onTap: () => onCredentialTap(email, 'test123'),
-        child: Text(
-          '$role: $email',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.blue[700],
-            decoration: TextDecoration.underline,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: Colors.white.withOpacity(0.8),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      role,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                    Text(
+                      email,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.touch_app,
+                size: 14,
+                color: Colors.white.withOpacity(0.5),
+              ),
+            ],
           ),
         ),
       ),

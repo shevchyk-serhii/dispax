@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../screens/create_ride_screen.dart';
+import '../../theme/app_theme.dart';
+import '../../constants/app_colors.dart';
+import '../../constants/app_styles.dart';
+import '../../constants/app_dimensions.dart';
 
 class SecretaryDashboard extends StatefulWidget {
   const SecretaryDashboard({super.key});
@@ -48,68 +52,48 @@ class _CreateRidesTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create New Ride'),
-        backgroundColor: Colors.purple[600],
-        foregroundColor: Colors.white,
-        elevation: 0,
+        title: Text('Create New Ride', style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary)),
+        backgroundColor: AppColors.secretaryColor,
+        foregroundColor: AppColors.textOnPrimary,
+        elevation: AppDimensions.appBarElevation,
         automaticallyImplyLeading: false,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.purple.shade600, Colors.grey.shade50],
-            stops: const [0.0, 0.15],
-          ),
-        ),
+      body: AppTheme.buildGradientContainer(
+        colors: AppColors.secretaryGradient,
+        stops: const [0.0, 0.15, 1.0],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(AppDimensions.paddingLarge),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
+                  padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
+                  decoration: AppTheme.cardDecoration,
                   child: Column(
                     children: [
                       Icon(
                         Icons.add_circle_outline,
-                        size: 64,
-                        color: Colors.purple[600],
+                        size: AppDimensions.iconLogo,
+                        color: AppColors.secretaryColor,
                       ),
-                      const SizedBox(height: 24),
-                      const Text(
+                      const SizedBox(height: AppDimensions.paddingLarge),
+                      Text(
                         'Create New Ride',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppStyles.headlineMedium,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppDimensions.paddingMedium),
                       Text(
                         'Book rides for your clients with flight information and airport transfer details',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                        ),
+                        style: AppStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: AppDimensions.paddingXLarge),
                       SizedBox(
                         width: double.infinity,
-                        height: 48,
+                        height: AppDimensions.buttonHeightMedium,
                         child: ElevatedButton.icon(
                           onPressed: () {
                             Navigator.of(context).push(
@@ -121,10 +105,10 @@ class _CreateRidesTab extends StatelessWidget {
                           icon: const Icon(Icons.add),
                           label: const Text('Start Creating'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple[600],
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppColors.secretaryColor,
+                            foregroundColor: AppColors.textOnPrimary,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                             ),
                           ),
                         ),
@@ -132,7 +116,7 @@ class _CreateRidesTab extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: AppDimensions.paddingXLarge),
                 Row(
                   children: [
                     Expanded(
@@ -143,7 +127,7 @@ class _CreateRidesTab extends StatelessWidget {
                         Colors.blue,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: AppDimensions.paddingMedium),
                     Expanded(
                       child: _buildQuickStatCard(
                         'This Week',
@@ -164,37 +148,22 @@ class _CreateRidesTab extends StatelessWidget {
 
   Widget _buildQuickStatCard(String title, String count, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+      padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+      decoration: AppTheme.cardDecoration.copyWith(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: AppDimensions.iconXLarge),
+          const SizedBox(height: AppDimensions.paddingSmall),
           Text(
             count,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+            style: AppStyles.headlineMedium.copyWith(color: color),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppDimensions.paddingXSmall),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-            ),
+            style: AppStyles.labelSmall.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -207,23 +176,31 @@ class _ManageClientsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.people, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Client Management',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+    return AppTheme.buildGradientContainer(
+      colors: AppColors.secretaryGradient,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(AppDimensions.paddingLarge),
+          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
+          decoration: AppTheme.glassDecoration,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.people, size: AppDimensions.iconLogo, color: AppColors.secretaryColor),
+              const SizedBox(height: AppDimensions.paddingMedium),
+              Text(
+                'Client Management',
+                style: AppStyles.headlineMedium.copyWith(color: AppColors.textOnPrimary),
+              ),
+              const SizedBox(height: AppDimensions.paddingSmall),
+              Text(
+                'Client list and account management',
+                textAlign: TextAlign.center,
+                style: AppStyles.bodyLarge.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
+              ),
+            ],
           ),
-          SizedBox(height: 8),
-          Text(
-            'Client list and account management',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -234,23 +211,31 @@ class _ReportsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.analytics, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Reports',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+    return AppTheme.buildGradientContainer(
+      colors: AppColors.secretaryGradient,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(AppDimensions.paddingLarge),
+          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
+          decoration: AppTheme.glassDecoration,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.analytics, size: AppDimensions.iconLogo, color: AppColors.secretaryColor),
+              const SizedBox(height: AppDimensions.paddingMedium),
+              Text(
+                'Reports',
+                style: AppStyles.headlineMedium.copyWith(color: AppColors.textOnPrimary),
+              ),
+              const SizedBox(height: AppDimensions.paddingSmall),
+              Text(
+                'Statistics and ride reports',
+                textAlign: TextAlign.center,
+                style: AppStyles.bodyLarge.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
+              ),
+            ],
           ),
-          SizedBox(height: 8),
-          Text(
-            'Statistics and ride reports',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
+        ),
       ),
     );
   }

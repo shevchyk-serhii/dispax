@@ -5,10 +5,30 @@ import 'package:http/http.dart' as http;
 
 class ApiClient {
   static String get privateBaseUrl {
+    // Check for environment variable first
+    const customUrl = String.fromEnvironment('API_BASE_URL');
+    if (customUrl.isNotEmpty) {
+      return customUrl;
+    }
+
+    // Check if we should use localhost for testing
+    const useLocalhost = String.fromEnvironment('USE_LOCALHOST');
+    if (useLocalhost == 'true') {
+      return 'http://127.0.0.1:8080/api';
+    }
+
+    // Auto-detect based on platform and debug mode
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8080/api'; // Android emulator
+      // For Android emulator, use special IP
+      // For real Android device, try localhost first as fallback
+      if (kDebugMode) {
+        return 'http://10.0.2.2:8080/api'; // Android emulator
+      } else {
+        return 'http://10.0.2.2:8080/api'; // Try emulator IP for real device too
+      }
     } else if (Platform.isIOS) {
-      return 'http://127.0.0.1:8080/api'; // iOS simulator
+      // For iOS simulator and real devices
+      return 'http://127.0.0.1:8080/api'; // Use localhost
     } else {
       return 'http://localhost:8080/api'; // Desktop/Web
     }
@@ -29,28 +49,36 @@ class ApiClient {
 
   Future<http.Response> get(String endpoint) async {
     try {
-      debugPrint('Making GET request to: $privateBaseUrl$endpoint');
-      debugPrint('Headers: $privateHeaders');
+      final url = '$privateBaseUrl$endpoint';
+      debugPrint('🌐 Making GET request to: $url');
+      debugPrint('📱 Platform: ${Platform.operatingSystem}, Debug mode: $kDebugMode');
+      debugPrint('📋 Headers: $privateHeaders');
+      
       final response = await privateClient
-          .get(Uri.parse('$privateBaseUrl$endpoint'), headers: privateHeaders)
-          .timeout(const Duration(seconds: 10));
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response body: ${response.body}');
+          .get(Uri.parse(url), headers: privateHeaders)
+          .timeout(const Duration(seconds: 15));
+      
+      debugPrint('✅ Response status: ${response.statusCode}');
+      debugPrint('📄 Response body: ${response.body.length > 200 ? response.body.substring(0, 200) + '...' : response.body}');
       return response;
     } on SocketException catch (e) {
-      debugPrint('SocketException: $e');
+      debugPrint('❌ SocketException: $e');
       throw ApiException(
-        'Network error: Unable to connect to server. Make sure the backend is running. Error: $e',
+        'Network error: Unable to connect to server at $privateBaseUrl. Make sure:\n'
+        '1. Backend is running on your computer\n'
+        '2. Your phone and computer are on the same WiFi network\n'
+        '3. Firewall allows port 8080\n'
+        'Error details: $e',
       );
     } on HttpException catch (e) {
-      debugPrint('HttpException: $e');
+      debugPrint('❌ HttpException: $e');
       throw ApiException('HTTP error: $e');
     } on FormatException catch (e) {
-      debugPrint('FormatException: $e');
+      debugPrint('❌ FormatException: $e');
       throw ApiException('Format error: $e');
     } catch (e) {
-      debugPrint('General Exception: $e');
-      throw ApiException('Failed to perform GET request: $e');
+      debugPrint('❌ General Exception: $e');
+      throw ApiException('Failed to perform GET request to $privateBaseUrl$endpoint: $e');
     }
   }
 
@@ -77,6 +105,19 @@ class ApiClient {
       return response;
     } catch (e) {
       throw ApiException('Failed to perform PUT request: $e');
+    }
+  }
+
+  Future<http.Response> patch(String endpoint, Map<String, dynamic> data) async {
+    try {
+      final response = await privateClient.patch(
+        Uri.parse('$privateBaseUrl$endpoint'),
+        headers: privateHeaders,
+        body: jsonEncode(data),
+      );
+      return response;
+    } catch (e) {
+      throw ApiException('Failed to perform PATCH request: $e');
     }
   }
 

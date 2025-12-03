@@ -6,6 +6,13 @@ import '../../widgets/widgets.dart';
 import '../../utils/date_utils.dart';
 import '../../screens/flight_screen.dart';
 import '../../screens/ride_details_screen.dart';
+import 'dart:io';
+import '../../screens/client_map_screen.dart';
+import '../../screens/simple_map_screen.dart';
+import '../../theme/app_theme.dart';
+import '../../constants/app_colors.dart';
+import '../../constants/app_styles.dart';
+import '../../constants/app_dimensions.dart';
 
 class ClientDashboard extends StatelessWidget {
   const ClientDashboard({super.key});
@@ -20,11 +27,11 @@ class ClientDashboard extends StatelessWidget {
         builder: (context, selectedIndex, child) {
           return IndexedStack(
             index: selectedIndex,
-            children: const [
-              MyRidesTab(),
-              RideStatusTab(),
-              FlightScreen(),
-              ProfileTab(),
+            children: [
+              const MyRidesTab(),
+              Platform.isAndroid ? const SimpleMapScreen() : const ClientMapScreen(),
+              const FlightScreen(),
+              const ProfileTab(),
             ],
           );
         },
@@ -44,8 +51,8 @@ class ClientDashboard extends StatelessWidget {
                 label: 'My Rides',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.location_on),
-                label: 'Current Ride',
+                icon: Icon(Icons.map),
+                label: 'Map',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.flight),
@@ -274,55 +281,37 @@ class MyRidesTab extends StatelessWidget {
   }
 }
 
-class RideStatusTab extends StatelessWidget {
-  const RideStatusTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.location_on, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Current Ride',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Information about current ride and driver location',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.person, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Client Profile',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+    return AppTheme.buildGradientContainer(
+      colors: AppColors.clientGradient,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(AppDimensions.paddingLarge),
+          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
+          decoration: AppTheme.glassDecoration,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.person, size: AppDimensions.iconLogo, color: AppColors.clientColor),
+              const SizedBox(height: AppDimensions.paddingMedium),
+              Text(
+                'Client Profile',
+                style: AppStyles.headlineMedium.copyWith(color: AppColors.textOnPrimary),
+              ),
+              const SizedBox(height: AppDimensions.paddingSmall),
+              Text(
+                'Personal information and account settings',
+                textAlign: TextAlign.center,
+                style: AppStyles.bodyLarge.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
+              ),
+            ],
           ),
-          SizedBox(height: 8),
-          Text(
-            'Personal information and account settings',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
+        ),
       ),
     );
   }

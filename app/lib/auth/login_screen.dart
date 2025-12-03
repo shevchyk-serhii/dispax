@@ -5,6 +5,10 @@ import '../dashboard/dashboard_screen.dart';
 import '../utils/navigation_helper.dart';
 import '../utils/auth_helper.dart';
 import '../widgets/widgets.dart';
+import '../theme/app_theme.dart';
+import '../constants/app_colors.dart';
+import '../constants/app_styles.dart';
+import '../constants/app_dimensions.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -17,9 +21,10 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
+      body: AppTheme.buildGradientContainer(
+        colors: AppColors.primaryGradient,
+        stops: const [0.0, 0.5, 1.0],
+        child: SafeArea(
           child: MultiBlocListener(
             listeners: [
               BlocListener<AuthBloc, AuthState>(
@@ -36,42 +41,32 @@ class LoginScreen extends StatelessWidget {
             child: BlocBuilder<AuthBloc, AuthState>(
               builder: (context, authState) {
                 if (authState.isLoading) {
-                  return const LoadingWidget();
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 3,
+                    ),
+                  );
                 }
 
                 return SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppDimensions.paddingLarge),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const AppHeader(),
-                      const SizedBox(height: 48),
-                      LoginForm(
-                        onSubmit: () => login(context),
-                        formKey: formKey,
-                        emailController: emailController,
-                        passwordController: passwordController,
-                        obscurePasswordNotifier: obscurePasswordNotifier,
-                      ),
-                      if (authState.hasError) ...[
-                        const SizedBox(height: 16),
-                        ErrorMessageCard(
-                          message: authState.errorMessage!,
-                          onClose: () => AuthHelper.clearError(context),
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      TestCredentialsCard(
-                        onCredentialTap: (email, password) {
-                          emailController.text = email;
-                          passwordController.text = password;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      QuickLoginButtons(
-                        onQuickLogin: (email) =>
-                            AuthHelper.quickLogin(context, email),
-                      ),
+                      const SizedBox(height: AppDimensions.paddingXXLarge + AppDimensions.paddingMedium),
+                      // Modern App Header
+                      _buildModernHeader(),
+                      const SizedBox(height: AppDimensions.paddingXXLarge + AppDimensions.paddingMedium),
+                      
+                      // Login Card
+                      _buildLoginCard(context, authState),
+                      
+                      const SizedBox(height: AppDimensions.paddingLarge),
+                      
+                      // Quick Login Section
+                      _buildQuickLoginSection(context),
+                      
+                      const SizedBox(height: AppDimensions.paddingXLarge),
                     ],
                   ),
                 );
@@ -80,6 +75,144 @@ class LoginScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildModernHeader() {
+    return Column(
+      children: [
+        Container(
+          width: AppDimensions.iconHero,
+          height: AppDimensions.iconHero,
+          decoration: BoxDecoration(
+            color: AppColors.glassBackground,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusXXLarge),
+            border: Border.all(color: AppColors.glassBorder, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadowMedium,
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.local_taxi_rounded,
+            size: AppDimensions.iconLogo,
+            color: AppColors.textOnPrimary,
+          ),
+        ),
+        const SizedBox(height: AppDimensions.paddingLarge),
+        Text(
+          'Oktopus Taxi',
+          style: AppStyles.glassHeadlineLarge,
+        ),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        Text(
+          'Professional Ride Management',
+          style: AppStyles.glassBodyLarge,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginCard(BuildContext context, AuthState authState) {
+    return Container(
+      width: double.infinity,
+      decoration: AppTheme.cardDecoration.copyWith(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusXLarge),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Welcome Back',
+              style: AppStyles.headlineMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppDimensions.paddingSmall),
+            Text(
+              'Sign in to continue',
+              style: AppStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppDimensions.paddingXLarge + AppDimensions.paddingSmall),
+            
+            LoginForm(
+              onSubmit: () => login(context),
+              formKey: formKey,
+              emailController: emailController,
+              passwordController: passwordController,
+              obscurePasswordNotifier: obscurePasswordNotifier,
+            ),
+            
+            if (authState.hasError) ...[
+              const SizedBox(height: AppDimensions.paddingMedium),
+              Container(
+                padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline, 
+                      color: AppColors.error, 
+                      size: AppDimensions.iconMedium,
+                    ),
+                    const SizedBox(width: AppDimensions.paddingMedium),
+                    Expanded(
+                      child: Text(
+                        authState.errorMessage!,
+                        style: AppStyles.bodyMedium.copyWith(color: AppColors.error),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close, 
+                        color: AppColors.error, 
+                        size: AppDimensions.iconSmall,
+                      ),
+                      onPressed: () => AuthHelper.clearError(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickLoginSection(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'Quick Access for Testing',
+          style: AppStyles.glassTitleMedium,
+        ),
+        const SizedBox(height: AppDimensions.paddingMedium),
+        
+        TestCredentialsCard(
+          onCredentialTap: (email, password) {
+            emailController.text = email;
+            passwordController.text = password;
+          },
+        ),
+        
+        const SizedBox(height: AppDimensions.paddingMedium),
+        
+        QuickLoginButtons(
+          onQuickLogin: (email) => AuthHelper.quickLogin(context, email),
+        ),
+      ],
     );
   }
 

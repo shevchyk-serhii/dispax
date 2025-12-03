@@ -107,6 +107,24 @@ class RideService {
     }
   }
 
+  Future<bool> updateRideStatus(int id, RideStatus status) async {
+    try {
+      final response = await privateApiClient.patch('/rides/$id/status', {
+        'status': status.value,
+      });
+
+      if (response.statusCode == 200) {
+        return true;
+      } else if (response.statusCode == 404) {
+        return false;
+      } else {
+        throw ApiException('Failed to update ride status: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw ApiException('Error updating ride status: $e');
+    }
+  }
+
   void dispose() {
     privateApiClient.dispose();
   }

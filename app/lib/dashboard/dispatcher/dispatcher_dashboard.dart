@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_theme.dart';
+import '../../constants/app_colors.dart';
+import '../../constants/app_styles.dart';
+import '../../constants/app_dimensions.dart';
 
 class DispatcherDashboard extends StatelessWidget {
   const DispatcherDashboard({super.key});
@@ -55,23 +59,31 @@ class PendingRidesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.pending_actions, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Pending Rides',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+    return AppTheme.buildGradientContainer(
+      colors: AppColors.dispatcherGradient,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(AppDimensions.paddingLarge),
+          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
+          decoration: AppTheme.glassDecoration,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.pending_actions, size: AppDimensions.iconLogo, color: AppColors.dispatcherColor),
+              const SizedBox(height: AppDimensions.paddingMedium),
+              Text(
+                'Pending Rides',
+                style: AppStyles.headlineMedium.copyWith(color: AppColors.textOnPrimary),
+              ),
+              const SizedBox(height: AppDimensions.paddingSmall),
+              Text(
+                'List of rides with "Requested" status',
+                textAlign: TextAlign.center,
+                style: AppStyles.bodyLarge.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
+              ),
+            ],
           ),
-          SizedBox(height: 8),
-          Text(
-            'List of rides with "Requested" status',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -82,23 +94,31 @@ class DriverSchedulesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.calendar_view_day, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Driver Schedules',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+    return AppTheme.buildGradientContainer(
+      colors: AppColors.dispatcherGradient,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(AppDimensions.paddingLarge),
+          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
+          decoration: AppTheme.glassDecoration,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.calendar_view_day, size: AppDimensions.iconLogo, color: AppColors.dispatcherColor),
+              const SizedBox(height: AppDimensions.paddingMedium),
+              Text(
+                'Driver Schedules',
+                style: AppStyles.headlineMedium.copyWith(color: AppColors.textOnPrimary),
+              ),
+              const SizedBox(height: AppDimensions.paddingSmall),
+              Text(
+                'Overall view of all company drivers schedules',
+                textAlign: TextAlign.center,
+                style: AppStyles.bodyLarge.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
+              ),
+            ],
           ),
-          SizedBox(height: 8),
-          Text(
-            'Overall view of all company drivers schedules',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -109,23 +129,31 @@ class AssignRidesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.assignment, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Ride Assignment',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+    return AppTheme.buildGradientContainer(
+      colors: AppColors.dispatcherGradient,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(AppDimensions.paddingLarge),
+          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
+          decoration: AppTheme.glassDecoration,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.assignment, size: AppDimensions.iconLogo, color: AppColors.dispatcherColor),
+              const SizedBox(height: AppDimensions.paddingMedium),
+              Text(
+                'Ride Assignment',
+                style: AppStyles.headlineMedium.copyWith(color: AppColors.textOnPrimary),
+              ),
+              const SizedBox(height: AppDimensions.paddingSmall),
+              Text(
+                'Interface for assigning rides to drivers',
+                textAlign: TextAlign.center,
+                style: AppStyles.bodyLarge.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
+              ),
+            ],
           ),
-          SizedBox(height: 8),
-          Text(
-            'Interface for assigning rides to drivers',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
+        ),
       ),
     );
   }

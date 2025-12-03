@@ -12,7 +12,7 @@ object Application extends ZIOAppDefault:
 
   def run: ZIO[Any, Throwable, Nothing] =
     (ZIO.logInfo("Starting the server on port 8080...") *>
-      ZIO.logInfo("Server is now listening on http://localhost:8080") *>
+      ZIO.logInfo("Server is now listening on http://0.0.0.0:8080 (accessible from network)") *>
       Server.serve(AppRoutes.routes @@ Middleware.addHeaders(AppRoutes.corsHeaders)))
       .provide(
         ZLayer.succeed(Server.Config.default.port(8080)) >>> Server.live,

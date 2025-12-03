@@ -5,6 +5,10 @@ import '../models/ride.dart';
 import '../models/location.dart';
 import '../blocs/blocs.dart';
 import '../utils/navigation_helper.dart';
+import '../theme/app_theme.dart';
+import '../constants/app_colors.dart';
+import '../constants/app_styles.dart';
+import '../constants/app_dimensions.dart';
 
 class CreateRideScreen extends StatefulWidget {
   const CreateRideScreen({super.key});
@@ -47,37 +51,33 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create New Ride'),
-        backgroundColor: Colors.purple[600],
-        foregroundColor: Colors.white,
-        elevation: 0,
+        title: Text('Create New Ride', style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary)),
+        backgroundColor: AppColors.secretaryColor,
+        foregroundColor: AppColors.textOnPrimary,
+        elevation: AppDimensions.appBarElevation,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.purple.shade600, Colors.grey.shade50],
-            stops: const [0.0, 0.15],
-          ),
-        ),
+      body: AppTheme.buildGradientContainer(
+        colors: AppColors.secretaryGradient,
+        stops: const [0.0, 0.15, 1.0],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(AppDimensions.paddingMedium),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildBasicInfoCard(),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimensions.paddingMedium),
                 _buildLocationCard(),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimensions.paddingMedium),
                 _buildScheduleCard(),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDimensions.paddingMedium),
                 _buildAirportTransferCard(),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppDimensions.paddingLarge),
                 _buildActionButtons(),
-                const SizedBox(height: 32),
+                const SizedBox(height: AppDimensions.paddingXLarge),
               ],
             ),
           ),
@@ -87,35 +87,33 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
   }
 
   Widget _buildBasicInfoCard() {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: AppTheme.cardDecoration,
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.person, color: Colors.purple[600], size: 24),
-                const SizedBox(width: 8),
-                const Text(
+                Icon(Icons.person, color: AppColors.secretaryColor, size: AppDimensions.iconLarge),
+                const SizedBox(width: AppDimensions.paddingSmall),
+                Text(
                   'Client Information',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppStyles.headlineSmall,
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimensions.paddingMedium),
             TextFormField(
               controller: _clientNameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Client Name *',
                 hintText: 'Enter client full name',
-                prefixIcon: Icon(Icons.person_outline),
-                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_outline, color: AppColors.secretaryColor),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                ),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
@@ -131,35 +129,33 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
   }
 
   Widget _buildLocationCard() {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: AppTheme.cardDecoration,
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.location_on, color: Colors.purple[600], size: 24),
-                const SizedBox(width: 8),
-                const Text(
+                Icon(Icons.location_on, color: AppColors.secretaryColor, size: AppDimensions.iconLarge),
+                const SizedBox(width: AppDimensions.paddingSmall),
+                Text(
                   'Route Information',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppStyles.headlineSmall,
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimensions.paddingMedium),
             TextFormField(
               controller: _fromAddressController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Pickup Address *',
                 hintText: 'Enter pickup location',
-                prefixIcon: Icon(Icons.trip_origin),
-                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.trip_origin, color: AppColors.secretaryColor),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                ),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
@@ -171,14 +167,16 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                 _checkAirportTransfer();
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimensions.paddingMedium),
             TextFormField(
               controller: _toAddressController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Destination Address *',
                 hintText: 'Enter destination location',
-                prefixIcon: Icon(Icons.location_on),
-                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_on, color: AppColors.secretaryColor),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                ),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
@@ -197,58 +195,48 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
   }
 
   Widget _buildScheduleCard() {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: AppTheme.cardDecoration,
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.schedule, color: Colors.purple[600], size: 24),
-                const SizedBox(width: 8),
-                const Text(
+                Icon(Icons.schedule, color: AppColors.secretaryColor, size: AppDimensions.iconLarge),
+                const SizedBox(width: AppDimensions.paddingSmall),
+                Text(
                   'Schedule',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppStyles.headlineSmall,
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimensions.paddingMedium),
             InkWell(
               onTap: _selectDateTime,
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppDimensions.paddingMedium),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppColors.textSecondary),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.access_time),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppDimensions.paddingMedium),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Pickup Date & Time *',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
+                            style: AppStyles.labelSmall.copyWith(color: AppColors.textSecondary),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppDimensions.paddingXSmall),
                           Text(
                             DateFormat('MMM dd, yyyy - HH:mm').format(_pickupDateTime),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: AppStyles.bodyLarge,
                           ),
                         ],
                       ),
@@ -265,18 +253,23 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
   }
 
   Widget _buildAirportTransferCard() {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: AppTheme.cardDecoration,
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.flight, color: Colors.purple[600], size: 24),
-                const SizedBox(width: 8),
+                Icon(
+                  _isAirportTransfer 
+                    ? (_isArrival ? Icons.flight_land : Icons.flight_takeoff)
+                    : Icons.flight,
+                  color: Colors.purple[600], 
+                  size: 24
+                ),
+                const SizedBox(width: AppDimensions.paddingSmall),
                 const Text(
                   'Airport Transfer',
                   style: TextStyle(
@@ -286,7 +279,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimensions.paddingMedium),
             SwitchListTile(
               title: const Text('Airport Transfer'),
               subtitle: const Text('Enable if this is an airport pickup/drop-off'),
@@ -305,7 +298,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
             ),
             if (_isAirportTransfer) ...[
               const Divider(),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppDimensions.paddingSmall),
               Row(
                 children: [
                   Expanded(
@@ -336,14 +329,16 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppDimensions.paddingMedium),
               TextFormField(
                 controller: _flightNumberController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Flight Number',
                   hintText: 'e.g. LH123, BA456',
-                  prefixIcon: Icon(Icons.flight_takeoff),
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.flight_takeoff, color: AppColors.secretaryColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  ),
                 ),
                 validator: _isAirportTransfer ? (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -352,14 +347,16 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                   return null;
                 } : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppDimensions.paddingMedium),
               Row(
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Gate',
-                        border: OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                        ),
                       ),
                       value: _selectedGate,
                       items: _gates.map((gate) => DropdownMenuItem(
@@ -373,12 +370,14 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppDimensions.paddingMedium),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Terminal',
-                        border: OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                        ),
                       ),
                       value: _selectedTerminal,
                       items: _terminals.map((terminal) => DropdownMenuItem(
@@ -425,41 +424,41 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
           children: [
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: AppDimensions.buttonHeightLarge,
               child: ElevatedButton.icon(
                 onPressed: state.isLoading ? null : _createRide,
                 icon: state.isLoading 
                   ? const SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: AppDimensions.iconSmall,
+                      height: AppDimensions.iconSmall,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppColors.textOnPrimary,
                       ),
                     )
                   : const Icon(Icons.add_circle_outline),
                 label: Text(state.isLoading ? 'Creating Ride...' : 'Create Ride'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple[600],
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.secretaryColor,
+                  foregroundColor: AppColors.textOnPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppDimensions.paddingMedium),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: AppDimensions.buttonHeightLarge,
               child: OutlinedButton.icon(
                 onPressed: _clearForm,
                 icon: const Icon(Icons.clear_all),
                 label: const Text('Clear Form'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.purple[600],
+                  foregroundColor: AppColors.secretaryColor,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                   ),
                 ),
               ),

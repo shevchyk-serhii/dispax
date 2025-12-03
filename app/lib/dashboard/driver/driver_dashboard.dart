@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'calendar/calendar_schedule_screen.dart';
 import 'today_rides_screen.dart';
 import 'upcoming_rides_screen.dart';
 import '../../screens/flight_screen.dart';
+import '../../screens/driver_map_screen.dart';
+import '../../screens/simple_map_screen.dart';
+import '../../theme/app_theme.dart';
+import '../../constants/app_colors.dart';
+import '../../constants/app_styles.dart';
+import '../../constants/app_dimensions.dart';
 
 class DriverDashboard extends StatelessWidget {
   const DriverDashboard({super.key});
@@ -17,12 +24,12 @@ class DriverDashboard extends StatelessWidget {
         return Scaffold(
           body: IndexedStack(
             index: selectedIndex,
-            children: const [
-              TodayRidesScreen(),
-              CalendarScheduleScreen(),
-              UpcomingRidesScreen(),
-              FlightScreen(),
-              ProfileTab(),
+            children: [
+              const TodayRidesScreen(),
+              const CalendarScheduleScreen(),
+              const UpcomingRidesScreen(),
+              const FlightScreen(),
+              Platform.isAndroid ? const SimpleMapScreen() : const DriverMapScreen(),
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
@@ -46,8 +53,8 @@ class DriverDashboard extends StatelessWidget {
                 label: 'Flights',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
+                icon: Icon(Icons.map),
+                label: 'Map',
               ),
             ],
           ),
@@ -57,29 +64,3 @@ class DriverDashboard extends StatelessWidget {
   }
 }
 
-class ProfileTab extends StatelessWidget {
-  const ProfileTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.person, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Driver Profile',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Personal information, vehicle details, and account settings',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-}

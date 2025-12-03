@@ -6,6 +6,7 @@ import 'auth/login_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'services/ride_service.dart';
 import 'services/mapbox_service.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,10 +36,7 @@ class MyApp extends StatelessWidget {
             },
             child: MaterialApp(
               title: 'Oktopus Taxi',
-              theme: ThemeData(
-                colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-                useMaterial3: true,
-              ),
+              theme: AppTheme.theme,
               home: BlocBuilder<AuthBloc, AuthState>(
                 builder: (context, authState) {
                   if (authState.isLoading) {

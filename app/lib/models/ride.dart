@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'location.dart';
 
 enum RideStatus {
@@ -37,6 +38,8 @@ class Ride {
   final String? gate;
   final String? terminal;
   final String? flightStatus; // "On Time", "Delayed", "Cancelled"
+  final String? driverName;
+  final Location? driverLocation; // Текущее местоположение водителя
 
   const Ride({
     required this.id,
@@ -57,6 +60,8 @@ class Ride {
     this.gate,
     this.terminal,
     this.flightStatus,
+    this.driverName,
+    this.driverLocation,
   });
 
   factory Ride.fromJson(Map<String, dynamic> json) {
@@ -79,6 +84,10 @@ class Ride {
       gate: json['gate'],
       terminal: json['terminal'],
       flightStatus: json['flightStatus'],
+      driverName: json['driverName'],
+      driverLocation: json['driverLocation'] != null 
+        ? Location.fromJson(json['driverLocation']) 
+        : null,
     );
   }
 
@@ -102,6 +111,8 @@ class Ride {
       'gate': gate,
       'terminal': terminal,
       'flightStatus': flightStatus,
+      'driverName': driverName,
+      'driverLocation': driverLocation?.toJson(),
     };
   }
 
@@ -124,6 +135,8 @@ class Ride {
     String? gate,
     String? terminal,
     String? flightStatus,
+    String? driverName,
+    Location? driverLocation,
   }) {
     return Ride(
       id: id ?? this.id,
@@ -144,6 +157,8 @@ class Ride {
       gate: gate ?? this.gate,
       terminal: terminal ?? this.terminal,
       flightStatus: flightStatus ?? this.flightStatus,
+      driverName: driverName ?? this.driverName,
+      driverLocation: driverLocation ?? this.driverLocation,
     );
   }
 
@@ -193,6 +208,12 @@ class Ride {
   String get flightIcon {
     if (!isAirportTransfer) return '';
     return isArrival ? '✈️↓' : '✈️↑';
+  }
+
+  // Material Design flight icons
+  IconData? get flightIconData {
+    if (!isAirportTransfer) return null;
+    return isArrival ? Icons.flight_land : Icons.flight_takeoff;
   }
 
   String get flightTypeText {
