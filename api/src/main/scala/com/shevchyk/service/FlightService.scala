@@ -2,7 +2,6 @@ package com.shevchyk.service
 
 import zio.*
 import zio.json.*
-import scala.io.Source
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse

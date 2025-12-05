@@ -39,7 +39,8 @@ class Ride {
   final String? terminal;
   final String? flightStatus; // "On Time", "Delayed", "Cancelled"
   final String? driverName;
-  final Location? driverLocation; // Текущее местоположение водителя
+  final Location? driverLocation; // Current driver location
+  final double? price; // Ride price in euros
 
   const Ride({
     required this.id,
@@ -62,6 +63,7 @@ class Ride {
     this.flightStatus,
     this.driverName,
     this.driverLocation,
+    this.price,
   });
 
   factory Ride.fromJson(Map<String, dynamic> json) {
@@ -88,6 +90,7 @@ class Ride {
       driverLocation: json['driverLocation'] != null 
         ? Location.fromJson(json['driverLocation']) 
         : null,
+      price: json['price']?.toDouble(),
     );
   }
 
@@ -113,6 +116,7 @@ class Ride {
       'flightStatus': flightStatus,
       'driverName': driverName,
       'driverLocation': driverLocation?.toJson(),
+      'price': price,
     };
   }
 
@@ -137,6 +141,7 @@ class Ride {
     String? flightStatus,
     String? driverName,
     Location? driverLocation,
+    double? price,
   }) {
     return Ride(
       id: id ?? this.id,
@@ -159,6 +164,7 @@ class Ride {
       flightStatus: flightStatus ?? this.flightStatus,
       driverName: driverName ?? this.driverName,
       driverLocation: driverLocation ?? this.driverLocation,
+      price: price ?? this.price,
     );
   }
 

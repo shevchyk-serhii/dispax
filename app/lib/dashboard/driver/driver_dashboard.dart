@@ -3,13 +3,10 @@ import 'dart:io';
 import 'calendar/calendar_schedule_screen.dart';
 import 'today_rides_screen.dart';
 import 'upcoming_rides_screen.dart';
+import 'ride_history_screen.dart';
 import '../../screens/flight_screen.dart';
 import '../../screens/driver_map_screen.dart';
 import '../../screens/simple_map_screen.dart';
-import '../../theme/app_theme.dart';
-import '../../constants/app_colors.dart';
-import '../../constants/app_styles.dart';
-import '../../constants/app_dimensions.dart';
 
 class DriverDashboard extends StatelessWidget {
   const DriverDashboard({super.key});
@@ -28,6 +25,7 @@ class DriverDashboard extends StatelessWidget {
               const TodayRidesScreen(),
               const CalendarScheduleScreen(),
               const UpcomingRidesScreen(),
+              const RideHistoryScreen(),
               const FlightScreen(),
               Platform.isAndroid ? const SimpleMapScreen() : const DriverMapScreen(),
             ],
@@ -47,6 +45,10 @@ class DriverDashboard extends StatelessWidget {
               BottomNavigationBarItem(
                 icon: Icon(Icons.event_note),
                 label: 'Upcoming',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.history),
+                label: 'History',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.flight),

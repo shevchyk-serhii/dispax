@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/ride.dart';
+import '../constants/app_colors.dart';
+import 'flight_confirmation_screen.dart';
+import '../widgets/location_clarification_dialog.dart';
 
 class RideDetailsScreen extends StatelessWidget {
   final Ride ride;
@@ -588,6 +591,36 @@ class RideDetailsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         
+        // Flight confirmation (only for airport transfers that are assigned or close to pickup time)
+        if (ride.isAirportTransfer && 
+            (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress) &&
+            ride.pickupDateTime.difference(DateTime.now()).inHours <= 2) ...[
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final result = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (context) => FlightConfirmationScreen(ride: ride),
+                  ),
+                );
+                
+                if (result == true && context.mounted) {
+                  Navigator.of(context).pop(); // Close details screen and refresh main view
+                }
+              },
+              icon: const Icon(Icons.flight_land),
+              label: const Text('Confirm Arrival'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.textOnPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        
         // Driver contact (only when driver assigned and ride active)
         if (ride.driverId != null && 
             (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)) ...[
@@ -606,6 +639,39 @@ class RideDetailsScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green[600],
                 foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        
+        // Location clarification (when ride is in progress)
+        if (ride.status == RideStatus.inProgress) ...[
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final result = await showLocationClarificationDialog(
+                  context: context,
+                  ride: ride,
+                );
+                
+                if (result == true && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Location updated'),
+                      backgroundColor: AppColors.success,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.my_location),
+              label: const Text('Update Location'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: BorderSide(color: AppColors.primary),
               ),
             ),
           ),

@@ -47,7 +47,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   Future<void> _initializeLocation() async {
-    // Получаем текущее местоположение
+    // Get current location
     final position = await _locationService.getCurrentPosition();
     if (position != null) {
       setState(() {
@@ -55,7 +55,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       });
     }
 
-    // Начинаем отслеживание местоположения
+    // Start location tracking
     final started = await _locationService.startLocationTracking();
     if (started) {
       _locationSubscription = _locationService.positionStream.listen((geo.Position position) {
@@ -70,14 +70,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
     
-    // Инициализируем менеджеры аннотаций
+    // Initialize annotation managers
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
     
-    // Добавляем стандартные изображения маркеров
+    // Add markers
     await MapboxService.addDefaultImages(mapboxMap);
     
-    // Устанавливаем начальную камеру
+    // Set initial camera
     if (_currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
         latitude: _currentPosition!.latitude,
@@ -96,7 +96,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     
     _circleAnnotationManager?.deleteAll();
     
-    // Добавляем круглый маркер для текущего местоположения клиента
+    // Add markers
     final marker = MapboxService.createLocationMarker(
       latitude: _currentPosition!.latitude,
       longitude: _currentPosition!.longitude,
@@ -110,8 +110,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   void _updateMapMarkers() {
     if (_mapboxMap == null || _circleAnnotationManager == null) return;
     
-    // Очищаем все маркеры, кроме текущего местоположения клиента
-    // Если есть активная поездка, показываем маркеры
+    // Clear markers
+    // If there is
     if (_activeRide != null) {
       final rideMarkers = MapboxService.createRideMarkers(
         from: _activeRide!.from,
@@ -122,7 +122,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         _circleAnnotationManager?.create(marker);
       }
       
-      // Если есть информация о местоположении водителя, добавляем маркер
+      // If there is
       if (_activeRide!.driverLocation != null && 
           _activeRide!.driverLocation!.latitude != null &&
           _activeRide!.driverLocation!.longitude != null) {
@@ -134,7 +134,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         _circleAnnotationManager?.create(driverMarker);
       }
       
-      // Устанавливаем камеру для отображения всего маршрута
+      // Set initial camera
       final cameraOptions = MapboxService.getCameraForRoute(
         from: _activeRide!.from,
         to: _activeRide!.to,
@@ -150,7 +150,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     
     if (_activeRide != null && MapboxService.isRideInProgress(_activeRide!)) {
       _driverLocationTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-        // В реальном приложении здесь будет запрос к API для получения местоположения водителя
+        // In real app, this would send location to server
         _updateDriverLocation();
       });
     }
@@ -158,7 +158,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   void _updateDriverLocation() {
     // Заглушка для обновления местоположения водителя
-    // В реальном приложении здесь будет API вызов
+    // In real app, this would send location to server
     if (_activeRide != null) {
       // Для демонстрации - немного сдвигаем позицию водителя
       setState(() {
@@ -192,7 +192,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         },
         child: Stack(
           children: [
-            // Карта
+            // Map
             MapWidget(
               key: const ValueKey('client_map'),
               onMapCreated: _onMapCreated,
@@ -203,7 +203,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               child: _buildInfoPanel(),
             ),
             
-            // Кнопки управления
+            // Control buttons
             Positioned(
               bottom: 100,
               right: 16,

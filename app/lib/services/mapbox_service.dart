@@ -255,7 +255,7 @@ class MapboxService {
 
   // Добавляет стандартные изображения маркеров
   static Future<void> addDefaultImages(MapboxMap mapboxMap) async {
-    // В реальном приложении здесь будут загружены изображения маркеров
+    // In real app, this would send location to server
     // Пока оставим заглушки для будущей реализации
     try {
       // await mapboxMap.style.addImage('driver-marker', driverMarkerBytes);

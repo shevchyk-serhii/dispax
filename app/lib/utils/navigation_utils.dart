@@ -88,7 +88,7 @@ class NavigationUtils {
     
     String googleMapsUrl;
     if (location.latitude != null && location.longitude != null) {
-      // Если есть координаты, используем их для более точного позиционирования
+      // If there is
       googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}';
     } else {
       // Используем адрес

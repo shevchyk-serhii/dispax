@@ -13,6 +13,8 @@ import '../../theme/app_theme.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
+import '../../widgets/airport_entry_timer.dart';
+import 'client_ride_history_screen.dart';
 
 class ClientDashboard extends StatelessWidget {
   const ClientDashboard({super.key});
@@ -29,6 +31,7 @@ class ClientDashboard extends StatelessWidget {
             index: selectedIndex,
             children: [
               const MyRidesTab(),
+              const ClientRideHistoryScreen(),
               Platform.isAndroid ? const SimpleMapScreen() : const ClientMapScreen(),
               const FlightScreen(),
               const ProfileTab(),
@@ -49,6 +52,10 @@ class ClientDashboard extends StatelessWidget {
               BottomNavigationBarItem(
                 icon: Icon(Icons.list),
                 label: 'My Rides',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.history),
+                label: 'History',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.map),
@@ -80,6 +87,34 @@ class MyRidesTab extends StatelessWidget {
     }
   }
 
+  void _onAirportEntryTimeReached(BuildContext context, Ride ride) {
+    // Show notification to client that driver should depart
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Your driver should now depart to the airport for flight ${ride.fullFlightInfo}',
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: AppColors.clientColor,
+        duration: const Duration(seconds: 8),
+        action: SnackBarAction(
+          label: 'Details',
+          textColor: Colors.white,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => RideDetailsScreen(
+                  ride: ride,
+                  isClientView: true,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RideBloc, RideState>(
@@ -103,19 +138,46 @@ class MyRidesTab extends StatelessWidget {
           );
         }
 
-        if (rideState.isEmpty) {
+        // Filter to show only active rides (not completed or cancelled)
+        final activeRides = rideState.rides.where((ride) => 
+          ride.status != RideStatus.completed && 
+          ride.status != RideStatus.cancelled
+        ).toList();
+
+        if (activeRides.isEmpty) {
           return const EmptyStateWidget(
-            message: 'You have no rides booked yet',
-            icon: Icons.history,
+            message: 'You have no active rides',
+            icon: Icons.event_available,
           );
         }
 
         return RefreshIndicator(
           onRefresh: () async => loadRides(context),
           child: ListView.builder(
-            itemCount: rideState.rides.length,
+            itemCount: activeRides.length + 1, // +1 for airport timer section
             itemBuilder: (context, index) {
-              final ride = rideState.rides[index];
+              // Airport timer section at the top
+              if (index == 0) {
+                final airportRides = activeRides
+                    .where((ride) => ride.isAirportTransfer && 
+                           (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress))
+                    .toList();
+                    
+                if (airportRides.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                
+                return Column(
+                  children: airportRides.map((ride) => AirportEntryTimer(
+                    ride: ride,
+                    onEntryTimeReached: () => _onAirportEntryTimeReached(context, ride),
+                  )).toList(),
+                );
+              }
+              
+              // Adjust index for actual rides
+              final rideIndex = index - 1;
+              final ride = activeRides[rideIndex];
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: InkWell(
@@ -175,7 +237,7 @@ class MyRidesTab extends StatelessWidget {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: getStatusColor(ride.status).withOpacity(0.1),
+                                color: getStatusColor(ride.status).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: getStatusColor(ride.status),
@@ -198,10 +260,10 @@ class MyRidesTab extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.05),
+                              color: Colors.blue.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: Colors.blue.withOpacity(0.2),
+                                color: Colors.blue.withValues(alpha: 0.2),
                                 width: 1,
                               ),
                             ),

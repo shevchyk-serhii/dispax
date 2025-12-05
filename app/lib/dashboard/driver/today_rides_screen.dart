@@ -561,7 +561,9 @@ class TodayRidesScreen extends StatelessWidget {
 
     return rides.where((ride) {
       return ride.pickupDateTime.isAfter(todayStart) &&
-          ride.pickupDateTime.isBefore(todayEnd);
+          ride.pickupDateTime.isBefore(todayEnd) &&
+          ride.status != RideStatus.completed &&
+          ride.status != RideStatus.cancelled;
     }).toList()..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
   }
 

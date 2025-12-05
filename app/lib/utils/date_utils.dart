@@ -35,4 +35,27 @@ class AppDateUtils {
       return formatDateTime(dateTime);
     }
   }
+
+  static String formatDateHeader(DateTime dateTime) {
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+    
+    if (isToday(dateTime)) {
+      return 'Today';
+    } else if (dateTime.year == yesterday.year &&
+               dateTime.month == yesterday.month &&
+               dateTime.day == yesterday.day) {
+      return 'Yesterday';
+    } else if (dateTime.year == now.year) {
+      // Same year - show month and day
+      final months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      return '${months[dateTime.month - 1]} ${dateTime.day}';
+    } else {
+      // Different year - show full date
+      return formatDate(dateTime);
+    }
+  }
 }

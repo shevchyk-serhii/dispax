@@ -12,6 +12,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
 import '../utils/date_utils.dart';
+import '../widgets/airport_entry_timer.dart';
 
 class DriverMapScreen extends StatefulWidget {
   const DriverMapScreen({super.key});
@@ -48,7 +49,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   Future<void> _initializeLocation() async {
-    // Получаем текущее местоположение
+    // Get current location
     final position = await _locationService.getCurrentPosition();
     if (position != null) {
       setState(() {
@@ -56,7 +57,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       });
     }
 
-    // Начинаем отслеживание местоположения
+    // Start location tracking
     final started = await _locationService.startLocationTracking();
     if (started) {
       _locationSubscription = _locationService.positionStream.listen((geo.Position position) {
@@ -64,7 +65,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
           _currentPosition = position;
         });
         _updateCurrentLocationMarker();
-        _sendLocationUpdate(); // Отправляем обновление местоположения на сервер
+        _sendLocationUpdate(); // Send location update to server
       });
     }
   }
@@ -72,14 +73,14 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
     
-    // Инициализируем менеджеры аннотаций
+    // Initialize annotation managers
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
     
-    // Добавляем стандартные изображения маркеров
+    // Add markers
     await MapboxService.addDefaultImages(mapboxMap);
     
-    // Устанавливаем начальную камеру
+    // Set initial camera
     if (_currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
         latitude: _currentPosition!.latitude,
@@ -97,7 +98,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     
     _circleAnnotationManager?.deleteAll();
     
-    // Добавляем круглый маркер для текущего местоположения водителя
+    // Add markers
     final marker = MapboxService.createLocationMarker(
       latitude: _currentPosition!.latitude,
       longitude: _currentPosition!.longitude,
@@ -111,8 +112,8 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   void _updateMapMarkers() {
     if (_mapboxMap == null || _circleAnnotationManager == null) return;
     
-    // Очищаем предыдущие маркеры поездок, оставляя маркер текущего местоположения
-    // Показываем маркеры для всех назначенных поездок
+    // Clear markers
+    // Show markers
     for (final ride in _assignedRides) {
       final rideMarkers = MapboxService.createRideMarkers(
         from: ride.from,
@@ -124,7 +125,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       }
     }
     
-    // Если есть текущая поездка, центрируем камеру на её маршруте
+    // If there is
     if (_currentRide != null) {
       final cameraOptions = MapboxService.getCameraForRoute(
         from: _currentRide!.from,
@@ -139,16 +140,35 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   void _sendLocationUpdate() {
     if (_currentPosition == null) return;
     
-    // В реальном приложении здесь будет отправка местоположения на сервер
-    // Можно использовать logger для отладки в development режиме
+    // In real app, this would send location to server
+    // Could use logger for debugging in development mode
   }
 
   void _updateRideStatus(Ride ride, RideStatus newStatus) {
-    // Обновляем статус поездки через блок
+    // Update ride status through bloc
     context.read<RideBloc>().add(RideStatusUpdateRequested(
       rideId: ride.id,
       status: newStatus,
     ));
+  }
+
+  void _onAirportEntryTimeReached(Ride ride) {
+    // Show notification to client that driver should depart
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Time to depart to airport for ride with ${ride.clientName}!',
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: AppColors.warning,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Start Ride',
+          textColor: Colors.white,
+          onPressed: () => _updateRideStatus(ride, RideStatus.inProgress),
+        ),
+      ),
+    );
   }
 
   @override
@@ -156,7 +176,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     return Scaffold(
       body: BlocListener<RideBloc, RideState>(
         listener: (context, state) {
-          // Получаем поездки, назначенные текущему водителю
+          // Get current location
           final authState = context.read<AuthBloc>().state;
           if (authState.isAuthenticated && authState.user != null) {
             final driverRides = state.rides.where((ride) =>
@@ -179,18 +199,31 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         },
         child: Stack(
           children: [
-            // Карта
+            // Map
             MapWidget(
               key: const ValueKey('driver_map'),
               onMapCreated: _onMapCreated,
             ),
             
-            // Информационная панель сверху
+            // Information panel at top
             SafeArea(
-              child: _buildInfoPanel(),
+              child: Column(
+                children: [
+                  _buildInfoPanel(),
+                  
+                  // Airport timer for assigned airport transfers
+                  if (_assignedRides.any((ride) => ride.isAirportTransfer && ride.status == RideStatus.assigned))
+                    ..._assignedRides
+                        .where((ride) => ride.isAirportTransfer && ride.status == RideStatus.assigned)
+                        .map((ride) => AirportEntryTimer(
+                              ride: ride,
+                              onEntryTimeReached: () => _onAirportEntryTimeReached(ride),
+                            )),
+                ],
+              ),
             ),
             
-            // Панель управления поездкой снизу
+            // Control panel
             if (_currentRide != null)
               Positioned(
                 bottom: 0,
@@ -199,7 +232,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                 child: _buildRideControlPanel(),
               ),
             
-            // Кнопки управления
+            // Control buttons
             Positioned(
               bottom: _currentRide != null ? 200 : 100,
               right: 16,
@@ -358,7 +391,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
           
           const SizedBox(height: AppDimensions.paddingLarge),
           
-          // Кнопки управления
+          // Control buttons
           if (_currentRide!.status == RideStatus.assigned)
             ElevatedButton(
               onPressed: () => _updateRideStatus(_currentRide!, RideStatus.inProgress),
@@ -418,10 +451,10 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   void _showAllRides() {
-    // Показываем все назначенные поездки на карте
+    // Show markers
     if (_mapboxMap == null || _assignedRides.isEmpty) return;
     
-    // Вычисляем границы для всех поездок
+    // Calculate bounds for all rides
     double minLat = double.infinity;
     double maxLat = -double.infinity;
     double minLng = double.infinity;
