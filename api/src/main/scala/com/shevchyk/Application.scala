@@ -5,6 +5,7 @@ import com.shevchyk.service.{UserService, OrderService, RideService, AuthService
 import zio.*
 import zio.http.*
 import zio.logging.backend.SLF4J
+import java.net.InetSocketAddress
 
 object Application extends ZIOAppDefault:
 
@@ -12,10 +13,10 @@ object Application extends ZIOAppDefault:
 
   def run: ZIO[Any, Throwable, Nothing] =
     (ZIO.logInfo("Starting the server on port 8080...") *>
-      ZIO.logInfo("Server is now listening on http://0.0.0.0:8080 (accessible from network)") *>
+      ZIO.logInfo("Server will bind to default interface") *>
       Server.serve(AppRoutes.routes @@ Middleware.addHeaders(AppRoutes.corsHeaders)))
       .provide(
-        ZLayer.succeed(Server.Config.default.port(8080)) >>> Server.live,
+        Server.default,
         UserService.live,
         OrderService.live,
         RideService.layer,

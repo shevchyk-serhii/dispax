@@ -1,7 +1,7 @@
-# Taxi Ride Planning Application
+# Oktopus Taxi - Comprehensive Ride Management Platform
 
 ## Overview
-A comprehensive ride planning application designed for taxi companies to manage orders, rides, and schedules efficiently.
+Oktopus Taxi is a comprehensive ride management platform designed for taxi companies to efficiently manage orders, rides, schedules, and provide real-time tracking capabilities. The platform includes mobile applications for drivers and clients, and web interfaces for dispatchers and secretaries.
 
 ## Features
 
@@ -15,29 +15,31 @@ A comprehensive ride planning application designed for taxi companies to manage 
 
 ### Mobile Application for Clients
 The client mobile app provides:
-- **Ride Overview**: Clients can view their current and upcoming rides
-- **Driver Information**: Access to driver details and contact information
-- **Real-time Tracking**: Driver's current location and estimated pickup time
-- **Driver Profile**: Driver's photo (if permission granted)
-- **Pricing Information**: Trip cost (if disclosure enabled)
-- **Vehicle Details**: Car model and vehicle information
-- **Journey Estimates**: Average travel time to destination
-- **Arrival Predictions**: Approximate time of arrival
-- **Flight Integration**: Planned aircraft departure times (for airport/railway station trips)
+- **Active Rides Management**: View current and upcoming rides with real-time status updates
+- **Ride History**: Complete history of completed and cancelled rides with statistics
+- **Real-time Map Integration**: Live tracking of driver location during active rides via Mapbox
+- **Airport Transfer Optimization**: Smart timing calculations for airport pickups to minimize parking costs
+- **Flight Information**: Integration with flight schedules showing gate, terminal, and status information
+- **Location Clarification**: Interactive dialog to confirm exact pickup location upon flight arrival
+- **Airport Entry Timer**: Visual countdown showing optimal driver departure time for airport entries
+- **Driver Contact**: Direct access to driver information and contact details
+- **Navigation Support**: Integration with external navigation apps for client convenience
 
 ### Mobile Application for Drivers
 The driver mobile app includes:
+- **Today's Active Rides**: Focused view of current day's active rides (excludes completed/cancelled)
 - **Calendar-Based Schedule View**: Interactive calendar interface for viewing ride schedule
   - **Calendar Navigation**: Swipe between days/weeks/months to see future and past rides
   - **Day View**: Detailed timeline showing all rides for selected date
   - **Week View**: Overview of 7-day schedule with ride density indicators
   - **Month View**: Monthly calendar with ride count badges per day
-  - **Today Highlight**: Quick access to current day's schedule
-- **Ride Management**: Complete schedule of assigned rides with status tracking
-- **Client Information**: Passenger details and contact information  
-- **Flight Schedules**: Departure times for airport pickups
-- **Weather Updates**: Current weather conditions along the route (when available)
-- **Navigation Support**: Estimated arrival times and route optimization
+- **Ride History**: Separate tab showing completed and cancelled rides with earnings tracking
+- **Upcoming Rides Management**: Overview of scheduled future rides
+- **Real-time Map Integration**: Live client location tracking during active rides via Mapbox
+- **Airport Transfer Optimization**: Visual timer showing optimal airport entry times
+- **Flight Information**: Complete flight details including gate, terminal, and real-time status
+- **Navigation Integration**: Direct launch to Google Maps for pickup and destination navigation
+- **Client Communication**: Quick call and contact features for client coordination
 
 ### Web Application for Secretaries
 The secretary web portal features:
@@ -310,17 +312,21 @@ For MVP simplicity, we use one Flutter application with role-based authenticatio
 LoginScreen
     ↓
 DashboardScreen (displays interface based on user role)
-    ├── Driver Dashboard
+    ├── Driver Dashboard (6-tab bottom navigation)
+    │   ├── Today's Rides (active rides only, with airport entry timers)
     │   ├── Calendar Schedule (interactive calendar with ride navigation)
     │   │   ├── Month View (calendar grid with ride indicators)
     │   │   ├── Week View (7-day timeline overview)
     │   │   └── Day View (detailed daily schedule)
-    │   ├── Today's Rides (quick access to current day)
     │   ├── Upcoming Rides (next 7 days overview)
-    │   └── Profile
-    ├── Client Dashboard  
-    │   ├── MyRides (current and past rides)
-    │   ├── RideStatus (track current ride)
+    │   ├── History (completed/cancelled rides with earnings)
+    │   ├── Flights (flight information and status)
+    │   └── Map (real-time location tracking with Mapbox integration)
+    ├── Client Dashboard (5-tab bottom navigation)
+    │   ├── My Rides (active rides only, with airport entry timers)
+    │   ├── History (completed/cancelled rides with spending tracking)
+    │   ├── Map (real-time driver tracking with Mapbox integration)
+    │   ├── Flights (flight information and confirmation)
     │   └── Profile
     ├── Secretary Dashboard
     │   ├── CreateRides (for clients)
@@ -342,10 +348,22 @@ DashboardScreen (displays interface based on user role)
 ```
 lib/
 ├── auth/
-│   ├── login_screen.dart
-│   ├── auth_service.dart
-│   └── auth_state.dart
+│   └── login_screen.dart
+├── blocs/
+│   ├── auth/
+│   │   ├── auth_bloc.dart
+│   │   ├── auth_event.dart
+│   │   └── auth_state.dart
+│   ├── ride/
+│   │   ├── ride_bloc.dart
+│   │   ├── ride_event.dart
+│   │   └── ride_state.dart
+│   └── blocs.dart
 ├── dashboard/
+│   ├── dashboard_screen.dart
+│   ├── client/
+│   │   ├── client_dashboard.dart
+│   │   └── client_ride_history_screen.dart
 │   ├── driver/
 │   │   ├── driver_dashboard.dart
 │   │   ├── calendar/
@@ -354,25 +372,54 @@ lib/
 │   │   │   ├── week_view_widget.dart
 │   │   │   └── day_view_widget.dart
 │   │   ├── today_rides_screen.dart
-│   │   └── upcoming_rides_screen.dart
-│   ├── client/
-│   │   ├── client_dashboard.dart
-│   │   ├── my_rides_screen.dart
-│   │   └── ride_status_screen.dart
+│   │   ├── upcoming_rides_screen.dart
+│   │   └── ride_history_screen.dart
 │   ├── secretary/
-│   │   ├── secretary_dashboard.dart
-│   │   ├── create_ride_screen.dart
-│   │   └── manage_clients_screen.dart
+│   │   └── secretary_dashboard.dart
 │   └── dispatcher/
-│       ├── dispatcher_dashboard.dart
-│       ├── pending_rides_screen.dart
-│       └── assign_rides_screen.dart
-├── shared/ 
-│   ├── widgets/
-│   ├── screens/ (common screens like profile)
-│   └── utils/
-├── models/ (shared data models)
-├── services/ (API services)
+│       └── dispatcher_dashboard.dart
+├── screens/
+│   ├── client_map_screen.dart
+│   ├── driver_map_screen.dart
+│   ├── simple_map_screen.dart (Android fallback)
+│   ├── flight_screen.dart
+│   ├── flight_confirmation_screen.dart
+│   ├── ride_details_screen.dart
+│   └── various other screens
+├── services/
+│   ├── api_client.dart
+│   ├── location_service.dart
+│   ├── mapbox_service.dart
+│   ├── airport_timing_service.dart
+│   ├── location_clarification_service.dart
+│   ├── flight_service.dart
+│   └── ride_service.dart
+├── models/
+│   ├── person.dart
+│   ├── location.dart
+│   ├── ride.dart
+│   └── airport_timing.dart
+├── widgets/
+│   ├── airport_entry_timer.dart
+│   ├── location_clarification_dialog.dart
+│   ├── auth/ (authentication widgets)
+│   ├── calendar/ (calendar components)
+│   ├── common/ (shared UI components)
+│   ├── dashboard/ (dashboard-specific widgets)
+│   ├── map/ (map-related widgets)
+│   └── ride/ (ride-related widgets)
+├── utils/
+│   ├── date_utils.dart
+│   ├── navigation_utils.dart
+│   ├── navigation_helper.dart
+│   └── various utility classes
+├── constants/
+│   ├── app_colors.dart
+│   ├── app_styles.dart
+│   ├── app_dimensions.dart
+│   └── app_constants.dart
+├── theme/
+│   └── app_theme.dart
 └── main.dart
 ```
 
@@ -390,9 +437,6 @@ lib/
 - **User Interface**: User-facing text should be in English
 - **Code Comments**: When needed, comments should be in English
 - **Variable/Function Names**: Always in English following standard conventions
-- **Naming Conventions**: 
-  - Do not use underscores in public class names and method names (use camelCase/PascalCase)
-  - Private methods in Dart can use underscore prefix (standard Dart convention)
 
 ## Driver Calendar Interface Design
 
@@ -500,3 +544,108 @@ The driver interface centers around a calendar-based schedule view that provides
 - **Flutter App**: 3-4 weeks (additional week for calendar interface)
 - **Integration & Testing**: 1-2 weeks
 - **Total**: ~7-8 weeks for working MVP with calendar interface
+
+## Implemented Features Status
+
+### ✅ Completed Features
+
+#### Core Application Structure
+- **Multi-role Authentication**: Login system supporting Driver, Client, Secretary, Dispatcher roles
+- **Role-based Navigation**: Dashboard interface adapts based on user role
+- **BLoC State Management**: Reactive state management using flutter_bloc
+- **Material Design 3**: Modern UI with consistent theming and styling
+
+#### Real-time Location & Mapping
+- **Mapbox Integration**: Real-time location tracking and mapping
+- **Driver Location Tracking**: Live driver location updates during rides
+- **Client Location Sharing**: Clients can share location with drivers
+- **Navigation Integration**: Direct integration with Google Maps for navigation
+- **Location Services**: Comprehensive location management with permissions
+
+#### Airport Transfer Optimization
+- **Airport Entry Timing**: Smart calculation of optimal airport entry times
+- **Entry Timer Widget**: Visual countdown timer for airport departure
+- **Parking Cost Optimization**: Minimize airport parking fees through timing
+- **Flight Integration**: Complete flight information with gate, terminal, status
+- **Location Clarification**: Interactive dialog for precise pickup location
+
+#### Driver Features
+- **Today's Active Rides**: Focused view of current day's active rides only
+- **Calendar Schedule View**: Interactive calendar with month/week/day views
+- **Ride History**: Separate history tab with earnings tracking and statistics
+- **Upcoming Rides**: Overview of future scheduled rides
+- **Flight Information**: Detailed flight status and gate information
+- **Real-time Map**: Live client tracking during active rides
+
+#### Client Features
+- **Active Rides View**: Current and upcoming rides with status tracking
+- **Ride History**: Complete history with spending statistics
+- **Real-time Map**: Live driver tracking during rides
+- **Flight Management**: Flight information and arrival confirmation
+- **Airport Timers**: Visual countdown for optimal driver timing
+
+#### Technical Infrastructure
+- **API Client**: RESTful API integration with authentication
+- **Error Handling**: Comprehensive error management and user feedback
+- **Data Models**: Complete data structures for Person, Ride, Location
+- **Service Layer**: Modular services for location, mapping, flights, timing
+- **Utility Classes**: Date formatting, navigation helpers, validators
+
+### 🚧 Partially Implemented
+- **Secretary Dashboard**: Basic structure exists, needs full implementation
+- **Dispatcher Dashboard**: Basic structure exists, needs assignment interface
+- **Backend Integration**: API endpoints defined but backend needs completion
+
+### ⏳ Planned Features (Future Phases)
+- **Push Notifications**: Real-time ride status notifications
+- **Invoice Generation**: Automated billing and payment processing
+- **Advanced Analytics**: Performance metrics and reporting
+- **Vehicle Management**: Car registration and maintenance tracking
+- **Multi-language Support**: Internationalization for different markets
+
+## Coding Standards
+
+### Naming Conventions
+
+#### Flutter/Dart
+- **Avoid underscores** in variable names, function names, and method names
+- Use camelCase for all identifiers
+- Mark private class members with `private` prefix instead of `_`
+
+#### Examples:
+```dart
+// ❌ Incorrect
+String _userName;
+void _refreshRides(BuildContext context) {}
+final _apiClient = ApiClient();
+
+// ✅ Correct
+String privateUserName;
+void refreshRides(BuildContext context) {}
+final privateApiClient = ApiClient();
+```
+
+#### Scala
+- Use camelCase for variables and methods
+- Use PascalCase for classes and objects
+- Avoid underscores except where required by the language
+
+### General Principles
+- Code should be readable and understandable
+- Use descriptive names
+- Avoid abbreviations where possible
+- Prefer clear, explicit code over clever solutions
+- Follow language-specific conventions and best practices
+
+### Documentation Requirements
+- All public APIs should have clear documentation
+- Complex business logic should include explanatory comments
+- README files for each major module or service
+- Keep documentation updated with code changes
+
+### Code Quality Standards
+- No hardcoded strings in UI (use constants or localization)
+- Proper error handling with user-friendly messages
+- Consistent formatting using language-standard tools (dartfmt, scalafmt)
+- Unit tests for business logic and critical paths
+- Integration tests for API endpoints and user workflows

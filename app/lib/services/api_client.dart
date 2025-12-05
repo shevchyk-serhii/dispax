@@ -2,8 +2,27 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'dart:ui' as ui;
 
 class ApiClient {
+  // Helper method to detect if running on physical device vs simulator
+  static bool get isPhysicalDevice {
+    if (Platform.isIOS) {
+      // For iOS: check if it's running on simulator
+      // Simulators typically have x86_64 or arm64 architecture but specific identifiers
+      return !Platform.environment.containsKey('SIMULATOR_DEVICE_NAME') &&
+             !Platform.environment.containsKey('SIMULATOR_HOST_HOME');
+    } else if (Platform.isAndroid) {
+      // For Android: check various emulator indicators
+      final fingerprint = Platform.environment['ANDROID_FINGERPRINT'] ?? '';
+      final model = Platform.environment['ANDROID_MODEL'] ?? '';
+      return !fingerprint.contains('generic') && 
+             !model.contains('Emulator') &&
+             !model.contains('google_sdk');
+    }
+    return false; // Default to simulator/emulator for other platforms
+  }
+
   static String get privateBaseUrl {
     // Check for environment variable first
     const customUrl = String.fromEnvironment('API_BASE_URL');
@@ -17,18 +36,23 @@ class ApiClient {
       return 'http://127.0.0.1:8080/api';
     }
 
-    // Auto-detect based on platform and debug mode
+    // Auto-detect based on platform and device type
     if (Platform.isAndroid) {
-      // For Android emulator, use special IP
-      // For real Android device, try localhost first as fallback
-      if (kDebugMode) {
-        return 'http://10.0.2.2:8080/api'; // Android emulator
+      if (isPhysicalDevice) {
+        // Real Android device - use network IP
+        return 'http://192.168.0.188:8080/api';
       } else {
-        return 'http://10.0.2.2:8080/api'; // Try emulator IP for real device too
+        // Android emulator - use emulator special IP
+        return 'http://10.0.2.2:8080/api';
       }
     } else if (Platform.isIOS) {
-      // For iOS simulator and real devices
-      return 'http://127.0.0.1:8080/api'; // Use localhost
+      if (isPhysicalDevice) {
+        // Real iOS device - use network IP
+        return 'http://192.168.0.188:8080/api';
+      } else {
+        // iOS simulator - use localhost
+        return 'http://127.0.0.1:8080/api';
+      }
     } else {
       return 'http://localhost:8080/api'; // Desktop/Web
     }
@@ -49,9 +73,11 @@ class ApiClient {
 
   Future<http.Response> get(String endpoint) async {
     try {
-      final url = '$privateBaseUrl$endpoint';
+      var url = '$privateBaseUrl$endpoint';
       debugPrint('🌐 Making GET request to: $url');
       debugPrint('📱 Platform: ${Platform.operatingSystem}, Debug mode: $kDebugMode');
+      debugPrint('📱 Physical device: $isPhysicalDevice');
+      debugPrint('📱 Base URL: $privateBaseUrl');
       debugPrint('📋 Headers: $privateHeaders');
       
       final response = await privateClient
