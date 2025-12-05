@@ -39,7 +39,7 @@ class ApiClient {
     // Auto-detect based on platform and device type
     if (Platform.isAndroid) {
       if (isPhysicalDevice) {
-        // Real Android device - use network IP
+        // Real Android device - use network IP for home network deployment
         return 'http://192.168.0.188:8080/api';
       } else {
         // Android emulator - use emulator special IP
@@ -47,7 +47,7 @@ class ApiClient {
       }
     } else if (Platform.isIOS) {
       if (isPhysicalDevice) {
-        // Real iOS device - use network IP
+        // Real iOS device - use network IP for home network deployment
         return 'http://192.168.0.188:8080/api';
       } else {
         // iOS simulator - use localhost

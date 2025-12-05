@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'api_client.dart';
 
 class FlightData {
   final String icao24;
@@ -36,7 +37,7 @@ class FlightData {
 }
 
 class FlightService {
-  static const String baseUrl = 'http://localhost:8080/api/flights/munich';
+  static String get baseUrl => '${ApiClient.privateBaseUrl}/flights/munich';
 
   Future<List<FlightData>> getMunichArrivals({int? hours}) async {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;

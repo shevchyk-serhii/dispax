@@ -4,7 +4,7 @@ import '../models/ride.dart';
 import '../models/location.dart' as app_location;
 
 class MapboxService {
-  static const String _accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
+  static const String _accessToken = 'MAPBOX_PUBLIC_TOKEN_REMOVED';
 
   // You'll need to set your Mapbox access token
   // Get it from https://account.mapbox.com/access-tokens/
