@@ -49,5 +49,7 @@
 	<string>This app needs location access to show your current position on the map and help with navigation.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs location access to show your current position on the map and help with navigation.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Der Oktopus использует Face ID для быстрого и безопасного входа в приложение.</string>
 </dict>
 </plist>

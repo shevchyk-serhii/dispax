@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 import '../../utils/validators.dart';
+import 'biometric_button.dart';
 
 class LoginForm extends StatelessWidget {
   final VoidCallback onSubmit;
@@ -72,6 +73,7 @@ class LoginForm extends StatelessWidget {
             ),
             child: const Text('Login', style: TextStyle(fontSize: 16)),
           ),
+          const BiometricButton(),
         ],
       ),
     );

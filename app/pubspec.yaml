@@ -20,6 +20,7 @@ dependencies:
   mapbox_maps_flutter: ^2.3.0
   geolocator: ^13.0.1
   url_launcher: ^6.3.0
+  local_auth: ^2.1.6
 
 dev_dependencies:
   flutter_test:
@@ -35,9 +36,10 @@ flutter:
     - assets/pickup_marker.svg
     - assets/destination_marker.svg
 
-flutter_launcher_icons:
-  android: true
-  ios: true
-  image_path: "assets/oktopus_icon.svg"
-  adaptive_icon_background: "#4A90E2"
-  adaptive_icon_foreground: "assets/oktopus_icon.svg"
+# flutter_launcher_icons:
+#   android: true
+#   ios: true
+#   image_path: "assets/oktopus_icon.png"
+#   remove_alpha_ios: true
+#   adaptive_icon_background: "#4A90E2"
+#   adaptive_icon_foreground: "assets/oktopus_icon.png"

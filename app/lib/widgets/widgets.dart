@@ -13,6 +13,7 @@ export 'auth/login_form.dart';
 export 'auth/test_credentials_card.dart';
 export 'auth/quick_login_buttons.dart';
 export 'auth/error_message_card.dart';
+export 'auth/biometric_button.dart';
 
 // Dashboard widgets
 export 'dashboard/user_app_bar.dart';

@@ -28,3 +28,20 @@ class AuthLogoutRequested extends AuthEvent {
 class AuthErrorCleared extends AuthEvent {
   const AuthErrorCleared();
 }
+
+class AuthBiometricLoginRequested extends AuthEvent {
+  const AuthBiometricLoginRequested();
+}
+
+class AuthBiometricSetupRequested extends AuthEvent {
+  final bool enabled;
+  final String? userId;
+
+  const AuthBiometricSetupRequested({
+    required this.enabled,
+    this.userId,
+  });
+
+  @override
+  List<Object?> get props => [enabled, userId];
+}
