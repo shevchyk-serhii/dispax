@@ -5,7 +5,7 @@ import 'today_rides_screen.dart';
 import 'upcoming_rides_screen.dart';
 import 'ride_history_screen.dart';
 import '../../screens/flight_screen.dart';
-import '../../screens/driver_map_screen.dart';
+// import '../../screens/driver_map_screen.dart'; // Disabled for compatibility
 import '../../screens/simple_map_screen.dart';
 
 class DriverDashboard extends StatelessWidget {
@@ -27,7 +27,7 @@ class DriverDashboard extends StatelessWidget {
               const UpcomingRidesScreen(),
               const RideHistoryScreen(),
               const FlightScreen(),
-              Platform.isAndroid ? const SimpleMapScreen() : const DriverMapScreen(),
+              const SimpleMapScreen(),
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(

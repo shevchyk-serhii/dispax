@@ -7,8 +7,9 @@ import '../../utils/date_utils.dart';
 import '../../screens/flight_screen.dart';
 import '../../screens/ride_details_screen.dart';
 import 'dart:io';
-import '../../screens/client_map_screen.dart';
+// import '../../screens/client_map_screen.dart'; // Disabled for Android compatibility
 import '../../screens/simple_map_screen.dart';
+import '../../screens/android_map_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
@@ -32,7 +33,7 @@ class ClientDashboard extends StatelessWidget {
             children: [
               const MyRidesTab(),
               const ClientRideHistoryScreen(),
-              Platform.isAndroid ? const SimpleMapScreen() : const ClientMapScreen(),
+              Platform.isAndroid ? const AndroidMapScreen() : const SimpleMapScreen(),
               const FlightScreen(),
               const ProfileTab(),
             ],

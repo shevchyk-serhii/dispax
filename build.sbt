@@ -10,12 +10,17 @@ lazy val root = (project in file("."))
   .settings(
     name                             := "oktopus",
     Compile / scalaSource            := baseDirectory.value / "api" / "src" / "main" / "scala",
+    Test / scalaSource               := baseDirectory.value / "api" / "src" / "test" / "scala",
     libraryDependencies ++= Seq(
       "dev.zio"       %% "zio"                % "2.1.9",
       "dev.zio"       %% "zio-http"           % "3.0.1",
       "dev.zio"       %% "zio-logging-slf4j2" % "2.3.1",
-      "ch.qos.logback" % "logback-classic"    % "1.5.15"
+      "ch.qos.logback" % "logback-classic"    % "1.5.15",
+      "dev.zio"       %% "zio-test"           % "2.1.9" % Test,
+      "dev.zio"       %% "zio-test-sbt"       % "2.1.9" % Test,
+      "dev.zio"       %% "zio-test-magnolia"  % "2.1.9" % Test
     ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
     Compile / mainClass              := Some("com.shevchyk.Application"),
     assembly / mainClass             := Some("com.shevchyk.Application"),
     assembly / assemblyJarName       := "oktopus-server.jar",

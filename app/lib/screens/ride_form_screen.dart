@@ -4,7 +4,7 @@ import '../models/location.dart';
 import '../services/mock_ride_service.dart';
 import '../widgets/ride/location_field.dart';
 import '../widgets/ride/date_time_picker.dart';
-import '../widgets/map/ride_map_widget.dart';
+// import '../widgets/map/ride_map_widget.dart'; // Disabled for compatibility
 
 class RideFormScreen extends StatefulWidget {
   final Ride? ride;
@@ -122,17 +122,15 @@ class _RideFormScreenState extends State<RideFormScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      RideMapWidget(
-                        fromLocation: _fromAddressController.text.isNotEmpty
-                            ? Location(address: _fromAddressController.text)
-                            : null,
-                        toLocation: _toAddressController.text.isNotEmpty
-                            ? Location(address: _toAddressController.text)
-                            : null,
+                      Container(
                         height: 200,
-                        showRoute:
-                            _fromAddressController.text.isNotEmpty &&
-                            _toAddressController.text.isNotEmpty,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: Text('Map functionality temporarily disabled'),
+                        ),
                       ),
                     ],
                   ),

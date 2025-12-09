@@ -26,7 +26,7 @@ trait FlightService:
 
 class FlightServiceImpl extends FlightService:
   private val munichIcao = "EDDM"
-  private val baseUrl    = "https://opensky-network.org/api"
+  private val baseUrl    = "https:
 
   override def getMunichArrivals(beginTime: Long, endTime: Long): Task[List[FlightData]] =
     val url = s"$baseUrl/flights/arrival?airport=$munichIcao&begin=$beginTime&end=$endTime"

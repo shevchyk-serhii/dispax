@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+// import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'; // Disabled for compatibility
 import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'services/ride_service.dart';
-import 'services/mapbox_service.dart';
+// import 'services/mapbox_service.dart'; // Disabled for compatibility
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Mapbox
-  MapboxOptions.setAccessToken(MapboxService.accessToken);
+  // Initialize Mapbox - Disabled for Android compatibility
+  // MapboxOptions.setAccessToken(MapboxService.accessToken);
 
   runApp(const MyApp());
 }

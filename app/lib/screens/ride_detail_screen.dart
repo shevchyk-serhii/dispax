@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/ride.dart';
-import '../widgets/map/ride_map_widget.dart';
+// import '../widgets/map/ride_map_widget.dart'; // Disabled for compatibility
 import 'ride_form_screen.dart';
 
 class RideDetailScreen extends StatelessWidget {
@@ -104,11 +104,15 @@ class RideDetailScreen extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
-                    RideMapWidget(
-                      fromLocation: ride.from,
-                      toLocation: ride.to,
+                    Container(
                       height: 250,
-                      showRoute: true,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Text('Map functionality temporarily disabled'),
+                      ),
                     ),
                   ],
                 ),

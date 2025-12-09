@@ -31,10 +31,10 @@ case class AuthServiceImpl() extends AuthService:
         val authToken = AuthToken(
           token = token,
           personId = person.id,
-          expiresAt = java.lang.System.currentTimeMillis() + (24 * 60 * 60 * 1000) // 24 hours
+          expiresAt = java.lang.System.currentTimeMillis() + (24 * 60 * 60 * 1000) 
         )
 
-        // Store token in memory for validation
+        
         AuthService.activeTokens += token -> authToken
 
         LoginResponse(
@@ -99,14 +99,14 @@ object AuthService:
   val nextId       = new java.util.concurrent.atomic.AtomicInteger(5)
   val activeTokens = mutable.Map[String, AuthToken]()
 
-  // Pre-populated test users
+  
   val mockPersons: mutable.Map[Int, Person] = mutable.Map(
     1 -> Person(
       id = 1,
       name = "John Driver",
       email = "driver@test.com",
       role = PersonRole.driver,
-      passwordHash = "ecd71870d1963316a97e3ac3408c9835ad8cf0f3c1bc703527c30265534f75ae", // SHA-256 of "test123"
+      passwordHash = "ecd71870d1963316a97e3ac3408c9835ad8cf0f3c1bc703527c30265534f75ae", 
       companyId = Some(1),
       licenseNumber = Some("DL12345"),
       phone = Some("+1234567890")

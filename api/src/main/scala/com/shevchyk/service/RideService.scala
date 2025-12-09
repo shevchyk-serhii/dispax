@@ -23,15 +23,15 @@ case class RideServiceImpl() extends RideService {
 
     user.role match {
       case PersonRole.driver =>
-        // Driver sees only rides assigned to them
+        
         allRides.filter(_.driverId.contains(user.id))
 
       case PersonRole.client =>
-        // Client sees only their own rides
+        
         allRides.filter(_.clientId == user.id)
 
       case PersonRole.secretary | PersonRole.dispatcher =>
-        // Secretary and Dispatcher see all rides in their company
+        
         user.companyId match {
           case Some(companyId) => allRides.filter(_.companyId == companyId)
           case None            => List.empty
@@ -63,7 +63,7 @@ case class RideServiceImpl() extends RideService {
       (for {
         flightService <- ZIO.service[FlightService]
         currentTime    = java.lang.System.currentTimeMillis() / 1000
-        // Search for flights in ±6 hours window
+        
         beginTime      = currentTime - 6 * 3600
         endTime        = currentTime + 6 * 3600
         arrivals      <- flightService.getMunichArrivals(beginTime, endTime)
@@ -75,19 +75,19 @@ case class RideServiceImpl() extends RideService {
         enrichedRide  <- ZIO.succeed {
                            flightInfo match {
                              case Some(flight) =>
-                               // Determine if it's arrival or departure based on location
+                               
                                val isFromAirport = ride.from.address.toLowerCase.contains("airport")
-                               val isArrival     = !isFromAirport // если начинаем не в аэропорту - значит прилет
+                               val isArrival     = !isFromAirport 
                                val flightTime    =
                                  if (isFromAirport) {
-                                   // Departure flight
+                                   
                                    java.time.LocalDateTime.ofEpochSecond(flight.firstSeen, 0, java.time.ZoneOffset.UTC)
                                  }
                                  else {
-                                   // Arrival flight
+                                   
                                    java.time.LocalDateTime.ofEpochSecond(flight.lastSeen, 0, java.time.ZoneOffset.UTC)
                                  }
-                               // Mock data for gate and terminal
+                               
                                val gate          = Some(
                                  s"${('A' + scala.util.Random.nextInt(6)).toChar}${scala.util.Random.nextInt(20) + 1}"
                                )
@@ -123,14 +123,14 @@ case class RideServiceImpl() extends RideService {
 object RideService {
   val layer: ULayer[RideService] = ZLayer.succeed(RideServiceImpl())
 
-  // Mock data for testing
+  
   val mockRides: Map[Long, Ride] = Map(
-    // Rides for Anna Client (ID=2)
+    
     1L -> Ride(
       id = 1L,
-      clientId = 2,       // Anna Client
-      creatorId = 3,      // Maria Secretary created this ride
-      driverId = Some(1), // Assigned to John Driver
+      clientId = 2,       
+      creatorId = 3,      
+      driverId = Some(1), 
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusHours(2),
       from = Location(address = "Downtown Munich"),
@@ -138,15 +138,15 @@ object RideService {
       status = RideStatus.Assigned,
       flightNumber = Some("LH123"),
       isAirportTransfer = true,
-      isArrival = false,  // отлет
+      isArrival = false,  
       gate = Some("A12"),
       terminal = Some("2"),
       flightStatus = Some("On Time")
     ),
     2L -> Ride(
       id = 2L,
-      clientId = 2,  // Anna Client
-      creatorId = 3, // Maria Secretary
+      clientId = 2,  
+      creatorId = 3, 
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusHours(5),
       from = Location(address = "Railway Station"),
@@ -155,9 +155,9 @@ object RideService {
     ),
     3L -> Ride(
       id = 3L,
-      clientId = 2,       // Anna Client
-      creatorId = 4,      // Peter Dispatcher
-      driverId = Some(1), // Assigned to John Driver
+      clientId = 2,       
+      creatorId = 4,      
+      driverId = Some(1), 
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusDays(1),
       from = Location(address = "Independence Square"),
@@ -166,8 +166,8 @@ object RideService {
     ),
     4L -> Ride(
       id = 4L,
-      clientId = 2,  // Anna Client
-      creatorId = 3, // Maria Secretary
+      clientId = 2,  
+      creatorId = 3, 
       companyId = 1,
       pickupDateTime = LocalDateTime.now().minusHours(2),
       from = Location(address = "Hotel Ukraine"),
@@ -175,12 +175,12 @@ object RideService {
       status = RideStatus.Completed
     ),
 
-    // Additional rides for other scenarios
+    
     5L -> Ride(
       id = 5L,
-      clientId = 5,       // Another client
-      creatorId = 3,      // Maria Secretary
-      driverId = Some(1), // Assigned to John Driver
+      clientId = 5,       
+      creatorId = 3,      
+      driverId = Some(1), 
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusHours(3),
       from = Location(address = "Munich Airport (MUC)"),
@@ -188,16 +188,16 @@ object RideService {
       status = RideStatus.Assigned,
       flightNumber = Some("BA456"),
       isAirportTransfer = true,
-      isArrival = true,   // прилет
+      isArrival = true,   
       gate = Some("B7"),
       terminal = Some("1"),
       flightStatus = Some("Delayed")
     ),
     6L -> Ride(
       id = 6L,
-      clientId = 6,       // Another client
-      creatorId = 4,      // Peter Dispatcher
-      driverId = Some(1), // Assigned to John Driver
+      clientId = 6,       
+      creatorId = 4,      
+      driverId = Some(1), 
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusHours(4),
       from = Location(address = "Khreshchatyk Street"),
@@ -206,8 +206,8 @@ object RideService {
     ),
     7L -> Ride(
       id = 7L,
-      clientId = 7,  // Another client
-      creatorId = 3, // Maria Secretary
+      clientId = 7,  
+      creatorId = 3, 
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusHours(6),
       from = Location(address = "Arsenalna Metro"),
@@ -216,9 +216,9 @@ object RideService {
     ),
     8L -> Ride(
       id = 8L,
-      clientId = 8,       // Another client
-      creatorId = 4,      // Peter Dispatcher
-      driverId = Some(1), // Assigned to John Driver
+      clientId = 8,       
+      creatorId = 4,      
+      driverId = Some(1), 
       companyId = 1,
       pickupDateTime = LocalDateTime.now().minusHours(1),
       from = Location(address = "Bessarabsky Market"),
