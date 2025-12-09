@@ -26,20 +26,20 @@ trait FlightService:
 
 class FlightServiceImpl extends FlightService:
   private val munichIcao = "EDDM"
-  private val baseUrl    = "https:
+  private val baseUrl    = "https://opensky-network.org/api"
 
   override def getMunichArrivals(beginTime: Long, endTime: Long): Task[List[FlightData]] =
     val url = s"$baseUrl/flights/arrival?airport=$munichIcao&begin=$beginTime&end=$endTime"
     makeRequest(url).catchAll { error =>
-      ZIO.logWarning(s"OpenSky API failed, using mock data: ${error.getMessage}") *>
-        getMockArrivals(beginTime, endTime)
+      ZIO.logError(s"OpenSky API failed: ${error.getMessage}") *>
+        ZIO.fail(error)
     }
 
   override def getMunichDepartures(beginTime: Long, endTime: Long): Task[List[FlightData]] =
     val url = s"$baseUrl/flights/departure?airport=$munichIcao&begin=$beginTime&end=$endTime"
     makeRequest(url).catchAll { error =>
-      ZIO.logWarning(s"OpenSky API failed, using mock data: ${error.getMessage}") *>
-        getMockDepartures(beginTime, endTime)
+      ZIO.logError(s"OpenSky API failed: ${error.getMessage}") *>
+        ZIO.fail(error)
     }
 
   private def makeRequest(url: String): Task[List[FlightData]] = ZIO.attemptBlocking {
@@ -61,22 +61,6 @@ class FlightServiceImpl extends FlightService:
       case Left(error)    => throw new RuntimeException(s"JSON decode error: $error")
     }
   }
-
-  private def getMockArrivals(beginTime: Long, endTime: Long): Task[List[FlightData]] = ZIO.succeed(
-    List(
-      FlightData("abc123", beginTime, "EDDF", beginTime + 3600, "EDDM", "LH123 "),
-      FlightData("def456", beginTime + 1800, "EGLL", beginTime + 5400, "EDDM", "BA456 "),
-      FlightData("ghi789", beginTime + 2700, "LFPG", beginTime + 6300, "EDDM", "AF789 ")
-    )
-  )
-
-  private def getMockDepartures(beginTime: Long, endTime: Long): Task[List[FlightData]] = ZIO.succeed(
-    List(
-      FlightData("xyz987", beginTime, "EDDM", beginTime + 3600, "KJFK", "LH654 "),
-      FlightData("uvw321", beginTime + 900, "EDDM", beginTime + 4500, "EGLL", "BA987 "),
-      FlightData("rst654", beginTime + 1800, "EDDM", beginTime + 5400, "LFPG", "AF321 ")
-    )
-  )
 
 object FlightService:
   val live: ULayer[FlightService] = ZLayer.succeed(FlightServiceImpl())

@@ -6,27 +6,23 @@ import zio.json.*
 
 object RouteHelpers {
 
-  
   def handleInternalError: Any => UIO[Response] = _ => ZIO.succeed(Response.internalServerError)
 
   def handleBadRequest(message: String): Any => UIO[Response] = _ => ZIO.succeed(Response.badRequest(message))
 
   def handleUnauthorized: Any => UIO[Response] = _ => ZIO.succeed(Response.status(Status.Unauthorized))
 
-  
   def handleOptionalResult[T: JsonEncoder](result: Option[T]): Response =
     result match
       case Some(value) => Response.json(value.toJson)
       case None        => Response.status(Status.NotFound)
 
-  
   def jsonResponse[T: JsonEncoder](data: T): Response = Response.json(data.toJson)
 
   def jsonResponseWithStatus[T: JsonEncoder](data: T, status: Status): Response = Response
     .json(data.toJson)
     .status(status)
 
-  
   def extractAuthToken(req: Request): IO[String, String] =
     for
       authHeader <- ZIO
@@ -35,14 +31,12 @@ object RouteHelpers {
       token      <- ZIO.succeed(authHeader.stripPrefix("Bearer "))
     yield token
 
-  
   def getQueryParam(req: Request, param: String): Option[String] = req.url.queryParams.getAll(param).headOption
 
   def getQueryParamAsLong(req: Request, param: String, default: Long): Long = getQueryParam(req, param)
     .map(_.toLong)
     .getOrElse(default)
 
-  
   def safeEndpoint[R](
       logic: ZIO[R, Any, Response],
       errorHandler: Any => UIO[Response] = handleInternalError
@@ -56,7 +50,6 @@ object RouteHelpers {
     logic(req).catchAll(handleInternalError)
   }
 
-  
   def appEndpoint[R](
       logic: ZIO[R, Any, Response]
   ): Handler[R, Nothing, Request, Response] = safeEndpoint(logic)
@@ -67,7 +60,6 @@ object RouteHelpers {
     logic(params, req).catchAll(handleInternalError)
   }
 
-  
   def authEndpoint[R](logic: Request => ZIO[R, Any, Response]): Handler[R, Nothing, Request, Response] = handler {
     (req: Request) =>
       logic(req).catchAll(handleUnauthorized)

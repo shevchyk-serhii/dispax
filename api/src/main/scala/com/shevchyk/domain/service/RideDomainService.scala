@@ -3,10 +3,8 @@ package com.shevchyk.domain.service
 import com.shevchyk.domain.model.*
 import java.time.{LocalDateTime, LocalTime}
 
-
 object RideDomainService:
 
-  
   def calculatePrice(distance: Distance, tariff: Tariff, pickupTime: LocalDateTime, isAirportTransfer: Boolean): Price =
     val baseAmount       = tariff.basePrice.amount + (distance.kilometers * tariff.pricePerKm.amount)
     val airportSurcharge = if isAirportTransfer then tariff.airportSurcharge.amount else 0.0
@@ -14,14 +12,12 @@ object RideDomainService:
 
     Price(baseAmount + airportSurcharge + nightSurcharge, tariff.basePrice.currency)
 
-  
   def assignBestDriver(availableDrivers: List[Driver], rideLocation: Location): Option[Driver] =
     availableDrivers
       .filter(_.isAvailableForRide)
       .sortBy(_.distanceFromLocation(rideLocation).kilometers)
       .headOption
 
-  
   def validateRideRequest(
       clientId: PersonId,
       from: Location,
@@ -45,45 +41,38 @@ object RideDomainService:
     else if from.address == to.address then Left("From and to locations cannot be the same")
     else Right(())
 
-  
   private def isNightTime(dateTime: LocalDateTime): Boolean =
     val time = dateTime.toLocalTime
     time.isAfter(LocalTime.of(22, 0)) || time.isBefore(LocalTime.of(6, 0))
 
-  
   def validateStatusTransition(currentStatus: RideStatus, newStatus: RideStatus): Either[String, Unit] =
     if currentStatus.canTransitionTo(newStatus) then Right(())
     else Left(s"Invalid status transition from $currentStatus to $newStatus")
 
-  
   def isDriverSuitableForRide(driver: Driver, ride: Ride, maxDistance: Distance): Boolean =
     driver.isAvailableForRide &&
       driver.companyId == ride.companyId &&
       driver.distanceFromLocation(ride.from) < maxDistance
 
-  
   def estimateRideDuration(distance: Distance): java.time.Duration =
-    
+
     val averageSpeedKmh = if distance.kilometers > 20 then 60.0 else 40.0
     val hours           = distance.kilometers / averageSpeedKmh
     java.time.Duration.ofMinutes((hours * 60).round)
 
-  
   def getRidePriority(ride: Ride): Int =
     val now              = LocalDateTime.now()
     val hoursUntilPickup = java.time.Duration.between(now, ride.pickupDateTime).toHours
 
     val basePriority =
       hoursUntilPickup match
-        case h if h <= 1 => 1 
-        case h if h <= 2 => 2 
-        case h if h <= 4 => 3 
-        case _           => 4 
+        case h if h <= 1 => 1
+        case h if h <= 2 => 2
+        case h if h <= 4 => 3
+        case _           => 4
 
-    
     if ride.isAirportTransfer then basePriority - 1 else basePriority
 
-  
   def canCancelRide(ride: Ride, userRole: PersonRole, userId: PersonId): Boolean =
     userRole match
       case PersonRole.client                            => ride.clientId == userId && ride.status != RideStatus.Completed
@@ -91,7 +80,6 @@ object RideDomainService:
       case PersonRole.secretary | PersonRole.dispatcher => ride.status != RideStatus.Completed
       case _                                            => false
 
-  
   def filterRidesForUser(rides: List[Ride], user: Person): List[Ride] =
     user.role match
       case PersonRole.driver => rides.filter(_.driverId.contains(user.id))

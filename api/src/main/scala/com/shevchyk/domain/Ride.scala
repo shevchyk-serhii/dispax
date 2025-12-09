@@ -20,8 +20,8 @@ case class Ride(
     flightNumber: Option[String] = None,
     flightTime: Option[LocalDateTime] = None,
     isAirportTransfer: Boolean = false,
-    isArrival: Boolean = false,         
+    isArrival: Boolean = false,
     gate: Option[String] = None,
     terminal: Option[String] = None,
-    flightStatus: Option[String] = None 
+    flightStatus: Option[String] = None
 ) derives JsonCodec

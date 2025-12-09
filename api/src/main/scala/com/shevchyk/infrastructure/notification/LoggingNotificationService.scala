@@ -4,7 +4,6 @@ import com.shevchyk.domain.model.*
 import com.shevchyk.domain.repository.{NotificationService, NotificationError}
 import zio.*
 
-
 case class LoggingNotificationService() extends NotificationService:
 
   override def notifyDriver(

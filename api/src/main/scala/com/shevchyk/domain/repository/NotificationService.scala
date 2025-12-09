@@ -3,8 +3,6 @@ package com.shevchyk.domain.repository
 import com.shevchyk.domain.model.*
 import zio.*
 
-
-
 trait NotificationService:
   def notifyDriver(driverId: PersonId, message: String, rideId: Option[RideId] = None): IO[NotificationError, Unit]
   def notifyClient(clientId: PersonId, message: String, rideId: Option[RideId] = None): IO[NotificationError, Unit]
@@ -33,13 +31,11 @@ trait FlightInfoService:
       to: java.time.LocalDateTime
   ): IO[FlightError, List[FlightInfo]]
 
-
 case class RouteInfo(
     distance: Distance,
     estimatedDuration: java.time.Duration,
     waypoints: List[Location] = List.empty
 ) derives zio.json.JsonCodec
-
 
 enum NotificationError extends Exception:
   case ServiceUnavailable(service: String)

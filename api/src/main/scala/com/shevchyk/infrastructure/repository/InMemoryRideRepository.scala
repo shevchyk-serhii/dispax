@@ -6,7 +6,6 @@ import zio.*
 import java.time.LocalDateTime
 import scala.collection.mutable
 
-
 case class InMemoryRideRepository(storage: Ref[Map[RideId, Ride]]) extends RideRepository:
 
   override def save(ride: Ride): IO[RepositoryError, Ride] = storage.update(_ + (ride.id -> ride)).as(ride)
@@ -51,7 +50,6 @@ object InMemoryRideRepository:
     Ref.make(mockRides).map(InMemoryRideRepository(_))
   )
 
-  
   private val mockRides: Map[RideId, Ride] = Map(
     RideId(1) -> Ride(
       id = RideId(1),

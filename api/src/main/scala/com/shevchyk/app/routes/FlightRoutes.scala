@@ -9,7 +9,6 @@ import zio.json.*
 
 object FlightRoutes {
 
-  
   val corsHeaders = Headers(
     Header.AccessControlAllowOrigin.All,
     Header.AccessControlAllowMethods(Method.GET, Method.POST, Method.PUT, Method.DELETE, Method.OPTIONS),
@@ -18,7 +17,6 @@ object FlightRoutes {
   )
 
   val routes = Routes(
-    
     Method.GET / "api" / "flights" / "munich" / "arrivals"   ->
       safeEndpoint { req =>
         val beginTime = getQueryParamAsLong(req, "begin", java.lang.System.currentTimeMillis() / 1000 - 3600)

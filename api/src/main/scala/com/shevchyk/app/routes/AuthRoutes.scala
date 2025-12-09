@@ -10,7 +10,6 @@ import zio.json.*
 object AuthRoutes {
 
   val routes = Routes(
-    
     Method.POST / "api" / "auth" / "login" ->
       badRequestEndpoint("Invalid login data") { req =>
         for

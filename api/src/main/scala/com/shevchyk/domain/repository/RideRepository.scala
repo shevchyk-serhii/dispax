@@ -3,8 +3,6 @@ package com.shevchyk.domain.repository
 import com.shevchyk.domain.model.*
 import zio.*
 
-
-
 trait RideRepository:
   def save(ride: Ride): IO[RepositoryError, Ride]
   def findById(id: RideId): IO[RepositoryError, Option[Ride]]
@@ -28,12 +26,14 @@ trait PersonRepository:
   def findById(id: PersonId): IO[RepositoryError, Option[Person]]
   def findByEmail(email: String): IO[RepositoryError, Option[Person]]
   def findByCompanyId(companyId: CompanyId): IO[RepositoryError, List[Person]]
+  def findAll(): IO[RepositoryError, List[Person]]
   def save(person: Person): IO[RepositoryError, Person]
+  def update(person: Person): IO[RepositoryError, Person]
+  def delete(id: PersonId): IO[RepositoryError, Boolean]
 
 trait TariffRepository:
   def findByCompanyId(companyId: CompanyId): IO[RepositoryError, Option[Tariff]]
   def save(tariff: Tariff, companyId: CompanyId): IO[RepositoryError, Unit]
-
 
 enum RepositoryError extends Exception:
   case DatabaseError(cause: Throwable)

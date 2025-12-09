@@ -10,7 +10,6 @@ import zio.json.*
 object RideRoutes {
 
   val routes = Routes(
-    
     Method.GET / "api" / "rides"                 ->
       authEndpoint { req =>
         for

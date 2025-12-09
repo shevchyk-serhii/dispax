@@ -12,8 +12,7 @@ import zio.json.*
 object SimpleRideRoutes {
 
   val routes = Routes(
-    
-    Method.GET / "api" / "v2" / "rides" ->
+    Method.GET / "api" / "v2" / "rides"                            ->
       authEndpoint { req =>
         (for
           token         <- extractAuthToken(req)
@@ -31,9 +30,7 @@ object SimpleRideRoutes {
             case other: Throwable     => ZIO.succeed(errorResponse(RideError.ValidationError(other.getMessage)))
           }
       },
-
-    
-    Method.GET / "api" / "v2" / "rides" / long("id") ->
+    Method.GET / "api" / "v2" / "rides" / long("id")               ->
       endpointWithParams { (id: Long, req: Request) =>
         (for
           rideService  <- ZIO.service[RideApplicationService]
@@ -45,9 +42,7 @@ object SimpleRideRoutes {
             case other: Throwable     => ZIO.succeed(errorResponse(RideError.ValidationError(other.getMessage)))
           }
       },
-
-    
-    Method.POST / "api" / "v2" / "rides" ->
+    Method.POST / "api" / "v2" / "rides"                           ->
       authEndpoint { req =>
         (for
           token         <- extractAuthToken(req)
@@ -69,9 +64,7 @@ object SimpleRideRoutes {
             case other: Throwable     => ZIO.succeed(errorResponse(RideError.ValidationError(other.getMessage)))
           }
       },
-
-    
-    Method.POST / "api" / "v2" / "rides" / long("id") / "assign" ->
+    Method.POST / "api" / "v2" / "rides" / long("id") / "assign"   ->
       endpointWithParams { (id: Long, req: Request) =>
         (for
           rideId       <- ZIO.succeed(RideId(id))
@@ -89,9 +82,7 @@ object SimpleRideRoutes {
             case other: Throwable     => ZIO.succeed(errorResponse(RideError.ValidationError(other.getMessage)))
           }
       },
-
-    
-    Method.POST / "api" / "v2" / "rides" / long("id") / "start" ->
+    Method.POST / "api" / "v2" / "rides" / long("id") / "start"    ->
       endpointWithParams { (id: Long, req: Request) =>
         (for
           rideId      <- ZIO.succeed(RideId(id))
@@ -109,8 +100,6 @@ object SimpleRideRoutes {
             case other: Throwable     => ZIO.succeed(errorResponse(RideError.ValidationError(other.getMessage)))
           }
       },
-
-    
     Method.POST / "api" / "v2" / "rides" / long("id") / "complete" ->
       endpointWithParams { (id: Long, req: Request) =>
         (for
@@ -131,7 +120,6 @@ object SimpleRideRoutes {
       }
   )
 
-  
   private def errorResponse(error: Throwable): Response =
     error match {
       case RideError.ValidationError(message) => Response.json(s"""{"error": "$message"}""").status(Status.BadRequest)

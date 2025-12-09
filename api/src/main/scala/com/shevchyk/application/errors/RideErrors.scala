@@ -3,7 +3,6 @@ package com.shevchyk.application.errors
 import com.shevchyk.domain.repository.*
 import com.shevchyk.domain.model.*
 
-
 enum RideError extends Exception:
   case ValidationError(msg: String)
   case NoDriversAvailable(location: String)
@@ -32,7 +31,6 @@ enum RideError extends Exception:
       case DatabaseError(cause)                  => s"Database error: ${cause.message}"
       case ExternalServiceError(service, cause)  => s"$service error: ${cause.getMessage}"
       case BusinessRuleViolation(rule, message)  => s"Business rule violation '$rule': $message"
-
 
 object ErrorMapper:
   def fromRepositoryError(error: RepositoryError): RideError = RideError.DatabaseError(error)

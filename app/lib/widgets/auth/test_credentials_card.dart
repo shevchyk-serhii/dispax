@@ -27,10 +27,10 @@ class TestCredentialsCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            buildCredentialRow('👤 Driver', 'driver@test.com', Icons.drive_eta),
-            buildCredentialRow('🚗 Client', 'client@test.com', Icons.person),
-            buildCredentialRow('📝 Secretary', 'secretary@test.com', Icons.business_center),
-            buildCredentialRow('📊 Dispatcher', 'dispatcher@test.com', Icons.dashboard),
+            buildCredentialRow('👤 Driver', 'john.driver@oktopus.com', Icons.drive_eta),
+            buildCredentialRow('🚗 Client', 'anna.client@example.com', Icons.person),
+            buildCredentialRow('📝 Secretary', 'maria.secretary@oktopus.com', Icons.business_center),
+            buildCredentialRow('📊 Dispatcher', 'peter.dispatcher@oktopus.com', Icons.dashboard),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
@@ -39,7 +39,7 @@ class TestCredentialsCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '🔑 Password for all: test123',
+                '🔑 Password for all: secret123',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withOpacity(0.8),
@@ -57,7 +57,7 @@ class TestCredentialsCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
-        onTap: () => onCredentialTap(email, 'test123'),
+        onTap: () => onCredentialTap(email, 'secret123'),
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),

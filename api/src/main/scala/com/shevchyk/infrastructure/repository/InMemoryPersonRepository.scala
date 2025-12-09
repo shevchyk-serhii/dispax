@@ -18,39 +18,21 @@ case class InMemoryPersonRepository(storage: Ref[Map[PersonId, Person]]) extends
 
   override def save(person: Person): IO[RepositoryError, Person] = storage.update(_ + (person.id -> person)).as(person)
 
+  override def findAll(): IO[RepositoryError, List[Person]] = storage.get.map(_.values.toList)
+
+  override def update(person: Person): IO[RepositoryError, Person] = storage
+    .update(_ + (person.id -> person))
+    .as(person)
+
+  override def delete(id: PersonId): IO[RepositoryError, Boolean] = storage.modify { map =>
+    if (map.contains(id))
+      (true, map - id)
+    else
+      (false, map)
+  }
+
 object InMemoryPersonRepository:
 
   val layer: ZLayer[Any, Nothing, PersonRepository] = ZLayer.fromZIO(
-    Ref.make(mockPersons).map(InMemoryPersonRepository(_))
-  )
-
-  private val mockPersons: Map[PersonId, Person] = Map(
-    PersonId(1) -> Person(
-      id = PersonId(1),
-      name = "John Driver",
-      email = "john.driver@oktopus.com",
-      role = PersonRole.driver,
-      companyId = Some(CompanyId(1))
-    ),
-    PersonId(2) -> Person(
-      id = PersonId(2),
-      name = "Anna Client",
-      email = "anna.client@example.com",
-      role = PersonRole.client,
-      companyId = Some(CompanyId(1))
-    ),
-    PersonId(3) -> Person(
-      id = PersonId(3),
-      name = "Maria Secretary",
-      email = "maria.secretary@oktopus.com",
-      role = PersonRole.secretary,
-      companyId = Some(CompanyId(1))
-    ),
-    PersonId(4) -> Person(
-      id = PersonId(4),
-      name = "Peter Dispatcher",
-      email = "peter.dispatcher@oktopus.com",
-      role = PersonRole.dispatcher,
-      companyId = Some(CompanyId(1))
-    )
+    Ref.make(Map.empty[PersonId, Person]).map(InMemoryPersonRepository(_))
   )

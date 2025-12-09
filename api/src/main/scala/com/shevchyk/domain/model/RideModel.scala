@@ -3,7 +3,6 @@ package com.shevchyk.domain.model
 import java.time.LocalDateTime
 import zio.json.*
 
-
 opaque type RideId = Long
 
 object RideId:
@@ -29,7 +28,6 @@ object CompanyId:
 
   given JsonCodec[CompanyId] = JsonCodec.int.transform(CompanyId.apply, _.value)
 
-
 case class Location(
     address: String,
     latitude: Option[Double] = None,
@@ -39,8 +37,7 @@ case class Location(
   def distanceTo(other: Location): Double =
     (latitude, longitude, other.latitude, other.longitude) match
       case (Some(lat1), Some(lon1), Some(lat2), Some(lon2)) =>
-        
-        val R    = 6371 
+        val R    = 6371
         val dLat = math.toRadians(lat2 - lat1)
         val dLon = math.toRadians(lon2 - lon1)
         val a    =
@@ -49,7 +46,7 @@ case class Location(
             math.sin(dLon / 2) * math.sin(dLon / 2)
         val c    = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
         R * c
-      case _                                                => Double.MaxValue 
+      case _                                                => Double.MaxValue
 
 case class Distance(kilometers: Double) derives JsonCodec:
   def +(other: Distance): Distance = Distance(kilometers + other.kilometers)
@@ -70,7 +67,6 @@ case class FlightInfo(
     isArrival: Boolean
 ) derives JsonCodec
 
-
 enum RideStatus derives JsonCodec:
   case Requested, Assigned, InProgress, Completed, Cancelled
 
@@ -88,7 +84,6 @@ enum PersonRole derives JsonCodec:
 
 enum DriverStatus derives JsonCodec:
   case Available, Busy, Offline
-
 
 case class Ride(
     id: RideId,
@@ -139,9 +134,11 @@ case class Person(
     name: String,
     email: String,
     role: PersonRole,
-    companyId: Option[CompanyId] = None
+    companyId: Option[CompanyId] = None,
+    passwordHash: Option[String] = None,
+    licenseNumber: Option[String] = None,
+    phone: Option[String] = None
 ) derives JsonCodec
-
 
 case class Tariff(
     basePrice: Price,

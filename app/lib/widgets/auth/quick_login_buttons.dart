@@ -17,25 +17,25 @@ class QuickLoginButtons extends StatelessWidget {
       children: [
         _buildQuickLoginButton(
           'Driver', 
-          'driver@test.com', 
+          'john.driver@oktopus.com', 
           Icons.drive_eta, 
           Colors.blue
         ),
         _buildQuickLoginButton(
           'Client', 
-          'client@test.com', 
+          'anna.client@example.com', 
           Icons.person, 
           Colors.green
         ),
         _buildQuickLoginButton(
           'Secretary', 
-          'secretary@test.com', 
+          'maria.secretary@oktopus.com', 
           Icons.business_center, 
           Colors.purple
         ),
         _buildQuickLoginButton(
           'Dispatcher', 
-          'dispatcher@test.com', 
+          'peter.dispatcher@oktopus.com', 
           Icons.dashboard, 
           Colors.orange
         ),

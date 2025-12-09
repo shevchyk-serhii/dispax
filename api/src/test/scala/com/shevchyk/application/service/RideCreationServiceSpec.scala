@@ -212,6 +212,18 @@ object TestMocks:
       
     def save(person: Person): IO[RepositoryError, Person] = ZIO.succeed(person)
 
+    def findAll(): IO[RepositoryError, List[Person]] =
+      ZIO.succeed(people.values.toList)
+
+    def update(person: Person): IO[RepositoryError, Option[Person]] =
+      if people.contains(person.id) then
+        ZIO.succeed(Some(person))
+      else
+        ZIO.succeed(None)
+
+    def delete(id: PersonId): IO[RepositoryError, Boolean] =
+      ZIO.succeed(people.contains(id))
+
   case class MockTariffRepository() extends TariffRepository:
     private val tariffs = Map(
       CompanyId(1) -> Tariff(

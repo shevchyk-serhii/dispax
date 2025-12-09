@@ -22,16 +22,11 @@ case class RideServiceImpl() extends RideService {
     val allRides = RideService.mockRides.values.toList
 
     user.role match {
-      case PersonRole.driver =>
-        
-        allRides.filter(_.driverId.contains(user.id))
+      case PersonRole.driver => allRides.filter(_.driverId.contains(user.id))
 
-      case PersonRole.client =>
-        
-        allRides.filter(_.clientId == user.id)
+      case PersonRole.client => allRides.filter(_.clientId == user.id)
 
       case PersonRole.secretary | PersonRole.dispatcher =>
-        
         user.companyId match {
           case Some(companyId) => allRides.filter(_.companyId == companyId)
           case None            => List.empty
@@ -63,56 +58,55 @@ case class RideServiceImpl() extends RideService {
       (for {
         flightService <- ZIO.service[FlightService]
         currentTime    = java.lang.System.currentTimeMillis() / 1000
-        
-        beginTime      = currentTime - 6 * 3600
-        endTime        = currentTime + 6 * 3600
-        arrivals      <- flightService.getMunichArrivals(beginTime, endTime)
-        departures    <- flightService.getMunichDepartures(beginTime, endTime)
-        allFlights     = arrivals ++ departures
-        flightInfo    <- ZIO.succeed {
-                           allFlights.find(_.callsign.trim == ride.flightNumber.getOrElse("").trim)
-                         }
-        enrichedRide  <- ZIO.succeed {
-                           flightInfo match {
-                             case Some(flight) =>
-                               
-                               val isFromAirport = ride.from.address.toLowerCase.contains("airport")
-                               val isArrival     = !isFromAirport 
-                               val flightTime    =
-                                 if (isFromAirport) {
-                                   
-                                   java.time.LocalDateTime.ofEpochSecond(flight.firstSeen, 0, java.time.ZoneOffset.UTC)
-                                 }
-                                 else {
-                                   
-                                   java.time.LocalDateTime.ofEpochSecond(flight.lastSeen, 0, java.time.ZoneOffset.UTC)
-                                 }
-                               
-                               val gate          = Some(
-                                 s"${('A' + scala.util.Random.nextInt(6)).toChar}${scala.util.Random.nextInt(20) + 1}"
-                               )
-                               val terminal      = Some(
-                                 if (scala.util.Random.nextBoolean())
-                                   "1"
-                                 else
-                                   "2"
-                               )
-                               val status        =
-                                 if (scala.util.Random.nextDouble() > 0.8)
-                                   Some("Delayed")
-                                 else
-                                   Some("On Time")
 
-                               ride.copy(
-                                 flightTime = Some(flightTime),
-                                 isArrival = isArrival,
-                                 gate = gate,
-                                 terminal = terminal,
-                                 flightStatus = status
-                               )
-                             case None         => ride
-                           }
-                         }
+        beginTime     = currentTime - 6 * 3600
+        endTime       = currentTime + 6 * 3600
+        arrivals     <- flightService.getMunichArrivals(beginTime, endTime)
+        departures   <- flightService.getMunichDepartures(beginTime, endTime)
+        allFlights    = arrivals ++ departures
+        flightInfo   <- ZIO.succeed {
+                          allFlights.find(_.callsign.trim == ride.flightNumber.getOrElse("").trim)
+                        }
+        enrichedRide <- ZIO.succeed {
+                          flightInfo match {
+                            case Some(flight) =>
+                              val isFromAirport = ride.from.address.toLowerCase.contains("airport")
+                              val isArrival     = !isFromAirport
+                              val flightTime    =
+                                if (isFromAirport) {
+
+                                  java.time.LocalDateTime.ofEpochSecond(flight.firstSeen, 0, java.time.ZoneOffset.UTC)
+                                }
+                                else {
+
+                                  java.time.LocalDateTime.ofEpochSecond(flight.lastSeen, 0, java.time.ZoneOffset.UTC)
+                                }
+
+                              val gate     = Some(
+                                s"${('A' + scala.util.Random.nextInt(6)).toChar}${scala.util.Random.nextInt(20) + 1}"
+                              )
+                              val terminal = Some(
+                                if (scala.util.Random.nextBoolean())
+                                  "1"
+                                else
+                                  "2"
+                              )
+                              val status   =
+                                if (scala.util.Random.nextDouble() > 0.8)
+                                  Some("Delayed")
+                                else
+                                  Some("On Time")
+
+                              ride.copy(
+                                flightTime = Some(flightTime),
+                                isArrival = isArrival,
+                                gate = gate,
+                                terminal = terminal,
+                                flightStatus = status
+                              )
+                            case None         => ride
+                          }
+                        }
       } yield enrichedRide).provideSomeLayer(FlightService.live)
     }
     else {
@@ -123,14 +117,12 @@ case class RideServiceImpl() extends RideService {
 object RideService {
   val layer: ULayer[RideService] = ZLayer.succeed(RideServiceImpl())
 
-  
   val mockRides: Map[Long, Ride] = Map(
-    
     1L -> Ride(
       id = 1L,
-      clientId = 2,       
-      creatorId = 3,      
-      driverId = Some(1), 
+      clientId = 2,
+      creatorId = 3,
+      driverId = Some(1),
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusHours(2),
       from = Location(address = "Downtown Munich"),
@@ -138,15 +130,15 @@ object RideService {
       status = RideStatus.Assigned,
       flightNumber = Some("LH123"),
       isAirportTransfer = true,
-      isArrival = false,  
+      isArrival = false,
       gate = Some("A12"),
       terminal = Some("2"),
       flightStatus = Some("On Time")
     ),
     2L -> Ride(
       id = 2L,
-      clientId = 2,  
-      creatorId = 3, 
+      clientId = 2,
+      creatorId = 3,
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusHours(5),
       from = Location(address = "Railway Station"),
@@ -155,9 +147,9 @@ object RideService {
     ),
     3L -> Ride(
       id = 3L,
-      clientId = 2,       
-      creatorId = 4,      
-      driverId = Some(1), 
+      clientId = 2,
+      creatorId = 4,
+      driverId = Some(1),
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusDays(1),
       from = Location(address = "Independence Square"),
@@ -166,21 +158,19 @@ object RideService {
     ),
     4L -> Ride(
       id = 4L,
-      clientId = 2,  
-      creatorId = 3, 
+      clientId = 2,
+      creatorId = 3,
       companyId = 1,
       pickupDateTime = LocalDateTime.now().minusHours(2),
       from = Location(address = "Hotel Ukraine"),
       to = Location(address = "St. Sophia Cathedral"),
       status = RideStatus.Completed
     ),
-
-    
     5L -> Ride(
       id = 5L,
-      clientId = 5,       
-      creatorId = 3,      
-      driverId = Some(1), 
+      clientId = 5,
+      creatorId = 3,
+      driverId = Some(1),
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusHours(3),
       from = Location(address = "Munich Airport (MUC)"),
@@ -188,16 +178,16 @@ object RideService {
       status = RideStatus.Assigned,
       flightNumber = Some("BA456"),
       isAirportTransfer = true,
-      isArrival = true,   
+      isArrival = true,
       gate = Some("B7"),
       terminal = Some("1"),
       flightStatus = Some("Delayed")
     ),
     6L -> Ride(
       id = 6L,
-      clientId = 6,       
-      creatorId = 4,      
-      driverId = Some(1), 
+      clientId = 6,
+      creatorId = 4,
+      driverId = Some(1),
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusHours(4),
       from = Location(address = "Khreshchatyk Street"),
@@ -206,8 +196,8 @@ object RideService {
     ),
     7L -> Ride(
       id = 7L,
-      clientId = 7,  
-      creatorId = 3, 
+      clientId = 7,
+      creatorId = 3,
       companyId = 1,
       pickupDateTime = LocalDateTime.now().plusHours(6),
       from = Location(address = "Arsenalna Metro"),
@@ -216,9 +206,9 @@ object RideService {
     ),
     8L -> Ride(
       id = 8L,
-      clientId = 8,       
-      creatorId = 4,      
-      driverId = Some(1), 
+      clientId = 8,
+      creatorId = 4,
+      driverId = Some(1),
       companyId = 1,
       pickupDateTime = LocalDateTime.now().minusHours(1),
       from = Location(address = "Bessarabsky Market"),
