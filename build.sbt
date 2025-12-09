@@ -5,6 +5,7 @@ ThisBuild / scalaVersion := "3.3.7"
 addCommandAlias("fmt", "; scalafmt ; scalafmtSbt")
 addCommandAlias("fmtDart", "! dart format /Users/shevchyk/projects/private/oktopus/app/lib/ --set-exit-if-changed")
 addCommandAlias("fmtAll", "; fmt ; fmtDart")
+addCommandAlias("fmtWatch", "~fmtAll")
 
 lazy val root = (project in file("."))
   .settings(

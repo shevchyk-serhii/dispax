@@ -1,6 +1,7 @@
 package com.shevchyk.app
 
 import com.shevchyk.app.routes.RouteHelpers
+import com.shevchyk.app.routes.AdminRoutes
 import RouteHelpers.*
 import zio.*
 import zio.http.*

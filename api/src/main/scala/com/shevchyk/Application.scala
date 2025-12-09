@@ -1,7 +1,7 @@
 package com.shevchyk
 
 import com.shevchyk.app.AppRoutes
-import com.shevchyk.app.routes.SimpleRideRoutes
+import com.shevchyk.app.routes.{SimpleRideRoutes, AdminRoutes}
 import com.shevchyk.application.service.{
   RideFacade,
   RideCreationService,
@@ -14,6 +14,7 @@ import com.shevchyk.infrastructure.repository.postgres.RepositoryLayers
 import com.shevchyk.infrastructure.database.{DatabaseConfig, DatabaseService}
 import com.shevchyk.infrastructure.notification.LoggingNotificationService
 import com.shevchyk.infrastructure.services.{StubLocationService, StubFlightInfoService}
+import com.shevchyk.infrastructure.testdata.{TestDataSeeder, TestDataInitializer, TestDataConfig}
 import zio.*
 import zio.http.*
 import zio.logging.backend.SLF4J
@@ -47,17 +48,38 @@ object Application extends ZIOAppDefault:
     else
       inMemoryInfrastructureLayer
 
-  private val applicationLayer =
+  private val serviceLayer =
     infrastructureLayer >>>
       (RideCreationService.layer ++
         DriverAssignmentService.layer ++
         RideLifecycleService.layer ++
-        NotificationOrchestrator.layer) >>>
+        NotificationOrchestrator.layer ++
+        TestDataSeeder.layer) >>>
       RideFacade.layer
 
-  private val allRoutes =
+  private val applicationLayer = serviceLayer ++ TestDataInitializer.autoSeedLayer
+
+  private val coreRoutes =
     AppRoutes.routes ++
       SimpleRideRoutes.routes
+
+  private def autoSeedData: ZIO[TestDataSeeder, Throwable, Unit] =
+    TestDataInitializer.getEnvironment match
+      case TestDataInitializer.Environment.Dev  =>
+        for
+          _      <- ZIO.logInfo("🧪 Dev environment detected - auto-seeding development test data...")
+          seeder <- ZIO.service[TestDataSeeder]
+          _      <- seeder.seedTestData(TestDataConfig.default)
+          _      <- ZIO.logInfo("✅ Development test data auto-seeded successfully!")
+        yield ()
+      case TestDataInitializer.Environment.Int  =>
+        for
+          _      <- ZIO.logInfo("🧪 Int environment detected - auto-seeding integration test data...")
+          seeder <- ZIO.service[TestDataSeeder]
+          _      <- seeder.seedTestData(TestDataConfig.small)
+          _      <- ZIO.logInfo("✅ Integration test data auto-seeded successfully!")
+        yield ()
+      case TestDataInitializer.Environment.Prod => ZIO.logInfo("🏭 Production environment - test data not auto-seeded.")
 
   def run: ZIO[Any, Throwable, Nothing] =
     (ZIO.logInfo("🐙 Starting Der Oktopus API Server...") *>
@@ -73,8 +95,8 @@ object Application extends ZIOAppDefault:
       ZIO.logInfo("  🔐 /api/auth - Authentication") *>
       ZIO.logInfo("  👥 /api/users - User management") *>
       ZIO.logInfo("🌐 Server running on http://localhost:8080") *>
-      Server.serve(allRoutes @@ Middleware.addHeaders(AppRoutes.corsHeaders)))
+      Server.serve(coreRoutes @@ Middleware.addHeaders(AppRoutes.corsHeaders)))
       .provide(
         Server.defaultWith(_.binding("0.0.0.0", 8080)),
-        applicationLayer
+        serviceLayer
       )
