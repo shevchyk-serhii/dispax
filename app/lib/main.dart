@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
 import 'dashboard/dashboard_screen.dart';
-import 'services/ride_service.dart';
+import 'modules/ride_management/services/ride_service.dart';
 // import 'services/mapbox_service.dart'; // Disabled for compatibility
 import 'theme/app_theme.dart';
 

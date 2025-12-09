@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
-import '../../models/ride.dart';
+import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
-import '../../utils/date_utils.dart';
+import '../../modules/core/date_utils.dart';
 import '../../screens/flight_screen.dart';
 import '../../screens/ride_details_screen.dart';
 import 'dart:io';
@@ -14,7 +14,7 @@ import '../../theme/app_theme.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
-import '../../widgets/airport_entry_timer.dart';
+import '../../modules/flight_management/widgets/airport_entry_timer.dart';
 import 'client_ride_history_screen.dart';
 
 class ClientDashboard extends StatelessWidget {

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../models/person.dart';
-import '../../services/api_client.dart';
-import '../../services/biometric_service.dart';
+import '../../modules/core/models/person.dart';
+import '../../modules/core/services/api_client.dart';
+import '../../modules/auth/services/biometric_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 

@@ -66,13 +66,13 @@ class AppColors {
   static const Color surfaceVariant = Color(0xFFF5F5F5);
 
   // Glass Morphism Colors
-  static Color glassBackground = Colors.white.withOpacity(0.1);
-  static Color glassBorder = Colors.white.withOpacity(0.2);
-  static Color glassText = Colors.white.withOpacity(0.9);
-  static Color glassTextSecondary = Colors.white.withOpacity(0.7);
+  static Color glassBackground = Colors.white.withValues(alpha: 0.1);
+  static Color glassBorder = Colors.white.withValues(alpha: 0.2);
+  static Color glassText = Colors.white.withValues(alpha: 0.9);
+  static Color glassTextSecondary = Colors.white.withValues(alpha: 0.7);
 
   // Shadow Colors
-  static Color shadowLight = Colors.black.withOpacity(0.05);
-  static Color shadowMedium = Colors.black.withOpacity(0.1);
-  static Color shadowDark = Colors.black.withOpacity(0.2);
+  static Color shadowLight = Colors.black.withValues(alpha: 0.05);
+  static Color shadowMedium = Colors.black.withValues(alpha: 0.1);
+  static Color shadowDark = Colors.black.withValues(alpha: 0.2);
 }

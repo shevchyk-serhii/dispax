@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../blocs/blocs.dart';
-import '../../models/ride.dart';
-import '../../widgets/widgets.dart';
-import '../../utils/navigation_helper.dart';
-import '../../utils/navigation_utils.dart';
-import '../../screens/ride_details_screen.dart';
+import '../../modules/ride_management/models/ride.dart';
+import '../../modules/driver_management/widgets/widgets.dart';
+import '../../modules/core/widgets/widgets.dart';
+import '../../modules/core/navigation_helper.dart';
 
 class TodayRidesScreen extends StatelessWidget {
   const TodayRidesScreen({super.key});
@@ -120,16 +119,19 @@ class TodayRidesScreen extends StatelessWidget {
       onRefresh: () async => refreshRides(context),
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: buildTodayStats(todayRides)),
+          SliverToBoxAdapter(child: TodayStatsCard(todayRides: todayRides)),
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
                 final ride = todayRides[index];
-                return buildTodayRideCard(
-                  context,
-                  ride,
-                  index == todayRides.length - 1,
+                return TodayRideCard(
+                  ride: ride,
+                  isLast: index == todayRides.length - 1,
+                  // TODO: Implement these callbacks
+                  onCallClient: () => _handleCallClient(ride),
+                  onStartRide: () => _handleStartRide(context, ride),
+                  onCompleteRide: () => _handleCompleteRide(context, ride),
                 );
               }, childCount: todayRides.length),
             ),
@@ -140,419 +142,32 @@ class TodayRidesScreen extends StatelessWidget {
   }
 
   Widget buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.free_breakfast, size: 80, color: Colors.blue.shade300),
-          const SizedBox(height: 24),
-          Text(
-            'No rides today!',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue.shade700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Enjoy your free day',
-            style: TextStyle(fontSize: 16, color: Colors.blue.shade500),
-          ),
-        ],
-      ),
-    );
+    return const EmptyRidesState();
   }
 
-  Widget buildTodayStats(List<Ride> todayRides) {
-    final completedRides = todayRides
-        .where((r) => r.status == RideStatus.completed)
-        .length;
-    final upcomingRides = todayRides
-        .where((r) => r.status == RideStatus.assigned)
-        .length;
-    final inProgressRides = todayRides
-        .where((r) => r.status == RideStatus.inProgress)
-        .length;
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(25),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Today\'s Overview',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              buildStatItem(
-                icon: Icons.event,
-                count: todayRides.length,
-                label: 'Total',
-                color: Colors.blue,
-              ),
-              buildStatItem(
-                icon: Icons.play_arrow,
-                count: upcomingRides,
-                label: 'Upcoming',
-                color: Colors.orange,
-              ),
-              buildStatItem(
-                icon: Icons.directions_car,
-                count: inProgressRides,
-                label: 'Active',
-                color: Colors.green,
-              ),
-              buildStatItem(
-                icon: Icons.check_circle,
-                count: completedRides,
-                label: 'Done',
-                color: Colors.grey,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  // Helper method to handle calling client
+  void _handleCallClient(Ride ride) {
+    // TODO: Implement call client functionality
+    print('Calling client for ride ${ride.id}');
+  }
+  
+  // Helper method to handle starting ride
+  void _handleStartRide(BuildContext context, Ride ride) {
+    // TODO: Implement start ride functionality
+    print('Starting ride ${ride.id}');
+  }
+  
+  // Helper method to handle completing ride
+  void _handleCompleteRide(BuildContext context, Ride ride) {
+    // TODO: Implement complete ride functionality
+    print('Completing ride ${ride.id}');
   }
 
-  Widget buildStatItem({
-    required IconData icon,
-    required int count,
-    required String label,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: color.withAlpha(25),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          count.toString(),
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-        ),
-      ],
-    );
-  }
 
-  Widget buildTodayRideCard(BuildContext context, Ride ride, bool isLast) {
-    final statusColor = getStatusColor(ride.status);
-    final isUpcoming = ride.pickupDateTime.isAfter(DateTime.now());
-    final timeUntilRide = ride.pickupDateTime.difference(DateTime.now());
 
-    return Container(
-      margin: EdgeInsets.only(bottom: isLast ? 0 : 16),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => RideDetailsScreen(ride: ride),
-              ),
-            );
-          },
-          child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: statusColor.withAlpha(77), width: 1),
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: statusColor.withAlpha(25),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.access_time, color: statusColor, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          DateFormat.Hm().format(ride.pickupDateTime),
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: statusColor,
-                          ),
-                        ),
-                        if (isUpcoming && timeUntilRide.inHours < 2)
-                          Container(
-                            margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.orange,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'Soon',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        getStatusText(ride.status),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    buildRideInfo(Icons.person, ride.clientName, 'Client'),
-                    const SizedBox(height: 12),
-                    buildRideInfo(
-                      Icons.location_on,
-                      ride.from.address,
-                      'Pickup',
-                    ),
-                    const SizedBox(height: 12),
-                    buildRideInfo(Icons.flag, ride.to.address, 'Destination'),
-                    if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      buildRideInfo(Icons.flight, ride.fullFlightInfo, 'Flight'),
-                    ],
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(child: buildQuickActions(ride)),
-                        TextButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => RideDetailsScreen(ride: ride),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.info_outline, size: 16),
-                          label: const Text('Details'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.blue,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        ),
-      ),
-    );
-  }
 
-  Widget buildRideInfo(IconData icon, String text, String label) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: Colors.grey.shade600),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 
-  Widget buildQuickActions(Ride ride) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () {}, // TODO: Implement call client
-          icon: const Icon(Icons.phone, size: 20),
-          color: Colors.green,
-          tooltip: 'Call Client',
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-        ),
-        Builder(
-          builder: (context) => IconButton(
-            onPressed: () => _handleNavigation(context, ride),
-            icon: const Icon(Icons.navigation, size: 20),
-            color: Colors.blue,
-            tooltip: 'Navigate',
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-          ),
-        ),
-        Expanded(
-          child: Container(
-            alignment: Alignment.centerRight,
-            child: _buildStatusButton(ride),
-          ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildStatusButton(Ride ride) {
-    if (ride.status == RideStatus.assigned) {
-      return ElevatedButton.icon(
-        onPressed: () {}, // TODO: Implement start ride
-        icon: const Icon(Icons.play_arrow, size: 14),
-        label: const Text('Start', style: TextStyle(fontSize: 12)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          minimumSize: const Size(60, 32),
-        ),
-      );
-    } else if (ride.status == RideStatus.inProgress) {
-      return ElevatedButton.icon(
-        onPressed: () {}, // TODO: Implement complete ride
-        icon: const Icon(Icons.check, size: 14),
-        label: const Text('Done', style: TextStyle(fontSize: 12)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          minimumSize: const Size(60, 32),
-        ),
-      );
-    }
-    return const SizedBox.shrink();
-  }
-
-  static void _handleNavigation(BuildContext context, Ride ride) async {
-    try {
-      // Показать диалог выбора навигации
-      final choice = await showDialog<String>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Navigate to'),
-            content: const Text('Choose navigation destination:'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop('pickup'),
-                child: Text('Pickup: ${ride.from.address}'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop('destination'),
-                child: Text('Drop-off: ${ride.to.address}'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(null),
-                child: const Text('Cancel'),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (choice == null) return;
-
-      // Открыть навигацию в зависимости от выбора
-      if (choice == 'pickup') {
-        await NavigationUtils.openGoogleMapsNavigation(ride.from);
-      } else if (choice == 'destination') {
-        await NavigationUtils.openGoogleMapsNavigation(ride.to);
-      }
-      
-      if (context.mounted) {
-        NavigationHelper.showSnackBar(
-          context,
-          'Opening navigation in Google Maps...',
-          isError: false,
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        NavigationHelper.showSnackBar(
-          context,
-          'Could not open navigation: $e',
-          isError: true,
-        );
-      }
-    }
-  }
 
   List<Ride> getTodayRides(List<Ride> rides) {
     final today = DateTime.now();

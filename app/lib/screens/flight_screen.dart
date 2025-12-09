@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/flight_service.dart';
+import '../modules/flight_management/services/flight_service.dart';
 
 class FlightScreen extends StatefulWidget {
   const FlightScreen({Key? key}) : super(key: key);

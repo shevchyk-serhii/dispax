@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
-import '../../../models/ride.dart';
+import '../../../modules/ride_management/models/ride.dart';
 
 class MonthViewWidget extends StatelessWidget {
   final DateTime selectedDay;

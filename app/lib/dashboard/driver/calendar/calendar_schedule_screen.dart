@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
-import '../../../utils/navigation_helper.dart';
-import '../../../widgets/calendar/calendar_controls.dart';
+import '../../../modules/core/navigation_helper.dart';
+import '../../../modules/core/widgets/calendar_controls.dart';
+export '../../../modules/core/widgets/calendar_controls.dart' show CalendarViewType;
 import 'month_view_widget.dart';
 import 'week_view_widget.dart';
 import 'day_view_widget.dart';

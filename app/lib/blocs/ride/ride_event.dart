@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../../models/person.dart';
-import '../../models/ride.dart';
+import '../../modules/core/models/person.dart';
+import '../../modules/ride_management/models/ride.dart';
 
 abstract class RideEvent extends Equatable {
   const RideEvent();

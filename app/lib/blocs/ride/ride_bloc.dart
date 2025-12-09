@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../models/ride.dart';
-import '../../services/ride_service.dart';
+import '../../modules/ride_management/models/ride.dart';
+import '../../modules/ride_management/services/ride_service.dart';
 import 'ride_event.dart';
 import 'ride_state.dart';
 

@@ -4,15 +4,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../blocs/blocs.dart';
-import '../models/ride.dart';
-import '../services/location_service.dart';
-import '../services/mapbox_service.dart';
+import '../../modules/ride_management/models/ride.dart';
+import '../modules/core/services/location_service.dart';
+import '../modules/core/services/mapbox_service.dart';
 import '../theme/app_theme.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
-import '../utils/date_utils.dart';
-import '../widgets/airport_entry_timer.dart';
+import '../modules/core/date_utils.dart';
+import '../modules/flight_management/widgets/airport_entry_timer.dart';
 
 class DriverMapScreen extends StatefulWidget {
   const DriverMapScreen({super.key});

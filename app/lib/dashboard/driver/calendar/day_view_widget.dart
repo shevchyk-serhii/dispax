@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
-import '../../../models/ride.dart';
+import '../../../modules/ride_management/models/ride.dart';
 
 class DayViewWidget extends StatelessWidget {
   final DateTime selectedDay;

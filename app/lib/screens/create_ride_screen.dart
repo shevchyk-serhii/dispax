@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../models/ride.dart';
-import '../models/location.dart';
+import '../../modules/ride_management/models/ride.dart';
+import '../modules/core/models/location.dart';
 import '../blocs/blocs.dart';
-import '../utils/navigation_helper.dart';
+import '../modules/ride_management/widgets/widgets.dart';
 import '../theme/app_theme.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
@@ -68,15 +68,60 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildBasicInfoCard(),
+                BasicInfoCard(clientNameController: _clientNameController),
                 const SizedBox(height: AppDimensions.paddingMedium),
-                _buildLocationCard(),
+                LocationCard(
+                  fromAddressController: _fromAddressController,
+                  toAddressController: _toAddressController,
+                  onFromAddressChanged: _checkAirportTransfer,
+                  onToAddressChanged: _checkAirportTransfer,
+                ),
                 const SizedBox(height: AppDimensions.paddingMedium),
-                _buildScheduleCard(),
+                ScheduleCard(
+                  pickupDateTime: _pickupDateTime,
+                  onSelectDateTime: _selectDateTime,
+                ),
                 const SizedBox(height: AppDimensions.paddingMedium),
-                _buildAirportTransferCard(),
+                AirportTransferCard(
+                  isAirportTransfer: _isAirportTransfer,
+                  isArrival: _isArrival,
+                  flightNumberController: _flightNumberController,
+                  selectedGate: _selectedGate,
+                  selectedTerminal: _selectedTerminal,
+                  gates: _gates,
+                  terminals: _terminals,
+                  onAirportTransferChanged: (value) {
+                    setState(() {
+                      _isAirportTransfer = value;
+                      if (!value) {
+                        _flightNumberController.clear();
+                        _selectedGate = null;
+                        _selectedTerminal = null;
+                        _isArrival = false;
+                      }
+                    });
+                  },
+                  onArrivalChanged: (value) {
+                    setState(() {
+                      _isArrival = value;
+                    });
+                  },
+                  onGateChanged: (value) {
+                    setState(() {
+                      _selectedGate = value;
+                    });
+                  },
+                  onTerminalChanged: (value) {
+                    setState(() {
+                      _selectedTerminal = value;
+                    });
+                  },
+                ),
                 const SizedBox(height: AppDimensions.paddingLarge),
-                _buildActionButtons(),
+                CreateRideActionButtons(
+                  onCreateRide: _createRide,
+                  onClearForm: _clearForm,
+                ),
                 const SizedBox(height: AppDimensions.paddingXLarge),
               ],
             ),
@@ -86,405 +131,10 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
     );
   }
 
-  Widget _buildBasicInfoCard() {
-    return Container(
-      decoration: AppTheme.cardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.person, color: AppColors.secretaryColor, size: AppDimensions.iconLarge),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                Text(
-                  'Client Information',
-                  style: AppStyles.headlineSmall,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.paddingMedium),
-            TextFormField(
-              controller: _clientNameController,
-              decoration: InputDecoration(
-                labelText: 'Client Name *',
-                hintText: 'Enter client full name',
-                prefixIcon: Icon(Icons.person_outline, color: AppColors.secretaryColor),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Client name is required';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildLocationCard() {
-    return Container(
-      decoration: AppTheme.cardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.location_on, color: AppColors.secretaryColor, size: AppDimensions.iconLarge),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                Text(
-                  'Route Information',
-                  style: AppStyles.headlineSmall,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.paddingMedium),
-            TextFormField(
-              controller: _fromAddressController,
-              decoration: InputDecoration(
-                labelText: 'Pickup Address *',
-                hintText: 'Enter pickup location',
-                prefixIcon: Icon(Icons.trip_origin, color: AppColors.secretaryColor),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Pickup address is required';
-                }
-                return null;
-              },
-              onChanged: (value) {
-                _checkAirportTransfer();
-              },
-            ),
-            const SizedBox(height: AppDimensions.paddingMedium),
-            TextFormField(
-              controller: _toAddressController,
-              decoration: InputDecoration(
-                labelText: 'Destination Address *',
-                hintText: 'Enter destination location',
-                prefixIcon: Icon(Icons.location_on, color: AppColors.secretaryColor),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Destination address is required';
-                }
-                return null;
-              },
-              onChanged: (value) {
-                _checkAirportTransfer();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildScheduleCard() {
-    return Container(
-      decoration: AppTheme.cardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.schedule, color: AppColors.secretaryColor, size: AppDimensions.iconLarge),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                Text(
-                  'Schedule',
-                  style: AppStyles.headlineSmall,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.paddingMedium),
-            InkWell(
-              onTap: _selectDateTime,
-              child: Container(
-                padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.textSecondary),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.access_time),
-                    const SizedBox(width: AppDimensions.paddingMedium),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Pickup Date & Time *',
-                            style: AppStyles.labelSmall.copyWith(color: AppColors.textSecondary),
-                          ),
-                          const SizedBox(height: AppDimensions.paddingXSmall),
-                          Text(
-                            DateFormat('MMM dd, yyyy - HH:mm').format(_pickupDateTime),
-                            style: AppStyles.bodyLarge,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_drop_down),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildAirportTransferCard() {
-    return Container(
-      decoration: AppTheme.cardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  _isAirportTransfer 
-                    ? (_isArrival ? Icons.flight_land : Icons.flight_takeoff)
-                    : Icons.flight,
-                  color: Colors.purple[600], 
-                  size: 24
-                ),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                const Text(
-                  'Airport Transfer',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.paddingMedium),
-            SwitchListTile(
-              title: const Text('Airport Transfer'),
-              subtitle: const Text('Enable if this is an airport pickup/drop-off'),
-              value: _isAirportTransfer,
-              onChanged: (value) {
-                setState(() {
-                  _isAirportTransfer = value;
-                  if (!value) {
-                    _flightNumberController.clear();
-                    _selectedGate = null;
-                    _selectedTerminal = null;
-                    _isArrival = false;
-                  }
-                });
-              },
-            ),
-            if (_isAirportTransfer) ...[
-              const Divider(),
-              const SizedBox(height: AppDimensions.paddingSmall),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<bool>(
-                      title: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.flight_takeoff, size: 16, color: Colors.blue),
-                          const SizedBox(width: 4),
-                          const Text('Departure'),
-                        ],
-                      ),
-                      subtitle: const Text('To airport'),
-                      value: false,
-                      groupValue: _isArrival,
-                      onChanged: (value) {
-                        setState(() {
-                          _isArrival = value!;
-                        });
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<bool>(
-                      title: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.flight_land, size: 16, color: Colors.green),
-                          const SizedBox(width: 4),
-                          const Text('Arrival'),
-                        ],
-                      ),
-                      subtitle: const Text('From airport'),
-                      value: true,
-                      groupValue: _isArrival,
-                      onChanged: (value) {
-                        setState(() {
-                          _isArrival = value!;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppDimensions.paddingMedium),
-              TextFormField(
-                controller: _flightNumberController,
-                decoration: InputDecoration(
-                  labelText: 'Flight Number',
-                  hintText: 'e.g. LH123, BA456',
-                  prefixIcon: Icon(
-                    _isArrival ? Icons.flight_land : Icons.flight_takeoff, 
-                    color: AppColors.secretaryColor
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                  ),
-                ),
-                validator: _isAirportTransfer ? (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Flight number is required for airport transfers';
-                  }
-                  return null;
-                } : null,
-              ),
-              const SizedBox(height: AppDimensions.paddingMedium),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Gate',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                        ),
-                      ),
-                      value: _selectedGate,
-                      items: _gates.map((gate) => DropdownMenuItem(
-                        value: gate,
-                        child: Text('Gate $gate'),
-                      )).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedGate = value;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppDimensions.paddingMedium),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Terminal',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                        ),
-                      ),
-                      value: _selectedTerminal,
-                      items: _terminals.map((terminal) => DropdownMenuItem(
-                        value: terminal,
-                        child: Text('Terminal $terminal'),
-                      )).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedTerminal = value;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildActionButtons() {
-    return BlocConsumer<RideBloc, RideState>(
-      listener: (context, state) {
-        if (state.hasError) {
-          NavigationHelper.showSnackBar(
-            context,
-            state.errorMessage!,
-            isError: true,
-          );
-        } else if (state.status == RideStateStatus.loaded && !state.isLoading) {
-          // Ride was successfully created, check if we just added a new ride
-          NavigationHelper.showSnackBar(
-            context,
-            'Ride created successfully!',
-            isError: false,
-          );
-          Navigator.of(context).pop();
-        }
-      },
-      builder: (context, state) {
-        return Column(
-          children: [
-            SizedBox(
-              width: double.infinity,
-              height: AppDimensions.buttonHeightLarge,
-              child: ElevatedButton.icon(
-                onPressed: state.isLoading ? null : _createRide,
-                icon: state.isLoading 
-                  ? const SizedBox(
-                      width: AppDimensions.iconSmall,
-                      height: AppDimensions.iconSmall,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.textOnPrimary,
-                      ),
-                    )
-                  : const Icon(Icons.add_circle_outline),
-                label: Text(state.isLoading ? 'Creating Ride...' : 'Create Ride'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secretaryColor,
-                  foregroundColor: AppColors.textOnPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppDimensions.paddingMedium),
-            SizedBox(
-              width: double.infinity,
-              height: AppDimensions.buttonHeightLarge,
-              child: OutlinedButton.icon(
-                onPressed: _clearForm,
-                icon: const Icon(Icons.clear_all),
-                label: const Text('Clear Form'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.secretaryColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   void _checkAirportTransfer() {
     final from = _fromAddressController.text.toLowerCase();
@@ -535,10 +185,11 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
     if (_formKey.currentState!.validate()) {
       final authState = context.read<AuthBloc>().state;
       if (!authState.isAuthenticated || authState.user == null) {
-        NavigationHelper.showSnackBar(
-          context,
-          'Authentication required',
-          isError: true,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Authentication required'),
+            backgroundColor: Colors.red,
+          ),
         );
         return;
       }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/ride.dart';
-import '../models/location.dart';
-import '../services/mock_ride_service.dart';
-import '../widgets/ride/location_field.dart';
-import '../widgets/ride/date_time_picker.dart';
+import '../../modules/ride_management/models/ride.dart';
+import '../modules/core/models/location.dart';
+import '../modules/ride_management/services/mock_ride_service.dart';
+import '../modules/ride_management/widgets/location_field.dart';
+import '../modules/ride_management/widgets/date_time_picker.dart';
 // import '../widgets/map/ride_map_widget.dart'; // Disabled for compatibility
 
 class RideFormScreen extends StatefulWidget {

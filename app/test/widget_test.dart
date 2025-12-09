@@ -16,7 +16,7 @@ void main() {
 
     // Verify that login screen elements are present
     expect(find.text('Oktopus Taxi'), findsOneWidget);
-    expect(find.text('Ride Management System'), findsOneWidget);
-    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Professional Ride Management'), findsOneWidget);
+    expect(find.text('Welcome Back'), findsOneWidget);
   });
 }

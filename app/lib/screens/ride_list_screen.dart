@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
-import '../utils/navigation_helper.dart';
+import '../modules/core/navigation_helper.dart';
 import '../widgets/widgets.dart';
 import 'ride_detail_screen.dart';
 import 'ride_form_screen.dart';

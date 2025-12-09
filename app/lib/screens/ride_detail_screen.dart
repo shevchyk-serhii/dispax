@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/ride.dart';
+import '../../modules/ride_management/models/ride.dart';
 // import '../widgets/map/ride_map_widget.dart'; // Disabled for compatibility
 import 'ride_form_screen.dart';
 

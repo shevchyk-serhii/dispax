@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../models/ride.dart';
+import '../../modules/ride_management/models/ride.dart';
 
 enum RideStateStatus { initial, loading, loaded, error, deleting }
 

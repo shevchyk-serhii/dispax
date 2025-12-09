@@ -1,0 +1,120 @@
+import 'package:flutter/material.dart';
+import '../../ride_management/models/ride.dart';
+import '../../../constants/app_colors.dart';
+import '../../core/extensions.dart';
+
+class RideStatusCard extends StatelessWidget {
+  final Ride ride;
+  final bool isClientView;
+
+  const RideStatusCard({
+    Key? key,
+    required this.ride,
+    this.isClientView = false,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _getStatusIcon(),
+                  color: _getStatusColor(),
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Status: ${ride.status.displayName}',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: _getStatusColor(),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _getStatusDescription(),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[600],
+              ),
+            ),
+            if (ride.estimatedPrice != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Price: ${ride.estimatedPrice!.toStringAsFixed(0)} UAH',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getStatusIcon() {
+    switch (ride.status) {
+      case RideStatus.requested:
+        return Icons.schedule;
+      case RideStatus.assigned:
+        return Icons.person_pin_circle;
+      case RideStatus.inProgress:
+        return Icons.directions_car;
+      case RideStatus.completed:
+        return Icons.check_circle;
+      case RideStatus.cancelled:
+        return Icons.cancel;
+    }
+  }
+
+  Color _getStatusColor() {
+    switch (ride.status) {
+      case RideStatus.requested:
+        return Colors.orange;
+      case RideStatus.assigned:
+        return Colors.blue;
+      case RideStatus.inProgress:
+        return Colors.green;
+      case RideStatus.completed:
+        return Colors.green[700]!;
+      case RideStatus.cancelled:
+        return Colors.red;
+    }
+  }
+
+  String _getStatusDescription() {
+    switch (ride.status) {
+      case RideStatus.requested:
+        return 'Waiting for driver assignment';
+      case RideStatus.assigned:
+        return isClientView 
+            ? 'Driver has been assigned and is on the way'
+            : 'You have been assigned to this ride';
+      case RideStatus.inProgress:
+        return isClientView 
+            ? 'Your ride is currently in progress'
+            : 'Ride in progress - take care of your passenger';
+      case RideStatus.completed:
+        return 'Ride has been completed successfully';
+      case RideStatus.cancelled:
+        return 'This ride has been cancelled';
+    }
+  }
+}
