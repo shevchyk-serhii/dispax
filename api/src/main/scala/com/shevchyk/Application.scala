@@ -2,12 +2,12 @@ package com.shevchyk
 
 import com.shevchyk.app.AppRoutes
 import com.shevchyk.app.routes.SimpleRideRoutes
-import com.shevchyk.service.{OrderService, RideService}
 import com.shevchyk.application.service.{
-  RideApplicationService,
-  AuthApplicationService,
-  UserApplicationService,
-  FlightApplicationService
+  RideFacade,
+  RideCreationService,
+  DriverAssignmentService,
+  RideLifecycleService,
+  NotificationOrchestrator
 }
 import com.shevchyk.infrastructure.repository.*
 import com.shevchyk.infrastructure.repository.postgres.RepositoryLayers
@@ -17,7 +17,6 @@ import com.shevchyk.infrastructure.services.{StubLocationService, StubFlightInfo
 import zio.*
 import zio.http.*
 import zio.logging.backend.SLF4J
-import java.net.InetSocketAddress
 
 object Application extends ZIOAppDefault:
 
@@ -50,10 +49,11 @@ object Application extends ZIOAppDefault:
 
   private val applicationLayer =
     infrastructureLayer >>>
-      (RideApplicationService.layer ++
-        AuthApplicationService.layer ++
-        UserApplicationService.layer ++
-        FlightApplicationService.layer)
+      (RideCreationService.layer ++
+        DriverAssignmentService.layer ++
+        RideLifecycleService.layer ++
+        NotificationOrchestrator.layer) >>>
+      RideFacade.layer
 
   private val allRoutes =
     AppRoutes.routes ++
@@ -76,10 +76,5 @@ object Application extends ZIOAppDefault:
       Server.serve(allRoutes @@ Middleware.addHeaders(AppRoutes.corsHeaders)))
       .provide(
         Server.defaultWith(_.binding("0.0.0.0", 8080)),
-        OrderService.live,
-        RideService.layer,
-        com.shevchyk.service.FlightService.live,
-        com.shevchyk.service.AuthService.layer,
-        com.shevchyk.service.UserService.live,
         applicationLayer
       )

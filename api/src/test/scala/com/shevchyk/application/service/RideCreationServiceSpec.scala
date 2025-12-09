@@ -139,7 +139,7 @@ object RideCreationServiceSpec extends ZIOSpecDefault:
         creatorId = PersonId(2),
         from = Location("Start", Some(50.0), Some(30.0)),
         to = Location("End", Some(50.1), Some(30.1)),
-        pickupDateTime = LocalDateTime.now().plusHours(2)
+        pickupDateTime = LocalDateTime.now().withHour(14).plusDays(1) // Daytime to avoid night surcharge
       )
 
       for
@@ -215,11 +215,11 @@ object TestMocks:
     def findAll(): IO[RepositoryError, List[Person]] =
       ZIO.succeed(people.values.toList)
 
-    def update(person: Person): IO[RepositoryError, Option[Person]] =
+    def update(person: Person): IO[RepositoryError, Person] =
       if people.contains(person.id) then
-        ZIO.succeed(Some(person))
+        ZIO.succeed(person)
       else
-        ZIO.succeed(None)
+        ZIO.fail(RepositoryError.NotFound(s"Person not found: ${person.id}"))
 
     def delete(id: PersonId): IO[RepositoryError, Boolean] =
       ZIO.succeed(people.contains(id))

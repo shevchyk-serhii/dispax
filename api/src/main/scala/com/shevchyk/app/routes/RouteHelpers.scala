@@ -27,7 +27,7 @@ object RouteHelpers {
     for
       authHeader <- ZIO
                       .fromOption(req.headers.get("Authorization"))
-                      .orElse(ZIO.fail("Missing Authorization header"))
+                      .orElseFail("Missing Authorization header")
       token      <- ZIO.succeed(authHeader.stripPrefix("Bearer "))
     yield token
 
