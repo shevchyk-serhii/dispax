@@ -2,7 +2,6 @@ package com.shevchyk.auth.domain
 
 import zio.json.*
 
-// Domain Models
 case class User(
     id: Long,
     email: String,
@@ -21,7 +20,6 @@ enum UserRole derives JsonCodec:
 enum UserStatus derives JsonCodec:
   case ACTIVE, INACTIVE, SUSPENDED
 
-// DTOs for API
 case class LoginRequest(
     email: String,
     password: String
@@ -87,7 +85,6 @@ case class PasswordResetRequest(
     email: String
 ) derives JsonCodec
 
-// Domain Errors
 sealed trait AuthError                                     extends Throwable
 case class UserNotFound(email: String)                     extends AuthError
 case class InvalidCredentials(email: String)               extends AuthError

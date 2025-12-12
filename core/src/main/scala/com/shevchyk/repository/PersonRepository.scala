@@ -1,11 +1,9 @@
 package com.shevchyk.repository
 
-import com.shevchyk.core.domain.{Person, PersonId, PersonRole, CompanyId}
+import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole}
+import com.shevchyk.database.DatabaseConfig
+import doobie.Transactor
 import zio.*
-import doobie.*
-import doobie.implicits.*
-import cats.effect.IO
-import zio.interop.catz.*
 
 trait PersonRepository {
   def create(person: Person): Task[Person]
@@ -94,5 +92,14 @@ final case class MockPersonRepository() extends PersonRepository {
 }
 
 object PersonRepository {
-  val layer: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(MockPersonRepository())
+  // Mock layer for testing
+  val mockLayer: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(MockPersonRepository())
+
+  // PostgreSQL layer for production
+  val postgresLayer: ZLayer[Transactor[Task], Nothing, PersonRepository] = ZLayer.fromFunction(
+    PostgresPersonRepository.apply
+  )
+
+  // Default layer (PostgreSQL with database transactor)
+  val layer: ZLayer[Any, Throwable, PersonRepository] = DatabaseConfig.liveTransactor >>> postgresLayer
 }

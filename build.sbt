@@ -104,8 +104,8 @@ lazy val root = (project in file("."))
   .settings(
     name                             := "oktopus",
     Compile / scalaSource            := baseDirectory.value / "api" / "src" / "main" / "scala",
-    Test / scalaSource               := baseDirectory.value / "src" / "test" / "scala",
-    Test / resourceDirectory         := baseDirectory.value / "src" / "test" / "resources",
+    Test / scalaSource               := baseDirectory.value / "api" / "src" / "test" / "scala",
+    Test / resourceDirectory         := baseDirectory.value / "api" / "src" / "test" / "resources",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies ++ testDependencies,
     testFrameworks ++= Seq(
       new TestFramework("zio.test.sbt.ZTestFramework"),

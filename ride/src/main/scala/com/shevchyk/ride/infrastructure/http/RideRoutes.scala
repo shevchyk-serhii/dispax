@@ -10,6 +10,7 @@ import zio.http.*
 import zio.json.*
 
 object RideRoutes {
+  import com.shevchyk.repository.PersonRepository
 
   // Generate rich test data with many rides and users
   private lazy val mockRides = TestDataGenerator.generateRides(count = 100)
@@ -63,7 +64,34 @@ object RideRoutes {
     "notes": "Terminal 2, Gate B3 - Allow extra time for security during peak hours"
   }"""
 
+  // Original routes without dependencies
   val routes = Routes(
+    Method.GET / "api" / "v2" / "health"                               -> handler { (_: Request) =>
+      ZIO.succeed(Response.text("Ride service is healthy"))
+    },
+    Method.GET / "api" / "rides"                                       -> handler { (_: Request) =>
+      ZIO.succeed(Response.json(mockRides))
+    },
+    // Universal flight endpoints - works for any airport
+    Method.GET / "api" / "flights" / string("airport") / "arrivals"    -> handler { (airport: String, _: Request) =>
+      ZIO.succeed(Response.json(mockArrivals))
+    },
+    Method.GET / "api" / "flights" / string("airport") / "departures"  -> handler { (airport: String, _: Request) =>
+      ZIO.succeed(Response.json(mockDepartures))
+    },
+    // Airport timing endpoint
+    Method.GET / "api" / "airport" / "timing"                          -> handler { (request: Request) =>
+      ZIO.succeed(Response.json(mockAirportTiming))
+    },
+    // Airport timing with flight number
+    Method.GET / "api" / "airport" / "timing" / string("flightNumber") -> handler {
+      (flightNumber: String, _: Request) =>
+        ZIO.succeed(Response.json(mockAirportTiming))
+    }
+  )
+
+  // Routes with PersonRepository environment for consistency
+  val routesWithPersonRepo: Routes[PersonRepository, Response] = Routes(
     Method.GET / "api" / "v2" / "health"                               -> handler { (_: Request) =>
       ZIO.succeed(Response.text("Ride service is healthy"))
     },

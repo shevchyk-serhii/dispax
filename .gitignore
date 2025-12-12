@@ -45,43 +45,43 @@ build/
 
 ### Scala ###
 .bsp/
-app/.bsp/
+web/.bsp/
 
 ### Flutter ###
 .dart_tool/
-app/build/
-app/.dart_tool/
-app/.flutter-plugins
-app/.flutter-plugins-dependencies
-app/.packages
-app/.pub-cache/
-app/.pub/
-app/pubspec.lock
+web/build/
+web/.dart_tool/
+web/.flutter-plugins
+web/.flutter-plugins-dependencies
+web/.packages
+web/.pub-cache/
+web/.pub/
+web/pubspec.lock
 
 ### Flutter iOS ###
-app/ios/Flutter/flutter_export_environment.sh
-app/ios/Flutter/Generated.xcconfig
-app/ios/Flutter/ephemeral/
+web/ios/Flutter/flutter_export_environment.sh
+web/ios/Flutter/Generated.xcconfig
+web/ios/Flutter/ephemeral/
 
 ### Flutter Android ###
-app/android/.gradle/
-app/android/build/
-app/android/app/build/
-app/android/local.properties
-app/android/key.properties
+web/android/.gradle/
+web/android/build/
+web/android/app/build/
+web/android/local.properties
+web/android/key.properties
 
 ### Flutter macOS ###
-app/macos/Flutter/ephemeral/
-app/macos/Flutter/GeneratedPluginRegistrant.swift
+web/macos/Flutter/ephemeral/
+web/macos/Flutter/GeneratedPluginRegistrant.swift
 
 ### Flutter Web ###
-app/web/.temp/
+web/web/.temp/
 
 ### Flutter Windows ###
-app/windows/flutter/
+web/windows/flutter/
 
 ### Flutter Linux ###
-app/linux/flutter/
+web/linux/flutter/
 
 ### Server logs ###
 server.log
