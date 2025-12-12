@@ -4,6 +4,7 @@ import '../../ride_management/models/ride.dart';
 import '../../../screens/ride_details_screen.dart';
 import '../../core/widgets/ride_info_row.dart';
 import 'ride_quick_actions.dart';
+import '../../../utils/ride_status_styles.dart';
 
 class TodayRideCard extends StatelessWidget {
   final Ride ride;
@@ -23,7 +24,7 @@ class TodayRideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _getStatusColor(ride.status);
+    final statusColor = RideStatusStyles.getStatusColor(ride.status);
     final isUpcoming = ride.pickupDateTime.isAfter(DateTime.now());
     final timeUntilRide = ride.pickupDateTime.difference(DateTime.now());
 
@@ -179,20 +180,6 @@ class TodayRideCard extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:
-        return Colors.orange;
-      case RideStatus.assigned:
-        return Colors.blue;
-      case RideStatus.inProgress:
-        return Colors.green;
-      case RideStatus.completed:
-        return Colors.grey;
-      case RideStatus.cancelled:
-        return Colors.red;
-    }
-  }
 
   String _getStatusText(RideStatus status) {
     switch (status) {

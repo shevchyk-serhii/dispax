@@ -5,6 +5,7 @@ addCommandAlias("fmt", "; scalafmt ; scalafmtSbt")
 addCommandAlias("fmtDart", "! dart format /Users/shevchyk/projects/private/oktopus/app/lib/ --set-exit-if-changed")
 addCommandAlias("fmtAll", "; fmt ; fmtDart")
 addCommandAlias("fmtWatch", "~fmtAll")
+addCommandAlias("cucumber", "testOnly *CucumberRunner")
 
 // Common dependencies used across modules
 lazy val commonDependencies = Seq(
@@ -40,11 +41,20 @@ lazy val configDependencies = Seq(
   "dev.zio" %% "zio-config-typesafe" % "4.0.2"
 )
 
+lazy val testDependencies = Seq(
+  "io.cucumber"        % "cucumber-core"          % "7.15.0" % Test,
+  "io.cucumber"       %% "cucumber-scala"         % "8.20.0" % Test,
+  "io.cucumber"        % "cucumber-junit"         % "7.15.0" % Test,
+  "org.junit.platform" % "junit-platform-console" % "1.10.1" % Test,
+  "junit"              % "junit"                  % "4.13.2" % Test,
+  "com.novocode"       % "junit-interface"        % "0.11"   % Test
+)
+
 // Core module - shared domain models and utilities
 lazy val core = (project in file("core"))
   .settings(
     name := "oktopus-core",
-    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies
+    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ dbDependencies
   )
 
 // Auth module - authentication and authorization
@@ -79,16 +89,28 @@ lazy val notification = (project in file("notification"))
     libraryDependencies ++= commonDependencies
   )
 
+// User module
+lazy val user = (project in file("user"))
+  .dependsOn(core, auth)
+  .settings(
+    name := "oktopus-user",
+    libraryDependencies ++= commonDependencies ++ httpDependencies
+  )
+
 // Main application - aggregates all modules
 lazy val root = (project in file("."))
-  .aggregate(core, auth, ride, driver, notification)
-  .dependsOn(core, auth, ride, driver, notification)
+  .aggregate(core, auth, ride, driver, notification, user)
+  .dependsOn(core, auth, ride, driver, notification, user)
   .settings(
     name                             := "oktopus",
     Compile / scalaSource            := baseDirectory.value / "api" / "src" / "main" / "scala",
-    Test / scalaSource               := baseDirectory.value / "api" / "src" / "test" / "scala",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies,
-    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
+    Test / scalaSource               := baseDirectory.value / "src" / "test" / "scala",
+    Test / resourceDirectory         := baseDirectory.value / "src" / "test" / "resources",
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies ++ testDependencies,
+    testFrameworks ++= Seq(
+      new TestFramework("zio.test.sbt.ZTestFramework"),
+      new TestFramework("com.novocode.junit.JUnitFramework")
+    ),
     Compile / mainClass              := Some("com.shevchyk.Application"),
     assembly / mainClass             := Some("com.shevchyk.Application"),
     assembly / assemblyJarName       := "oktopus-server.jar",

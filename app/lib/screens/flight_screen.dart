@@ -49,7 +49,7 @@ class _FlightScreenState extends State<FlightScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Munich Airport'),
+        title: const Text('Flight Information'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

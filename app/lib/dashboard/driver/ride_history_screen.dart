@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
+import '../../utils/ride_status_styles.dart';
 
 class RideHistoryScreen extends StatelessWidget {
   const RideHistoryScreen({super.key});
@@ -310,10 +311,10 @@ class RideHistoryScreen extends StatelessWidget {
                         vertical: AppDimensions.paddingXSmall,
                       ),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(ride.status).withAlpha(50),
+                        color: RideStatusStyles.getStatusBackgroundColor(ride.status),
                         borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                         border: Border.all(
-                          color: _getStatusColor(ride.status),
+                          color: RideStatusStyles.getStatusBorderColor(ride.status),
                           width: 1,
                         ),
                       ),
@@ -321,15 +322,15 @@ class RideHistoryScreen extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            _getStatusIcon(ride.status),
+                            RideStatusStyles.getStatusIcon(ride.status),
                             size: AppDimensions.iconSmall,
-                            color: _getStatusColor(ride.status),
+                            color: RideStatusStyles.getStatusTextColor(ride.status),
                           ),
                           const SizedBox(width: AppDimensions.paddingXSmall),
                           Text(
-                            ride.statusDisplayName,
+                            RideStatusStyles.getStatusDisplayName(ride.status),
                             style: AppStyles.labelSmall.copyWith(
-                              color: _getStatusColor(ride.status),
+                              color: RideStatusStyles.getStatusTextColor(ride.status),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -455,27 +456,6 @@ class RideHistoryScreen extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.completed:
-        return AppColors.success;
-      case RideStatus.cancelled:
-        return AppColors.error;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
-  IconData _getStatusIcon(RideStatus status) {
-    switch (status) {
-      case RideStatus.completed:
-        return Icons.check_circle;
-      case RideStatus.cancelled:
-        return Icons.cancel;
-      default:
-        return Icons.help;
-    }
-  }
 
   bool _isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&

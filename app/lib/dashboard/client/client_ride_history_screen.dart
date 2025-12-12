@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
+import '../../utils/ride_status_styles.dart';
 
 class ClientRideHistoryScreen extends StatelessWidget {
   const ClientRideHistoryScreen({super.key});
@@ -185,13 +186,13 @@ class ClientRideHistoryScreen extends StatelessWidget {
           icon: Icons.check_circle,
           value: completedCount.toString(),
           label: 'Completed',
-          color: AppColors.success,
+          color: AppColors.rideCompleted,
         ),
         _buildStatItem(
           icon: Icons.cancel,
           value: cancelledCount.toString(),
           label: 'Cancelled',
-          color: AppColors.error,
+          color: AppColors.rideCancelled,
         ),
         _buildStatItem(
           icon: Icons.euro,
@@ -304,37 +305,14 @@ class ClientRideHistoryScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
+                    RideStatusStyles.createStatusBadge(
+                      ride.status,
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppDimensions.paddingSmall,
                         vertical: AppDimensions.paddingXSmall,
                       ),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(ride.status).withAlpha(50),
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                        border: Border.all(
-                          color: _getStatusColor(ride.status),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _getStatusIcon(ride.status),
-                            size: AppDimensions.iconSmall,
-                            color: _getStatusColor(ride.status),
-                          ),
-                          const SizedBox(width: AppDimensions.paddingXSmall),
-                          Text(
-                            ride.statusDisplayName,
-                            style: AppStyles.labelSmall.copyWith(
-                              color: _getStatusColor(ride.status),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+                      fontSize: 12,
+                      iconSize: AppDimensions.iconSmall,
                     ),
                     Text(
                       AppDateUtils.formatTime(ride.pickupDateTime),
@@ -455,27 +433,6 @@ class ClientRideHistoryScreen extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.completed:
-        return AppColors.success;
-      case RideStatus.cancelled:
-        return AppColors.error;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
-  IconData _getStatusIcon(RideStatus status) {
-    switch (status) {
-      case RideStatus.completed:
-        return Icons.check_circle;
-      case RideStatus.cancelled:
-        return Icons.cancel;
-      default:
-        return Icons.help;
-    }
-  }
 
   bool _isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&

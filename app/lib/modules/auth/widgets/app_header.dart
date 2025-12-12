@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../constants/app_colors.dart';
+import '../../../constants/app_styles.dart';
+import '../../../constants/app_dimensions.dart';
 
 class AppHeader extends StatelessWidget {
   const AppHeader({super.key});
@@ -7,22 +10,40 @@ class AppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(Icons.local_taxi, size: 80, color: Theme.of(context).primaryColor),
-        const SizedBox(height: 32),
-        Text(
-          'Oktopus Taxi',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+        Container(
+          width: AppDimensions.iconHero,
+          height: AppDimensions.iconHero,
+          decoration: BoxDecoration(
+            color: AppColors.glassBackground,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusXXLarge),
+            border: Border.all(color: AppColors.glassBorder, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadowMedium,
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusXXLarge),
+            child: Image.asset(
+              'assets/oktopus_icon.png',
+              width: AppDimensions.iconLogo,
+              height: AppDimensions.iconLogo,
+              fit: BoxFit.contain,
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppDimensions.paddingLarge),
         Text(
-          'Ride Management System',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+          'Der Oktopus',
+          style: AppStyles.glassHeadlineLarge,
+        ),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        Text(
+          'Smart Mobility Solutions',
+          style: AppStyles.glassBodyLarge,
         ),
       ],
     );

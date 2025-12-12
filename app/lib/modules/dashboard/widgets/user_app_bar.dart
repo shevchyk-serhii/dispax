@@ -19,7 +19,18 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: Text(getAppBarTitle(user.role)),
+      title: Row(
+        children: [
+          Image.asset(
+            'assets/oktopus_icon.png',
+            height: 32,
+            width: 32,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(width: 12),
+          Text(getAppBarTitle(user.role)),
+        ],
+      ),
       actions: [
         PopupMenuButton<String>(
           onSelected: (value) async {

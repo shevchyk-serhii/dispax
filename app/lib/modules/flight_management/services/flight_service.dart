@@ -37,14 +37,14 @@ class FlightData {
 }
 
 class FlightService {
-  static String get baseUrl => '${ApiClient.privateBaseUrl}/flights/munich';
+  static String get baseUrl => '${ApiClient.privateBaseUrl}/flights';
 
-  Future<List<FlightData>> getMunichArrivals({int? hours}) async {
+  Future<List<FlightData>> getArrivals({String airport = 'default', int? hours}) async {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final begin = now - (hours ?? 1) * 3600;
 
     final response = await http.get(
-      Uri.parse('$baseUrl/arrivals?begin=$begin&end=$now'),
+      Uri.parse('$baseUrl/$airport/arrivals?begin=$begin&end=$now'),
     );
 
     if (response.statusCode == 200) {
@@ -55,12 +55,12 @@ class FlightService {
     }
   }
 
-  Future<List<FlightData>> getMunichDepartures({int? hours}) async {
+  Future<List<FlightData>> getDepartures({String airport = 'default', int? hours}) async {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final begin = now - (hours ?? 1) * 3600;
 
     final response = await http.get(
-      Uri.parse('$baseUrl/departures?begin=$begin&end=$now'),
+      Uri.parse('$baseUrl/$airport/departures?begin=$begin&end=$now'),
     );
 
     if (response.statusCode == 200) {
@@ -69,5 +69,14 @@ class FlightService {
     } else {
       throw Exception('Failed to load departures');
     }
+  }
+
+  // Backward compatibility methods
+  Future<List<FlightData>> getMunichArrivals({int? hours}) async {
+    return getArrivals(airport: 'munich', hours: hours);
+  }
+
+  Future<List<FlightData>> getMunichDepartures({int? hours}) async {
+    return getDepartures(airport: 'munich', hours: hours);
   }
 }

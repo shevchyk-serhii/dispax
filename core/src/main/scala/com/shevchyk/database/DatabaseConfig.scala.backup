@@ -1,0 +1,54 @@
+package com.shevchyk.database
+
+import zio.*
+import zio.config as ZConfig
+import zio.config.magnolia.*
+import zio.config.typesafe.*
+import doobie.*
+import doobie.hikari.*
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+import cats.arrow.FunctionK
+import zio.interop.catz.*
+
+case class DatabaseConfig(
+    driver: String,
+    url: String,
+    username: String,
+    password: String,
+    maxPoolSize: Int = 10,
+    connectionTimeout: Long = 30000,
+    idleTimeout: Long = 600000,
+    maxLifetime: Long = 1800000
+)
+
+object DatabaseConfig {
+  val config: ZConfig.Config[DatabaseConfig] = deriveConfig[DatabaseConfig].nested("database")
+  
+  val layer: ZLayer[Any, ZConfig.Config.Error, DatabaseConfig] = 
+    ZLayer.fromZIO {
+      read(config.from(ConfigProvider.fromResourcePath()))
+    }
+
+  val transactorLayer: ZLayer[DatabaseConfig, Throwable, Transactor[Task]] = 
+    ZLayer.scoped {
+      for {
+        config <- ZIO.service[DatabaseConfig]
+        xa <- ZIO.fromAutoCloseable {
+          ZIO.attempt {
+            HikariTransactor.newHikariTransactor[IO](
+              driverClassName = config.driver,
+              url = config.url,
+              user = config.username,
+              pass = config.password,
+              connectEC = scala.concurrent.ExecutionContext.global
+            ).allocated.unsafeRunSync()._1
+          }.map(_.mapK(zioToIoK))
+        }
+      } yield xa
+    }
+
+  private val zioToIoK: FunctionK[Task, IO] = new FunctionK[Task, IO] {
+    def apply[A](fa: Task[A]): IO[A] = fa.to(IO)
+  }
+}

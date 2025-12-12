@@ -12,7 +12,8 @@ final case class Location(
     latitude: Double,
     longitude: Double,
     address: String
-) derives JsonCodec
+) derives JsonCodec:
+  def display: String = address
 
 object Location:
   def apply(address: String): Location = Location(0.0, 0.0, address)

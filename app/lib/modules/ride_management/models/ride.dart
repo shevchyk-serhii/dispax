@@ -212,18 +212,8 @@ class Ride {
   }
 
   String get statusDisplayName {
-    switch (status) {
-      case RideStatus.requested:
-        return 'Requested';
-      case RideStatus.assigned:
-        return 'Assigned';
-      case RideStatus.inProgress:
-        return 'In Progress';
-      case RideStatus.completed:
-        return 'Completed';
-      case RideStatus.cancelled:
-        return 'Cancelled';
-    }
+    // Use RideStatusStyles for consistency across the app
+    return status.displayName;
   }
 
   // Helper methods for flight display

@@ -27,7 +27,8 @@ class Person {
       name: json['name'],
       email: json['email'],
       role: PersonRole.values.firstWhere(
-        (e) => e.toString().split('.').last == json['role'],
+        (e) => e.toString().split('.').last.toLowerCase() == json['role'].toString().toLowerCase(),
+        orElse: () => PersonRole.client, // Default fallback
       ),
       companyId: json['companyId'],
       licenseNumber: json['licenseNumber'],

@@ -1,0 +1,163 @@
+package com.shevchyk.app.routes
+
+import com.shevchyk.TestDataGenerator
+import com.shevchyk.repository.PersonRepository
+import com.shevchyk.ride.repository.RideRepository
+import com.shevchyk.core.domain.*
+import com.shevchyk.ride.domain.*
+import zio.*
+import zio.http.*
+import zio.json.*
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
+object TestDataRoutes {
+
+  def routes: Routes[PersonRepository & RideRepository, Response] =
+    Routes(
+      // Seed database with test data
+      Method.POST / "api" / "test" / "seed" -> handler { 
+        for {
+          _ <- ZIO.logInfo("🌱 Seeding database with test data...")
+          personRepo <- ZIO.service[PersonRepository]
+          rideRepo <- ZIO.service[RideRepository]
+          
+          // Clear existing data
+          _ <- ZIO.logInfo("Clearing existing test data...")
+          
+          // Create test users
+          _ <- ZIO.logInfo("Creating test users...")
+          testUsers <- createTestUsers(personRepo)
+          
+          // Create test rides  
+          _ <- ZIO.logInfo("Creating test rides...")
+          testRides <- createTestRides(rideRepo, testUsers)
+          
+          response = Map(
+            "status" -> "success",
+            "message" -> "Test data seeded successfully",
+            "users_created" -> testUsers.length,
+            "rides_created" -> testRides.length
+          ).toJson
+          
+          _ <- ZIO.logInfo(s"✅ Test data seeded: ${testUsers.length} users, ${testRides.length} rides")
+        } yield Response.json(response)
+      },
+      
+      // Clear all test data
+      Method.DELETE / "api" / "test" / "clear" -> handler {
+        for {
+          _ <- ZIO.logInfo("🗑️ Clearing all test data...")
+          // Implementation would clear all data
+          response = Map(
+            "status" -> "success", 
+            "message" -> "Test data cleared successfully"
+          ).toJson
+        } yield Response.json(response)
+      },
+      
+      // Get test data status
+      Method.GET / "api" / "test" / "status" -> handler {
+        for {
+          personRepo <- ZIO.service[PersonRepository]
+          rideRepo <- ZIO.service[RideRepository]
+          
+          users <- personRepo.findAll()
+          rides <- rideRepo.findAll()
+          
+          response = Map(
+            "users_count" -> users.length,
+            "rides_count" -> rides.length,
+            "last_seeded" -> LocalDateTime.now().toString
+          ).toJson
+        } yield Response.json(response)
+      }
+    )
+
+  private def createTestUsers(personRepo: PersonRepository): Task[List[Person]] = {
+    val testUsers = List(
+      // Clients
+      Person(None, "Anna Mueller", "anna.mueller@example.com", "client", Some(1), Some("+49301234567"), None),
+      Person(None, "Peter Schmidt", "peter.schmidt@example.com", "client", Some(1), Some("+49301234568"), None),
+      Person(None, "Maria Wagner", "maria.wagner@example.com", "client", Some(1), Some("+49301234569"), None),
+      Person(None, "Klaus Weber", "klaus.weber@example.com", "client", Some(1), Some("+49301234570"), None),
+      Person(None, "Katharina Fischer", "katharina.fischer@example.com", "client", Some(1), Some("+49301234571"), None),
+      
+      // Drivers  
+      Person(None, "Hans Driver", "hans.driver@oktopus.de", "driver", Some(1), Some("+49171234567"), Some("DE123456789")),
+      Person(None, "Fritz Taxi", "fritz.taxi@oktopus.de", "driver", Some(1), Some("+49171234568"), Some("DE123456790")),
+      Person(None, "Otto Fahrer", "otto.fahrer@oktopus.de", "driver", Some(1), Some("+49171234569"), Some("DE123456791")),
+      Person(None, "Wilhelm Chauffeur", "wilhelm.chauffeur@oktopus.de", "driver", Some(1), Some("+49171234570"), Some("DE123456792")),
+      
+      // Dispatchers
+      Person(None, "Ingrid Dispatcher", "ingrid.dispatcher@oktopus.de", "dispatcher", Some(1), Some("+49301234567"), None),
+      Person(None, "Wolfgang Coordinator", "wolfgang.coordinator@oktopus.de", "dispatcher", Some(1), Some("+49301234568"), None),
+      
+      // Secretaries
+      Person(None, "Greta Secretary", "greta.secretary@oktopus.de", "secretary", Some(1), Some("+49301234580"), None),
+      Person(None, "Helga Assistant", "helga.assistant@oktopus.de", "secretary", Some(1), Some("+49301234581"), None)
+    )
+    
+    ZIO.foreach(testUsers)(personRepo.create)
+  }
+
+  private def createTestRides(rideRepo: RideRepository, users: List[Person]): Task[List[Ride]] = {
+    val clients = users.filter(_.role == "client")
+    val drivers = users.filter(_.role == "driver")
+    val secretaries = users.filter(_.role == "secretary")
+    
+    val locations = List(
+      Location(None, "Marienplatz, Munich", Some(48.1374), Some(11.5755)),
+      Location(None, "Munich Airport", Some(48.3538), Some(11.7861)),
+      Location(None, "Munich Central Station", Some(48.1405), Some(11.5563)),
+      Location(None, "BMW Welt", Some(48.1775), Some(11.5560)),
+      Location(None, "English Garden", Some(48.1640), Some(11.6040)),
+      Location(None, "Schwabing District", Some(48.1674), Some(11.5736)),
+      Location(None, "Berlin Airport", Some(52.3667), Some(13.5033)),
+      Location(None, "Hamburg Airport", Some(53.6304), Some(9.9882)),
+      Location(None, "Frankfurt Airport", Some(50.0379), Some(8.5622))
+    )
+    
+    val testRides = (1 to 25).toList.map { i =>
+      val client = clients(scala.util.Random.nextInt(clients.length))
+      val creator = if (scala.util.Random.nextBoolean()) client else secretaries.headOption.getOrElse(client)
+      val driver = if (scala.util.Random.nextBoolean()) Some(drivers(scala.util.Random.nextInt(drivers.length))) else None
+      val from = locations(scala.util.Random.nextInt(locations.length))
+      val to = locations(scala.util.Random.nextInt(locations.length))
+      
+      val pickupTime = LocalDateTime.now().plusDays(scala.util.Random.nextInt(14) - 7)
+      val isAirportTransfer = to.address.contains("Airport") || from.address.contains("Airport")
+      
+      val status = driver match {
+        case Some(_) => 
+          if (pickupTime.isBefore(LocalDateTime.now().minusHours(1))) RideStatus.Completed
+          else if (pickupTime.isBefore(LocalDateTime.now().plusHours(1))) RideStatus.InProgress  
+          else RideStatus.Assigned
+        case None => RideStatus.Requested
+      }
+      
+      val price = if (status == RideStatus.Completed) Some(25.0 + scala.util.Random.nextDouble() * 75.0) else None
+      
+      Ride(
+        id = None,
+        clientId = client.id.get,
+        creatorId = creator.id.get,
+        driverId = driver.map(_.id.get),
+        companyId = 1,
+        pickupDateTime = pickupTime,
+        pickupLocation = from,
+        destinationLocation = to,
+        status = status,
+        price = price,
+        isAirportTransfer = isAirportTransfer,
+        flightNumber = if (isAirportTransfer) Some(s"LH${scala.util.Random.nextInt(999) + 100}") else None,
+        isArrival = if (isAirportTransfer) Some(from.address.contains("Airport")) else None,
+        gate = if (isAirportTransfer) Some(s"A${scala.util.Random.nextInt(20) + 1}") else None,
+        terminal = if (isAirportTransfer) Some(s"Terminal ${scala.util.Random.nextInt(3) + 1}") else None,
+        flightStatus = if (isAirportTransfer) Some("On Time") else None
+      )
+    }
+    
+    ZIO.foreach(testRides)(rideRepo.create)
+  }
+}

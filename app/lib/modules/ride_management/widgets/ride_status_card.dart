@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../core/extensions.dart';
+import '../../../utils/ride_status_styles.dart';
 
 class RideStatusCard extends StatelessWidget {
   final Ride ride;
@@ -25,15 +26,15 @@ class RideStatusCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  _getStatusIcon(),
-                  color: _getStatusColor(),
+                  RideStatusStyles.getStatusIcon(ride.status),
+                  color: RideStatusStyles.getStatusColor(ride.status),
                   size: 24,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Status: ${ride.status.displayName}',
+                  'Status: ${RideStatusStyles.getStatusDisplayName(ride.status)}',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: _getStatusColor(),
+                    color: RideStatusStyles.getStatusColor(ride.status),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -69,35 +70,6 @@ class RideStatusCard extends StatelessWidget {
     );
   }
 
-  IconData _getStatusIcon() {
-    switch (ride.status) {
-      case RideStatus.requested:
-        return Icons.schedule;
-      case RideStatus.assigned:
-        return Icons.person_pin_circle;
-      case RideStatus.inProgress:
-        return Icons.directions_car;
-      case RideStatus.completed:
-        return Icons.check_circle;
-      case RideStatus.cancelled:
-        return Icons.cancel;
-    }
-  }
-
-  Color _getStatusColor() {
-    switch (ride.status) {
-      case RideStatus.requested:
-        return Colors.orange;
-      case RideStatus.assigned:
-        return Colors.blue;
-      case RideStatus.inProgress:
-        return Colors.green;
-      case RideStatus.completed:
-        return Colors.green[700]!;
-      case RideStatus.cancelled:
-        return Colors.red;
-    }
-  }
 
   String _getStatusDescription() {
     switch (ride.status) {

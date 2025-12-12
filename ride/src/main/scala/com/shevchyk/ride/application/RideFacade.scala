@@ -1,4 +1,4 @@
-package com.shevchyk.ride.application.service
+package com.shevchyk.ride.application
 
 import com.shevchyk.core.domain.*
 import com.shevchyk.ride.domain.*

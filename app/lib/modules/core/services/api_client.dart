@@ -45,13 +45,8 @@ class ApiClient {
         return 'http://10.0.2.2:8080/api';
       }
     } else if (Platform.isIOS) {
-      if (isPhysicalDevice) {
-        // Real iOS device - use network IP for home network deployment
-        return 'http://192.168.0.188:8080/api';
-      } else {
-        // iOS simulator - use localhost
-        return 'http://127.0.0.1:8080/api';
-      }
+      // Always use localhost for iOS Simulator during development
+      return 'http://127.0.0.1:8080/api';
     } else {
       return 'http://localhost:8080/api'; // Desktop/Web
     }
