@@ -5,10 +5,12 @@ import com.shevchyk.app.routes.UserRoutes
 import com.shevchyk.repository.PersonRepository
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.infrastructure.http.AuthRoutes
+import com.shevchyk.auth.repository.{TokenRepository, UserRepository}
+import com.shevchyk.auth.config.JwtConfig
+import com.shevchyk.auth.service.JwtService
 import zio.*
 import zio.http.*
 import zio.logging.backend.SLF4J
-import zio.json.*
 
 object Application extends ZIOAppDefault:
 
@@ -39,5 +41,9 @@ object Application extends ZIOAppDefault:
       .provide(
         Server.defaultWith(_.binding("0.0.0.0", 8080)),
         PersonRepository.layer,
+        UserRepository.layer,
+        TokenRepository.layer,
+        JwtConfig.development, // Use development config for now
+        JwtService.live,
         AuthService.live
       )

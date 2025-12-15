@@ -6,8 +6,9 @@ addCommandAlias("fmtDart", "! dart format /Users/shevchyk/projects/private/oktop
 addCommandAlias("fmtAll", "; fmt ; fmtDart")
 addCommandAlias("fmtWatch", "~fmtAll")
 addCommandAlias("cucumber", "testOnly *CucumberRunner")
+addCommandAlias("cucumberWithServer", "; testServer & ; cucumber ; Test / runMain com.shevchyk.TestApplication")
+addCommandAlias("testServer", "Test / runMain com.shevchyk.TestApplication")
 
-// Common dependencies used across modules
 lazy val commonDependencies = Seq(
   "dev.zio"       %% "zio"                % "2.1.9",
   "dev.zio"       %% "zio-logging-slf4j2" % "2.3.1",
@@ -41,6 +42,10 @@ lazy val configDependencies = Seq(
   "dev.zio" %% "zio-config-typesafe" % "4.0.2"
 )
 
+lazy val jwtDependencies = Seq(
+  "com.github.jwt-scala" %% "jwt-zio-json" % "10.0.1"
+)
+
 lazy val testDependencies = Seq(
   "io.cucumber"        % "cucumber-core"          % "7.15.0" % Test,
   "io.cucumber"       %% "cucumber-scala"         % "8.20.0" % Test,
@@ -50,22 +55,19 @@ lazy val testDependencies = Seq(
   "com.novocode"       % "junit-interface"        % "0.11"   % Test
 )
 
-// Core module - shared domain models and utilities
 lazy val core = (project in file("core"))
   .settings(
     name := "oktopus-core",
     libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ dbDependencies
   )
 
-// Auth module - authentication and authorization
 lazy val auth = (project in file("auth"))
   .dependsOn(core)
   .settings(
     name := "oktopus-auth",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jwtDependencies
   )
 
-// Ride management module
 lazy val ride = (project in file("ride"))
   .dependsOn(core)
   .settings(
@@ -73,7 +75,6 @@ lazy val ride = (project in file("ride"))
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
   )
 
-// Driver management module
 lazy val driver = (project in file("driver"))
   .dependsOn(core, ride)
   .settings(
@@ -81,7 +82,6 @@ lazy val driver = (project in file("driver"))
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies
   )
 
-// Notification module
 lazy val notification = (project in file("notification"))
   .dependsOn(core)
   .settings(
@@ -89,18 +89,9 @@ lazy val notification = (project in file("notification"))
     libraryDependencies ++= commonDependencies
   )
 
-// User module
-lazy val user = (project in file("user"))
-  .dependsOn(core, auth)
-  .settings(
-    name := "oktopus-user",
-    libraryDependencies ++= commonDependencies ++ httpDependencies
-  )
-
-// Main application - aggregates all modules
 lazy val root = (project in file("."))
-  .aggregate(core, auth, ride, driver, notification, user)
-  .dependsOn(core, auth, ride, driver, notification, user)
+  .aggregate(core, auth, ride, driver, notification)
+  .dependsOn(core, auth, ride, driver, notification)
   .settings(
     name                             := "oktopus",
     Compile / scalaSource            := baseDirectory.value / "api" / "src" / "main" / "scala",

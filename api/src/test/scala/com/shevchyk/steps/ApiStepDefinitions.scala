@@ -11,6 +11,54 @@ import java.time.Instant
 import com.shevchyk.core.domain.*
 import scala.jdk.CollectionConverters.*
 
+object ApiStepDefinitions {
+  private val runtime = Runtime.default
+  @volatile private var serverFiber: Option[Fiber[Throwable, Any]] = None
+  @volatile private var serverStarted = false
+
+  def startServerIfNeeded(): Unit = synchronized {
+    if (!serverStarted) {
+      println("🚀 Starting test server for Cucumber tests...")
+      
+      // Start the test server in a separate fiber
+      val serverApp = com.shevchyk.TestApplication.run.provide(ZIOAppArgs.empty).mapError(_.asInstanceOf[Throwable])
+      
+      serverFiber = Some(Unsafe.unsafe { implicit u =>
+        runtime.unsafe.fork(serverApp)
+      })
+      
+      // Wait a bit for server to start
+      Thread.sleep(3000)
+      serverStarted = true
+      
+      // Add shutdown hook
+      sys.addShutdownHook {
+        stopServer()
+      }
+      
+      println("✅ Test server started successfully")
+    }
+  }
+
+  def stopServer(): Unit = synchronized {
+    if (serverStarted) {
+      println("🛑 Shutting down test server...")
+      serverFiber.foreach { fiber =>
+        try {
+          Unsafe.unsafe { implicit u =>
+            runtime.unsafe.run(fiber.interrupt)
+          }
+        } catch {
+          case _: Exception => // Ignore shutdown errors
+        }
+      }
+      serverFiber = None
+      serverStarted = false
+      println("✅ Test server shut down")
+    }
+  }
+}
+
 class ApiStepDefinitions extends ScalaDsl with EN {
   
   println("🥒 ApiStepDefinitions loaded successfully!")
@@ -25,9 +73,15 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   // Mock API client for testing
   private val client = Client.default
 
+  // Server management
+  import ApiStepDefinitions._
+
+
   // Step definitions for common API operations
   Given("""^the API is running$""") { () =>
-    // Check if the real API is running by making a simple HTTP request
+    startServerIfNeeded()
+    
+    // Verify server is running
     import java.net.{HttpURLConnection, URL}
     import java.io.IOException
     
@@ -49,7 +103,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     } catch {
       case _: IOException =>
         throw new RuntimeException(
-          "❌ API is not running! Please start the server with 'sbt run' before running Cucumber tests"
+          "❌ Failed to connect to test server after startup attempt"
         )
     }
   }
