@@ -29,7 +29,7 @@ class RideActionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = _getAvailableActions();
-    
+
     if (actions.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -48,7 +48,7 @@ class RideActionsCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -63,7 +63,6 @@ class RideActionsCard extends StatelessWidget {
   List<Widget> _getAvailableActions() {
     final List<Widget> actions = [];
 
-    // Always available actions
     if (onViewOnMap != null) {
       actions.add(_buildActionButton(
         icon: Icons.map,
@@ -82,7 +81,6 @@ class RideActionsCard extends StatelessWidget {
       ));
     }
 
-    // Status-based actions
     switch (ride.status) {
       case RideStatus.requested:
         if (!isClientView && onAssignDriver != null) {
@@ -93,7 +91,7 @@ class RideActionsCard extends StatelessWidget {
             color: Colors.green,
           ));
         }
-        
+
         if (onEditRide != null) {
           actions.add(_buildActionButton(
             icon: Icons.edit,
@@ -102,7 +100,7 @@ class RideActionsCard extends StatelessWidget {
             color: Colors.orange,
           ));
         }
-        
+
         if (onCancelRide != null) {
           actions.add(_buildActionButton(
             icon: Icons.cancel,
@@ -123,7 +121,7 @@ class RideActionsCard extends StatelessWidget {
             isPrimary: true,
           ));
         }
-        
+
         if (onCancelRide != null) {
           actions.add(_buildActionButton(
             icon: Icons.cancel,
@@ -148,7 +146,7 @@ class RideActionsCard extends StatelessWidget {
 
       case RideStatus.completed:
       case RideStatus.cancelled:
-        // No additional actions for completed/cancelled rides
+
         break;
     }
 

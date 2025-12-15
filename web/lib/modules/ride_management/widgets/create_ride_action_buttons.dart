@@ -26,7 +26,7 @@ class CreateRideActionButtons extends StatelessWidget {
             isError: true,
           );
         } else if (state.status == RideStateStatus.loaded && !state.isLoading) {
-          // Ride was successfully created, check if we just added a new ride
+
           NavigationHelper.showSnackBar(
             context,
             'Ride created successfully!',
@@ -43,7 +43,7 @@ class CreateRideActionButtons extends StatelessWidget {
               height: AppDimensions.buttonHeightLarge,
               child: ElevatedButton.icon(
                 onPressed: state.isLoading ? null : onCreateRide,
-                icon: state.isLoading 
+                icon: state.isLoading
                   ? const SizedBox(
                       width: AppDimensions.iconSmall,
                       height: AppDimensions.iconSmall,

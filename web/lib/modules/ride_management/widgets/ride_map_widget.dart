@@ -55,8 +55,7 @@ class _RideMapWidgetState extends State<RideMapWidget> {
     double zoom = 12.0;
 
     if (widget.fromLocation != null) {
-      // Use fromLocation coordinates if available
-      // For now, use geocoding service
+
       _updateCameraToLocations();
     }
 
@@ -70,7 +69,6 @@ class _RideMapWidgetState extends State<RideMapWidget> {
   void _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
 
-    // Create annotation managers
     _circleAnnotationManager = await mapboxMap.annotations
         .createCircleAnnotationManager();
     _polylineAnnotationManager = await mapboxMap.annotations
@@ -87,7 +85,6 @@ class _RideMapWidgetState extends State<RideMapWidget> {
   Future<void> _updateCameraToLocations() async {
     if (widget.fromLocation == null && widget.toLocation == null) return;
 
-    // Get coordinates for locations
     List<double>? fromCoords;
     List<double>? toCoords;
 
@@ -102,7 +99,7 @@ class _RideMapWidgetState extends State<RideMapWidget> {
     }
 
     if (fromCoords != null && toCoords != null) {
-      // Calculate center point and appropriate zoom
+
       double centerLat = (fromCoords[0] + toCoords[0]) / 2;
       double centerLng = (fromCoords[1] + toCoords[1]) / 2;
 
@@ -135,7 +132,6 @@ class _RideMapWidgetState extends State<RideMapWidget> {
 
     List<CircleAnnotationOptions> annotations = [];
 
-    // Add pickup location marker (green)
     if (widget.fromLocation != null) {
       final coords = await MapboxService.geocodeAddress(
         widget.fromLocation!.address,
@@ -151,7 +147,6 @@ class _RideMapWidgetState extends State<RideMapWidget> {
       }
     }
 
-    // Add destination marker (red)
     if (widget.toLocation != null) {
       final coords = await MapboxService.geocodeAddress(
         widget.toLocation!.address,

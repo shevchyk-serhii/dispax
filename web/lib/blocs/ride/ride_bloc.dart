@@ -103,7 +103,6 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     RideCreateRequested event,
     Emitter<RideState> emit,
   ) async {
-    // Set loading state with current rides still visible
     emit(state.copyWith(
       status: RideStateStatus.loading,
       errorMessage: null,
@@ -111,10 +110,9 @@ class RideBloc extends Bloc<RideEvent, RideState> {
 
     try {
       final createdRide = await privateRideService.createRide(event.ride);
-      
-      // Add the new ride to the existing list
+
       final updatedRides = List<Ride>.from(state.rides)..add(createdRide);
-      
+
       emit(RideState.loaded(updatedRides));
     } catch (e) {
       emit(state.copyWith(
@@ -128,7 +126,6 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     RideStatusUpdateRequested event,
     Emitter<RideState> emit,
   ) async {
-    // Set loading state
     emit(state.copyWith(
       status: RideStateStatus.loading,
       errorMessage: null,
@@ -136,16 +133,15 @@ class RideBloc extends Bloc<RideEvent, RideState> {
 
     try {
       final success = await privateRideService.updateRideStatus(event.rideId, event.status);
-      
+
       if (success) {
-        // Update the ride status in the existing list
         final updatedRides = state.rides.map((ride) {
           if (ride.id == event.rideId) {
             return ride.copyWith(status: event.status);
           }
           return ride;
         }).toList();
-        
+
         emit(RideState.loaded(updatedRides));
       } else {
         emit(state.copyWith(

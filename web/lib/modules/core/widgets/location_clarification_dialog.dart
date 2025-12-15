@@ -21,7 +21,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _instructionsController = TextEditingController();
   final LocationClarificationService _service = LocationClarificationService.instance;
-  
+
   bool _isLoading = false;
   String? _errorMessage;
   String _selectedQuickLocation = '';
@@ -46,10 +46,10 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
   }
 
   Future<void> _updateLocation() async {
-    final location = _selectedQuickLocation.isNotEmpty 
-        ? _selectedQuickLocation 
+    final location = _selectedQuickLocation.isNotEmpty
+        ? _selectedQuickLocation
         : _locationController.text.trim();
-    
+
     if (location.isEmpty) {
       setState(() {
         _errorMessage = 'Please specify your location';
@@ -66,8 +66,8 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
       final success = await _service.updateClientLocation(
         rideId: widget.ride.id.toString(),
         newLocation: location,
-        additionalInstructions: _instructionsController.text.trim().isNotEmpty 
-            ? _instructionsController.text.trim() 
+        additionalInstructions: _instructionsController.text.trim().isNotEmpty
+            ? _instructionsController.text.trim()
             : null,
       );
 
@@ -122,10 +122,9 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
                 color: AppColors.textSecondary,
               ),
             ),
-            
+
             const SizedBox(height: AppDimensions.paddingLarge),
-            
-            // Быстрый выбор местоположения
+
             Text(
               'Quick select:',
               style: AppStyles.labelMedium.copyWith(
@@ -133,18 +132,17 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
                 fontWeight: FontWeight.w600,
               ),
             ),
-            
+
             const SizedBox(height: AppDimensions.paddingSmall),
-            
+
             Wrap(
               spacing: AppDimensions.paddingSmall,
               runSpacing: AppDimensions.paddingSmall,
               children: _quickLocations.map((location) => _buildQuickLocationChip(location)).toList(),
             ),
-            
+
             const SizedBox(height: AppDimensions.paddingLarge),
-            
-            // Или ввод вручную
+
             Text(
               'Or specify exactly:',
               style: AppStyles.labelMedium.copyWith(
@@ -152,9 +150,9 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
                 fontWeight: FontWeight.w600,
               ),
             ),
-            
+
             const SizedBox(height: AppDimensions.paddingSmall),
-            
+
             TextField(
               controller: _locationController,
               decoration: InputDecoration(
@@ -166,10 +164,9 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
               ),
               maxLines: 2,
             ),
-            
+
             const SizedBox(height: AppDimensions.paddingLarge),
-            
-            // Дополнительные инструкции
+
             Text(
               'Additional instructions (optional):',
               style: AppStyles.labelMedium.copyWith(
@@ -177,9 +174,9 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
                 fontWeight: FontWeight.w600,
               ),
             ),
-            
+
             const SizedBox(height: AppDimensions.paddingSmall),
-            
+
             TextField(
               controller: _instructionsController,
               decoration: InputDecoration(
@@ -191,7 +188,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
               ),
               maxLines: 3,
             ),
-            
+
             if (_errorMessage != null) ...[
               const SizedBox(height: AppDimensions.paddingMedium),
               Container(
@@ -256,7 +253,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
 
   Widget _buildQuickLocationChip(String location) {
     final isSelected = _selectedQuickLocation == location;
-    
+
     return FilterChip(
       label: Text(
         location,
@@ -271,7 +268,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
           if (selected) {
             _selectedQuickLocation = location;
             if (location != 'Other location') {
-              _locationController.clear(); // Clear markers
+              _locationController.clear();
             }
           } else {
             _selectedQuickLocation = '';
@@ -282,15 +279,15 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
       checkmarkColor: AppColors.textOnPrimary,
       backgroundColor: AppColors.surface,
       side: BorderSide(
-        color: isSelected 
-            ? AppColors.primary 
+        color: isSelected
+            ? AppColors.primary
             : AppColors.textSecondary.withAlpha(100),
       ),
     );
   }
 }
 
-/// Показывает диалог уточнения местоположения
+/
 Future<bool?> showLocationClarificationDialog({
   required BuildContext context,
   required Ride ride,

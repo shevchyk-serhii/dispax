@@ -80,7 +80,7 @@ class RideListScreen extends StatelessWidget {
   }
 
   Widget buildBody(BuildContext context, RideState rideState) {
-    // Load rides on first build if not loaded yet
+
     if (rideState.status == RideStateStatus.initial) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => loadRidesIfAuthenticated(context),

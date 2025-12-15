@@ -53,13 +53,11 @@ class LoginScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       const SizedBox(height: AppDimensions.paddingXXLarge + AppDimensions.paddingMedium),
-                      
-                      // App Header
+
                       const AppHeader(),
-                      
+
                       const SizedBox(height: AppDimensions.paddingXXLarge + AppDimensions.paddingMedium),
-                      
-                      // Login Card
+
                       LoginCard(
                         formKey: formKey,
                         emailController: emailController,
@@ -68,10 +66,9 @@ class LoginScreen extends StatelessWidget {
                         onSubmit: () => _login(context),
                         onErrorDismiss: () => AuthHelper.clearError(context),
                       ),
-                      
+
                       const SizedBox(height: AppDimensions.paddingLarge),
-                      
-                      // Test Credentials Section
+
                       TestCredentialsSection(
                         onCredentialTap: (email, password) {
                           emailController.text = email;
@@ -79,7 +76,7 @@ class LoginScreen extends StatelessWidget {
                         },
                         onQuickLogin: (email) => AuthHelper.quickLogin(context, email),
                       ),
-                      
+
                       const SizedBox(height: AppDimensions.paddingXLarge),
                     ],
                   ),

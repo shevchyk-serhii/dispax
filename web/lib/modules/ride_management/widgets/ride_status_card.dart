@@ -70,17 +70,16 @@ class RideStatusCard extends StatelessWidget {
     );
   }
 
-
   String _getStatusDescription() {
     switch (ride.status) {
       case RideStatus.requested:
         return 'Waiting for driver assignment';
       case RideStatus.assigned:
-        return isClientView 
+        return isClientView
             ? 'Driver has been assigned and is on the way'
             : 'You have been assigned to this ride';
       case RideStatus.inProgress:
-        return isClientView 
+        return isClientView
             ? 'Your ride is currently in progress'
             : 'Ride in progress - take care of your passenger';
       case RideStatus.completed:

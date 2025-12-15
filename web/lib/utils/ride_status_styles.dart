@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import '../modules/ride_management/models/ride.dart';
 import '../constants/app_colors.dart';
 
-/// Unified ride status styling system
-/// Provides consistent colors, icons, and display text across the app
+/
+/
 class RideStatusStyles {
   RideStatusStyles._();
 
-  /// Get the main status color (for icons in some contexts)
+  /
   static Color getStatusColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -23,7 +23,7 @@ class RideStatusStyles {
     }
   }
 
-  /// Get background color for status containers
+  /
   static Color getStatusBackgroundColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -39,7 +39,7 @@ class RideStatusStyles {
     }
   }
 
-  /// Get border color for status containers
+  /
   static Color getStatusBorderColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -55,7 +55,7 @@ class RideStatusStyles {
     }
   }
 
-  /// Get text color for status containers (high contrast)
+  /
   static Color getStatusTextColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -71,23 +71,23 @@ class RideStatusStyles {
     }
   }
 
-  /// Get appropriate icon for each status
+  /
   static IconData getStatusIcon(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
-        return Icons.access_time; // clock icon
+        return Icons.access_time;
       case RideStatus.assigned:
-        return Icons.person_pin; // person with location
+        return Icons.person_pin;
       case RideStatus.inProgress:
-        return Icons.local_taxi; // taxi icon instead of generic car
+        return Icons.local_taxi;
       case RideStatus.completed:
-        return Icons.check_circle_outline; // outlined check for better visibility
+        return Icons.check_circle_outline;
       case RideStatus.cancelled:
-        return Icons.highlight_off; // X icon instead of generic cancel
+        return Icons.highlight_off;
     }
   }
 
-  /// Get status display name
+  /
   static String getStatusDisplayName(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -103,7 +103,7 @@ class RideStatusStyles {
     }
   }
 
-  /// Create a consistent status badge widget
+  /
   static Widget createStatusBadge(RideStatus status, {
     double? fontSize,
     double? iconSize,

@@ -7,7 +7,7 @@ import '../../modules/core/date_utils.dart';
 import '../../screens/flight_screen.dart';
 import '../../screens/ride_details_screen.dart';
 import 'dart:io';
-// import '../../screens/client_map_screen.dart'; // Disabled for Android compatibility
+
 import '../../screens/simple_map_screen.dart';
 import '../../screens/android_map_screen.dart';
 import '../../theme/app_theme.dart';
@@ -89,7 +89,7 @@ class MyRidesTab extends StatelessWidget {
   }
 
   void _onAirportEntryTimeReached(BuildContext context, Ride ride) {
-    // Show notification to client that driver should depart
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -120,7 +120,7 @@ class MyRidesTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) {
-        // Load rides on first build if not loaded yet
+
         if (rideState.status == RideStateStatus.initial) {
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => loadRides(context),
@@ -139,9 +139,8 @@ class MyRidesTab extends StatelessWidget {
           );
         }
 
-        // Filter to show only active rides (not completed or cancelled)
-        final activeRides = rideState.rides.where((ride) => 
-          ride.status != RideStatus.completed && 
+        final activeRides = rideState.rides.where((ride) =>
+          ride.status != RideStatus.completed &&
           ride.status != RideStatus.cancelled
         ).toList();
 
@@ -155,19 +154,19 @@ class MyRidesTab extends StatelessWidget {
         return RefreshIndicator(
           onRefresh: () async => loadRides(context),
           child: ListView.builder(
-            itemCount: activeRides.length + 1, // +1 for airport timer section
+            itemCount: activeRides.length + 1,
             itemBuilder: (context, index) {
-              // Airport timer section at the top
+
               if (index == 0) {
                 final airportRides = activeRides
-                    .where((ride) => ride.isAirportTransfer && 
+                    .where((ride) => ride.isAirportTransfer &&
                            (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress))
                     .toList();
-                    
+
                 if (airportRides.isEmpty) {
                   return const SizedBox.shrink();
                 }
-                
+
                 return Column(
                   children: airportRides.map((ride) => AirportEntryTimer(
                     ride: ride,
@@ -175,8 +174,7 @@ class MyRidesTab extends StatelessWidget {
                   )).toList(),
                 );
               }
-              
-              // Adjust index for actual rides
+
               final rideIndex = index - 1;
               final ride = activeRides[rideIndex];
               return Card(
@@ -343,7 +341,6 @@ class MyRidesTab extends StatelessWidget {
     }
   }
 }
-
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});

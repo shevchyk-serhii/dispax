@@ -25,8 +25,8 @@ class ErrorMessageCard extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            Icons.error_outline, 
-            color: AppColors.error, 
+            Icons.error_outline,
+            color: AppColors.error,
             size: AppDimensions.iconMedium,
           ),
           const SizedBox(width: AppDimensions.paddingMedium),
@@ -39,8 +39,8 @@ class ErrorMessageCard extends StatelessWidget {
           if (onDismiss != null)
             IconButton(
               icon: Icon(
-                Icons.close, 
-                color: AppColors.error, 
+                Icons.close,
+                color: AppColors.error,
                 size: AppDimensions.iconSmall,
               ),
               onPressed: onDismiss,

@@ -169,8 +169,7 @@ class CalendarScheduleScreen extends StatelessWidget {
         return DayViewWidget(
           selectedDay: selectedDay,
           onRideSelected: (ride) {
-            // Navigate to ride details
-            // NavigationHelper.push(context, RideDetailScreen(ride: ride));
+
           },
         );
     }

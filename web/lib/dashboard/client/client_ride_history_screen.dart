@@ -22,10 +22,10 @@ class ClientRideHistoryScreen extends StatelessWidget {
   }
 
   List<Ride> getClientCompletedRides(List<Ride> rides, String? clientId) {
-    return rides.where((ride) => 
-      ride.clientId.toString() == clientId && 
+    return rides.where((ride) =>
+      ride.clientId.toString() == clientId &&
       (ride.status == RideStatus.completed || ride.status == RideStatus.cancelled)
-    ).toList()..sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime)); // Most recent first
+    ).toList()..sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
   }
 
   @override
@@ -35,8 +35,7 @@ class ClientRideHistoryScreen extends StatelessWidget {
       child: BlocBuilder<RideBloc, RideState>(
         builder: (context, rideState) {
           final authState = context.read<AuthBloc>().state;
-          
-          // Load rides on first build if not loaded yet
+
           if (rideState.status == RideStateStatus.initial) {
             WidgetsBinding.instance.addPostFrameCallback(
               (_) => loadRides(context),
@@ -55,7 +54,7 @@ class ClientRideHistoryScreen extends StatelessWidget {
             );
           }
 
-          final completedRides = authState.user != null 
+          final completedRides = authState.user != null
             ? getClientCompletedRides(rideState.rides, authState.user!.id.toString())
             : <Ride>[];
 
@@ -107,11 +106,11 @@ class ClientRideHistoryScreen extends StatelessWidget {
   Widget _buildRideHistory(List<Ride> rides) {
     return RefreshIndicator(
       onRefresh: () async {
-        // Refresh will be handled by the bloc listener
+
       },
       child: CustomScrollView(
         slivers: [
-          // Header with title and stats
+
           SliverToBoxAdapter(
             child: Container(
               margin: const EdgeInsets.all(AppDimensions.paddingLarge),
@@ -143,14 +142,13 @@ class ClientRideHistoryScreen extends StatelessWidget {
             ),
           ),
 
-          // Ride list grouped by date
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final ride = rides[index];
-                final showDateHeader = index == 0 || 
+                final showDateHeader = index == 0 ||
                   !_isSameDay(rides[index - 1].pickupDateTime, ride.pickupDateTime);
-                
+
                 return Column(
                   children: [
                     if (showDateHeader) _buildDateHeader(ride.pickupDateTime),
@@ -162,7 +160,6 @@ class ClientRideHistoryScreen extends StatelessWidget {
             ),
           ),
 
-          // Bottom padding
           const SliverToBoxAdapter(
             child: SizedBox(height: AppDimensions.paddingXLarge),
           ),
@@ -301,7 +298,7 @@ class ClientRideHistoryScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with status and time
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -326,7 +323,6 @@ class ClientRideHistoryScreen extends StatelessWidget {
 
                 const SizedBox(height: AppDimensions.paddingMedium),
 
-                // Route information
                 Row(
                   children: [
                     Icon(
@@ -350,7 +346,6 @@ class ClientRideHistoryScreen extends StatelessWidget {
 
                 const SizedBox(height: AppDimensions.paddingSmall),
 
-                // Driver and price
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -391,7 +386,6 @@ class ClientRideHistoryScreen extends StatelessWidget {
                   ],
                 ),
 
-                // Flight info for airport transfers
                 if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) ...[
                   const SizedBox(height: AppDimensions.paddingSmall),
                   Container(
@@ -432,7 +426,6 @@ class ClientRideHistoryScreen extends StatelessWidget {
       ),
     );
   }
-
 
   bool _isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&

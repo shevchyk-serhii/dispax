@@ -24,11 +24,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   MapboxMap? _mapboxMap;
   PointAnnotationManager? _pointAnnotationManager;
   CircleAnnotationManager? _circleAnnotationManager;
-  
+
   StreamSubscription<geo.Position>? _locationSubscription;
   geo.Position? _currentPosition;
   Ride? _activeRide;
-  
+
   final LocationService _locationService = LocationService.instance;
   Timer? _driverLocationTimer;
 
@@ -47,7 +47,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   Future<void> _initializeLocation() async {
-    // Get current location
+
     final position = await _locationService.getCurrentPosition();
     if (position != null) {
       setState(() {
@@ -55,7 +55,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       });
     }
 
-    // Start location tracking
     final started = await _locationService.startLocationTracking();
     if (started) {
       _locationSubscription = _locationService.positionStream.listen((geo.Position position) {
@@ -69,15 +68,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
-    
-    // Initialize annotation managers
+
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
-    
-    // Add markers
+
     await MapboxService.addDefaultImages(mapboxMap);
-    
-    // Set initial camera
+
     if (_currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
         latitude: _currentPosition!.latitude,
@@ -86,44 +82,40 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       );
       await mapboxMap.setCamera(cameraOptions);
     }
-    
+
     _updateMapMarkers();
     _startDriverLocationUpdates();
   }
 
   void _updateCurrentLocationMarker() {
     if (_mapboxMap == null || _currentPosition == null) return;
-    
+
     _circleAnnotationManager?.deleteAll();
-    
-    // Add markers
+
     final marker = MapboxService.createLocationMarker(
       latitude: _currentPosition!.latitude,
       longitude: _currentPosition!.longitude,
       color: 'blue',
       radius: 12.0,
     );
-    
+
     _circleAnnotationManager?.create(marker);
   }
 
   void _updateMapMarkers() {
     if (_mapboxMap == null || _circleAnnotationManager == null) return;
-    
-    // Clear markers
-    // If there is
+
     if (_activeRide != null) {
       final rideMarkers = MapboxService.createRideMarkers(
         from: _activeRide!.from,
         to: _activeRide!.to,
       );
-      
+
       for (final marker in rideMarkers) {
         _circleAnnotationManager?.create(marker);
       }
-      
-      // If there is
-      if (_activeRide!.driverLocation != null && 
+
+      if (_activeRide!.driverLocation != null &&
           _activeRide!.driverLocation!.latitude != null &&
           _activeRide!.driverLocation!.longitude != null) {
         final driverMarker = MapboxService.createDriverMarker(
@@ -133,36 +125,34 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         );
         _circleAnnotationManager?.create(driverMarker);
       }
-      
-      // Set initial camera
+
       final cameraOptions = MapboxService.getCameraForRoute(
         from: _activeRide!.from,
         to: _activeRide!.to,
         currentPosition: _currentPosition,
       );
-      
+
       _mapboxMap?.setCamera(cameraOptions);
     }
   }
 
   void _startDriverLocationUpdates() {
     _driverLocationTimer?.cancel();
-    
+
     if (_activeRide != null && MapboxService.isRideInProgress(_activeRide!)) {
       _driverLocationTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-        // In real app, this would send location to server
+
         _updateDriverLocation();
       });
     }
   }
 
   void _updateDriverLocation() {
-    // Заглушка для обновления местоположения водителя
-    // In real app, this would send location to server
+
     if (_activeRide != null) {
-      // Для демонстрации - немного сдвигаем позицию водителя
+
       setState(() {
-        // Обновляем маркеры на карте
+
         _updateMapMarkers();
       });
     }
@@ -173,14 +163,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     return Scaffold(
       body: BlocListener<RideBloc, RideState>(
         listener: (context, state) {
-          // Находим активную поездку клиента
+
           final authState = context.read<AuthBloc>().state;
           if (authState.isAuthenticated && authState.user != null) {
             final activeRide = state.rides.where((ride) =>
               ride.clientId == authState.user!.id &&
               MapboxService.isRideInProgress(ride)
             ).firstOrNull;
-            
+
             if (activeRide != _activeRide) {
               setState(() {
                 _activeRide = activeRide;
@@ -192,18 +182,16 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         },
         child: Stack(
           children: [
-            // Map
+
             MapWidget(
               key: const ValueKey('client_map'),
               onMapCreated: _onMapCreated,
             ),
-            
-            // Информационная панель сверху
+
             SafeArea(
               child: _buildInfoPanel(),
             ),
-            
-            // Control buttons
+
             Positioned(
               bottom: 100,
               right: 16,
@@ -234,7 +222,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               ),
             ],
           ),
-          
+
           if (_activeRide != null) ...[
             const SizedBox(height: AppDimensions.paddingMedium),
             _buildActiveRideInfo(),
@@ -252,7 +240,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   Widget _buildActiveRideInfo() {
     if (_activeRide == null) return const SizedBox.shrink();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -270,9 +258,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             style: AppStyles.labelSmall.copyWith(color: AppColors.textOnPrimary),
           ),
         ),
-        
+
         const SizedBox(height: AppDimensions.paddingMedium),
-        
+
         Row(
           children: [
             Icon(Icons.schedule, color: AppColors.textOnPrimary, size: AppDimensions.iconSmall),
@@ -283,9 +271,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             ),
           ],
         ),
-        
+
         const SizedBox(height: AppDimensions.paddingSmall),
-        
+
         Row(
           children: [
             Icon(Icons.route, color: AppColors.textOnPrimary, size: AppDimensions.iconSmall),
@@ -300,7 +288,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             ),
           ],
         ),
-        
+
         if (_activeRide!.driverName != null) ...[
           const SizedBox(height: AppDimensions.paddingSmall),
           Row(
@@ -328,7 +316,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           backgroundColor: AppColors.clientColor,
           child: const Icon(Icons.my_location, color: AppColors.textOnPrimary),
         ),
-        
+
         if (_activeRide != null) ...[
           const SizedBox(height: AppDimensions.paddingSmall),
           FloatingActionButton(

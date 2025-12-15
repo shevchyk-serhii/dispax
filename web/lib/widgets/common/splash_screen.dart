@@ -44,12 +44,12 @@ class SplashScreenContentState extends State<SplashScreenContent>
   @override
   void initState() {
     super.initState();
-    
+
     animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -57,7 +57,7 @@ class SplashScreenContentState extends State<SplashScreenContent>
       parent: animationController,
       curve: Curves.easeIn,
     ));
-    
+
     animationController.forward();
   }
 
@@ -108,7 +108,7 @@ class SplashScreenContentState extends State<SplashScreenContent>
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo/Icon
+
                       Container(
                         width: 120,
                         height: 120,
@@ -129,7 +129,6 @@ class SplashScreenContentState extends State<SplashScreenContent>
 
                       const SizedBox(height: 40),
 
-                      // App name
                       const Text(
                         'Oktopus Taxi',
                         style: TextStyle(
@@ -153,7 +152,6 @@ class SplashScreenContentState extends State<SplashScreenContent>
 
                       const SizedBox(height: 80),
 
-                      // Loading indicator
                       if (isLoading) ...[
                         const SizedBox(
                           width: 40,
@@ -166,7 +164,6 @@ class SplashScreenContentState extends State<SplashScreenContent>
                         const SizedBox(height: 24),
                       ],
 
-                      // Status text
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 32),
                         child: Text(
@@ -182,7 +179,6 @@ class SplashScreenContentState extends State<SplashScreenContent>
 
                       const SizedBox(height: 24),
 
-                      // Retry button for errors
                       if (showRetry)
                         ElevatedButton(
                           onPressed: () {
@@ -197,7 +193,6 @@ class SplashScreenContentState extends State<SplashScreenContent>
 
                       const SizedBox(height: 40),
 
-                      // Version info
                       const Text(
                         'MVP Version 1.0',
                         style: TextStyle(

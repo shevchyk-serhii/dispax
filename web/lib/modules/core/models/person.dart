@@ -28,13 +28,13 @@ class Person {
       email: json['email'],
       role: PersonRole.values.firstWhere(
         (e) => e.toString().split('.').last.toLowerCase() == json['role'].toString().toLowerCase(),
-        orElse: () => PersonRole.client, // Default fallback
+        orElse: () => PersonRole.client,
       ),
       companyId: json['companyId'],
       licenseNumber: json['licenseNumber'],
       phone: json['phone'],
-      vehicleInfo: json['vehicleInfo'] != null 
-          ? VehicleInfo.fromJson(json['vehicleInfo']) 
+      vehicleInfo: json['vehicleInfo'] != null
+          ? VehicleInfo.fromJson(json['vehicleInfo'])
           : null,
     );
   }

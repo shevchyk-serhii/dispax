@@ -51,9 +51,9 @@ class FlightInfoCard extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: AppDimensions.paddingMedium),
-          
+
           Container(
             padding: const EdgeInsets.all(AppDimensions.paddingMedium),
             decoration: BoxDecoration(
@@ -89,9 +89,9 @@ class FlightInfoCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: AppDimensions.paddingSmall),
-                
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

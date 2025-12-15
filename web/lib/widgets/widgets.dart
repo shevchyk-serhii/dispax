@@ -1,9 +1,7 @@
-// Modular widgets barrel export - imports from feature modules
 
-// Core widgets
+
 export '../modules/core/widgets/widgets.dart';
 
-// Feature-specific widgets
 export '../modules/auth/widgets/widgets.dart';
 export '../modules/dashboard/widgets/widgets.dart';
 export '../modules/ride_management/widgets/widgets.dart';

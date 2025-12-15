@@ -73,7 +73,6 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
           _isLoading = false;
         });
 
-        // Notify if time to depart
         if (timing?.shouldDepartNow == true) {
           widget.onEntryTimeReached?.call();
         }
@@ -197,17 +196,16 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
 
   Widget _buildTimingInfo() {
     final timing = _airportTiming!;
-    
+
     return Column(
       children: [
-        // Main timing information
+
         _buildMainTimingCard(timing),
-        
+
         const SizedBox(height: AppDimensions.paddingMedium),
-        
-        // Savings and details
+
         _buildSavingsInfo(timing),
-        
+
         if (timing.isFlightDelayed) ...[
           const SizedBox(height: AppDimensions.paddingMedium),
           _buildFlightDelayNotice(timing),
@@ -225,7 +223,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
       ),
       child: Column(
         children: [
-          // Time until departure
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -248,10 +246,9 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: AppDimensions.paddingMedium),
-          
-          // Optimal entry time
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -270,10 +267,9 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: AppDimensions.paddingSmall),
-          
-          // Travel time
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

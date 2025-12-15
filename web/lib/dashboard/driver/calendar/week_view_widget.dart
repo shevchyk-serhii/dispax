@@ -65,7 +65,7 @@ class WeekViewWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const SizedBox(width: 60), // Space for time column
+          const SizedBox(width: 60),
           ...weekDays.map(
             (day) => Expanded(
               child: GestureDetector(
@@ -120,7 +120,7 @@ class WeekViewWidget extends StatelessWidget {
   Widget buildWeekTimeline(List<DateTime> weekDays, List<Ride> rides) {
     return SingleChildScrollView(
       child: SizedBox(
-        height: 17 * 40.0, // 17 hours * 40 pixels per hour
+        height: 17 * 40.0,
         child: Row(
           children: [
             buildTimeColumn(),
@@ -138,7 +138,7 @@ class WeekViewWidget extends StatelessWidget {
       width: 60,
       child: Column(
         children: List.generate(17, (index) {
-          final hour = index + 6; // Start from 6 AM
+          final hour = index + 6;
           return Container(
             height: 40,
             alignment: Alignment.centerRight,
@@ -162,7 +162,7 @@ class WeekViewWidget extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Hour lines
+
           ...List.generate(
             17,
             (index) => Positioned(
@@ -172,7 +172,7 @@ class WeekViewWidget extends StatelessWidget {
               child: Container(height: 1, color: Colors.grey.shade100),
             ),
           ),
-          // Ride blocks
+
           ...dayRides.map((ride) => buildRideBlock(ride)),
         ],
       ),
@@ -182,7 +182,7 @@ class WeekViewWidget extends StatelessWidget {
   Widget buildRideBlock(Ride ride) {
     final startHour = ride.pickupDateTime.hour;
     final startMinute = ride.pickupDateTime.minute;
-    final duration = 1.5; // Estimated 1.5 hours per ride
+    final duration = 1.5;
 
     final top = ((startHour - 6) * 40.0) + (startMinute / 60 * 40.0);
     final height = duration * 40.0;

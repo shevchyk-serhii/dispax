@@ -5,11 +5,11 @@ import '../constants/app_constants.dart';
 class TestDataService {
   static const String baseUrl = AppConstants.baseUrl;
 
-  /// Seed the database with test data
+  /
   static Future<bool> seedTestData() async {
     try {
       print('🌱 Seeding database with test data...');
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/api/test/seed'),
         headers: {'Content-Type': 'application/json'},
@@ -32,7 +32,7 @@ class TestDataService {
     }
   }
 
-  /// Get test data status
+  /
   static Future<Map<String, dynamic>?> getTestDataStatus() async {
     try {
       final response = await http.get(
@@ -52,11 +52,11 @@ class TestDataService {
     }
   }
 
-  /// Clear all test data
+  /
   static Future<bool> clearTestData() async {
     try {
       print('🗑️ Clearing test data...');
-      
+
       final response = await http.delete(
         Uri.parse('$baseUrl/api/test/clear'),
         headers: {'Content-Type': 'application/json'},
@@ -75,7 +75,7 @@ class TestDataService {
     }
   }
 
-  /// Check if server is available
+  /
   static Future<bool> isServerAvailable() async {
     try {
       final response = await http.get(

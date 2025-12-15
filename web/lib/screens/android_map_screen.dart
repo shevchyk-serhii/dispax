@@ -11,8 +11,7 @@ class AndroidMapScreen extends StatefulWidget {
 
 class _AndroidMapScreenState extends State<AndroidMapScreen> {
   GoogleMapController? _controller;
-  
-  // Default location (Munich)
+
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(48.1351, 11.5820),
     zoom: 12,

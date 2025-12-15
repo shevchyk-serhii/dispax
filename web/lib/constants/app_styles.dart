@@ -5,7 +5,6 @@ import 'app_dimensions.dart';
 class AppStyles {
   AppStyles._();
 
-  // Text Styles
   static const TextStyle headlineLarge = TextStyle(
     fontSize: 32,
     fontWeight: FontWeight.bold,
@@ -79,7 +78,6 @@ class AppStyles {
     color: AppColors.textSecondary,
   );
 
-  // Glass Morphism Text Styles
   static TextStyle glassHeadlineLarge = headlineLarge.copyWith(
     color: AppColors.glassText,
   );
@@ -108,7 +106,6 @@ class AppStyles {
     color: AppColors.glassTextSecondary,
   );
 
-  // Button Styles
   static ButtonStyle primaryButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: AppColors.primary,
     foregroundColor: AppColors.textOnPrimary,
@@ -136,7 +133,6 @@ class AppStyles {
     ),
   );
 
-  // Card Styles
   static BoxDecoration primaryCardDecoration = BoxDecoration(
     color: AppColors.surface,
     borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -162,7 +158,6 @@ class AppStyles {
     ],
   );
 
-  // Input Decoration
   static InputDecoration textFieldDecoration({
     required String labelText,
     String? hintText,
@@ -200,7 +195,6 @@ class AppStyles {
     );
   }
 
-  // Gradient Decorations
   static BoxDecoration getGradientDecoration(List<Color> colors) {
     return BoxDecoration(
       gradient: LinearGradient(
@@ -232,7 +226,6 @@ class AppStyles {
     return getGradientDecoration(colors);
   }
 
-  // App Bar Style
   static AppBarTheme appBarTheme = const AppBarTheme(
     backgroundColor: AppColors.primary,
     foregroundColor: AppColors.textOnPrimary,

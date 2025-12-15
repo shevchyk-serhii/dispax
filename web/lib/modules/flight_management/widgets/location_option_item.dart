@@ -25,12 +25,12 @@ class LocationOptionItem extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(AppDimensions.paddingMedium),
           decoration: BoxDecoration(
-            color: isSelected 
+            color: isSelected
                 ? AppColors.clientColor.withAlpha(100)
                 : AppColors.surface.withAlpha(50),
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
             border: Border.all(
-              color: isSelected 
+              color: isSelected
                   ? AppColors.clientColor
                   : AppColors.textOnPrimary.withAlpha(50),
               width: isSelected ? 2 : 1,
@@ -40,8 +40,8 @@ class LocationOptionItem extends StatelessWidget {
             children: [
               Icon(
                 isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                color: isSelected 
-                    ? AppColors.clientColor 
+                color: isSelected
+                    ? AppColors.clientColor
                     : AppColors.textOnPrimary.withAlpha(128),
               ),
               const SizedBox(width: AppDimensions.paddingMedium),

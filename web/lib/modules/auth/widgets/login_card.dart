@@ -50,7 +50,7 @@ class LoginCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppDimensions.paddingXLarge + AppDimensions.paddingSmall),
-            
+
             LoginForm(
               onSubmit: onSubmit,
               formKey: formKey,
@@ -58,7 +58,7 @@ class LoginCard extends StatelessWidget {
               passwordController: passwordController,
               obscurePasswordNotifier: obscurePasswordNotifier,
             ),
-            
+
             BlocBuilder<AuthBloc, AuthState>(
               builder: (context, authState) {
                 if (authState.hasError) {

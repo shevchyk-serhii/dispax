@@ -35,8 +35,7 @@ class ProfileDialog extends StatelessWidget {
               if (user.licenseNumber != null)
                 buildProfileRow('License', user.licenseNumber!),
               if (user.phone != null) buildProfileRow('Phone', user.phone!),
-              
-              // Biometric settings
+
               if (authState.biometricAvailable) ...[
                 const Divider(),
                 const SizedBox(height: 8),
@@ -72,7 +71,7 @@ class ProfileDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  authState.biometricEnabled 
+                  authState.biometricEnabled
                     ? 'Быстрый вход с Face ID/Touch ID включен'
                     : 'Используйте биометрию для быстрого входа',
                   style: TextStyle(

@@ -18,7 +18,7 @@ class RideFlightCard extends StatelessWidget {
     }
 
     final flight = ride.flightInfo!;
-    
+
     return Card(
       elevation: 4,
       child: Padding(
@@ -43,25 +43,23 @@ class RideFlightCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            
-            // Flight Number
+
             _buildFlightInfoRow(
               context,
               icon: Icons.confirmation_number,
               label: 'Flight Number',
               value: flight.flightNumber,
             ),
-            
+
             const SizedBox(height: 12),
-            
-            // Flight Time
+
             _buildFlightInfoRow(
               context,
               icon: Icons.schedule,
               label: flight.isArrival ? 'Arrival Time' : 'Departure Time',
               value: DateFormat('HH:mm, MMM dd').format(flight.flightTime),
             ),
-            
+
             if (flight.terminal != null) ...[
               const SizedBox(height: 12),
               _buildFlightInfoRow(
@@ -71,7 +69,7 @@ class RideFlightCard extends StatelessWidget {
                 value: flight.terminal!,
               ),
             ],
-            
+
             if (flight.gate != null) ...[
               const SizedBox(height: 12),
               _buildFlightInfoRow(
@@ -81,10 +79,9 @@ class RideFlightCard extends StatelessWidget {
                 value: flight.gate!,
               ),
             ],
-            
+
             const SizedBox(height: 12),
-            
-            // Flight Status
+
             Row(
               children: [
                 Icon(Icons.info_outline, color: AppColors.primary, size: 20),
@@ -120,7 +117,7 @@ class RideFlightCard extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             if (flight.notes?.isNotEmpty == true) ...[
               const SizedBox(height: 12),
               const Divider(),

@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
 
 extension ContextExtensions on BuildContext {
-  // Theme shortcuts
+
   ThemeData get theme => Theme.of(this);
   TextTheme get textTheme => Theme.of(this).textTheme;
   ColorScheme get colorScheme => Theme.of(this).colorScheme;
 
-  // Media query shortcuts
   MediaQueryData get mediaQuery => MediaQuery.of(this);
   Size get screenSize => MediaQuery.of(this).size;
   double get screenWidth => MediaQuery.of(this).size.width;
   double get screenHeight => MediaQuery.of(this).size.height;
 
-  // Navigation shortcuts
   NavigatorState get navigator => Navigator.of(this);
   bool get canPop => Navigator.of(this).canPop();
 
-  // Scaffold messenger shortcut
   ScaffoldMessengerState get scaffoldMessenger => ScaffoldMessenger.of(this);
 }
 

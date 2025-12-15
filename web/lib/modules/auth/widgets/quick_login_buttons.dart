@@ -16,27 +16,27 @@ class QuickLoginButtons extends StatelessWidget {
       childAspectRatio: 2.2,
       children: [
         _buildQuickLoginButton(
-          'Driver', 
-          'john.driver@oktopus.com', 
-          Icons.drive_eta, 
+          'Driver',
+          'john.driver@oktopus.com',
+          Icons.drive_eta,
           Colors.blue
         ),
         _buildQuickLoginButton(
-          'Client', 
-          'anna.client@example.com', 
-          Icons.person, 
+          'Client',
+          'anna.client@example.com',
+          Icons.person,
           Colors.green
         ),
         _buildQuickLoginButton(
-          'Secretary', 
-          'maria.secretary@oktopus.com', 
-          Icons.business_center, 
+          'Secretary',
+          'maria.secretary@oktopus.com',
+          Icons.business_center,
           Colors.purple
         ),
         _buildQuickLoginButton(
-          'Dispatcher', 
-          'peter.dispatcher@oktopus.com', 
-          Icons.dashboard, 
+          'Dispatcher',
+          'peter.dispatcher@oktopus.com',
+          Icons.dashboard,
           Colors.orange
         ),
       ],
@@ -44,9 +44,9 @@ class QuickLoginButtons extends StatelessWidget {
   }
 
   Widget _buildQuickLoginButton(
-    String role, 
-    String email, 
-    IconData icon, 
+    String role,
+    String email,
+    IconData icon,
     MaterialColor color
   ) {
     return Container(

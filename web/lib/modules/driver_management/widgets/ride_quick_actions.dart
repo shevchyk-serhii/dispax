@@ -23,7 +23,7 @@ class RideQuickActions extends StatelessWidget {
       children: [
         IconButton(
           onPressed: onCallClient ?? () {
-            // TODO: Implement call client functionality
+
           },
           icon: const Icon(Icons.phone, size: 20),
           color: Colors.green,
@@ -53,7 +53,7 @@ class RideQuickActions extends StatelessWidget {
     if (ride.status == RideStatus.assigned) {
       return ElevatedButton.icon(
         onPressed: onStartRide ?? () {
-          // TODO: Implement start ride functionality
+
         },
         icon: const Icon(Icons.play_arrow, size: 14),
         label: const Text('Start', style: TextStyle(fontSize: 12)),
@@ -67,7 +67,7 @@ class RideQuickActions extends StatelessWidget {
     } else if (ride.status == RideStatus.inProgress) {
       return ElevatedButton.icon(
         onPressed: onCompleteRide ?? () {
-          // TODO: Implement complete ride functionality
+
         },
         icon: const Icon(Icons.check, size: 14),
         label: const Text('Done', style: TextStyle(fontSize: 12)),

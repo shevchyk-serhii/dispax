@@ -45,7 +45,7 @@ class MockRideService {
   Future<List<Ride>> getAllRides() async {
     await Future.delayed(
       const Duration(milliseconds: 500),
-    ); // Simulate network delay
+    );
     return List.from(mockRides);
   }
 
@@ -83,6 +83,6 @@ class MockRideService {
   }
 
   void dispose() {
-    // Nothing to dispose for mock service
+
   }
 }

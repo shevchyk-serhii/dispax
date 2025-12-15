@@ -22,13 +22,13 @@ class TestCredentialsSection extends StatelessWidget {
           style: AppStyles.glassTitleMedium,
         ),
         const SizedBox(height: AppDimensions.paddingMedium),
-        
+
         TestCredentialsCard(
           onCredentialTap: onCredentialTap,
         ),
-        
+
         const SizedBox(height: AppDimensions.paddingMedium),
-        
+
         QuickLoginButtons(
           onQuickLogin: onQuickLogin,
         ),

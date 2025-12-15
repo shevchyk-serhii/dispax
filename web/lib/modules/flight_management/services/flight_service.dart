@@ -71,7 +71,6 @@ class FlightService {
     }
   }
 
-  // Backward compatibility methods
   Future<List<FlightData>> getMunichArrivals({int? hours}) async {
     return getArrivals(airport: 'munich', hours: hours);
   }

@@ -25,13 +25,13 @@ class FlightConfirmationScreen extends StatefulWidget {
 class _FlightConfirmationScreenState extends State<FlightConfirmationScreen> {
   final ApiClient _apiClient = ApiClient();
   final LocationService _locationService = LocationService.instance;
-  
+
   bool _isLoading = false;
   String? _errorMessage;
   geo.Position? _currentPosition;
   String _selectedLocation = '';
   final TextEditingController _customLocationController = TextEditingController();
-  
+
   final List<String> _commonAirportLocations = [
     'Baggage Claim',
     'Arrivals Hall',
@@ -86,7 +86,6 @@ class _FlightConfirmationScreenState extends State<FlightConfirmationScreen> {
         finalLocation = _customLocationController.text.trim();
       }
 
-      // Send flight confirmation
       final response = await _apiClient.patch('/rides/${widget.ride.id}/flight-confirmation', {
         'arrived': true,
         'arrivalTime': DateTime.now().toIso8601String(),
@@ -96,14 +95,13 @@ class _FlightConfirmationScreenState extends State<FlightConfirmationScreen> {
       });
 
       if (response.statusCode == 200) {
-        // Update ride status
+
         if (context.mounted) {
           context.read<RideBloc>().add(RideStatusUpdateRequested(
             rideId: widget.ride.id,
             status: RideStatus.inProgress,
           ));
 
-          // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Your driver has been notified of your arrival'),
@@ -128,7 +126,7 @@ class _FlightConfirmationScreenState extends State<FlightConfirmationScreen> {
   }
 
   Future<void> _delayPickup() async {
-    // Show dialog for delay time selection
+
     final delay = await showDialog<int>(
       context: context,
       builder: (context) => const DelayPickupDialog(),
@@ -189,9 +187,9 @@ class _FlightConfirmationScreenState extends State<FlightConfirmationScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 FlightInfoCard(ride: widget.ride),
-                
+
                 const SizedBox(height: AppDimensions.paddingLarge),
-                
+
                 LocationSelectionCard(
                   selectedLocation: _selectedLocation,
                   customLocationController: _customLocationController,
@@ -202,14 +200,14 @@ class _FlightConfirmationScreenState extends State<FlightConfirmationScreen> {
                   },
                   locationOptions: _commonAirportLocations,
                 ),
-                
+
                 if (_errorMessage != null) ...[
                   const SizedBox(height: AppDimensions.paddingMedium),
                   ErrorMessageWidget(message: _errorMessage!),
                 ],
-                
+
                 const SizedBox(height: AppDimensions.paddingXLarge),
-                
+
                 FlightActionButtons(
                   isLoading: _isLoading,
                   onConfirmArrival: _confirmArrival,
@@ -222,9 +220,5 @@ class _FlightConfirmationScreenState extends State<FlightConfirmationScreen> {
       ),
     );
   }
-
-
-
-
 
 }

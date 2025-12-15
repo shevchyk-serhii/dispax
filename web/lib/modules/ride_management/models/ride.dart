@@ -11,7 +11,7 @@ enum RideStatus {
 
   const RideStatus(this.value);
   final String value;
-  
+
   String get displayName {
     switch (this) {
       case RideStatus.requested:
@@ -50,13 +50,13 @@ class Ride {
   final String? flightNumber;
   final DateTime? flightTime;
   final bool isAirportTransfer;
-  final bool isArrival; // true = прилет, false = отлет
+  final bool isArrival;
   final String? gate;
   final String? terminal;
-  final String? flightStatus; // "On Time", "Delayed", "Cancelled"
+  final String? flightStatus;
   final String? driverName;
-  final Location? driverLocation; // Current driver location
-  final double? price; // Ride price in euros
+  final Location? driverLocation;
+  final double? price;
 
   const Ride({
     required this.id,
@@ -103,8 +103,8 @@ class Ride {
       terminal: json['terminal'],
       flightStatus: json['flightStatus'],
       driverName: json['driverName'],
-      driverLocation: json['driverLocation'] != null 
-        ? Location.fromJson(json['driverLocation']) 
+      driverLocation: json['driverLocation'] != null
+        ? Location.fromJson(json['driverLocation'])
         : null,
       price: json['price']?.toDouble(),
     );
@@ -212,17 +212,15 @@ class Ride {
   }
 
   String get statusDisplayName {
-    // Use RideStatusStyles for consistency across the app
+
     return status.displayName;
   }
 
-  // Helper methods for flight display
   String get flightIcon {
     if (!isAirportTransfer) return '';
     return isArrival ? '✈️↓' : '✈️↑';
   }
 
-  // Material Design flight icons
   IconData? get flightIconData {
     if (!isAirportTransfer) return null;
     return isArrival ? Icons.flight_land : Icons.flight_takeoff;
@@ -249,10 +247,10 @@ class Ride {
 
   String get fullFlightInfo {
     if (!isAirportTransfer || flightNumber == null) return '';
-    
+
     List<String> parts = [];
     parts.add('$flightIcon $flightNumber');
-    
+
     if (gate != null && terminal != null) {
       parts.add('Gate $gate (Terminal $terminal)');
     } else if (gate != null) {
@@ -260,23 +258,21 @@ class Ride {
     } else if (terminal != null) {
       parts.add('Terminal $terminal');
     }
-    
+
     if (flightStatus != null) {
       parts.add('$flightStatusIcon $flightStatus');
     }
-    
+
     return parts.join(' • ');
   }
 
-  // Aliases for backward compatibility
   String get pickupLocation => from.address;
   String get dropoffLocation => to.address;
   DateTime get pickupTime => pickupDateTime;
   double? get estimatedPrice => price;
-  double? get estimatedDistance => null; // Will be calculated based on locations
-  int? get estimatedDuration => null; // Will be calculated based on distance
+  double? get estimatedDistance => null;
+  int? get estimatedDuration => null;
 
-  // Flight info as object
   FlightInfo? get flightInfo {
     if (!isAirportTransfer) return null;
     return FlightInfo(
@@ -289,7 +285,6 @@ class Ride {
     );
   }
 
-  // Mock objects for driver and client - will be replaced by proper service calls
   Person? get driver {
     if (driverId == null || driverName == null) return null;
     return Person(
@@ -318,7 +313,6 @@ class Ride {
   }
 }
 
-// Flight info model
 class FlightInfo {
   final String flightNumber;
   final DateTime flightTime;

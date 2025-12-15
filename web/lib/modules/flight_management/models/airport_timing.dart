@@ -1,34 +1,34 @@
 import 'package:equatable/equatable.dart';
 
 class AirportTiming extends Equatable {
-  /// Optimal airport entry time
+  /
   final DateTime optimalEntryTime;
-  
-  /// Latest reasonable entry time
+
+  /
   final DateTime latestEntryTime;
-  
-  /// Travel time from current location to airport
+
+  /
   final Duration travelTime;
-  
-  /// Recommended buffer time
+
+  /
   final Duration bufferTime;
-  
-  /// Parking cost with optimal entry
+
+  /
   final double optimalParkingCost;
-  
-  /// Parking cost with early entry
+
+  /
   final double earlyEntryParkingCost;
-  
-  /// Savings with optimal entry
+
+  /
   final double savings;
-  
-  /// Flight status (On Time, Delayed, etc.)
+
+  /
   final String flightStatus;
-  
-  /// Actual arrival time (if available)
+
+  /
   final DateTime? actualArrivalTime;
-  
-  /// Time until departure to airport
+
+  /
   final Duration timeToDepart;
 
   const AirportTiming({
@@ -54,7 +54,7 @@ class AirportTiming extends Equatable {
       earlyEntryParkingCost: (json['earlyEntryParkingCost'] as num).toDouble(),
       savings: (json['savings'] as num).toDouble(),
       flightStatus: json['flightStatus'],
-      actualArrivalTime: json['actualArrivalTime'] != null 
+      actualArrivalTime: json['actualArrivalTime'] != null
           ? DateTime.parse(json['actualArrivalTime'])
           : null,
       timeToDepart: Duration(minutes: json['timeToDepartMinutes']),
@@ -76,25 +76,25 @@ class AirportTiming extends Equatable {
     };
   }
 
-  /// Whether driver should depart now
+  /
   bool get shouldDepartNow => timeToDepart.inMinutes <= 0;
 
-  /// Whether timing is critical
+  /
   bool get isCritical => timeToDepart.inMinutes <= 15;
 
-  /// Whether flight is delayed
+  /
   bool get isFlightDelayed => flightStatus.toLowerCase().contains('delay');
 
-  /// Formatted savings string
+  /
   String get formattedSavings => '€${savings.toStringAsFixed(2)}';
 
-  /// Formatted time until departure
+  /
   String get formattedTimeToDepart {
     if (shouldDepartNow) return 'Depart now!';
-    
+
     final hours = timeToDepart.inHours;
     final minutes = timeToDepart.inMinutes % 60;
-    
+
     if (hours > 0) {
       return '${hours}h ${minutes}m';
     } else {
@@ -102,7 +102,7 @@ class AirportTiming extends Equatable {
     }
   }
 
-  /// Formatted optimal entry time
+  /
   String get formattedOptimalEntryTime {
     final hour = optimalEntryTime.hour.toString().padLeft(2, '0');
     final minute = optimalEntryTime.minute.toString().padLeft(2, '0');

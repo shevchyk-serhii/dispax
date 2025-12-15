@@ -13,11 +13,9 @@ class AppTheme {
         seedColor: AppColors.primary,
         brightness: Brightness.light,
       ),
-      
-      // App Bar Theme
+
       appBarTheme: AppStyles.appBarTheme,
-      
-      // Text Theme
+
       textTheme: const TextTheme(
         headlineLarge: AppStyles.headlineLarge,
         headlineMedium: AppStyles.headlineMedium,
@@ -32,8 +30,7 @@ class AppTheme {
         labelMedium: AppStyles.labelMedium,
         labelSmall: AppStyles.labelSmall,
       ),
-      
-      // Button Themes
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: AppStyles.primaryButtonStyle,
       ),
@@ -43,8 +40,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: AppStyles.textButtonStyle,
       ),
-      
-      // Card Theme
+
       cardTheme: CardThemeData(
         color: AppColors.surface,
         shadowColor: AppColors.shadowMedium,
@@ -54,8 +50,7 @@ class AppTheme {
         ),
         margin: const EdgeInsets.all(AppDimensions.paddingSmall),
       ),
-      
-      // Input Decoration Theme
+
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
@@ -68,21 +63,21 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
           borderSide: const BorderSide(
-            color: AppColors.primary, 
+            color: AppColors.primary,
             width: AppDimensions.inputFocusedBorderWidth,
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
           borderSide: const BorderSide(
-            color: AppColors.error, 
+            color: AppColors.error,
             width: AppDimensions.inputFocusedBorderWidth,
           ),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
           borderSide: const BorderSide(
-            color: AppColors.error, 
+            color: AppColors.error,
             width: AppDimensions.inputFocusedBorderWidth,
           ),
         ),
@@ -93,16 +88,14 @@ class AppTheme {
         labelStyle: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
         hintStyle: AppStyles.bodyMedium.copyWith(color: AppColors.textLight),
       ),
-      
-      // Divider Theme
+
       dividerTheme: const DividerThemeData(
         thickness: AppDimensions.dividerThickness,
         indent: AppDimensions.dividerIndent,
         endIndent: AppDimensions.dividerIndent,
         color: AppColors.textLight,
       ),
-      
-      // Bottom Navigation Theme
+
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.primary,
@@ -112,23 +105,20 @@ class AppTheme {
         selectedLabelStyle: AppStyles.labelMedium,
         unselectedLabelStyle: AppStyles.labelSmall,
       ),
-      
-      // Floating Action Button Theme
+
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.textOnPrimary,
         elevation: AppDimensions.cardElevationHigh,
         shape: CircleBorder(),
       ),
-      
-      // Progress Indicator Theme
+
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primary,
         linearTrackColor: AppColors.surfaceVariant,
         circularTrackColor: AppColors.surfaceVariant,
       ),
-      
-      // Switch Theme
+
       switchTheme: SwitchThemeData(
         thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
           if (states.contains(MaterialState.selected)) {
@@ -143,8 +133,7 @@ class AppTheme {
           return AppColors.surfaceVariant;
         }),
       ),
-      
-      // Checkbox Theme
+
       checkboxTheme: CheckboxThemeData(
         fillColor: MaterialStateProperty.resolveWith<Color>((states) {
           if (states.contains(MaterialState.selected)) {
@@ -157,8 +146,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppDimensions.radiusSmall / 2),
         ),
       ),
-      
-      // Radio Theme
+
       radioTheme: RadioThemeData(
         fillColor: MaterialStateProperty.resolveWith<Color>((states) {
           if (states.contains(MaterialState.selected)) {
@@ -167,8 +155,7 @@ class AppTheme {
           return AppColors.textSecondary;
         }),
       ),
-      
-      // Slider Theme
+
       sliderTheme: const SliderThemeData(
         activeTrackColor: AppColors.primary,
         inactiveTrackColor: AppColors.surfaceVariant,
@@ -177,8 +164,7 @@ class AppTheme {
         valueIndicatorColor: AppColors.primary,
         valueIndicatorTextStyle: AppStyles.labelSmall,
       ),
-      
-      // Snackbar Theme
+
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimary,
         contentTextStyle: AppStyles.bodyMedium.copyWith(color: AppColors.textOnPrimary),
@@ -191,7 +177,6 @@ class AppTheme {
     );
   }
 
-  // Helper methods for common gradient containers
   static Container buildGradientContainer({
     required Widget child,
     required List<Color> colors,
@@ -237,12 +222,10 @@ class AppTheme {
     }
   }
 
-  // Glass morphism decoration
   static BoxDecoration get glassDecoration {
     return AppStyles.glassCardDecoration;
   }
 
-  // Primary card decoration
   static BoxDecoration get cardDecoration {
     return AppStyles.primaryCardDecoration;
   }

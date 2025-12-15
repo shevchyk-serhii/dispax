@@ -1,4 +1,4 @@
-// Auth widgets barrel export
+
 export 'app_header.dart';
 export 'login_form.dart';
 export 'login_card.dart';

@@ -29,7 +29,6 @@ class InitializationBloc extends Bloc<InitializationEvent, InitializationState> 
       emit(const InitializationLoading('Checking server connection...'));
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Check if server is available
       final isServerAvailable = await TestDataService.isServerAvailable();
       if (!isServerAvailable) {
         emit(const InitializationLoading('Server offline, using cached data...'));
@@ -40,19 +39,17 @@ class InitializationBloc extends Bloc<InitializationEvent, InitializationState> 
 
       emit(const InitializationLoading('Checking database status...'));
 
-      // Check current test data status
       final status = await TestDataService.getTestDataStatus();
       if (status != null) {
         final userCount = status['users_count'] ?? 0;
         final rideCount = status['rides_count'] ?? 0;
-        
+
         emit(InitializationLoading('Found $userCount users, $rideCount rides'));
         await Future.delayed(const Duration(milliseconds: 500));
 
-        // If database is empty, seed it with test data
         if (userCount == 0 || rideCount == 0) {
           emit(const InitializationLoading('Setting up test data...'));
-          
+
           final seedSuccess = await TestDataService.seedTestData();
           if (seedSuccess) {
             emit(const InitializationLoading('Test data loaded successfully!'));
@@ -71,7 +68,7 @@ class InitializationBloc extends Bloc<InitializationEvent, InitializationState> 
       emit(const InitializationLoading('Welcome to Oktopus Taxi!'));
       await Future.delayed(const Duration(milliseconds: 500));
       emit(const InitializationCompleted());
-      
+
     } catch (e) {
       print('Error during initialization: $e');
       emit(InitializationError('Initialization failed: ${e.toString()}'));

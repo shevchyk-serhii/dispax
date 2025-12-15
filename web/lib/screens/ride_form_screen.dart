@@ -4,7 +4,6 @@ import '../modules/core/models/location.dart';
 import '../modules/ride_management/services/mock_ride_service.dart';
 import '../modules/ride_management/widgets/location_field.dart';
 import '../modules/ride_management/widgets/date_time_picker.dart';
-// import '../widgets/map/ride_map_widget.dart'; // Disabled for compatibility
 
 class RideFormScreen extends StatefulWidget {
   final Ride? ride;
@@ -17,7 +16,7 @@ class RideFormScreen extends StatefulWidget {
 
 class _RideFormScreenState extends State<RideFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  // Using mock service (without external API)
+
   final MockRideService _rideService = MockRideService();
 
   late TextEditingController _fromAddressController;
@@ -178,10 +177,10 @@ class _RideFormScreenState extends State<RideFormScreen> {
 
       final ride = Ride(
         id: widget.ride?.id ?? 0,
-        clientId: widget.ride?.clientId ?? 2, // Default to Anna Client for now
-        creatorId: widget.ride?.creatorId ?? 3, // Default to Maria Secretary
+        clientId: widget.ride?.clientId ?? 2,
+        creatorId: widget.ride?.creatorId ?? 3,
         driverId: widget.ride?.driverId,
-        companyId: widget.ride?.companyId ?? 1, // Default company
+        companyId: widget.ride?.companyId ?? 1,
         scheduleDayId: widget.ride?.scheduleDayId,
         pickupDateTime: _selectedDateTime!,
         from: from,

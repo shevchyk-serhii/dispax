@@ -8,7 +8,7 @@ import 'location_service.dart';
 class LocationClarificationService {
   static LocationClarificationService? _instance;
   LocationClarificationService._internal();
-  
+
   static LocationClarificationService get instance {
     _instance ??= LocationClarificationService._internal();
     return _instance!;
@@ -17,16 +17,16 @@ class LocationClarificationService {
   final ApiClient _apiClient = ApiClient();
   final LocationService _locationService = LocationService.instance;
 
-  /// Sends updated client location to driver
+  /
   Future<bool> updateClientLocation({
     required String rideId,
     required String newLocation,
     String? additionalInstructions,
   }) async {
     try {
-      // Get current location
+
       final position = await _locationService.getCurrentPosition();
-      
+
       final response = await _apiClient.patch('/rides/$rideId/client-location', {
         'clientLocation': newLocation,
         'additionalInstructions': additionalInstructions,
@@ -48,7 +48,7 @@ class LocationClarificationService {
     }
   }
 
-  /// Запрашивает уточнение местоположения у клиента (для водителей)
+  /
   Future<bool> requestLocationClarification({
     required String rideId,
     String? message,
@@ -66,15 +66,15 @@ class LocationClarificationService {
     }
   }
 
-  /// Получает историю обновлений местоположения для поездки
+  /
   Future<List<LocationUpdate>> getLocationUpdates(String rideId) async {
     try {
       final response = await _apiClient.get('/rides/$rideId/location-updates');
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final updates = data['updates'] as List;
-        
+
         return updates
             .map((update) => LocationUpdate.fromJson(update))
             .toList();
@@ -85,14 +85,14 @@ class LocationClarificationService {
     return [];
   }
 
-  /// Отправляет экстренное сообщение о местоположении
+  /
   Future<bool> sendEmergencyLocation({
     required String rideId,
     required String emergencyMessage,
   }) async {
     try {
       final position = await _locationService.getCurrentPosition();
-      
+
       final response = await _apiClient.post('/rides/$rideId/emergency-location', {
         'emergencyMessage': emergencyMessage,
         'latitude': position?.latitude,
@@ -108,11 +108,11 @@ class LocationClarificationService {
     }
   }
 
-  /// Проверяет, нужно ли клиенту обновить свое местоположение
+  /
   Future<bool> shouldRequestLocationUpdate(String rideId) async {
     try {
       final response = await _apiClient.get('/rides/$rideId/location-status');
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['needsUpdate'] ?? false;
@@ -124,7 +124,7 @@ class LocationClarificationService {
   }
 }
 
-/// Модель для обновления местоположения
+/
 class LocationUpdate {
   final String id;
   final String rideId;
@@ -134,7 +134,7 @@ class LocationUpdate {
   final double? longitude;
   final DateTime timestamp;
   final LocationUpdateType type;
-  final String? fromUser; // 'client' или 'driver'
+  final String? fromUser;
 
   LocationUpdate({
     required this.id,
@@ -179,7 +179,7 @@ class LocationUpdate {
     };
   }
 
-  /// Получает иконку в зависимости от типа обновления
+  /
   String get iconName {
     switch (type) {
       case LocationUpdateType.initial:
@@ -195,7 +195,7 @@ class LocationUpdate {
     }
   }
 
-  /// Получает цвет в зависимости от типа обновления
+  /
   String get colorName {
     switch (type) {
       case LocationUpdateType.initial:
@@ -213,9 +213,9 @@ class LocationUpdate {
 }
 
 enum LocationUpdateType {
-  initial,      // Первоначальное местоположение
-  update,       // Обычное обновление местоположения
-  clarification, // Уточнение местоположения по запросу
-  emergency,    // Экстренное обновление
-  arrival,      // Подтверждение прибытия
+  initial,
+  update,
+  clarification,
+  emergency,
+  arrival,
 }

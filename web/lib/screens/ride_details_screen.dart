@@ -12,8 +12,8 @@ class RideDetailsScreen extends StatefulWidget {
   final bool isClientView;
 
   const RideDetailsScreen({
-    Key? key, 
-    required this.ride, 
+    Key? key,
+    required this.ride,
     this.isClientView = false,
   }) : super(key: key);
 
@@ -46,25 +46,22 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Status Card
+
                   RideStatusCard(
                     ride: _currentRide,
                     isClientView: widget.isClientView,
                   ),
                   const SizedBox(height: 16),
-                  
-                  // Route Information
+
                   RideRouteCard(ride: _currentRide),
                   const SizedBox(height: 16),
-                  
-                  // Flight Information (if airport transfer)
+
                   if (_currentRide.isAirportTransfer) ...[
                     RideFlightCard(ride: _currentRide),
                     const SizedBox(height: 16),
                   ],
-                  
-                  // Driver/Client Information
-                  if (widget.isClientView && _currentRide.driver != null) 
+
+                  if (widget.isClientView && _currentRide.driver != null)
                     RidePersonCard(
                       person: _currentRide.driver!,
                       isDriver: true,
@@ -79,8 +76,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       onMessage: () => _sendMessage(_currentRide.client.phone),
                     ),
                   const SizedBox(height: 16),
-                  
-                  // Actions Card
+
                   RideActionsCard(
                     ride: _currentRide,
                     isClientView: widget.isClientView,
@@ -98,7 +94,6 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     );
   }
 
-  // Permission checks
   bool _canEditRide() {
     return _currentRide.status == RideStatus.requested;
   }
@@ -119,10 +114,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     return !widget.isClientView && _currentRide.status == RideStatus.requested;
   }
 
-  // Action methods
   Future<void> _makePhoneCall(String? phoneNumber) async {
     if (phoneNumber?.isEmpty != false) return;
-    
+
     final uri = Uri(scheme: 'tel', path: phoneNumber);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
@@ -131,7 +125,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
   Future<void> _sendMessage(String? phoneNumber) async {
     if (phoneNumber?.isEmpty != false) return;
-    
+
     final uri = Uri(scheme: 'sms', path: phoneNumber);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
@@ -153,7 +147,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       'Cancel Ride',
       'Are you sure you want to cancel this ride?',
     );
-    
+
     if (confirmed) {
       await _updateRideStatus(RideStatus.cancelled);
     }
@@ -169,7 +163,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       'Complete Ride',
       'Mark this ride as completed?',
     );
-    
+
     if (confirmed) {
       await _updateRideStatus(RideStatus.completed);
     }
@@ -187,7 +181,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _shareRide(BuildContext context) async {
-    // Implement ride sharing functionality
+
     final rideDetails = '''
 Ride Details:
 From: ${_currentRide.pickupLocation}
@@ -195,15 +189,13 @@ To: ${_currentRide.dropoffLocation}
 Time: ${_currentRide.pickupTime}
 Status: ${_currentRide.status.name}
 ''';
-    
-    // Use share package or platform sharing
+
     Navigator.of(context).pop(rideDetails);
   }
 
-  // Helper methods
   Future<void> _updateRideStatus(RideStatus newStatus) async {
     setState(() => _isLoading = true);
-    
+
     try {
       final success = await _rideService.updateRideStatus(_currentRide.id, newStatus);
       if (success) {
@@ -211,7 +203,7 @@ Status: ${_currentRide.status.name}
           _currentRide = _currentRide.copyWith(status: newStatus);
         });
       }
-      
+
       _showSuccessMessage('Ride status updated successfully');
     } catch (e) {
       _showErrorMessage('Failed to update ride status: $e');
@@ -222,13 +214,13 @@ Status: ${_currentRide.status.name}
 
   Future<void> _updateRideWithDriver(Person driver) async {
     setState(() => _isLoading = true);
-    
+
     try {
       final updatedRide = await _rideService.assignDriver(_currentRide.id, driver.id);
       setState(() {
         _currentRide = updatedRide;
       });
-      
+
       _showSuccessMessage('Driver assigned successfully');
     } catch (e) {
       _showErrorMessage('Failed to assign driver: $e');

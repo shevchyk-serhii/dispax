@@ -28,7 +28,7 @@ class AuthState extends Equatable {
 
   factory AuthState.authenticated(Person user, {bool biometricEnabled = false, bool biometricAvailable = false}) {
     return AuthState(
-      status: AuthStatus.authenticated, 
+      status: AuthStatus.authenticated,
       user: user,
       biometricEnabled: biometricEnabled,
       biometricAvailable: biometricAvailable,
@@ -45,7 +45,7 @@ class AuthState extends Equatable {
 
   factory AuthState.error(String message, {bool biometricEnabled = false, bool biometricAvailable = false}) {
     return AuthState(
-      status: AuthStatus.error, 
+      status: AuthStatus.error,
       errorMessage: message,
       biometricEnabled: biometricEnabled,
       biometricAvailable: biometricAvailable,
@@ -53,8 +53,8 @@ class AuthState extends Equatable {
   }
 
   AuthState copyWith({
-    AuthStatus? status, 
-    Person? user, 
+    AuthStatus? status,
+    Person? user,
     String? errorMessage,
     bool? biometricEnabled,
     bool? biometricAvailable,

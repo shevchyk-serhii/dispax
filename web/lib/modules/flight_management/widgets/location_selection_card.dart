@@ -33,24 +33,24 @@ class LocationSelectionCard extends StatelessWidget {
               color: AppColors.textOnPrimary,
             ),
           ),
-          
+
           const SizedBox(height: AppDimensions.paddingMedium),
-          
+
           Text(
             'Select your current location so the driver can easily find you',
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textOnPrimary.withAlpha(180),
             ),
           ),
-          
+
           const SizedBox(height: AppDimensions.paddingLarge),
-          
+
           ...locationOptions.map((location) => LocationOptionItem(
             location: location,
             isSelected: selectedLocation == location,
             onTap: () => onLocationSelected(location),
           )),
-          
+
           if (selectedLocation == 'Other location (specify below)') ...[
             const SizedBox(height: AppDimensions.paddingMedium),
             TextField(

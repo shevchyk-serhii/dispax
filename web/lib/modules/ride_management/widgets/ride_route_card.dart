@@ -27,8 +27,7 @@ class RideRouteCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
-            // From Location
+
             _buildLocationRow(
               context,
               icon: Icons.trip_origin,
@@ -36,10 +35,9 @@ class RideRouteCard extends StatelessWidget {
               location: ride.pickupLocation,
               color: Colors.green,
             ),
-            
+
             const SizedBox(height: 12),
-            
-            // To Location
+
             _buildLocationRow(
               context,
               icon: Icons.location_on,
@@ -47,12 +45,11 @@ class RideRouteCard extends StatelessWidget {
               location: ride.dropoffLocation,
               color: Colors.red,
             ),
-            
+
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 12),
-            
-            // Pickup Time
+
             Row(
               children: [
                 Icon(Icons.schedule, color: AppColors.primary, size: 20),
@@ -80,7 +77,7 @@ class RideRouteCard extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             if (ride.estimatedDistance != null) ...[
               const SizedBox(height: 12),
               Row(
@@ -108,7 +105,7 @@ class RideRouteCard extends StatelessWidget {
                 ],
               ),
             ],
-            
+
             if (ride.estimatedDuration != null) ...[
               const SizedBox(height: 12),
               Row(

@@ -8,7 +8,6 @@ import zio.json.*
 
 object AuthRoutes:
 
-  // Organic JSON body parsing handler
   private def jsonHandler[T: JsonDecoder](
       f: T => ZIO[AuthService, Nothing, Response]
   ): Handler[AuthService, Response, Request, Response] = handler { (req: Request) =>
@@ -19,8 +18,9 @@ object AuthRoutes:
                    .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
       result  <- f(parsed)
     } yield result).catchAll { ex =>
-      ZIO.logError(s"JSON parsing error: ${ex.toString}") *>
-        ZIO.succeed(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"Invalid request format"}""")))
+      ZIO
+        .logError(s"JSON parsing error: ${ex.toString}")
+        .as(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"Invalid request format"}""")))
     }
   }
 
@@ -30,15 +30,13 @@ object AuthRoutes:
         _             <- ZIO.logInfo(s"Login request received")
         authService   <- ZIO.service[AuthService]
         loginResponse <- authService.login(loginReq.email, loginReq.password)
-        response      <- ZIO.succeed(Response.json(loginResponse.toJson))
-      } yield response).catchAll {
+      } yield Response.json(loginResponse.toJson)).catchAll {
         case _: UserNotFound | _: InvalidCredentials =>
           ZIO.succeed(Response(Status.Unauthorized, body = Body.fromString("""{"error":"Invalid credentials"}""")))
         case ex                                      =>
-          ZIO.logError(s"Login error: ${ex.toString}") *>
-            ZIO.succeed(
-              Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
-            )
+          ZIO
+            .logError(s"Login error: ${ex.toString}")
+            .as(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}""")))
       }
     }
   )

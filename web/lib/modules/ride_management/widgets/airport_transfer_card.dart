@@ -45,10 +45,10 @@ class AirportTransferCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  isAirportTransfer 
+                  isAirportTransfer
                     ? (isArrival ? Icons.flight_land : Icons.flight_takeoff)
                     : Icons.flight,
-                  color: Colors.purple[600], 
+                  color: Colors.purple[600],
                   size: 24
                 ),
                 const SizedBox(width: AppDimensions.paddingSmall),
@@ -114,7 +114,7 @@ class AirportTransferCard extends StatelessWidget {
                   labelText: 'Flight Number',
                   hintText: 'e.g. LH123, BA456',
                   prefixIcon: Icon(
-                    isArrival ? Icons.flight_land : Icons.flight_takeoff, 
+                    isArrival ? Icons.flight_land : Icons.flight_takeoff,
                     color: AppColors.secretaryColor
                   ),
                   border: OutlineInputBorder(

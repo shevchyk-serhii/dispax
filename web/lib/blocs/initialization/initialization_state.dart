@@ -4,7 +4,7 @@ abstract class InitializationState {
 
 class InitializationLoading extends InitializationState {
   final String statusMessage;
-  
+
   const InitializationLoading(this.statusMessage);
 }
 
@@ -14,6 +14,6 @@ class InitializationCompleted extends InitializationState {
 
 class InitializationError extends InitializationState {
   final String errorMessage;
-  
+
   const InitializationError(this.errorMessage);
 }

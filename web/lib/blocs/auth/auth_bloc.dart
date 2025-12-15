@@ -38,8 +38,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final prefs = await SharedPreferences.getInstance();
       final userData = prefs.getString(privateUserKey);
       final token = prefs.getString(privateTokenKey);
-      
-      // Check biometric availability and settings
+
       final biometricAvailable = await privateBiometricService.isAvailable;
       final biometricEnabled = await privateBiometricService.isBiometricEnabled;
 
@@ -48,7 +47,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final user = Person.fromJson(userJson);
         privateApiClient.setAuthToken(token);
 
-        emit(AuthState.authenticated(user, 
+        emit(AuthState.authenticated(user,
           biometricEnabled: biometricEnabled,
           biometricAvailable: biometricAvailable,
         ));
@@ -70,7 +69,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthState.loading());
 
     try {
-      // Create fresh ApiClient for login
       privateApiClient = ApiClient();
 
       final loginResponse = await privateApiClient.login(
@@ -132,7 +130,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(state.copyWith(status: AuthStatus.loading));
 
-      // Check if biometric is available and enabled
       final biometricAvailable = await privateBiometricService.isAvailable;
       final biometricEnabled = await privateBiometricService.isBiometricEnabled;
 
@@ -152,11 +149,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      // Authenticate with biometrics
       final result = await privateBiometricService.authenticate();
 
       if (result.isSuccess) {
-        // Get stored user data
         final prefs = await SharedPreferences.getInstance();
         final userData = prefs.getString(privateUserKey);
         final token = prefs.getString(privateTokenKey);
@@ -196,7 +191,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       final biometricAvailable = await privateBiometricService.isAvailable;
-      
+
       if (!biometricAvailable) {
         emit(state.copyWith(
           status: AuthStatus.error,
@@ -206,7 +201,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       if (event.enabled) {
-        // Test biometric authentication before enabling
         final result = await privateBiometricService.authenticate(
           reason: 'Подтвердите настройку биометрического входа',
         );
@@ -221,7 +215,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ));
         }
       } else {
-        // Disable biometric
         await privateBiometricService.setBiometricEnabled(false);
         emit(state.copyWith(biometricEnabled: false));
       }

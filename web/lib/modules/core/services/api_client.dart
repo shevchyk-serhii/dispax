@@ -4,51 +4,48 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiClient {
-  // Helper method to detect if running on physical device vs simulator
+
   static bool get isPhysicalDevice {
     if (Platform.isIOS) {
-      // For iOS: check if it's running on simulator
-      // Simulators typically have x86_64 or arm64 architecture but specific identifiers
+
       return !Platform.environment.containsKey('SIMULATOR_DEVICE_NAME') &&
              !Platform.environment.containsKey('SIMULATOR_HOST_HOME');
     } else if (Platform.isAndroid) {
-      // For Android: check various emulator indicators
+
       final fingerprint = Platform.environment['ANDROID_FINGERPRINT'] ?? '';
       final model = Platform.environment['ANDROID_MODEL'] ?? '';
-      return !fingerprint.contains('generic') && 
+      return !fingerprint.contains('generic') &&
              !model.contains('Emulator') &&
              !model.contains('google_sdk');
     }
-    return false; // Default to simulator/emulator for other platforms
+    return false;
   }
 
   static String get privateBaseUrl {
-    // Check for environment variable first
+
     const customUrl = String.fromEnvironment('API_BASE_URL');
     if (customUrl.isNotEmpty) {
       return customUrl;
     }
 
-    // Check if we should use localhost for testing
     const useLocalhost = String.fromEnvironment('USE_LOCALHOST');
     if (useLocalhost == 'true') {
       return 'http://127.0.0.1:8080/api';
     }
 
-    // Auto-detect based on platform and device type
     if (Platform.isAndroid) {
       if (isPhysicalDevice) {
-        // Real Android device - use network IP for home network deployment
+
         return 'http://192.168.0.188:8080/api';
       } else {
-        // Android emulator - use emulator special IP
+
         return 'http://10.0.2.2:8080/api';
       }
     } else if (Platform.isIOS) {
-      // Always use localhost for iOS Simulator during development
+
       return 'http://127.0.0.1:8080/api';
     } else {
-      return 'http://localhost:8080/api'; // Desktop/Web
+      return 'http://localhost:8080/api';
     }
   }
 
@@ -73,11 +70,11 @@ class ApiClient {
       debugPrint('📱 Physical device: $isPhysicalDevice');
       debugPrint('📱 Base URL: $privateBaseUrl');
       debugPrint('📋 Headers: $privateHeaders');
-      
+
       final response = await privateClient
           .get(Uri.parse(url), headers: privateHeaders)
           .timeout(const Duration(seconds: 15));
-      
+
       debugPrint('✅ Response status: ${response.statusCode}');
       debugPrint('📄 Response body: ${response.body.length > 200 ? response.body.substring(0, 200) + '...' : response.body}');
       return response;
@@ -185,7 +182,7 @@ class ApiClient {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else if (response.statusCode == 401) {
-        return null; // Invalid credentials
+        return null;
       } else {
         throw ApiException('Login failed with status: ${response.statusCode}');
       }

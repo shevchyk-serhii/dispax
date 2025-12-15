@@ -67,14 +67,14 @@ class RidePersonCard extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             if (isDriver && person.vehicleInfo != null) ...[
               const SizedBox(height: 12),
               const Divider(),
               const SizedBox(height: 8),
               _buildVehicleInfo(context),
             ],
-            
+
             if (person.phone?.isNotEmpty == true) ...[
               const SizedBox(height: 16),
               Row(
@@ -118,7 +118,7 @@ class RidePersonCard extends StatelessWidget {
 
   Widget _buildVehicleInfo(BuildContext context) {
     final vehicle = person.vehicleInfo!;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -130,7 +130,7 @@ class RidePersonCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        
+
         Row(
           children: [
             Icon(Icons.directions_car, color: Colors.grey[600], size: 18),
@@ -143,7 +143,7 @@ class RidePersonCard extends StatelessWidget {
             ),
           ],
         ),
-        
+
         if (vehicle.color?.isNotEmpty == true) ...[
           const SizedBox(height: 4),
           Row(
@@ -157,7 +157,7 @@ class RidePersonCard extends StatelessWidget {
             ],
           ),
         ],
-        
+
         if (vehicle.licensePlate?.isNotEmpty == true) ...[
           const SizedBox(height: 4),
           Row(

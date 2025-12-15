@@ -13,7 +13,7 @@ class BiometricButton extends StatefulWidget {
   State<BiometricButton> createState() => _BiometricButtonState();
 }
 
-class _BiometricButtonState extends State<BiometricButton> 
+class _BiometricButtonState extends State<BiometricButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -34,7 +34,7 @@ class _BiometricButtonState extends State<BiometricButton>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-    
+
     _initBiometrics();
   }
 
@@ -53,7 +53,7 @@ class _BiometricButtonState extends State<BiometricButton>
   void _onTap() async {
     await _animationController.forward();
     await _animationController.reverse();
-    
+
     if (mounted) {
       context.read<AuthBloc>().add(const AuthBiometricLoginRequested());
     }
@@ -83,7 +83,7 @@ class _BiometricButtonState extends State<BiometricButton>
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        // Show biometric button only if available and enabled
+
         if (!state.biometricAvailable || !state.biometricEnabled) {
           return const SizedBox.shrink();
         }
@@ -169,7 +169,7 @@ class _BiometricButtonState extends State<BiometricButton>
 
 class BiometricSetupDialog extends StatelessWidget {
   final String? userId;
-  
+
   const BiometricSetupDialog({
     super.key,
     this.userId,

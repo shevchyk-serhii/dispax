@@ -7,10 +7,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 class BiometricService {
   static const String _biometricEnabledKey = 'biometric_enabled';
   static const String _biometricUserIdKey = 'biometric_user_id';
-  
+
   final LocalAuthentication _localAuth = LocalAuthentication();
 
-  /// Check if device supports biometric authentication
+  /
   Future<bool> get isAvailable async {
     try {
       final bool isAvailable = await _localAuth.canCheckBiometrics;
@@ -22,7 +22,7 @@ class BiometricService {
     }
   }
 
-  /// Get available biometric types
+  /
   Future<List<BiometricType>> get availableBiometrics async {
     try {
       final List<BiometricType> biometrics = await _localAuth.getAvailableBiometrics();
@@ -33,7 +33,7 @@ class BiometricService {
     }
   }
 
-  /// Check if biometric is enabled for current user
+  /
   Future<bool> get isBiometricEnabled async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -44,7 +44,7 @@ class BiometricService {
     }
   }
 
-  /// Enable/disable biometric authentication for user
+  /
   Future<bool> setBiometricEnabled(bool enabled, {String? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -61,7 +61,7 @@ class BiometricService {
     }
   }
 
-  /// Get user ID associated with biometric
+  /
   Future<String?> get biometricUserId async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -72,13 +72,13 @@ class BiometricService {
     }
   }
 
-  /// Authenticate using biometrics
+  /
   Future<BiometricAuthResult> authenticate({
     String? reason,
     bool stickyAuth = true,
   }) async {
     try {
-      // Check if biometric is available and enabled
+
       if (!await isAvailable) {
         return BiometricAuthResult.unavailable;
       }
@@ -87,7 +87,7 @@ class BiometricService {
         return BiometricAuthResult.disabled;
       }
 
-      final String localizedReason = reason ?? 
+      final String localizedReason = reason ??
           'Подтвердите личность для входа в Der Oktopus';
 
       final bool didAuthenticate = await _localAuth.authenticate(
@@ -105,7 +105,7 @@ class BiometricService {
       }
     } on PlatformException catch (e) {
       debugPrint('Biometric authentication error: ${e.code} - ${e.message}');
-      
+
       switch (e.code) {
         case auth_error.notEnrolled:
           return BiometricAuthResult.notEnrolled;
@@ -124,7 +124,7 @@ class BiometricService {
     }
   }
 
-  /// Get human readable biometric type name
+  /
   String getBiometricTypeName(BiometricType type) {
     switch (type) {
       case BiometricType.face:
@@ -140,10 +140,10 @@ class BiometricService {
     }
   }
 
-  /// Get localized reason based on available biometric type
+  /
   Future<String> getLocalizedReason({String? customReason}) async {
     if (customReason != null) return customReason;
-    
+
     final biometrics = await availableBiometrics;
     if (biometrics.contains(BiometricType.face)) {
       return 'Используйте Face ID для входа в Der Oktopus';
@@ -154,7 +154,7 @@ class BiometricService {
     }
   }
 
-  /// Clear all biometric data
+  /
   Future<void> clearBiometricData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -177,7 +177,6 @@ enum BiometricAuthResult {
   permanentlyLockedOut,
 }
 
-// Extension for user-friendly messages
 extension BiometricAuthResultExtension on BiometricAuthResult {
   String get message {
     switch (this) {

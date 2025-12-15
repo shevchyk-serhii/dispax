@@ -25,12 +25,12 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   MapboxMap? _mapboxMap;
   PointAnnotationManager? _pointAnnotationManager;
   CircleAnnotationManager? _circleAnnotationManager;
-  
+
   StreamSubscription<geo.Position>? _locationSubscription;
   geo.Position? _currentPosition;
   List<Ride> _assignedRides = [];
   Ride? _currentRide;
-  
+
   final LocationService _locationService = LocationService.instance;
   Timer? _locationUpdateTimer;
 
@@ -49,7 +49,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   Future<void> _initializeLocation() async {
-    // Get current location
+
     final position = await _locationService.getCurrentPosition();
     if (position != null) {
       setState(() {
@@ -57,7 +57,6 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       });
     }
 
-    // Start location tracking
     final started = await _locationService.startLocationTracking();
     if (started) {
       _locationSubscription = _locationService.positionStream.listen((geo.Position position) {
@@ -65,22 +64,19 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
           _currentPosition = position;
         });
         _updateCurrentLocationMarker();
-        _sendLocationUpdate(); // Send location update to server
+        _sendLocationUpdate();
       });
     }
   }
 
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
-    
-    // Initialize annotation managers
+
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
-    
-    // Add markers
+
     await MapboxService.addDefaultImages(mapboxMap);
-    
-    // Set initial camera
+
     if (_currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
         latitude: _currentPosition!.latitude,
@@ -89,63 +85,57 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       );
       await mapboxMap.setCamera(cameraOptions);
     }
-    
+
     _updateMapMarkers();
   }
 
   void _updateCurrentLocationMarker() {
     if (_mapboxMap == null || _currentPosition == null) return;
-    
+
     _circleAnnotationManager?.deleteAll();
-    
-    // Add markers
+
     final marker = MapboxService.createLocationMarker(
       latitude: _currentPosition!.latitude,
       longitude: _currentPosition!.longitude,
       color: 'blue',
       radius: 15.0,
     );
-    
+
     _circleAnnotationManager?.create(marker);
   }
 
   void _updateMapMarkers() {
     if (_mapboxMap == null || _circleAnnotationManager == null) return;
-    
-    // Clear markers
-    // Show markers
+
     for (final ride in _assignedRides) {
       final rideMarkers = MapboxService.createRideMarkers(
         from: ride.from,
         to: ride.to,
       );
-      
+
       for (final marker in rideMarkers) {
         _circleAnnotationManager?.create(marker);
       }
     }
-    
-    // If there is
+
     if (_currentRide != null) {
       final cameraOptions = MapboxService.getCameraForRoute(
         from: _currentRide!.from,
         to: _currentRide!.to,
         currentPosition: _currentPosition,
       );
-      
+
       _mapboxMap?.setCamera(cameraOptions);
     }
   }
 
   void _sendLocationUpdate() {
     if (_currentPosition == null) return;
-    
-    // In real app, this would send location to server
-    // Could use logger for debugging in development mode
+
   }
 
   void _updateRideStatus(Ride ride, RideStatus newStatus) {
-    // Update ride status through bloc
+
     context.read<RideBloc>().add(RideStatusUpdateRequested(
       rideId: ride.id,
       status: newStatus,
@@ -153,7 +143,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   void _onAirportEntryTimeReached(Ride ride) {
-    // Show notification to client that driver should depart
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -176,18 +166,18 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     return Scaffold(
       body: BlocListener<RideBloc, RideState>(
         listener: (context, state) {
-          // Get current location
+
           final authState = context.read<AuthBloc>().state;
           if (authState.isAuthenticated && authState.user != null) {
             final driverRides = state.rides.where((ride) =>
               ride.driverId == authState.user!.id &&
               (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)
             ).toList();
-            
-            final currentRide = driverRides.where((ride) => 
+
+            final currentRide = driverRides.where((ride) =>
               ride.status == RideStatus.inProgress
             ).firstOrNull;
-            
+
             if (driverRides != _assignedRides || currentRide != _currentRide) {
               setState(() {
                 _assignedRides = driverRides;
@@ -199,19 +189,17 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         },
         child: Stack(
           children: [
-            // Map
+
             MapWidget(
               key: const ValueKey('driver_map'),
               onMapCreated: _onMapCreated,
             ),
-            
-            // Information panel at top
+
             SafeArea(
               child: Column(
                 children: [
                   _buildInfoPanel(),
-                  
-                  // Airport timer for assigned airport transfers
+
                   if (_assignedRides.any((ride) => ride.isAirportTransfer && ride.status == RideStatus.assigned))
                     ..._assignedRides
                         .where((ride) => ride.isAirportTransfer && ride.status == RideStatus.assigned)
@@ -222,8 +210,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                 ],
               ),
             ),
-            
-            // Control panel
+
             if (_currentRide != null)
               Positioned(
                 bottom: 0,
@@ -231,8 +218,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                 right: 0,
                 child: _buildRideControlPanel(),
               ),
-            
-            // Control buttons
+
             Positioned(
               bottom: _currentRide != null ? 200 : 100,
               right: 16,
@@ -263,9 +249,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: AppDimensions.paddingSmall),
-          
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -297,7 +283,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
   Widget _buildRideControlPanel() {
     if (_currentRide == null) return const SizedBox.shrink();
-    
+
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
       decoration: BoxDecoration(
@@ -318,7 +304,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Заголовок поездки
+
           Row(
             children: [
               Expanded(
@@ -343,10 +329,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: AppDimensions.paddingMedium),
-          
-          // Информация о маршруте
+
           Row(
             children: [
               Icon(Icons.schedule, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
@@ -357,9 +342,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: AppDimensions.paddingSmall),
-          
+
           Row(
             children: [
               Icon(Icons.route, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
@@ -374,7 +359,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
               ),
             ],
           ),
-          
+
           if (_currentRide!.isAirportTransfer) ...[
             const SizedBox(height: AppDimensions.paddingSmall),
             Row(
@@ -388,10 +373,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
               ],
             ),
           ],
-          
+
           const SizedBox(height: AppDimensions.paddingLarge),
-          
-          // Control buttons
+
           if (_currentRide!.status == RideStatus.assigned)
             ElevatedButton(
               onPressed: () => _updateRideStatus(_currentRide!, RideStatus.inProgress),
@@ -425,7 +409,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
           backgroundColor: AppColors.driverColor,
           child: const Icon(Icons.my_location, color: AppColors.textOnPrimary),
         ),
-        
+
         if (_assignedRides.isNotEmpty) ...[
           const SizedBox(height: AppDimensions.paddingSmall),
           FloatingActionButton(
@@ -451,15 +435,14 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   void _showAllRides() {
-    // Show markers
+
     if (_mapboxMap == null || _assignedRides.isEmpty) return;
-    
-    // Calculate bounds for all rides
+
     double minLat = double.infinity;
     double maxLat = -double.infinity;
     double minLng = double.infinity;
     double maxLng = -double.infinity;
-    
+
     for (final ride in _assignedRides) {
       if (ride.from.latitude != null && ride.from.longitude != null) {
         minLat = minLat > ride.from.latitude! ? ride.from.latitude! : minLat;
@@ -467,7 +450,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         minLng = minLng > ride.from.longitude! ? ride.from.longitude! : minLng;
         maxLng = maxLng < ride.from.longitude! ? ride.from.longitude! : maxLng;
       }
-      
+
       if (ride.to.latitude != null && ride.to.longitude != null) {
         minLat = minLat > ride.to.latitude! ? ride.to.latitude! : minLat;
         maxLat = maxLat < ride.to.latitude! ? ride.to.latitude! : maxLat;
@@ -475,22 +458,22 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         maxLng = maxLng < ride.to.longitude! ? ride.to.longitude! : maxLng;
       }
     }
-    
+
     if (_currentPosition != null) {
       minLat = minLat > _currentPosition!.latitude ? _currentPosition!.latitude : minLat;
       maxLat = maxLat < _currentPosition!.latitude ? _currentPosition!.latitude : maxLat;
       minLng = minLng > _currentPosition!.longitude ? _currentPosition!.longitude : minLng;
       maxLng = maxLng < _currentPosition!.longitude ? _currentPosition!.longitude : maxLng;
     }
-    
+
     final centerLat = (minLat + maxLat) / 2;
     final centerLng = (minLng + maxLng) / 2;
-    
+
     final cameraOptions = CameraOptions(
       center: Point(coordinates: Position(centerLng, centerLat)),
       zoom: 12.0,
     );
-    
+
     _mapboxMap!.setCamera(cameraOptions);
   }
 

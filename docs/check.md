@@ -1,9 +1,9 @@
 # Backend
-- no comment needed
-- check there are no unused imports
-- no cyrillic 
-   
-# Frontend 
-- don't use StatefulWidget, we use BloC pattern 
-- don't use _ underscore signs in the names
-- main language is English
+- No comments needed
+- Ensure there are no unused imports
+- Do not use Cyrillic characters
+
+# Frontend
+- Do not use `StatefulWidget`; we use the **BLoC pattern**
+- Do not use underscore (`_`) characters in names
+- The main language is **English**

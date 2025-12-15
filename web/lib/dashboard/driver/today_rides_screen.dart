@@ -88,7 +88,7 @@ class TodayRidesScreen extends StatelessWidget {
   }
 
   Widget buildBody(BuildContext context, RideState rideState) {
-    // Load rides on first build if not loaded yet
+
     if (rideState.status == RideStateStatus.initial) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => loadTodayRides(context),
@@ -128,7 +128,7 @@ class TodayRidesScreen extends StatelessWidget {
                 return TodayRideCard(
                   ride: ride,
                   isLast: index == todayRides.length - 1,
-                  // TODO: Implement these callbacks
+
                   onCallClient: () => _handleCallClient(ride),
                   onStartRide: () => _handleStartRide(context, ride),
                   onCompleteRide: () => _handleCompleteRide(context, ride),
@@ -145,29 +145,20 @@ class TodayRidesScreen extends StatelessWidget {
     return const EmptyRidesState();
   }
 
-  // Helper method to handle calling client
   void _handleCallClient(Ride ride) {
-    // TODO: Implement call client functionality
+
     print('Calling client for ride ${ride.id}');
   }
-  
-  // Helper method to handle starting ride
+
   void _handleStartRide(BuildContext context, Ride ride) {
-    // TODO: Implement start ride functionality
+
     print('Starting ride ${ride.id}');
   }
-  
-  // Helper method to handle completing ride
+
   void _handleCompleteRide(BuildContext context, Ride ride) {
-    // TODO: Implement complete ride functionality
+
     print('Completing ride ${ride.id}');
   }
-
-
-
-
-
-
 
   List<Ride> getTodayRides(List<Ride> rides) {
     final today = DateTime.now();

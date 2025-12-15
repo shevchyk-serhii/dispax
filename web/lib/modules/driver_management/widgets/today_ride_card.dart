@@ -180,7 +180,6 @@ class TodayRideCard extends StatelessWidget {
     );
   }
 
-
   String _getStatusText(RideStatus status) {
     switch (status) {
       case RideStatus.requested:

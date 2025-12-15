@@ -23,7 +23,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
   final _fromAddressController = TextEditingController();
   final _toAddressController = TextEditingController();
   final _flightNumberController = TextEditingController();
-  
+
   DateTime _pickupDateTime = DateTime.now().add(const Duration(hours: 1));
   bool _isAirportTransfer = false;
   bool _isArrival = false;
@@ -131,20 +131,15 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
     );
   }
 
-
-
-
-
-
   void _checkAirportTransfer() {
     final from = _fromAddressController.text.toLowerCase();
     final to = _toAddressController.text.toLowerCase();
-    
-    final hasAirport = from.contains('airport') || 
-                      from.contains('muc') || 
-                      to.contains('airport') || 
+
+    final hasAirport = from.contains('airport') ||
+                      from.contains('muc') ||
+                      to.contains('airport') ||
                       to.contains('muc');
-    
+
     if (hasAirport && !_isAirportTransfer) {
       setState(() {
         _isAirportTransfer = true;
@@ -194,10 +189,9 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
         return;
       }
 
-      // Create new ride object
       final newRide = Ride(
-        id: DateTime.now().millisecondsSinceEpoch, // Temporary ID
-        clientId: 0, // Will be set by backend
+        id: DateTime.now().millisecondsSinceEpoch,
+        clientId: 0,
         creatorId: authState.user!.id,
         companyId: authState.user!.companyId ?? 0,
         pickupDateTime: _pickupDateTime,
@@ -212,7 +206,6 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
         terminal: _selectedTerminal,
       );
 
-      // Dispatch create ride event
       context.read<RideBloc>().add(RideCreateRequested(ride: newRide));
     }
   }
@@ -222,7 +215,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
     _fromAddressController.clear();
     _toAddressController.clear();
     _flightNumberController.clear();
-    
+
     setState(() {
       _pickupDateTime = DateTime.now().add(const Duration(hours: 1));
       _isAirportTransfer = false;

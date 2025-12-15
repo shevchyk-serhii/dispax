@@ -44,9 +44,9 @@ class Validators {
 
   static String? phone(String? value) {
     if (value == null || value.isEmpty) {
-      return null; // Phone is optional in many cases
+      return null;
     }
-    // Basic phone validation - can be enhanced based on requirements
+
     if (!RegExp(r'^\+?[\d\s\-\(\)]+$').hasMatch(value)) {
       return 'Enter valid phone number';
     }

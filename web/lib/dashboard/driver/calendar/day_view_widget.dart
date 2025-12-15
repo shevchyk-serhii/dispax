@@ -145,10 +145,8 @@ class DayViewWidget extends StatelessWidget {
     for (int i = 0; i < rides.length; i++) {
       final ride = rides[i];
 
-      // Add ride card
       items.add(buildRideCard(ride, i == rides.length - 1));
 
-      // Add travel time indicator if not the last ride
       if (i < rides.length - 1) {
         final nextRide = rides[i + 1];
         final travelTime = nextRide.pickupDateTime
@@ -257,12 +255,12 @@ class DayViewWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                onPressed: () {}, // TODO: Implement call client
+                onPressed: () {},
                 icon: const Icon(Icons.phone, color: Colors.green),
                 tooltip: 'Call Client',
               ),
               IconButton(
-                onPressed: () {}, // TODO: Implement navigation
+                onPressed: () {},
                 icon: const Icon(Icons.navigation, color: Colors.blue),
                 tooltip: 'Start Navigation',
               ),
@@ -272,7 +270,7 @@ class DayViewWidget extends StatelessWidget {
         if (ride.status == RideStatus.assigned)
           Flexible(
             child: ElevatedButton.icon(
-              onPressed: () {}, // TODO: Implement start ride
+              onPressed: () {},
               icon: const Icon(Icons.play_arrow, size: 18),
               label: const Text('Start'),
               style: ElevatedButton.styleFrom(
@@ -284,7 +282,7 @@ class DayViewWidget extends StatelessWidget {
         else if (ride.status == RideStatus.inProgress)
           Flexible(
             child: ElevatedButton.icon(
-              onPressed: () {}, // TODO: Implement complete ride
+              onPressed: () {},
               icon: const Icon(Icons.check, size: 18),
               label: const Text('Complete'),
               style: ElevatedButton.styleFrom(
