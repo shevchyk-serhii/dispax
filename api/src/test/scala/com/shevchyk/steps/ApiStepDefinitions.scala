@@ -12,6 +12,8 @@ import com.shevchyk.core.domain.*
 import scala.jdk.CollectionConverters.*
 
 class ApiStepDefinitions extends ScalaDsl with EN {
+  
+  println("🥒 ApiStepDefinitions loaded successfully!")
 
   // Test state management
   private var lastResponse: Response = _
@@ -25,9 +27,31 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
   // Step definitions for common API operations
   Given("""^the API is running$""") { () =>
-    // In a real implementation, this would check if the API is actually running
-    // For now, we'll just simulate that it's running
-    testData("api_running") = true
+    // Check if the real API is running by making a simple HTTP request
+    import java.net.{HttpURLConnection, URL}
+    import java.io.IOException
+    
+    try {
+      val url = new URL("http://localhost:8080/health")
+      val connection = url.openConnection().asInstanceOf[HttpURLConnection]
+      connection.setRequestMethod("GET")
+      connection.setConnectTimeout(5000)
+      connection.setReadTimeout(5000)
+      
+      val responseCode = connection.getResponseCode
+      if (responseCode == 200) {
+        testData("api_running") = true
+        println("✅ API health check passed - server is running")
+      } else {
+        throw new RuntimeException(s"API health check failed with status: $responseCode")
+      }
+      connection.disconnect()
+    } catch {
+      case _: IOException =>
+        throw new RuntimeException(
+          "❌ API is not running! Please start the server with 'sbt run' before running Cucumber tests"
+        )
+    }
   }
 
   Given("""^I am authenticated as a (client|dispatcher|admin) with ID (\d+)$""") { 

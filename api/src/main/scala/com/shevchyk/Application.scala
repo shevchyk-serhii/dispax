@@ -3,9 +3,12 @@ package com.shevchyk
 import com.shevchyk.ride.infrastructure.http.RideRoutes
 import com.shevchyk.app.routes.UserRoutes
 import com.shevchyk.repository.PersonRepository
+import com.shevchyk.auth.application.AuthService
+import com.shevchyk.auth.infrastructure.http.AuthRoutes
 import zio.*
 import zio.http.*
 import zio.logging.backend.SLF4J
+import zio.json.*
 
 object Application extends ZIOAppDefault:
 
@@ -15,19 +18,7 @@ object Application extends ZIOAppDefault:
     Method.GET / "health" -> handler((_: Request) => ZIO.succeed(Response.text("🐙 Der Oktopus Modular API - OK")))
   )
 
-  private val authRoutes = Routes(
-    Method.POST / "api" / "auth" / "login" -> handler { (req: Request) =>
-      (for
-        bodyStr     <- req.body.asString
-        _           <- ZIO.logInfo(s"Login request: $bodyStr")
-        mockResponse =
-          s"""{"person":{"id":1,"email":"test@example.com","name":"Test User","role":"CLIENT"},"token":"valid-token-1"}"""
-        response    <- ZIO.succeed(Response.json(mockResponse))
-      yield response).orElse(ZIO.succeed(Response.badRequest("Invalid request")))
-    }
-  )
-
-  private val allRoutes = healthRoutes ++ RideRoutes.routes ++ UserRoutes.routes ++ authRoutes
+  private val allRoutes = healthRoutes ++ RideRoutes.routes ++ UserRoutes.routes ++ AuthRoutes.routes
 
   def run: ZIO[Any, Throwable, Nothing] =
     (ZIO.logInfo("🐙 Starting Der Oktopus API Server (PostgreSQL)...") *>
@@ -42,8 +33,11 @@ object Application extends ZIOAppDefault:
       ZIO.logInfo("  📊 /api/stats/rides - Ride statistics") *>
       ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + notification + PostgreSQL repositories") *>
       ZIO.logInfo("🌐 Server running on http://localhost:8080") *>
-      Server.serve(allRoutes.handleError(err => Response.internalServerError(err.getMessage))))
+      Server.serve(
+        allRoutes.handleError(err => Response(Status.InternalServerError, body = Body.fromString(err.toString)))
+      ))
       .provide(
         Server.defaultWith(_.binding("0.0.0.0", 8080)),
-        PersonRepository.layer
+        PersonRepository.layer,
+        AuthService.live
       )

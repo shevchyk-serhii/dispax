@@ -1,13 +1,8 @@
 package com.shevchyk.ride.infrastructure.http
 
-import com.shevchyk.core.domain.RideId
-import com.shevchyk.ride.application.RideFacade
-import com.shevchyk.ride.application.service.SimpleRideService
-import com.shevchyk.ride.domain.{RideError, CreateRideRequest, UpdateRideStatusRequest}
 import com.shevchyk.TestDataGenerator
 import zio.*
 import zio.http.*
-import zio.json.*
 
 object RideRoutes {
   import com.shevchyk.repository.PersonRepository

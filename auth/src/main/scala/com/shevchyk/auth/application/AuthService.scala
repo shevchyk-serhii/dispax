@@ -2,6 +2,7 @@ package com.shevchyk.auth.application
 
 import com.shevchyk.auth.domain.*
 import zio.*
+import zio.json.*
 import java.time.Instant
 import java.security.MessageDigest
 import java.util.Base64
@@ -115,7 +116,7 @@ class AuthServiceImpl extends AuthService:
       _       <- ZIO.when(request.name.trim.isEmpty)(ZIO.fail(ValidationError("name", "Name cannot be empty")))
       userMap <- users.get
       _       <- ZIO.when(userMap.values.exists(_.email == request.email))(ZIO.fail(UserAlreadyExists(request.email)))
-      role    <- ZIO.attempt(UserRole.valueOf(request.role)).mapError(_ => ValidationError("role", "Invalid role"))
+      role    <- ZIO.attempt(UserRole.valueOf(request.role)).orElseFail(ValidationError("role", "Invalid role"))
       newId    = userMap.keys.maxOption.getOrElse(0L) + 1
       newUser  = User(
                    id = newId,
@@ -152,11 +153,11 @@ class AuthServiceImpl extends AuthService:
         )
       role         <-
         request.role.fold(ZIO.succeed(existingUser.role))(r =>
-          ZIO.attempt(UserRole.valueOf(r)).mapError(_ => ValidationError("role", "Invalid role"))
+          ZIO.attempt(UserRole.valueOf(r)).orElseFail(ValidationError("role", "Invalid role"))
         )
       status       <-
         request.status.fold(ZIO.succeed(existingUser.status))(s =>
-          ZIO.attempt(UserStatus.valueOf(s)).mapError(_ => ValidationError("status", "Invalid status"))
+          ZIO.attempt(UserStatus.valueOf(s)).orElseFail(ValidationError("status", "Invalid status"))
         )
       updatedUser   = existingUser.copy(
                         email = request.email.getOrElse(existingUser.email),

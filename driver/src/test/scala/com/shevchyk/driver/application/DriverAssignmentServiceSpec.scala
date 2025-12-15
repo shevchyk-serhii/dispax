@@ -1,7 +1,6 @@
 package com.shevchyk.driver.application
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.ride.domain.*
 import zio.test.*
 import zio.*
 

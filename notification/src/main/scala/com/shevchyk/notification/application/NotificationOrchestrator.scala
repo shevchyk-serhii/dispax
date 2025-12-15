@@ -1,7 +1,5 @@
 package com.shevchyk.notification.application
 
-import com.shevchyk.core.domain.*
-import zio.UIO
 import zio.*
 
 trait NotificationOrchestrator:
