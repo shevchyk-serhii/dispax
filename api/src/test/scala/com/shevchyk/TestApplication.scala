@@ -10,6 +10,7 @@ import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
+import com.shevchyk.config.ServerConfig
 import zio.*
 import zio.http.*
 import zio.logging.backend.SLF4J
@@ -103,19 +104,24 @@ object TestApplication extends ZIOAppDefault:
       RideRoutes.routes
 
   def run: ZIO[ZIOAppArgs, Any, Any] =
-    (ZIO.logInfo("🐙 Starting Der Oktopus API Server (Test - In-Memory)...") *>
+    ZIO.serviceWithZIO[ServerConfig] { serverConfig =>
+      ZIO.logInfo("🐙 Starting Der Oktopus API Server (Test - In-Memory)...") *>
       ZIO.logInfo("📋 Available APIs:") *>
       ZIO.logInfo("  🔍 /health - Health check") *>
       ZIO.logInfo("  🔐 /api/auth/login - Simple login endpoint") *>
       ZIO.logInfo("  👥 /api/users - User management endpoints") *>
       ZIO.logInfo("  🚗 /api/rides - Rich ride data (Mock)") *>
       ZIO.logInfo("🏗️  Modules: auth + ride + in-memory repositories (TESTING)") *>
-      ZIO.logInfo("🌐 Server running on http://localhost:8080") *>
+      ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
       Server.serve(
         allRoutes.handleError(err => Response(Status.InternalServerError, body = Body.fromString(err.toString)))
-      ))
-      .provide(
-        Server.defaultWith(_.binding("0.0.0.0", 8080)),
+      )
+    }.provide(
+        // Server configuration
+        ZLayer.service[ServerConfig] >>> ZLayer.fromFunction((config: ServerConfig) =>
+          Server.Config.default.binding(config.host, config.port)
+        ) >>> Server.live,
+        ServerConfig.liveLayer,
         ZLayer.succeed[PersonRepository](mockPersonRepository),
         ZLayer.succeed[UserRepository](mockUserRepository),
         ZLayer.succeed[TokenRepository](mockTokenRepository),
