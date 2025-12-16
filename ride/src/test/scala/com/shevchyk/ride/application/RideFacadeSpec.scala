@@ -6,6 +6,7 @@ import com.shevchyk.ride.application.service.*
 import com.shevchyk.ride.repository.InMemoryRideRepository
 import zio.test.*
 import zio.*
+import java.util.UUID
 
 object RideFacadeSpec extends ZIOSpecDefault {
 
@@ -13,7 +14,7 @@ object RideFacadeSpec extends ZIOSpecDefault {
     suite("createRide")(
       test("should successfully create a ride") {
         val request = CreateRideRequest(
-          clientId = PersonId(100),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
           pickupLocation = Location("Pickup Address"),
           dropoffLocation = Location("Dropoff Address")
         )
@@ -39,7 +40,7 @@ object RideFacadeSpec extends ZIOSpecDefault {
       test("should return failure for non-existing ride") {
         for {
           facade <- ZIO.service[RideFacade]
-          result <- facade.getRideById(RideId(999)).exit
+          result <- facade.getRideById(RideId(UUID.fromString("000003e7-0000-0000-0000-000000000999"))).exit
         } yield assertTrue(result.isFailure)
       }.provide(
         InMemoryRideRepository.layer,

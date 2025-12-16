@@ -8,15 +8,17 @@ import zio.json.*
 import java.time.Instant
 import java.security.MessageDigest
 import java.util.Base64
+import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 
 trait AuthService:
   def login(email: String, password: String): ZIO[Any, AuthError, LoginResponse]
   def createUser(request: CreateUserRequest): ZIO[Any, AuthError, UserDto]
-  def getUserById(id: Long): ZIO[Any, AuthError, UserDto]
+  def getUserById(id: UUID): ZIO[Any, AuthError, UserDto]
   def getUserByEmail(email: String): ZIO[Any, AuthError, UserDto]
-  def updateUser(id: Long, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto]
-  def deleteUser(id: Long): ZIO[Any, AuthError, Unit]
-  def changePassword(userId: Long, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit]
+  def updateUser(id: UUID, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto]
+  def deleteUser(id: UUID): ZIO[Any, AuthError, Unit]
+  def changePassword(userId: UUID, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit]
   def validateToken(token: String): ZIO[Any, AuthError, UserDto]
   def refreshToken(token: String): ZIO[Any, AuthError, String]
   def getAllUsers(role: Option[UserRole] = None, status: Option[UserStatus] = None): ZIO[Any, AuthError, List[UserDto]]
@@ -53,7 +55,7 @@ class AuthServiceImpl(userRepository: UserRepository, tokenRepository: TokenRepo
       _           <- ZIO.when(existing.isDefined)(ZIO.fail(UserAlreadyExists(request.email)))
       role        <- ZIO.attempt(UserRole.valueOf(request.role)).orElseFail(ValidationError("role", "Invalid role"))
       newUser      = User(
-                       id = 0L, // Will be set by database
+                       id = UuidCreator.getTimeOrderedEpoch(),
                        email = request.email,
                        name = request.name,
                        role = role,
@@ -65,7 +67,7 @@ class AuthServiceImpl(userRepository: UserRepository, tokenRepository: TokenRepo
       createdUser <- userRepository.create(newUser).orElseFail(ValidationError("user", "Failed to create user"))
     yield UserDto.fromDomain(createdUser)
 
-  override def getUserById(id: Long): ZIO[Any, AuthError, UserDto] =
+  override def getUserById(id: UUID): ZIO[Any, AuthError, UserDto] =
     for
       userOpt <- userRepository.findById(id).orElseFail(UserNotFound(s"ID: $id"))
       user    <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(s"ID: $id"))
@@ -77,7 +79,7 @@ class AuthServiceImpl(userRepository: UserRepository, tokenRepository: TokenRepo
       user    <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(email))
     yield UserDto.fromDomain(user)
 
-  override def updateUser(id: Long, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto] =
+  override def updateUser(id: UUID, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto] =
     for
       existingUserOpt <- userRepository.findById(id).orElseFail(UserNotFound(s"ID: $id"))
       existingUser    <- ZIO.fromOption(existingUserOpt).orElseFail(UserNotFound(s"ID: $id"))
@@ -104,7 +106,7 @@ class AuthServiceImpl(userRepository: UserRepository, tokenRepository: TokenRepo
       saved           <- userRepository.update(updatedUser).orElseFail(ValidationError("user", "Failed to update user"))
     yield UserDto.fromDomain(saved)
 
-  override def deleteUser(id: Long): ZIO[Any, AuthError, Unit] =
+  override def deleteUser(id: UUID): ZIO[Any, AuthError, Unit] =
     for
       userOpt <- userRepository.findById(id).orElseFail(UserNotFound(s"ID: $id"))
       _       <- ZIO.when(userOpt.isEmpty)(ZIO.fail(UserNotFound(s"ID: $id")))
@@ -112,7 +114,7 @@ class AuthServiceImpl(userRepository: UserRepository, tokenRepository: TokenRepo
       _       <- tokenRepository.deleteByUserId(id).orElseFail(ValidationError("token", "Failed to delete tokens"))
     yield ()
 
-  override def changePassword(userId: Long, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit] =
+  override def changePassword(userId: UUID, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit] =
     for
       _          <-
         ZIO.when(!validatePassword(request.newPassword))(

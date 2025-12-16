@@ -2,17 +2,20 @@ package com.shevchyk.core.domain
 
 import zio.test.*
 import zio.json.*
+import java.util.UUID
 
 object CoreDomainSpec extends ZIOSpecDefault {
 
   def spec = suite("CoreDomain")(
     suite("PersonId")(
       test("should create valid PersonId") {
-        val personId = PersonId(123L)
-        assertTrue(personId.value == 123L)
+        val testUuid = UUID.fromString("12345678-1234-1234-1234-123456789012")
+        val personId = PersonId(testUuid)
+        assertTrue(personId.value == testUuid)
       },
       test("should serialize and deserialize to JSON") {
-        val personId = PersonId(456L)
+        val testUuid = UUID.fromString("45678901-2345-2345-2345-456789012345")
+        val personId = PersonId(testUuid)
         val json = personId.toJson
         val decoded = json.fromJson[PersonId]
         assertTrue(decoded.isRight && decoded.toOption.contains(personId))
@@ -41,12 +44,14 @@ object CoreDomainSpec extends ZIOSpecDefault {
 
     suite("Person")(
       test("should create person with all fields") {
+        val testPersonUuid = UUID.fromString("12345678-1234-1234-1234-123456789012")
+        val testCompanyUuid = UUID.fromString("87654321-4321-4321-4321-210987654321")
         val person = Person(
-          id = PersonId(1),
+          id = PersonId(testPersonUuid),
           name = "John Driver",
           email = "john@example.com",
           role = PersonRole.Driver,
-          companyId = Some(CompanyId(100)),
+          companyId = Some(CompanyId(testCompanyUuid)),
           licenseNumber = Some("DL123456"),
           phone = Some("+380123456789")
         )
@@ -57,9 +62,13 @@ object CoreDomainSpec extends ZIOSpecDefault {
         )
       },
       test("should handle different roles") {
-        val client = Person(PersonId(1), "Client", "client@example.com", PersonRole.Client)
-        val driver = Person(PersonId(2), "Driver", "driver@example.com", PersonRole.Driver)
-        val dispatcher = Person(PersonId(3), "Dispatcher", "dispatch@example.com", PersonRole.Dispatcher)
+        val clientUuid = UUID.fromString("11111111-1111-1111-1111-111111111111")
+        val driverUuid = UUID.fromString("22222222-2222-2222-2222-222222222222")
+        val dispatcherUuid = UUID.fromString("33333333-3333-3333-3333-333333333333")
+        
+        val client = Person(PersonId(clientUuid), "Client", "client@example.com", PersonRole.Client)
+        val driver = Person(PersonId(driverUuid), "Driver", "driver@example.com", PersonRole.Driver)
+        val dispatcher = Person(PersonId(dispatcherUuid), "Dispatcher", "dispatch@example.com", PersonRole.Dispatcher)
         
         assertTrue(
           client.role == PersonRole.Client &&
@@ -71,8 +80,9 @@ object CoreDomainSpec extends ZIOSpecDefault {
 
     suite("Company")(
       test("should create company with valid data") {
+        val testCompanyUuid = UUID.fromString("10101010-1010-1010-1010-101010101010")
         val company = Company(
-          id = CompanyId(1),
+          id = CompanyId(testCompanyUuid),
           name = "Oktopus Taxi",
           email = "info@oktopus.taxi",
           phone = "+380501234567",

@@ -20,10 +20,10 @@ class RideCreationServiceImpl(rideRepository: RideRepository) extends RideCreati
 
       // Create ride entity
       ride           = Ride(
-                         id = RideId(0),               // Will be set by database
+                         id = RideId.generate(),           // Generate UUID
                          clientId = request.clientId,
-                         creatorId = request.clientId, // For now, creator is the client
-                         companyId = CompanyId(1),     // Default company for now
+                         creatorId = request.clientId,     // For now, creator is the client
+                         companyId = CompanyId.generate(), // Generate UUID for default company
                          pickupLocation = request.pickupLocation,
                          dropoffLocation = request.dropoffLocation,
                          scheduledTime = request.scheduledTime,
@@ -37,10 +37,7 @@ class RideCreationServiceImpl(rideRepository: RideRepository) extends RideCreati
       // Persist to database
       persistedRide <- rideRepository
                          .create(ride)
-                         .mapError {
-                           case ex: Throwable => RideError.DatabaseError(ex)
-                           case error         => error.asInstanceOf[RideError]
-                         }
+                         .mapError(ex => RideError.DatabaseError(ex))
 
     } yield RideCreationEvent(persistedRide)
 
@@ -73,10 +70,10 @@ object RideCreationService:
     new RideCreationService {
       def createRide(request: CreateRideRequest): IO[RideError, RideCreationEvent] =
         val ride = Ride(
-          id = RideId(scala.util.Random.nextLong()),
+          id = RideId.generate(),
           clientId = request.clientId,
           creatorId = request.clientId,
-          companyId = CompanyId(1),
+          companyId = CompanyId.generate(),
           pickupLocation = request.pickupLocation,
           dropoffLocation = request.dropoffLocation,
           scheduledTime = request.scheduledTime,

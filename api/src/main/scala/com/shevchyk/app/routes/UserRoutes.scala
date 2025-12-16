@@ -2,6 +2,7 @@ package com.shevchyk.app.routes
 
 import com.shevchyk.repository.PersonRepository
 import com.shevchyk.core.domain.{Person, PersonId, PersonRole}
+import java.util.UUID
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -9,17 +10,17 @@ import zio.json.*
 object UserRoutes {
 
   val routes: Routes[PersonRepository, Throwable] = Routes(
-    Method.GET / "api" / "users"             -> handler { (_: Request) =>
+    Method.GET / "api" / "users"                -> handler { (_: Request) =>
       for {
         personRepo <- ZIO.service[PersonRepository]
         users      <- personRepo.findAll()
         response   <- ZIO.succeed(Response.json(users.toJson))
       } yield response
     },
-    Method.GET / "api" / "users" / int("id") -> handler { (userId: Int, _: Request) =>
+    Method.GET / "api" / "users" / string("id") -> handler { (userId: String, _: Request) =>
       for {
         personRepo <- ZIO.service[PersonRepository]
-        userOpt    <- personRepo.findById(PersonId(userId))
+        userOpt    <- personRepo.findById(PersonId(UUID.fromString(userId)))
         response   <-
           userOpt match {
             case Some(user) => ZIO.succeed(Response.json(user.toJson))
@@ -27,21 +28,21 @@ object UserRoutes {
           }
       } yield response
     },
-    Method.GET / "api" / "users" / "drivers" -> handler { (_: Request) =>
+    Method.GET / "api" / "users" / "drivers"    -> handler { (_: Request) =>
       for {
         personRepo <- ZIO.service[PersonRepository]
         drivers    <- personRepo.findByRole(PersonRole.Driver)
         response   <- ZIO.succeed(Response.json(drivers.toJson))
       } yield response
     },
-    Method.GET / "api" / "users" / "clients" -> handler { (_: Request) =>
+    Method.GET / "api" / "users" / "clients"    -> handler { (_: Request) =>
       for {
         personRepo <- ZIO.service[PersonRepository]
         clients    <- personRepo.findByRole(PersonRole.Client)
         response   <- ZIO.succeed(Response.json(clients.toJson))
       } yield response
     },
-    Method.GET / "api" / "stats" / "rides"   -> handler { (_: Request) =>
+    Method.GET / "api" / "stats" / "rides"      -> handler { (_: Request) =>
       for {
         personRepo <- ZIO.service[PersonRepository]
         drivers    <- personRepo.findByRole(PersonRole.Driver)

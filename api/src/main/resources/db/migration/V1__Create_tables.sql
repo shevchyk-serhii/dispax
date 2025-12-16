@@ -11,7 +11,7 @@ CREATE TYPE driver_status AS ENUM ('Available', 'Busy', 'Offline');
 
 -- Companies table
 CREATE TABLE companies (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255),
     phone VARCHAR(20),
@@ -22,11 +22,11 @@ CREATE TABLE companies (
 
 -- Persons table (users, drivers, clients, dispatchers)
 CREATE TABLE persons (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     role person_role NOT NULL,
-    company_id INTEGER REFERENCES companies(id),
+    company_id UUID REFERENCES companies(id),
     password_hash VARCHAR(255),
     license_number VARCHAR(50),
     phone VARCHAR(20),
@@ -36,19 +36,19 @@ CREATE TABLE persons (
 
 -- Drivers table (extends persons)
 CREATE TABLE drivers (
-    id INTEGER PRIMARY KEY REFERENCES persons(id),
+    id UUID PRIMARY KEY REFERENCES persons(id),
     current_location_address VARCHAR(500),
     current_location_lat DOUBLE PRECISION,
     current_location_lng DOUBLE PRECISION,
     status driver_status NOT NULL DEFAULT 'Available',
-    company_id INTEGER NOT NULL REFERENCES companies(id),
+    company_id UUID NOT NULL REFERENCES companies(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Tariffs table
 CREATE TABLE tariffs (
-    company_id INTEGER PRIMARY KEY REFERENCES companies(id),
+    company_id UUID PRIMARY KEY REFERENCES companies(id),
     base_price_amount DECIMAL(10,2) NOT NULL,
     base_price_currency VARCHAR(3) NOT NULL DEFAULT 'EUR',
     price_per_km_amount DECIMAL(10,2) NOT NULL,
@@ -63,11 +63,11 @@ CREATE TABLE tariffs (
 
 -- Rides table (complete schema)
 CREATE TABLE rides (
-    id BIGSERIAL PRIMARY KEY,
-    client_id INTEGER NOT NULL REFERENCES persons(id),
-    creator_id INTEGER NOT NULL REFERENCES persons(id),
-    driver_id INTEGER REFERENCES persons(id),
-    company_id INTEGER NOT NULL REFERENCES companies(id),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client_id UUID NOT NULL REFERENCES persons(id),
+    creator_id UUID NOT NULL REFERENCES persons(id),
+    driver_id UUID REFERENCES persons(id),
+    company_id UUID NOT NULL REFERENCES companies(id),
     
     -- Location information
     from_address VARCHAR(500) NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE rides (
     
     -- Status and pricing
     status ride_status NOT NULL DEFAULT 'Requested',
-    tariff_id INTEGER REFERENCES tariffs(company_id),
+    tariff_id UUID REFERENCES tariffs(company_id),
     estimated_price_amount DECIMAL(10,2),
     estimated_price_currency VARCHAR(3) DEFAULT 'EUR',
     final_price_amount DECIMAL(10,2),
@@ -130,18 +130,29 @@ CREATE INDEX idx_persons_role ON persons(role);
 CREATE INDEX idx_drivers_status ON drivers(status);
 CREATE INDEX idx_drivers_company_id ON drivers(company_id);
 
--- Insert default data
-INSERT INTO companies (id, name, email, phone, address) VALUES 
-    (1, 'Oktopus Taxi', 'info@oktopus.taxi', '+380501234567', 'Kyiv, Ukraine');
+-- Authentication tables
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL CHECK (role IN ('CLIENT', 'DRIVER', 'DISPATCHER', 'SECRETARY', 'ADMIN')),
+    password_hash VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'SUSPENDED')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE
+);
 
-INSERT INTO tariffs (company_id, base_price_amount, price_per_km_amount, airport_surcharge_amount, night_surcharge_amount) VALUES
-    (1, 5.00, 1.50, 5.00, 2.00);
+CREATE TABLE tokens (
+    token VARCHAR(512) PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
--- Insert test users
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone) VALUES 
-    (1, 'John Client', 'john.client@example.com', 'client', 1, '$2a$10$dummyhash1', '+380501111111'),
-    (2, 'Jane Driver', 'jane.driver@example.com', 'driver', 1, '$2a$10$dummyhash2', '+380502222222'),
-    (3, 'Bob Dispatch', 'bob.dispatch@example.com', 'dispatcher', 1, '$2a$10$dummyhash3', '+380503333333');
+-- Create indexes for auth tables
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX idx_tokens_user_id ON tokens(user_id);
 
-INSERT INTO drivers (id, status, company_id) VALUES 
-    (2, 'Available', 1);
+-- Schema created. Data insertion moved to separate development-only migration.

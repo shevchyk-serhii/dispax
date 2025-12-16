@@ -8,10 +8,11 @@ import doobie.postgres.implicits.*
 import cats.effect.IO
 import zio.interop.catz.*
 import java.time.Instant
+import java.util.UUID
 
 final class PostgresTokenRepository(xa: Transactor[Task]) extends TokenRepository:
 
-  override def create(token: String, userId: Long): Task[Unit] =
+  override def create(token: String, userId: UUID): Task[Unit] =
     sql"""
       INSERT INTO tokens (token, user_id, created_at) 
       VALUES ($token, $userId, ${Instant.now()})
@@ -20,13 +21,13 @@ final class PostgresTokenRepository(xa: Transactor[Task]) extends TokenRepositor
       .transact(xa)
       .map(_ => ())
 
-  override def findUserIdByToken(token: String): Task[Option[Long]] =
+  override def findUserIdByToken(token: String): Task[Option[UUID]] =
     sql"""
       SELECT user_id
       FROM tokens 
       WHERE token = $token
     """
-      .query[Long]
+      .query[UUID]
       .option
       .transact(xa)
 
@@ -37,7 +38,7 @@ final class PostgresTokenRepository(xa: Transactor[Task]) extends TokenRepositor
       .transact(xa)
       .map(_ => ())
 
-  override def deleteByUserId(userId: Long): Task[Unit] =
+  override def deleteByUserId(userId: UUID): Task[Unit] =
     sql"""
       DELETE FROM tokens WHERE user_id = $userId
     """.update.run

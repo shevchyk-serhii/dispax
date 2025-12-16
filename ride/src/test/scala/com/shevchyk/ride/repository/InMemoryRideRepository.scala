@@ -4,16 +4,13 @@ import com.shevchyk.core.domain.{RideId, PersonId, CompanyId}
 import com.shevchyk.ride.domain.{Ride, RideStatus}
 import zio.*
 import java.time.Instant
-import java.util.concurrent.atomic.AtomicLong
 
 class InMemoryRideRepository extends RideRepository:
   private val rides = Unsafe.unsafe { implicit unsafe =>
     Runtime.default.unsafe.run(Ref.Synchronized.make(Map.empty[RideId, Ride])).getOrThrowFiberFailure()
   }
-  private val idCounter = new AtomicLong(1)
-
   override def create(ride: Ride): Task[Ride] =
-    val rideWithId = ride.copy(id = RideId(idCounter.getAndIncrement()))
+    val rideWithId = ride.copy(id = RideId.generate())
     rides.update(_.updated(rideWithId.id, rideWithId)).as(rideWithId)
 
   override def findById(id: RideId): Task[Option[Ride]] =

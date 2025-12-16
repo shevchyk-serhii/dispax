@@ -46,6 +46,10 @@ lazy val jwtDependencies = Seq(
   "com.github.jwt-scala" %% "jwt-zio-json" % "10.0.1"
 )
 
+lazy val uuidDependencies = Seq(
+  "com.github.f4b6a3" % "uuid-creator" % "5.3.2"
+)
+
 lazy val testDependencies = Seq(
   "io.cucumber"        % "cucumber-core"          % "7.15.0" % Test,
   "io.cucumber"       %% "cucumber-scala"         % "8.20.0" % Test,
@@ -58,7 +62,7 @@ lazy val testDependencies = Seq(
 lazy val core = (project in file("core"))
   .settings(
     name := "oktopus-core",
-    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ dbDependencies
+    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ dbDependencies ++ uuidDependencies
   )
 
 lazy val auth = (project in file("auth"))

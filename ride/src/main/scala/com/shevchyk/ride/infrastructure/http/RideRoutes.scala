@@ -5,6 +5,7 @@ import com.shevchyk.ride.domain.{*, given}
 import com.shevchyk.ride.application.RideFacade
 import com.shevchyk.ride.repository.RideRepository
 import com.shevchyk.core.domain.{RideId, PersonId}
+import java.util.UUID
 import com.shevchyk.auth.middleware.{AuthMiddleware, AuthenticatedUser}
 import com.shevchyk.auth.service.JwtService
 import zio.*
@@ -78,7 +79,7 @@ object RideRoutes {
                             .mapError(_ => "Invalid JSON format")
 
           // For now, use hardcoded client ID (would come from JWT token in production)
-          domainRequest = CreateRideApiRequest.toDomain(apiRequest).copy(clientId = PersonId(1L))
+          domainRequest = CreateRideApiRequest.toDomain(apiRequest).copy(clientId = PersonId.generate())
           facade       <- ZIO.service[RideFacade]
           ride         <- facade.createRide(domainRequest)
         } yield RideDto.fromDomain(ride)
@@ -104,7 +105,7 @@ object RideRoutes {
         for {
           facade <- ZIO.service[RideFacade]
           // For now, get rides for hardcoded user ID
-          rides  <- facade.getRidesForUser(PersonId(1L))
+          rides  <- facade.getRidesForUser(PersonId.generate())
         } yield rides.map(RideDto.fromDomain)
 
       getRidesLogic
@@ -117,11 +118,11 @@ object RideRoutes {
     },
 
     // Get specific ride by ID
-    Method.GET / "api" / "rides" / long("rideId") -> handler { (rideId: Long, _: Request) =>
+    Method.GET / "api" / "rides" / string("rideId") -> handler { (rideId: String, _: Request) =>
       val getRideLogic =
         for {
           facade <- ZIO.service[RideFacade]
-          ride   <- facade.getRideById(RideId(rideId))
+          ride   <- facade.getRideById(RideId(UUID.fromString(rideId)))
         } yield RideDto.fromDomain(ride)
 
       getRideLogic

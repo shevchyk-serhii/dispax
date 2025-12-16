@@ -39,10 +39,10 @@ object SimpleRideService:
 
       def createRide(request: CreateRideRequest): IO[RideError, Ride] =
         val ride = Ride(
-          id = RideId(scala.util.Random.nextLong()),
+          id = RideId.generate(),
           clientId = request.clientId,
           creatorId = request.clientId,
-          companyId = CompanyId(1),
+          companyId = CompanyId.generate(),
           pickupLocation = request.pickupLocation,
           dropoffLocation = request.dropoffLocation,
           scheduledTime = request.scheduledTime,

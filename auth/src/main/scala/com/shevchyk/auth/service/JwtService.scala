@@ -6,9 +6,10 @@ import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
 import zio.*
 import zio.json.*
 import java.time.Instant
+import java.util.UUID
 
 final case class JwtPayload(
-    userId: Long,
+    userId: UUID,
     email: String,
     role: UserRole,
     iat: Long, // issued at

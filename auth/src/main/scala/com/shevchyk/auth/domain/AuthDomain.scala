@@ -1,9 +1,11 @@
 package com.shevchyk.auth.domain
 
 import zio.json.*
+import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 
 case class User(
-    id: Long,
+    id: UUID,
     email: String,
     name: String,
     role: UserRole,
@@ -31,7 +33,7 @@ case class LoginResponse(
 ) derives JsonCodec
 
 case class UserDto(
-    id: Long,
+    id: UUID,
     email: String,
     name: String,
     role: String,

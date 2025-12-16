@@ -25,9 +25,9 @@ final case class MockRideRepository() extends RideRepository {
       Some(
         Ride(
           id = id,
-          clientId = PersonId(1),
-          creatorId = PersonId(1),
-          companyId = CompanyId(1),
+          clientId = PersonId.generate(),
+          creatorId = PersonId.generate(),
+          companyId = CompanyId.generate(),
           status = RideStatus.Requested,
           pickupLocation = Location("Mock Pickup Location"),
           dropoffLocation = Location("Mock Destination Location")
@@ -40,10 +40,10 @@ final case class MockRideRepository() extends RideRepository {
     ZIO.succeed(
       List(
         Ride(
-          id = RideId(1),
-          clientId = PersonId(1),
-          creatorId = PersonId(1),
-          companyId = CompanyId(1),
+          id = RideId.generate(),
+          clientId = PersonId.generate(),
+          creatorId = PersonId.generate(),
+          companyId = CompanyId.generate(),
           status = status,
           pickupLocation = Location("Mock Pickup Location"),
           dropoffLocation = Location("Mock Destination Location")
@@ -56,10 +56,10 @@ final case class MockRideRepository() extends RideRepository {
     ZIO.succeed(
       List(
         Ride(
-          id = RideId(1),
-          clientId = PersonId(1),
-          creatorId = PersonId(1),
-          companyId = CompanyId(1),
+          id = RideId.generate(),
+          clientId = PersonId.generate(),
+          creatorId = PersonId.generate(),
+          companyId = CompanyId.generate(),
           status = RideStatus.Requested,
           pickupLocation = Location("Mock Pickup Location"),
           dropoffLocation = Location("Mock Destination Location")

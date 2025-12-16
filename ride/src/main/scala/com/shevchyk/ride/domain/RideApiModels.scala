@@ -1,8 +1,9 @@
 package com.shevchyk.ride.domain
 
-import com.shevchyk.core.domain.Location
+import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId}
 import zio.json.*
 import java.time.Instant
+import java.util.UUID
 
 // Frontend-compatible DTOs
 
@@ -13,12 +14,12 @@ case class LocationDto(
 ) derives JsonCodec
 
 case class RideDto(
-    id: Long,
-    clientId: Long,
-    creatorId: Long,
-    driverId: Option[Long] = None,
-    companyId: Long,
-    scheduleDayId: Option[Long] = None,
+    id: String,
+    clientId: String,
+    creatorId: String,
+    driverId: Option[String] = None,
+    companyId: String,
+    scheduleDayId: Option[String] = None,
     pickupDateTime: String,
     from: LocationDto,
     to: LocationDto,
@@ -37,10 +38,10 @@ case class RideDto(
 ) derives JsonCodec
 
 case class CreateRideApiRequest(
-    clientId: Long,
-    creatorId: Long,
-    companyId: Long,
-    scheduleDayId: Option[Long] = None,
+    clientId: String,
+    creatorId: String,
+    companyId: String,
+    scheduleDayId: Option[String] = None,
     pickupDateTime: String,
     from: LocationDto,
     to: LocationDto,
@@ -56,7 +57,7 @@ case class CreateRideApiRequest(
 ) derives JsonCodec
 
 case class UpdateRideApiRequest(
-    clientId: Option[Long] = None,
+    clientId: Option[String] = None,
     pickupLocation: Option[String] = None,
     destination: Option[String] = None,
     pickupTime: Option[String] = None,
@@ -76,7 +77,7 @@ case class RideStatusUpdateResponse(
 ) derives JsonCodec
 
 case class AssignDriverRequest(
-    driverId: Long
+    driverId: String
 ) derives JsonCodec
 
 case class ValidationErrorsResponse(
@@ -106,11 +107,11 @@ object LocationDto:
 object RideDto:
 
   def fromDomain(ride: Ride): RideDto = RideDto(
-    id = ride.id.value,
-    clientId = ride.clientId.value,
-    creatorId = ride.creatorId.value,
-    driverId = ride.driverId.map(_.value),
-    companyId = ride.companyId.value,
+    id = ride.id.value.toString,
+    clientId = ride.clientId.value.toString,
+    creatorId = ride.creatorId.value.toString,
+    driverId = ride.driverId.map(_.value.toString),
+    companyId = ride.companyId.value.toString,
     scheduleDayId = None,                   // Not used in current domain model
     pickupDateTime = ride.scheduledTime.getOrElse(ride.requestTime).toString,
     from = LocationDto.fromDomain(ride.pickupLocation),
@@ -132,7 +133,7 @@ object RideDto:
 object CreateRideApiRequest:
 
   def toDomain(request: CreateRideApiRequest): CreateRideRequest = CreateRideRequest(
-    clientId = com.shevchyk.core.domain.PersonId(request.clientId),
+    clientId = PersonId(UUID.fromString(request.clientId)),
     pickupLocation = LocationDto.toDomain(request.from),
     dropoffLocation = LocationDto.toDomain(request.to),
     scheduledTime = scala.util.Try(Instant.parse(request.pickupDateTime)).toOption,

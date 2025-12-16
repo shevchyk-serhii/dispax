@@ -4,22 +4,23 @@ import com.shevchyk.auth.domain.*
 import com.shevchyk.database.DatabaseConfig
 import doobie.Transactor
 import zio.*
+import java.util.UUID
 
 trait UserRepository:
   def create(user: User): Task[User]
-  def findById(id: Long): Task[Option[User]]
+  def findById(id: UUID): Task[Option[User]]
   def findByEmail(email: String): Task[Option[User]]
   def findAll(): Task[List[User]]
   def findByRole(role: UserRole): Task[List[User]]
   def findByStatus(status: UserStatus): Task[List[User]]
   def update(user: User): Task[User]
-  def delete(id: Long): Task[Unit]
+  def delete(id: UUID): Task[Unit]
   def searchByQuery(query: String): Task[List[User]]
 
 object UserRepository:
   def create(user: User): ZIO[UserRepository, Throwable, User] = ZIO.serviceWithZIO[UserRepository](_.create(user))
 
-  def findById(id: Long): ZIO[UserRepository, Throwable, Option[User]] = ZIO.serviceWithZIO[UserRepository](
+  def findById(id: UUID): ZIO[UserRepository, Throwable, Option[User]] = ZIO.serviceWithZIO[UserRepository](
     _.findById(id)
   )
 
@@ -39,7 +40,7 @@ object UserRepository:
 
   def update(user: User): ZIO[UserRepository, Throwable, User] = ZIO.serviceWithZIO[UserRepository](_.update(user))
 
-  def delete(id: Long): ZIO[UserRepository, Throwable, Unit] = ZIO.serviceWithZIO[UserRepository](_.delete(id))
+  def delete(id: UUID): ZIO[UserRepository, Throwable, Unit] = ZIO.serviceWithZIO[UserRepository](_.delete(id))
 
   def searchByQuery(query: String): ZIO[UserRepository, Throwable, List[User]] = ZIO.serviceWithZIO[UserRepository](
     _.searchByQuery(query)

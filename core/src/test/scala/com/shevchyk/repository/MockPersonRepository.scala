@@ -2,6 +2,7 @@ package com.shevchyk.repository
 
 import com.shevchyk.core.domain.{Person, PersonId, PersonRole, CompanyId}
 import zio.*
+import java.util.UUID
 
 final case class MockPersonRepository() extends PersonRepository {
 
@@ -21,7 +22,7 @@ final case class MockPersonRepository() extends PersonRepository {
   override def findByEmail(email: String): Task[Option[Person]] = {
     ZIO.some {
       Person(
-        id = PersonId(1),
+        id = PersonId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
         name = "Mock User",
         email = email,
         role = PersonRole.Client
@@ -33,7 +34,7 @@ final case class MockPersonRepository() extends PersonRepository {
     ZIO.succeed(
       List(
         Person(
-          id = PersonId(1),
+          id = PersonId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
           name = "Mock User",
           email = "mock@example.com",
           role = role
@@ -46,7 +47,7 @@ final case class MockPersonRepository() extends PersonRepository {
     ZIO.succeed(
       List(
         Person(
-          id = PersonId(1),
+          id = PersonId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
           name = "Mock User",
           email = "mock@example.com",
           role = PersonRole.Client,
@@ -60,7 +61,7 @@ final case class MockPersonRepository() extends PersonRepository {
     ZIO.succeed(
       List(
         Person(
-          id = PersonId(1),
+          id = PersonId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
           name = "Mock User",
           email = "mock@example.com",
           role = PersonRole.Client

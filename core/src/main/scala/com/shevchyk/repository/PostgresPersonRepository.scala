@@ -8,6 +8,8 @@ import doobie.postgres.*
 import doobie.postgres.implicits.*
 import cats.effect.IO
 import zio.interop.catz.*
+import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 
 final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonRepository {
 
@@ -26,13 +28,17 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
     }
 
   override def create(person: Person): Task[Person] = {
+    val personWithId =
+      if (person.id.value == null)
+        person.copy(id = PersonId.generate())
+      else
+        person
     sql"""
-      INSERT INTO persons (name, email, role, company_id, license_number, phone) 
-      VALUES (${person.name}, ${person.email}, ${person.role}, ${person.companyId}, ${person.licenseNumber}, ${person.phone})
-    """.update
-      .withUniqueGeneratedKeys[Long]("id")
+      INSERT INTO persons (id, name, email, role, company_id, license_number, phone) 
+      VALUES (${personWithId.id.value}, ${personWithId.name}, ${personWithId.email}, ${personWithId.role}, ${personWithId.companyId}, ${personWithId.licenseNumber}, ${personWithId.phone})
+    """.update.run
       .transact(xa)
-      .map(id => person.copy(id = PersonId(id)))
+      .as(personWithId)
   }
 
   override def findById(id: PersonId): Task[Option[Person]] = {
@@ -115,7 +121,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
 
   // Custom Read instance for Person
   implicit val personRead: Read[Person] =
-    Read[(Long, String, String, PersonRole, Option[Long], Option[String], Option[String])].map {
+    Read[(UUID, String, String, PersonRole, Option[UUID], Option[String], Option[String])].map {
       case (id, name, email, role, companyId, licenseNumber, phone) =>
         Person(
           id = PersonId(id),

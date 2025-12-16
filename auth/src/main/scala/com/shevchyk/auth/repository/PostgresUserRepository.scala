@@ -9,6 +9,8 @@ import doobie.postgres.implicits.*
 import cats.effect.IO
 import zio.interop.catz.*
 import java.time.Instant
+import java.util.UUID
+import com.github.f4b6a3.uuid.UuidCreator
 
 final class PostgresUserRepository(xa: Transactor[Task]) extends UserRepository:
 
@@ -39,21 +41,25 @@ final class PostgresUserRepository(xa: Transactor[Task]) extends UserRepository:
     }
 
   implicit val userRead: Read[User] =
-    Read[(Long, String, String, UserRole, String, Option[String], UserStatus, Instant, Option[Instant])].map {
+    Read[(UUID, String, String, UserRole, String, Option[String], UserStatus, Instant, Option[Instant])].map {
       case (id, email, name, role, passwordHash, phone, status, createdAt, updatedAt) =>
         User(id, email, name, role, passwordHash, phone, status, createdAt, updatedAt)
     }
 
   override def create(user: User): Task[User] =
+    val userWithId =
+      if (user.id == null)
+        user.copy(id = UuidCreator.getTimeOrderedEpoch())
+      else
+        user
     sql"""
-      INSERT INTO users (email, name, role, password_hash, phone, status, created_at, updated_at) 
-      VALUES (${user.email}, ${user.name}, ${user.role}, ${user.passwordHash}, ${user.phone}, ${user.status}, ${user.createdAt}, ${user.updatedAt})
-    """.update
-      .withUniqueGeneratedKeys[Long]("id")
+      INSERT INTO users (id, email, name, role, password_hash, phone, status, created_at, updated_at) 
+      VALUES (${userWithId.id}, ${userWithId.email}, ${userWithId.name}, ${userWithId.role}, ${userWithId.passwordHash}, ${userWithId.phone}, ${userWithId.status}, ${userWithId.createdAt}, ${userWithId.updatedAt})
+    """.update.run
       .transact(xa)
-      .map(id => user.copy(id = id))
+      .map(_ => userWithId)
 
-  override def findById(id: Long): Task[Option[User]] =
+  override def findById(id: UUID): Task[Option[User]] =
     sql"""
       SELECT id, email, name, role, password_hash, phone, status, created_at, updated_at
       FROM users 
@@ -118,7 +124,7 @@ final class PostgresUserRepository(xa: Transactor[Task]) extends UserRepository:
       .transact(xa)
       .map(_ => user)
 
-  override def delete(id: Long): Task[Unit] =
+  override def delete(id: UUID): Task[Unit] =
     sql"""
       DELETE FROM users WHERE id = $id
     """.update.run

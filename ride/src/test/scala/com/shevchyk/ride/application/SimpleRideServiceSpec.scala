@@ -6,6 +6,7 @@ import com.shevchyk.ride.application.service.*
 import com.shevchyk.ride.repository.InMemoryRideRepository
 import zio.test.*
 import zio.*
+import java.util.UUID
 
 object SimpleRideServiceSpec extends ZIOSpecDefault {
 
@@ -14,7 +15,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
       test("should return RideNotFound error for any ID") {
         for {
           service <- ZIO.service[SimpleRideService]
-          result  <- service.getRideById(RideId(123)).exit
+          result  <- service.getRideById(RideId(UUID.fromString("0000007b-0000-0000-0000-000000000123"))).exit
         } yield assertTrue(result.isFailure)
       }.provide(
         InMemoryRideRepository.layer,
@@ -26,7 +27,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
     suite("createRide")(
       test("should create ride with generated ID") {
         val request = CreateRideRequest(
-          clientId = PersonId(100),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
           pickupLocation = Location("Start Point"),
           dropoffLocation = Location("End Point"),
           notes = Some("Test ride")
@@ -50,7 +51,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
 
       test("should create airport transfer ride") {
         val request = CreateRideRequest(
-          clientId = PersonId(200),
+          clientId = PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200")),
           pickupLocation = Location("Airport Terminal 1"),
           dropoffLocation = Location("Hotel"),
           airportCode = Some("KBP"),

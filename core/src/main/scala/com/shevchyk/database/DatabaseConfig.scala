@@ -84,7 +84,14 @@ object DatabaseConfig {
 
   val liveTransactorWithMigrations: ZLayer[Any, Throwable, Transactor[Task]] = ZLayer.makeSome[Any, Transactor[Task]](
     layer.catchAll(_ => defaultLayer),
-    FlywayService.live,
+    FlywayService.development, // Default to development (includes dev data)
     transactorWithMigrations
   )
+
+  val productionTransactorWithMigrations: ZLayer[Any, Throwable, Transactor[Task]] = ZLayer
+    .makeSome[Any, Transactor[Task]](
+      layer.catchAll(_ => defaultLayer),
+      FlywayService.production, // Production (schema only, no test data)
+      transactorWithMigrations
+    )
 }

@@ -10,6 +10,7 @@ import scala.util.Try
 import java.time.Instant
 import com.shevchyk.core.domain.*
 import scala.jdk.CollectionConverters.*
+import java.util.UUID
 
 object ApiStepDefinitions {
   private val runtime = Runtime.default
@@ -110,22 +111,26 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
   Given("""^I am authenticated as a (client|dispatcher|admin) with ID (\d+)$""") { 
     (role: String, userId: String) =>
-      currentUserId = Some(PersonId(userId.toLong))
-      authToken = Some(generateMockToken(PersonId(userId.toLong), role))
+      val uuid = getTestUuidForId(userId.toInt)
+      currentUserId = Some(PersonId(uuid))
+      authToken = Some(generateMockToken(PersonId(uuid), role))
   }
 
   Given("""^I am authenticated as an? (admin|user)$""") { (role: String) =>
-    authToken = Some(generateMockToken(PersonId(1), role))
+    val testUuid = UUID.fromString("11111111-1111-1111-1111-111111111111")
+    authToken = Some(generateMockToken(PersonId(testUuid), role))
   }
 
   Given("""^I am authenticated with a valid JWT token$""") { () =>
-    authToken = Some(generateMockToken(PersonId(1), "client"))
+    val testUuid = UUID.fromString("11111111-1111-1111-1111-111111111111")
+    authToken = Some(generateMockToken(PersonId(testUuid), "client"))
   }
 
   Given("""^the following test data exists:$""") { (dataTable: DataTable) =>
     val data = dataTable.asMaps().asScala.toList
     data.foreach { row =>
-      val personId = PersonId(row.get("PersonId").toLong)
+      val uuid = getTestUuidForId(row.get("PersonId").toInt)
+      val personId = PersonId(uuid)
       val person = Person(
         id = personId,
         name = row.get("Name"),
@@ -139,7 +144,8 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   Given("""^the following drivers exist:$""") { (dataTable: DataTable) =>
     val data = dataTable.asMaps().asScala.toList
     data.foreach { row =>
-      val personId = PersonId(row.get("PersonId").toLong)
+      val uuid = getTestUuidForId(row.get("PersonId").toInt)
+      val personId = PersonId(uuid)
       val driver = Person(
         id = personId,
         name = row.get("Name"),
@@ -155,7 +161,8 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   Given("""^the following companies exist:$""") { (dataTable: DataTable) =>
     val data = dataTable.asMaps().asScala.toList
     data.foreach { row =>
-      val companyId = CompanyId(row.get("CompanyId").toLong)
+      val uuid = getTestUuidForId(row.get("CompanyId").toInt)
+      val companyId = CompanyId(uuid)
       val company = Company(
         id = companyId,
         name = row.get("Name"),
@@ -168,17 +175,20 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Given("""^a ride exists with ID (\d+)$""") { (rideId: String) =>
-    testData(s"ride_$rideId") = createMockRide(RideId(rideId.toLong))
+    val uuid = getTestUuidForId(rideId.toInt)
+    testData(s"ride_$rideId") = createMockRide(RideId(uuid))
   }
 
   Given("""^a pending ride exists with ID (\d+)$""") { (rideId: String) =>
-    val ride = createMockRide(RideId(rideId.toLong))
+    val uuid = getTestUuidForId(rideId.toInt)
+    val ride = createMockRide(RideId(uuid))
     testData(s"ride_$rideId") = ride
     testData(s"ride_${rideId}_status") = "Pending"
   }
 
   Given("""^a ride exists with ID (\d+) belonging to client (\d+)$""") { (rideId: String, clientId: String) =>
-    val ride = createMockRide(RideId(rideId.toLong))
+    val uuid = getTestUuidForId(rideId.toInt)
+    val ride = createMockRide(RideId(uuid))
     testData(s"ride_$rideId") = ride
     testData(s"ride_${rideId}_client") = clientId
   }
@@ -383,8 +393,16 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   // Helper methods
+  private def getTestUuidForId(id: Int): UUID = id match {
+    case 1 => UUID.fromString("11111111-1111-1111-1111-111111111111")
+    case 50 => UUID.fromString("50505050-5050-5050-5050-505050505050")
+    case 10 => UUID.fromString("10101010-1010-1010-1010-101010101010")
+    case 99 => UUID.fromString("99999999-9999-9999-9999-999999999999")
+    case _ => UUID.fromString(s"${id.toString.padTo(8, '0')}-1111-1111-1111-111111111111")
+  }
+
   private def generateMockToken(userId: PersonId, role: String): String = {
-    s"mock-jwt-token-${userId.value}-$role-${java.lang.System.currentTimeMillis()}"
+    s"mock-jwt-token-${userId.value.toString.take(8)}-$role-${java.lang.System.currentTimeMillis()}"
   }
 
   private def isValidJson(jsonString: String): Boolean = {
@@ -406,8 +424,8 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
   private def createMockRide(rideId: RideId): Map[String, Any] = {
     Map(
-      "id" -> rideId.value,
-      "clientId" -> 1,
+      "id" -> rideId.value.toString,
+      "clientId" -> getTestUuidForId(1).toString,
       "pickup" -> "Test Pickup",
       "destination" -> "Test Destination",
       "status" -> "Pending",
@@ -529,7 +547,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         val rideId = p.split("/").last
         if (rideId == "999999") """{"error":"Ride not found"}"""
         else if (rideId == "invalid-id") """{"error":"Invalid ride ID format"}"""
-        else if (rideId == "888" && currentUserId.exists(_.value == 50)) """{"error":"Access denied to this resource"}"""
+        else if (rideId == "888" && currentUserId.exists(_.value == getTestUuidForId(50))) """{"error":"Access denied to this resource"}"""
         else s"""{"id":$rideId,"clientId":1,"pickup":"Test Pickup","destination":"Test Destination","status":"Pending"}"""
       case (Method.GET, "/api/v2/drivers/available") => 
         """[{"id":10,"name":"Mike Driver","status":"Available"}]"""
@@ -943,22 +961,26 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   // Additional missing step definitions for better coverage
 
   Given("""^I am authenticated as a dispatcher$""") { () =>
-    authToken = Some(generateMockToken(PersonId(1), "dispatcher"))
+    val testUuid = UUID.fromString("11111111-1111-1111-1111-111111111111")
+    authToken = Some(generateMockToken(PersonId(testUuid), "dispatcher"))
   }
 
   Given("""^I am authenticated as driver with ID (\d+)$""") { (driverId: String) =>
-    currentUserId = Some(PersonId(driverId.toLong))
-    authToken = Some(generateMockToken(PersonId(driverId.toLong), "driver"))
+    val uuid = getTestUuidForId(driverId.toInt)
+    currentUserId = Some(PersonId(uuid))
+    authToken = Some(generateMockToken(PersonId(uuid), "driver"))
   }
 
   Given("""^I am authenticated as a driver with ID (\d+)$""") { (driverId: String) =>
-    currentUserId = Some(PersonId(driverId.toLong))
-    authToken = Some(generateMockToken(PersonId(driverId.toLong), "driver"))
+    val uuid = getTestUuidForId(driverId.toInt)
+    currentUserId = Some(PersonId(uuid))
+    authToken = Some(generateMockToken(PersonId(uuid), "driver"))
   }
 
   Given("""^I am authenticated as client with ID (\d+)$""") { (clientId: String) =>
-    currentUserId = Some(PersonId(clientId.toLong))
-    authToken = Some(generateMockToken(PersonId(clientId.toLong), "client"))
+    val uuid = getTestUuidForId(clientId.toInt)
+    currentUserId = Some(PersonId(uuid))
+    authToken = Some(generateMockToken(PersonId(uuid), "client"))
   }
 
   Then("""^the response should contain ride details with ID (\d+)$""") { (rideId: String) =>
@@ -1066,12 +1088,14 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Given("""^I am authenticated as a client$""") { () =>
-    authToken = Some(generateMockToken(PersonId(1), "client"))
+    val testUuid = UUID.fromString("11111111-1111-1111-1111-111111111111")
+    authToken = Some(generateMockToken(PersonId(testUuid), "client"))
   }
 
   Given("""^I am authenticated as a driver$""") { () =>
-    authToken = Some(generateMockToken(PersonId(2), "driver"))
-    currentUserId = Some(PersonId(2))
+    val testUuid = UUID.fromString("22222222-2222-2222-2222-222222222222")
+    authToken = Some(generateMockToken(PersonId(testUuid), "driver"))
+    currentUserId = Some(PersonId(testUuid))
   }
 
   // Additional missing step definitions to make all tests pass
@@ -1383,7 +1407,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         else if (p.contains("invalid-id")) Status.BadRequest
         else if (authToken.isDefined) {
           // Check access control - ride 888 belongs to client 60, but client 50 is trying to access it
-          if (p.contains("888") && currentUserId.exists(_.value == 50)) Status.Forbidden
+          if (p.contains("888") && currentUserId.exists(_.value == getTestUuidForId(50))) Status.Forbidden
           else Status.Ok
         } else Status.Unauthorized
       case (Method.POST, "/api/v2/auth/login") => 
@@ -1567,8 +1591,9 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
   
   Given("""I am authenticated as an admin with ID {int}""") { (adminId: Int) =>
-    currentUserId = Some(PersonId(adminId))
-    authToken = Some(generateMockToken(PersonId(adminId), "admin"))
+    val uuid = getTestUuidForId(adminId)
+    currentUserId = Some(PersonId(uuid))
+    authToken = Some(generateMockToken(PersonId(uuid), "admin"))
   }
   
   When("""I make a POST request to {string} with JSON:""") { (endpoint: String, jsonBody: String) =>

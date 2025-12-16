@@ -3,6 +3,7 @@ package com.shevchyk.ride.domain
 import com.shevchyk.core.domain.*
 import zio.test.*
 import java.time.Instant
+import java.util.UUID
 
 object RideDomainSpec extends ZIOSpecDefault {
 
@@ -20,10 +21,10 @@ object RideDomainSpec extends ZIOSpecDefault {
     suite("Ride")(
       test("should create ride with default status") {
         val ride = Ride(
-          id = RideId(1),
-          clientId = PersonId(100),
-          creatorId = PersonId(100),
-          companyId = CompanyId(1),
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          companyId = CompanyId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
           pickupLocation = Location("Airport Terminal 1"),
           dropoffLocation = Location("City Center")
         )
@@ -32,10 +33,10 @@ object RideDomainSpec extends ZIOSpecDefault {
 
       test("should validate business rules") {
         val ride = Ride(
-          id = RideId(1),
-          clientId = PersonId(100),
-          creatorId = PersonId(100),
-          companyId = CompanyId(1),
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          companyId = CompanyId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
           status = RideStatus.Requested,
           pickupLocation = Location("Start"),
           dropoffLocation = Location("End")
@@ -50,11 +51,11 @@ object RideDomainSpec extends ZIOSpecDefault {
 
       test("should handle assigned status correctly") {
         val assignedRide = Ride(
-          id = RideId(1),
-          clientId = PersonId(100),
-          creatorId = PersonId(100),
-          driverId = Some(PersonId(200)),
-          companyId = CompanyId(1),
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          driverId = Some(PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200"))),
+          companyId = CompanyId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
           status = RideStatus.Assigned,
           pickupLocation = Location("Start"),
           dropoffLocation = Location("End")
@@ -69,11 +70,11 @@ object RideDomainSpec extends ZIOSpecDefault {
 
       test("should handle in-progress status correctly") {
         val inProgressRide = Ride(
-          id = RideId(1),
-          clientId = PersonId(100),
-          creatorId = PersonId(100),
-          driverId = Some(PersonId(200)),
-          companyId = CompanyId(1),
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          driverId = Some(PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200"))),
+          companyId = CompanyId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
           status = RideStatus.InProgress,
           pickupLocation = Location("Start"),
           dropoffLocation = Location("End")
@@ -90,7 +91,7 @@ object RideDomainSpec extends ZIOSpecDefault {
     suite("CreateRideRequest")(
       test("should create valid request") {
         val request = CreateRideRequest(
-          clientId = PersonId(100),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
           pickupLocation = Location("Airport"),
           dropoffLocation = Location("Hotel"),
           scheduledTime = Some(Instant.now().plusSeconds(3600)),
@@ -99,7 +100,7 @@ object RideDomainSpec extends ZIOSpecDefault {
         )
 
         assertTrue(
-          request.clientId == PersonId(100) &&
+          request.clientId == PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")) &&
           request.isAirportTransfer &&
           request.notes.contains("Terminal 2")
         )
@@ -116,9 +117,9 @@ object RideDomainSpec extends ZIOSpecDefault {
       },
 
       test("should create ride not found error") {
-        val error = RideError.RideNotFound(RideId(999))
+        val error = RideError.RideNotFound(RideId(UUID.fromString("000003e7-0000-0000-0000-000000000999")))
         assertTrue(error match {
-          case RideError.RideNotFound(id) => id == RideId(999)
+          case RideError.RideNotFound(id) => id == RideId(UUID.fromString("000003e7-0000-0000-0000-000000000999"))
           case _ => false
         })
       }

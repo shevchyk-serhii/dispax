@@ -10,6 +10,7 @@ import doobie.postgres.implicits.*
 import cats.effect.IO
 import zio.interop.catz.*
 import java.time.Instant
+import java.util.UUID
 
 final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository {
 
@@ -37,28 +38,29 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   override def create(ride: Ride): Task[Ride] = {
     sql"""
       INSERT INTO rides (
-        client_id, creator_id, driver_id, company_id,
+        id, client_id, creator_id, driver_id, company_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
-        status, tariff_id, 
+        status, 
         estimated_price_amount, estimated_price_currency,
         final_price_amount, final_price_currency,
         notes, airport_code, flight_number, is_airport_transfer
       ) VALUES (
-        ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.driverId.map(_.value)}, ${ride.companyId.value},
+        ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.driverId.map(
+        _.value
+      )}, ${ride.companyId.value},
         ${ride.requestTime}, ${ride.scheduledTime}, ${ride.requestTime}, ${ride.startTime}, ${ride.endTime},
         ${ride.pickupLocation.address}, ${ride.pickupLocation.latitude}, ${ride.pickupLocation.longitude},
         ${ride.dropoffLocation.address}, ${ride.dropoffLocation.latitude}, ${ride.dropoffLocation.longitude},
-        ${ride.status}, ${ride.tariffId.map(_.value)},
+        ${ride.status},
         ${ride.estimatedPrice}, ${"EUR"},
         ${ride.finalPrice}, ${"EUR"},
         ${ride.notes}, ${ride.airportCode}, ${ride.flightNumber}, ${ride.isAirportTransfer}
       )
-    """.update
-      .withUniqueGeneratedKeys[Long]("id")
+    """.update.run
       .transact(xa)
-      .map(id => ride.copy(id = RideId(id)))
+      .as(ride) // Return the ride as-is since we're using generated UUIDs
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
@@ -190,11 +192,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   implicit val rideRead: Read[Ride] =
     Read[
       (
-          Long,
-          Long,
-          Long,
-          Option[Long],
-          Long,               // id, client_id, creator_id, driver_id, company_id
+          UUID,
+          UUID,
+          UUID,
+          Option[UUID],
+          UUID,               // id, client_id, creator_id, driver_id, company_id
           Instant,
           Option[Instant],
           Instant,
@@ -207,7 +209,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
           Option[Double],
           Option[Double],     // to_address, to_lat, to_lng
           RideStatus,
-          Option[Long],       // status, tariff_id
+          Option[UUID],       // status, tariff_id
           Option[BigDecimal],
           Option[BigDecimal], // estimated_price_amount, final_price_amount
           Option[String],

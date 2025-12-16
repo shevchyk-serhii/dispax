@@ -5,9 +5,10 @@ import com.shevchyk.auth.domain.{JwtError, InvalidTokenError, ExpiredTokenError}
 import zio.*
 import zio.http.*
 import zio.json.*
+import java.util.UUID
 
 case class AuthenticatedUser(
-    userId: Long,
+    userId: UUID,
     email: String,
     role: String
 )
@@ -61,7 +62,7 @@ object AuthMiddleware:
   }
 
   // Helper to check if user can access resource (owns it)
-  def requireOwnership(resourceUserId: Long): ZIO[AuthenticatedUser, Response, Unit] = getAuthenticatedUser.flatMap {
+  def requireOwnership(resourceUserId: UUID): ZIO[AuthenticatedUser, Response, Unit] = getAuthenticatedUser.flatMap {
     user =>
       if (user.userId != resourceUserId)
         ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Access denied"}""")))

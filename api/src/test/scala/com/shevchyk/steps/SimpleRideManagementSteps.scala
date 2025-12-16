@@ -4,19 +4,20 @@ import com.shevchyk.ride.domain.{CreateRideRequest, RideStatus}
 import com.shevchyk.core.domain.{Location, PersonId}
 import io.cucumber.scala.{EN, ScalaDsl}
 import zio.http.*
+import java.util.UUID
 
 // Simplified version of RideManagementSteps that compiles
 class SimpleRideManagementSteps extends ScalaDsl with EN with ApiTestHelpers {
 
   var currentRideRequest: CreateRideRequest = _
   var lastRideResponse: Response = _
-  var lastRideId: Option[Long] = None
-  var createdRideIds: List[Long] = List.empty
-  var testUserId: Long = 1L
+  var lastRideId: Option[UUID] = None
+  var createdRideIds: List[UUID] = List.empty
+  val testPersonId: PersonId = PersonId.generate()
 
   Given("^I want to create a ride from \"([^\"]+)\" to \"([^\"]+)\"$") { (pickup: String, dropoff: String) =>
     currentRideRequest = CreateRideRequest(
-      clientId = PersonId(testUserId),
+      clientId = testPersonId,
       pickupLocation = Location(pickup),
       dropoffLocation = Location(dropoff),
       scheduledTime = None,
@@ -29,8 +30,9 @@ class SimpleRideManagementSteps extends ScalaDsl with EN with ApiTestHelpers {
 
   When("^I send a POST request to create the ride$") { () =>
     // Mock successful ride creation
-    lastRideResponse = Response(Status.Created, body = Body.fromString("""{"id":1,"status":"requested"}"""))
-    lastRideId = Some(1L)
+    val mockRideId = UUID.randomUUID()
+    lastRideResponse = Response(Status.Created, body = Body.fromString(s"""{"id":"${mockRideId}","status":"requested"}"""))
+    lastRideId = Some(mockRideId)
   }
 
   Then("^I should receive the created ride with status \"([^\"]+)\"$") { (expectedStatus: String) =>
