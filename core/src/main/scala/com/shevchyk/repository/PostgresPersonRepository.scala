@@ -102,7 +102,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       WHERE id = ${person.id.value}
     """.update.run
       .transact(xa)
-      .map(_ => person)
+      .as(person)
   }
 
   override def delete(id: PersonId): Task[Unit] = {
@@ -110,7 +110,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       DELETE FROM persons WHERE id = ${id.value}
     """.update.run
       .transact(xa)
-      .map(_ => ())
+      .unit
   }
 
   // Custom Read instance for Person

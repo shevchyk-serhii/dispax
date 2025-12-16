@@ -1,8 +1,11 @@
 package com.shevchyk.database
 
 import zio.*
+import zio.config.*
+import zio.config.magnolia.*
+import zio.config.typesafe.*
 import doobie.*
-import doobie.hikari.*
+import doobie.hikari.{Config => DoobieConfig, *}
 import doobie.util.transactor.Transactor
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import cats.effect.IO
@@ -20,15 +23,23 @@ case class DatabaseConfig(
 
 object DatabaseConfig {
 
-  // Hardcoded config for now - can be moved to external config later
-  val defaultConfig = DatabaseConfig(
-    driver = "org.postgresql.Driver",
-    url = "jdbc:postgresql://localhost:5432/oktopus",
-    user = "oktopus",
-    password = "oktopus"
+  // Configuration descriptor for ZIO Config
+  private val configDescriptor: Config[DatabaseConfig] = deriveConfig[DatabaseConfig].nested("database")
+
+  // Layer that loads configuration from application.conf
+  val layer: ZLayer[Any, Throwable, DatabaseConfig] = ZLayer.fromZIO(
+    read(configDescriptor.from(ConfigProvider.fromResourcePath()))
   )
 
-  val layer: ZLayer[Any, Nothing, DatabaseConfig] = ZLayer.succeed(defaultConfig)
+  // Fallback layer with default configuration for development/testing
+  val defaultLayer: ZLayer[Any, Nothing, DatabaseConfig] = ZLayer.succeed(
+    DatabaseConfig(
+      driver = "org.postgresql.Driver",
+      url = "jdbc:postgresql://localhost:5432/oktopus",
+      user = "oktopus",
+      password = "oktopus"
+    )
+  )
 
   val transactorLayer: ZLayer[DatabaseConfig, Throwable, Transactor[Task]] = ZLayer.scoped {
     for {
@@ -69,8 +80,11 @@ object DatabaseConfig {
     } yield transactor
   }
 
-  val liveTransactor: ZLayer[Any, Throwable, Transactor[Task]] = layer >>> transactorLayer
+  val liveTransactor: ZLayer[Any, Throwable, Transactor[Task]] = layer.catchAll(_ => defaultLayer) >>> transactorLayer
 
-  val liveTransactorWithMigrations: ZLayer[Any, Throwable, Transactor[Task]] =
-    (layer ++ (layer >>> FlywayService.live)) >>> transactorWithMigrations
+  val liveTransactorWithMigrations: ZLayer[Any, Throwable, Transactor[Task]] = ZLayer.makeSome[Any, Transactor[Task]](
+    layer.catchAll(_ => defaultLayer),
+    FlywayService.live,
+    transactorWithMigrations
+  )
 }
