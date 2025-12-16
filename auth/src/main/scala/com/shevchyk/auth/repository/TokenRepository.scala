@@ -31,4 +31,4 @@ object TokenRepository:
     PostgresTokenRepository.apply
   )
 
-  val layer: ZLayer[Any, Throwable, TokenRepository] = DatabaseConfig.liveTransactor >>> postgresLayer
+  val layer: ZLayer[Any, Throwable, TokenRepository] = DatabaseConfig.liveTransactorWithMigrations >>> postgresLayer

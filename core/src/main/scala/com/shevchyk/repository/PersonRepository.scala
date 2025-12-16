@@ -23,6 +23,6 @@ object PersonRepository {
     PostgresPersonRepository.apply
   )
 
-  // Default layer (PostgreSQL with database transactor)
-  val layer: ZLayer[Any, Throwable, PersonRepository] = DatabaseConfig.liveTransactor >>> postgresLayer
+  // Default layer (PostgreSQL with database transactor and migrations)
+  val layer: ZLayer[Any, Throwable, PersonRepository] = DatabaseConfig.liveTransactorWithMigrations >>> postgresLayer
 }

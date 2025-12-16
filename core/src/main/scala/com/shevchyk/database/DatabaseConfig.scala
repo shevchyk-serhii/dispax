@@ -46,5 +46,31 @@ object DatabaseConfig {
     } yield transactor
   }
 
+  val transactorWithMigrations: ZLayer[DatabaseConfig & FlywayService, Throwable, Transactor[Task]] = ZLayer.scoped {
+    for {
+      flywayService <- ZIO.service[FlywayService]
+      _             <- flywayService
+                         .migrate()
+                         .tapBoth(
+                           err => ZIO.logError(s"Migration failed: ${err.getMessage}"),
+                           count => ZIO.logInfo(s"Applied $count migrations successfully")
+                         )
+      dbConfig      <- ZIO.service[DatabaseConfig]
+      hikariConfig   = new HikariConfig()
+      _              = hikariConfig.setDriverClassName(dbConfig.driver)
+      _              = hikariConfig.setJdbcUrl(dbConfig.url)
+      _              = hikariConfig.setUsername(dbConfig.user)
+      _              = hikariConfig.setPassword(dbConfig.password)
+      _              = hikariConfig.setMaximumPoolSize(dbConfig.maxPoolSize)
+      _              = hikariConfig.setMinimumIdle(dbConfig.minIdle)
+      dataSource    <- ZIO.fromAutoCloseable(ZIO.attempt(new HikariDataSource(hikariConfig)))
+      ec            <- ZIO.descriptor.map(_.executor.asExecutionContext)
+      transactor     = Transactor.fromDataSource[Task](dataSource, ec)
+    } yield transactor
+  }
+
   val liveTransactor: ZLayer[Any, Throwable, Transactor[Task]] = layer >>> transactorLayer
+
+  val liveTransactorWithMigrations: ZLayer[Any, Throwable, Transactor[Task]] =
+    (layer ++ (layer >>> FlywayService.live)) >>> transactorWithMigrations
 }

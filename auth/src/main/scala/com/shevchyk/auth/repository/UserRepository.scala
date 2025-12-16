@@ -49,4 +49,4 @@ object UserRepository:
     PostgresUserRepository.apply
   )
 
-  val layer: ZLayer[Any, Throwable, UserRepository] = DatabaseConfig.liveTransactor >>> postgresLayer
+  val layer: ZLayer[Any, Throwable, UserRepository] = DatabaseConfig.liveTransactorWithMigrations >>> postgresLayer
