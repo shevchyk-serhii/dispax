@@ -10,6 +10,8 @@ trait RideRepository {
   def findById(id: RideId): Task[Option[Ride]]
   def findByStatus(status: RideStatus): Task[List[Ride]]
   def findAll(): Task[List[Ride]]
+  def findByClientId(clientId: PersonId): Task[List[Ride]]
+  def findByDriverId(driverId: PersonId): Task[List[Ride]]
   def update(ride: Ride): Task[Ride]
   def delete(id: RideId): Task[Unit]
 }
@@ -65,6 +67,10 @@ final case class MockRideRepository() extends RideRepository {
       )
     )
   }
+
+  override def findByClientId(clientId: PersonId): Task[List[Ride]] = findAll()
+
+  override def findByDriverId(driverId: PersonId): Task[List[Ride]] = findAll()
 
   override def update(ride: Ride): Task[Ride] = ZIO.succeed(ride)
 

@@ -1,3 +1,0 @@
-ALTER TABLE persons ADD COLUMN password_hash VARCHAR(255);
-ALTER TABLE persons ADD COLUMN license_number VARCHAR(50);
-ALTER TABLE persons ADD COLUMN phone VARCHAR(20);

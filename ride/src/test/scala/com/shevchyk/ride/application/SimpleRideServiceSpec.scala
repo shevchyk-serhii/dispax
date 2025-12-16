@@ -3,6 +3,7 @@ package com.shevchyk.ride.application
 import com.shevchyk.core.domain.*
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.*
+import com.shevchyk.ride.repository.InMemoryRideRepository
 import zio.test.*
 import zio.*
 
@@ -15,7 +16,11 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
           service <- ZIO.service[SimpleRideService]
           result  <- service.getRideById(RideId(123)).exit
         } yield assertTrue(result.isFailure)
-      }.provide(SimpleRideService.layer)
+      }.provide(
+        InMemoryRideRepository.layer,
+        RideCreationService.layer,
+        SimpleRideService.layer
+      )
     ),
 
     suite("createRide")(
@@ -37,7 +42,11 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
           ride.notes == request.notes &&
           ride.status == RideStatus.Requested
         )
-      }.provide(SimpleRideService.layer),
+      }.provide(
+        InMemoryRideRepository.layer,
+        RideCreationService.layer,
+        SimpleRideService.layer
+      ),
 
       test("should create airport transfer ride") {
         val request = CreateRideRequest(
@@ -57,7 +66,11 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
           ride.airportCode.contains("KBP") &&
           ride.flightNumber.contains("PS123")
         )
-      }.provide(SimpleRideService.layer)
+      }.provide(
+        InMemoryRideRepository.layer,
+        RideCreationService.layer,
+        SimpleRideService.layer
+      )
     )
   )
 }

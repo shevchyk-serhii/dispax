@@ -9,14 +9,14 @@ case class RideId(value: Long) derives JsonCodec
 case class TariffId(value: Long) derives JsonCodec
 
 final case class Location(
-    latitude: Double,
-    longitude: Double,
-    address: String
+    address: String,
+    latitude: Option[Double] = None,
+    longitude: Option[Double] = None
 ) derives JsonCodec:
   def display: String = address
 
 object Location:
-  def apply(address: String): Location = Location(0.0, 0.0, address)
+  def apply(address: String): Location = Location(address, None, None)
 
 enum PersonRole derives JsonCodec:
   case Driver, Client, Secretary, Dispatcher

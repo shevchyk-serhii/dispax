@@ -3,6 +3,7 @@ package com.shevchyk.ride.application
 import com.shevchyk.core.domain.*
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.*
+import com.shevchyk.ride.repository.InMemoryRideRepository
 import zio.test.*
 import zio.*
 
@@ -27,6 +28,8 @@ object RideFacadeSpec extends ZIOSpecDefault {
           ride.status == RideStatus.Requested
         )
       }.provide(
+        InMemoryRideRepository.layer,
+        RideCreationService.layer,
         SimpleRideService.layer,
         RideFacade.layer
       )
@@ -39,6 +42,8 @@ object RideFacadeSpec extends ZIOSpecDefault {
           result <- facade.getRideById(RideId(999)).exit
         } yield assertTrue(result.isFailure)
       }.provide(
+        InMemoryRideRepository.layer,
+        RideCreationService.layer,
         SimpleRideService.layer,
         RideFacade.layer
       )

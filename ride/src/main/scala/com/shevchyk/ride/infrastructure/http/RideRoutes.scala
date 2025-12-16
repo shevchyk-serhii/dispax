@@ -1,8 +1,15 @@
 package com.shevchyk.ride.infrastructure.http
 
 import com.shevchyk.TestDataGenerator
+import com.shevchyk.ride.domain.{*, given}
+import com.shevchyk.ride.application.RideFacade
+import com.shevchyk.ride.repository.RideRepository
+import com.shevchyk.core.domain.{RideId, PersonId}
+import com.shevchyk.auth.middleware.{AuthMiddleware, AuthenticatedUser}
+import com.shevchyk.auth.service.JwtService
 import zio.*
 import zio.http.*
+import zio.json.*
 
 object RideRoutes {
   import com.shevchyk.repository.PersonRepository
@@ -59,12 +66,83 @@ object RideRoutes {
     "notes": "Terminal 2, Gate B3 - Allow extra time for security during peak hours"
   }"""
 
+  // Simple routes for ride management (without complex auth for now)
+  val authenticatedRoutes: Routes[RideFacade, Response] = Routes(
+    // Create new ride
+    Method.POST / "api" / "rides" -> handler { (request: Request) =>
+      val createRideLogic =
+        for {
+          bodyStr      <- request.body.asString
+          apiRequest   <- ZIO
+                            .fromEither(bodyStr.fromJson[CreateRideApiRequest])
+                            .mapError(_ => "Invalid JSON format")
+
+          // For now, use hardcoded client ID (would come from JWT token in production)
+          domainRequest = CreateRideApiRequest.toDomain(apiRequest).copy(clientId = PersonId(1L))
+          facade       <- ZIO.service[RideFacade]
+          ride         <- facade.createRide(domainRequest)
+        } yield RideDto.fromDomain(ride)
+
+      createRideLogic
+        .map(rideDto => Response(Status.Created, body = Body.fromString(rideDto.toJson)))
+        .catchAll {
+          case msg: String                    => ZIO.succeed(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$msg"}""")))
+          case RideError.ValidationError(msg) =>
+            ZIO.succeed(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$msg"}""")))
+          case RideError.DatabaseError(_)     =>
+            ZIO.succeed(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Database error"}""")))
+          case _                              =>
+            ZIO.succeed(
+              Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+            )
+        }
+    },
+
+    // Get rides for user
+    Method.GET / "api" / "rides" -> handler { (_: Request) =>
+      val getRidesLogic =
+        for {
+          facade <- ZIO.service[RideFacade]
+          // For now, get rides for hardcoded user ID
+          rides  <- facade.getRidesForUser(PersonId(1L))
+        } yield rides.map(RideDto.fromDomain)
+
+      getRidesLogic
+        .map(rideDtos => Response.json(rideDtos.toJson))
+        .catchAll(_ =>
+          ZIO.succeed(
+            Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Failed to fetch rides"}"""))
+          )
+        )
+    },
+
+    // Get specific ride by ID
+    Method.GET / "api" / "rides" / long("rideId") -> handler { (rideId: Long, _: Request) =>
+      val getRideLogic =
+        for {
+          facade <- ZIO.service[RideFacade]
+          ride   <- facade.getRideById(RideId(rideId))
+        } yield RideDto.fromDomain(ride)
+
+      getRideLogic
+        .map(rideDto => Response.json(rideDto.toJson))
+        .catchAll {
+          case RideError.RideNotFound(_) =>
+            ZIO.succeed(Response(Status.NotFound, body = Body.fromString("""{"error":"Ride not found"}""")))
+          case _                         =>
+            ZIO.succeed(
+              Response(Status.InternalServerError, body = Body.fromString("""{"error":"Internal server error"}"""))
+            )
+        }
+    }
+  )
+
   // Original routes without dependencies
   val routes = Routes(
     Method.GET / "api" / "v2" / "health"                               -> handler { (_: Request) =>
       ZIO.succeed(Response.text("Ride service is healthy"))
     },
-    Method.GET / "api" / "rides"                                       -> handler { (_: Request) =>
+    Method.GET / "api" / "rides" / "mock"                              -> handler { (_: Request) =>
       ZIO.succeed(Response.json(mockRides))
     },
     // Universal flight endpoints - works for any airport
@@ -90,7 +168,7 @@ object RideRoutes {
     Method.GET / "api" / "v2" / "health"                               -> handler { (_: Request) =>
       ZIO.succeed(Response.text("Ride service is healthy"))
     },
-    Method.GET / "api" / "rides"                                       -> handler { (_: Request) =>
+    Method.GET / "api" / "rides" / "mock"                              -> handler { (_: Request) =>
       ZIO.succeed(Response.json(mockRides))
     },
     // Universal flight endpoints - works for any airport

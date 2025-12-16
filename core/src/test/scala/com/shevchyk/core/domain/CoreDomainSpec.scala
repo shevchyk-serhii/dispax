@@ -21,19 +21,20 @@ object CoreDomainSpec extends ZIOSpecDefault {
 
     suite("Location")(
       test("should create location with coordinates") {
-        val location = Location(50.4501, 30.5234, "Kyiv, Ukraine")
+        val location = Location("Kyiv, Ukraine", Some(50.4501), Some(30.5234))
         assertTrue(
-          location.latitude == 50.4501 &&
-          location.longitude == 30.5234 &&
-          location.address == "Kyiv, Ukraine"
+          location.address == "Kyiv, Ukraine" &&
+          location.latitude.contains(50.4501) &&
+          location.longitude.contains(30.5234) &&
+          location.display == "Kyiv, Ukraine"
         )
       },
       test("should create location from address only") {
         val location = Location("Lviv, Ukraine")
         assertTrue(
-          location.latitude == 0.0 &&
-          location.longitude == 0.0 &&
-          location.address == "Lviv, Ukraine"
+          location.address == "Lviv, Ukraine" &&
+          location.latitude.isEmpty &&
+          location.longitude.isEmpty
         )
       }
     ),

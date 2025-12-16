@@ -69,7 +69,7 @@ lazy val auth = (project in file("auth"))
   )
 
 lazy val ride = (project in file("ride"))
-  .dependsOn(core)
+  .dependsOn(core, auth)
   .settings(
     name := "oktopus-ride",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
