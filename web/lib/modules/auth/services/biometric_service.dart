@@ -3,12 +3,22 @@ import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth/error_codes.dart' as auth_error;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class BiometricService {
   static const String _biometricEnabledKey = 'biometric_enabled';
   static const String _biometricUserIdKey = 'biometric_user_id';
 
   final LocalAuthentication _localAuth = LocalAuthentication();
+  
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+    iOptions: IOSOptions(
+      accessibility: IOSAccessibility.first_unlock_this_device,
+    ),
+  );
 
   /
   Future<bool> get isAvailable async {
@@ -50,9 +60,9 @@ class BiometricService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_biometricEnabledKey, enabled);
       if (userId != null && enabled) {
-        await prefs.setString(_biometricUserIdKey, userId);
+        await _secureStorage.write(key: _biometricUserIdKey, value: userId);
       } else if (!enabled) {
-        await prefs.remove(_biometricUserIdKey);
+        await _secureStorage.delete(key: _biometricUserIdKey);
       }
       return true;
     } catch (e) {
@@ -64,8 +74,7 @@ class BiometricService {
   /
   Future<String?> get biometricUserId async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(_biometricUserIdKey);
+      return await _secureStorage.read(key: _biometricUserIdKey);
     } catch (e) {
       debugPrint('Error getting biometric user ID: $e');
       return null;
@@ -159,7 +168,7 @@ class BiometricService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_biometricEnabledKey);
-      await prefs.remove(_biometricUserIdKey);
+      await _secureStorage.delete(key: _biometricUserIdKey);
     } catch (e) {
       debugPrint('Error clearing biometric data: $e');
     }
