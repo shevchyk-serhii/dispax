@@ -40,7 +40,7 @@ class ProfileDialog extends StatelessWidget {
                 const Divider(),
                 const SizedBox(height: 8),
                 const Text(
-                  'Настройки безопасности',
+                  'Security Settings',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
@@ -52,7 +52,7 @@ class ProfileDialog extends StatelessWidget {
                   children: [
                     const Expanded(
                       child: Text(
-                        'Вход по биометрии',
+                        'Biometric Login',
                         style: TextStyle(fontSize: 14),
                       ),
                     ),
@@ -72,8 +72,8 @@ class ProfileDialog extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   authState.biometricEnabled
-                    ? 'Быстрый вход с Face ID/Touch ID включен'
-                    : 'Используйте биометрию для быстрого входа',
+                    ? 'Quick login with Face ID/Touch ID enabled'
+                    : 'Use biometrics for quick login',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,

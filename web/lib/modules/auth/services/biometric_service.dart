@@ -97,7 +97,7 @@ class BiometricService {
       }
 
       final String localizedReason = reason ??
-          'Подтвердите личность для входа в Der Oktopus';
+          'Confirm your identity to sign in to Oktopus';
 
       final bool didAuthenticate = await _localAuth.authenticate(
         localizedReason: localizedReason,
@@ -143,9 +143,9 @@ class BiometricService {
       case BiometricType.iris:
         return 'Iris';
       case BiometricType.weak:
-        return 'Биометрия';
+        return 'Biometrics';
       case BiometricType.strong:
-        return 'Биометрия';
+        return 'Biometrics';
     }
   }
 
@@ -155,11 +155,11 @@ class BiometricService {
 
     final biometrics = await availableBiometrics;
     if (biometrics.contains(BiometricType.face)) {
-      return 'Используйте Face ID для входа в Der Oktopus';
+      return 'Use Face ID to sign in to Oktopus';
     } else if (biometrics.contains(BiometricType.fingerprint)) {
-      return 'Используйте Touch ID для входа в Der Oktopus';
+      return 'Use Touch ID to sign in to Oktopus';
     } else {
-      return 'Подтвердите личность для входа в Der Oktopus';
+      return 'Confirm your identity to sign in to Oktopus';
     }
   }
 
@@ -190,21 +190,21 @@ extension BiometricAuthResultExtension on BiometricAuthResult {
   String get message {
     switch (this) {
       case BiometricAuthResult.success:
-        return 'Аутентификация прошла успешно';
+        return 'Authentication successful';
       case BiometricAuthResult.cancelled:
-        return 'Аутентификация отменена';
+        return 'Authentication cancelled';
       case BiometricAuthResult.unavailable:
-        return 'Биометрия недоступна на этом устройстве';
+        return 'Biometrics is not available on this device';
       case BiometricAuthResult.disabled:
-        return 'Биометрия отключена в настройках приложения';
+        return 'Biometrics is disabled in app settings';
       case BiometricAuthResult.notEnrolled:
-        return 'На устройстве не настроена биометрия';
+        return 'Biometrics is not configured on this device';
       case BiometricAuthResult.lockedOut:
-        return 'Биометрия временно заблокирована';
+        return 'Biometrics is temporarily locked';
       case BiometricAuthResult.permanentlyLockedOut:
-        return 'Биометрия заблокирована. Используйте пароль';
+        return 'Biometrics is locked. Use password';
       case BiometricAuthResult.error:
-        return 'Ошибка аутентификации';
+        return 'Authentication error';
     }
   }
 

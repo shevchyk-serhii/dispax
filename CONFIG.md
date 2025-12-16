@@ -2,9 +2,9 @@
 
 ## Database Configuration
 
-Конфигурация базы данных теперь вынесена из кода в конфигурационный файл и переменные окружения.
+Database configuration has been extracted from code into a configuration file and environment variables.
 
-### Файл конфигурации
+### Configuration File
 
 **`api/src/main/resources/application.conf`:**
 ```hocon
@@ -23,9 +23,9 @@ database {
 }
 ```
 
-### Переменные окружения
+### Environment Variables
 
-Можно переопределить настройки базы данных через переменные окружения:
+Database settings can be overridden via environment variables:
 
 ```bash
 export DATABASE_URL="jdbc:postgresql://prod-host:5432/oktopus_prod"
@@ -35,54 +35,54 @@ export DATABASE_MAX_POOL_SIZE="20"
 export DATABASE_MIN_IDLE="5"
 ```
 
-### Использование
+### Usage
 
-**В коде:**
+**In code:**
 ```scala
 import com.shevchyk.database.DatabaseConfig
 
-// Загружает конфигурацию из application.conf или переменных окружения
+// Loads configuration from application.conf or environment variables
 DatabaseConfig.layer
 
-// Fallback с дефолтными значениями (для разработки/тестирования)
+// Fallback with default values (for development/testing)
 DatabaseConfig.defaultLayer
 
-// Готовые слои с транзакторами
-DatabaseConfig.liveTransactor                    // без миграций
-DatabaseConfig.liveTransactorWithMigrations      // с миграциями
+// Ready-to-use layers with transactors
+DatabaseConfig.liveTransactor                    // without migrations
+DatabaseConfig.liveTransactorWithMigrations      // with migrations
 ```
 
-**Для разных окружений:**
+**For different environments:**
 
 ```scala
 // Production
 val productionLayers = ZLayer.make[AuthService](
-  DatabaseConfig.layer,               // Читает из application.conf
+  DatabaseConfig.layer,               // Reads from application.conf
   UserRepository.layer,
   TokenRepository.layer,
   AuthService.live
 )
 
-// Development/Testing  
+// Development/Testing
 val developmentLayers = ZLayer.make[AuthService](
-  DatabaseConfig.defaultLayer,        // Использует дефолтные значения
+  DatabaseConfig.defaultLayer,        // Uses default values
   UserRepository.layer,
-  TokenRepository.layer, 
+  TokenRepository.layer,
   AuthService.live
 )
 ```
 
-### Преимущества
+### Benefits
 
-1. **Безопасность**: Пароли и URL не хранятся в коде
-2. **Гибкость**: Разные настройки для dev/staging/prod
-3. **Конфигурируемость**: Легко изменить без перекомпиляции
-4. **12-Factor App**: Следует принципам конфигурирования
-5. **Fallback**: Автоматически использует дефолтные значения при ошибке чтения конфига
+1. **Security**: Passwords and URLs are not stored in code
+2. **Flexibility**: Different settings for dev/staging/prod
+3. **Configurability**: Easy to change without recompilation
+4. **12-Factor App**: Follows configuration principles
+5. **Fallback**: Automatically uses default values on config read error
 
-### Структура
+### Structure
 
-- `DatabaseConfig.layer` - основной слой, читает из конфига
-- `DatabaseConfig.defaultLayer` - fallback с хардкодными значениями  
-- Автоматический fallback при ошибке чтения конфигурации
-- Поддержка переменных окружения через `${?VARIABLE_NAME}` синтаксис
+- `DatabaseConfig.layer` - main layer, reads from config
+- `DatabaseConfig.defaultLayer` - fallback with hardcoded values
+- Automatic fallback on configuration read error
+- Environment variable support via `${?VARIABLE_NAME}` syntax

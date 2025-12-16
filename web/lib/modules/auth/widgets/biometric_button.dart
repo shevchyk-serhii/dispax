@@ -75,7 +75,7 @@ class _BiometricButtonState extends State<BiometricButton>
     } else if (_availableBiometrics.contains(BiometricType.fingerprint)) {
       return 'Touch ID';
     } else {
-      return 'Биометрия';
+      return 'Biometrics';
     }
   }
 
@@ -97,7 +97,7 @@ class _BiometricButtonState extends State<BiometricButton>
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    'или',
+                    'or',
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 14,
@@ -178,15 +178,15 @@ class BiometricSetupDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Настройка биометрии'),
+      title: const Text('Biometric Setup'),
       content: const Text(
-        'Хотите включить быстрый вход с помощью биометрии?\n\n'
-        'Это позволит входить в приложение с помощью Face ID, Touch ID или отпечатка пальца.',
+        'Would you like to enable quick login using biometrics?\n\n'
+        'This will allow you to sign in using Face ID, Touch ID, or fingerprint.',
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Позже'),
+          child: const Text('Later'),
         ),
         ElevatedButton(
           onPressed: () {
@@ -195,7 +195,7 @@ class BiometricSetupDialog extends StatelessWidget {
             );
             Navigator.of(context).pop();
           },
-          child: const Text('Включить'),
+          child: const Text('Enable'),
         ),
       ],
     );

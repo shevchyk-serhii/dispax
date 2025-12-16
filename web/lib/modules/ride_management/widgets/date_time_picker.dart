@@ -9,7 +9,7 @@ class DateTimePicker extends StatelessWidget {
     super.key,
     required this.selectedDateTime,
     required this.onDateTimeSelected,
-    this.label = 'Выберите время',
+    this.label = 'Select time',
   });
 
   @override

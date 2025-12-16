@@ -39,7 +39,7 @@ class LocationField extends StatelessWidget {
 
   String? _defaultValidator(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Пожалуйста, введите адрес';
+      return 'Please enter an address';
     }
     return null;
   }

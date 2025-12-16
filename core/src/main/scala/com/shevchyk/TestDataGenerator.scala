@@ -183,7 +183,7 @@ object TestDataGenerator {
         if (isAirportTransfer) {
           (
             Some(flightNumbers(random.nextInt(flightNumbers.length))),
-            Some(from.address.contains("Аеропорт")), // true if picking up from airport
+            Some(from.address.contains("Airport")), // true if picking up from airport
             Some(gates(random.nextInt(gates.length))),
             Some(terminals(random.nextInt(terminals.length))),
             Some(flightStatuses(random.nextInt(flightStatuses.length)))

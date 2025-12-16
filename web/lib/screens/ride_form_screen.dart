@@ -52,7 +52,7 @@ class _RideFormScreenState extends State<RideFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.ride == null ? 'Новая поездка' : 'Редактировать поездку',
+          widget.ride == null ? 'New Ride' : 'Edit Ride',
         ),
         actions: [
           if (_isLoading)
@@ -78,31 +78,31 @@ class _RideFormScreenState extends State<RideFormScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Откуда',
+                        'From',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
                       LocationField(
                         controller: _fromAddressController,
-                        hint: 'Адрес отправления',
+                        hint: 'Pickup address',
                         onChanged: () => setState(() {}),
                       ),
                       const SizedBox(height: 24),
 
                       Text(
-                        'Куда',
+                        'To',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
                       LocationField(
                         controller: _toAddressController,
-                        hint: 'Адрес назначения',
+                        hint: 'Destination address',
                         onChanged: () => setState(() {}),
                       ),
                       const SizedBox(height: 24),
 
                       Text(
-                        'Время поездки',
+                        'Ride Time',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
@@ -117,7 +117,7 @@ class _RideFormScreenState extends State<RideFormScreen> {
                       const SizedBox(height: 24),
 
                       Text(
-                        'Маршрут на карте',
+                        'Route on Map',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
@@ -142,8 +142,8 @@ class _RideFormScreenState extends State<RideFormScreen> {
                   onPressed: _isLoading ? null : _saveRide,
                   child: Text(
                     widget.ride == null
-                        ? 'Создать поездку'
-                        : 'Сохранить изменения',
+                        ? 'Create Ride'
+                        : 'Save Changes',
                   ),
                 ),
               ),
@@ -161,7 +161,7 @@ class _RideFormScreenState extends State<RideFormScreen> {
 
     if (_selectedDateTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Пожалуйста, выберите время поездки')),
+        const SnackBar(content: Text('Please select ride time')),
       );
       return;
     }
@@ -202,7 +202,7 @@ class _RideFormScreenState extends State<RideFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Ошибка сохранения: $e')));
+        ).showSnackBar(SnackBar(content: Text('Save error: $e')));
       }
     } finally {
       if (mounted) {

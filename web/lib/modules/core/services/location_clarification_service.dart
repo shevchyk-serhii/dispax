@@ -55,7 +55,7 @@ class LocationClarificationService {
   }) async {
     try {
       final response = await _apiClient.post('/rides/$rideId/request-location', {
-        'driverMessage': message ?? 'Водитель просит уточнить ваше местоположение',
+        'driverMessage': message ?? 'Driver requests to clarify your location',
         'timestamp': DateTime.now().toIso8601String(),
       });
 

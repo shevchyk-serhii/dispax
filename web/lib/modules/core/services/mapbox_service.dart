@@ -41,23 +41,17 @@ class MapboxService {
 
   static Future<List<double>?> geocodeAddress(String address) async {
 
-    if (address.toLowerCase().contains('downtown') ||
-        address.toLowerCase().contains('центр')) {
+    if (address.toLowerCase().contains('downtown')) {
       return [50.4501, 30.5234];
-    } else if (address.toLowerCase().contains('airport') ||
-        address.toLowerCase().contains('аэропорт')) {
+    } else if (address.toLowerCase().contains('airport')) {
       return [50.3457, 30.8944];
-    } else if (address.toLowerCase().contains('railway') ||
-        address.toLowerCase().contains('вокзал')) {
+    } else if (address.toLowerCase().contains('railway')) {
       return [50.4433, 30.4914];
-    } else if (address.toLowerCase().contains('university') ||
-        address.toLowerCase().contains('университет')) {
+    } else if (address.toLowerCase().contains('university')) {
       return [50.4434, 30.5059];
-    } else if (address.toLowerCase().contains('independence') ||
-        address.toLowerCase().contains('независимости')) {
+    } else if (address.toLowerCase().contains('independence')) {
       return [50.4501, 30.5241];
-    } else if (address.toLowerCase().contains('golden') ||
-        address.toLowerCase().contains('золотые')) {
+    } else if (address.toLowerCase().contains('golden')) {
       return [50.4484, 30.5134];
     }
 

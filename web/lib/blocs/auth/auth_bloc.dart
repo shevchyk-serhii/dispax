@@ -143,7 +143,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (!biometricAvailable) {
         emit(state.copyWith(
           status: AuthStatus.error,
-          errorMessage: 'Биометрия недоступна на этом устройстве',
+          errorMessage: 'Biometrics is not available on this device',
         ));
         return;
       }
@@ -151,7 +151,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (!biometricEnabled) {
         emit(state.copyWith(
           status: AuthStatus.error,
-          errorMessage: 'Биометрия не настроена. Включите в настройках',
+          errorMessage: 'Biometrics is not configured. Enable it in settings',
         ));
         return;
       }
@@ -174,7 +174,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } else {
           emit(state.copyWith(
             status: AuthStatus.error,
-            errorMessage: 'Данные пользователя не найдены. Войдите заново',
+            errorMessage: 'User data not found. Please log in again',
           ));
         }
       } else {
@@ -186,7 +186,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(state.copyWith(
         status: AuthStatus.error,
-        errorMessage: 'Ошибка биометрической аутентификации: $e',
+        errorMessage: 'Biometric authentication error: $e',
       ));
     }
   }
@@ -201,14 +201,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (!biometricAvailable) {
         emit(state.copyWith(
           status: AuthStatus.error,
-          errorMessage: 'Биометрия недоступна на этом устройстве',
+          errorMessage: 'Biometrics is not available on this device',
         ));
         return;
       }
 
       if (event.enabled) {
         final result = await privateBiometricService.authenticate(
-          reason: 'Подтвердите настройку биометрического входа',
+          reason: 'Confirm biometric login setup',
         );
 
         if (result.isSuccess) {
@@ -217,7 +217,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } else {
           emit(state.copyWith(
             status: AuthStatus.error,
-            errorMessage: 'Не удалось настроить биометрию: ${result.message}',
+            errorMessage: 'Failed to setup biometrics: ${result.message}',
           ));
         }
       } else {
@@ -227,7 +227,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(state.copyWith(
         status: AuthStatus.error,
-        errorMessage: 'Ошибка настройки биометрии: $e',
+        errorMessage: 'Biometric setup error: $e',
       ));
     }
   }

@@ -12,7 +12,7 @@ class RideDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Детали поездки'),
+        title: const Text('Ride Details'),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -39,7 +39,7 @@ class RideDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Маршрут',
+                      'Route',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
@@ -53,7 +53,7 @@ class RideDetailScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Откуда:',
+                                'From:',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               Text(ride.from.address),
@@ -77,7 +77,7 @@ class RideDetailScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Куда:',
+                                'To:',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               Text(ride.to.address),
@@ -100,7 +100,7 @@ class RideDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Маршрут на карте',
+                      'Route on Map',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
@@ -128,7 +128,7 @@ class RideDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Время поездки',
+                      'Ride Time',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
@@ -169,7 +169,7 @@ class RideDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Информация о поездке',
+                      'Ride Information',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
@@ -178,7 +178,7 @@ class RideDetailScreen extends StatelessWidget {
                       children: [
                         const Icon(Icons.confirmation_number),
                         const SizedBox(width: 8),
-                        Text('ID поездки: ${ride.id}'),
+                        Text('Ride ID: ${ride.id}'),
                       ],
                     ),
 
@@ -197,8 +197,8 @@ class RideDetailScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           isUpcoming(ride.pickupDateTime)
-                              ? 'Предстоящая поездка'
-                              : 'Прошедшая поездка',
+                              ? 'Upcoming Ride'
+                              : 'Past Ride',
                           style: TextStyle(
                             color: isUpcoming(ride.pickupDateTime)
                                 ? Colors.green
@@ -219,18 +219,18 @@ class RideDetailScreen extends StatelessWidget {
 
   String formatDate(DateTime dateTime) {
     const months = [
-      'января',
-      'февраля',
-      'марта',
-      'апреля',
-      'мая',
-      'июня',
-      'июля',
-      'августа',
-      'сентября',
-      'октября',
-      'ноября',
-      'декабря',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${dateTime.day} ${months[dateTime.month - 1]} ${dateTime.year}';
   }

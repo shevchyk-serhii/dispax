@@ -1,131 +1,131 @@
-# Реализация карт в приложении Oktopus Taxi
+# Map Implementation in Oktopus Taxi Application
 
-## Обзор
-Добавлена интеграция с Mapbox для отображения карт и отслеживания местоположения в реальном времени для водителей и клиентов.
+## Overview
+Added Mapbox integration for map display and real-time location tracking for drivers and clients.
 
-## Основные компоненты
+## Main Components
 
 ### 1. LocationService
-**Файл**: `lib/services/location_service.dart`
-- Singleton сервис для работы с геолокацией
-- Отслеживание местоположения в реальном времени
-- Управление разрешениями на геолокацию
+**File**: `lib/services/location_service.dart`
+- Singleton service for geolocation operations
+- Real-time location tracking
+- Geolocation permissions management
 
-**Основные методы:**
-- `getCurrentPosition()` - получение текущего местоположения
-- `startLocationTracking()` - начало отслеживания в реальном времени
-- `stopLocationTracking()` - остановка отслеживания
-- `positionStream` - поток обновлений местоположения
+**Main methods:**
+- `getCurrentPosition()` - get current location
+- `startLocationTracking()` - start real-time tracking
+- `stopLocationTracking()` - stop tracking
+- `positionStream` - location updates stream
 
-### 2. MapboxService (обновленный)
-**Файл**: `lib/services/mapbox_service.dart`
-- Расширены возможности работы с картами
-- Создание маркеров для водителей, клиентов, точек маршрута
-- Автоматическое центрирование карты по маршруту
+### 2. MapboxService (updated)
+**File**: `lib/services/mapbox_service.dart`
+- Extended map functionality
+- Creating markers for drivers, clients, and route points
+- Automatic map centering on route
 
-**Новые методы:**
-- `createDriverMarker()` - маркер водителя
-- `createClientMarker()` - маркер клиента
-- `createRideMarkers()` - маркеры начала и конца поездки
-- `getCameraForRoute()` - оптимальная камера для маршрута
-- `isRideInProgress()` - проверка статуса поездки
+**New methods:**
+- `createDriverMarker()` - driver marker
+- `createClientMarker()` - client marker
+- `createRideMarkers()` - ride start and end markers
+- `getCameraForRoute()` - optimal camera for route
+- `isRideInProgress()` - check ride status
 
 ### 3. ClientMapScreen
-**Файл**: `lib/screens/client_map_screen.dart`
-- Карта для клиентов
-- Отображение текущего местоположения клиента
-- Показ местоположения водителя во время активной поездки
-- Информационная панель с деталями поездки
-- Кнопки управления камерой
+**File**: `lib/screens/client_map_screen.dart`
+- Map for clients
+- Display client's current location
+- Show driver location during active ride
+- Information panel with ride details
+- Camera control buttons
 
-**Функции:**
-- Автоматическое отслеживание местоположения
-- Отображение активной поездки
-- Обновление местоположения водителя каждые 10 секунд
-- Центрирование на маршруте или текущем местоположении
+**Features:**
+- Automatic location tracking
+- Display active ride
+- Update driver location every 10 seconds
+- Center on route or current location
 
 ### 4. DriverMapScreen
-**Файл**: `lib/screens/driver_map_screen.dart`
-- Карта для водителей
-- Отображение всех назначенных поездок
-- Управление статусом поездки (начать/завершить)
-- Отправка местоположения на сервер
+**File**: `lib/screens/driver_map_screen.dart`
+- Map for drivers
+- Display all assigned rides
+- Manage ride status (start/complete)
+- Send location to server
 
-**Функции:**
-- Отображение маршрутов всех назначенных поездок
-- Панель управления активной поездкой
-- Автоматическое отслеживание и передача местоположения
-- Кнопки для центрирования карты
+**Features:**
+- Display routes for all assigned rides
+- Active ride control panel
+- Automatic location tracking and transmission
+- Map centering buttons
 
-### 5. Обновленная модель Location
-**Файл**: `lib/models/location.dart`
-- Добавлены поля `latitude` и `longitude`
-- Поддержка координат в модели локации
+### 5. Updated Location Model
+**File**: `lib/models/location.dart`
+- Added `latitude` and `longitude` fields
+- Coordinate support in location model
 
-### 6. Обновленная модель Ride
-**Файл**: `lib/models/ride.dart`
-- Добавлены поля `driverName` и `driverLocation`
-- Поддержка отслеживания местоположения водителя
+### 6. Updated Ride Model
+**File**: `lib/models/ride.dart`
+- Added `driverName` and `driverLocation` fields
+- Driver location tracking support
 
-### 7. RideBloc обновления
-**Файл**: `lib/blocs/ride/ride_bloc.dart`
-- Новое событие `RideStatusUpdateRequested`
-- Обработка обновления статуса поездки
+### 7. RideBloc Updates
+**File**: `lib/blocs/ride/ride_bloc.dart`
+- New `RideStatusUpdateRequested` event
+- Ride status update handling
 
-## Интеграция в Dashboard
+## Dashboard Integration
 
 ### Client Dashboard
-- Заменена вкладка "Current Ride" на "Map" с ClientMapScreen
-- Показывает карту вместо статичной заглушки
+- Replaced "Current Ride" tab with "Map" showing ClientMapScreen
+- Shows map instead of static placeholder
 
-### Driver Dashboard  
-- Заменена вкладка "Profile" на "Map" с DriverMapScreen
-- Водители могут видеть все свои поездки и управлять ими
+### Driver Dashboard
+- Replaced "Profile" tab with "Map" showing DriverMapScreen
+- Drivers can see all their rides and manage them
 
-## Разрешения и настройки
+## Permissions and Settings
 
 ### Android
-**Файл**: `android/app/src/main/AndroidManifest.xml`
-- `ACCESS_FINE_LOCATION` - точная геолокация
-- `ACCESS_COARSE_LOCATION` - приблизительная геолокация
+**File**: `android/app/src/main/AndroidManifest.xml`
+- `ACCESS_FINE_LOCATION` - precise geolocation
+- `ACCESS_COARSE_LOCATION` - approximate geolocation
 
 ### iOS
-**Файл**: `ios/Runner/Info.plist`
-- `NSLocationWhenInUseUsageDescription` - использование во время работы приложения
-- `NSLocationAlwaysAndWhenInUseUsageDescription` - постоянное использование
+**File**: `ios/Runner/Info.plist`
+- `NSLocationWhenInUseUsageDescription` - use during app operation
+- `NSLocationAlwaysAndWhenInUseUsageDescription` - always use
 
 ## Assets
-**Папка**: `assets/`
-- `driver_marker.svg` - иконка водителя
-- `client_marker.svg` - иконка клиента
-- `pickup_marker.svg` - иконка начала поездки
-- `destination_marker.svg` - иконка конца поездки
+**Folder**: `assets/`
+- `driver_marker.svg` - driver icon
+- `client_marker.svg` - client icon
+- `pickup_marker.svg` - ride start icon
+- `destination_marker.svg` - ride end icon
 
-## Зависимости
+## Dependencies
 - `mapbox_maps_flutter: ^2.3.0` - Mapbox SDK
-- `geolocator: ^13.0.1` - геолокация
+- `geolocator: ^13.0.1` - geolocation
 
-## Как использовать
+## How to Use
 
-### Для клиента:
-1. Открыть вкладку "Map" в dashboard
-2. Приложение автоматически покажет текущее местоположение
-3. Если есть активная поездка, отобразится местоположение водителя
-4. Можно центрировать карту на текущем местоположении или маршруте
+### For Client:
+1. Open "Map" tab in dashboard
+2. App automatically shows current location
+3. If there's an active ride, driver location will be displayed
+4. Can center map on current location or route
 
-### Для водителя:
-1. Открыть вкладку "Map" в dashboard  
-2. Видны все назначенные поездки на карте
-3. При наличии активной поездки - панель управления внизу
-4. Возможность начать/завершить поездку
-5. Автоматическая отправка местоположения на сервер
+### For Driver:
+1. Open "Map" tab in dashboard
+2. All assigned rides visible on map
+3. When there's an active ride - control panel at bottom
+4. Ability to start/complete ride
+5. Automatic location sending to server
 
-## Примечания
+## Notes
 
-- В текущей реализации используются mock данные для демонстрации
-- Для продакшена нужно:
-  - Настроить реальный Mapbox Access Token
-  - Реализовать API для отслеживания местоположения водителей
-  - Добавить обработку offline режима
-  - Оптимизировать частоту обновлений местоположения
-  - Добавить логирование вместо print statements
+- Current implementation uses mock data for demonstration
+- For production need to:
+  - Configure real Mapbox Access Token
+  - Implement API for driver location tracking
+  - Add offline mode handling
+  - Optimize location update frequency
+  - Add logging instead of print statements
