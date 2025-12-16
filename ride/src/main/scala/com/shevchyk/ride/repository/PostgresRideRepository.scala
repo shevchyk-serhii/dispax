@@ -1,14 +1,14 @@
 package com.shevchyk.ride.repository
 
-import com.shevchyk.ride.domain.{Ride, RideStatus, RideError}
-import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId, TariffId}
-import zio.*
+import com.shevchyk.core.domain.*
+import com.shevchyk.ride.domain.{Ride, RideError, RideStatus}
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
-import cats.effect.IO
+import zio.*
 import zio.interop.catz.*
+
 import java.time.Instant
 import java.util.UUID
 
@@ -60,8 +60,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       )
     """.update.run
       .transact(xa)
-      .as(ride) // Return the ride as-is since we're using generated UUIDs
-      .mapError(ex => RideError.DatabaseError(ex))
+      .mapBoth(ex => RideError.DatabaseError(ex), _ => ride)
   }
 
   override def findById(id: RideId): Task[Option[Ride]] = {

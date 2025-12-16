@@ -37,7 +37,7 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("  🚗 /api/v2/health - Ride service health") *>
         ZIO.logInfo("  🔐 /api/auth/login - Simple login endpoint") *>
         ZIO.logInfo("  👥 /api/users - User management endpoints") *>
-        ZIO.logInfo("  🚗 /api/rides - Rich ride data (Mock)") *>
+        ZIO.logInfo("  🚗 /api/rides - Rich ride data (PostgreSQL)") *>
         ZIO.logInfo("  ✈️ /api/flights/{airport}/arrivals|departures - Flight info") *>
         ZIO.logInfo("  ⏰ /api/airport/timing - Airport timing calculation") *>
         ZIO.logInfo("  📊 /api/stats/rides - Ride statistics") *>
@@ -56,16 +56,13 @@ object Application extends ZIOAppDefault:
       ) >>> Server.live,
       ServerConfig.liveLayer,
 
-      // Database and core infrastructure
-      DatabaseConfig.liveTransactorWithMigrations,
-
       // Person/User repositories
       PersonRepository.layer,
       UserRepository.layer,
       TokenRepository.layer,
 
       // Ride management layers
-      PostgresRideRepository.layer,
+      RideRepository.layer,
       RideCreationService.layer,
       SimpleRideService.layer,
       RideFacade.layer,

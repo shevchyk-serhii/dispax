@@ -16,67 +16,15 @@ trait RideRepository {
   def delete(id: RideId): Task[Unit]
 }
 
-final case class MockRideRepository() extends RideRepository {
-
-  override def create(ride: Ride): Task[Ride] = ZIO.succeed(ride)
-
-  override def findById(id: RideId): Task[Option[Ride]] = {
-    ZIO.succeed(
-      Some(
-        Ride(
-          id = id,
-          clientId = PersonId.generate(),
-          creatorId = PersonId.generate(),
-          companyId = CompanyId.generate(),
-          status = RideStatus.Requested,
-          pickupLocation = Location("Mock Pickup Location"),
-          dropoffLocation = Location("Mock Destination Location")
-        )
-      )
-    )
-  }
-
-  override def findByStatus(status: RideStatus): Task[List[Ride]] = {
-    ZIO.succeed(
-      List(
-        Ride(
-          id = RideId.generate(),
-          clientId = PersonId.generate(),
-          creatorId = PersonId.generate(),
-          companyId = CompanyId.generate(),
-          status = status,
-          pickupLocation = Location("Mock Pickup Location"),
-          dropoffLocation = Location("Mock Destination Location")
-        )
-      )
-    )
-  }
-
-  override def findAll(): Task[List[Ride]] = {
-    ZIO.succeed(
-      List(
-        Ride(
-          id = RideId.generate(),
-          clientId = PersonId.generate(),
-          creatorId = PersonId.generate(),
-          companyId = CompanyId.generate(),
-          status = RideStatus.Requested,
-          pickupLocation = Location("Mock Pickup Location"),
-          dropoffLocation = Location("Mock Destination Location")
-        )
-      )
-    )
-  }
-
-  override def findByClientId(clientId: PersonId): Task[List[Ride]] = findAll()
-
-  override def findByDriverId(driverId: PersonId): Task[List[Ride]] = findAll()
-
-  override def update(ride: Ride): Task[Ride] = ZIO.succeed(ride)
-
-  override def delete(id: RideId): Task[Unit] = ZIO.succeed(())
-}
-
 object RideRepository {
-  val layer: ZLayer[Any, Nothing, RideRepository] = ZLayer.succeed(MockRideRepository())
+  import com.shevchyk.database.DatabaseConfig
+  import doobie.Transactor
+
+  // PostgreSQL layer for production
+  val postgresLayer: ZLayer[Transactor[Task], Nothing, RideRepository] = ZLayer.fromFunction(
+    PostgresRideRepository.apply
+  )
+
+  // Default layer (PostgreSQL with database transactor and migrations)
+  val layer: ZLayer[Any, Throwable, RideRepository] = DatabaseConfig.liveTransactorWithMigrations >>> postgresLayer
 }

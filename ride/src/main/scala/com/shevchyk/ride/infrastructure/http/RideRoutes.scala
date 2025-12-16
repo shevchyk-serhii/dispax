@@ -1,16 +1,17 @@
 package com.shevchyk.ride.infrastructure.http
 
 import com.shevchyk.TestDataGenerator
-import com.shevchyk.ride.domain.{*, given}
+import com.shevchyk.core.domain.{PersonId, RideId}
 import com.shevchyk.ride.application.RideFacade
-import com.shevchyk.ride.repository.RideRepository
-import com.shevchyk.core.domain.{RideId, PersonId}
-import java.util.UUID
+import com.shevchyk.ride.domain.{*, given}
 import com.shevchyk.auth.middleware.{AuthMiddleware, AuthenticatedUser}
 import com.shevchyk.auth.service.JwtService
+import com.shevchyk.auth.infrastructure.http.AuthenticatedHandlers.*
 import zio.*
 import zio.http.*
 import zio.json.*
+
+import java.util.UUID
 
 object RideRoutes {
   import com.shevchyk.repository.PersonRepository
@@ -67,74 +68,39 @@ object RideRoutes {
     "notes": "Terminal 2, Gate B3 - Allow extra time for security during peak hours"
   }"""
 
-  // Simple routes for ride management (without complex auth for now)
-  val authenticatedRoutes: Routes[RideFacade, Response] = Routes(
-    // Create new ride
-    Method.POST / "api" / "rides" -> handler { (request: Request) =>
-      val createRideLogic =
-        for {
-          bodyStr      <- request.body.asString
-          apiRequest   <- ZIO
-                            .fromEither(bodyStr.fromJson[CreateRideApiRequest])
-                            .mapError(_ => "Invalid JSON format")
-
-          // For now, use hardcoded client ID (would come from JWT token in production)
-          domainRequest = CreateRideApiRequest.toDomain(apiRequest).copy(clientId = PersonId.generate())
-          facade       <- ZIO.service[RideFacade]
-          ride         <- facade.createRide(domainRequest)
-        } yield RideDto.fromDomain(ride)
-
-      createRideLogic
-        .map(rideDto => Response(Status.Created, body = Body.fromString(rideDto.toJson)))
-        .catchAll {
-          case msg: String                    => ZIO.succeed(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$msg"}""")))
-          case RideError.ValidationError(msg) =>
-            ZIO.succeed(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$msg"}""")))
-          case RideError.DatabaseError(_)     =>
-            ZIO.succeed(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Database error"}""")))
-          case _                              =>
-            ZIO.succeed(
-              Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
-            )
-        }
+  val authenticatedRoutes: Routes[RideFacade & JwtService, Response] = Routes(
+    // Create new ride (authenticated)
+    Method.POST / "api" / "rides" -> authenticatedJsonHandler[RideFacade, CreateRideApiRequest] { (user, apiRequest) =>
+      for {
+        domainRequest <- ZIO.succeed(CreateRideApiRequest.toDomain(apiRequest).copy(clientId = PersonId(user.userId)))
+        facade        <- ZIO.service[RideFacade]
+        ride          <- facade.createRide(domainRequest)
+        rideDto        = RideDto.fromDomain(ride)
+      } yield Response(Status.Created, body = Body.fromString(rideDto.toJson))
     },
 
-    // Get rides for user
-    Method.GET / "api" / "rides" -> handler { (_: Request) =>
-      val getRidesLogic =
-        for {
-          facade <- ZIO.service[RideFacade]
-          // For now, get rides for hardcoded user ID
-          rides  <- facade.getRidesForUser(PersonId.generate())
-        } yield rides.map(RideDto.fromDomain)
-
-      getRidesLogic
-        .map(rideDtos => Response.json(rideDtos.toJson))
-        .catchAll(_ =>
-          ZIO.succeed(
-            Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Failed to fetch rides"}"""))
-          )
-        )
+    // Get all rides for authenticated user
+    Method.GET / "api" / "rides" -> authenticatedHandler[RideFacade] { (user, _) =>
+      for {
+        facade  <- ZIO.service[RideFacade]
+        rides   <- facade.getRidesForUser(PersonId(user.userId))
+        rideDtos = rides.map(RideDto.fromDomain)
+      } yield Response.json(rideDtos.toJson)
     },
 
-    // Get specific ride by ID
-    Method.GET / "api" / "rides" / string("rideId") -> handler { (rideId: String, _: Request) =>
-      val getRideLogic =
-        for {
-          facade <- ZIO.service[RideFacade]
-          ride   <- facade.getRideById(RideId(UUID.fromString(rideId)))
-        } yield RideDto.fromDomain(ride)
-
-      getRideLogic
-        .map(rideDto => Response.json(rideDto.toJson))
-        .catchAll {
-          case RideError.RideNotFound(_) =>
-            ZIO.succeed(Response(Status.NotFound, body = Body.fromString("""{"error":"Ride not found"}""")))
-          case _                         =>
-            ZIO.succeed(
-              Response(Status.InternalServerError, body = Body.fromString("""{"error":"Internal server error"}"""))
-            )
-        }
+    // Get specific ride by ID (authenticated)
+    Method.GET / "api" / "rides" / string("rideId") -> handler { (rideId: String, request: Request) =>
+      (for {
+        user   <- AuthMiddleware.authenticateRequest(request)
+        facade <- ZIO.service[RideFacade]
+        ride   <- facade.getRideById(RideId(UUID.fromString(rideId)))
+        // TODO: Add authorization check - ensure user owns this ride or has permission
+        rideDto = RideDto.fromDomain(ride)
+      } yield Response.json(rideDto.toJson)).catchAll {
+        case response: Response => ZIO.succeed(response) // Auth errors
+        case ex: Throwable      =>
+          ZIO.succeed(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
+      }
     }
   )
 
@@ -183,7 +149,6 @@ object RideRoutes {
     Method.GET / "api" / "airport" / "timing"                          -> handler { (request: Request) =>
       ZIO.succeed(Response.json(mockAirportTiming))
     },
-    // Airport timing with flight number
     Method.GET / "api" / "airport" / "timing" / string("flightNumber") -> handler {
       (flightNumber: String, _: Request) =>
         ZIO.succeed(Response.json(mockAirportTiming))
