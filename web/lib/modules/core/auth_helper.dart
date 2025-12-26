@@ -14,7 +14,7 @@ class AuthHelper {
   }
 
   static void quickLogin(BuildContext context, String email) {
-    performLogin(context, email, 'test123');
+    performLogin(context, email, 'password123');
   }
 
   static void logout(BuildContext context) {
