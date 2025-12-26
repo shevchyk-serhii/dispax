@@ -17,7 +17,6 @@ class LocationClarificationService {
   final ApiClient _apiClient = ApiClient();
   final LocationService _locationService = LocationService.instance;
 
-  /
   Future<bool> updateClientLocation({
     required String rideId,
     required String newLocation,
@@ -48,7 +47,6 @@ class LocationClarificationService {
     }
   }
 
-  /
   Future<bool> requestLocationClarification({
     required String rideId,
     String? message,
@@ -66,7 +64,6 @@ class LocationClarificationService {
     }
   }
 
-  /
   Future<List<LocationUpdate>> getLocationUpdates(String rideId) async {
     try {
       final response = await _apiClient.get('/rides/$rideId/location-updates');
@@ -85,7 +82,6 @@ class LocationClarificationService {
     return [];
   }
 
-  /
   Future<bool> sendEmergencyLocation({
     required String rideId,
     required String emergencyMessage,
@@ -108,7 +104,6 @@ class LocationClarificationService {
     }
   }
 
-  /
   Future<bool> shouldRequestLocationUpdate(String rideId) async {
     try {
       final response = await _apiClient.get('/rides/$rideId/location-status');
@@ -124,7 +119,6 @@ class LocationClarificationService {
   }
 }
 
-/
 class LocationUpdate {
   final String id;
   final String rideId;
@@ -179,7 +173,6 @@ class LocationUpdate {
     };
   }
 
-  /
   String get iconName {
     switch (type) {
       case LocationUpdateType.initial:
@@ -195,7 +188,6 @@ class LocationUpdate {
     }
   }
 
-  /
   String get colorName {
     switch (type) {
       case LocationUpdateType.initial:

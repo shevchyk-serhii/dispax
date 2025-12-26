@@ -176,11 +176,11 @@ class _RideFormScreenState extends State<RideFormScreen> {
       final to = Location(address: _toAddressController.text);
 
       final ride = Ride(
-        id: widget.ride?.id ?? 0,
-        clientId: widget.ride?.clientId ?? 2,
-        creatorId: widget.ride?.creatorId ?? 3,
+        id: widget.ride?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        clientId: widget.ride?.clientId ?? '',
+        creatorId: widget.ride?.creatorId ?? '',
         driverId: widget.ride?.driverId,
-        companyId: widget.ride?.companyId ?? 1,
+        companyId: widget.ride?.companyId ?? '',
         scheduleDayId: widget.ride?.scheduleDayId,
         pickupDateTime: _selectedDateTime!,
         from: from,

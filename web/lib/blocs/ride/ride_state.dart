@@ -7,7 +7,7 @@ class RideState extends Equatable {
   final RideStateStatus status;
   final List<Ride> rides;
   final String? errorMessage;
-  final int? deletingRideId;
+  final String? deletingRideId;
 
   const RideState({
     this.status = RideStateStatus.initial,
@@ -36,7 +36,7 @@ class RideState extends Equatable {
     RideStateStatus? status,
     List<Ride>? rides,
     String? errorMessage,
-    int? deletingRideId,
+    String? deletingRideId,
   }) {
     return RideState(
       status: status ?? this.status,

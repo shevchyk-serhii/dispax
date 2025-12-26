@@ -23,7 +23,7 @@ class RideListScreen extends StatelessWidget {
     }
   }
 
-  void deleteRide(BuildContext context, int id) {
+  void deleteRide(BuildContext context, String id) {
     context.read<RideBloc>().add(RideDeleteRequested(rideId: id));
   }
 

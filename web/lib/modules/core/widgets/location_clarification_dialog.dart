@@ -287,7 +287,6 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
   }
 }
 
-/
 Future<bool?> showLocationClarificationDialog({
   required BuildContext context,
   required Ride ride,

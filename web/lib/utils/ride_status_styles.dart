@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import '../modules/ride_management/models/ride.dart';
 import '../constants/app_colors.dart';
 
-/
-/
+/// Utility class for ride status styling and presentation
 class RideStatusStyles {
   RideStatusStyles._();
 
-  /
+  /// Gets the primary color for the given ride status
   static Color getStatusColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -23,7 +22,7 @@ class RideStatusStyles {
     }
   }
 
-  /
+  /// Gets the background color for the given ride status
   static Color getStatusBackgroundColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -39,7 +38,7 @@ class RideStatusStyles {
     }
   }
 
-  /
+  /// Gets the border color for the given ride status
   static Color getStatusBorderColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -55,7 +54,7 @@ class RideStatusStyles {
     }
   }
 
-  /
+  /// Gets the text color for the given ride status
   static Color getStatusTextColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -71,7 +70,7 @@ class RideStatusStyles {
     }
   }
 
-  /
+  /// Gets the icon for the given ride status
   static IconData getStatusIcon(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -87,7 +86,7 @@ class RideStatusStyles {
     }
   }
 
-  /
+  /// Gets the display name for the given ride status
   static String getStatusDisplayName(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
@@ -103,7 +102,7 @@ class RideStatusStyles {
     }
   }
 
-  /
+  /// Creates a status badge widget for the given ride status
   static Widget createStatusBadge(RideStatus status, {
     double? fontSize,
     double? iconSize,

@@ -1,34 +1,24 @@
 import 'package:equatable/equatable.dart';
 
 class AirportTiming extends Equatable {
-  /
   final DateTime optimalEntryTime;
 
-  /
   final DateTime latestEntryTime;
 
-  /
   final Duration travelTime;
 
-  /
   final Duration bufferTime;
 
-  /
   final double optimalParkingCost;
 
-  /
   final double earlyEntryParkingCost;
 
-  /
   final double savings;
 
-  /
   final String flightStatus;
 
-  /
   final DateTime? actualArrivalTime;
 
-  /
   final Duration timeToDepart;
 
   const AirportTiming({
@@ -76,19 +66,14 @@ class AirportTiming extends Equatable {
     };
   }
 
-  /
   bool get shouldDepartNow => timeToDepart.inMinutes <= 0;
 
-  /
   bool get isCritical => timeToDepart.inMinutes <= 15;
 
-  /
   bool get isFlightDelayed => flightStatus.toLowerCase().contains('delay');
 
-  /
   String get formattedSavings => '€${savings.toStringAsFixed(2)}';
 
-  /
   String get formattedTimeToDepart {
     if (shouldDepartNow) return 'Depart now!';
 
@@ -102,7 +87,6 @@ class AirportTiming extends Equatable {
     }
   }
 
-  /
   String get formattedOptimalEntryTime {
     final hour = optimalEntryTime.hour.toString().padLeft(2, '0');
     final minute = optimalEntryTime.minute.toString().padLeft(2, '0');

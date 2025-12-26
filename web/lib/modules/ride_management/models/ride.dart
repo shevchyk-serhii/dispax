@@ -36,12 +36,12 @@ enum RideStatus {
 }
 
 class Ride {
-  final int id;
-  final int clientId;
-  final int creatorId;
-  final int? driverId;
-  final int companyId;
-  final int? scheduleDayId;
+  final String id;
+  final String clientId;
+  final String creatorId;
+  final String? driverId;
+  final String companyId;
+  final String? scheduleDayId;
   final DateTime pickupDateTime;
   final Location from;
   final Location to;
@@ -84,11 +84,11 @@ class Ride {
 
   factory Ride.fromJson(Map<String, dynamic> json) {
     return Ride(
-      id: json['id'] ?? 0,
-      clientId: json['clientId'] ?? 0,
-      creatorId: json['creatorId'] ?? 0,
+      id: json['id'] ?? '',
+      clientId: json['clientId'] ?? '',
+      creatorId: json['creatorId'] ?? '',
       driverId: json['driverId'],
-      companyId: json['companyId'] ?? 0,
+      companyId: json['companyId'] ?? '',
       scheduleDayId: json['scheduleDayId'],
       pickupDateTime: DateTime.parse(json['pickupDateTime']),
       from: Location.fromJson(json['from']),
@@ -137,12 +137,12 @@ class Ride {
   }
 
   Ride copyWith({
-    int? id,
-    int? clientId,
-    int? creatorId,
-    int? driverId,
-    int? companyId,
-    int? scheduleDayId,
+    String? id,
+    String? clientId,
+    String? creatorId,
+    String? driverId,
+    String? companyId,
+    String? scheduleDayId,
     DateTime? pickupDateTime,
     Location? from,
     Location? to,

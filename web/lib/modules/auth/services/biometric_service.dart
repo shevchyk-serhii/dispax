@@ -16,11 +16,11 @@ class BiometricService {
       encryptedSharedPreferences: true,
     ),
     iOptions: IOSOptions(
-      accessibility: IOSAccessibility.first_unlock_this_device,
+      accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
   );
 
-  /
+  /// Checks if biometric authentication is available on the device
   Future<bool> get isAvailable async {
     try {
       final bool isAvailable = await _localAuth.canCheckBiometrics;
@@ -32,7 +32,7 @@ class BiometricService {
     }
   }
 
-  /
+  /// Gets the list of available biometric types on the device
   Future<List<BiometricType>> get availableBiometrics async {
     try {
       final List<BiometricType> biometrics = await _localAuth.getAvailableBiometrics();
@@ -43,7 +43,7 @@ class BiometricService {
     }
   }
 
-  /
+  /// Checks if biometric authentication is enabled in app settings
   Future<bool> get isBiometricEnabled async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -54,7 +54,7 @@ class BiometricService {
     }
   }
 
-  /
+  /// Enables or disables biometric authentication for the specified user
   Future<bool> setBiometricEnabled(bool enabled, {String? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -71,7 +71,7 @@ class BiometricService {
     }
   }
 
-  /
+  /// Gets the user ID associated with biometric authentication
   Future<String?> get biometricUserId async {
     try {
       return await _secureStorage.read(key: _biometricUserIdKey);
@@ -81,7 +81,7 @@ class BiometricService {
     }
   }
 
-  /
+  /// Authenticates the user using biometric authentication
   Future<BiometricAuthResult> authenticate({
     String? reason,
     bool stickyAuth = true,
@@ -133,7 +133,7 @@ class BiometricService {
     }
   }
 
-  /
+  /// Gets the user-friendly name for a biometric type
   String getBiometricTypeName(BiometricType type) {
     switch (type) {
       case BiometricType.face:
@@ -149,7 +149,7 @@ class BiometricService {
     }
   }
 
-  /
+  /// Gets a localized reason for biometric authentication based on available biometric types
   Future<String> getLocalizedReason({String? customReason}) async {
     if (customReason != null) return customReason;
 
@@ -163,7 +163,7 @@ class BiometricService {
     }
   }
 
-  /
+  /// Clears all biometric data from the device
   Future<void> clearBiometricData() async {
     try {
       final prefs = await SharedPreferences.getInstance();

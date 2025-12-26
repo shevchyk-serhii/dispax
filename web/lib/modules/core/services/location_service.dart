@@ -22,7 +22,6 @@ class LocationService {
 
   geo.Position? get currentPosition => _currentPosition;
 
-  /
   Future<bool> checkAndRequestLocationPermission() async {
     bool serviceEnabled;
     geo.LocationPermission permission;
@@ -47,7 +46,6 @@ class LocationService {
     return true;
   }
 
-  /
   Future<geo.Position?> getCurrentPosition() async {
     try {
       final hasPermission = await checkAndRequestLocationPermission();
@@ -67,7 +65,6 @@ class LocationService {
     }
   }
 
-  /
   Future<bool> startLocationTracking() async {
     try {
       final hasPermission = await checkAndRequestLocationPermission();
@@ -101,18 +98,15 @@ class LocationService {
     }
   }
 
-  /
   Future<void> stopLocationTracking() async {
     await _positionSubscription?.cancel();
     _positionSubscription = null;
   }
 
-  /
   double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     return geo.Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
   }
 
-  /
   Location positionToLocation(geo.Position position) {
     return Location(
       latitude: position.latitude,
@@ -121,7 +115,6 @@ class LocationService {
     );
   }
 
-  /
   void dispose() {
     stopLocationTracking();
     _positionController?.close();

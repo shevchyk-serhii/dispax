@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../modules/core/models/location.dart';
 import '../blocs/blocs.dart';
@@ -190,10 +189,10 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
       }
 
       final newRide = Ride(
-        id: DateTime.now().millisecondsSinceEpoch,
-        clientId: 0,
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        clientId: authState.user!.id,
         creatorId: authState.user!.id,
-        companyId: authState.user!.companyId ?? 0,
+        companyId: authState.user!.companyId ?? '',
         pickupDateTime: _pickupDateTime,
         from: Location(address: _fromAddressController.text.trim()),
         to: Location(address: _toAddressController.text.trim()),

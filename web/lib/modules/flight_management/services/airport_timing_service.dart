@@ -16,7 +16,6 @@ class AirportTimingService {
 
   final ApiClient _apiClient = ApiClient();
 
-  /
   Future<AirportTiming?> getOptimalEntryTime({
     required String rideId,
     required double driverLatitude,
@@ -43,7 +42,6 @@ class AirportTimingService {
     }
   }
 
-  /
   Future<bool> notifyAirportEntry({
     required String rideId,
     required DateTime entryTime,
@@ -61,7 +59,6 @@ class AirportTimingService {
     }
   }
 
-  /
   Future<AirportFlightInfo?> getFlightInfo(String flightNumber) async {
     try {
       final response = await _apiClient.get('/flights/$flightNumber');
@@ -76,7 +73,6 @@ class AirportTimingService {
     return null;
   }
 
-  /
   Future<Duration?> calculateTravelTime({
     required double fromLatitude,
     required double fromLongitude,
@@ -101,7 +97,6 @@ class AirportTimingService {
   }
 }
 
-/
 class AirportFlightInfo {
   final String flightNumber;
   final DateTime scheduledTime;
@@ -132,10 +127,8 @@ class AirportFlightInfo {
     );
   }
 
-  /
   DateTime get effectiveArrivalTime => actualTime ?? scheduledTime;
 
-  /
   Duration? get delay {
     if (actualTime == null) return null;
     return actualTime!.difference(scheduledTime);

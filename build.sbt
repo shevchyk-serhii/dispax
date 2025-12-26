@@ -8,6 +8,14 @@ addCommandAlias("fmtWatch", "~fmtAll")
 addCommandAlias("cucumber", "testOnly *CucumberRunner")
 addCommandAlias("cucumberWithServer", "; testServer & ; cucumber ; Test / runMain com.shevchyk.TestApplication")
 addCommandAlias("testServer", "Test / runMain com.shevchyk.TestApplication")
+addCommandAlias(
+  "runDev",
+  "; set Compile / run / javaOptions += \"-Dconfig.resource=application-development.conf\"; run"
+)
+addCommandAlias(
+  "runProd",
+  "; set Compile / run / javaOptions += \"-Dconfig.resource=application-production.conf\"; run"
+)
 
 lazy val commonDependencies = Seq(
   "dev.zio"       %% "zio"                % "2.1.9",
@@ -99,6 +107,7 @@ lazy val root = (project in file("."))
   .settings(
     name                             := "oktopus",
     Compile / scalaSource            := baseDirectory.value / "api" / "src" / "main" / "scala",
+    Compile / resourceDirectory      := baseDirectory.value / "api" / "src" / "main" / "resources",
     Test / scalaSource               := baseDirectory.value / "api" / "src" / "test" / "scala",
     Test / resourceDirectory         := baseDirectory.value / "api" / "src" / "test" / "resources",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies ++ testDependencies,

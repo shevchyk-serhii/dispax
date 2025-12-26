@@ -1,11 +1,11 @@
 enum PersonRole { driver, client, secretary, dispatcher }
 
 class Person {
-  final int id;
+  final String id;
   final String name;
   final String email;
   final PersonRole role;
-  final int? companyId;
+  final String? companyId;
   final String? licenseNumber;
   final String? phone;
   final VehicleInfo? vehicleInfo;

@@ -28,7 +28,7 @@ class RideRefreshRequested extends RideEvent {
 }
 
 class RideDeleteRequested extends RideEvent {
-  final int rideId;
+  final String rideId;
 
   const RideDeleteRequested({required this.rideId});
 
@@ -64,7 +64,7 @@ class RideCreateRequested extends RideEvent {
 }
 
 class RideStatusUpdateRequested extends RideEvent {
-  final int rideId;
+  final String rideId;
   final RideStatus status;
 
   const RideStatusUpdateRequested({

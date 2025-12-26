@@ -42,7 +42,7 @@ class RideService {
     }
   }
 
-  Future<Ride?> getRideById(int id) async {
+  Future<Ride?> getRideById(String id) async {
     try {
       final response = await privateApiClient.get('/rides/$id');
 
@@ -74,7 +74,7 @@ class RideService {
     }
   }
 
-  Future<Ride?> updateRide(int id, Ride ride) async {
+  Future<Ride?> updateRide(String id, Ride ride) async {
     try {
       final response = await privateApiClient.put('/rides/$id', ride.toJson());
 
@@ -91,7 +91,7 @@ class RideService {
     }
   }
 
-  Future<bool> deleteRide(int id) async {
+  Future<bool> deleteRide(String id) async {
     try {
       final response = await privateApiClient.delete('/rides/$id');
 
@@ -107,7 +107,7 @@ class RideService {
     }
   }
 
-  Future<bool> updateRideStatus(int id, RideStatus status) async {
+  Future<bool> updateRideStatus(String id, RideStatus status) async {
     try {
       final response = await privateApiClient.patch('/rides/$id/status', {
         'status': status.value,
@@ -125,7 +125,7 @@ class RideService {
     }
   }
 
-  Future<Ride> assignDriver(int rideId, int driverId) async {
+  Future<Ride> assignDriver(String rideId, String driverId) async {
     try {
       final response = await privateApiClient.put('/rides/$rideId/assign-driver', {
         'driverId': driverId,
