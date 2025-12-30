@@ -6,7 +6,8 @@ import com.shevchyk.auth.middleware.AuthMiddleware
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{CompanyId, PersonId, RideId}
 import com.shevchyk.ride.application.RideFacade
-import com.shevchyk.ride.domain.{*, given}
+import com.shevchyk.ride.domain.*
+import com.shevchyk.ride.infrastructure.http.dto.{*, given}
 import zio.*
 import zio.http.*
 import zio.json.*

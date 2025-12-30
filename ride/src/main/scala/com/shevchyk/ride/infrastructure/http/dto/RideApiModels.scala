@@ -1,9 +1,15 @@
-package com.shevchyk.ride.domain
+package com.shevchyk.ride.infrastructure.http.dto
 
 import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId}
+import com.shevchyk.ride.domain.{Ride, CreateRideRequest, RideStatus}
 import zio.json.*
 import java.time.Instant
 import java.util.UUID
+
+given JsonCodec[RideStatus] = JsonCodec.string.transform(
+  str => RideStatus.valueOf(str),
+  status => status.toString
+)
 
 case class LocationDto(
     address: String,

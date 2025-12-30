@@ -6,7 +6,7 @@ import com.shevchyk.core.domain.{PersonId, RideId}
 import com.shevchyk.repository.PersonRepository
 import com.shevchyk.ride.application.RideFacade
 import com.shevchyk.ride.application.service.{RideCreationService, SimpleRideService}
-import com.shevchyk.ride.domain.RideDto
+import com.shevchyk.ride.infrastructure.http.dto.RideDto
 import com.shevchyk.ride.helpers.{TestData, TestJWT}
 import com.shevchyk.ride.infrastructure.http.RideRoutes
 import com.shevchyk.ride.repository.{InMemoryPersonRepository, InMemoryRideRepository, RideRepository}

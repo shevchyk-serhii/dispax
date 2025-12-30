@@ -1,10 +1,9 @@
 package com.shevchyk.ride.domain
 
 import com.shevchyk.core.domain.*
-import zio.json.*
 import java.time.Instant
 
-enum RideStatus derives JsonCodec:
+enum RideStatus:
   case Requested, Assigned, InProgress, Completed, Cancelled
 
 final case class Ride(
@@ -27,7 +26,7 @@ final case class Ride(
     airportCode: Option[String] = None,
     flightNumber: Option[String] = None,
     isAirportTransfer: Boolean = false
-) derives JsonCodec:
+):
 
   def canBeAssigned: Boolean  = status == RideStatus.Requested
   def canBeStarted: Boolean   = status == RideStatus.Assigned && driverId.isDefined
@@ -43,12 +42,12 @@ final case class CreateRideRequest(
     airportCode: Option[String] = None,
     flightNumber: Option[String] = None,
     isAirportTransfer: Boolean = false
-) derives JsonCodec
+)
 
 final case class UpdateRideStatusRequest(
     status: RideStatus,
     notes: Option[String] = None
-) derives JsonCodec
+)
 
 enum RideError extends Throwable:
   case ValidationError(message: String)
@@ -64,5 +63,4 @@ enum RideError extends Throwable:
   case BusinessRuleViolation(rule: String, message: String)
   case TariffNotFound(id: TariffId)
 
-object RideError:
-  given JsonEncoder[RideError] = JsonEncoder[String].contramap(_.toString)
+object RideError
