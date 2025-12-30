@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../models/ride.dart';
+import '../models/create_ride_request.dart';
 import '../../core/models/person.dart';
 import '../../core/services/api_client.dart';
 
@@ -59,9 +60,9 @@ class RideService {
     }
   }
 
-  Future<Ride> createRide(Ride ride) async {
+  Future<Ride> createRide(CreateRideRequest request) async {
     try {
-      final response = await privateApiClient.post('/rides', ride.toJson());
+      final response = await privateApiClient.post('/rides', request.toJson());
 
       if (response.statusCode == 201) {
         final Map<String, dynamic> json = jsonDecode(response.body);

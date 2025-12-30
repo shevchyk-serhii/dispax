@@ -1,4 +1,5 @@
 import '../models/ride.dart';
+import '../models/create_ride_request.dart';
 import '../../core/models/location.dart';
 
 class MockRideService {
@@ -54,9 +55,21 @@ class MockRideService {
     return mockRides.where((ride) => ride.id == id).firstOrNull;
   }
 
-  Future<Ride> createRide(Ride ride) async {
+  Future<Ride> createRide(CreateRideRequest request) async {
     await Future.delayed(const Duration(milliseconds: 800));
-    final newRide = ride.copyWith(id: (nextId++).toString());
+    final newRide = Ride(
+      id: (nextId++).toString(),
+      clientId: request.clientId,
+      creatorId: request.creatorId,
+      companyId: request.companyId,
+      pickupDateTime: request.pickupDateTime,
+      from: request.from,
+      to: request.to,
+      status: RideStatus.requested,
+      clientName: request.clientName,
+      flightNumber: request.flightNumber,
+      isAirportTransfer: request.isAirportTransfer,
+    );
     mockRides.add(newRide);
     return newRide;
   }

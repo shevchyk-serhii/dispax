@@ -1,0 +1,96 @@
+import 'package:equatable/equatable.dart';
+
+enum CreateRideFormStatus { initial, submitting, success, failure }
+
+class CreateRideFormState extends Equatable {
+  final String clientName;
+  final String fromAddress;
+  final String toAddress;
+  final String flightNumber;
+  final DateTime pickupDateTime;
+  final bool isAirportTransfer;
+  final bool isArrival;
+  final String? selectedGate;
+  final String? selectedTerminal;
+  final CreateRideFormStatus status;
+  final String? errorMessage;
+
+  const CreateRideFormState({
+    required this.clientName,
+    required this.fromAddress,
+    required this.toAddress,
+    required this.flightNumber,
+    required this.pickupDateTime,
+    required this.isAirportTransfer,
+    required this.isArrival,
+    this.selectedGate,
+    this.selectedTerminal,
+    this.status = CreateRideFormStatus.initial,
+    this.errorMessage,
+  });
+
+  factory CreateRideFormState.initial() {
+    return CreateRideFormState(
+      clientName: '',
+      fromAddress: '',
+      toAddress: '',
+      flightNumber: '',
+      pickupDateTime: DateTime.now().add(const Duration(hours: 1)),
+      isAirportTransfer: false,
+      isArrival: false,
+      selectedGate: null,
+      selectedTerminal: null,
+      status: CreateRideFormStatus.initial,
+    );
+  }
+
+  CreateRideFormState copyWith({
+    String? clientName,
+    String? fromAddress,
+    String? toAddress,
+    String? flightNumber,
+    DateTime? pickupDateTime,
+    bool? isAirportTransfer,
+    bool? isArrival,
+    String? selectedGate,
+    String? selectedTerminal,
+    CreateRideFormStatus? status,
+    String? errorMessage,
+  }) {
+    return CreateRideFormState(
+      clientName: clientName ?? this.clientName,
+      fromAddress: fromAddress ?? this.fromAddress,
+      toAddress: toAddress ?? this.toAddress,
+      flightNumber: flightNumber ?? this.flightNumber,
+      pickupDateTime: pickupDateTime ?? this.pickupDateTime,
+      isAirportTransfer: isAirportTransfer ?? this.isAirportTransfer,
+      isArrival: isArrival ?? this.isArrival,
+      selectedGate: selectedGate ?? this.selectedGate,
+      selectedTerminal: selectedTerminal ?? this.selectedTerminal,
+      status: status ?? this.status,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+
+  bool get isValid {
+    return clientName.trim().isNotEmpty &&
+           fromAddress.trim().isNotEmpty &&
+           toAddress.trim().isNotEmpty &&
+           (!isAirportTransfer || flightNumber.trim().isNotEmpty);
+  }
+
+  @override
+  List<Object?> get props => [
+    clientName,
+    fromAddress,
+    toAddress,
+    flightNumber,
+    pickupDateTime,
+    isAirportTransfer,
+    isArrival,
+    selectedGate,
+    selectedTerminal,
+    status,
+    errorMessage,
+  ];
+}

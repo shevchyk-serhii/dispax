@@ -1,6 +1,7 @@
 package com.shevchyk.ride.application
 
 import com.shevchyk.core.domain.*
+import com.shevchyk.repository.{PersonRepository, MockPersonRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.*
 import com.shevchyk.ride.repository.InMemoryRideRepository
@@ -19,6 +20,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
         } yield assertTrue(result.isFailure)
       }.provide(
         InMemoryRideRepository.layer,
+        ZLayer.succeed[PersonRepository](MockPersonRepository()),
         RideCreationService.layer,
         SimpleRideService.layer
       )
@@ -28,6 +30,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
       test("should create ride with generated ID") {
         val request = CreateRideRequest(
           clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          companyId = CompanyId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
           pickupLocation = Location("Start Point"),
           dropoffLocation = Location("End Point"),
           notes = Some("Test ride")
@@ -45,6 +48,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
         )
       }.provide(
         InMemoryRideRepository.layer,
+        ZLayer.succeed[PersonRepository](MockPersonRepository()),
         RideCreationService.layer,
         SimpleRideService.layer
       ),
@@ -52,6 +56,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
       test("should create airport transfer ride") {
         val request = CreateRideRequest(
           clientId = PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200")),
+          companyId = CompanyId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
           pickupLocation = Location("Airport Terminal 1"),
           dropoffLocation = Location("Hotel"),
           airportCode = Some("KBP"),
@@ -69,6 +74,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
         )
       }.provide(
         InMemoryRideRepository.layer,
+        ZLayer.succeed[PersonRepository](MockPersonRepository()),
         RideCreationService.layer,
         SimpleRideService.layer
       )

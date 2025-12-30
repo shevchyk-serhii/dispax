@@ -39,6 +39,7 @@ case class UserDto(
     role: String,
     phone: Option[String] = None,
     status: Option[String] = None,
+    companyId: Option[UUID] = None,
     createdAt: Option[String] = None
 ) derives JsonCodec
 
@@ -106,12 +107,13 @@ case class TokenNotEligibleForRefresh(message: String) extends JwtError
 // Conversion methods
 object UserDto:
 
-  def fromDomain(user: User): UserDto = UserDto(
+  def fromDomain(user: User, companyId: Option[UUID] = None): UserDto = UserDto(
     id = user.id,
     email = user.email,
     name = user.name,
     role = user.role.toString,
     phone = user.phone,
     status = Some(user.status.toString),
+    companyId = companyId,
     createdAt = Some(user.createdAt.toString)
   )

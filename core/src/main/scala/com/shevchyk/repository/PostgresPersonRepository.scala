@@ -14,18 +14,21 @@ import com.github.f4b6a3.uuid.UuidCreator
 final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonRepository {
 
   // Doobie mappers for custom types
-  implicit val personRoleMeta: Meta[PersonRole] =
-    Meta[String].imap {
+  implicit val personRoleMeta: Meta[PersonRole] = pgEnumString(
+    "person_role",
+    {
       case "driver"     => PersonRole.Driver
       case "client"     => PersonRole.Client
       case "secretary"  => PersonRole.Secretary
       case "dispatcher" => PersonRole.Dispatcher
-    } {
+    },
+    {
       case PersonRole.Driver     => "driver"
       case PersonRole.Client     => "client"
       case PersonRole.Secretary  => "secretary"
       case PersonRole.Dispatcher => "dispatcher"
     }
+  )
 
   override def create(person: Person): Task[Person] = {
     val personWithId =

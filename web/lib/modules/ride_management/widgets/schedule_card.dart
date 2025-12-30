@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../constants/app_colors.dart';
-import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../theme/app_theme.dart';
 
@@ -10,10 +8,10 @@ class ScheduleCard extends StatelessWidget {
   final VoidCallback onSelectDateTime;
 
   const ScheduleCard({
-    Key? key,
+    super.key,
     required this.pickupDateTime,
     required this.onSelectDateTime,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,11 +24,11 @@ class ScheduleCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.schedule, color: AppColors.secretaryColor, size: AppDimensions.iconLarge),
+                Icon(Icons.schedule, color: Colors.orange[600], size: 24),
                 const SizedBox(width: AppDimensions.paddingSmall),
-                Text(
-                  'Schedule',
-                  style: AppStyles.headlineSmall,
+                const Text(
+                  'Pickup Schedule',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -40,30 +38,27 @@ class ScheduleCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(AppDimensions.paddingMedium),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.textSecondary),
+                  border: Border.all(color: Colors.grey[300]!),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.access_time),
+                    Icon(Icons.calendar_today, color: AppColors.secretaryColor),
                     const SizedBox(width: AppDimensions.paddingMedium),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const Text('Pickup Date & Time', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const SizedBox(height: 4),
                           Text(
-                            'Pickup Date & Time *',
-                            style: AppStyles.labelSmall.copyWith(color: AppColors.textSecondary),
-                          ),
-                          const SizedBox(height: AppDimensions.paddingXSmall),
-                          Text(
-                            DateFormat('MMM dd, yyyy - HH:mm').format(pickupDateTime),
-                            style: AppStyles.bodyLarge,
+                            '${pickupDateTime.day}.${pickupDateTime.month}.${pickupDateTime.year} at ${pickupDateTime.hour.toString().padLeft(2, '0')}:${pickupDateTime.minute.toString().padLeft(2, '0')}',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_drop_down),
+                    const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                   ],
                 ),
               ),

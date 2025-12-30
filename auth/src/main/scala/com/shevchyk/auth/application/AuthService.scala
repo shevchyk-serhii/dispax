@@ -3,6 +3,8 @@ package com.shevchyk.auth.application
 import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.repository.*
 import com.shevchyk.auth.service.JwtService
+import com.shevchyk.repository.PersonRepository
+import com.shevchyk.core.domain.PersonId
 import zio.*
 import zio.json.*
 import java.time.Instant
@@ -24,8 +26,12 @@ trait AuthService:
   def getAllUsers(role: Option[UserRole] = None, status: Option[UserStatus] = None): ZIO[Any, AuthError, List[UserDto]]
   def searchUsers(query: String): ZIO[Any, AuthError, List[UserDto]]
 
-class AuthServiceImpl(userRepository: UserRepository, tokenRepository: TokenRepository, jwtService: JwtService)
-    extends AuthService:
+class AuthServiceImpl(
+    userRepository: UserRepository,
+    tokenRepository: TokenRepository,
+    jwtService: JwtService,
+    personRepository: PersonRepository
+) extends AuthService:
 
   private def hashPassword(password: String): String =
     val digest = MessageDigest.getInstance("SHA-256")
@@ -38,12 +44,15 @@ class AuthServiceImpl(userRepository: UserRepository, tokenRepository: TokenRepo
 
   override def login(email: String, password: String): ZIO[Any, AuthError, LoginResponse] =
     for
-      userOpt <- userRepository.findByEmail(email).orElseFail(UserNotFound(email))
-      user    <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(email))
-      _       <- ZIO.when(user.passwordHash != hashPassword(password))(ZIO.fail(InvalidCredentials(email)))
-      token   <- jwtService.generateToken(user).mapError(identity)
-      _       <- tokenRepository.create(token, user.id).orElseFail(ValidationError("token", "Failed to store token"))
-    yield LoginResponse(UserDto.fromDomain(user), token)
+      userOpt   <- userRepository.findByEmail(email).orElseFail(UserNotFound(email))
+      user      <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(email))
+      _         <- ZIO.when(user.passwordHash != hashPassword(password))(ZIO.fail(InvalidCredentials(email)))
+      // Fetch companyId from persons table
+      personOpt <- personRepository.findById(PersonId(user.id)).orElseFail(UserNotFound(email))
+      companyId  = personOpt.flatMap(_.companyId.map(_.value))
+      token     <- jwtService.generateToken(user, companyId).mapError(identity)
+      _         <- tokenRepository.create(token, user.id).orElseFail(ValidationError("token", "Failed to store token"))
+    yield LoginResponse(UserDto.fromDomain(user, companyId), token)
 
   override def createUser(request: CreateUserRequest): ZIO[Any, AuthError, UserDto] =
     for
@@ -142,13 +151,13 @@ class AuthServiceImpl(userRepository: UserRepository, tokenRepository: TokenRepo
       filteredUsers = allUsers.filter { user =>
                         role.forall(_ == user.role) && status.forall(_ == user.status)
                       }
-    yield filteredUsers.map(UserDto.fromDomain)
+    yield filteredUsers.map(user => UserDto.fromDomain(user, None))
 
   override def searchUsers(query: String): ZIO[Any, AuthError, List[UserDto]] =
     for matchingUsers <- userRepository
                            .searchByQuery(query)
                            .orElseFail(ValidationError("user", "Failed to search users"))
-    yield matchingUsers.map(UserDto.fromDomain)
+    yield matchingUsers.map(user => UserDto.fromDomain(user, None))
 
   override def refreshToken(token: String): ZIO[Any, AuthError, String] = jwtService
     .refreshToken(token)
@@ -156,6 +165,5 @@ class AuthServiceImpl(userRepository: UserRepository, tokenRepository: TokenRepo
 
 object AuthService:
 
-  val live: ZLayer[UserRepository & TokenRepository & JwtService, Nothing, AuthService] = ZLayer.fromFunction(
-    AuthServiceImpl.apply
-  )
+  val live: ZLayer[UserRepository & TokenRepository & JwtService & PersonRepository, Nothing, AuthService] = ZLayer
+    .fromFunction(AuthServiceImpl.apply)

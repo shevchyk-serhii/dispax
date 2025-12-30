@@ -74,21 +74,27 @@ lazy val core = (project in file("core"))
   )
 
 lazy val auth = (project in file("auth"))
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
   .settings(
     name := "oktopus-auth",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jwtDependencies
   )
 
 lazy val ride = (project in file("ride"))
-  .dependsOn(core, auth)
+  .dependsOn(
+    core % "compile->compile;test->test",
+    auth % "compile->compile;test->test"
+  )
   .settings(
     name := "oktopus-ride",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
   )
 
 lazy val driver = (project in file("driver"))
-  .dependsOn(core, ride)
+  .dependsOn(
+    core % "compile->compile;test->test",
+    ride % "compile->compile;test->test"
+  )
   .settings(
     name := "oktopus-driver",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies

@@ -6,7 +6,8 @@ import '../../../theme/app_theme.dart';
 class AirportTransferCard extends StatelessWidget {
   final bool isAirportTransfer;
   final bool isArrival;
-  final TextEditingController flightNumberController;
+  final String flightNumber;
+  final ValueChanged<String>? onFlightNumberChanged;
   final String? selectedGate;
   final String? selectedTerminal;
   final List<String> gates;
@@ -21,7 +22,8 @@ class AirportTransferCard extends StatelessWidget {
     Key? key,
     required this.isAirportTransfer,
     required this.isArrival,
-    required this.flightNumberController,
+    required this.flightNumber,
+    this.onFlightNumberChanged,
     required this.selectedGate,
     required this.selectedTerminal,
     required this.gates,
@@ -80,7 +82,7 @@ class AirportTransferCard extends StatelessWidget {
                         children: [
                           Icon(Icons.flight_takeoff, size: 16, color: Colors.blue),
                           const SizedBox(width: 4),
-                          const Text('Departure'),
+                          Flexible(child: Text('Departure', overflow: TextOverflow.ellipsis)),
                         ],
                       ),
                       subtitle: const Text('To airport'),
@@ -96,7 +98,7 @@ class AirportTransferCard extends StatelessWidget {
                         children: [
                           Icon(Icons.flight_land, size: 16, color: Colors.green),
                           const SizedBox(width: 4),
-                          const Text('Arrival'),
+                          Flexible(child: Text('Arrival', overflow: TextOverflow.ellipsis)),
                         ],
                       ),
                       subtitle: const Text('From airport'),
@@ -109,7 +111,7 @@ class AirportTransferCard extends StatelessWidget {
               ),
               const SizedBox(height: AppDimensions.paddingMedium),
               TextFormField(
-                controller: flightNumberController,
+                initialValue: flightNumber,
                 decoration: InputDecoration(
                   labelText: 'Flight Number',
                   hintText: 'e.g. LH123, BA456',
@@ -121,6 +123,7 @@ class AirportTransferCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                   ),
                 ),
+                onChanged: onFlightNumberChanged,
                 validator: flightNumberValidator ?? (isAirportTransfer ? (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Flight number is required for airport transfers';
@@ -138,11 +141,13 @@ class AirportTransferCard extends StatelessWidget {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                         ),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                       ),
                       value: selectedGate,
                       items: gates.map((gate) => DropdownMenuItem(
                         value: gate,
-                        child: Text('Gate $gate'),
+                        child: Text(gate),
                       )).toList(),
                       onChanged: onGateChanged,
                     ),
@@ -155,11 +160,13 @@ class AirportTransferCard extends StatelessWidget {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                         ),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                       ),
                       value: selectedTerminal,
                       items: terminals.map((terminal) => DropdownMenuItem(
                         value: terminal,
-                        child: Text('Terminal $terminal'),
+                        child: Text(terminal),
                       )).toList(),
                       onChanged: onTerminalChanged,
                     ),

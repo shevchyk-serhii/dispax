@@ -10,7 +10,8 @@ import java.util.UUID
 case class AuthenticatedUser(
     userId: UUID,
     email: String,
-    role: String
+    role: String,
+    companyId: Option[UUID] = None
 )
 
 object AuthenticatedUser:
@@ -39,7 +40,8 @@ object AuthMiddleware:
               AuthenticatedUser(
                 userId = payload.userId,
                 email = payload.email,
-                role = payload.role.toString
+                role = payload.role.toString,
+                companyId = payload.companyId
               )
             }
           )

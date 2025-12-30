@@ -15,20 +15,23 @@ import java.util.UUID
 final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository {
 
   // Doobie mappers for custom types
-  implicit val rideStatusMeta: Meta[RideStatus] =
-    Meta[String].imap {
+  implicit val rideStatusMeta: Meta[RideStatus] = pgEnumString(
+    "ride_status",
+    {
       case "Requested"  => RideStatus.Requested
       case "Assigned"   => RideStatus.Assigned
       case "InProgress" => RideStatus.InProgress
       case "Completed"  => RideStatus.Completed
       case "Cancelled"  => RideStatus.Cancelled
-    } {
+    },
+    {
       case RideStatus.Requested  => "Requested"
       case RideStatus.Assigned   => "Assigned"
       case RideStatus.InProgress => "InProgress"
       case RideStatus.Completed  => "Completed"
       case RideStatus.Cancelled  => "Cancelled"
     }
+  )
 
   implicit val instantMeta: Meta[Instant] =
     Meta[java.time.OffsetDateTime].imap(_.toInstant)(instant =>

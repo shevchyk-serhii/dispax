@@ -35,6 +35,7 @@ final case class Ride(
 
 final case class CreateRideRequest(
     clientId: PersonId,
+    companyId: CompanyId,
     pickupLocation: Location,
     dropoffLocation: Location,
     scheduledTime: Option[Instant] = None,

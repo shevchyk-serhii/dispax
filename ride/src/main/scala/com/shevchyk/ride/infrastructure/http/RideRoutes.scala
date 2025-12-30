@@ -1,7 +1,7 @@
 package com.shevchyk.ride.infrastructure.http
 
 import com.shevchyk.TestDataGenerator
-import com.shevchyk.core.domain.{PersonId, RideId}
+import com.shevchyk.core.domain.{PersonId, RideId, CompanyId}
 import com.shevchyk.ride.application.RideFacade
 import com.shevchyk.ride.domain.{*, given}
 import com.shevchyk.auth.middleware.{AuthMiddleware, AuthenticatedUser}
@@ -71,12 +71,24 @@ object RideRoutes {
   val authenticatedRoutes: Routes[RideFacade & JwtService, Response] = Routes(
     // Create new ride (authenticated)
     Method.POST / "api" / "rides" -> authenticatedJsonHandler[RideFacade, CreateRideApiRequest] { (user, apiRequest) =>
-      for {
-        domainRequest <- ZIO.succeed(CreateRideApiRequest.toDomain(apiRequest).copy(clientId = PersonId(user.userId)))
-        facade        <- ZIO.service[RideFacade]
-        ride          <- facade.createRide(domainRequest)
-        rideDto        = RideDto.fromDomain(ride)
-      } yield Response(Status.Created, body = Body.fromString(rideDto.toJson))
+      (for {
+        // Use companyId from JWT token (authenticated user)
+        companyId    <- ZIO
+                          .fromOption(user.companyId)
+                          .orElseFail(
+                            new RuntimeException("User must belong to a company to create rides")
+                          )
+        domainRequest = CreateRideApiRequest
+                          .toDomain(apiRequest, CompanyId(companyId))
+                          .copy(clientId = PersonId(user.userId))
+        facade       <- ZIO.service[RideFacade]
+        ride         <- facade.createRide(domainRequest)
+        rideDto       = RideDto.fromDomain(ride)
+      } yield Response(Status.Created, body = Body.fromString(rideDto.toJson)))
+        .catchAll { ex =>
+          ZIO.logError(s"Create ride error: ${ex.getMessage}") *>
+            ZIO.succeed(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
+        }
     },
 
     // Get all rides for authenticated user
@@ -101,6 +113,52 @@ object RideRoutes {
         case ex: Throwable      =>
           ZIO.succeed(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
       }
+    },
+
+    // Calculate optimal airport entry time (authenticated)
+    Method.POST / "api" / "rides" / string("rideId") / "airport-timing" -> handler {
+      (rideId: String, request: Request) =>
+        (for {
+          user   <- AuthMiddleware.authenticateRequest(request)
+          facade <- ZIO.service[RideFacade]
+          ride   <- facade.getRideById(RideId(UUID.fromString(rideId)))
+
+          // Mock calculation - in production, this would use real-time data
+          now        = java.time.Instant.now()
+          flightTime = ride.scheduledTime.getOrElse(now.plusSeconds(7200))
+
+          // Calculate times
+          travelTime = 45 // minutes
+          bufferTime = 30 // minutes (security + check-in)
+          totalTime  = travelTime + bufferTime
+
+          optimalEntry = flightTime.minusSeconds(totalTime * 60)
+          latestEntry  = flightTime.minusSeconds(bufferTime * 60)
+          timeToDepart = java.time.Duration.between(now, optimalEntry).toMinutes.toInt
+
+          // Mock parking costs
+          optimalCost = 12.50
+          earlyCost   = 25.00
+          savings     = earlyCost - optimalCost
+
+          response =
+            s"""{
+          "optimalEntryTime": "${optimalEntry}",
+          "latestEntryTime": "${latestEntry}",
+          "travelTimeMinutes": $travelTime,
+          "bufferTimeMinutes": $bufferTime,
+          "optimalParkingCost": $optimalCost,
+          "earlyEntryParkingCost": $earlyCost,
+          "savings": $savings,
+          "flightStatus": "On time",
+          "timeToDepartMinutes": $timeToDepart
+        }"""
+
+        } yield Response.json(response)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      =>
+            ZIO.succeed(Response(Status.NotFound, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
+        }
     }
   )
 

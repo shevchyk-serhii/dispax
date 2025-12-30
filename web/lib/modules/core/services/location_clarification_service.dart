@@ -7,15 +7,25 @@ import 'location_service.dart';
 
 class LocationClarificationService {
   static LocationClarificationService? _instance;
-  LocationClarificationService._internal();
+  final ApiClient _apiClient;
+  final LocationService _locationService = LocationService.instance;
+
+  LocationClarificationService._internal(this._apiClient);
 
   static LocationClarificationService get instance {
-    _instance ??= LocationClarificationService._internal();
+    if (_instance == null) {
+      throw StateError(
+        'LocationClarificationService has not been configured. '
+        'Call LocationClarificationService.configure() with an authenticated ApiClient first.'
+      );
+    }
     return _instance!;
   }
 
-  final ApiClient _apiClient = ApiClient();
-  final LocationService _locationService = LocationService.instance;
+  /// Configure the singleton with an authenticated ApiClient
+  static void configure(ApiClient apiClient) {
+    _instance = LocationClarificationService._internal(apiClient);
+  }
 
   Future<bool> updateClientLocation({
     required String rideId,

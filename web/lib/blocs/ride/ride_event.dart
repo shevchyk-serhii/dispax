@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import '../../modules/core/models/person.dart';
 import '../../modules/ride_management/models/ride.dart';
+import '../../modules/ride_management/models/create_ride_request.dart';
 
 abstract class RideEvent extends Equatable {
   const RideEvent();
@@ -55,12 +56,12 @@ class RideUpdated extends RideEvent {
 }
 
 class RideCreateRequested extends RideEvent {
-  final Ride ride;
+  final CreateRideRequest request;
 
-  const RideCreateRequested({required this.ride});
+  const RideCreateRequested({required this.request});
 
   @override
-  List<Object> get props => [ride];
+  List<Object> get props => [request];
 }
 
 class RideStatusUpdateRequested extends RideEvent {

@@ -4,7 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../modules/core/models/person.dart';
 import '../../modules/core/services/api_client.dart';
+import '../../modules/core/services/location_clarification_service.dart';
 import '../../modules/auth/services/biometric_service.dart';
+import '../../modules/flight_management/services/airport_timing_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -56,6 +58,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final user = Person.fromJson(userJson);
         privateApiClient.setAuthToken(token);
 
+        /// Configure services with authenticated API client
+        AirportTimingService.configure(privateApiClient);
+        LocationClarificationService.configure(privateApiClient);
+
         emit(AuthState.authenticated(user,
           biometricEnabled: biometricEnabled,
           biometricAvailable: biometricAvailable,
@@ -93,6 +99,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await _secureStorage.write(key: privateTokenKey, value: loginResponse['token']);
 
         privateApiClient.setAuthToken(loginResponse['token']);
+
+        /// Configure services with authenticated API client
+        AirportTimingService.configure(privateApiClient);
+        LocationClarificationService.configure(privateApiClient);
 
         final user = Person.fromJson(loginResponse['person']);
         emit(AuthState.authenticated(user));

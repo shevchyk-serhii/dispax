@@ -15,3 +15,4 @@ export 'location_card.dart';
 export 'schedule_card.dart';
 export 'airport_transfer_card.dart';
 export 'create_ride_action_buttons.dart';
+export 'create_ride_form_body.dart';

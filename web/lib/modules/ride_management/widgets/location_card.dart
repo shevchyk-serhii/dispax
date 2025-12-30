@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
-import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../theme/app_theme.dart';
 
 class LocationCard extends StatelessWidget {
-  final TextEditingController fromAddressController;
-  final TextEditingController toAddressController;
-  final VoidCallback? onFromAddressChanged;
-  final VoidCallback? onToAddressChanged;
+  final String fromAddress;
+  final String toAddress;
+  final ValueChanged<String> onFromAddressChanged;
+  final ValueChanged<String> onToAddressChanged;
 
   const LocationCard({
-    Key? key,
-    required this.fromAddressController,
-    required this.toAddressController,
-    this.onFromAddressChanged,
-    this.onToAddressChanged,
-  }) : super(key: key);
+    super.key,
+    required this.fromAddress,
+    required this.toAddress,
+    required this.onFromAddressChanged,
+    required this.onToAddressChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,20 +28,20 @@ class LocationCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.location_on, color: AppColors.secretaryColor, size: AppDimensions.iconLarge),
+                Icon(Icons.location_on, color: Colors.green[600], size: 24),
                 const SizedBox(width: AppDimensions.paddingSmall),
-                Text(
-                  'Route Information',
-                  style: AppStyles.headlineSmall,
+                const Text(
+                  'Ride Locations',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: AppDimensions.paddingMedium),
             TextFormField(
-              controller: fromAddressController,
+              initialValue: fromAddress,
               decoration: InputDecoration(
-                labelText: 'Pickup Address *',
-                hintText: 'Enter pickup location',
+                labelText: 'From',
+                hintText: 'Pick-up location',
                 prefixIcon: Icon(Icons.trip_origin, color: AppColors.secretaryColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
@@ -50,18 +49,18 @@ class LocationCard extends StatelessWidget {
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Pickup address is required';
+                  return 'Pick-up location is required';
                 }
                 return null;
               },
-              onChanged: (value) => onFromAddressChanged?.call(),
+              onChanged: onFromAddressChanged,
             ),
             const SizedBox(height: AppDimensions.paddingMedium),
             TextFormField(
-              controller: toAddressController,
+              initialValue: toAddress,
               decoration: InputDecoration(
-                labelText: 'Destination Address *',
-                hintText: 'Enter destination location',
+                labelText: 'To',
+                hintText: 'Drop-off location',
                 prefixIcon: Icon(Icons.location_on, color: AppColors.secretaryColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
@@ -69,11 +68,11 @@ class LocationCard extends StatelessWidget {
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Destination address is required';
+                  return 'Drop-off location is required';
                 }
                 return null;
               },
-              onChanged: (value) => onToAddressChanged?.call(),
+              onChanged: onToAddressChanged,
             ),
           ],
         ),

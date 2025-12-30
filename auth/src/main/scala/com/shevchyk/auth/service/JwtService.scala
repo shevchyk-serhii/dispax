@@ -12,6 +12,7 @@ final case class JwtPayload(
     userId: UUID,
     email: String,
     role: UserRole,
+    companyId: Option[UUID] = None,
     iat: Long, // issued at
     exp: Long  // expires at
 )
@@ -27,7 +28,7 @@ object JwtPayload:
   )
 
 trait JwtService:
-  def generateToken(user: User): ZIO[Any, JwtError, String]
+  def generateToken(user: User, companyId: Option[UUID] = None): ZIO[Any, JwtError, String]
   def validateToken(token: String): ZIO[Any, JwtError, JwtPayload]
   def refreshToken(token: String): ZIO[Any, JwtError, String]
 
@@ -35,7 +36,7 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
 
   private val algorithm = JwtAlgorithm.HS256
 
-  override def generateToken(user: User): ZIO[Any, JwtError, String] = ZIO
+  override def generateToken(user: User, companyId: Option[UUID] = None): ZIO[Any, JwtError, String] = ZIO
     .attempt {
       val now = Instant.now()
       val exp = now.plusSeconds(config.expirationTime.toSeconds)
@@ -44,6 +45,7 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
         userId = user.id,
         email = user.email,
         role = user.role,
+        companyId = companyId,
         iat = now.getEpochSecond,
         exp = exp.getEpochSecond
       )
@@ -97,7 +99,8 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
 
       refreshedPayload = payload.copy(
                            iat = now.getEpochSecond,
-                           exp = exp.getEpochSecond
+                           exp = exp.getEpochSecond,
+                           companyId = payload.companyId
                          )
 
       claim = JwtClaim(

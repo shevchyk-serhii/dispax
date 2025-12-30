@@ -132,8 +132,9 @@ object RideDto:
 
 object CreateRideApiRequest:
 
-  def toDomain(request: CreateRideApiRequest): CreateRideRequest = CreateRideRequest(
+  def toDomain(request: CreateRideApiRequest, companyId: CompanyId): CreateRideRequest = CreateRideRequest(
     clientId = PersonId(UUID.fromString(request.clientId)),
+    companyId = companyId,
     pickupLocation = LocationDto.toDomain(request.from),
     dropoffLocation = LocationDto.toDomain(request.to),
     scheduledTime = scala.util.Try(Instant.parse(request.pickupDateTime)).toOption,
