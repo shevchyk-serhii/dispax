@@ -39,20 +39,7 @@ class RideServiceImpl(
                      .fromOption(clientOpt)
                      .orElseFail(RideError.PersonNotFound(request.clientId))
 
-      ride = Ride(
-               id = RideId.generate(),
-               clientId = request.clientId,
-               creatorId = request.clientId,
-               companyId = request.companyId,
-               pickupLocation = request.pickupLocation,
-               dropoffLocation = request.dropoffLocation,
-               scheduledTime = request.scheduledTime,
-               requestTime = Instant.now(),
-               notes = request.notes,
-               airportCode = request.airportCode,
-               flightNumber = request.flightNumber,
-               isAirportTransfer = request.isAirportTransfer
-             )
+      ride = RideService.buildRideFromRequest(request)
 
       persistedRide <- rideRepository
                          .create(ride)
@@ -64,10 +51,11 @@ class RideServiceImpl(
     for {
       ride <- getRideById(rideId)
 
-      _ <- ZIO
-             .fail(RideError.DriverNotFound(driverId))
-             .when(!ride.canBeStarted)
-             .as(())
+      _ <-
+        ZIO
+          .fail(RideError.DriverNotFound(driverId))
+          .when(!ride.canBeStarted)
+          .unit
 
       driverOpt <- personRepository
                      .findById(driverId)
@@ -92,10 +80,11 @@ class RideServiceImpl(
     for {
       ride <- getRideById(rideId)
 
-      _ <- ZIO
-             .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Completed))
-             .when(!ride.canBeCompleted)
-             .as(())
+      _ <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Completed))
+          .when(!ride.canBeCompleted)
+          .unit
 
       updatedRide = ride.copy(
                       status = RideStatus.Completed,
@@ -112,10 +101,11 @@ class RideServiceImpl(
     for {
       ride <- getRideById(rideId)
 
-      _ <- ZIO
-             .fail(RideError.UnauthorizedAccess(userId, rideId))
-             .when(ride.status == RideStatus.Completed)
-             .as(())
+      _ <-
+        ZIO
+          .fail(RideError.UnauthorizedAccess(userId, rideId))
+          .when(ride.status == RideStatus.Completed)
+          .unit
 
       updatedRide = ride.copy(status = RideStatus.Cancelled)
 
@@ -162,41 +152,21 @@ class RideServiceImpl(
 
 object RideService:
 
+  private[service] def buildRideFromRequest(request: CreateRideRequest): Ride = Ride(
+    id = RideId.generate(),
+    clientId = request.clientId,
+    creatorId = request.clientId,
+    companyId = request.companyId,
+    pickupLocation = request.pickupLocation,
+    dropoffLocation = request.dropoffLocation,
+    scheduledTime = request.scheduledTime,
+    requestTime = Instant.now(),
+    notes = request.notes,
+    airportCode = request.airportCode,
+    flightNumber = request.flightNumber,
+    isAirportTransfer = request.isAirportTransfer
+  )
+
   val layer: ZLayer[RideRepository & PersonRepository, Nothing, RideService] = ZLayer.fromFunction(
     RideServiceImpl.apply
   )
-
-  val mock: ZLayer[Any, Nothing, RideService] = ZLayer.succeed {
-    new RideService {
-      def getRideById(rideId: RideId): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
-
-      def createRide(request: CreateRideRequest): IO[RideError, Ride] =
-        val ride = Ride(
-          id = RideId.generate(),
-          clientId = request.clientId,
-          creatorId = request.clientId,
-          companyId = request.companyId,
-          pickupLocation = request.pickupLocation,
-          dropoffLocation = request.dropoffLocation,
-          scheduledTime = request.scheduledTime,
-          requestTime = Instant.now(),
-          notes = request.notes,
-          airportCode = request.airportCode,
-          flightNumber = request.flightNumber,
-          isAirportTransfer = request.isAirportTransfer
-        )
-        ZIO.succeed(ride)
-
-      def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
-
-      def completeRide(rideId: RideId): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
-
-      def cancelRide(rideId: RideId, userId: PersonId, userRole: PersonRole): IO[RideError, Ride] = ZIO.fail(
-        RideError.RideNotFound(rideId)
-      )
-
-      def updateRideStatus(rideId: RideId, request: UpdateRideStatusRequest): IO[RideError, Ride] = ZIO.fail(
-        RideError.RideNotFound(rideId)
-      )
-    }
-  }
