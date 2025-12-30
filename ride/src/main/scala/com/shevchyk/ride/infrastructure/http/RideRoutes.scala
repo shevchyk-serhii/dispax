@@ -1,12 +1,12 @@
 package com.shevchyk.ride.infrastructure.http
 
 import com.shevchyk.TestDataGenerator
-import com.shevchyk.core.domain.{PersonId, RideId, CompanyId}
+import com.shevchyk.auth.infrastructure.http.AuthenticatedHandlers.*
+import com.shevchyk.auth.middleware.AuthMiddleware
+import com.shevchyk.auth.service.JwtService
+import com.shevchyk.core.domain.{CompanyId, PersonId, RideId}
 import com.shevchyk.ride.application.RideFacade
 import com.shevchyk.ride.domain.{*, given}
-import com.shevchyk.auth.middleware.{AuthMiddleware, AuthenticatedUser}
-import com.shevchyk.auth.service.JwtService
-import com.shevchyk.auth.infrastructure.http.AuthenticatedHandlers.*
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -69,10 +69,8 @@ object RideRoutes {
   }"""
 
   val authenticatedRoutes: Routes[RideFacade & JwtService, Response] = Routes(
-    // Create new ride (authenticated)
     Method.POST / "api" / "rides" -> authenticatedJsonHandler[RideFacade, CreateRideApiRequest] { (user, apiRequest) =>
       (for {
-        // Use companyId from JWT token (authenticated user)
         companyId    <- ZIO
                           .fromOption(user.companyId)
                           .orElseFail(
@@ -86,13 +84,19 @@ object RideRoutes {
         rideDto       = RideDto.fromDomain(ride)
       } yield Response(Status.Created, body = Body.fromString(rideDto.toJson)))
         .catchAll { ex =>
-          ZIO.logError(s"Create ride error: ${ex.getMessage}") *>
-            ZIO.succeed(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
+          val errorMsg =
+            ex match {
+              case RideError.ValidationError(msg) => s"Validation error: $msg"
+              case RideError.PersonNotFound(id)   => s"Person not found: ${id.value}"
+              case RideError.RideNotFound(id)     => s"Ride not found: ${id.value}"
+              case other                          => Option(other.getMessage).getOrElse(other.toString)
+            }
+          ZIO
+            .logError(s"Create ride error: $errorMsg")
+            .as(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$errorMsg"}""")))
         }
     },
-
-    // Get all rides for authenticated user
-    Method.GET / "api" / "rides" -> authenticatedHandler[RideFacade] { (user, _) =>
+    Method.GET / "api" / "rides"  -> authenticatedHandler[RideFacade] { (user, _) =>
       for {
         facade  <- ZIO.service[RideFacade]
         rides   <- facade.getRidesForUser(PersonId(user.userId))
@@ -123,11 +127,9 @@ object RideRoutes {
           facade <- ZIO.service[RideFacade]
           ride   <- facade.getRideById(RideId(UUID.fromString(rideId)))
 
-          // Mock calculation - in production, this would use real-time data
           now        = java.time.Instant.now()
           flightTime = ride.scheduledTime.getOrElse(now.plusSeconds(7200))
 
-          // Calculate times
           travelTime = 45 // minutes
           bufferTime = 30 // minutes (security + check-in)
           totalTime  = travelTime + bufferTime
@@ -136,7 +138,6 @@ object RideRoutes {
           latestEntry  = flightTime.minusSeconds(bufferTime * 60)
           timeToDepart = java.time.Duration.between(now, optimalEntry).toMinutes.toInt
 
-          // Mock parking costs
           optimalCost = 12.50
           earlyCost   = 25.00
           savings     = earlyCost - optimalCost
