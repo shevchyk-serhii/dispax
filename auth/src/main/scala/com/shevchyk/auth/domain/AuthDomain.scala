@@ -96,7 +96,6 @@ case class InvalidToken(token: String)                     extends AuthError
 case class WeakPassword(reason: String)                    extends AuthError
 case class ValidationError(field: String, message: String) extends AuthError
 
-// JWT-specific errors
 sealed trait JwtError                                  extends AuthError
 case class JwtGenerationError(message: String)         extends JwtError
 case class InvalidTokenError(message: String)          extends JwtError
@@ -104,7 +103,6 @@ case class ExpiredTokenError(message: String)          extends JwtError
 case class InvalidPayloadError(message: String)        extends JwtError
 case class TokenNotEligibleForRefresh(message: String) extends JwtError
 
-// Conversion methods
 object UserDto:
 
   def fromDomain(user: User, companyId: Option[UUID] = None): UserDto = UserDto(

@@ -25,7 +25,6 @@ case class RideFacade(
       maybeRide <- rideRepository.findById(rideId).mapError(ex => RideError.DatabaseError(ex.getCause))
       ride      <- ZIO.fromOption(maybeRide).orElseFail(RideError.RideNotFound(rideId))
 
-      // Validate status transition
       _ <-
         status match {
           case RideStatus.Assigned if ride.status != RideStatus.Requested   =>

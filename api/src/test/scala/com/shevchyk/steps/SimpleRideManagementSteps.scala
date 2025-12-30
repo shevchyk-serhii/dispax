@@ -6,7 +6,6 @@ import io.cucumber.scala.{EN, ScalaDsl}
 import zio.http.*
 import java.util.UUID
 
-// Simplified version of RideManagementSteps that compiles
 class SimpleRideManagementSteps extends ScalaDsl with EN with ApiTestHelpers {
 
   var currentRideRequest: CreateRideRequest = _
@@ -30,7 +29,6 @@ class SimpleRideManagementSteps extends ScalaDsl with EN with ApiTestHelpers {
   }
 
   When("^I send a POST request to create the ride$") { () =>
-    // Mock successful ride creation
     val mockRideId = UUID.randomUUID()
     lastRideResponse = Response(Status.Created, body = Body.fromString(s"""{"id":"${mockRideId}","status":"requested"}"""))
     lastRideId = Some(mockRideId)

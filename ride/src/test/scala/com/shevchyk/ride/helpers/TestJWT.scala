@@ -9,9 +9,6 @@ import scala.concurrent.duration.Duration
 
 object TestJWT {
 
-  /**
-   * Generates a valid JWT token for testing
-   */
   def generateToken(
       userId: UUID,
       email: String = "test@example.com",
@@ -32,21 +29,15 @@ object TestJWT {
     ZIO.serviceWithZIO[JwtService](_.generateToken(user, companyId))
   }
 
-  /**
-   * Test JWT configuration with predictable secret
-   */
   val testConfig: ZLayer[Any, Nothing, JwtConfig] = ZLayer.succeed(
     JwtConfig(
       secret = "test-secret-key-for-testing-only-not-for-production-must-be-at-least-256-bits",
       issuer = "test-issuer",
       audience = "test-audience",
-      expirationTime = Duration.fromNanos(24L * 60 * 60 * 1_000_000_000L) // 24 hours
+      expirationTime = Duration.fromNanos(24L * 60 * 60 * 1_000_000_000L)
     )
   )
 
-  /**
-   * Test JWT service layer
-   */
   val testJwtService: ZLayer[Any, Nothing, JwtService] =
     testConfig >>> JwtService.live
 }

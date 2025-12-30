@@ -20,11 +20,9 @@ object RideRepository {
   import com.shevchyk.database.DatabaseConfig
   import doobie.Transactor
 
-  // PostgreSQL layer for production
   val postgresLayer: ZLayer[Transactor[Task], Nothing, RideRepository] = ZLayer.fromFunction(
     PostgresRideRepository.apply
   )
 
-  // Default layer (PostgreSQL with database transactor and migrations)
   val layer: ZLayer[Any, Throwable, RideRepository] = DatabaseConfig.liveTransactorWithMigrations >>> postgresLayer
 }

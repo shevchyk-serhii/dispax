@@ -50,24 +50,17 @@ object Application extends ZIOAppDefault:
         )
     }
     .provide(
-      // Server configuration
       ZLayer.service[ServerConfig] >>> ZLayer.fromFunction((config: ServerConfig) =>
         Server.Config.default.binding(config.host, config.port)
       ) >>> Server.live,
       ServerConfig.liveLayer,
-
-      // Person/User repositories
       PersonRepository.layer,
       UserRepository.layer,
       TokenRepository.layer,
-
-      // Ride management layers
       RideRepository.layer,
       RideCreationService.layer,
       SimpleRideService.layer,
       RideFacade.layer,
-
-      // Authentication layers
       JwtConfig.development, // Use development config for now
       JwtService.live,
       AuthService.live

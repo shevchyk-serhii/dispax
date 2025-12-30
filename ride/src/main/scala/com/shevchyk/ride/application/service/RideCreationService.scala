@@ -17,34 +17,30 @@ class RideCreationServiceImpl(rideRepository: RideRepository, personRepository: 
 
   def createRide(request: CreateRideRequest): IO[RideError, RideCreationEvent] =
     for {
-      // Validate request
       _ <- validateCreateRideRequest(request)
 
-      // Verify client exists
-      clientOpt     <- personRepository
-                         .findById(request.clientId)
-                         .mapError(ex => RideError.DatabaseError(ex))
-      _             <- ZIO
-                         .fromOption(clientOpt)
-                         .orElseFail(RideError.PersonNotFound(request.clientId))
+      clientOpt <- personRepository
+                     .findById(request.clientId)
+                     .mapError(ex => RideError.DatabaseError(ex))
+      _         <- ZIO
+                     .fromOption(clientOpt)
+                     .orElseFail(RideError.PersonNotFound(request.clientId))
 
-      // Create ride entity
-      ride           = Ride(
-                         id = RideId.generate(),
-                         clientId = request.clientId,
-                         creatorId = request.clientId,  // For now, creator is the client
-                         companyId = request.companyId, // Use companyId from request (extracted from JWT)
-                         pickupLocation = request.pickupLocation,
-                         dropoffLocation = request.dropoffLocation,
-                         scheduledTime = request.scheduledTime,
-                         requestTime = Instant.now(),
-                         notes = request.notes,
-                         airportCode = request.airportCode,
-                         flightNumber = request.flightNumber,
-                         isAirportTransfer = request.isAirportTransfer
-                       )
+      ride = Ride(
+               id = RideId.generate(),
+               clientId = request.clientId,
+               creatorId = request.clientId,  // For now, creator is the client
+               companyId = request.companyId, // Use companyId from request (extracted from JWT)
+               pickupLocation = request.pickupLocation,
+               dropoffLocation = request.dropoffLocation,
+               scheduledTime = request.scheduledTime,
+               requestTime = Instant.now(),
+               notes = request.notes,
+               airportCode = request.airportCode,
+               flightNumber = request.flightNumber,
+               isAirportTransfer = request.isAirportTransfer
+             )
 
-      // Persist to database
       persistedRide <- rideRepository
                          .create(ride)
                          .mapError(ex => RideError.DatabaseError(ex))
@@ -77,7 +73,6 @@ object RideCreationService:
     RideCreationServiceImpl.apply
   )
 
-  // Mock layer for testing
   val mock: ZLayer[Any, Nothing, RideCreationService] = ZLayer.succeed {
     new RideCreationService {
       def createRide(request: CreateRideRequest): IO[RideError, RideCreationEvent] =

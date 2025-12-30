@@ -70,7 +70,7 @@ object TestData {
   )
 
   def validCreateRideJson: String = {
-    val futureTime = java.time.Instant.now().plusSeconds(3600).toString // 1 hour from now
+    val futureTime = java.time.Instant.now().plusSeconds(3600).toString
     s"""{
       "clientId": "00000000-0000-0000-0000-000000000001",
       "creatorId": "00000000-0000-0000-0000-000000000001",

@@ -52,10 +52,8 @@ object AuthMiddleware:
     .map(_.substring(7).trim)
     .filter(_.nonEmpty)
 
-  // Helper to get authenticated user from environment
   def getAuthenticatedUser: ZIO[AuthenticatedUser, Nothing, AuthenticatedUser] = ZIO.service[AuthenticatedUser]
 
-  // Helper to check if user has specific role
   def requireRole(role: String): ZIO[AuthenticatedUser, Response, Unit] = getAuthenticatedUser.flatMap { user =>
     if (user.role != role)
       ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Insufficient permissions"}""")))
@@ -63,7 +61,6 @@ object AuthMiddleware:
       ZIO.unit
   }
 
-  // Helper to check if user can access resource (owns it)
   def requireOwnership(resourceUserId: UUID): ZIO[AuthenticatedUser, Response, Unit] = getAuthenticatedUser.flatMap {
     user =>
       if (user.userId != resourceUserId)

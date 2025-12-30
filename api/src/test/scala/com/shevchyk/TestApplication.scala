@@ -23,13 +23,11 @@ object TestApplication extends ZIOAppDefault:
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
-  // Simple mock implementations for testing
   private def hashPassword(password: String): String =
     val digest = MessageDigest.getInstance("SHA-256")
     val hash = digest.digest(password.getBytes("UTF-8"))
     Base64.getEncoder.encodeToString(hash)
 
-  // Predefined test UUIDs for consistent testing
   private val testPersonId1 = PersonId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
   private val testCompanyId1 = CompanyId(UUID.fromString("10101010-1010-1010-1010-101010101010"))
 
@@ -54,7 +52,6 @@ object TestApplication extends ZIOAppDefault:
     def delete(id: PersonId): Task[Unit] = ZIO.unit
   }
 
-  // Predefined test UUIDs for consistent testing
   private val testUserId1 = UUID.fromString("11111111-1111-1111-1111-111111111111")
   private val testUserId50 = UUID.fromString("50505050-5050-5050-5050-505050505050")
   private val testUserId10 = UUID.fromString("10101010-1010-1010-1010-101010101010")
@@ -117,7 +114,6 @@ object TestApplication extends ZIOAppDefault:
         allRoutes.handleError(err => Response(Status.InternalServerError, body = Body.fromString(err.toString)))
       )
     }.provide(
-        // Server configuration
         ZLayer.service[ServerConfig] >>> ZLayer.fromFunction((config: ServerConfig) =>
           Server.Config.default.binding(config.host, config.port)
         ) >>> Server.live,

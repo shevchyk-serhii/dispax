@@ -32,7 +32,6 @@ object SimpleRideService:
     SimpleRideServiceImpl.apply
   )
 
-  // Mock layer for testing
   val mock: ZLayer[Any, Nothing, SimpleRideService] = ZLayer.succeed {
     new SimpleRideService {
       def getRideById(rideId: RideId): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))

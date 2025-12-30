@@ -13,7 +13,6 @@ final case class JwtConfig(
 
 object JwtConfig:
 
-  // For development/testing - provides reasonable defaults
   val development: ZLayer[Any, Nothing, JwtConfig] = ZLayer.succeed(
     JwtConfig(
       secret = "dev-secret-key-that-should-be-changed-in-production-must-be-at-least-256-bits",

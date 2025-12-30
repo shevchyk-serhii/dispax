@@ -12,19 +12,15 @@ case class ServerConfig(
 
 object ServerConfig {
 
-  // Configuration descriptor for ZIO Config
   private val configDescriptor: Config[ServerConfig] = deriveConfig[ServerConfig].nested("server")
 
-  // Layer that loads configuration from application.conf
   val layer: ZLayer[Any, Throwable, ServerConfig] = ZLayer.fromZIO(
     read(configDescriptor.from(ConfigProvider.fromResourcePath()))
   )
 
-  // Fallback layer with default configuration
   val defaultLayer: ZLayer[Any, Nothing, ServerConfig] = ZLayer.succeed(
     ServerConfig()
   )
 
-  // Live layer with fallback to defaults
   val liveLayer: ZLayer[Any, Throwable, ServerConfig] = layer.catchAll(_ => defaultLayer)
 }

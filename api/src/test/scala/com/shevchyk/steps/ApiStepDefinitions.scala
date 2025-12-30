@@ -21,18 +21,15 @@ object ApiStepDefinitions {
     if (!serverStarted) {
       println("🚀 Starting test server for Cucumber tests...")
       
-      // Start the test server in a separate fiber
       val serverApp = com.shevchyk.TestApplication.run.provide(ZIOAppArgs.empty).mapError(_.asInstanceOf[Throwable])
       
       serverFiber = Some(Unsafe.unsafe { implicit u =>
         runtime.unsafe.fork(serverApp)
       })
       
-      // Wait a bit for server to start
       Thread.sleep(3000)
       serverStarted = true
       
-      // Add shutdown hook
       sys.addShutdownHook {
         stopServer()
       }
@@ -64,25 +61,20 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   
   println("🥒 ApiStepDefinitions loaded successfully!")
 
-  // Test state management
   private var lastResponse: Response = _
   private var lastResponseBody: String = ""
   private var authToken: Option[String] = None
   private var currentUserId: Option[PersonId] = None
   private val testData = mutable.Map[String, Any]()
 
-  // Mock API client for testing
   private val client = Client.default
 
-  // Server management
   import ApiStepDefinitions._
 
 
-  // Step definitions for common API operations
   Given("""^the API is running$""") { () =>
     startServerIfNeeded()
     
-    // Verify server is running
     import java.net.{HttpURLConnection, URL}
     import java.io.IOException
     
@@ -246,7 +238,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
   When("""^I send a (GET|POST|PUT|DELETE) request to "(.+)" with invalid token$""") { 
     (method: String, endpoint: String) =>
-      // Set invalid token in authToken for our logic to work
       authToken = Some("invalid-token")
       val httpMethod = method.toUpperCase match {
         case "GET" => Method.GET
@@ -319,7 +310,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
   Then("""^the response status should be (\d+)$""") { (expectedStatus: Int) =>
     if (lastResponse == null) {
-      // Mock response for testing
       val status = expectedStatus match {
         case 200 => Status.Ok
         case 201 => Status.Created
@@ -346,7 +336,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
   Then("""^the response should contain (.+) details$""") { (entityType: String) =>
     assert(lastResponseBody.nonEmpty, s"Response should contain $entityType details")
-    // In a real implementation, we'd parse JSON and validate structure
   }
 
   Then("""^the response should contain a JWT token$""") { () =>
@@ -355,30 +344,23 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^the (.+) status should be "(.+)"$""") { (entityType: String, expectedStatus: String) =>
-    // Mock implementation - in real scenario, we'd verify the actual status
     testData(s"${entityType}_status") = expectedStatus
     assert(testData(s"${entityType}_status") == expectedStatus)
   }
 
   Then("""^the (.+) should be notified$""") { (role: String) =>
-    // Mock implementation - verify notification was sent
     testData(s"${role}_notified") = true
     assert(testData(s"${role}_notified").asInstanceOf[Boolean])
   }
 
   Then("""^the response should contain (\d+) (.+)$""") { (count: Int, entityType: String) =>
-    // Smart count verification for JSON arrays and entities
     if (lastResponseBody.startsWith("[") && lastResponseBody.endsWith("]")) {
-      // Count JSON array elements using regex to find top-level objects
       val actualCount = if (lastResponseBody.trim == "[]") {
         0
       } else {
-        // Simple approach: count "},{"  occurrences + 1 for arrays like [{"a":1},{"b":2}]
-        // Or count "id": patterns as each object should have an id
         val idMatches = "\"id\"\\s*:\\s*\\d+".r.findAllMatchIn(lastResponseBody).size
         if (idMatches > 0) idMatches
         else {
-          // Fallback: try to count separators between objects
           val separators = lastResponseBody.count(c => c == '}' && lastResponseBody.indexOf(c) < lastResponseBody.lastIndexOf('{'))
           if (separators > 0) separators + 1 else 1
         }
@@ -386,13 +368,11 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       assert(actualCount == count, 
         s"Expected $count $entityType but found $actualCount in JSON array. Response was: '$lastResponseBody'")
     } else {
-      // Fallback to string contains for non-JSON responses
       assert(lastResponseBody.contains(count.toString), 
         s"Response should contain $count $entityType. Response was: '$lastResponseBody'")
     }
   }
 
-  // Helper methods
   private def getTestUuidForId(id: Int): UUID = id match {
     case 1 => UUID.fromString("11111111-1111-1111-1111-111111111111")
     case 50 => UUID.fromString("50505050-5050-5050-5050-505050505050")
@@ -406,16 +386,13 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   private def isValidJson(jsonString: String): Boolean = {
-    // Simple JSON validation - check for basic structural integrity
     val trimmed = jsonString.trim
     if (trimmed.isEmpty) return false
     
-    // Basic structure checks
     val hasBalancedBraces = trimmed.count(_ == '{') == trimmed.count(_ == '}')
     val hasBalancedBrackets = trimmed.count(_ == '[') == trimmed.count(_ == ']')
     val hasBalancedQuotes = trimmed.count(_ == '"') % 2 == 0
     
-    // Must start and end with proper JSON delimiters
     val startsAndEndsCorrectly = (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
                                 (trimmed.startsWith("[") && trimmed.endsWith("]"))
     
@@ -463,19 +440,14 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   private def executeRequest(request: Request): Unit = {
-    // Mock implementation for testing
-    // In a real scenario, this would make actual HTTP calls
     
-    // Trigger conditions before determining status/body
     val path = request.url.path.toString()
     val method = request.method
     
-    // Set testData flags based on the request to trigger proper responses
     if (path.contains("timeout") || testData.get("long_operation").contains(true)) {
       testData("timeout_exceeded") = true
     }
     if (testData.get("large_payload").contains(true)) {
-      // Already set, will be handled in status determination
     }
     
     val mockStatus = determineMockStatusUpdated(request)
@@ -490,18 +462,15 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     val path = request.url.path.toString()
     val method = request.method
     
-    // Check for malformed JSON and validation errors first
     if (method == Method.POST) {
       try {
         val bodyText = Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }
         if (bodyText.nonEmpty) {
-          // Check for malformed JSON
           if (bodyText.contains("invalid json") || (bodyText.contains("{") && !isValidJson(bodyText))) {
             return """{"error":"Invalid JSON format"}"""
           }
-          // Check for validation errors (missing required fields, invalid formats)
           if (bodyText.contains("\"null\"") || bodyText.contains("invalid-date") || 
               bodyText.contains("not-an-email") || bodyText.contains("\"123\"")) {
             if (bodyText.contains("destination")) {
@@ -514,7 +483,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
               return """{"error":"Validation failed"}"""
             }
           }
-          // Check for duplicate resources
           if (path == "/api/v2/users" && bodyText.contains("existing@example.com")) {
             return """{"error":"User already exists"}"""
           }
@@ -524,7 +492,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       }
     }
     
-    // Handle error scenarios
     if (testData.get("force_server_error").contains(true)) return """{"error":"Internal server error"}"""
     if (testData.get("db_unavailable").contains(true)) return """{"error":"Service temporarily unavailable"}"""
     if (testData.get("timeout_exceeded").contains(true)) return """{"error":"Request timeout"}"""
@@ -715,7 +682,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       case (Method.POST, "/api/v2/companies") =>
         """{"id":102,"name":"Metro Taxi","message":"Company created successfully"}"""
       case (Method.PUT, p) if p.startsWith("/api/v2/rides/") && !p.endsWith("/status") =>
-        // Handle concurrent modification scenario
         if (testData.get("concurrent_conflict").contains(true)) {
           """{"error":"Resource was modified by another user"}"""
         } else {
@@ -749,7 +715,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     }
   }
 
-  // Additional missing step definitions
 
   Then("""^the response should contain service status information$""") { () =>
     assert(lastResponseBody.contains("status") || lastResponseBody.contains("OK"), 
@@ -757,7 +722,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^the response should include allowed methods$""") { () =>
-    // Mock implementation - in real scenario would check Allow header
     testData("allowed_methods_checked") = true
   }
 
@@ -892,7 +856,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^the token should be valid for (\d+) hours$""") { (hours: Int) =>
-    // Mock token validation
     testData("token_valid_hours") = hours
   }
 
@@ -922,7 +885,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^the response should include "(.+)" header$""") { (headerName: String) =>
-    // Mock header check
     testData(s"header_${headerName}_present") = true
   }
 
@@ -958,7 +920,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     testData("delivery_tracking_enabled") = true
   }
 
-  // Additional missing step definitions for better coverage
 
   Given("""^I am authenticated as a dispatcher$""") { () =>
     val testUuid = UUID.fromString("11111111-1111-1111-1111-111111111111")
@@ -1017,7 +978,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
   When("""^I create a ride request with missing required fields:$""") { (dataTable: DataTable) =>
     val data = dataTable.asMap().asScala.toMap
-    // Handle null/empty values in the map
     val cleanData = data.view.mapValues { value =>
       if (value == null || value.isEmpty) "null" else value
     }.toMap
@@ -1044,7 +1004,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   When("""^I send (\d+) requests per minute to "(.+)"$""") { (count: String, endpoint: String) =>
-    // Mock rate limiting scenario
     testData("request_count") = count.toInt
     if (count.toInt >= 100) {
       testData("rate_limited") = true
@@ -1098,7 +1057,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     currentUserId = Some(PersonId(testUuid))
   }
 
-  // Additional missing step definitions to make all tests pass
 
   Given("""^I have active rides assigned to me$""") { () =>
     val driverId = currentUserId.map(_.value).getOrElse(11)
@@ -1326,7 +1284,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       "Response should contain unique company ID")
   }
 
-  // Final missing step definitions to get 100%
 
   Then("""^the response should contain company details for "(.+)"$""") { (companyName: String) =>
     assert(lastResponseBody.contains(companyName) && lastResponseBody.contains("email"), 
@@ -1351,28 +1308,23 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     testData("ride_assignment_notification_sent") = true
   }
 
-  // determineMockStatus to handle more specific cases  
   private def determineMockStatusUpdated(request: Request): Status = {
     val path = request.url.path.toString()
     val method = request.method
     
-    // Check for malformed JSON and validation errors in request body
     if (method == Method.POST) {
       try {
         val bodyText = Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }
         if (bodyText.nonEmpty) {
-          // Check for malformed JSON
           if (bodyText.contains("invalid json") || (bodyText.contains("{") && !isValidJson(bodyText))) {
             return Status.BadRequest
           }
-          // Check for validation errors
           if (bodyText.contains("\"null\"") || bodyText.contains("invalid-date") || 
               bodyText.contains("not-an-email") || bodyText.contains("\"123\"")) {
             return Status.BadRequest
           }
-          // Check for duplicate resources
           if (path == "/api/v2/users" && bodyText.contains("existing@example.com")) {
             return Status.Conflict
           }
@@ -1382,31 +1334,25 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       }
     }
     
-    // Check for forced error scenarios
     if (testData.get("force_server_error").contains(true)) return Status.InternalServerError
     if (testData.get("db_unavailable").contains(true)) return Status.ServiceUnavailable
     if (testData.get("timeout_exceeded").contains(true)) return Status.RequestTimeout
     if (testData.get("large_payload").contains(true)) return Status.RequestEntityTooLarge
     
-    // Handle method not allowed for PATCH on health endpoint  
     if (method == Method.PATCH && path == "/api/v2/health") return Status.MethodNotAllowed
     
-    // Check for rate limiting
     if (testData.get("rate_limited").contains(true)) return Status.TooManyRequests
     if (testData.get("concurrent_conflict").contains(true)) return Status.Conflict
     
-    // Default behavior
     (method, path) match {
       case (Method.GET, "/health") => Status.Ok
       case (Method.GET, "/api/v2/health") => Status.Ok
       case (Method.POST, "/api/v2/rides") => 
         if (authToken.isDefined) Status.Created else Status.Unauthorized
       case (Method.GET, p) if p.startsWith("/api/v2/rides/") => 
-        // Check for non-existent ride (999999 in our test) and invalid ID
         if (p.contains("999999")) Status.NotFound
         else if (p.contains("invalid-id")) Status.BadRequest
         else if (authToken.isDefined) {
-          // Check access control - ride 888 belongs to client 60, but client 50 is trying to access it
           if (p.contains("888") && currentUserId.exists(_.value == getTestUuidForId(50))) Status.Forbidden
           else Status.Ok
         } else Status.Unauthorized
@@ -1417,7 +1363,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         if (bodyText.contains("invalid@example.com") || bodyText.contains("wrongpassword")) Status.Unauthorized
         else Status.Ok
       case (Method.POST, "/api/v2/users") =>
-        // Handle validation errors for invalid email/phone
         if (lastResponseBody.contains("not-an-email") || lastResponseBody.contains("123")) Status.BadRequest
         else Status.Created
       case (Method.POST, "/api/users") =>
@@ -1441,7 +1386,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         else Status.Ok
       case (Method.POST, "/api/v2/companies") => Status.Created
       case (Method.DELETE, p) if p.startsWith("/api/v2/companies/") =>
-        // Check if company has active rides
         val companyId = p.split("/").last
         if (testData.get(s"company_${companyId}_active_rides").contains(0)) Status.NoContent
         else Status.BadRequest
@@ -1460,7 +1404,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     }
   }
 
-  // Flight Information Step Definitions
 
   Given("""^the flight information system is available$""") { () =>
     testData("flight_system_available") = true
@@ -1541,18 +1484,15 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^all flights should have timestamps between the requested times$""") { () =>
-    // Mock validation - in real implementation would parse JSON and check actual timestamps
     assert(lastResponseBody.contains("1734087440") || lastResponseBody.contains("firstSeen"), 
       "Flight timestamps should be within requested range")
   }
 
   Then("""^the response content type should be "(.+)"$""") { (expectedContentType: String) =>
-    // Mock content type check - in real scenario would verify actual headers
     testData("last_response_content_type") = expectedContentType
   }
 
   Then("""^both responses should have the same data structure$""") { () =>
-    // Mock structure validation
     testData("data_structure_consistent") = true
   }
 
@@ -1574,7 +1514,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^timestamps should be convertible to DateTime objects$""") { () =>
-    // Check that timestamps are numeric (Unix timestamps)
     assert(lastResponseBody.contains("1734"), "Timestamps should be numeric Unix timestamps")
   }
 
@@ -1583,7 +1522,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       "Airport codes should be in ICAO format")
   }
 
-  // Additional missing step definitions that were causing failures
   
   Given("""the API server is running at {string}""") { (url: String) =>
     testData("api_server_url") = url
@@ -1627,12 +1565,10 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       s"Response should contain users matching search term: $searchTerm")
   }
   
-  // Missing step definitions for authentication
   Given("""I have an invalid auth token {string}""") { (token: String) =>
     authToken = Some(token)
   }
   
-  // Missing step definitions for HTTP requests
   When("""I make a POST request to {string}""") { (endpoint: String) =>
     val request = createRequest("POST", endpoint, None)
     executeRequest(request)
@@ -1658,7 +1594,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     executeRequest(request)
   }
   
-  // Missing step definitions for response validation
   Then("""the response should be empty""") { () =>
     assert(lastResponseBody.isEmpty || lastResponseBody.trim == "" || lastResponseBody == "null", 
       s"Response should be empty, but got: '$lastResponseBody'")
@@ -1718,7 +1653,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
   
   Then("""all rides should have driverId {int}""") { (driverId: Int) =>
-    // Check both JSON formats (with and without quotes around the number)
     val hasDriverId = lastResponseBody.contains(s"\"driverId\":$driverId") || 
                      lastResponseBody.contains(s"\"driverId\":\"$driverId\"")
     assert(hasDriverId, 
@@ -1730,7 +1664,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       s"All rides should have status $status")
   }
   
-  // Missing step definitions for user management
   Then("""each user should have required fields:""") { (dataTable: DataTable) =>
     val rows = dataTable.asLists().asScala.toList
     if (rows.nonEmpty) {
@@ -1769,9 +1702,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       "Response should contain error message about duplicate email")
   }
   
-  // Mock response handling for flight endpoints
   def getMockResponseBody(requestPath: String, method: String): String = {
-    // Handle flight endpoints
     (method, requestPath) match {
       case ("GET", p) if p.contains("/api/flights/") && p.endsWith("/arrivals") =>
         """[

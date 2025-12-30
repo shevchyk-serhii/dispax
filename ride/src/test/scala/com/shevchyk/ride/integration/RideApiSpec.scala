@@ -15,33 +15,15 @@ import zio.http.*
 import zio.json.*
 import zio.test.*
 
-/**
- * Integration tests for Ride API endpoints.
- *
- * These tests validate the full HTTP stack:
- * - HTTP request/response handling
- * - JWT authentication
- * - JSON serialization/deserialization
- * - Business logic execution
- * - Repository operations
- */
 object RideApiSpec extends ZIOSpecDefault {
 
-  /**
-   * Helper to run a request and unwrap the response from Either
-   */
   private def runRequest(request: Request): ZIO[RideFacade & JwtService, Nothing, Response] =
     RideRoutes.authenticatedRoutes.run(request).either.map {
-      case Left(either) => either.merge  // Either[Response, Response] => Response
+      case Left(either) => either.merge
       case Right(response) => response
     }
 
   def spec = suite("Ride API Integration Tests")(
-
-    // ========================================
-    // POST /api/rides - Create Ride Tests
-    // ========================================
-
     suite("POST /api/rides")(
 
       test(" creates ride successfully with valid authentication") {
@@ -49,7 +31,6 @@ object RideApiSpec extends ZIOSpecDefault {
           personRepo <- ZIO.service[PersonRepository]
           _          <- personRepo.create(TestData.createTestClient())
 
-          // Arrange: Generate JWT token for test user
           token    <- TestJWT.generateToken(
                         userId = TestData.testUserId,
                         email = "client@example.com",
@@ -57,22 +38,17 @@ object RideApiSpec extends ZIOSpecDefault {
                         companyId = Some(TestData.testCompanyId)
                       )
 
-          // Arrange: Prepare request with auth header and JSON body
           request   = Request
                         .post(URL.decode("/api/rides").toOption.get, Body.fromString(TestData.validCreateRideJson))
                         .addHeader(Header.Authorization.Bearer(token))
 
-          // Act: Call the API endpoint
           response <- runRequest(request)
 
-          // Assert: Check response status
           _        <- assertTrue(response.status == Status.Created)
 
-          // Assert: Parse and validate response body
           bodyStr  <- response.body.asString.orDie
           rideDto  <- ZIO.fromEither(bodyStr.fromJson[RideDto]).mapError(new RuntimeException(_)).orDie
 
-          // Assert: Validate ride data
           _        <- assertTrue(
                         rideDto.clientId == TestData.testUserId.toString,
                         rideDto.companyId == TestData.testCompanyId.toString,
@@ -81,7 +57,6 @@ object RideApiSpec extends ZIOSpecDefault {
                         rideDto.to.address == "Berlin Central Station"
                       )
 
-          // Assert: Verify ride was saved to repository
           repo     <- ZIO.service[RideRepository]
           saved    <- repo.findById(RideId(java.util.UUID.fromString(rideDto.id)))
 
@@ -90,7 +65,6 @@ object RideApiSpec extends ZIOSpecDefault {
 
       test(" returns 401 Unauthorized when JWT token is missing") {
         for {
-          // Arrange: Request without Authorization header
           request  <- ZIO.succeed(
                         Request.post(
                           URL.decode("/api/rides").toOption.get,
@@ -98,10 +72,8 @@ object RideApiSpec extends ZIOSpecDefault {
                         )
                       )
 
-          // Act: Call the API endpoint
           response <- runRequest(request)
 
-          // Assert: Should return 401 Unauthorized
           bodyStr  <- response.body.asString.orDie
 
         } yield assertTrue(
@@ -112,17 +84,14 @@ object RideApiSpec extends ZIOSpecDefault {
 
       test(" returns 401 Unauthorized when JWT token is invalid") {
         for {
-          // Arrange: Request with invalid token
           request  <- ZIO.succeed(
                         Request
                           .post(URL.decode("/api/rides").toOption.get, Body.fromString(TestData.validCreateRideJson))
                           .addHeader(Header.Authorization.Bearer("invalid-token"))
                       )
 
-          // Act: Call the API endpoint
           response <- runRequest(request)
 
-          // Assert: Should return 401 Unauthorized
           bodyStr  <- response.body.asString.orDie
 
         } yield assertTrue(
@@ -133,22 +102,19 @@ object RideApiSpec extends ZIOSpecDefault {
 
       test(" returns 400 Bad Request when user has no company") {
         for {
-          // Arrange: Generate JWT token for user WITHOUT company
           token    <- TestJWT.generateToken(
                         userId = TestData.testUserId,
                         email = "client@example.com",
                         role = UserRole.CLIENT,
-                        companyId = None  // No company!
+                        companyId = None
                       )
 
           request   = Request
                         .post(URL.decode("/api/rides").toOption.get, Body.fromString(TestData.validCreateRideJson))
                         .addHeader(Header.Authorization.Bearer(token))
 
-          // Act: Call the API endpoint
           response <- runRequest(request)
 
-          // Assert: Should return 400 Bad Request
           bodyStr  <- response.body.asString.orDie
 
         } yield assertTrue(
@@ -159,7 +125,6 @@ object RideApiSpec extends ZIOSpecDefault {
 
       test(" returns 400 Bad Request when JSON is invalid") {
         for {
-          // Arrange: Valid auth but invalid JSON
           token    <- TestJWT.generateToken(
                         userId = TestData.testUserId,
                         companyId = Some(TestData.testCompanyId)
@@ -169,10 +134,8 @@ object RideApiSpec extends ZIOSpecDefault {
                         .post(URL.decode("/api/rides").toOption.get, Body.fromString("{invalid json}"))
                         .addHeader(Header.Authorization.Bearer(token))
 
-          // Act: Call the API endpoint
           response <- runRequest(request)
 
-          // Assert: Should return 400 Bad Request
           bodyStr  <- response.body.asString.orDie
 
         } yield assertTrue(
@@ -183,18 +146,15 @@ object RideApiSpec extends ZIOSpecDefault {
 
       test(" creates ride with airport transfer information") {
         for {
-          // Arrange: Add test person to repository
           personRepo <- ZIO.service[PersonRepository]
           _          <- personRepo.create(TestData.createTestClient())
 
-          // Arrange: JWT token
           token    <- TestJWT.generateToken(
                         userId = TestData.testUserId,
                         companyId = Some(TestData.testCompanyId)
                       )
 
-          // Arrange: JSON with airport transfer details
-          futureTime   = java.time.Instant.now().plusSeconds(7200).toString // 2 hours from now
+          futureTime   = java.time.Instant.now().plusSeconds(7200).toString
           airportJson = s"""{
             "clientId": "00000000-0000-0000-0000-000000000001",
             "creatorId": "00000000-0000-0000-0000-000000000001",
@@ -212,12 +172,10 @@ object RideApiSpec extends ZIOSpecDefault {
                        .post(URL.decode("/api/rides").toOption.get, Body.fromString(airportJson))
                        .addHeader(Header.Authorization.Bearer(token))
 
-          // Act: Call the API endpoint
           response <- runRequest(request)
           bodyStr  <- response.body.asString.orDie
           rideDto  <- ZIO.fromEither(bodyStr.fromJson[RideDto]).mapError(new RuntimeException(_)).orDie
 
-          // Assert: Validate flight information
         } yield assertTrue(
           response.status == Status.Created,
           rideDto.flightNumber.contains("LH456"),
@@ -225,36 +183,28 @@ object RideApiSpec extends ZIOSpecDefault {
         )
       }
 
-    ) @@ TestAspect.sequential, // Run tests sequentially to avoid repository conflicts
-
-    // ========================================
-    // GET /api/rides - Get User Rides Tests
-    // ========================================
+    ) @@ TestAspect.sequential,
 
     suite("GET /api/rides")(
 
       test(" returns all rides for authenticated user") {
         for {
-          // Arrange: Create test rides in repository
           repo     <- ZIO.service[RideRepository]
           ride1     = TestData.createRide(clientId = PersonId(TestData.testUserId))
           ride2     = TestData.createRide(clientId = PersonId(TestData.testUserId))
           _        <- repo.create(ride1)
           _        <- repo.create(ride2)
 
-          // Arrange: Generate auth token
           token    <- TestJWT.generateToken(userId = TestData.testUserId)
 
           request   = Request
                         .get(URL.decode("/api/rides").toOption.get)
                         .addHeader(Header.Authorization.Bearer(token))
 
-          // Act: Call the API endpoint
           response <- runRequest(request)
           bodyStr  <- response.body.asString.orDie
           rides    <- ZIO.fromEither(bodyStr.fromJson[List[RideDto]]).mapError(new RuntimeException(_)).orDie
 
-          // Assert: Should return both rides
         } yield assertTrue(
           response.status == Status.Ok,
           rides.length == 2,
@@ -264,19 +214,16 @@ object RideApiSpec extends ZIOSpecDefault {
 
       test(" returns empty array when user has no rides") {
         for {
-          // Arrange: User with no rides
           token    <- TestJWT.generateToken(userId = java.util.UUID.randomUUID())
 
           request   = Request
                         .get(URL.decode("/api/rides").toOption.get)
                         .addHeader(Header.Authorization.Bearer(token))
 
-          // Act: Call the API endpoint
           response <- runRequest(request)
           bodyStr  <- response.body.asString.orDie
           rides    <- ZIO.fromEither(bodyStr.fromJson[List[RideDto]]).mapError(new RuntimeException(_)).orDie
 
-          // Assert: Should return empty array
         } yield assertTrue(
           response.status == Status.Ok,
           rides.isEmpty
@@ -301,5 +248,5 @@ object RideApiSpec extends ZIOSpecDefault {
     SimpleRideService.layer,
     RideFacade.layer,
     TestJWT.testJwtService
-  ) @@ TestAspect.sequential // Ensure all suites run sequentially
+  ) @@ TestAspect.sequential
 }

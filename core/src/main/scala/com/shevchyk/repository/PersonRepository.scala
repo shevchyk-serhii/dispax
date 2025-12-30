@@ -18,11 +18,9 @@ trait PersonRepository {
 
 object PersonRepository {
 
-  // PostgreSQL layer for production
   val postgresLayer: ZLayer[Transactor[Task], Nothing, PersonRepository] = ZLayer.fromFunction(
     PostgresPersonRepository.apply
   )
 
-  // Default layer (PostgreSQL with database transactor and migrations)
   val layer: ZLayer[Any, Throwable, PersonRepository] = DatabaseConfig.liveTransactorWithMigrations >>> postgresLayer
 }

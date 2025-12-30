@@ -16,10 +16,8 @@ import java.util.UUID
 object RideRoutes {
   import com.shevchyk.repository.PersonRepository
 
-  // Generate rich test data with many rides and users
   private lazy val mockRides = TestDataGenerator.generateRides(count = 100)
 
-  // Mock flight data for frontend compatibility
   private val mockArrivals = """[
     {
       "icao24": "4B1814",
@@ -58,7 +56,6 @@ object RideRoutes {
     }
   ]"""
 
-  // Mock airport timing data
   private val mockAirportTiming = """{
     "optimalEntryTime": "2025-12-11T14:30:00Z",
     "recommendedArrival": "2025-12-11T14:00:00Z",
@@ -69,7 +66,7 @@ object RideRoutes {
   }"""
 
   val authenticatedRoutes: Routes[RideFacade & JwtService, Response] = Routes(
-    Method.POST / "api" / "rides" -> authenticatedJsonHandler[RideFacade, CreateRideApiRequest] { (user, apiRequest) =>
+    Method.POST / "api" / "rides"                                       -> authenticatedJsonHandler[RideFacade, CreateRideApiRequest] { (user, apiRequest) =>
       (for {
         companyId    <- ZIO
                           .fromOption(user.companyId)
@@ -96,30 +93,25 @@ object RideRoutes {
             .as(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$errorMsg"}""")))
         }
     },
-    Method.GET / "api" / "rides"  -> authenticatedHandler[RideFacade] { (user, _) =>
+    Method.GET / "api" / "rides"                                        -> authenticatedHandler[RideFacade] { (user, _) =>
       for {
         facade  <- ZIO.service[RideFacade]
         rides   <- facade.getRidesForUser(PersonId(user.userId))
         rideDtos = rides.map(RideDto.fromDomain)
       } yield Response.json(rideDtos.toJson)
     },
-
-    // Get specific ride by ID (authenticated)
-    Method.GET / "api" / "rides" / string("rideId") -> handler { (rideId: String, request: Request) =>
+    Method.GET / "api" / "rides" / string("rideId")                     -> handler { (rideId: String, request: Request) =>
       (for {
         user   <- AuthMiddleware.authenticateRequest(request)
         facade <- ZIO.service[RideFacade]
         ride   <- facade.getRideById(RideId(UUID.fromString(rideId)))
-        // TODO: Add authorization check - ensure user owns this ride or has permission
         rideDto = RideDto.fromDomain(ride)
       } yield Response.json(rideDto.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response) // Auth errors
+        case response: Response => ZIO.succeed(response)
         case ex: Throwable      =>
           ZIO.succeed(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
       }
     },
-
-    // Calculate optimal airport entry time (authenticated)
     Method.POST / "api" / "rides" / string("rideId") / "airport-timing" -> handler {
       (rideId: String, request: Request) =>
         (for {
@@ -127,20 +119,17 @@ object RideRoutes {
           facade <- ZIO.service[RideFacade]
           ride   <- facade.getRideById(RideId(UUID.fromString(rideId)))
 
-          now        = java.time.Instant.now()
-          flightTime = ride.scheduledTime.getOrElse(now.plusSeconds(7200))
-
-          travelTime = 45 // minutes
-          bufferTime = 30 // minutes (security + check-in)
-          totalTime  = travelTime + bufferTime
-
+          now          = java.time.Instant.now()
+          flightTime   = ride.scheduledTime.getOrElse(now.plusSeconds(7200))
+          travelTime   = 45
+          bufferTime   = 30
+          totalTime    = travelTime + bufferTime
           optimalEntry = flightTime.minusSeconds(totalTime * 60)
           latestEntry  = flightTime.minusSeconds(bufferTime * 60)
           timeToDepart = java.time.Duration.between(now, optimalEntry).toMinutes.toInt
-
-          optimalCost = 12.50
-          earlyCost   = 25.00
-          savings     = earlyCost - optimalCost
+          optimalCost  = 12.50
+          earlyCost    = 25.00
+          savings      = earlyCost - optimalCost
 
           response =
             s"""{
@@ -163,7 +152,6 @@ object RideRoutes {
     }
   )
 
-  // Original routes without dependencies
   val routes = Routes(
     Method.GET / "api" / "v2" / "health"                               -> handler { (_: Request) =>
       ZIO.succeed(Response.text("Ride service is healthy"))
@@ -171,25 +159,21 @@ object RideRoutes {
     Method.GET / "api" / "rides" / "mock"                              -> handler { (_: Request) =>
       ZIO.succeed(Response.json(mockRides))
     },
-    // Universal flight endpoints - works for any airport
     Method.GET / "api" / "flights" / string("airport") / "arrivals"    -> handler { (airport: String, _: Request) =>
       ZIO.succeed(Response.json(mockArrivals))
     },
     Method.GET / "api" / "flights" / string("airport") / "departures"  -> handler { (airport: String, _: Request) =>
       ZIO.succeed(Response.json(mockDepartures))
     },
-    // Airport timing endpoint
     Method.GET / "api" / "airport" / "timing"                          -> handler { (request: Request) =>
       ZIO.succeed(Response.json(mockAirportTiming))
     },
-    // Airport timing with flight number
     Method.GET / "api" / "airport" / "timing" / string("flightNumber") -> handler {
       (flightNumber: String, _: Request) =>
         ZIO.succeed(Response.json(mockAirportTiming))
     }
   )
 
-  // Routes with PersonRepository environment for consistency
   val routesWithPersonRepo: Routes[PersonRepository, Response] = Routes(
     Method.GET / "api" / "v2" / "health"                               -> handler { (_: Request) =>
       ZIO.succeed(Response.text("Ride service is healthy"))
@@ -197,14 +181,12 @@ object RideRoutes {
     Method.GET / "api" / "rides" / "mock"                              -> handler { (_: Request) =>
       ZIO.succeed(Response.json(mockRides))
     },
-    // Universal flight endpoints - works for any airport
     Method.GET / "api" / "flights" / string("airport") / "arrivals"    -> handler { (airport: String, _: Request) =>
       ZIO.succeed(Response.json(mockArrivals))
     },
     Method.GET / "api" / "flights" / string("airport") / "departures"  -> handler { (airport: String, _: Request) =>
       ZIO.succeed(Response.json(mockDepartures))
     },
-    // Airport timing endpoint
     Method.GET / "api" / "airport" / "timing"                          -> handler { (request: Request) =>
       ZIO.succeed(Response.json(mockAirportTiming))
     },

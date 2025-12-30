@@ -14,7 +14,6 @@ import java.util.UUID
 
 final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository {
 
-  // Doobie mappers for custom types
   implicit val rideStatusMeta: Meta[RideStatus] = pgEnumString(
     "ride_status",
     {
@@ -190,7 +189,6 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
-  // Custom Read instance for Ride
   implicit val rideRead: Read[Ride] =
     Read[
       (

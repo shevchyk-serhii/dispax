@@ -88,7 +88,6 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
     for {
       payload <- validateToken(token)
 
-      // Allow refresh if token expires in the next hour
       _ <-
         ZIO.when(payload.exp - Instant.now().getEpochSecond > 3600)(
           ZIO.fail(TokenNotEligibleForRefresh("Token not eligible for refresh yet"))

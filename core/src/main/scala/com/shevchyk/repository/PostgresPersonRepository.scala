@@ -13,7 +13,6 @@ import com.github.f4b6a3.uuid.UuidCreator
 
 final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonRepository {
 
-  // Doobie mappers for custom types
   implicit val personRoleMeta: Meta[PersonRole] = pgEnumString(
     "person_role",
     {
@@ -122,7 +121,6 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       .unit
   }
 
-  // Custom Read instance for Person
   implicit val personRead: Read[Person] =
     Read[(UUID, String, String, PersonRole, Option[UUID], Option[String], Option[String])].map {
       case (id, name, email, role, companyId, licenseNumber, phone) =>

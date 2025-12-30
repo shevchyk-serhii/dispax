@@ -18,10 +18,8 @@ trait ApiTestHelpers:
     assert(response.status == expectedStatus, s"Expected status $expectedStatus but got ${response.status}")
 
   def assumeResponseContains(response: Response, expectedContent: String): Unit =
-    // Simple string check - in real tests you'd await the body
     assert(response.body.toString.contains(expectedContent), s"Response body should contain '$expectedContent'")
 
   def extractJsonField(jsonString: String, fieldName: String): Option[String] =
-    // Simple regex-based extraction for testing
     val pattern = s""""$fieldName"\\s*:\\s*"([^"]+)"""".r
     pattern.findFirstMatchIn(jsonString).map(_.group(1))

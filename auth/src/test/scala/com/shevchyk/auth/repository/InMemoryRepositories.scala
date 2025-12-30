@@ -21,7 +21,6 @@ final class InMemoryUserRepository extends UserRepository:
     val hash   = digest.digest(password.getBytes("UTF-8"))
     Base64.getEncoder.encodeToString(hash)
 
-  // Mock data storage - for testing only
   private val users = Unsafe.unsafe { implicit u =>
     Runtime.default.unsafe
       .run(
@@ -130,7 +129,6 @@ final class InMemoryUserRepository extends UserRepository:
 final class InMemoryTokenRepository extends TokenRepository:
   import TestUUIDs._
 
-  // Mock tokens storage - for testing only
   private val tokens = Unsafe.unsafe { implicit u =>
     Runtime.default.unsafe
       .run(

@@ -47,7 +47,6 @@ class AuthServiceImpl(
       userOpt   <- userRepository.findByEmail(email).orElseFail(UserNotFound(email))
       user      <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(email))
       _         <- ZIO.when(user.passwordHash != hashPassword(password))(ZIO.fail(InvalidCredentials(email)))
-      // Fetch companyId from persons table
       personOpt <- personRepository.findById(PersonId(user.id)).orElseFail(UserNotFound(email))
       companyId  = personOpt.flatMap(_.companyId.map(_.value))
       token     <- jwtService.generateToken(user, companyId).mapError(identity)
@@ -141,7 +140,6 @@ class AuthServiceImpl(
     for
       payload <- jwtService.validateToken(token).mapError(identity)
       user    <- getUserById(payload.userId)
-      // Verify that the user still exists and matches the token
       _       <- ZIO.when(user.email != payload.email)(ZIO.fail(InvalidToken(token)))
     yield user
 

@@ -5,8 +5,6 @@ import zio.json.*
 import java.time.Instant
 import java.util.UUID
 
-// Frontend-compatible DTOs
-
 case class LocationDto(
     address: String,
     latitude: Option[Double] = None,
@@ -89,7 +87,6 @@ case class ValidationFieldError(
     message: String
 ) derives JsonCodec
 
-// Conversion helpers
 object LocationDto:
 
   def fromDomain(location: Location): LocationDto = LocationDto(

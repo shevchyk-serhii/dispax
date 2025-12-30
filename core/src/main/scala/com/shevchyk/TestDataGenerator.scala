@@ -41,9 +41,7 @@ object TestDataGenerator {
       flightStatus: Option[String] = None
   )
 
-  // Test users data - German context
   private val testUsers = Seq(
-    // Clients
     TestUser(1, "Anna Mueller", "anna.mueller@example.com", "client", "+49301234567"),
     TestUser(2, "Peter Schmidt", "peter.schmidt@example.com", "client", "+49301234568"),
     TestUser(3, "Maria Wagner", "maria.wagner@example.com", "client", "+49301234569"),
@@ -52,27 +50,19 @@ object TestDataGenerator {
     TestUser(6, "Thomas Becker", "thomas.becker@example.com", "client", "+49301234572"),
     TestUser(7, "Sabine Schulz", "sabine.schulz@example.com", "client", "+49301234573"),
     TestUser(8, "Andreas Hoffmann", "andreas.hoffmann@example.com", "client", "+49301234574"),
-
-    // Drivers
     TestUser(10, "Hans Driver", "hans.driver@oktopus.de", "driver", "+49171234567"),
     TestUser(11, "Fritz Taxi", "fritz.taxi@oktopus.de", "driver", "+49171234568"),
     TestUser(12, "Otto Fahrer", "otto.fahrer@oktopus.de", "driver", "+49171234569"),
     TestUser(13, "Wilhelm Chauffeur", "wilhelm.chauffeur@oktopus.de", "driver", "+49171234570"),
     TestUser(14, "Gunther Pilot", "gunther.pilot@oktopus.de", "driver", "+49171234571"),
     TestUser(15, "Heinrich Mobile", "heinrich.mobile@oktopus.de", "driver", "+49171234572"),
-
-    // Dispatchers
     TestUser(20, "Ingrid Dispatcher", "ingrid.dispatcher@oktopus.de", "dispatcher", "+49301234567"),
     TestUser(21, "Wolfgang Coordinator", "wolfgang.coordinator@oktopus.de", "dispatcher", "+49301234568"),
-
-    // Secretaries
     TestUser(30, "Greta Secretary", "greta.secretary@oktopus.de", "secretary", "+49301234580"),
     TestUser(31, "Helga Assistant", "helga.assistant@oktopus.de", "secretary", "+49301234581")
   )
 
-  // German cities locations for realistic test data
   private val germanLocations = Seq(
-    // Munich locations
     TestLocation("Marienplatz", 48.1374, 11.5755),
     TestLocation("Munich Airport", 48.3538, 11.7861),
     TestLocation("Munich Central Station", 48.1405, 11.5563),
@@ -83,8 +73,6 @@ object TestDataGenerator {
     TestLocation("Schwabing District", 48.1674, 11.5736),
     TestLocation("Sendlinger Tor", 48.1344, 11.5663),
     TestLocation("Isartor", 48.1349, 11.5802),
-
-    // Berlin locations
     TestLocation("Brandenburg Gate", 52.5163, 13.3777),
     TestLocation("Berlin Airport", 52.3667, 13.5033),
     TestLocation("Berlin Central Station", 52.5255, 13.3690),
@@ -92,16 +80,12 @@ object TestDataGenerator {
     TestLocation("Alexanderplatz", 52.5219, 13.4132),
     TestLocation("Ku'damm 200", 52.5037, 13.3300),
     TestLocation("Checkpoint Charlie", 52.5075, 13.3903),
-
-    // Hamburg locations
     TestLocation("Hamburg Airport", 53.6304, 9.9882),
     TestLocation("Hamburg Central Station", 53.5527, 10.0068),
     TestLocation("HafenCity", 53.5411, 10.0025),
     TestLocation("Speicherstadt", 53.5438, 10.0016),
     TestLocation("Reeperbahn 154", 53.5496, 9.9625),
     TestLocation("Alster Lake", 53.5630, 10.0093),
-
-    // Frankfurt locations
     TestLocation("Frankfurt Airport", 50.0379, 8.5622),
     TestLocation("Frankfurt Central Station", 50.1073, 8.6647),
     TestLocation("Zeil Shopping Street", 50.1154, 8.6818)
@@ -141,7 +125,6 @@ object TestDataGenerator {
         else
           None
 
-      // Generate pickup time from 7 days ago to 7 days ahead
       val dayOffset    = random.nextInt(15) - 7
       val hourOffset   = random.nextInt(24)
       val minuteOffset = random.nextInt(60)
@@ -150,7 +133,6 @@ object TestDataGenerator {
       val from = germanLocations(random.nextInt(germanLocations.length))
       val to   = germanLocations(random.nextInt(germanLocations.length))
 
-      // Determine status based on pickup time
       val status =
         if (pickupTime.isBefore(currentTime.minusHours(2))) {
           if (random.nextDouble() < 0.8)
@@ -178,7 +160,6 @@ object TestDataGenerator {
           None
       val isAirportTransfer = to.address.contains("Airport") || from.address.contains("Airport")
 
-      // Flight details for airport transfers
       val (flightNumber, isArrival, gate, terminal, flightStatus) =
         if (isAirportTransfer) {
           (
@@ -268,7 +249,6 @@ object TestDataGenerator {
     ridesJson
   }
 
-  // Generate realistic statistics
   def generateStats(): Map[String, Int] = {
     val rides      = (1 to 50).map(_ => rideStatuses(Random.nextInt(rideStatuses.length)))
     Map(

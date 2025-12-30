@@ -23,15 +23,12 @@ case class DatabaseConfig(
 
 object DatabaseConfig {
 
-  // Configuration descriptor for ZIO Config
   private val configDescriptor: Config[DatabaseConfig] = deriveConfig[DatabaseConfig].nested("database")
 
-  // Layer that loads configuration from application.conf
   val layer: ZLayer[Any, Throwable, DatabaseConfig] = ZLayer.fromZIO(
     read(configDescriptor.from(ConfigProvider.fromResourcePath()))
   )
 
-  // Fallback layer with default configuration for development/testing
   val defaultLayer: ZLayer[Any, Nothing, DatabaseConfig] = ZLayer.succeed(
     DatabaseConfig(
       driver = "org.postgresql.Driver",
