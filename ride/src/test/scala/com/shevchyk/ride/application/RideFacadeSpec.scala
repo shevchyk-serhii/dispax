@@ -3,7 +3,7 @@ package com.shevchyk.ride.application
 import com.shevchyk.core.domain.*
 import com.shevchyk.repository.{PersonRepository, MockPersonRepository}
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.application.service.*
+import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.repository.InMemoryRideRepository
 import zio.test.*
 import zio.*
@@ -33,8 +33,7 @@ object RideFacadeSpec extends ZIOSpecDefault {
       }.provide(
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
-        RideCreationService.layer,
-        SimpleRideService.layer,
+        RideService.layer,
         RideFacade.layer
       )
     ),
@@ -48,8 +47,7 @@ object RideFacadeSpec extends ZIOSpecDefault {
       }.provide(
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
-        RideCreationService.layer,
-        SimpleRideService.layer,
+        RideService.layer,
         RideFacade.layer
       )
     )

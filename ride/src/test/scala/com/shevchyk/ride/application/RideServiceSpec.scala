@@ -3,26 +3,25 @@ package com.shevchyk.ride.application
 import com.shevchyk.core.domain.*
 import com.shevchyk.repository.{PersonRepository, MockPersonRepository}
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.application.service.*
+import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.repository.InMemoryRideRepository
 import zio.test.*
 import zio.*
 import java.util.UUID
 
-object SimpleRideServiceSpec extends ZIOSpecDefault {
+object RideServiceSpec extends ZIOSpecDefault {
 
-  def spec = suite("SimpleRideService")(
+  def spec = suite("RideService")(
     suite("getRideById")(
       test("should return RideNotFound error for any ID") {
         for {
-          service <- ZIO.service[SimpleRideService]
+          service <- ZIO.service[RideService]
           result  <- service.getRideById(RideId(UUID.fromString("0000007b-0000-0000-0000-000000000123"))).exit
         } yield assertTrue(result.isFailure)
       }.provide(
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
-        RideCreationService.layer,
-        SimpleRideService.layer
+        RideService.layer
       )
     ),
 
@@ -37,7 +36,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
         )
 
         for {
-          service <- ZIO.service[SimpleRideService]
+          service <- ZIO.service[RideService]
           ride    <- service.createRide(request)
         } yield assertTrue(
           ride.clientId == request.clientId &&
@@ -49,8 +48,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
       }.provide(
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
-        RideCreationService.layer,
-        SimpleRideService.layer
+        RideService.layer
       ),
 
       test("should create airport transfer ride") {
@@ -65,7 +63,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
         )
 
         for {
-          service <- ZIO.service[SimpleRideService]
+          service <- ZIO.service[RideService]
           ride    <- service.createRide(request)
         } yield assertTrue(
           ride.isAirportTransfer &&
@@ -75,8 +73,7 @@ object SimpleRideServiceSpec extends ZIOSpecDefault {
       }.provide(
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
-        RideCreationService.layer,
-        SimpleRideService.layer
+        RideService.layer
       )
     )
   )

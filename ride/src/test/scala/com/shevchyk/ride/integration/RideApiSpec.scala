@@ -5,7 +5,7 @@ import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{PersonId, RideId}
 import com.shevchyk.repository.PersonRepository
 import com.shevchyk.ride.application.RideFacade
-import com.shevchyk.ride.application.service.{RideCreationService, SimpleRideService}
+import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.infrastructure.http.dto.RideDto
 import com.shevchyk.ride.helpers.{TestData, TestJWT}
 import com.shevchyk.ride.infrastructure.http.RideRoutes
@@ -244,8 +244,7 @@ object RideApiSpec extends ZIOSpecDefault {
   ).provide(
     InMemoryRideRepository.layer,
     InMemoryPersonRepository.layer,
-    RideCreationService.layer,
-    SimpleRideService.layer,
+    RideService.layer,
     RideFacade.layer,
     TestJWT.testJwtService
   ) @@ TestAspect.sequential
