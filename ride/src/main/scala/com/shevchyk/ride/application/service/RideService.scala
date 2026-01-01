@@ -2,6 +2,7 @@ package com.shevchyk.ride.application.service
 
 import com.shevchyk.core.domain.*
 import com.shevchyk.ride.domain.*
+import com.shevchyk.ride.domain.RepositoryExtensions.*
 import com.shevchyk.ride.repository.RideRepository
 import com.shevchyk.repository.PersonRepository
 import zio.*
@@ -22,7 +23,7 @@ class RideServiceImpl(
 
   def getRideById(rideId: RideId): IO[RideError, Ride] = rideRepository
     .findById(rideId)
-    .mapError(ex => RideError.DatabaseError(ex))
+    .mapDatabaseError
     .flatMap {
       case Some(ride) => ZIO.succeed(ride)
       case None       => ZIO.fail(RideError.RideNotFound(rideId))
@@ -30,19 +31,8 @@ class RideServiceImpl(
 
   def createRide(request: CreateRideRequest): IO[RideError, Ride] =
     for {
-      clientOpt <- personRepository
-                     .findById(request.clientId)
-                     .mapError(ex => RideError.DatabaseError(ex))
-      _         <- ZIO
-                     .fromOption(clientOpt)
-                     .orElseFail(RideError.PersonNotFound(request.clientId))
-
-      ride = RideService.buildRideFromRequest(request)
-
-      persistedRide <- rideRepository
-                         .create(ride)
-                         .mapError(ex => RideError.DatabaseError(ex))
-
+      ride          <- ZIO.succeed(RideMapper.fromRequest(request))
+      persistedRide <- rideRepository.create(ride).mapDatabaseError
     } yield persistedRide
 
   def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride] =
@@ -55,9 +45,10 @@ class RideServiceImpl(
           .when(!ride.canBeStarted)
           .unit
 
-      driverOpt <- personRepository
-                     .findById(driverId)
-                     .mapError(ex => RideError.DatabaseError(ex))
+      driverOpt <-
+        personRepository
+          .findById(driverId)
+          .mapDatabaseError
       _         <- ZIO
                      .fromOption(driverOpt)
                      .orElseFail(RideError.DriverNotFound(driverId))
@@ -68,9 +59,10 @@ class RideServiceImpl(
                       startTime = Some(Instant.now())
                     )
 
-      persistedRide <- rideRepository
-                         .update(updatedRide)
-                         .mapError(ex => RideError.DatabaseError(ex))
+      persistedRide <-
+        rideRepository
+          .update(updatedRide)
+          .mapDatabaseError
 
     } yield persistedRide
 
@@ -89,9 +81,10 @@ class RideServiceImpl(
                       endTime = Some(Instant.now())
                     )
 
-      persistedRide <- rideRepository
-                         .update(updatedRide)
-                         .mapError(ex => RideError.DatabaseError(ex))
+      persistedRide <-
+        rideRepository
+          .update(updatedRide)
+          .mapDatabaseError
 
     } yield persistedRide
 
@@ -107,9 +100,10 @@ class RideServiceImpl(
 
       updatedRide = ride.copy(status = RideStatus.Cancelled)
 
-      persistedRide <- rideRepository
-                         .update(updatedRide)
-                         .mapError(ex => RideError.DatabaseError(ex))
+      persistedRide <-
+        rideRepository
+          .update(updatedRide)
+          .mapDatabaseError
 
     } yield persistedRide
 
@@ -122,28 +116,14 @@ class RideServiceImpl(
                       notes = request.notes.orElse(ride.notes)
                     )
 
-      persistedRide <- rideRepository
-                         .update(updatedRide)
-                         .mapError(ex => RideError.DatabaseError(ex))
+      persistedRide <-
+        rideRepository
+          .update(updatedRide)
+          .mapDatabaseError
 
     } yield persistedRide
 
 object RideService:
-
-  private[service] def buildRideFromRequest(request: CreateRideRequest): Ride = Ride(
-    id = RideId.generate(),
-    clientId = request.clientId,
-    creatorId = request.clientId,
-    companyId = request.companyId,
-    pickupLocation = request.pickupLocation,
-    dropoffLocation = request.dropoffLocation,
-    scheduledTime = request.scheduledTime,
-    requestTime = Instant.now(),
-    notes = request.notes,
-    airportCode = request.airportCode,
-    flightNumber = request.flightNumber,
-    isAirportTransfer = request.isAirportTransfer
-  )
 
   val layer: ZLayer[RideRepository & PersonRepository, Nothing, RideService] = ZLayer.fromFunction(
     RideServiceImpl.apply
