@@ -30,8 +30,6 @@ class RideServiceImpl(
 
   def createRide(request: CreateRideRequest): IO[RideError, Ride] =
     for {
-      _ <- validateCreateRideRequest(request)
-
       clientOpt <- personRepository
                      .findById(request.clientId)
                      .mapError(ex => RideError.DatabaseError(ex))
@@ -129,26 +127,6 @@ class RideServiceImpl(
                          .mapError(ex => RideError.DatabaseError(ex))
 
     } yield persistedRide
-
-  private def validateCreateRideRequest(request: CreateRideRequest): IO[RideError, Unit] =
-    for {
-      _ <-
-        ZIO.when(request.pickupLocation.address.trim.isEmpty)(
-          ZIO.fail(RideError.ValidationError("Pickup location cannot be empty"))
-        )
-      _ <-
-        ZIO.when(request.dropoffLocation.address.trim.isEmpty)(
-          ZIO.fail(RideError.ValidationError("Dropoff location cannot be empty"))
-        )
-      _ <-
-        ZIO.when(request.scheduledTime.exists(_.isBefore(Instant.now())))(
-          ZIO.fail(RideError.ValidationError("Scheduled time cannot be in the past"))
-        )
-      _ <-
-        ZIO.when(request.isAirportTransfer && request.airportCode.isEmpty)(
-          ZIO.fail(RideError.ValidationError("Airport code is required for airport transfers"))
-        )
-    } yield ()
 
 object RideService:
 

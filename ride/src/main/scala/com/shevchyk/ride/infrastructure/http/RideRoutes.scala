@@ -8,6 +8,8 @@ import com.shevchyk.core.domain.{CompanyId, PersonId, RideId}
 import com.shevchyk.ride.application.RideFacade
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.infrastructure.http.dto.{*, given}
+import com.shevchyk.ride.validation.{Validator, given}
+import com.shevchyk.ride.validation.Validator.validate
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -20,13 +22,15 @@ object RideRoutes {
   val authenticatedRoutes: Routes[RideFacade & JwtService, Response] = Routes(
     Method.POST / "api" / "rides"                                       -> authenticatedJsonHandler[RideFacade, CreateRideApiRequest] { (user, apiRequest) =>
       (for {
+        validRequest <- apiRequest.validate
+
         companyId    <- ZIO
                           .fromOption(user.companyId)
                           .orElseFail(
                             new RuntimeException("User must belong to a company to create rides")
                           )
         domainRequest = CreateRideApiRequest
-                          .toDomain(apiRequest, CompanyId(companyId))
+                          .toDomain(validRequest, CompanyId(companyId))
                           .copy(clientId = PersonId(user.userId))
         facade       <- ZIO.service[RideFacade]
         ride         <- facade.createRide(domainRequest)
