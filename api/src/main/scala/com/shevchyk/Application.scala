@@ -1,7 +1,6 @@
 package com.shevchyk
 
 import com.shevchyk.ride.infrastructure.http.RideRoutes
-import com.shevchyk.ride.application.RideFacade
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.repository.{RideRepository, PostgresRideRepository}
 import com.shevchyk.app.routes.UserRoutes
@@ -59,7 +58,6 @@ object Application extends ZIOAppDefault:
       TokenRepository.layer,
       RideRepository.layer,
       RideService.layer,
-      RideFacade.layer,
       JwtConfig.development,
       JwtService.live,
       AuthService.live

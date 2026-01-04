@@ -34,9 +34,16 @@ lazy val jsonDependencies = Seq(
   "dev.zio" %% "zio-json" % "0.7.3"
 )
 
+lazy val circeDependencies = Seq(
+  "io.circe" %% "circe-core"    % "0.14.10",
+  "io.circe" %% "circe-generic" % "0.14.10",
+  "io.circe" %% "circe-parser"  % "0.14.10"
+)
+
 lazy val dbDependencies = Seq(
   "org.tpolecat"  %% "doobie-core"                % "1.0.0-RC5",
   "org.tpolecat"  %% "doobie-postgres"            % "1.0.0-RC5",
+  "org.tpolecat"  %% "doobie-postgres-circe"      % "1.0.0-RC5",
   "org.tpolecat"  %% "doobie-hikari"              % "1.0.0-RC5",
   "org.postgresql" % "postgresql"                 % "42.7.4",
   "org.flywaydb"   % "flyway-core"                % "10.20.1",
@@ -87,7 +94,7 @@ lazy val ride = (project in file("ride"))
   )
   .settings(
     name := "oktopus-ride",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies
   )
 
 lazy val driver = (project in file("driver"))

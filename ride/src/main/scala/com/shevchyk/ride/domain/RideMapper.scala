@@ -14,7 +14,5 @@ object RideMapper:
     scheduledTime = request.scheduledTime,
     requestTime = Instant.now(),
     notes = request.notes,
-    airportCode = request.airportCode,
-    flightNumber = request.flightNumber,
-    isAirportTransfer = request.isAirportTransfer
+    specifics = request.specifics
   )

@@ -4,7 +4,6 @@ import com.shevchyk.auth.domain.UserRole
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{PersonId, RideId}
 import com.shevchyk.repository.PersonRepository
-import com.shevchyk.ride.application.RideFacade
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.infrastructure.http.dto.RideDto
 import com.shevchyk.ride.helpers.{TestData, TestJWT}
@@ -17,7 +16,7 @@ import zio.test.*
 
 object RideApiSpec extends ZIOSpecDefault {
 
-  private def runRequest(request: Request): ZIO[RideFacade & JwtService, Nothing, Response] =
+  private def runRequest(request: Request): ZIO[RideService & JwtService, Nothing, Response] =
     RideRoutes.authenticatedRoutes.run(request).either.map {
       case Left(either) => either.merge
       case Right(response) => response
@@ -244,7 +243,6 @@ object RideApiSpec extends ZIOSpecDefault {
     InMemoryRideRepository.layer,
     InMemoryPersonRepository.layer,
     RideService.layer,
-    RideFacade.layer,
     TestJWT.testJwtService
   ) @@ TestAspect.sequential
 }

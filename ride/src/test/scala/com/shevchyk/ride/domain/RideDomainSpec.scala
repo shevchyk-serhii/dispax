@@ -92,12 +92,12 @@ object RideDomainSpec extends ZIOSpecDefault {
           dropoffLocation = Location("Hotel"),
           scheduledTime = Some(Instant.now().plusSeconds(3600)),
           notes = Some("Terminal 2"),
-          isAirportTransfer = true
+          specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123"))
         )
 
         assertTrue(
           request.clientId == PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")) &&
-          request.isAirportTransfer &&
+          request.specifics.isDefined &&
           request.notes.contains("Terminal 2")
         )
       }

@@ -85,11 +85,17 @@ given createRideRequestValidator: Validator[CreateRideRequest] with
       .unit
 
   private def validateDomainAirportTransfer(request: CreateRideRequest): IO[RideError, Unit] =
-    ZIO
-      .when(request.isAirportTransfer && request.airportCode.isEmpty)(
-        ZIO.fail(RideError.ValidationError("Airport code is required for airport transfers"))
-      )
-      .unit
+    request.specifics match {
+      case Some(RideSpecifics.AirportTransfer(airportCode, flightNumber)) =>
+        ZIO
+          .when(airportCode.trim.isEmpty || flightNumber.trim.isEmpty)(
+            ZIO.fail(
+              RideError.ValidationError("Airport code and flight number must not be empty for airport transfers")
+            )
+          )
+          .unit
+      case None                                                           => ZIO.unit
+    }
 
 given assignDriverRequestValidator: Validator[AssignDriverRequest] with
   type Error = RideError

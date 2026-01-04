@@ -55,9 +55,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           clientId = PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200")),
           pickupLocation = Location("Airport Terminal 1"),
           dropoffLocation = Location("Hotel"),
-          airportCode = Some("KBP"),
-          flightNumber = Some("PS123"),
-          isAirportTransfer = true
+          specifics = Some(RideSpecifics.AirportTransfer("KBP", "PS123"))
         )
 
         for {
@@ -65,8 +63,10 @@ object RideServiceSpec extends ZIOSpecDefault {
           ride    <- service.createRide(request)
         } yield assertTrue(
           ride.isAirportTransfer &&
-          ride.airportCode.contains("KBP") &&
-          ride.flightNumber.contains("PS123")
+          ride.specifics.exists {
+            case RideSpecifics.AirportTransfer(code, flight) =>
+              code == "KBP" && flight == "PS123"
+          }
         )
       }.provide(
         InMemoryRideRepository.layer,

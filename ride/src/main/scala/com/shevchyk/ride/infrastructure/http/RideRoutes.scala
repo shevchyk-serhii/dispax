@@ -5,7 +5,7 @@ import com.shevchyk.auth.infrastructure.http.AuthenticatedHandlers.*
 import com.shevchyk.auth.middleware.AuthMiddleware
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{CompanyId, PersonId, RideId}
-import com.shevchyk.ride.application.RideFacade
+import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.infrastructure.http.dto.{*, given}
 import com.shevchyk.ride.validation.{Validator, given}
@@ -19,8 +19,8 @@ import java.util.UUID
 object RideRoutes {
   import com.shevchyk.repository.PersonRepository
 
-  val authenticatedRoutes: Routes[RideFacade & JwtService, Response] = Routes(
-    Method.POST / "api" / "rides"                                       -> authenticatedJsonHandler[RideFacade, CreateRideApiRequest] { (user, apiRequest) =>
+  val authenticatedRoutes: Routes[RideService & JwtService, Response] = Routes(
+    Method.POST / "api" / "rides"                                       -> authenticatedJsonHandler[RideService, CreateRideApiRequest] { (user, apiRequest) =>
       (for {
         _            <-
           ZIO.when(user.companyId.isEmpty)(
@@ -31,8 +31,8 @@ object RideRoutes {
         domainRequest = CreateRideApiRequest
                           .toDomain(validRequest)
                           .copy(clientId = PersonId(user.userId))
-        facade       <- ZIO.service[RideFacade]
-        ride         <- facade.createRide(domainRequest)
+        service      <- ZIO.service[RideService]
+        ride         <- service.createRide(domainRequest)
         rideDto       = RideDto.fromDomain(ride)
       } yield Response(Status.Created, body = Body.fromString(rideDto.toJson)))
         .catchAll { ex =>
@@ -48,19 +48,19 @@ object RideRoutes {
             .as(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$errorMsg"}""")))
         }
     },
-    Method.GET / "api" / "rides"                                        -> authenticatedHandler[RideFacade] { (user, _) =>
+    Method.GET / "api" / "rides"                                        -> authenticatedHandler[RideService] { (user, _) =>
       for {
-        facade  <- ZIO.service[RideFacade]
-        rides   <- facade.getRidesForUser(PersonId(user.userId))
+        service <- ZIO.service[RideService]
+        rides   <- service.getRidesForUser(PersonId(user.userId))
         rideDtos = rides.map(RideDto.fromDomain)
       } yield Response.json(rideDtos.toJson)
     },
     Method.GET / "api" / "rides" / string("rideId")                     -> handler { (rideId: String, request: Request) =>
       (for {
-        user   <- AuthMiddleware.authenticateRequest(request)
-        facade <- ZIO.service[RideFacade]
-        ride   <- facade.getRideById(RideId(UUID.fromString(rideId)))
-        rideDto = RideDto.fromDomain(ride)
+        user    <- AuthMiddleware.authenticateRequest(request)
+        service <- ZIO.service[RideService]
+        ride    <- service.getRideById(RideId(UUID.fromString(rideId)))
+        rideDto  = RideDto.fromDomain(ride)
       } yield Response.json(rideDto.toJson)).catchAll {
         case response: Response => ZIO.succeed(response)
         case ex: Throwable      =>
@@ -70,9 +70,9 @@ object RideRoutes {
     Method.POST / "api" / "rides" / string("rideId") / "airport-timing" -> handler {
       (rideId: String, request: Request) =>
         (for {
-          user   <- AuthMiddleware.authenticateRequest(request)
-          facade <- ZIO.service[RideFacade]
-          ride   <- facade.getRideById(RideId(UUID.fromString(rideId)))
+          user    <- AuthMiddleware.authenticateRequest(request)
+          service <- ZIO.service[RideService]
+          ride    <- service.getRideById(RideId(UUID.fromString(rideId)))
 
           now          = java.time.Instant.now()
           flightTime   = ride.scheduledTime.getOrElse(now.plusSeconds(7200))

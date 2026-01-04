@@ -1,7 +1,7 @@
 package com.shevchyk.ride.infrastructure.http.dto
 
 import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId}
-import com.shevchyk.ride.domain.{Ride, CreateRideRequest, RideStatus}
+import com.shevchyk.ride.domain.{Ride, CreateRideRequest, RideSpecifics, RideStatus}
 import zio.json.*
 import java.time.Instant
 import java.util.UUID
@@ -107,38 +107,71 @@ object LocationDto:
 
 object RideDto:
 
-  def fromDomain(ride: Ride): RideDto = RideDto(
-    id = ride.id.value.toString,
-    clientId = ride.clientId.value.toString,
-    creatorId = ride.creatorId.value.toString,
-    driverId = ride.driverId.map(_.value.toString),
-    scheduleDayId = None,                   // Not used in current domain model
-    pickupDateTime = ride.scheduledTime.getOrElse(ride.requestTime).toString,
-    from = LocationDto.fromDomain(ride.pickupLocation),
-    to = LocationDto.fromDomain(ride.dropoffLocation),
-    status = ride.status.toString,
-    clientName = "Unknown Client",          // Would need to be fetched from PersonRepository
-    flightNumber = ride.flightNumber,
-    flightTime = ride.scheduledTime.map(_.toString),
-    isAirportTransfer = ride.isAirportTransfer,
-    isArrival = ride.airportCode.isDefined, // Simple heuristic
-    gate = None,                            // Would need additional data
-    terminal = None,                        // Would need additional data
-    flightStatus = None,                    // Would need flight service integration
-    driverName = None,                      // Would need to be fetched from PersonRepository
-    driverLocation = None,                  // Would need driver location service
-    price = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue)
-  )
+  def fromDomain(ride: Ride): RideDto =
+    val (flightNumber, isAirportTransfer) =
+      ride.specifics match {
+        case Some(RideSpecifics.AirportTransfer(_, flight)) => (Some(flight), true)
+        case None                                           => (None, false)
+      }
+
+    RideDto(
+      id = ride.id.value.toString,
+      clientId = ride.clientId.value.toString,
+      creatorId = ride.creatorId.value.toString,
+      driverId = ride.driverId.map(_.value.toString),
+      scheduleDayId = None,               // Not used in current domain model
+      pickupDateTime = ride.scheduledTime.getOrElse(ride.requestTime).toString,
+      from = LocationDto.fromDomain(ride.pickupLocation),
+      to = LocationDto.fromDomain(ride.dropoffLocation),
+      status = ride.status.toString,
+      clientName = "Unknown Client",      // Would need to be fetched from PersonRepository
+      flightNumber = flightNumber,
+      flightTime = ride.scheduledTime.map(_.toString),
+      isAirportTransfer = isAirportTransfer,
+      isArrival = flightNumber.isDefined, // Simple heuristic
+      gate = None,                        // Would need additional data
+      terminal = None,                    // Would need additional data
+      flightStatus = None,                // Would need flight service integration
+      driverName = None,                  // Would need to be fetched from PersonRepository
+      driverLocation = None,              // Would need driver location service
+      price = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue)
+    )
 
 object CreateRideApiRequest:
 
-  def toDomain(request: CreateRideApiRequest): CreateRideRequest = CreateRideRequest(
-    clientId = PersonId(UUID.fromString(request.clientId)),
-    pickupLocation = LocationDto.toDomain(request.from),
-    dropoffLocation = LocationDto.toDomain(request.to),
-    scheduledTime = scala.util.Try(Instant.parse(request.pickupDateTime)).toOption,
-    notes = None,
-    airportCode = None, // Could be extracted from location or flight number
-    flightNumber = request.flightNumber,
-    isAirportTransfer = request.isAirportTransfer
-  )
+  def toDomain(request: CreateRideApiRequest): CreateRideRequest =
+    // Create AirportTransfer if either isAirportTransfer is true OR flightNumber is provided
+    val specifics =
+      if (request.isAirportTransfer || request.flightNumber.isDefined) {
+        request.flightNumber.map { flight =>
+          RideSpecifics.AirportTransfer(
+            airportCode = extractAirportCode(request), // Could be extracted from location
+            flightNumber = flight
+          )
+        }
+      }
+      else {
+        None
+      }
+
+    CreateRideRequest(
+      clientId = PersonId(UUID.fromString(request.clientId)),
+      pickupLocation = LocationDto.toDomain(request.from),
+      dropoffLocation = LocationDto.toDomain(request.to),
+      scheduledTime = scala.util.Try(Instant.parse(request.pickupDateTime)).toOption,
+      notes = None,
+      specifics = specifics
+    )
+
+  private def extractAirportCode(request: CreateRideApiRequest): String =
+    // Simple heuristic: try to extract from address
+    // In real implementation, could use airport database or user input
+    val address = request.from.address
+    if (address.toLowerCase.contains("munich"))
+      "MUC"
+    else if (address.toLowerCase.contains("frankfurt"))
+      "FRA"
+    else if (address.toLowerCase.contains("berlin"))
+      "BER"
+    else
+      "UNKNOWN"

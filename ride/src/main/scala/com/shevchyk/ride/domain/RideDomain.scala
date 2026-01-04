@@ -6,6 +6,50 @@ import java.time.Instant
 enum RideStatus:
   case Requested, Assigned, InProgress, Completed, Cancelled
 
+sealed trait RideSpecifics
+
+object RideSpecifics:
+
+  final case class AirportTransfer(
+      airportCode: String,
+      flightNumber: String
+  ) extends RideSpecifics
+
+  // Circe JSON codecs for PostgreSQL JSONB
+  import io.circe.{Codec, Decoder, Encoder}
+  import io.circe.generic.semiauto.*
+  import io.circe.syntax.*
+
+  implicit val airportTransferCodec: Codec[AirportTransfer] = deriveCodec[AirportTransfer]
+
+  implicit val rideSpecificsEncoder: Encoder[RideSpecifics] = Encoder.instance { case at: AirportTransfer =>
+    at.asJson.mapObject(_.add("type", "AirportTransfer".asJson))
+  }
+
+  implicit val rideSpecificsDecoder: Decoder[RideSpecifics] = Decoder.instance { cursor =>
+    cursor.downField("type").as[String].flatMap {
+      case "AirportTransfer" => cursor.as[AirportTransfer]
+      case other             => Left(io.circe.DecodingFailure(s"Unknown RideSpecifics type: $other", cursor.history))
+    }
+  }
+
+  // ZIO JSON codecs for HTTP API
+  import zio.json.*
+  import zio.json.internal.Write
+
+  given JsonEncoder[AirportTransfer] = DeriveJsonEncoder.gen[AirportTransfer]
+  given JsonDecoder[AirportTransfer] = DeriveJsonDecoder.gen[AirportTransfer]
+
+  given JsonEncoder[RideSpecifics] =
+    new JsonEncoder[RideSpecifics] {
+      override def unsafeEncode(a: RideSpecifics, indent: Option[Int], out: Write): Unit =
+        a match {
+          case at: AirportTransfer => JsonEncoder[AirportTransfer].unsafeEncode(at, indent, out)
+        }
+    }
+
+  given JsonDecoder[RideSpecifics] = JsonDecoder[AirportTransfer].map(identity)
+
 final case class Ride(
     id: RideId,
     clientId: PersonId,
@@ -22,14 +66,14 @@ final case class Ride(
     estimatedPrice: Option[BigDecimal] = None,
     finalPrice: Option[BigDecimal] = None,
     notes: Option[String] = None,
-    airportCode: Option[String] = None,
-    flightNumber: Option[String] = None,
-    isAirportTransfer: Boolean = false
+    specifics: Option[RideSpecifics] = None
 ):
 
   def canBeAssigned: Boolean  = status == RideStatus.Requested
   def canBeStarted: Boolean   = status == RideStatus.Assigned && driverId.isDefined
   def canBeCompleted: Boolean = status == RideStatus.InProgress
+
+  def isAirportTransfer: Boolean = specifics.exists(_.isInstanceOf[RideSpecifics.AirportTransfer])
 
 final case class CreateRideRequest(
     clientId: PersonId,
@@ -37,9 +81,7 @@ final case class CreateRideRequest(
     dropoffLocation: Location,
     scheduledTime: Option[Instant] = None,
     notes: Option[String] = None,
-    airportCode: Option[String] = None,
-    flightNumber: Option[String] = None,
-    isAirportTransfer: Boolean = false
+    specifics: Option[RideSpecifics] = None
 )
 
 final case class UpdateRideStatusRequest(

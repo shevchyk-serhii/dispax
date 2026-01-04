@@ -1,7 +1,7 @@
 package com.shevchyk.ride.helpers
 
 import com.shevchyk.core.domain.{PersonId, CompanyId, Location, RideId, Person, PersonRole}
-import com.shevchyk.ride.domain.{Ride, RideStatus, CreateRideRequest}
+import com.shevchyk.ride.domain.{Ride, RideSpecifics, RideStatus, CreateRideRequest}
 import java.time.Instant
 import java.util.UUID
 
@@ -27,16 +27,21 @@ object TestData {
       pickupAddress: String = "Munich Airport",
       dropoffAddress: String = "Berlin Central Station",
       scheduledTime: Option[Instant] = None,
-      isAirportTransfer: Boolean = false,
-      flightNumber: Option[String] = None
+      specifics: Option[RideSpecifics] = None
   ): CreateRideRequest = CreateRideRequest(
     clientId = PersonId(testUserId),
     pickupLocation = Location(pickupAddress),
     dropoffLocation = Location(dropoffAddress),
     scheduledTime = scheduledTime,
-    isAirportTransfer = isAirportTransfer,
-    flightNumber = flightNumber,
+    specifics = specifics,
     notes = Some("Test ride")
+  )
+
+  def createAirportRideRequest(
+      airportCode: String = "MUC",
+      flightNumber: String = "LH123"
+  ): CreateRideRequest = createRideRequest(
+    specifics = Some(RideSpecifics.AirportTransfer(airportCode, flightNumber))
   )
 
   def createRide(
@@ -44,7 +49,8 @@ object TestData {
       clientId: PersonId = PersonId(testUserId),
       status: RideStatus = RideStatus.Requested,
       pickupLocation: Location = Location("Munich Airport"),
-      dropoffLocation: Location = Location("Berlin Central Station")
+      dropoffLocation: Location = Location("Berlin Central Station"),
+      specifics: Option[RideSpecifics] = None
   ): Ride = Ride(
     id = id,
     clientId = clientId,
@@ -61,9 +67,14 @@ object TestData {
     estimatedPrice = Some(BigDecimal(50.0)),
     finalPrice = None,
     notes = Some("Test ride"),
-    airportCode = None,
-    flightNumber = None,
-    isAirportTransfer = false
+    specifics = specifics
+  )
+
+  def createAirportRide(
+      airportCode: String = "MUC",
+      flightNumber: String = "LH123"
+  ): Ride = createRide(
+    specifics = Some(RideSpecifics.AirportTransfer(airportCode, flightNumber))
   )
 
   def validCreateRideJson: String = {

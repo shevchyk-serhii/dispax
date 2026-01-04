@@ -21,9 +21,7 @@ class SimpleRideManagementSteps extends ScalaDsl with EN with ApiTestHelpers {
       dropoffLocation = Location(dropoff),
       scheduledTime = None,
       notes = None,
-      airportCode = None,
-      flightNumber = None,
-      isAirportTransfer = false
+      specifics = None
     )
   }
 

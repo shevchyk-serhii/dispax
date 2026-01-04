@@ -11,6 +11,7 @@ import java.time.Instant
 trait RideService:
   def getRideById(rideId: RideId): IO[RideError, Ride]
   def createRide(request: CreateRideRequest): IO[RideError, Ride]
+  def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]
   def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]
   def completeRide(rideId: RideId): IO[RideError, Ride]
   def cancelRide(rideId: RideId, userId: PersonId, userRole: PersonRole): IO[RideError, Ride]
@@ -34,6 +35,11 @@ class RideServiceImpl(
       ride          <- ZIO.succeed(RideMapper.fromRequest(request))
       persistedRide <- rideRepository.create(ride).mapDatabaseError
     } yield persistedRide
+
+  def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]] = rideRepository
+    .findByClientId(userId)
+    .orElse(rideRepository.findByDriverId(userId))
+    .mapError(ex => RideError.DatabaseError(ex))
 
   def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride] =
     for {
