@@ -16,7 +16,6 @@ object RideFacadeSpec extends ZIOSpecDefault {
       test("should successfully create a ride") {
         val request = CreateRideRequest(
           clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
-          companyId = CompanyId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
           pickupLocation = Location("Pickup Address"),
           dropoffLocation = Location("Dropoff Address")
         )

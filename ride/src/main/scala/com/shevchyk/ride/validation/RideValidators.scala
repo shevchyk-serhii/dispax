@@ -17,7 +17,6 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
       _ <- validateLocation(request.to, "Dropoff location")
       _ <- validateDateTime(request.pickupDateTime)
       _ <- validateClientId(request.clientId)
-      _ <- validateCompanyId(request.companyId)
       _ <- validateAirportTransfer(request)
       _ <- validatePrice(request.price)
     } yield request
@@ -44,12 +43,6 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
     ZIO
       .attempt(UUID.fromString(clientId))
       .orElseFail(RideError.ValidationError(s"Invalid client ID format: $clientId"))
-      .unit
-
-  private def validateCompanyId(companyId: String): IO[RideError, Unit] =
-    ZIO
-      .attempt(UUID.fromString(companyId))
-      .orElseFail(RideError.ValidationError(s"Invalid company ID format: $companyId"))
       .unit
 
   private def validateAirportTransfer(request: CreateRideApiRequest): IO[RideError, Unit] =

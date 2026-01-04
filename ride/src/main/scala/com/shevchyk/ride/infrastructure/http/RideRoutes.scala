@@ -22,15 +22,14 @@ object RideRoutes {
   val authenticatedRoutes: Routes[RideFacade & JwtService, Response] = Routes(
     Method.POST / "api" / "rides"                                       -> authenticatedJsonHandler[RideFacade, CreateRideApiRequest] { (user, apiRequest) =>
       (for {
+        _            <-
+          ZIO.when(user.companyId.isEmpty)(
+            ZIO.fail(RideError.ValidationError("User must belong to a company to create rides"))
+          )
         validRequest <- apiRequest.validate
 
-        companyId    <- ZIO
-                          .fromOption(user.companyId)
-                          .orElseFail(
-                            new RuntimeException("User must belong to a company to create rides")
-                          )
         domainRequest = CreateRideApiRequest
-                          .toDomain(validRequest, CompanyId(companyId))
+                          .toDomain(validRequest)
                           .copy(clientId = PersonId(user.userId))
         facade       <- ZIO.service[RideFacade]
         ride         <- facade.createRide(domainRequest)

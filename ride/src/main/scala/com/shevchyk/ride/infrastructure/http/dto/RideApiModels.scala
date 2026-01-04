@@ -22,7 +22,6 @@ case class RideDto(
     clientId: String,
     creatorId: String,
     driverId: Option[String] = None,
-    companyId: String,
     scheduleDayId: Option[String] = None,
     pickupDateTime: String,
     from: LocationDto,
@@ -44,7 +43,6 @@ case class RideDto(
 case class CreateRideApiRequest(
     clientId: String,
     creatorId: String,
-    companyId: String,
     scheduleDayId: Option[String] = None,
     pickupDateTime: String,
     from: LocationDto,
@@ -114,7 +112,6 @@ object RideDto:
     clientId = ride.clientId.value.toString,
     creatorId = ride.creatorId.value.toString,
     driverId = ride.driverId.map(_.value.toString),
-    companyId = ride.companyId.value.toString,
     scheduleDayId = None,                   // Not used in current domain model
     pickupDateTime = ride.scheduledTime.getOrElse(ride.requestTime).toString,
     from = LocationDto.fromDomain(ride.pickupLocation),
@@ -135,9 +132,8 @@ object RideDto:
 
 object CreateRideApiRequest:
 
-  def toDomain(request: CreateRideApiRequest, companyId: CompanyId): CreateRideRequest = CreateRideRequest(
+  def toDomain(request: CreateRideApiRequest): CreateRideRequest = CreateRideRequest(
     clientId = PersonId(UUID.fromString(request.clientId)),
-    companyId = companyId,
     pickupLocation = LocationDto.toDomain(request.from),
     dropoffLocation = LocationDto.toDomain(request.to),
     scheduledTime = scala.util.Try(Instant.parse(request.pickupDateTime)).toOption,

@@ -51,7 +51,6 @@ object RideApiSpec extends ZIOSpecDefault {
 
           _        <- assertTrue(
                         rideDto.clientId == TestData.testUserId.toString,
-                        rideDto.companyId == TestData.testCompanyId.toString,
                         rideDto.status == "Requested",
                         rideDto.from.address == "Munich Airport",
                         rideDto.to.address == "Berlin Central Station"

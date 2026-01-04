@@ -1,7 +1,7 @@
 package com.shevchyk.steps
 
 import com.shevchyk.ride.domain.{CreateRideRequest, RideStatus}
-import com.shevchyk.core.domain.{CompanyId, Location, PersonId}
+import com.shevchyk.core.domain.{Location, PersonId}
 import io.cucumber.scala.{EN, ScalaDsl}
 import zio.http.*
 import java.util.UUID
@@ -17,7 +17,6 @@ class SimpleRideManagementSteps extends ScalaDsl with EN with ApiTestHelpers {
   Given("^I want to create a ride from \"([^\"]+)\" to \"([^\"]+)\"$") { (pickup: String, dropoff: String) =>
     currentRideRequest = CreateRideRequest(
       clientId = testPersonId,
-      companyId = CompanyId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
       pickupLocation = Location(pickup),
       dropoffLocation = Location(dropoff),
       scheduledTime = None,

@@ -31,7 +31,6 @@ object TestData {
       flightNumber: Option[String] = None
   ): CreateRideRequest = CreateRideRequest(
     clientId = PersonId(testUserId),
-    companyId = CompanyId(testCompanyId),
     pickupLocation = Location(pickupAddress),
     dropoffLocation = Location(dropoffAddress),
     scheduledTime = scheduledTime,
@@ -43,7 +42,6 @@ object TestData {
   def createRide(
       id: RideId = RideId.generate(),
       clientId: PersonId = PersonId(testUserId),
-      companyId: CompanyId = CompanyId(testCompanyId),
       status: RideStatus = RideStatus.Requested,
       pickupLocation: Location = Location("Munich Airport"),
       dropoffLocation: Location = Location("Berlin Central Station")
@@ -52,7 +50,6 @@ object TestData {
     clientId = clientId,
     creatorId = clientId,
     driverId = None,
-    companyId = companyId,
     status = status,
     pickupLocation = pickupLocation,
     dropoffLocation = dropoffLocation,
@@ -74,7 +71,6 @@ object TestData {
     s"""{
       "clientId": "00000000-0000-0000-0000-000000000001",
       "creatorId": "00000000-0000-0000-0000-000000000001",
-      "companyId": "00000000-0000-0000-0000-000000000010",
       "pickupDateTime": "$futureTime",
       "from": {"address": "Munich Airport"},
       "to": {"address": "Berlin Central Station"},

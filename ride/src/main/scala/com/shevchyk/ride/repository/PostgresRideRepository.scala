@@ -40,18 +40,18 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   override def create(ride: Ride): Task[Ride] = {
     sql"""
       INSERT INTO rides (
-        id, client_id, creator_id, driver_id, company_id,
+        id, client_id, creator_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
-        status, 
+        status,
         estimated_price_amount, estimated_price_currency,
         final_price_amount, final_price_currency,
         notes, airport_code, flight_number, is_airport_transfer
       ) VALUES (
         ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.driverId.map(
         _.value
-      )}, ${ride.companyId.value},
+      )},
         ${ride.requestTime}, ${ride.scheduledTime}, ${ride.requestTime}, ${ride.startTime}, ${ride.endTime},
         ${ride.pickupLocation.address}, ${ride.pickupLocation.latitude}, ${ride.pickupLocation.longitude},
         ${ride.dropoffLocation.address}, ${ride.dropoffLocation.latitude}, ${ride.dropoffLocation.longitude},
@@ -67,15 +67,15 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
 
   override def findById(id: RideId): Task[Option[Ride]] = {
     sql"""
-      SELECT 
-        id, client_id, creator_id, driver_id, company_id,
+      SELECT
+        id, client_id, creator_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
         status, tariff_id,
         estimated_price_amount, final_price_amount,
         notes, airport_code, flight_number, is_airport_transfer
-      FROM rides 
+      FROM rides
       WHERE id = ${id.value}
     """
       .query[Ride]
@@ -86,15 +86,15 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
 
   override def findByStatus(status: RideStatus): Task[List[Ride]] = {
     sql"""
-      SELECT 
-        id, client_id, creator_id, driver_id, company_id,
+      SELECT
+        id, client_id, creator_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
         status, tariff_id,
         estimated_price_amount, final_price_amount,
         notes, airport_code, flight_number, is_airport_transfer
-      FROM rides 
+      FROM rides
       WHERE status = $status
       ORDER BY request_time DESC
     """
@@ -106,15 +106,15 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
 
   override def findAll(): Task[List[Ride]] = {
     sql"""
-      SELECT 
-        id, client_id, creator_id, driver_id, company_id,
+      SELECT
+        id, client_id, creator_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
         status, tariff_id,
         estimated_price_amount, final_price_amount,
         notes, airport_code, flight_number, is_airport_transfer
-      FROM rides 
+      FROM rides
       ORDER BY request_time DESC
     """
       .query[Ride]
@@ -125,15 +125,15 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
 
   def findByClientId(clientId: PersonId): Task[List[Ride]] = {
     sql"""
-      SELECT 
-        id, client_id, creator_id, driver_id, company_id,
+      SELECT
+        id, client_id, creator_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
         status, tariff_id,
         estimated_price_amount, final_price_amount,
         notes, airport_code, flight_number, is_airport_transfer
-      FROM rides 
+      FROM rides
       WHERE client_id = ${clientId.value}
       ORDER BY request_time DESC
     """
@@ -145,15 +145,15 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
 
   def findByDriverId(driverId: PersonId): Task[List[Ride]] = {
     sql"""
-      SELECT 
-        id, client_id, creator_id, driver_id, company_id,
+      SELECT
+        id, client_id, creator_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
         status, tariff_id,
         estimated_price_amount, final_price_amount,
         notes, airport_code, flight_number, is_airport_transfer
-      FROM rides 
+      FROM rides
       WHERE driver_id = ${driverId.value}
       ORDER BY request_time DESC
     """
@@ -195,8 +195,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
           UUID,
           UUID,
           UUID,
-          Option[UUID],
-          UUID,               // id, client_id, creator_id, driver_id, company_id
+          Option[UUID],       // id, client_id, creator_id, driver_id
           Instant,
           Option[Instant],
           Instant,
@@ -223,7 +222,6 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
             clientId,
             creatorId,
             driverId,
-            companyId,
             pickupDateTime,
             scheduledTime,
             requestTime,
@@ -249,7 +247,6 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
           clientId = PersonId(clientId),
           creatorId = PersonId(creatorId),
           driverId = driverId.map(PersonId.apply),
-          companyId = CompanyId(companyId),
           status = status,
           pickupLocation = Location(
             address = fromAddress,

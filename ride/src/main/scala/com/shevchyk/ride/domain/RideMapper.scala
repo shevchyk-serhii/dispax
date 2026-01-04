@@ -9,7 +9,6 @@ object RideMapper:
     id = RideId.generate(),
     clientId = request.clientId,
     creatorId = request.clientId,
-    companyId = request.companyId,
     pickupLocation = request.pickupLocation,
     dropoffLocation = request.dropoffLocation,
     scheduledTime = request.scheduledTime,
