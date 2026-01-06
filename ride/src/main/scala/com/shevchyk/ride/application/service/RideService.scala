@@ -7,6 +7,7 @@ import com.shevchyk.ride.repository.RideRepository
 import com.shevchyk.repository.PersonRepository
 import zio.*
 import java.time.Instant
+import monocle.syntax.all.*
 
 trait RideService:
   def getRideById(rideId: RideId): IO[RideError, Ride]
@@ -45,31 +46,20 @@ class RideServiceImpl(
     for {
       ride <- getRideById(rideId)
 
-      _ <-
-        ZIO
-          .fail(RideError.DriverNotFound(driverId))
-          .when(!ride.canBeStarted)
-          .unit
+      _ <- ZIO.fail(RideError.DriverNotFound(driverId)).when(!ride.canBeStarted).unit
 
-      driverOpt <-
-        personRepository
-          .findById(driverId)
-          .mapDatabaseError
-      _         <- ZIO
-                     .fromOption(driverOpt)
-                     .orElseFail(RideError.DriverNotFound(driverId))
+      driverOpt <- personRepository.findById(driverId).mapDatabaseError
+      _         <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(driverId))
 
-      updatedRide = ride.copy(
-                      status = RideStatus.InProgress,
-                      driverId = Some(driverId),
-                      startTime = Some(Instant.now())
-                    )
+      updatedRide = ride
+                      .focus(_.status)
+                      .replace(RideStatus.InProgress)
+                      .focus(_.driverId)
+                      .replace(Some(driverId))
+                      .focus(_.startTime)
+                      .replace(Some(Instant.now()))
 
-      persistedRide <-
-        rideRepository
-          .update(updatedRide)
-          .mapDatabaseError
-
+      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
     } yield persistedRide
 
   def completeRide(rideId: RideId): IO[RideError, Ride] =
@@ -82,10 +72,11 @@ class RideServiceImpl(
           .when(!ride.canBeCompleted)
           .unit
 
-      updatedRide = ride.copy(
-                      status = RideStatus.Completed,
-                      endTime = Some(Instant.now())
-                    )
+      updatedRide = ride
+                      .focus(_.status)
+                      .replace(RideStatus.Completed)
+                      .focus(_.endTime)
+                      .replace(Some(Instant.now()))
 
       persistedRide <-
         rideRepository
@@ -104,7 +95,7 @@ class RideServiceImpl(
           .when(ride.status == RideStatus.Completed)
           .unit
 
-      updatedRide = ride.copy(status = RideStatus.Cancelled)
+      updatedRide = ride.focus(_.status).replace(RideStatus.Cancelled)
 
       persistedRide <-
         rideRepository
@@ -117,10 +108,11 @@ class RideServiceImpl(
     for {
       ride <- getRideById(rideId)
 
-      updatedRide = ride.copy(
-                      status = request.status,
-                      notes = request.notes.orElse(ride.notes)
-                    )
+      updatedRide = ride
+                      .focus(_.status)
+                      .replace(request.status)
+                      .focus(_.notes)
+                      .replace(request.notes.orElse(ride.notes))
 
       persistedRide <-
         rideRepository

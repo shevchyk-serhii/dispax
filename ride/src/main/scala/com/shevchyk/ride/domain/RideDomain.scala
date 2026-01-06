@@ -33,7 +33,6 @@ object RideSpecifics:
     }
   }
 
-  // ZIO JSON codecs for HTTP API
   import zio.json.*
   import zio.json.internal.Write
 
@@ -41,12 +40,10 @@ object RideSpecifics:
   given JsonDecoder[AirportTransfer] = DeriveJsonDecoder.gen[AirportTransfer]
 
   given JsonEncoder[RideSpecifics] =
-    new JsonEncoder[RideSpecifics] {
-      override def unsafeEncode(a: RideSpecifics, indent: Option[Int], out: Write): Unit =
-        a match {
-          case at: AirportTransfer => JsonEncoder[AirportTransfer].unsafeEncode(at, indent, out)
-        }
-    }
+    (a: RideSpecifics, indent: Option[Int], out: Write) =>
+      a match {
+        case at: AirportTransfer => JsonEncoder[AirportTransfer].unsafeEncode(at, indent, out)
+      }
 
   given JsonDecoder[RideSpecifics] = JsonDecoder[AirportTransfer].map(identity)
 

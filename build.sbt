@@ -40,6 +40,11 @@ lazy val circeDependencies = Seq(
   "io.circe" %% "circe-parser"  % "0.14.10"
 )
 
+lazy val monocleDependencies = Seq(
+  "dev.optics" %% "monocle-core"  % "3.3.0",
+  "dev.optics" %% "monocle-macro" % "3.3.0"
+)
+
 lazy val dbDependencies = Seq(
   "org.tpolecat"  %% "doobie-core"                % "1.0.0-RC5",
   "org.tpolecat"  %% "doobie-postgres"            % "1.0.0-RC5",
@@ -94,7 +99,7 @@ lazy val ride = (project in file("ride"))
   )
   .settings(
     name := "oktopus-ride",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies
   )
 
 lazy val driver = (project in file("driver"))
