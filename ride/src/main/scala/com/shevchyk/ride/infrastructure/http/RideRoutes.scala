@@ -29,7 +29,7 @@ object RideRoutes {
         validRequest <- apiRequest.validate
 
         domainRequest = CreateRideApiRequest
-                          .toDomain(validRequest)
+                          .toDomain(validRequest, CompanyId(user.companyId.get))
                           .copy(clientId = PersonId(user.userId))
         service      <- ZIO.service[RideService]
         ride         <- service.createRide(domainRequest)
@@ -54,6 +54,57 @@ object RideRoutes {
         rides   <- service.getRidesForUser(PersonId(user.userId))
         rideDtos = rides.map(RideDto.fromDomain)
       } yield Response.json(rideDtos.toJson)
+    },
+    Method.GET / "api" / "rides" / "pending"                            -> authenticatedHandler[RideService] { (_, _) =>
+      for {
+        service <- ZIO.service[RideService]
+        rides   <- service.getRidesByStatus(RideStatus.Requested)
+        rideDtos = rides.map(RideDto.fromDomain)
+      } yield Response.json(rideDtos.toJson)
+    },
+    Method.GET / "api" / "rides" / "driver" / string("driverId")        -> handler { (driverId: String, request: Request) =>
+      (for {
+        _       <- AuthMiddleware.authenticateRequest(request)
+        service <- ZIO.service[RideService]
+        rides   <- service.getDriverRides(PersonId(UUID.fromString(driverId)))
+        rideDtos = rides.map(RideDto.fromDomain)
+      } yield Response.json(rideDtos.toJson)).catchAll {
+        case response: Response => ZIO.succeed(response)
+        case ex: Throwable      =>
+          ZIO.succeed(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
+      }
+    },
+    Method.PUT / "api" / "rides" / string("rideId") / "assign-driver"   -> handler { (rideId: String, request: Request) =>
+      (for {
+        _          <- AuthMiddleware.authenticateRequest(request)
+        bodyStr    <- request.body.asString
+        apiRequest <- ZIO
+                        .fromEither(bodyStr.fromJson[AssignDriverRequest])
+                        .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+        validated  <- apiRequest.validate
+        service    <- ZIO.service[RideService]
+        ride       <- service.assignDriver(
+                        RideId(UUID.fromString(rideId)),
+                        PersonId(UUID.fromString(validated.driverId))
+                      )
+        rideDto     = RideDto.fromDomain(ride)
+      } yield Response.json(rideDto.toJson)).catchAll {
+        case response: Response => ZIO.succeed(response)
+        case ex: RideError      =>
+          val (status, msg) =
+            ex match {
+              case RideError.RideNotFound(id)                 => (Status.NotFound, s"Ride not found: ${id.value}")
+              case RideError.DriverNotFound(id)               => (Status.NotFound, s"Driver not found: ${id.value}")
+              case RideError.InvalidStatusTransition(from, _) =>
+                (Status.Conflict, s"Ride cannot be assigned in status: $from")
+              case RideError.BusinessRuleViolation(_, msg)    => (Status.BadRequest, msg)
+              case RideError.ValidationError(msg)             => (Status.BadRequest, s"Validation error: $msg")
+              case other                                      => (Status.InternalServerError, Option(other.getMessage).getOrElse(other.toString))
+            }
+          ZIO.succeed(Response(status, body = Body.fromString(s"""{"error":"$msg"}""")))
+        case ex: Throwable      =>
+          ZIO.succeed(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
+      }
     },
     Method.GET / "api" / "rides" / string("rideId")                     -> handler { (rideId: String, request: Request) =>
       (for {

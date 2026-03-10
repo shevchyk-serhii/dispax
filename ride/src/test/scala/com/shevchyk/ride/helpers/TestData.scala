@@ -30,6 +30,7 @@ object TestData {
       specifics: Option[RideSpecifics] = None
   ): CreateRideRequest = CreateRideRequest(
     clientId = PersonId(testUserId),
+    companyId = CompanyId(testCompanyId),
     pickupLocation = Location(pickupAddress),
     dropoffLocation = Location(dropoffAddress),
     scheduledTime = scheduledTime,
@@ -47,6 +48,7 @@ object TestData {
   def createRide(
       id: RideId = RideId.generate(),
       clientId: PersonId = PersonId(testUserId),
+      companyId: CompanyId = CompanyId(testCompanyId),
       status: RideStatus = RideStatus.Requested,
       pickupLocation: Location = Location("Munich Airport"),
       dropoffLocation: Location = Location("Berlin Central Station"),
@@ -55,6 +57,7 @@ object TestData {
     id = id,
     clientId = clientId,
     creatorId = clientId,
+    companyId = companyId,
     driverId = None,
     status = status,
     pickupLocation = pickupLocation,

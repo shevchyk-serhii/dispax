@@ -3,6 +3,9 @@ package com.shevchyk
 import com.shevchyk.ride.infrastructure.http.RideRoutes
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.repository.{RideRepository, PostgresRideRepository}
+import com.shevchyk.driver.application.DriverLocationService
+import com.shevchyk.driver.infrastructure.http.DriverRoutes
+import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.app.routes.UserRoutes
 import com.shevchyk.repository.PersonRepository
 import com.shevchyk.auth.application.AuthService
@@ -26,7 +29,8 @@ object Application extends ZIOAppDefault:
 
   private val publicRoutes = healthRoutes ++ RideRoutes.routes ++ UserRoutes.routes ++ AuthRoutes.routes
 
-  private val rideRoutes = RideRoutes.authenticatedRoutes
+  private val rideRoutes   = RideRoutes.authenticatedRoutes
+  private val driverRoutes = DriverRoutes.authenticatedRoutes
 
   def run: ZIO[Any, Throwable, Nothing] = ZIO
     .serviceWithZIO[ServerConfig] { serverConfig =>
@@ -43,7 +47,7 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + notification + PostgreSQL repositories") *>
         ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
         Server.serve(
-          (publicRoutes ++ rideRoutes).handleError(err =>
+          (publicRoutes ++ rideRoutes ++ driverRoutes).handleError(err =>
             Response(Status.InternalServerError, body = Body.fromString(err.toString))
           )
         )
@@ -58,6 +62,8 @@ object Application extends ZIOAppDefault:
       TokenRepository.layer,
       RideRepository.layer,
       RideService.layer,
+      DriverLocationRepository.layer,
+      DriverLocationService.layer,
       JwtConfig.development,
       JwtService.live,
       AuthService.live

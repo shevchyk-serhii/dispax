@@ -56,6 +56,8 @@ class Ride {
   final String? flightStatus;
   final String? driverName;
   final Location? driverLocation;
+  final bool driverApproaching;
+  final int? driverDistanceMeters;
   final double? price;
 
   const Ride({
@@ -79,6 +81,8 @@ class Ride {
     this.flightStatus,
     this.driverName,
     this.driverLocation,
+    this.driverApproaching = false,
+    this.driverDistanceMeters,
     this.price,
   });
 
@@ -106,6 +110,8 @@ class Ride {
       driverLocation: json['driverLocation'] != null
         ? Location.fromJson(json['driverLocation'])
         : null,
+      driverApproaching: json['driverApproaching'] ?? false,
+      driverDistanceMeters: json['driverDistanceMeters'],
       price: json['price']?.toDouble(),
     );
   }
@@ -132,6 +138,8 @@ class Ride {
       'flightStatus': flightStatus,
       'driverName': driverName,
       'driverLocation': driverLocation?.toJson(),
+      'driverApproaching': driverApproaching,
+      'driverDistanceMeters': driverDistanceMeters,
       'price': price,
     };
   }
@@ -157,6 +165,8 @@ class Ride {
     String? flightStatus,
     String? driverName,
     Location? driverLocation,
+    bool? driverApproaching,
+    int? driverDistanceMeters,
     double? price,
   }) {
     return Ride(
@@ -180,6 +190,8 @@ class Ride {
       flightStatus: flightStatus ?? this.flightStatus,
       driverName: driverName ?? this.driverName,
       driverLocation: driverLocation ?? this.driverLocation,
+      driverApproaching: driverApproaching ?? this.driverApproaching,
+      driverDistanceMeters: driverDistanceMeters ?? this.driverDistanceMeters,
       price: price ?? this.price,
     );
   }

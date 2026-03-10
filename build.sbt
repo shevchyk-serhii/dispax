@@ -105,11 +105,12 @@ lazy val ride = (project in file("ride"))
 lazy val driver = (project in file("driver"))
   .dependsOn(
     core % "compile->compile;test->test",
+    auth % "compile->compile;test->test",
     ride % "compile->compile;test->test"
   )
   .settings(
     name := "oktopus-driver",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
   )
 
 lazy val notification = (project in file("notification"))

@@ -59,7 +59,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   override def create(ride: Ride): Task[Ride] = {
     sql"""
       INSERT INTO rides (
-        id, client_id, creator_id, driver_id,
+        id, client_id, creator_id, company_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
@@ -68,7 +68,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         final_price_amount, final_price_currency,
         notes, specifics
       ) VALUES (
-        ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.driverId.map(
+        ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.companyId.value}, ${ride.driverId.map(
         _.value
       )},
         ${ride.requestTime}, ${ride.scheduledTime}, ${ride.requestTime}, ${ride.startTime}, ${ride.endTime},
@@ -87,7 +87,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   override def findById(id: RideId): Task[Option[Ride]] = {
     sql"""
       SELECT
-        id, client_id, creator_id, driver_id,
+        id, client_id, creator_id, company_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
@@ -106,7 +106,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   override def findByStatus(status: RideStatus): Task[List[Ride]] = {
     sql"""
       SELECT
-        id, client_id, creator_id, driver_id,
+        id, client_id, creator_id, company_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
@@ -126,7 +126,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   override def findAll(): Task[List[Ride]] = {
     sql"""
       SELECT
-        id, client_id, creator_id, driver_id,
+        id, client_id, creator_id, company_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
@@ -145,7 +145,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   def findByClientId(clientId: PersonId): Task[List[Ride]] = {
     sql"""
       SELECT
-        id, client_id, creator_id, driver_id,
+        id, client_id, creator_id, company_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
@@ -165,7 +165,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   def findByDriverId(driverId: PersonId): Task[List[Ride]] = {
     sql"""
       SELECT
-        id, client_id, creator_id, driver_id,
+        id, client_id, creator_id, company_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
         from_address, from_lat, from_lng,
         to_address, to_lat, to_lng,
@@ -214,7 +214,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
           UUID,
           UUID,
           UUID,
-          Option[UUID],         // id, client_id, creator_id, driver_id
+          UUID,                 // id, client_id, creator_id, company_id
+          Option[UUID],         // driver_id
           Instant,
           Option[Instant],
           Instant,
@@ -238,6 +239,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
             id,
             clientId,
             creatorId,
+            companyId,
             driverId,
             pickupDateTime,
             scheduledTime,
@@ -261,6 +263,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
           id = RideId(id),
           clientId = PersonId(clientId),
           creatorId = PersonId(creatorId),
+          companyId = CompanyId(companyId),
           driverId = driverId.map(PersonId.apply),
           status = status,
           pickupLocation = Location(

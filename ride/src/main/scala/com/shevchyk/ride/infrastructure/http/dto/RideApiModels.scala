@@ -37,6 +37,8 @@ case class RideDto(
     flightStatus: Option[String] = None,
     driverName: Option[String] = None,
     driverLocation: Option[LocationDto] = None,
+    driverApproaching: Boolean = false,
+    driverDistanceMeters: Option[Int] = None,
     price: Option[Double] = None
 ) derives JsonCodec
 
@@ -107,39 +109,74 @@ object LocationDto:
 
 object RideDto:
 
-  def fromDomain(ride: Ride): RideDto =
+  private val APPROACHING_THRESHOLD_METERS = 500
+
+  def fromDomain(ride: Ride): RideDto = fromDomain(ride, driverLat = None, driverLng = None)
+
+  def fromDomain(ride: Ride, driverLat: Option[Double], driverLng: Option[Double]): RideDto =
     val (flightNumber, isAirportTransfer) =
       ride.specifics match {
         case Some(RideSpecifics.AirportTransfer(_, flight)) => (Some(flight), true)
         case None                                           => (None, false)
       }
 
+    val driverLoc =
+      for {
+        lat <- driverLat
+        lng <- driverLng
+      } yield LocationDto(address = "", latitude = Some(lat), longitude = Some(lng))
+
+    val distanceMeters =
+      for {
+        dLat    <- driverLat
+        dLng    <- driverLng
+        pickLat <- ride.pickupLocation.latitude
+        pickLng <- ride.pickupLocation.longitude
+      } yield distanceMetersHaversine(dLat, dLng, pickLat, pickLng)
+
+    val approaching =
+      distanceMeters.exists(_ <= APPROACHING_THRESHOLD_METERS) &&
+        (ride.status == RideStatus.Assigned || ride.status == RideStatus.InProgress)
+
     RideDto(
       id = ride.id.value.toString,
       clientId = ride.clientId.value.toString,
       creatorId = ride.creatorId.value.toString,
       driverId = ride.driverId.map(_.value.toString),
-      scheduleDayId = None,               // Not used in current domain model
+      scheduleDayId = None,
       pickupDateTime = ride.scheduledTime.getOrElse(ride.requestTime).toString,
       from = LocationDto.fromDomain(ride.pickupLocation),
       to = LocationDto.fromDomain(ride.dropoffLocation),
       status = ride.status.toString,
-      clientName = "Unknown Client",      // Would need to be fetched from PersonRepository
+      clientName = "Unknown Client",
       flightNumber = flightNumber,
       flightTime = ride.scheduledTime.map(_.toString),
       isAirportTransfer = isAirportTransfer,
-      isArrival = flightNumber.isDefined, // Simple heuristic
-      gate = None,                        // Would need additional data
-      terminal = None,                    // Would need additional data
-      flightStatus = None,                // Would need flight service integration
-      driverName = None,                  // Would need to be fetched from PersonRepository
-      driverLocation = None,              // Would need driver location service
+      isArrival = flightNumber.isDefined,
+      gate = None,
+      terminal = None,
+      flightStatus = None,
+      driverName = None,
+      driverLocation = driverLoc,
+      driverApproaching = approaching,
+      driverDistanceMeters = distanceMeters,
       price = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue)
     )
 
+  private def distanceMetersHaversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Int =
+    val R    = 6371000.0
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLng = Math.toRadians(lng2 - lng1)
+    val a    =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    val c    = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    (R * c).toInt
+
 object CreateRideApiRequest:
 
-  def toDomain(request: CreateRideApiRequest): CreateRideRequest =
+  def toDomain(request: CreateRideApiRequest, companyId: CompanyId): CreateRideRequest =
     // Create AirportTransfer if either isAirportTransfer is true OR flightNumber is provided
     val specifics =
       if (request.isAirportTransfer || request.flightNumber.isDefined) {
@@ -156,6 +193,7 @@ object CreateRideApiRequest:
 
     CreateRideRequest(
       clientId = PersonId(UUID.fromString(request.clientId)),
+      companyId = companyId,
       pickupLocation = LocationDto.toDomain(request.from),
       dropoffLocation = LocationDto.toDomain(request.to),
       scheduledTime = scala.util.Try(Instant.parse(request.pickupDateTime)).toOption,

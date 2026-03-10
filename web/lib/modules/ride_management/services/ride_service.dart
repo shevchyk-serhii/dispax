@@ -143,6 +143,30 @@ class RideService {
     }
   }
 
+  Future<void> updateDriverLocation(String driverId, double latitude, double longitude) async {
+    try {
+      await privateApiClient.put('/drivers/$driverId/location', {
+        'latitude': latitude,
+        'longitude': longitude,
+      });
+    } catch (e) {
+      // Silently fail - location updates are best-effort
+    }
+  }
+
+  Future<Map<String, dynamic>?> getDriverProximity(String rideId) async {
+    try {
+      final response = await privateApiClient.get('/rides/$rideId/driver-location');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   void dispose() {
     privateApiClient.dispose();
   }

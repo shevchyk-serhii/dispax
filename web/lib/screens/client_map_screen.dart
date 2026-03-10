@@ -5,6 +5,8 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
+import '../../modules/ride_management/services/ride_service.dart';
+import '../modules/core/models/location.dart' as loc;
 import '../modules/core/services/location_service.dart';
 import '../modules/core/services/mapbox_service.dart';
 import '../theme/app_theme.dart';
@@ -136,25 +138,62 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     }
   }
 
+  bool _driverApproachingShown = false;
+  final RideService _rideService = RideService();
+
   void _startDriverLocationUpdates() {
     _driverLocationTimer?.cancel();
 
-    if (_activeRide != null && MapboxService.isRideInProgress(_activeRide!)) {
+    if (_activeRide != null &&
+        (_activeRide!.status == RideStatus.assigned ||
+         _activeRide!.status == RideStatus.inProgress)) {
+      _updateDriverLocation(); // immediate first poll
       _driverLocationTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-
         _updateDriverLocation();
       });
     }
   }
 
-  void _updateDriverLocation() {
+  void _updateDriverLocation() async {
+    if (_activeRide == null) return;
 
-    if (_activeRide != null) {
+    final proximity = await _rideService.getDriverProximity(_activeRide!.id);
+    if (proximity == null || !mounted) return;
 
+    final driverLoc = proximity['driverLocation'];
+    final approaching = proximity['driverApproaching'] == true;
+    final distanceMeters = proximity['driverDistanceMeters'];
+
+    if (driverLoc != null &&
+        driverLoc['latitude'] != null &&
+        driverLoc['longitude'] != null) {
       setState(() {
-
+        _activeRide = _activeRide!.copyWith(
+          driverLocation: loc.Location(
+            address: '',
+            latitude: (driverLoc['latitude'] as num).toDouble(),
+            longitude: (driverLoc['longitude'] as num).toDouble(),
+          ),
+        );
         _updateMapMarkers();
       });
+    }
+
+    // Show "driver approaching" notification once
+    if (approaching && !_driverApproachingShown && mounted) {
+      _driverApproachingShown = true;
+      final distanceText = distanceMeters != null ? '~${distanceMeters}m' : '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Your driver is approaching! $distanceText',
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 8),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -168,7 +207,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           if (authState.isAuthenticated && authState.user != null) {
             final activeRide = state.rides.where((ride) =>
               ride.clientId == authState.user!.id &&
-              MapboxService.isRideInProgress(ride)
+              (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)
             ).firstOrNull;
 
             if (activeRide != _activeRide) {

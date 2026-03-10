@@ -51,6 +51,7 @@ final case class Ride(
     id: RideId,
     clientId: PersonId,
     creatorId: PersonId,
+    companyId: CompanyId,
     driverId: Option[PersonId] = None,
     status: RideStatus = RideStatus.Requested,
     pickupLocation: Location,
@@ -74,6 +75,7 @@ final case class Ride(
 
 final case class CreateRideRequest(
     clientId: PersonId,
+    companyId: CompanyId,
     pickupLocation: Location,
     dropoffLocation: Location,
     scheduledTime: Option[Instant] = None,

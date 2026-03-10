@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
+import '../../modules/ride_management/services/ride_service.dart';
 import '../modules/core/services/location_service.dart';
 import '../modules/core/services/mapbox_service.dart';
 import '../theme/app_theme.dart';
@@ -129,9 +130,29 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     }
   }
 
+  DateTime? _lastLocationSent;
+
   void _sendLocationUpdate() {
     if (_currentPosition == null) return;
+    if (_assignedRides.isEmpty) return;
 
+    // Throttle: don't send more than once per 10 seconds
+    final now = DateTime.now();
+    if (_lastLocationSent != null &&
+        now.difference(_lastLocationSent!).inSeconds < 10) {
+      return;
+    }
+    _lastLocationSent = now;
+
+    final authState = context.read<AuthBloc>().state;
+    if (!authState.isAuthenticated || authState.user == null) return;
+
+    final rideService = RideService();
+    rideService.updateDriverLocation(
+      authState.user!.id,
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+    );
   }
 
   void _updateRideStatus(Ride ride, RideStatus newStatus) {
