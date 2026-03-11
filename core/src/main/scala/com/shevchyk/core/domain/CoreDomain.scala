@@ -9,6 +9,7 @@ case class PersonId(value: UUID) derives JsonCodec
 case class CompanyId(value: UUID) derives JsonCodec
 case class RideId(value: UUID) derives JsonCodec
 case class TariffId(value: UUID) derives JsonCodec
+case class ScheduleDayId(value: UUID) derives JsonCodec
 
 object PersonId:
   def generate(): PersonId = PersonId(UuidCreator.getTimeOrderedEpoch())
@@ -21,6 +22,9 @@ object RideId:
 
 object TariffId:
   def generate(): TariffId = TariffId(UuidCreator.getTimeOrderedEpoch())
+
+object ScheduleDayId:
+  def generate(): ScheduleDayId = ScheduleDayId(UuidCreator.getTimeOrderedEpoch())
 
 final case class Location(
     address: String,

@@ -6,6 +6,9 @@ import com.shevchyk.ride.repository.{RideRepository, PostgresRideRepository}
 import com.shevchyk.driver.application.DriverLocationService
 import com.shevchyk.driver.infrastructure.http.DriverRoutes
 import com.shevchyk.driver.repository.DriverLocationRepository
+import com.shevchyk.schedule.infrastructure.http.ScheduleRoutes
+import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
+import com.shevchyk.schedule.repository.ScheduleDayRepository
 import com.shevchyk.app.routes.UserRoutes
 import com.shevchyk.repository.PersonRepository
 import com.shevchyk.auth.application.AuthService
@@ -29,8 +32,9 @@ object Application extends ZIOAppDefault:
 
   private val publicRoutes = healthRoutes ++ RideRoutes.routes ++ UserRoutes.routes ++ AuthRoutes.routes
 
-  private val rideRoutes   = RideRoutes.authenticatedRoutes
-  private val driverRoutes = DriverRoutes.authenticatedRoutes
+  private val rideRoutes     = RideRoutes.authenticatedRoutes
+  private val driverRoutes   = DriverRoutes.authenticatedRoutes
+  private val scheduleRoutes = ScheduleRoutes.authenticatedRoutes
 
   def run: ZIO[Any, Throwable, Nothing] = ZIO
     .serviceWithZIO[ServerConfig] { serverConfig =>
@@ -44,10 +48,11 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("  ✈️ /api/flights/{airport}/arrivals|departures - Flight info") *>
         ZIO.logInfo("  ⏰ /api/airport/timing - Airport timing calculation") *>
         ZIO.logInfo("  📊 /api/stats/rides - Ride statistics") *>
-        ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + notification + PostgreSQL repositories") *>
+        ZIO.logInfo("  📅 /api/schedules - Schedule management") *>
+        ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + schedule + notification + PostgreSQL repositories") *>
         ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
         Server.serve(
-          (publicRoutes ++ rideRoutes ++ driverRoutes).handleError(err =>
+          (publicRoutes ++ rideRoutes ++ driverRoutes ++ scheduleRoutes).handleError(err =>
             Response(Status.InternalServerError, body = Body.fromString(err.toString))
           )
         )
@@ -64,6 +69,8 @@ object Application extends ZIOAppDefault:
       RideService.layer,
       DriverLocationRepository.layer,
       DriverLocationService.layer,
+      ScheduleDayRepository.layer,
+      ScheduleSvc.layer,
       JwtConfig.development,
       JwtService.live,
       AuthService.live

@@ -113,6 +113,16 @@ lazy val driver = (project in file("driver"))
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
   )
 
+lazy val schedule = (project in file("schedule"))
+  .dependsOn(
+    core % "compile->compile;test->test",
+    auth % "compile->compile;test->test"
+  )
+  .settings(
+    name := "oktopus-schedule",
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
+  )
+
 lazy val notification = (project in file("notification"))
   .dependsOn(core)
   .settings(
@@ -121,8 +131,8 @@ lazy val notification = (project in file("notification"))
   )
 
 lazy val root = (project in file("."))
-  .aggregate(core, auth, ride, driver, notification)
-  .dependsOn(core, auth, ride, driver, notification)
+  .aggregate(core, auth, ride, driver, notification, schedule)
+  .dependsOn(core, auth, ride, driver, notification, schedule)
   .settings(
     name                             := "oktopus",
     Compile / scalaSource            := baseDirectory.value / "api" / "src" / "main" / "scala",
