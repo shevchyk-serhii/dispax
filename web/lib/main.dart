@@ -5,6 +5,7 @@ import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'modules/ride_management/services/ride_service.dart';
+import 'modules/schedule_management/services/schedule_service.dart';
 
 import 'services/test_data_service.dart';
 import 'widgets/common/splash_screen.dart';
@@ -43,33 +44,42 @@ class MyApp extends StatelessWidget {
                 rideService: RideService(apiClient: authBloc.apiClient),
               );
             },
-            child: MaterialApp(
-              title: 'Oktopus Taxi',
-              theme: AppTheme.theme,
-              home: BlocBuilder<AppStateBloc, AppState>(
-                builder: (context, appState) {
-                  if (!appState.isInitialized) {
-                    return SplashScreen(
-                      onInitializationComplete: () {
-                        context.read<AppStateBloc>().add(const AppInitialized());
+            child: BlocProvider<ScheduleBloc>(
+              key: ValueKey('schedule_${authState.isAuthenticated}'),
+              create: (context) {
+                final authBloc = context.read<AuthBloc>();
+                return ScheduleBloc(
+                  scheduleService: ScheduleService(apiClient: authBloc.apiClient),
+                );
+              },
+              child: MaterialApp(
+                title: 'Oktopus Taxi',
+                theme: AppTheme.theme,
+                home: BlocBuilder<AppStateBloc, AppState>(
+                  builder: (context, appState) {
+                    if (!appState.isInitialized) {
+                      return SplashScreen(
+                        onInitializationComplete: () {
+                          context.read<AppStateBloc>().add(const AppInitialized());
+                        },
+                      );
+                    }
+
+                    return BlocBuilder<AuthBloc, AuthState>(
+                      builder: (context, authState) {
+                        if (authState.isLoading) {
+                          return const Scaffold(
+                            body: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        return authState.isAuthenticated
+                            ? const DashboardScreen()
+                            : const LoginScreen();
                       },
                     );
-                  }
-
-                  return BlocBuilder<AuthBloc, AuthState>(
-                    builder: (context, authState) {
-                      if (authState.isLoading) {
-                        return const Scaffold(
-                          body: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-
-                      return authState.isAuthenticated
-                          ? const DashboardScreen()
-                          : const LoginScreen();
-                    },
-                  );
-                },
+                  },
+                ),
               ),
             ),
           );

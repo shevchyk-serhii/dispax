@@ -10,3 +10,7 @@ export 'ride/ride_state.dart';
 export 'create_ride_form/create_ride_form_bloc.dart';
 export 'create_ride_form/create_ride_form_event.dart';
 export 'create_ride_form/create_ride_form_state.dart';
+
+export 'schedule/schedule_bloc.dart';
+export 'schedule/schedule_event.dart';
+export 'schedule/schedule_state.dart';
