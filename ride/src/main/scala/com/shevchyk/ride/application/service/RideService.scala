@@ -27,6 +27,7 @@ trait RideService:
   def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride]
   def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]
   def getDriverRides(driverId: PersonId): IO[RideError, List[Ride]]
+  def getAllRides: IO[RideError, List[Ride]]
 
   def updateRideDetails(
       rideId: RideId,
@@ -34,6 +35,7 @@ trait RideService:
       userId: PersonId,
       userRole: PersonRole
   ): IO[RideError, Ride]
+  def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride]
 
 class RideServiceImpl(
     rideRepository: RideRepository,
@@ -246,11 +248,50 @@ class RideServiceImpl(
           .ignore
     } yield persistedRide
 
+  def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride] =
+    for {
+      ride <- getRideById(rideId)
+      _    <-
+        ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Assigned)).when(!ride.canBeReassigned).unit
+
+      driverOpt <- personRepository.findById(newDriverId).mapDatabaseError
+      driver    <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(newDriverId))
+
+      _ <-
+        ZIO
+          .fail(RideError.BusinessRuleViolation("driver_role", "Person is not a driver"))
+          .when(driver.role != PersonRole.Driver)
+          .unit
+      _ <-
+        ZIO
+          .fail(RideError.BusinessRuleViolation("company_isolation", "Driver belongs to a different company"))
+          .when(!driver.companyId.contains(ride.companyId))
+          .unit
+
+      updatedRide = ride
+                      .focus(_.driverId)
+                      .replace(Some(newDriverId))
+
+      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
+      _             <-
+        eventHub
+          .publish(
+            WebSocketEvent.RideAssigned(
+              rideId = persistedRide.id.value,
+              driverId = newDriverId.value,
+              companyId = persistedRide.companyId.value
+            )
+          )
+          .ignore
+    } yield persistedRide
+
   def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]] =
     rideRepository.findByStatus(status).mapDatabaseError
 
   def getDriverRides(driverId: PersonId): IO[RideError, List[Ride]] =
     rideRepository.findByDriverId(driverId).mapDatabaseError
+
+  def getAllRides: IO[RideError, List[Ride]] = rideRepository.findAll().mapDatabaseError
 
 object RideService:
 

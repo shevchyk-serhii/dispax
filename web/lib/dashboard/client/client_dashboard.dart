@@ -6,14 +6,12 @@ import '../../widgets/widgets.dart';
 import '../../modules/core/date_utils.dart';
 import '../../screens/flight_screen.dart';
 import '../../screens/ride_details_screen.dart';
+import '../../screens/settings_screen.dart';
 import 'dart:io';
 
 import '../../screens/simple_map_screen.dart';
 import '../../screens/android_map_screen.dart';
-import '../../theme/app_theme.dart';
 import '../../constants/app_colors.dart';
-import '../../constants/app_styles.dart';
-import '../../constants/app_dimensions.dart';
 import '../../modules/flight_management/widgets/airport_entry_timer.dart';
 import 'client_ride_history_screen.dart';
 
@@ -35,7 +33,7 @@ class ClientDashboard extends StatelessWidget {
               const ClientRideHistoryScreen(),
               Platform.isAndroid ? const AndroidMapScreen() : const SimpleMapScreen(),
               const FlightScreen(),
-              const ProfileTab(),
+              const SettingsScreen(),
             ],
           );
         },
@@ -67,8 +65,8 @@ class ClientDashboard extends StatelessWidget {
                 label: 'Flights',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
+                icon: Icon(Icons.settings),
+                label: 'Settings',
               ),
             ],
           );
@@ -342,37 +340,3 @@ class MyRidesTab extends StatelessWidget {
   }
 }
 
-class ProfileTab extends StatelessWidget {
-  const ProfileTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppTheme.buildGradientContainer(
-      colors: AppColors.clientGradient,
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(AppDimensions.paddingLarge),
-          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
-          decoration: AppTheme.glassDecoration,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.person, size: AppDimensions.iconLogo, color: AppColors.clientColor),
-              const SizedBox(height: AppDimensions.paddingMedium),
-              Text(
-                'Client Profile',
-                style: AppStyles.headlineMedium.copyWith(color: AppColors.textOnPrimary),
-              ),
-              const SizedBox(height: AppDimensions.paddingSmall),
-              Text(
-                'Personal information and account settings',
-                textAlign: TextAlign.center,
-                style: AppStyles.bodyLarge.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

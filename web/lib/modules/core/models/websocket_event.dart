@@ -8,6 +8,7 @@ class WebSocketEvent {
   final double? longitude;
   final String? locationType;
   final String companyId;
+  final Map<String, dynamic> data;
 
   const WebSocketEvent({
     required this.type,
@@ -19,6 +20,7 @@ class WebSocketEvent {
     this.longitude,
     this.locationType,
     required this.companyId,
+    this.data = const {},
   });
 
   factory WebSocketEvent.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class WebSocketEvent {
       longitude: json['longitude']?.toDouble(),
       locationType: json['locationType'],
       companyId: json['companyId'] ?? '',
+      data: json,
     );
   }
 
@@ -39,4 +42,5 @@ class WebSocketEvent {
   bool get isRideAssigned => type == 'RideAssigned';
   bool get isRideCreated => type == 'RideCreated';
   bool get isLocationUpdated => type == 'LocationUpdated';
+  bool get isChatMessage => type == 'ChatMessageSent';
 }

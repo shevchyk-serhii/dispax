@@ -23,7 +23,12 @@ class DriverSchedulePanel extends StatefulWidget {
   State<DriverSchedulePanel> createState() => _DriverSchedulePanelState();
 }
 
+enum _LoadFilter { all, available, moderate, busy }
+
 class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
+  String _searchQuery = '';
+  _LoadFilter _loadFilter = _LoadFilter.all;
+
   @override
   void initState() {
     super.initState();
@@ -46,27 +51,66 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
     widget.onDateChanged(widget.selectedDate.add(Duration(days: days)));
   }
 
+  String _driverLabel(ScheduleDay d) =>
+      d.notes?.isNotEmpty == true
+          ? d.notes!
+          : 'Driver ${d.driverId.length > 8 ? d.driverId.substring(0, 8) : d.driverId}...';
+
+  int _driverRideCount(ScheduleDay d, List<Ride> allRides) =>
+      allRides.where((r) =>
+          r.driverId == d.driverId &&
+          r.status != RideStatus.cancelled &&
+          r.status != RideStatus.completed).length;
+
+  List<ScheduleDay> _applyFilters(List<ScheduleDay> days, List<Ride> allRides) {
+    var filtered = days;
+
+    // Search by driver name
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      filtered = filtered.where((d) => _driverLabel(d).toLowerCase().contains(q)).toList();
+    }
+
+    // Filter by load
+    switch (_loadFilter) {
+      case _LoadFilter.available:
+        filtered = filtered.where((d) => _driverRideCount(d, allRides) == 0).toList();
+      case _LoadFilter.moderate:
+        filtered = filtered.where((d) {
+          final c = _driverRideCount(d, allRides);
+          return c >= 1 && c <= 2;
+        }).toList();
+      case _LoadFilter.busy:
+        filtered = filtered.where((d) => _driverRideCount(d, allRides) >= 3).toList();
+      case _LoadFilter.all:
+        break;
+    }
+
+    return filtered;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         _buildHeader(),
         _buildDateSelector(),
+        _buildFilterBar(),
         Expanded(
           child: BlocBuilder<ScheduleBloc, ScheduleState>(
-            builder: (context, state) {
-              if (state.isLoading) {
+            builder: (context, scheduleState) {
+              if (scheduleState.isLoading) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (state.hasError) {
+              if (scheduleState.hasError) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
                       const SizedBox(height: 12),
-                      Text(state.errorMessage ?? 'Error loading schedules'),
+                      Text(scheduleState.errorMessage ?? 'Error loading schedules'),
                       const SizedBox(height: 12),
                       ElevatedButton(onPressed: _loadSchedule, child: const Text('Retry')),
                     ],
@@ -74,7 +118,7 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                 );
               }
 
-              final days = state.scheduleDays
+              final allDays = scheduleState.scheduleDays
                   .where((d) =>
                     d.date.year == widget.selectedDate.year &&
                     d.date.month == widget.selectedDate.month &&
@@ -83,24 +127,96 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                   .toList()
                 ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
-              if (days.isEmpty) {
-                return _buildEmptyState();
-              }
+              return BlocBuilder<RideBloc, RideState>(
+                builder: (context, rideState) {
+                  final days = _applyFilters(allDays, rideState.rides);
 
-              return RefreshIndicator(
-                onRefresh: () async => _loadSchedule(),
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-                  itemCount: days.length,
-                  itemBuilder: (context, index) {
-                    return _DriverScheduleDropTarget(scheduleDay: days[index]);
-                  },
-                ),
+                  if (days.isEmpty) {
+                    return _buildEmptyState();
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async => _loadSchedule(),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                      itemCount: days.length,
+                      itemBuilder: (context, index) {
+                        return _DriverScheduleDropTarget(scheduleDay: days[index]);
+                      },
+                    ),
+                  );
+                },
               );
             },
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: Colors.white,
+      child: Column(
+        children: [
+          SizedBox(
+            height: 36,
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search driver name...',
+                hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                prefixIcon: const Icon(Icons.search, size: 18),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+              ),
+              style: const TextStyle(fontSize: 13),
+              onChanged: (v) => setState(() => _searchQuery = v),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _buildLoadChip('All', _LoadFilter.all, Colors.grey),
+              const SizedBox(width: 6),
+              _buildLoadChip('Available', _LoadFilter.available, Colors.green),
+              const SizedBox(width: 6),
+              _buildLoadChip('Moderate', _LoadFilter.moderate, Colors.orange),
+              const SizedBox(width: 6),
+              _buildLoadChip('Busy', _LoadFilter.busy, Colors.red),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadChip(String label, _LoadFilter filter, Color color) {
+    final selected = _loadFilter == filter;
+    return GestureDetector(
+      onTap: () => setState(() => _loadFilter = filter),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected ? color : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : Colors.grey.shade700,
+          ),
+        ),
+      ),
     );
   }
 
@@ -214,6 +330,154 @@ class _DriverScheduleDropTarget extends StatelessWidget {
   final ScheduleDay scheduleDay;
 
   const _DriverScheduleDropTarget({required this.scheduleDay});
+
+  void _showReassignSheet(BuildContext context, Ride ride) {
+    final scheduleState = context.read<ScheduleBloc>().state;
+    final rideState = context.read<RideBloc>().state;
+
+    final otherDrivers = scheduleState.scheduleDays
+        .where((d) => d.driverId != ride.driverId && d.status != ScheduleDayStatus.cancelled)
+        .toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    if (otherDrivers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No other drivers available for reassignment.')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (_, scrollController) => Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade700,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white54,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Reassign Ride',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${ride.clientName} — ${DateFormat('dd.MM HH:mm').format(ride.pickupDateTime)}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                padding: const EdgeInsets.all(12),
+                itemCount: otherDrivers.length,
+                itemBuilder: (_, index) {
+                  final schedule = otherDrivers[index];
+                  final driverRides = rideState.rides
+                      .where((r) => r.driverId == schedule.driverId &&
+                                    r.status != RideStatus.cancelled &&
+                                    r.status != RideStatus.completed)
+                      .toList();
+                  final conflicts = ConflictDetector.findConflicts(ride, driverRides);
+                  final rideCount = driverRides.length;
+                  final loadColor = rideCount == 0
+                      ? Colors.green
+                      : rideCount <= 2
+                          ? Colors.orange
+                          : Colors.red;
+
+                  final driverLabel = schedule.notes?.isNotEmpty == true
+                      ? schedule.notes!
+                      : 'Driver ${schedule.driverId.length > 8 ? schedule.driverId.substring(0, 8) : schedule.driverId}...';
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(
+                        color: conflicts.isNotEmpty ? Colors.red.withAlpha(100) : Colors.transparent,
+                      ),
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: loadColor.withAlpha(40),
+                        child: Icon(Icons.person, color: loadColor),
+                      ),
+                      title: Text(driverLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('$rideCount ride${rideCount == 1 ? '' : 's'} assigned'),
+                          if (conflicts.isNotEmpty)
+                            Text(
+                              '${conflicts.length} time conflict${conflicts.length == 1 ? '' : 's'}',
+                              style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                        ],
+                      ),
+                      trailing: const Icon(Icons.swap_horiz, size: 20),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Confirm Reassignment'),
+                            content: Text('Reassign ${ride.clientName} to $driverLabel?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  context.read<RideBloc>().add(RideReassignRequested(
+                                    rideId: ride.id,
+                                    newDriverId: schedule.driverId,
+                                  ));
+                                },
+                                child: const Text('Reassign', style: TextStyle(color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -335,6 +599,14 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            if (ride.status == RideStatus.assigned)
+                              GestureDetector(
+                                onTap: () => _showReassignSheet(context, ride),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 4),
+                                  child: Icon(Icons.swap_horiz, size: 16, color: Colors.orange.shade700),
+                                ),
+                              ),
                           ],
                         ),
                       )),

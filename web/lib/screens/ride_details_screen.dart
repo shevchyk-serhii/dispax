@@ -6,6 +6,7 @@ import '../modules/core/widgets/widgets.dart';
 import '../modules/ride_management/services/ride_service.dart';
 import '../modules/core/navigation_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'chat_screen.dart';
 
 class RideDetailsScreen extends StatefulWidget {
   final Ride ride;
@@ -76,6 +77,31 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       onMessage: () => _sendMessage(_currentRide.client.phone),
                     ),
                   const SizedBox(height: 16),
+
+                  if (_currentRide.status == RideStatus.assigned ||
+                      _currentRide.status == RideStatus.inProgress)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ChatScreen(ride: _currentRide),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.chat),
+                          label: const Text('Open Chat'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ),
+                      ),
+                    ),
 
                   RideActionsCard(
                     ride: _currentRide,

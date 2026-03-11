@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
+import '../../screens/settings_screen.dart';
 import 'widgets/pending_rides_panel.dart';
 import 'widgets/driver_schedule_panel.dart';
+import 'widgets/analytics_panel.dart';
 
 class DispatcherDashboard extends StatefulWidget {
   const DispatcherDashboard({super.key});
@@ -60,11 +62,14 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
             selectedDate: _selectedDate,
             onDateChanged: (date) => setState(() => _selectedDate = date),
           ),
+          const AnalyticsPanel(),
+          const SettingsScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _mobileTabIndex,
         onTap: (index) => setState(() => _mobileTabIndex = index),
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.pending_actions),
@@ -73,6 +78,14 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_view_day),
             label: 'Schedule',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: 'Analytics',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),

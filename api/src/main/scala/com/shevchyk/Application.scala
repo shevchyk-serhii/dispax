@@ -1,12 +1,13 @@
 package com.shevchyk
 
 import com.shevchyk.ride.infrastructure.http.RideRoutes
-import com.shevchyk.ride.application.service.{RideService, ClientLocationService}
+import com.shevchyk.ride.application.service.{RideService, ClientLocationService, ChatService}
 import com.shevchyk.ride.repository.{
   RideRepository,
   PostgresRideRepository,
   ClientLocationRepository,
-  PostgresClientLocationRepository
+  PostgresClientLocationRepository,
+  InMemoryChatMessageRepository
 }
 import com.shevchyk.driver.application.DriverLocationService
 import com.shevchyk.driver.infrastructure.http.DriverRoutes
@@ -45,6 +46,7 @@ object Application extends ZIOAppDefault:
   private val driverRoutes         = DriverRoutes.authenticatedRoutes
   private val scheduleRoutes       = ScheduleRoutes.authenticatedRoutes
   private val userRoutes           = UserRoutes.authenticatedRoutes
+  private val chatRoutes           = RideRoutes.chatRoutes
   private val wsRoutes             = WebSocketRoutes.wsRoutes
 
   def run: ZIO[Any, Throwable, Nothing] = ZIO
@@ -65,8 +67,14 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + schedule + notification + PostgreSQL repositories") *>
         ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
         Server.serve(
-          (publicRoutes ++ rideRoutes ++ clientLocationRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ wsRoutes)
-            .handleError(err => Response(Status.InternalServerError, body = Body.fromString(err.toString)))
+          (publicRoutes ++ rideRoutes ++ clientLocationRoutes ++ chatRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ wsRoutes)
+            .handleErrorCauseZIO { cause =>
+              ZIO
+                .logErrorCause("Unhandled server error", cause)
+                .as(
+                  Response(Status.InternalServerError, body = Body.fromString("Internal server error"))
+                )
+            }
         )
     }
     .provide(
@@ -86,6 +94,8 @@ object Application extends ZIOAppDefault:
       ScheduleSvc.layer,
       ClientLocationRepository.layer,
       ClientLocationService.layer,
+      InMemoryChatMessageRepository.layer,
+      ChatService.layer,
       EventHub.layer,
       InMemoryFcmTokenRepository.layer,
       FcmService.layer,

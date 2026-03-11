@@ -19,6 +19,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     on<RideStatusUpdateRequested>(onStatusUpdateRequested);
     on<RideLoadPendingRequested>(onLoadPendingRequested);
     on<RideAssignRequested>(onAssignRequested);
+    on<RideReassignRequested>(onReassignRequested);
   }
 
   Future<void> onLoadRequested(
@@ -189,6 +190,26 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       emit(state.copyWith(
         status: RideStateStatus.error,
         errorMessage: 'Failed to assign driver: $e',
+      ));
+    }
+  }
+
+  Future<void> onReassignRequested(
+    RideReassignRequested event,
+    Emitter<RideState> emit,
+  ) async {
+    emit(state.copyWith(status: RideStateStatus.assigning));
+
+    try {
+      final updatedRide = await privateRideService.reassignDriver(event.rideId, event.newDriverId);
+      final updatedRides = state.rides.map((ride) {
+        return ride.id == updatedRide.id ? updatedRide : ride;
+      }).toList();
+      emit(RideState.loaded(updatedRides));
+    } catch (e) {
+      emit(state.copyWith(
+        status: RideStateStatus.error,
+        errorMessage: 'Failed to reassign driver: $e',
       ));
     }
   }

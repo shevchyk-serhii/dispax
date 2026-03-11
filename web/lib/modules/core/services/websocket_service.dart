@@ -39,7 +39,10 @@ class WebSocketService {
 
     try {
       _socket?.close();
-      _socket = await WebSocket.connect(_wsUrl);
+      _socket = await WebSocket.connect(
+        _wsUrl,
+        headers: {'Authorization': 'Bearer $_token'},
+      );
       _reconnectAttempt = 0;
       debugPrint('WebSocket connected');
 

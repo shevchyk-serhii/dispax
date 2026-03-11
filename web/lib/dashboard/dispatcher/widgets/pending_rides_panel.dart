@@ -16,11 +16,60 @@ class PendingRidesPanel extends StatefulWidget {
   State<PendingRidesPanel> createState() => _PendingRidesPanelState();
 }
 
+enum _SortMode { timeAsc, timeDesc, client }
+enum _FilterMode { all, today, airport }
+
 class _PendingRidesPanelState extends State<PendingRidesPanel> {
+  _SortMode _sortMode = _SortMode.timeAsc;
+  _FilterMode _filterMode = _FilterMode.all;
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
     context.read<RideBloc>().add(const RideLoadPendingRequested());
+  }
+
+  List<Ride> _applyFiltersAndSort(List<Ride> rides) {
+    var filtered = rides.where((r) => r.status == RideStatus.requested).toList();
+
+    // Apply filter
+    switch (_filterMode) {
+      case _FilterMode.today:
+        final now = DateTime.now();
+        filtered = filtered.where((r) =>
+          r.pickupDateTime.year == now.year &&
+          r.pickupDateTime.month == now.month &&
+          r.pickupDateTime.day == now.day
+        ).toList();
+      case _FilterMode.airport:
+        filtered = filtered.where((r) => r.isAirportTransfer).toList();
+      case _FilterMode.all:
+        break;
+    }
+
+    // Apply search
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      filtered = filtered.where((r) =>
+        r.clientName.toLowerCase().contains(q) ||
+        r.from.address.toLowerCase().contains(q) ||
+        r.to.address.toLowerCase().contains(q) ||
+        (r.flightNumber?.toLowerCase().contains(q) ?? false)
+      ).toList();
+    }
+
+    // Apply sort
+    switch (_sortMode) {
+      case _SortMode.timeAsc:
+        filtered.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+      case _SortMode.timeDesc:
+        filtered.sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
+      case _SortMode.client:
+        filtered.sort((a, b) => a.clientName.compareTo(b.clientName));
+    }
+
+    return filtered;
   }
 
   @override
@@ -28,6 +77,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     return Column(
       children: [
         _buildHeader(),
+        _buildFilterBar(),
         Expanded(
           child: BlocBuilder<RideBloc, RideState>(
             builder: (context, state) {
@@ -35,10 +85,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final pendingRides = state.rides
-                  .where((r) => r.status == RideStatus.requested)
-                  .toList()
-                ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+              final pendingRides = _applyFiltersAndSort(state.rides);
 
               if (pendingRides.isEmpty) {
                 return _buildEmptyState();
@@ -79,6 +126,83 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: Colors.white,
+      child: Column(
+        children: [
+          // Search
+          SizedBox(
+            height: 36,
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search client, address...',
+                hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                prefixIcon: const Icon(Icons.search, size: 18),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+              ),
+              style: const TextStyle(fontSize: 13),
+              onChanged: (v) => setState(() => _searchQuery = v),
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Filter chips + sort
+          Row(
+            children: [
+              _buildFilterChip('All', _FilterMode.all),
+              const SizedBox(width: 6),
+              _buildFilterChip('Today', _FilterMode.today),
+              const SizedBox(width: 6),
+              _buildFilterChip('Airport', _FilterMode.airport),
+              const Spacer(),
+              PopupMenuButton<_SortMode>(
+                icon: Icon(Icons.sort, size: 20, color: Colors.grey.shade700),
+                tooltip: 'Sort',
+                onSelected: (mode) => setState(() => _sortMode = mode),
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: _SortMode.timeAsc, child: Text('Time (earliest first)', style: TextStyle(fontWeight: _sortMode == _SortMode.timeAsc ? FontWeight.bold : FontWeight.normal))),
+                  PopupMenuItem(value: _SortMode.timeDesc, child: Text('Time (latest first)', style: TextStyle(fontWeight: _sortMode == _SortMode.timeDesc ? FontWeight.bold : FontWeight.normal))),
+                  PopupMenuItem(value: _SortMode.client, child: Text('Client name', style: TextStyle(fontWeight: _sortMode == _SortMode.client ? FontWeight.bold : FontWeight.normal))),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, _FilterMode mode) {
+    final selected = _filterMode == mode;
+    return GestureDetector(
+      onTap: () => setState(() => _filterMode = mode),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : Colors.grey.shade700,
+          ),
+        ),
+      ),
     );
   }
 

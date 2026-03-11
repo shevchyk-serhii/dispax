@@ -14,15 +14,17 @@ final case class JwtConfig(
 
 object JwtConfig:
 
-  private val defaultDevSecret = "dev-secret-key-that-should-be-changed-in-production-must-be-at-least-256-bits"
-
   val live: ZLayer[Any, Nothing, JwtConfig] = ZLayer.succeed {
-    val secret = sys.env.getOrElse(
-      "JWT_SECRET",
-      if Environment.isProduction then
-        throw new RuntimeException("JWT_SECRET environment variable must be set in production")
-      else defaultDevSecret
-    )
+    val secret =
+      sys.env.get("JWT_SECRET") match
+        case Some(s)                          => s
+        case None if Environment.isProduction =>
+          throw new RuntimeException("JWT_SECRET environment variable must be set in production")
+        case None                             =>
+          throw new RuntimeException(
+            "JWT_SECRET environment variable must be set. " +
+              "For development, set it in your shell: export JWT_SECRET=<your-secret-at-least-256-bits>"
+          )
     JwtConfig(
       secret = secret,
       issuer = if Environment.isProduction then "oktopus" else "oktopus-dev",

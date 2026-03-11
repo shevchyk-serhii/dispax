@@ -14,3 +14,7 @@ export 'create_ride_form/create_ride_form_state.dart';
 export 'schedule/schedule_bloc.dart';
 export 'schedule/schedule_event.dart';
 export 'schedule/schedule_state.dart';
+
+export 'client/client_bloc.dart';
+export 'client/client_event.dart';
+export 'client/client_state.dart';

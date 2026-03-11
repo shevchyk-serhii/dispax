@@ -1,0 +1,147 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Oktopus Taxi",
+
+  "login": "Login",
+  "logout": "Logout",
+  "email": "Email",
+  "password": "Password",
+  "invalidCredentials": "Invalid email or password",
+
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "yesterday": "Yesterday",
+  "week": "Week",
+  "month": "Month",
+  "all": "All",
+
+  "myRides": "My Rides",
+  "history": "History",
+  "map": "Map",
+  "flights": "Flights",
+  "profile": "Profile",
+  "calendar": "Calendar",
+  "upcoming": "Upcoming",
+  "settings": "Settings",
+
+  "pendingRides": "Pending Rides",
+  "ridesAwaiting": "{count} ride(s) awaiting assignment",
+  "@ridesAwaiting": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "driverSchedules": "Driver Schedules",
+  "noDriversScheduled": "No drivers scheduled",
+  "noPendingRides": "No pending rides",
+  "allRidesAssigned": "All rides have been assigned",
+  "selectDriver": "Select Driver",
+  "reassignRide": "Reassign Ride",
+  "confirmReassignment": "Confirm Reassignment",
+  "reassign": "Reassign",
+  "assign": "Assign",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "retry": "Retry",
+  "save": "Save",
+  "delete": "Delete",
+
+  "searchClientAddress": "Search client, address...",
+  "searchDriverName": "Search driver name...",
+  "airport": "Airport",
+  "available": "Available",
+  "moderate": "Moderate",
+  "busy": "Busy",
+  "sortTimeEarliest": "Time (earliest first)",
+  "sortTimeLatest": "Time (latest first)",
+  "sortClientName": "Client name",
+  "nRidesAssigned": "{count} ride(s) assigned",
+  "@nRidesAssigned": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "timeConflicts": "{count} time conflict(s)",
+  "@timeConflicts": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "dropHereToAssign": "Drop here to assign",
+
+  "todaysHistory": "Today's History",
+  "thisWeeksHistory": "This Week's History",
+  "thisMonthsHistory": "This Month's History",
+  "allTimeHistory": "All Time History",
+  "rideHistory": "Ride History",
+  "myRideHistory": "My Ride History",
+  "noRideHistory": "No Ride History",
+  "completedRidesAppearHere": "Your completed rides will appear here",
+  "noRidesForPeriod": "No rides for this period",
+  "completed": "Completed",
+  "cancelled": "Cancelled",
+  "earned": "Earned",
+  "spent": "Spent",
+
+  "analytics": "Analytics",
+  "totalRides": "Total Rides",
+  "completedRides": "Completed",
+  "cancelledRides": "Cancelled",
+  "inProgressRides": "In Progress",
+  "requestedRides": "Requested",
+  "assignedRides": "Assigned",
+  "activeDrivers": "Active Drivers",
+  "totalClients": "Total Clients",
+  "todayRevenue": "Today Revenue",
+  "monthlyRevenue": "Monthly Revenue",
+  "avgAssignmentTime": "Avg. Assignment",
+  "cancellationRate": "Cancellation %",
+  "driverLoad": "Driver Load",
+  "dailyOverview": "Daily Overview",
+
+  "chat": "Chat",
+  "typeMessage": "Type a message...",
+  "send": "Send",
+  "chatUnavailable": "Chat is available only during active rides",
+  "noMessages": "No messages yet",
+
+  "settingsTitle": "Settings",
+  "accountSettings": "Account",
+  "changePassword": "Change Password",
+  "currentPassword": "Current Password",
+  "newPassword": "New Password",
+  "confirmNewPassword": "Confirm New Password",
+  "passwordChanged": "Password changed successfully",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "passwordTooShort": "Password must be at least 6 characters",
+
+  "notifications": "Notifications",
+  "pushNotifications": "Push Notifications",
+  "rideUpdates": "Ride Updates",
+  "chatMessages": "Chat Messages",
+
+  "appearance": "Appearance",
+  "theme": "Theme",
+  "lightTheme": "Light",
+  "darkTheme": "Dark",
+  "systemTheme": "System",
+
+  "language": "Language",
+  "english": "English",
+  "german": "Deutsch",
+  "ukrainian": "Ukrainian",
+
+  "editProfile": "Edit Profile",
+  "name": "Name",
+  "phone": "Phone",
+  "profileUpdated": "Profile updated successfully",
+
+  "security": "Security",
+  "biometricLogin": "Biometric Login",
+
+  "about": "About",
+  "version": "Version",
+  "privacyPolicy": "Privacy Policy",
+  "termsOfService": "Terms of Service"
+}

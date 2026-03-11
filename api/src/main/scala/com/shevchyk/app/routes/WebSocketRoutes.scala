@@ -11,10 +11,20 @@ object WebSocketRoutes:
 
   val wsRoutes: Routes[EventHub & JwtService, Nothing] = Routes(
     Method.GET / "api" / "ws" -> handler { (req: Request) =>
-      val tokenOpt = req.url.queryParams.queryParam("token")
+      val tokenFromHeader = req.header(Header.Authorization).collect { case Header.Authorization.Bearer(token) =>
+        token.value.asString
+      }
+      val tokenFromQuery  = req.url.queryParams.queryParam("token")
+      val tokenOpt        = tokenFromHeader.orElse(tokenFromQuery)
 
       tokenOpt match
-        case None        => ZIO.succeed(Response(Status.Unauthorized, body = Body.fromString("Missing token query parameter")))
+        case None        =>
+          ZIO.succeed(
+            Response(
+              Status.Unauthorized,
+              body = Body.fromString("Missing Authorization header or token query parameter")
+            )
+          )
         case Some(token) =>
           ZIO.serviceWithZIO[JwtService] { jwtService =>
             jwtService

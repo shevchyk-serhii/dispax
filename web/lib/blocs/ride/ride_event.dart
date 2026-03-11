@@ -90,3 +90,13 @@ class RideAssignRequested extends RideEvent {
   @override
   List<Object> get props => [rideId, driverId];
 }
+
+class RideReassignRequested extends RideEvent {
+  final String rideId;
+  final String newDriverId;
+
+  const RideReassignRequested({required this.rideId, required this.newDriverId});
+
+  @override
+  List<Object> get props => [rideId, newDriverId];
+}

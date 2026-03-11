@@ -116,6 +116,10 @@ case class AssignDriverRequest(
     driverId: String
 ) derives JsonCodec
 
+case class SendChatMessageRequest(
+    message: String
+) derives JsonCodec
+
 case class ValidationErrorsResponse(
     errors: List[ValidationFieldError]
 ) derives JsonCodec

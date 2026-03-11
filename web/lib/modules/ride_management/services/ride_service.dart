@@ -158,6 +158,23 @@ class RideService {
     }
   }
 
+  Future<Ride> reassignDriver(String rideId, String newDriverId) async {
+    try {
+      final response = await privateApiClient.put('/rides/$rideId/reassign-driver', {
+        'driverId': newDriverId,
+      });
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+        return Ride.fromJson(json);
+      } else {
+        throw ApiException('Failed to reassign driver: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw ApiException('Error reassigning driver: $e');
+    }
+  }
+
   Future<void> updateDriverLocation(String driverId, double latitude, double longitude) async {
     try {
       await privateApiClient.put('/drivers/$driverId/location', {

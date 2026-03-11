@@ -44,9 +44,11 @@ object DriverRoutes:
         } yield Response(Status.NoContent)).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      =>
-            ZIO.succeed(
-              Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"${ex.getMessage}"}"""))
-            )
+            ZIO
+              .logError(s"Unhandled error: ${ex.getMessage}")
+              .as(
+                Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+              )
         }
     },
     Method.GET / "api" / "rides" / string("rideId") / "driver-location" -> handler {
@@ -74,9 +76,11 @@ object DriverRoutes:
         } yield Response.json(proximity.toJson)).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      =>
-            ZIO.succeed(
-              Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"${ex.getMessage}"}"""))
-            )
+            ZIO
+              .logError(s"Unhandled error: ${ex.getMessage}")
+              .as(
+                Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+              )
         }
     }
   )

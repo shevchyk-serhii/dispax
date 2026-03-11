@@ -60,7 +60,7 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
 
       Jwt.encode(claim, config.secret, algorithm)
     }
-    .mapError(ex => JwtGenerationError(ex.getMessage))
+    .mapError(ex => JwtGenerationError(Option(ex.getMessage).getOrElse(ex.toString)))
 
   override def validateToken(token: String): ZIO[Any, JwtError, JwtPayload] =
     for {
@@ -68,9 +68,9 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
                    .attempt {
                      Jwt.decode(token, config.secret, Seq(algorithm))
                    }
-                   .mapError(ex => InvalidTokenError(ex.getMessage))
+                   .mapError(ex => InvalidTokenError(Option(ex.getMessage).getOrElse(ex.toString)))
 
-      claim <- ZIO.fromTry(decoded).mapError(ex => InvalidTokenError(ex.getMessage))
+      claim <- ZIO.fromTry(decoded).mapError(ex => InvalidTokenError(Option(ex.getMessage).getOrElse(ex.toString)))
 
       payload <- ZIO
                    .fromEither(
@@ -114,7 +114,7 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
                     .attempt {
                       Jwt.encode(claim, config.secret, algorithm)
                     }
-                    .mapError(ex => JwtGenerationError(ex.getMessage))
+                    .mapError(ex => JwtGenerationError(Option(ex.getMessage).getOrElse(ex.toString)))
 
     } yield newToken
 

@@ -41,7 +41,11 @@ object AuthenticatedHandlers {
     } yield result).catchAll {
       case response: Response => ZIO.succeed(response) // Auth errors return Response directly
       case ex: Throwable      =>
-        ZIO.succeed(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
+        ZIO
+          .logError(s"Unhandled error: ${ex.getMessage}")
+          .as(
+            Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+          )
     }
   }
 
@@ -80,7 +84,11 @@ object AuthenticatedHandlers {
     } yield result).catchAll {
       case response: Response => ZIO.succeed(response) // Auth errors return Response directly
       case ex: Throwable      =>
-        ZIO.succeed(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
+        ZIO
+          .logError(s"Unhandled error: ${ex.getMessage}")
+          .as(
+            Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+          )
     }
   }
 
@@ -115,7 +123,11 @@ object AuthenticatedHandlers {
     } yield result).catchAll {
       case response: Response => ZIO.succeed(response)
       case ex: Throwable      =>
-        ZIO.succeed(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"${ex.getMessage}"}""")))
+        ZIO
+          .logError(s"Unhandled error: ${ex.getMessage}")
+          .as(
+            Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+          )
     }
   }
 }

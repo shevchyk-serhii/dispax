@@ -11,8 +11,17 @@ import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
 import '../../utils/ride_status_styles.dart';
 
-class ClientRideHistoryScreen extends StatelessWidget {
+enum _ClientPeriodFilter { today, week, month, all }
+
+class ClientRideHistoryScreen extends StatefulWidget {
   const ClientRideHistoryScreen({super.key});
+
+  @override
+  State<ClientRideHistoryScreen> createState() => _ClientRideHistoryScreenState();
+}
+
+class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
+  _ClientPeriodFilter _period = _ClientPeriodFilter.all;
 
   void loadRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
@@ -22,10 +31,31 @@ class ClientRideHistoryScreen extends StatelessWidget {
   }
 
   List<Ride> getClientCompletedRides(List<Ride> rides, String? clientId) {
-    return rides.where((ride) =>
+    var filtered = rides.where((ride) =>
       ride.clientId.toString() == clientId &&
       (ride.status == RideStatus.completed || ride.status == RideStatus.cancelled)
-    ).toList()..sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
+    ).toList();
+
+    final now = DateTime.now();
+    switch (_period) {
+      case _ClientPeriodFilter.today:
+        filtered = filtered.where((r) =>
+          r.pickupDateTime.year == now.year &&
+          r.pickupDateTime.month == now.month &&
+          r.pickupDateTime.day == now.day
+        ).toList();
+      case _ClientPeriodFilter.week:
+        final weekStart = now.subtract(Duration(days: now.weekday - 1));
+        final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
+        filtered = filtered.where((r) => r.pickupDateTime.isAfter(start)).toList();
+      case _ClientPeriodFilter.month:
+        final start = DateTime(now.year, now.month, 1);
+        filtered = filtered.where((r) => r.pickupDateTime.isAfter(start)).toList();
+      case _ClientPeriodFilter.all:
+        break;
+    }
+
+    return filtered..sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
   }
 
   @override
@@ -58,7 +88,7 @@ class ClientRideHistoryScreen extends StatelessWidget {
             ? getClientCompletedRides(rideState.rides, authState.user!.id.toString())
             : <Ride>[];
 
-          if (completedRides.isEmpty) {
+          if (completedRides.isEmpty && _period == _ClientPeriodFilter.all) {
             return _buildEmptyState();
           }
 
@@ -103,11 +133,60 @@ class ClientRideHistoryScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildPeriodSelector() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingLarge),
+      child: Row(
+        children: [
+          _buildPeriodChip('Today', _ClientPeriodFilter.today),
+          const SizedBox(width: 8),
+          _buildPeriodChip('Week', _ClientPeriodFilter.week),
+          const SizedBox(width: 8),
+          _buildPeriodChip('Month', _ClientPeriodFilter.month),
+          const SizedBox(width: 8),
+          _buildPeriodChip('All', _ClientPeriodFilter.all),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodChip(String label, _ClientPeriodFilter filter) {
+    final selected = _period == filter;
+    return GestureDetector(
+      onTap: () => setState(() => _period = filter),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.clientColor : Colors.white.withAlpha(40),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? AppColors.clientColor : Colors.white.withAlpha(80),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : Colors.white.withAlpha(200),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _periodLabel() {
+    switch (_period) {
+      case _ClientPeriodFilter.today: return "Today's";
+      case _ClientPeriodFilter.week: return "This Week's";
+      case _ClientPeriodFilter.month: return "This Month's";
+      case _ClientPeriodFilter.all: return 'My Ride';
+    }
+  }
+
   Widget _buildRideHistory(List<Ride> rides) {
     return RefreshIndicator(
-      onRefresh: () async {
-
-      },
+      onRefresh: () async => loadRides(context),
       child: CustomScrollView(
         slivers: [
 
@@ -127,10 +206,12 @@ class ClientRideHistoryScreen extends StatelessWidget {
                         size: AppDimensions.iconMedium,
                       ),
                       const SizedBox(width: AppDimensions.paddingSmall),
-                      Text(
-                        'My Ride History',
-                        style: AppStyles.titleLarge.copyWith(
-                          color: AppColors.textOnPrimary,
+                      Expanded(
+                        child: Text(
+                          '${_periodLabel()} History',
+                          style: AppStyles.titleLarge.copyWith(
+                            color: AppColors.textOnPrimary,
+                          ),
                         ),
                       ),
                     ],
@@ -142,6 +223,23 @@ class ClientRideHistoryScreen extends StatelessWidget {
             ),
           ),
 
+          SliverToBoxAdapter(child: _buildPeriodSelector()),
+
+          const SliverToBoxAdapter(child: SizedBox(height: AppDimensions.paddingMedium)),
+
+          if (rides.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Text(
+                  'No rides for this period',
+                  style: AppStyles.bodyLarge.copyWith(
+                    color: AppColors.textOnPrimary.withAlpha(150),
+                  ),
+                ),
+              ),
+            )
+          else
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {

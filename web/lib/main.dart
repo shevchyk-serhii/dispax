@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+import 'l10n/app_localizations.dart';
 import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
 import 'dashboard/dashboard_screen.dart';
@@ -12,7 +14,6 @@ import 'modules/schedule_management/services/schedule_service.dart';
 import 'modules/core/services/websocket_service.dart';
 import 'modules/core/services/push_notification_service.dart';
 
-import 'services/test_data_service.dart';
 import 'widgets/common/splash_screen.dart';
 import 'blocs/app_state/app_state_bloc.dart';
 import 'blocs/app_state/app_state_event.dart';
@@ -131,6 +132,13 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
     return MaterialApp(
       title: 'Oktopus Taxi',
       theme: AppTheme.theme,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: BlocBuilder<AppStateBloc, AppState>(
         builder: (context, appState) {
           if (!appState.isInitialized) {

@@ -36,7 +36,10 @@ class ApiClient {
     if (Platform.isAndroid) {
       if (isPhysicalDevice) {
 
-        return 'http://192.168.0.188:8080/api';
+        const physicalDeviceUrl = String.fromEnvironment('PHYSICAL_DEVICE_URL');
+        return physicalDeviceUrl.isNotEmpty
+            ? physicalDeviceUrl
+            : 'http://10.0.2.2:8080/api';
       } else {
 
         return 'http://10.0.2.2:8080/api';
@@ -65,11 +68,7 @@ class ApiClient {
   Future<http.Response> get(String endpoint) async {
     try {
       var url = '$privateBaseUrl$endpoint';
-      debugPrint('🌐 Making GET request to: $url');
-      debugPrint('📱 Platform: ${Platform.operatingSystem}, Debug mode: $kDebugMode');
-      debugPrint('📱 Physical device: $isPhysicalDevice');
-      debugPrint('📱 Base URL: $privateBaseUrl');
-      debugPrint('📋 Headers: $privateHeaders');
+      debugPrint('🌐 GET $endpoint');
 
       final response = await privateClient
           .get(Uri.parse(url), headers: privateHeaders)
@@ -177,7 +176,6 @@ class ApiClient {
           .timeout(const Duration(seconds: 10));
 
       debugPrint('Login response status: ${response.statusCode}');
-      debugPrint('Login response body: ${response.body}');
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);

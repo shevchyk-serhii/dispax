@@ -36,5 +36,12 @@ object WebSocketEvent:
       companyId: UUID
   ) extends WebSocketEvent
 
+  final case class ChatMessageSent(
+      rideId: UUID,
+      senderId: UUID,
+      message: String,
+      companyId: UUID
+  ) extends WebSocketEvent
+
   given JsonEncoder[WebSocketEvent] = DeriveJsonEncoder.gen[WebSocketEvent]
   given JsonDecoder[WebSocketEvent] = DeriveJsonDecoder.gen[WebSocketEvent]

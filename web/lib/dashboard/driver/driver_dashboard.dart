@@ -4,6 +4,7 @@ import 'today_rides_screen.dart';
 import 'upcoming_rides_screen.dart';
 import 'ride_history_screen.dart';
 import '../../screens/flight_screen.dart';
+import '../../screens/settings_screen.dart';
 
 import '../../screens/simple_map_screen.dart';
 
@@ -27,6 +28,7 @@ class DriverDashboard extends StatelessWidget {
               const RideHistoryScreen(),
               const FlightScreen(),
               const SimpleMapScreen(),
+              const SettingsScreen(),
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
@@ -56,6 +58,10 @@ class DriverDashboard extends StatelessWidget {
               BottomNavigationBarItem(
                 icon: Icon(Icons.map),
                 label: 'Map',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.settings),
+                label: 'Settings',
               ),
             ],
           ),

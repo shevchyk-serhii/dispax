@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../blocs/blocs.dart';
+import '../../modules/core/services/user_service.dart';
 import '../../screens/create_ride_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
+import 'widgets/client_list_panel.dart';
+import 'widgets/secretary_reports_panel.dart';
 
 class SecretaryDashboard extends StatefulWidget {
   const SecretaryDashboard({super.key});
@@ -17,29 +22,37 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: const [_CreateRidesTab(), _ManageClientsTab(), _ReportsTab()],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle),
-            label: 'Create Ride',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Clients'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Reports',
-          ),
-        ],
+    return BlocProvider<ClientBloc>(
+      create: (context) {
+        final authBloc = context.read<AuthBloc>();
+        return ClientBloc(
+          userService: UserService(apiClient: authBloc.apiClient),
+        );
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: const [_CreateRidesTab(), ClientListPanel(), SecretaryReportsPanel()],
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.add_circle),
+              label: 'Create Ride',
+            ),
+            BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Clients'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.analytics),
+              label: 'Reports',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -166,76 +179,6 @@ class _CreateRidesTab extends StatelessWidget {
             style: AppStyles.labelSmall.copyWith(color: AppColors.textSecondary),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ManageClientsTab extends StatelessWidget {
-  const _ManageClientsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return AppTheme.buildGradientContainer(
-      colors: AppColors.secretaryGradient,
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(AppDimensions.paddingLarge),
-          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
-          decoration: AppTheme.glassDecoration,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.people, size: AppDimensions.iconLogo, color: AppColors.secretaryColor),
-              const SizedBox(height: AppDimensions.paddingMedium),
-              Text(
-                'Client Management',
-                style: AppStyles.headlineMedium.copyWith(color: AppColors.textOnPrimary),
-              ),
-              const SizedBox(height: AppDimensions.paddingSmall),
-              Text(
-                'Client list and account management',
-                textAlign: TextAlign.center,
-                style: AppStyles.bodyLarge.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReportsTab extends StatelessWidget {
-  const _ReportsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return AppTheme.buildGradientContainer(
-      colors: AppColors.secretaryGradient,
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(AppDimensions.paddingLarge),
-          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
-          decoration: AppTheme.glassDecoration,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.analytics, size: AppDimensions.iconLogo, color: AppColors.secretaryColor),
-              const SizedBox(height: AppDimensions.paddingMedium),
-              Text(
-                'Reports',
-                style: AppStyles.headlineMedium.copyWith(color: AppColors.textOnPrimary),
-              ),
-              const SizedBox(height: AppDimensions.paddingSmall),
-              Text(
-                'Statistics and ride reports',
-                textAlign: TextAlign.center,
-                style: AppStyles.bodyLarge.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

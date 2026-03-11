@@ -67,11 +67,12 @@ final case class Ride(
     specifics: Option[RideSpecifics] = None
 ):
 
-  def canBeAssigned: Boolean  = status == RideStatus.Requested
-  def canBeStarted: Boolean   = status == RideStatus.Assigned && driverId.isDefined
-  def canBeCompleted: Boolean = status == RideStatus.InProgress
-  def canBeCancelled: Boolean = status != RideStatus.Completed && status != RideStatus.Cancelled
-  def canBeEdited: Boolean    = status == RideStatus.Requested || status == RideStatus.Assigned
+  def canBeAssigned: Boolean   = status == RideStatus.Requested
+  def canBeReassigned: Boolean = status == RideStatus.Assigned && driverId.isDefined
+  def canBeStarted: Boolean    = status == RideStatus.Assigned && driverId.isDefined
+  def canBeCompleted: Boolean  = status == RideStatus.InProgress
+  def canBeCancelled: Boolean  = status != RideStatus.Completed && status != RideStatus.Cancelled
+  def canBeEdited: Boolean     = status == RideStatus.Requested || status == RideStatus.Assigned
 
   def isAirportTransfer: Boolean = specifics.exists(_.isInstanceOf[RideSpecifics.AirportTransfer])
 

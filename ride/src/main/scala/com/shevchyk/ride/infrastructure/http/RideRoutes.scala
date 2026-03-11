@@ -4,7 +4,7 @@ import com.shevchyk.auth.infrastructure.http.AuthenticatedHandlers.*
 import com.shevchyk.auth.middleware.{AuthMiddleware, AuthenticatedUser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{CompanyId, PersonId, PersonRole, RideId}
-import com.shevchyk.ride.application.service.{RideService, ClientLocationService}
+import com.shevchyk.ride.application.service.{RideService, ClientLocationService, ChatService}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.infrastructure.http.dto.{*, given}
 import com.shevchyk.ride.validation.{Validator, given}
@@ -19,18 +19,50 @@ object RideRoutes {
   import com.shevchyk.repository.PersonRepository
 
   private def handleRideError(ex: Throwable): UIO[Response] =
-    val (status, msg) =
-      ex match
-        case RideError.ValidationError(msg)              => (Status.BadRequest, s"Validation error: $msg")
-        case RideError.RideNotFound(id)                  => (Status.NotFound, s"Ride not found: ${id.value}")
-        case RideError.PersonNotFound(id)                => (Status.NotFound, s"Person not found: ${id.value}")
-        case RideError.DriverNotFound(id)                => (Status.NotFound, s"Driver not found: ${id.value}")
-        case RideError.UnauthorizedAccess(_, _)          => (Status.Forbidden, "Access denied")
-        case RideError.InvalidStatusTransition(from, to) => (Status.Conflict, s"Cannot transition from $from to $to")
-        case RideError.RideAlreadyAssigned(_, _)         => (Status.Conflict, "Ride already assigned")
-        case RideError.BusinessRuleViolation(_, msg)     => (Status.BadRequest, msg)
-        case other                                       => (Status.InternalServerError, Option(other.getMessage).getOrElse(other.toString))
-    ZIO.logError(s"Ride error: $msg").as(Response(status, body = Body.fromString(s"""{"error":"$msg"}""")))
+    ex match
+      case RideError.ValidationError(msg)              =>
+        val userMsg = s"Validation error: $msg"
+        ZIO
+          .logError(s"Ride error: $userMsg")
+          .as(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$userMsg"}""")))
+      case RideError.RideNotFound(id)                  =>
+        val userMsg = s"Ride not found: ${id.value}"
+        ZIO
+          .logError(s"Ride error: $userMsg")
+          .as(Response(Status.NotFound, body = Body.fromString(s"""{"error":"$userMsg"}""")))
+      case RideError.PersonNotFound(id)                =>
+        val userMsg = s"Person not found: ${id.value}"
+        ZIO
+          .logError(s"Ride error: $userMsg")
+          .as(Response(Status.NotFound, body = Body.fromString(s"""{"error":"$userMsg"}""")))
+      case RideError.DriverNotFound(id)                =>
+        val userMsg = s"Driver not found: ${id.value}"
+        ZIO
+          .logError(s"Ride error: $userMsg")
+          .as(Response(Status.NotFound, body = Body.fromString(s"""{"error":"$userMsg"}""")))
+      case RideError.UnauthorizedAccess(_, _)          =>
+        ZIO
+          .logError(s"Ride error: Access denied")
+          .as(Response(Status.Forbidden, body = Body.fromString(s"""{"error":"Access denied"}""")))
+      case RideError.InvalidStatusTransition(from, to) =>
+        val userMsg = s"Cannot transition from $from to $to"
+        ZIO
+          .logError(s"Ride error: $userMsg")
+          .as(Response(Status.Conflict, body = Body.fromString(s"""{"error":"$userMsg"}""")))
+      case RideError.RideAlreadyAssigned(_, _)         =>
+        ZIO
+          .logError(s"Ride error: Ride already assigned")
+          .as(Response(Status.Conflict, body = Body.fromString(s"""{"error":"Ride already assigned"}""")))
+      case RideError.BusinessRuleViolation(_, msg)     =>
+        ZIO
+          .logError(s"Ride error: $msg")
+          .as(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$msg"}""")))
+      case other                                       =>
+        ZIO
+          .logError(s"Unhandled error: ${Option(other.getMessage).getOrElse(other.toString)}")
+          .as(
+            Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+          )
 
   private def toPersonRole(role: String): PersonRole =
     role match
@@ -122,9 +154,28 @@ object RideRoutes {
         case ex: Throwable      => handleRideError(ex)
       }
     },
+    Method.PUT / "api" / "rides" / string("rideId") / "reassign-driver" -> handler {
+      (rideId: String, request: Request) =>
+        (for {
+          user       <- AuthMiddleware.authenticateRequest(request)
+          _          <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          bodyStr    <- request.body.asString
+          apiRequest <- ZIO
+                          .fromEither(bodyStr.fromJson[AssignDriverRequest])
+                          .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+          validated  <- apiRequest.validate
+          service    <- ZIO.service[RideService]
+          ride       <- service.reassignDriver(RideId(UUID.fromString(rideId)), PersonId(UUID.fromString(validated.driverId)))
+          rideDto     = RideDto.fromDomain(ride)
+        } yield Response.json(rideDto.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleRideError(ex)
+        }
+    },
     Method.PUT / "api" / "rides" / string("rideId")                     -> handler { (rideId: String, request: Request) =>
       (for {
         user       <- AuthMiddleware.authenticateRequest(request)
+        _          <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER", "SECRETARY")
         bodyStr    <- request.body.asString
         apiRequest <- ZIO
                         .fromEither(bodyStr.fromJson[UpdateRideDetailsApiRequest])
@@ -145,8 +196,13 @@ object RideRoutes {
     Method.GET / "api" / "rides" / string("rideId")                     -> handler { (rideId: String, request: Request) =>
       (for {
         user    <- AuthMiddleware.authenticateRequest(request)
+        _       <- AuthMiddleware.checkRole(user, "DRIVER", "CLIENT", "DISPATCHER", "SECRETARY")
         service <- ZIO.service[RideService]
         ride    <- service.getRideById(RideId(UUID.fromString(rideId)))
+        _       <-
+          ZIO.when(user.companyId.nonEmpty && ride.companyId.value != user.companyId.get)(
+            ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), RideId(UUID.fromString(rideId))))
+          )
         rideDto  = RideDto.fromDomain(ride)
       } yield Response.json(rideDto.toJson)).catchAll {
         case response: Response => ZIO.succeed(response)
@@ -157,8 +213,13 @@ object RideRoutes {
       (rideId: String, request: Request) =>
         (for {
           user        <- AuthMiddleware.authenticateRequest(request)
+          _           <- AuthMiddleware.checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
           service     <- ZIO.service[RideService]
           ride        <- service.getRideById(RideId(UUID.fromString(rideId)))
+          _           <-
+            ZIO.when(user.companyId.nonEmpty && ride.companyId.value != user.companyId.get)(
+              ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), RideId(UUID.fromString(rideId))))
+            )
           now          = java.time.Instant.now()
           flightTime   = ride.scheduledTime.getOrElse(now.plusSeconds(7200))
           travelTime   = 45
@@ -225,6 +286,39 @@ object RideRoutes {
         service   <- ZIO.service[ClientLocationService]
         locations <- service.getRideLocations(RideId(UUID.fromString(rideId)))
       } yield Response.json(locations.toJson)).catchAll {
+        case response: Response => ZIO.succeed(response)
+        case ex: Throwable      => handleRideError(ex)
+      }
+    }
+  )
+
+  val chatRoutes: Routes[ChatService & JwtService, Response] = Routes(
+    Method.POST / "api" / "rides" / string("rideId") / "chat" -> handler { (rideId: String, request: Request) =>
+      (for {
+        user    <- AuthMiddleware.authenticateRequest(request)
+        _       <- AuthMiddleware.checkRole(user, "CLIENT", "DRIVER")
+        bodyStr <- request.body.asString
+        chatReq <- ZIO
+                     .fromEither(bodyStr.fromJson[SendChatMessageRequest])
+                     .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+        service <- ZIO.service[ChatService]
+        msg     <- service.sendMessage(
+                     RideId(UUID.fromString(rideId)),
+                     PersonId(user.userId),
+                     chatReq.message
+                   )
+      } yield Response(Status.Created, body = Body.fromString(msg.toJson))).catchAll {
+        case response: Response => ZIO.succeed(response)
+        case ex: Throwable      => handleRideError(ex)
+      }
+    },
+    Method.GET / "api" / "rides" / string("rideId") / "chat"  -> handler { (rideId: String, request: Request) =>
+      (for {
+        user     <- AuthMiddleware.authenticateRequest(request)
+        _        <- AuthMiddleware.checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
+        service  <- ZIO.service[ChatService]
+        messages <- service.getMessages(RideId(UUID.fromString(rideId)))
+      } yield Response.json(messages.toJson)).catchAll {
         case response: Response => ZIO.succeed(response)
         case ex: Throwable      => handleRideError(ex)
       }
