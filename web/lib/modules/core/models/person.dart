@@ -9,6 +9,8 @@ class Person {
   final String? licenseNumber;
   final String? phone;
   final VehicleInfo? vehicleInfo;
+  final bool isVip;
+  final String? preferredDriverId;
 
   Person({
     required this.id,
@@ -19,6 +21,8 @@ class Person {
     this.licenseNumber,
     this.phone,
     this.vehicleInfo,
+    this.isVip = false,
+    this.preferredDriverId,
   });
 
   factory Person.fromJson(Map<String, dynamic> json) {
@@ -36,6 +40,8 @@ class Person {
       vehicleInfo: json['vehicleInfo'] != null
           ? VehicleInfo.fromJson(json['vehicleInfo'])
           : null,
+      isVip: json['isVip'] ?? false,
+      preferredDriverId: json['preferredDriverId'],
     );
   }
 
@@ -49,6 +55,8 @@ class Person {
       'licenseNumber': licenseNumber,
       'phone': phone,
       'vehicleInfo': vehicleInfo?.toJson(),
+      'isVip': isVip,
+      'preferredDriverId': preferredDriverId,
     };
   }
 

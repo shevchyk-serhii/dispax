@@ -27,6 +27,7 @@ trait RideService:
   def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride]
   def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]
   def getDriverRides(driverId: PersonId): IO[RideError, List[Ride]]
+  def getClientRides(clientId: PersonId): IO[RideError, List[Ride]]
   def getAllRides: IO[RideError, List[Ride]]
 
   def updateRideDetails(
@@ -290,6 +291,9 @@ class RideServiceImpl(
 
   def getDriverRides(driverId: PersonId): IO[RideError, List[Ride]] =
     rideRepository.findByDriverId(driverId).mapDatabaseError
+
+  def getClientRides(clientId: PersonId): IO[RideError, List[Ride]] =
+    rideRepository.findByClientId(clientId).mapDatabaseError
 
   def getAllRides: IO[RideError, List[Ride]] = rideRepository.findAll().mapDatabaseError
 

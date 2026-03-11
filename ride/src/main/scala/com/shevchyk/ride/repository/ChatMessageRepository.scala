@@ -10,6 +10,12 @@ trait ChatMessageRepository:
   def save(message: ChatMessage): Task[ChatMessage]
   def findByRideId(rideId: RideId): Task[List[ChatMessage]]
 
+object ChatMessageRepository:
+  import com.shevchyk.database.DatabaseConfig
+
+  val layer: ZLayer[Any, Throwable, ChatMessageRepository] =
+    DatabaseConfig.liveTransactorWithMigrations >>> PostgresChatMessageRepository.layer
+
 class InMemoryChatMessageRepository extends ChatMessageRepository:
   private val store = new ConcurrentHashMap[ChatMessageId, ChatMessage]()
 

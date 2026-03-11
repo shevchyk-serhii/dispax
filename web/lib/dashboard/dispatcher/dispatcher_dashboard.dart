@@ -4,6 +4,7 @@ import '../../screens/settings_screen.dart';
 import 'widgets/pending_rides_panel.dart';
 import 'widgets/driver_schedule_panel.dart';
 import 'widgets/analytics_panel.dart';
+import 'widgets/driver_earnings_panel.dart';
 
 class DispatcherDashboard extends StatefulWidget {
   const DispatcherDashboard({super.key});
@@ -63,6 +64,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
             onDateChanged: (date) => setState(() => _selectedDate = date),
           ),
           const AnalyticsPanel(),
+          const DriverEarningsPanel(),
           const SettingsScreen(),
         ],
       ),
@@ -82,6 +84,10 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           BottomNavigationBarItem(
             icon: Icon(Icons.analytics),
             label: 'Analytics',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.euro),
+            label: 'Earnings',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),

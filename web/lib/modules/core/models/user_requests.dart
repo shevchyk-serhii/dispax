@@ -28,11 +28,15 @@ class UpdateUserRequest {
   final String? name;
   final String? email;
   final String? phone;
+  final bool? isVip;
+  final String? preferredDriverId;
 
   const UpdateUserRequest({
     this.name,
     this.email,
     this.phone,
+    this.isVip,
+    this.preferredDriverId,
   });
 
   Map<String, dynamic> toJson() {
@@ -40,6 +44,8 @@ class UpdateUserRequest {
       if (name != null) 'name': name,
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
+      if (isVip != null) 'isVip': isVip,
+      if (preferredDriverId != null) 'preferredDriverId': preferredDriverId,
     };
   }
 }

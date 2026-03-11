@@ -46,7 +46,9 @@ final case class Person(
     role: PersonRole,
     companyId: Option[CompanyId] = None,
     licenseNumber: Option[String] = None,
-    phone: Option[String] = None
+    phone: Option[String] = None,
+    isVip: Boolean = false,
+    preferredDriverId: Option[PersonId] = None
 ) derives JsonCodec
 
 final case class Company(

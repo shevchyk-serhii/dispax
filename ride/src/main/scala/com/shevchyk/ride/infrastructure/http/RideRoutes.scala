@@ -115,6 +115,18 @@ object RideRoutes {
         case ex: Throwable      => handleRideError(ex)
       }
     },
+    Method.GET / "api" / "rides" / "client" / string("clientId")        -> handler { (clientId: String, request: Request) =>
+      (for {
+        user    <- AuthMiddleware.authenticateRequest(request)
+        _       <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY")
+        service <- ZIO.service[RideService]
+        rides   <- service.getClientRides(PersonId(UUID.fromString(clientId)))
+        rideDtos = rides.map(RideDto.fromDomain)
+      } yield Response.json(rideDtos.toJson)).catchAll {
+        case response: Response => ZIO.succeed(response)
+        case ex: Throwable      => handleRideError(ex)
+      }
+    },
     Method.PUT / "api" / "rides" / string("rideId") / "status"          -> handler { (rideId: String, request: Request) =>
       (for {
         user       <- AuthMiddleware.authenticateRequest(request)

@@ -126,6 +126,21 @@ class RideService {
     }
   }
 
+  Future<List<Ride>> getClientRides(String clientId) async {
+    try {
+      final response = await privateApiClient.get('/rides/client/$clientId');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList.map((json) => Ride.fromJson(json)).toList();
+      } else {
+        throw ApiException('Failed to fetch client rides: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw ApiException('Error fetching client rides: $e');
+    }
+  }
+
   Future<List<Ride>> getPendingRides() async {
     try {
       final response = await privateApiClient.get('/rides/pending');

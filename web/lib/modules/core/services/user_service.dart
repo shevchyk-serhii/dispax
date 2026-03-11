@@ -79,6 +79,20 @@ class UserService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getDriverStats() async {
+    try {
+      final response = await privateApiClient.get('/stats/drivers');
+
+      if (response.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+      } else {
+        throw ApiException('Failed to fetch driver stats: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw ApiException('Error fetching driver stats: $e');
+    }
+  }
+
   void dispose() {
     privateApiClient.dispose();
   }

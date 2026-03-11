@@ -14,11 +14,12 @@ import 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   late ApiClient privateApiClient;
   late BiometricService privateBiometricService;
-  
+  final FlutterSecureStorage privateSecureStorage;
+
   static const String privateUserKey = 'current_user';
   static const String privateTokenKey = 'auth_token';
-  
-  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+
+  static const FlutterSecureStorage _defaultSecureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(
       encryptedSharedPreferences: true,
     ),
@@ -27,9 +28,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     ),
   );
 
-  AuthBloc() : super(AuthState.initial()) {
-    privateApiClient = ApiClient();
-    privateBiometricService = BiometricService();
+  AuthBloc({
+    ApiClient? apiClient,
+    BiometricService? biometricService,
+    FlutterSecureStorage? secureStorage,
+  }) : privateSecureStorage = secureStorage ?? _defaultSecureStorage,
+       super(AuthState.initial()) {
+    privateApiClient = apiClient ?? ApiClient();
+    privateBiometricService = biometricService ?? BiometricService();
 
     on<AuthInitializeRequested>(_onInitializeRequested);
     on<AuthLoginRequested>(_onLoginRequested);
@@ -48,8 +54,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthState.loading());
 
     try {
-      final userData = await _secureStorage.read(key: privateUserKey);
-      final token = await _secureStorage.read(key: privateTokenKey);
+      final userData = await privateSecureStorage.read(key: privateUserKey);
+      final token = await privateSecureStorage.read(key: privateTokenKey);
 
       final biometricAvailable = await privateBiometricService.isAvailable;
       final biometricEnabled = await privateBiometricService.isBiometricEnabled;
@@ -96,11 +102,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
 
       if (loginResponse != null) {
-        await _secureStorage.write(
+        await privateSecureStorage.write(
           key: privateUserKey,
           value: jsonEncode(loginResponse['person']),
         );
-        await _secureStorage.write(key: privateTokenKey, value: loginResponse['token']);
+        await privateSecureStorage.write(key: privateTokenKey, value: loginResponse['token']);
 
         privateApiClient.setAuthToken(loginResponse['token']);
 
@@ -128,8 +134,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthState.loading());
 
     try {
-      await _secureStorage.delete(key: privateUserKey);
-      await _secureStorage.delete(key: privateTokenKey);
+      await privateSecureStorage.delete(key: privateUserKey);
+      await privateSecureStorage.delete(key: privateTokenKey);
 
       privateApiClient.clearAuthToken();
 
@@ -182,8 +188,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final result = await privateBiometricService.authenticate();
 
       if (result.isSuccess) {
-        final userData = await _secureStorage.read(key: privateUserKey);
-        final token = await _secureStorage.read(key: privateTokenKey);
+        final userData = await privateSecureStorage.read(key: privateUserKey);
+        final token = await privateSecureStorage.read(key: privateTokenKey);
 
         if (userData != null && token != null) {
           final userJson = jsonDecode(userData);

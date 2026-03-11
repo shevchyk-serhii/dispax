@@ -8,6 +8,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../utils/conflict_detector.dart';
 import 'assignment_dialog.dart';
+import 'bulk_reassign_dialog.dart';
 
 class DriverSchedulePanel extends StatefulWidget {
   final DateTime selectedDate;
@@ -558,17 +559,41 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                             ),
                           ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: loadColor.withAlpha(30),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: loadColor.withAlpha(100)),
-                          ),
-                          child: Text(
-                            '$rideCount ride${rideCount == 1 ? '' : 's'}',
-                            style: TextStyle(color: loadColor, fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (rideCount > 0)
+                              GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => BulkReassignDialog(
+                                      fromDriverId: scheduleDay.driverId,
+                                      fromDriverLabel: scheduleDay.notes?.isNotEmpty == true
+                                          ? scheduleDay.notes!
+                                          : 'Driver ${scheduleDay.driverId.length > 8 ? scheduleDay.driverId.substring(0, 8) : scheduleDay.driverId}...',
+                                      rides: driverRides,
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Icon(Icons.swap_horiz, size: 20, color: Colors.red.shade600),
+                                ),
+                              ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: loadColor.withAlpha(30),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: loadColor.withAlpha(100)),
+                              ),
+                              child: Text(
+                                '$rideCount ride${rideCount == 1 ? '' : 's'}',
+                                style: TextStyle(color: loadColor, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

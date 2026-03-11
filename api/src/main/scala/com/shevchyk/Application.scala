@@ -7,7 +7,7 @@ import com.shevchyk.ride.repository.{
   PostgresRideRepository,
   ClientLocationRepository,
   PostgresClientLocationRepository,
-  InMemoryChatMessageRepository
+  ChatMessageRepository
 }
 import com.shevchyk.driver.application.DriverLocationService
 import com.shevchyk.driver.infrastructure.http.DriverRoutes
@@ -94,7 +94,7 @@ object Application extends ZIOAppDefault:
       ScheduleSvc.layer,
       ClientLocationRepository.layer,
       ClientLocationService.layer,
-      InMemoryChatMessageRepository.layer,
+      ChatMessageRepository.layer,
       ChatService.layer,
       EventHub.layer,
       InMemoryFcmTokenRepository.layer,

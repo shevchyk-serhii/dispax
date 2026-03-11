@@ -121,15 +121,48 @@ object UserRoutes {
         }
       },
 
+      // GET /api/stats/drivers — per-driver earnings and ride stats (dispatcher)
+      Method.GET / "api" / "stats" / "drivers" -> authenticatedHandler[RideService & PersonRepository] { (user, _) =>
+        (for {
+          _           <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
+          rideService <- ZIO.service[RideService]
+          personRepo  <- ZIO.service[PersonRepository]
+          drivers     <- personRepo.findByRole(PersonRole.Driver)
+          allRides    <- rideService.getAllRides
+          driverStats  = drivers.map { driver =>
+                           val driverRides    = allRides.filter(_.driverId.contains(driver.id))
+                           val completedRides = driverRides.filter(_.status == RideStatus.Completed)
+                           val totalRides     = driverRides.length
+                           val completedCount = completedRides.length
+                           val cancelledCount = driverRides.count(_.status == RideStatus.Cancelled)
+                           val earnings       =
+                             completedRides
+                               .map(r => r.finalPrice.orElse(r.estimatedPrice).getOrElse(BigDecimal(0)))
+                               .sum
+                           s"""{
+                             "driverId":"${driver.id.value}",
+                             "driverName":"${driver.name}",
+                             "totalRides":$totalRides,
+                             "completedRides":$completedCount,
+                             "cancelledRides":$cancelledCount,
+                             "earnings":$earnings
+                           }"""
+                         }
+          json         = driverStats.mkString("[", ",", "]")
+        } yield Response.json(json)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleAuthError(ex)
+        }
+      },
+
       // PUT /api/users/change-password — change own password (any role)
       Method.PUT / "api" / "users" / "change-password" -> authenticatedJsonHandler[AuthService, ChangePasswordRequest] {
         (user, changeReq) =>
           (for {
             service <- ZIO.service[AuthService]
             _       <- service.changePassword(user.userId, changeReq)
-          } yield Response(Status.NoContent)).catchAll {
-            case response: Response => ZIO.succeed(response)
-            case ex: Throwable      => handleAuthError(ex)
+          } yield Response(Status.NoContent)).catchAll { ex =>
+            handleAuthError(ex)
           }
       },
 

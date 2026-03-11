@@ -8,6 +8,7 @@ import '../../../modules/core/models/user_requests.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../constants/app_styles.dart';
+import 'client_detail_screen.dart';
 
 class ClientListPanel extends StatefulWidget {
   const ClientListPanel({super.key});
@@ -152,16 +153,35 @@ class _ClientListPanelState extends State<ClientListPanel> {
       margin: const EdgeInsets.only(bottom: AppDimensions.paddingSmall),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: AppColors.secretaryColor.withAlpha(30),
-          child: Text(
-            client.name.isNotEmpty ? client.name[0].toUpperCase() : '?',
-            style: TextStyle(
-              color: AppColors.secretaryColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          backgroundColor: client.isVip
+              ? Colors.amber.shade100
+              : AppColors.secretaryColor.withAlpha(30),
+          child: client.isVip
+              ? const Icon(Icons.star, color: Colors.amber, size: 20)
+              : Text(
+                  client.name.isNotEmpty ? client.name[0].toUpperCase() : '?',
+                  style: TextStyle(
+                    color: AppColors.secretaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
-        title: Text(client.name, style: AppStyles.titleSmall),
+        title: Row(
+          children: [
+            Flexible(child: Text(client.name, style: AppStyles.titleSmall)),
+            if (client.isVip) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text('VIP', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.amber)),
+              ),
+            ],
+          ],
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -186,7 +206,13 @@ class _ClientListPanelState extends State<ClientListPanel> {
             ),
           ],
         ),
-        onTap: () => _showEditClientDialog(context, client),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ClientDetailScreen(client: client),
+            ),
+          );
+        },
       ),
     );
   }
