@@ -1,6 +1,7 @@
 package com.shevchyk.ride.application
 
 import com.shevchyk.core.domain.*
+import com.shevchyk.core.application.EventHub
 import com.shevchyk.repository.{PersonRepository, MockPersonRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.RideService
@@ -59,7 +60,7 @@ object RideServiceSpec extends ZIOSpecDefault {
     clientPerson.id -> clientPerson
   ))
 
-  val standardLayers = InMemoryRideRepository.layer ++ ZLayer.succeed[PersonRepository](testPersonRepo) >>> RideService.layer
+  val standardLayers = InMemoryRideRepository.layer ++ ZLayer.succeed[PersonRepository](testPersonRepo) ++ EventHub.layer >>> RideService.layer
 
   def spec = suite("RideService")(
     suite("getRideById")(
@@ -71,6 +72,7 @@ object RideServiceSpec extends ZIOSpecDefault {
       }.provide(
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
+        EventHub.layer,
         RideService.layer
       )
     ),
@@ -98,6 +100,7 @@ object RideServiceSpec extends ZIOSpecDefault {
       }.provide(
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
+        EventHub.layer,
         RideService.layer
       ),
 
@@ -123,6 +126,7 @@ object RideServiceSpec extends ZIOSpecDefault {
       }.provide(
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
+        EventHub.layer,
         RideService.layer
       )
     ),

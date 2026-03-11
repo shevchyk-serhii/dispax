@@ -1,7 +1,7 @@
 package com.shevchyk.ride.infrastructure.http.dto
 
 import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId}
-import com.shevchyk.ride.domain.{Ride, CreateRideRequest, RideSpecifics, RideStatus}
+import com.shevchyk.ride.domain.{Ride, CreateRideRequest, RideSpecifics, RideStatus, UpdateRideDetailsRequest}
 import zio.json.*
 import java.time.Instant
 import java.util.UUID
@@ -78,6 +78,38 @@ case class RideStatusUpdateRequest(
 case class RideStatusUpdateResponse(
     success: Boolean,
     status: String
+) derives JsonCodec
+
+case class UpdateRideDetailsApiRequest(
+    from: Option[LocationDto] = None,
+    to: Option[LocationDto] = None,
+    pickupDateTime: Option[String] = None,
+    notes: Option[String] = None,
+    flightNumber: Option[String] = None,
+    isAirportTransfer: Option[Boolean] = None
+) derives JsonCodec
+
+object UpdateRideDetailsApiRequest:
+
+  def toDomain(request: UpdateRideDetailsApiRequest): UpdateRideDetailsRequest =
+    import com.shevchyk.ride.domain.{UpdateRideDetailsRequest, RideSpecifics}
+    val specifics =
+      for {
+        isAirport <- request.isAirportTransfer if isAirport
+        flight    <- request.flightNumber
+      } yield RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = flight)
+
+    UpdateRideDetailsRequest(
+      pickupLocation = request.from.map(LocationDto.toDomain),
+      dropoffLocation = request.to.map(LocationDto.toDomain),
+      scheduledTime = request.pickupDateTime.flatMap(dt => scala.util.Try(Instant.parse(dt)).toOption),
+      notes = request.notes,
+      specifics = specifics
+    )
+
+case class UpdateClientLocationRequest(
+    latitude: Double,
+    longitude: Double
 ) derives JsonCodec
 
 case class AssignDriverRequest(

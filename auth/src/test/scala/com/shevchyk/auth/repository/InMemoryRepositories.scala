@@ -3,9 +3,8 @@ package com.shevchyk.auth.repository
 import com.shevchyk.auth.domain.*
 import zio.*
 import java.time.Instant
-import java.security.MessageDigest
-import java.util.Base64
 import java.util.UUID
+import org.mindrot.jbcrypt.BCrypt
 
 object TestUUIDs:
   val testUserId1 = UUID.fromString("11111111-1111-1111-1111-111111111111")
@@ -17,9 +16,7 @@ final class InMemoryUserRepository extends UserRepository:
   import TestUUIDs._
 
   private def hashPassword(password: String): String =
-    val digest = MessageDigest.getInstance("SHA-256")
-    val hash   = digest.digest(password.getBytes("UTF-8"))
-    Base64.getEncoder.encodeToString(hash)
+    BCrypt.hashpw(password, BCrypt.gensalt(12))
 
   private val users = Unsafe.unsafe { implicit u =>
     Runtime.default.unsafe

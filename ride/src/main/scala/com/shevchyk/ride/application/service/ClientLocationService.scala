@@ -1,0 +1,89 @@
+package com.shevchyk.ride.application.service
+
+import com.shevchyk.core.domain.{PersonId, RideId, DriverLocationProvider, WebSocketEvent}
+import com.shevchyk.core.application.EventHub
+import com.shevchyk.ride.domain.{ClientLocation, RideError}
+import com.shevchyk.ride.domain.RepositoryExtensions.*
+import com.shevchyk.ride.repository.{ClientLocationRepository, RideRepository}
+import zio.*
+import zio.json.*
+import java.time.Instant
+
+final case class LocationWithTimestamp(
+    latitude: Double,
+    longitude: Double,
+    updatedAt: Instant
+) derives JsonCodec
+
+final case class RideLocationsResponse(
+    driverLocation: Option[LocationWithTimestamp],
+    clientLocation: Option[LocationWithTimestamp]
+) derives JsonCodec
+
+trait ClientLocationService:
+  def updateClientLocation(rideId: RideId, clientId: PersonId, latitude: Double, longitude: Double): IO[RideError, Unit]
+  def getRideLocations(rideId: RideId): IO[RideError, RideLocationsResponse]
+
+class ClientLocationServiceImpl(
+    clientLocationRepository: ClientLocationRepository,
+    rideRepository: RideRepository,
+    driverLocationProvider: DriverLocationProvider,
+    eventHub: EventHub
+) extends ClientLocationService:
+
+  override def updateClientLocation(
+      rideId: RideId,
+      clientId: PersonId,
+      latitude: Double,
+      longitude: Double
+  ): IO[RideError, Unit] =
+    for {
+      ride <- rideRepository.findById(rideId).mapDatabaseError.flatMap {
+                case Some(r) => ZIO.succeed(r)
+                case None    => ZIO.fail(RideError.RideNotFound(rideId))
+              }
+      _    <-
+        ZIO
+          .fail(RideError.UnauthorizedAccess(clientId, rideId))
+          .when(ride.clientId != clientId)
+          .unit
+      _    <- clientLocationRepository.updateLocation(rideId, clientId, latitude, longitude).mapDatabaseError
+      _    <-
+        eventHub
+          .publish(
+            WebSocketEvent.LocationUpdated(
+              rideId = Some(rideId.value),
+              userId = clientId.value,
+              latitude = latitude,
+              longitude = longitude,
+              locationType = "client",
+              companyId = ride.companyId.value
+            )
+          )
+          .ignore
+    } yield ()
+
+  override def getRideLocations(rideId: RideId): IO[RideError, RideLocationsResponse] =
+    for {
+      ride      <- rideRepository.findById(rideId).mapDatabaseError.flatMap {
+                     case Some(r) => ZIO.succeed(r)
+                     case None    => ZIO.fail(RideError.RideNotFound(rideId))
+                   }
+      clientLoc <- clientLocationRepository.getLocation(rideId).mapDatabaseError
+      driverLoc <-
+        ride.driverId match
+          case Some(driverId) =>
+            driverLocationProvider
+              .getDriverLocation(driverId)
+              .mapError(ex => RideError.DatabaseError(ex))
+          case None           => ZIO.succeed(None)
+    } yield RideLocationsResponse(
+      driverLocation = driverLoc.map { case (lat, lng, ts) => LocationWithTimestamp(lat, lng, ts) },
+      clientLocation = clientLoc.map(cl => LocationWithTimestamp(cl.latitude, cl.longitude, cl.updatedAt))
+    )
+
+object ClientLocationService:
+
+  val layer
+      : ZLayer[ClientLocationRepository & RideRepository & DriverLocationProvider & EventHub, Nothing, ClientLocationService] =
+    ZLayer.fromFunction(ClientLocationServiceImpl.apply)

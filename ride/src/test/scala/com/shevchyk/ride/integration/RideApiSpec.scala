@@ -3,6 +3,7 @@ package com.shevchyk.ride.integration
 import com.shevchyk.auth.domain.UserRole
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{PersonId, RideId}
+import com.shevchyk.core.application.EventHub
 import com.shevchyk.repository.PersonRepository
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.infrastructure.http.dto.RideDto
@@ -242,6 +243,7 @@ object RideApiSpec extends ZIOSpecDefault {
   ).provide(
     InMemoryRideRepository.layer,
     InMemoryPersonRepository.layer,
+    EventHub.layer,
     RideService.layer,
     TestJWT.testJwtService
   ) @@ TestAspect.sequential

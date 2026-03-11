@@ -16,8 +16,18 @@ class CalendarScheduleScreen extends StatelessWidget {
   static final ValueNotifier<CalendarViewType> viewTypeNotifier =
       ValueNotifier<CalendarViewType>(CalendarViewType.month);
 
+  void _loadDriverSchedule(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    if (authState.isAuthenticated && authState.user != null) {
+      context.read<ScheduleBloc>().add(
+        ScheduleLoadDriverSchedule(driverId: authState.user!.id),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    _loadDriverSchedule(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Schedule'),

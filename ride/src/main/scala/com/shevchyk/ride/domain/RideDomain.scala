@@ -70,6 +70,8 @@ final case class Ride(
   def canBeAssigned: Boolean  = status == RideStatus.Requested
   def canBeStarted: Boolean   = status == RideStatus.Assigned && driverId.isDefined
   def canBeCompleted: Boolean = status == RideStatus.InProgress
+  def canBeCancelled: Boolean = status != RideStatus.Completed && status != RideStatus.Cancelled
+  def canBeEdited: Boolean    = status == RideStatus.Requested || status == RideStatus.Assigned
 
   def isAirportTransfer: Boolean = specifics.exists(_.isInstanceOf[RideSpecifics.AirportTransfer])
 
@@ -86,6 +88,14 @@ final case class CreateRideRequest(
 final case class UpdateRideStatusRequest(
     status: RideStatus,
     notes: Option[String] = None
+)
+
+final case class UpdateRideDetailsRequest(
+    pickupLocation: Option[Location] = None,
+    dropoffLocation: Option[Location] = None,
+    scheduledTime: Option[Instant] = None,
+    notes: Option[String] = None,
+    specifics: Option[RideSpecifics] = None
 )
 
 enum RideError extends Throwable:

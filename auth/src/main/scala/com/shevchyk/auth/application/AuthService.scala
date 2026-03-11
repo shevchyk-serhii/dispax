@@ -8,9 +8,8 @@ import com.shevchyk.core.domain.PersonId
 import zio.*
 import zio.json.*
 import java.time.Instant
-import java.security.MessageDigest
-import java.util.Base64
 import java.util.UUID
+import org.mindrot.jbcrypt.BCrypt
 import com.github.f4b6a3.uuid.UuidCreator
 
 trait AuthService:
@@ -33,10 +32,9 @@ class AuthServiceImpl(
     personRepository: PersonRepository
 ) extends AuthService:
 
-  private def hashPassword(password: String): String =
-    val digest = MessageDigest.getInstance("SHA-256")
-    val hash   = digest.digest(password.getBytes("UTF-8"))
-    Base64.getEncoder.encodeToString(hash)
+  private def hashPassword(password: String): String = BCrypt.hashpw(password, BCrypt.gensalt(12))
+
+  private def checkPassword(password: String, hash: String): Boolean = BCrypt.checkpw(password, hash)
 
   private def validateEmail(email: String): Boolean = email.contains("@") && email.length > 5
 
@@ -46,7 +44,7 @@ class AuthServiceImpl(
     for
       userOpt   <- userRepository.findByEmail(email).orElseFail(UserNotFound(email))
       user      <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(email))
-      _         <- ZIO.when(user.passwordHash != hashPassword(password))(ZIO.fail(InvalidCredentials(email)))
+      _         <- ZIO.when(!checkPassword(password, user.passwordHash))(ZIO.fail(InvalidCredentials(email)))
       personOpt <- personRepository.findById(PersonId(user.id)).orElseFail(UserNotFound(email))
       companyId  = personOpt.flatMap(_.companyId.map(_.value))
       token     <- jwtService.generateToken(user, companyId).mapError(identity)
@@ -131,7 +129,7 @@ class AuthServiceImpl(
       userOpt    <- userRepository.findById(userId).orElseFail(UserNotFound(s"ID: $userId"))
       user       <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(s"ID: $userId"))
       _          <-
-        ZIO.when(user.passwordHash != hashPassword(request.currentPassword))(ZIO.fail(InvalidCredentials(user.email)))
+        ZIO.when(!checkPassword(request.currentPassword, user.passwordHash))(ZIO.fail(InvalidCredentials(user.email)))
       updatedUser = user.copy(passwordHash = hashPassword(request.newPassword), updatedAt = Some(Instant.now()))
       _          <- userRepository.update(updatedUser).orElseFail(ValidationError("user", "Failed to update password"))
     yield ()

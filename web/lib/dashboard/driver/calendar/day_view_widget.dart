@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
+import '../../../modules/schedule_management/models/schedule_day.dart';
+import '../../../modules/core/navigation_utils.dart';
+import '../../../modules/core/navigation_helper.dart';
 
 class DayViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -18,37 +22,138 @@ class DayViewWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) {
-        final dayRides = getRidesForDay(rideState.rides, selectedDay);
-        dayRides.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+        return BlocBuilder<ScheduleBloc, ScheduleState>(
+          builder: (context, scheduleState) {
+            final dayRides = getRidesForDay(rideState.rides, selectedDay);
+            dayRides.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
 
-        return Container(
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withAlpha(25),
-                spreadRadius: 1,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+            final daySchedules = scheduleState.scheduleDays.where((d) =>
+              d.date.year == selectedDay.year &&
+              d.date.month == selectedDay.month &&
+              d.date.day == selectedDay.day &&
+              d.status != ScheduleDayStatus.cancelled
+            ).toList();
+
+            return Container(
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withAlpha(25),
+                    spreadRadius: 1,
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              buildDayHeader(),
-              Expanded(
-                child: dayRides.isEmpty
-                    ? buildEmptyState()
-                    : buildRidesList(dayRides),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  buildDayHeader(),
+                  if (daySchedules.isNotEmpty)
+                    _buildScheduleBlock(daySchedules),
+                  Expanded(
+                    child: dayRides.isEmpty
+                        ? buildEmptyState()
+                        : buildRidesList(dayRides),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
+  }
+
+  Widget _buildScheduleBlock(List<ScheduleDay> schedules) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.work_outline, size: 16, color: Colors.blue.shade700),
+              const SizedBox(width: 6),
+              Text(
+                'Work Schedule',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...schedules.map((s) => Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Row(
+              children: [
+                Icon(Icons.schedule, size: 14, color: Colors.blue.shade600),
+                const SizedBox(width: 6),
+                Text(
+                  '${s.startTime} — ${s.endTime}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.blue.shade800,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _scheduleStatusColor(s.status).withAlpha(30),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    s.status.displayName,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: _scheduleStatusColor(s.status),
+                    ),
+                  ),
+                ),
+                if (s.notes != null && s.notes!.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      s.notes!,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Color _scheduleStatusColor(ScheduleDayStatus status) {
+    switch (status) {
+      case ScheduleDayStatus.scheduled:
+        return Colors.blue;
+      case ScheduleDayStatus.active:
+        return Colors.green;
+      case ScheduleDayStatus.completed:
+        return Colors.grey;
+      case ScheduleDayStatus.cancelled:
+        return Colors.red;
+    }
   }
 
   Widget buildDayHeader() {
@@ -247,52 +352,152 @@ class DayViewWidget extends StatelessWidget {
   }
 
   Widget buildActionButtons(Ride ride) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Flexible(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.phone, color: Colors.green),
-                tooltip: 'Call Client',
-              ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.navigation, color: Colors.blue),
-                tooltip: 'Start Navigation',
-              ),
-            ],
-          ),
-        ),
-        if (ride.status == RideStatus.assigned)
+    return Builder(
+      builder: (context) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
           Flexible(
-            child: ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.play_arrow, size: 18),
-              label: const Text('Start'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          )
-        else if (ride.status == RideStatus.inProgress)
-          Flexible(
-            child: ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Complete'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  onPressed: () => _handleCall(context, ride),
+                  icon: const Icon(Icons.phone, color: Colors.green),
+                  tooltip: 'Call Client',
+                ),
+                IconButton(
+                  onPressed: () => _handleNavigation(context, ride),
+                  icon: const Icon(Icons.navigation, color: Colors.blue),
+                  tooltip: 'Start Navigation',
+                ),
+              ],
             ),
           ),
-      ],
+          if (ride.status == RideStatus.assigned)
+            Flexible(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  context.read<RideBloc>().add(RideStatusUpdateRequested(
+                    rideId: ride.id,
+                    status: RideStatus.inProgress,
+                  ));
+                },
+                icon: const Icon(Icons.play_arrow, size: 18),
+                label: const Text('Start'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            )
+          else if (ride.status == RideStatus.inProgress)
+            Flexible(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  context.read<RideBloc>().add(RideStatusUpdateRequested(
+                    rideId: ride.id,
+                    status: RideStatus.completed,
+                  ));
+                },
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text('Complete'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
+  }
+
+  void _handleCall(BuildContext context, Ride ride) {
+    final phone = ride.client.phone;
+    if (phone == null || phone.isEmpty) {
+      NavigationHelper.showSnackBar(context, 'No phone number available', isError: true);
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.phone, color: Colors.green),
+              title: const Text('Call'),
+              subtitle: Text(phone),
+              onTap: () {
+                Navigator.pop(ctx);
+                launchUrl(Uri.parse('tel:$phone'));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.message, color: Colors.blue),
+              title: const Text('SMS'),
+              subtitle: Text(phone),
+              onTap: () {
+                Navigator.pop(ctx);
+                launchUrl(Uri.parse('sms:$phone'));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleNavigation(BuildContext context, Ride ride) async {
+    try {
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (ctx) => SimpleDialog(
+          title: const Text('Navigate to'),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, 'pickup'),
+              child: ListTile(
+                leading: const Icon(Icons.location_on, color: Colors.green),
+                title: Text(ride.from.address),
+                subtitle: const Text('Pickup location'),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, 'dropoff'),
+              child: ListTile(
+                leading: const Icon(Icons.flag, color: Colors.red),
+                title: Text(ride.to.address),
+                subtitle: const Text('Drop-off location'),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, 'waze_pickup'),
+              child: const ListTile(
+                leading: Icon(Icons.map, color: Colors.teal),
+                title: Text('Open in Waze'),
+                subtitle: Text('Pickup location'),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (choice == null) return;
+
+      switch (choice) {
+        case 'pickup':
+          await NavigationUtils.openGoogleMapsNavigation(ride.from);
+        case 'dropoff':
+          await NavigationUtils.openGoogleMapsNavigation(ride.to);
+        case 'waze_pickup':
+          await NavigationUtils.openWazeNavigation(ride.from);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        NavigationHelper.showSnackBar(context, 'Could not open navigation: $e', isError: true);
+      }
+    }
   }
 
   Widget buildTravelTimeIndicator(int minutes) {

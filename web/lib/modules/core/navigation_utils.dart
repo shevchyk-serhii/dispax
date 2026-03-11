@@ -77,6 +77,27 @@ class NavigationUtils {
     }
   }
 
+  static Future<void> openWazeNavigation(Location destination) async {
+    String wazeUrl;
+    if (destination.latitude != null && destination.longitude != null) {
+      wazeUrl = 'https://waze.com/ul?ll=${destination.latitude},${destination.longitude}&navigate=yes';
+    } else {
+      final address = Uri.encodeComponent(destination.address);
+      wazeUrl = 'https://waze.com/ul?q=$address&navigate=yes';
+    }
+
+    try {
+      final Uri uri = Uri.parse(wazeUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Could not launch Waze';
+      }
+    } catch (e) {
+      throw 'Could not open Waze: $e';
+    }
+  }
+
   static Future<void> openGoogleMapsLocation(Location location) async {
     final address = Uri.encodeComponent(location.address);
 
@@ -110,9 +131,10 @@ class NavigationUtils {
   }
 
   static Future<Person?> navigateToDriverSelection(BuildContext context) async {
-
+    // Driver selection is now handled by the dispatcher dashboard's
+    // tap-to-assign flow (pending_rides_panel.dart _showDriverSelectionSheet)
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Driver selection functionality not yet implemented')),
+      const SnackBar(content: Text('Use the Dispatcher Dashboard to assign drivers')),
     );
     return null;
   }

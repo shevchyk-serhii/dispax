@@ -17,6 +17,8 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     on<RideUpdated>(onRideUpdated);
     on<RideCreateRequested>(onCreateRequested);
     on<RideStatusUpdateRequested>(onStatusUpdateRequested);
+    on<RideLoadPendingRequested>(onLoadPendingRequested);
+    on<RideAssignRequested>(onAssignRequested);
   }
 
   Future<void> onLoadRequested(
@@ -153,6 +155,40 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       emit(state.copyWith(
         status: RideStateStatus.error,
         errorMessage: 'Failed to update ride status: $e',
+      ));
+    }
+  }
+
+  Future<void> onLoadPendingRequested(
+    RideLoadPendingRequested event,
+    Emitter<RideState> emit,
+  ) async {
+    emit(state.copyWith(status: RideStateStatus.loading));
+
+    try {
+      final rides = await privateRideService.getPendingRides();
+      emit(RideState.loaded(rides));
+    } catch (e) {
+      emit(RideState.error('Failed to load pending rides: $e'));
+    }
+  }
+
+  Future<void> onAssignRequested(
+    RideAssignRequested event,
+    Emitter<RideState> emit,
+  ) async {
+    emit(state.copyWith(status: RideStateStatus.assigning));
+
+    try {
+      final updatedRide = await privateRideService.assignDriver(event.rideId, event.driverId);
+      final updatedRides = state.rides.map((ride) {
+        return ride.id == updatedRide.id ? updatedRide : ride;
+      }).toList();
+      emit(RideState.loaded(updatedRides));
+    } catch (e) {
+      emit(state.copyWith(
+        status: RideStateStatus.error,
+        errorMessage: 'Failed to assign driver: $e',
       ));
     }
   }

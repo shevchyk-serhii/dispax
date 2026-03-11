@@ -29,7 +29,8 @@ object DriverRoutes:
     Method.PUT / "api" / "drivers" / string("driverId") / "location"    -> handler {
       (driverId: String, request: Request) =>
         (for {
-          _       <- AuthMiddleware.authenticateRequest(request)
+          user    <- AuthMiddleware.authenticateRequest(request)
+          _       <- AuthMiddleware.checkRoleOrOwner(user, UUID.fromString(driverId), "DISPATCHER")
           bodyStr <- request.body.asString
           locReq  <- ZIO
                        .fromEither(bodyStr.fromJson[UpdateLocationRequest])

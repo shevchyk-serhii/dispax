@@ -68,3 +68,21 @@ object AuthMiddleware:
       else
         ZIO.unit
   }
+
+  /**
+   * Check that the user has one of the allowed roles
+   */
+  def checkRole(user: AuthenticatedUser, roles: String*): IO[Response, Unit] =
+    if (roles.contains(user.role))
+      ZIO.unit
+    else
+      ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Insufficient permissions"}""")))
+
+  /**
+   * Check that the user has one of the allowed roles OR is the resource owner
+   */
+  def checkRoleOrOwner(user: AuthenticatedUser, resourceOwnerId: UUID, roles: String*): IO[Response, Unit] =
+    if (roles.contains(user.role) || user.userId == resourceOwnerId)
+      ZIO.unit
+    else
+      ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Access denied"}""")))

@@ -87,21 +87,31 @@ class RideQuickActions extends StatelessWidget {
       final choice = await showDialog<String>(
         context: context,
         builder: (BuildContext context) {
-          return AlertDialog(
+          return SimpleDialog(
             title: const Text('Navigate to'),
-            content: const Text('Choose navigation destination:'),
-            actions: [
-              TextButton(
+            children: [
+              SimpleDialogOption(
                 onPressed: () => Navigator.of(context).pop('pickup'),
-                child: Text('Pickup: ${ride.from.address}'),
+                child: ListTile(
+                  leading: const Icon(Icons.location_on, color: Colors.green),
+                  title: Text(ride.from.address),
+                  subtitle: const Text('Google Maps — Pickup'),
+                ),
               ),
-              TextButton(
+              SimpleDialogOption(
                 onPressed: () => Navigator.of(context).pop('destination'),
-                child: Text('Drop-off: ${ride.to.address}'),
+                child: ListTile(
+                  leading: const Icon(Icons.flag, color: Colors.red),
+                  title: Text(ride.to.address),
+                  subtitle: const Text('Google Maps — Drop-off'),
+                ),
               ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(null),
-                child: const Text('Cancel'),
+              SimpleDialogOption(
+                onPressed: () => Navigator.of(context).pop('waze_pickup'),
+                child: const ListTile(
+                  leading: Icon(Icons.map, color: Colors.teal),
+                  title: Text('Waze — Pickup'),
+                ),
               ),
             ],
           );
@@ -110,10 +120,13 @@ class RideQuickActions extends StatelessWidget {
 
       if (choice == null) return;
 
-      if (choice == 'pickup') {
-        await NavigationUtils.openGoogleMapsNavigation(ride.from);
-      } else if (choice == 'destination') {
-        await NavigationUtils.openGoogleMapsNavigation(ride.to);
+      switch (choice) {
+        case 'pickup':
+          await NavigationUtils.openGoogleMapsNavigation(ride.from);
+        case 'destination':
+          await NavigationUtils.openGoogleMapsNavigation(ride.to);
+        case 'waze_pickup':
+          await NavigationUtils.openWazeNavigation(ride.from);
       }
 
       if (context.mounted) {

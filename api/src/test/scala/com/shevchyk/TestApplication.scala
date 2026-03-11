@@ -1,6 +1,6 @@
 package com.shevchyk
 
-import com.shevchyk.ride.infrastructure.http.RideRoutes
+import com.shevchyk.ride.infrastructure.http.MockRideRoutes
 import com.shevchyk.app.routes.UserRoutes
 import com.shevchyk.repository.PersonRepository
 import com.shevchyk.auth.repository.{UserRepository, TokenRepository}
@@ -15,18 +15,15 @@ import zio.*
 import zio.http.*
 import zio.logging.backend.SLF4J
 import java.time.Instant
-import java.security.MessageDigest
-import java.util.Base64
 import java.util.UUID
+import org.mindrot.jbcrypt.BCrypt
 
 object TestApplication extends ZIOAppDefault:
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   private def hashPassword(password: String): String =
-    val digest = MessageDigest.getInstance("SHA-256")
-    val hash = digest.digest(password.getBytes("UTF-8"))
-    Base64.getEncoder.encodeToString(hash)
+    BCrypt.hashpw(password, BCrypt.gensalt(12))
 
   private val testPersonId1 = PersonId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
   private val testCompanyId1 = CompanyId(UUID.fromString("10101010-1010-1010-1010-101010101010"))
@@ -98,7 +95,7 @@ object TestApplication extends ZIOAppDefault:
     ) ++
       AuthRoutes.routes ++
       UserRoutes.routes ++
-      RideRoutes.routes
+      MockRideRoutes.routes
 
   def run: ZIO[ZIOAppArgs, Any, Any] =
     ZIO.serviceWithZIO[ServerConfig] { serverConfig =>
@@ -121,7 +118,7 @@ object TestApplication extends ZIOAppDefault:
         ZLayer.succeed[PersonRepository](mockPersonRepository),
         ZLayer.succeed[UserRepository](mockUserRepository),
         ZLayer.succeed[TokenRepository](mockTokenRepository),
-        JwtConfig.development,
+        JwtConfig.live,
         JwtService.live,
         AuthService.live,
       )

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../modules/ride_management/models/ride.dart';
+import '../../modules/ride_management/models/create_ride_request.dart';
 import '../modules/core/models/location.dart';
 import '../modules/ride_management/services/mock_ride_service.dart';
 import '../modules/ride_management/widgets/location_field.dart';
@@ -175,23 +176,31 @@ class _RideFormScreenState extends State<RideFormScreen> {
 
       final to = Location(address: _toAddressController.text);
 
-      final ride = Ride(
-        id: widget.ride?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        clientId: widget.ride?.clientId ?? '',
-        creatorId: widget.ride?.creatorId ?? '',
-        driverId: widget.ride?.driverId,
-        companyId: widget.ride?.companyId ?? '',
-        scheduleDayId: widget.ride?.scheduleDayId,
-        pickupDateTime: _selectedDateTime!,
-        from: from,
-        to: to,
-        status: widget.ride?.status ?? RideStatus.requested,
-        clientName: widget.ride?.clientName ?? 'Unknown Client',
-      );
-
       if (widget.ride == null) {
-        await _rideService.createRide(ride);
+        final request = CreateRideRequest(
+          clientId: '',
+          creatorId: '',
+          companyId: '',
+          pickupDateTime: _selectedDateTime!,
+          from: from,
+          to: to,
+          clientName: 'Unknown Client',
+        );
+        await _rideService.createRide(request);
       } else {
+        final ride = Ride(
+          id: widget.ride!.id,
+          clientId: widget.ride!.clientId,
+          creatorId: widget.ride!.creatorId,
+          driverId: widget.ride!.driverId,
+          companyId: widget.ride!.companyId,
+          scheduleDayId: widget.ride!.scheduleDayId,
+          pickupDateTime: _selectedDateTime!,
+          from: from,
+          to: to,
+          status: widget.ride!.status,
+          clientName: widget.ride!.clientName,
+        );
         await _rideService.updateRide(widget.ride!.id, ride);
       }
 

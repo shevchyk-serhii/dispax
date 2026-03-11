@@ -17,5 +17,5 @@ object TestLayers {
     ZLayer.succeed(MockPersonRepository())
 
   val authServiceWithInMemory: ZLayer[Any, Nothing, AuthService] =
-    (inMemoryUserRepository ++ inMemoryTokenRepository ++ mockPersonRepository ++ (JwtConfig.development >>> JwtService.live)) >>> AuthService.live
+    (inMemoryUserRepository ++ inMemoryTokenRepository ++ mockPersonRepository ++ (JwtConfig.live >>> JwtService.live)) >>> AuthService.live
 }

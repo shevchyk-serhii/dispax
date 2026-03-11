@@ -5,6 +5,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../modules/core/models/person.dart';
 import '../../modules/core/services/api_client.dart';
 import '../../modules/core/services/location_clarification_service.dart';
+import '../../modules/core/services/websocket_service.dart';
+import '../../modules/core/services/push_notification_service.dart';
 import '../../modules/auth/services/biometric_service.dart';
 import '../../modules/flight_management/services/airport_timing_service.dart';
 import 'auth_event.dart';
@@ -62,6 +64,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         AirportTimingService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
 
+        /// Connect WebSocket for real-time updates
+        WebSocketService.instance.connect(token);
+
         emit(AuthState.authenticated(user,
           biometricEnabled: biometricEnabled,
           biometricAvailable: biometricAvailable,
@@ -104,6 +109,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         AirportTimingService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
 
+        /// Connect WebSocket for real-time updates
+        WebSocketService.instance.connect(loginResponse['token']);
+
         final user = Person.fromJson(loginResponse['person']);
         emit(AuthState.authenticated(user));
       } else {
@@ -125,6 +133,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _secureStorage.delete(key: privateTokenKey);
 
       privateApiClient.clearAuthToken();
+
+      /// Disconnect WebSocket
+      WebSocketService.instance.disconnect();
+
+      /// Unregister FCM token
+      await PushNotificationService.instance.unregisterToken();
 
       emit(AuthState.unauthenticated());
     } catch (e) {
@@ -176,6 +190,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final userJson = jsonDecode(userData);
           final user = Person.fromJson(userJson);
           privateApiClient.setAuthToken(token);
+
+          WebSocketService.instance.connect(token);
 
           emit(AuthState.authenticated(user,
             biometricEnabled: biometricEnabled,

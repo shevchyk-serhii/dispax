@@ -126,6 +126,21 @@ class RideService {
     }
   }
 
+  Future<List<Ride>> getPendingRides() async {
+    try {
+      final response = await privateApiClient.get('/rides/pending');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList.map((json) => Ride.fromJson(json)).toList();
+      } else {
+        throw ApiException('Failed to fetch pending rides: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw ApiException('Error fetching pending rides: $e');
+    }
+  }
+
   Future<Ride> assignDriver(String rideId, String driverId) async {
     try {
       final response = await privateApiClient.put('/rides/$rideId/assign-driver', {
@@ -164,6 +179,17 @@ class RideService {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  Future<void> updateClientLocation(String rideId, double latitude, double longitude) async {
+    try {
+      await privateApiClient.post('/rides/$rideId/client-location', {
+        'latitude': latitude,
+        'longitude': longitude,
+      });
+    } catch (e) {
+      // Best-effort location update
     }
   }
 

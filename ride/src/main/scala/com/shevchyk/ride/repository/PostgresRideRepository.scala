@@ -187,10 +187,18 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       UPDATE rides SET
         driver_id = ${ride.driverId.map(_.value)},
         status = ${ride.status},
+        from_address = ${ride.pickupLocation.address},
+        from_lat = ${ride.pickupLocation.latitude},
+        from_lng = ${ride.pickupLocation.longitude},
+        to_address = ${ride.dropoffLocation.address},
+        to_lat = ${ride.dropoffLocation.latitude},
+        to_lng = ${ride.dropoffLocation.longitude},
+        scheduled_time = ${ride.scheduledTime},
         start_time = ${ride.startTime},
         end_time = ${ride.endTime},
         final_price_amount = ${ride.finalPrice},
         notes = ${ride.notes},
+        specifics = ${ride.specifics},
         updated_at = NOW()
       WHERE id = ${ride.id.value}
     """.update.run

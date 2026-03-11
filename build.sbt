@@ -66,6 +66,10 @@ lazy val jwtDependencies = Seq(
   "com.github.jwt-scala" %% "jwt-zio-json" % "10.0.1"
 )
 
+lazy val bcryptDependencies = Seq(
+  "org.mindrot" % "jbcrypt" % "0.4"
+)
+
 lazy val uuidDependencies = Seq(
   "com.github.f4b6a3" % "uuid-creator" % "5.3.2"
 )
@@ -89,7 +93,7 @@ lazy val auth = (project in file("auth"))
   .dependsOn(core % "compile->compile;test->test")
   .settings(
     name := "oktopus-auth",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jwtDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jwtDependencies ++ bcryptDependencies
   )
 
 lazy val ride = (project in file("ride"))
@@ -123,11 +127,15 @@ lazy val schedule = (project in file("schedule"))
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
   )
 
+lazy val firebaseDependencies = Seq(
+  "com.google.firebase" % "firebase-admin" % "9.3.0"
+)
+
 lazy val notification = (project in file("notification"))
   .dependsOn(core)
   .settings(
     name := "oktopus-notification",
-    libraryDependencies ++= commonDependencies
+    libraryDependencies ++= commonDependencies ++ jsonDependencies ++ firebaseDependencies
   )
 
 lazy val root = (project in file("."))
@@ -139,7 +147,7 @@ lazy val root = (project in file("."))
     Compile / resourceDirectory      := baseDirectory.value / "api" / "src" / "main" / "resources",
     Test / scalaSource               := baseDirectory.value / "api" / "src" / "test" / "scala",
     Test / resourceDirectory         := baseDirectory.value / "api" / "src" / "test" / "resources",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies ++ testDependencies,
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies ++ bcryptDependencies ++ testDependencies,
     testFrameworks ++= Seq(
       new TestFramework("zio.test.sbt.ZTestFramework"),
       new TestFramework("com.novocode.junit.JUnitFramework")

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../modules/driver_management/widgets/widgets.dart';
@@ -129,7 +130,7 @@ class TodayRidesScreen extends StatelessWidget {
                   ride: ride,
                   isLast: index == todayRides.length - 1,
 
-                  onCallClient: () => _handleCallClient(ride),
+                  onCallClient: () => _handleCallClient(context, ride),
                   onStartRide: () => _handleStartRide(context, ride),
                   onCompleteRide: () => _handleCompleteRide(context, ride),
                 );
@@ -145,19 +146,79 @@ class TodayRidesScreen extends StatelessWidget {
     return const EmptyRidesState();
   }
 
-  void _handleCallClient(Ride ride) {
+  void _handleCallClient(BuildContext context, Ride ride) {
+    final phone = ride.client.phone;
+    if (phone == null || phone.isEmpty) {
+      NavigationHelper.showSnackBar(context, 'No phone number available', isError: true);
+      return;
+    }
+    _showContactOptions(context, phone);
+  }
 
-    print('Calling client for ride ${ride.id}');
+  void _showContactOptions(BuildContext context, String phone) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.phone, color: Colors.green),
+              title: const Text('Call'),
+              subtitle: Text(phone),
+              onTap: () {
+                Navigator.pop(ctx);
+                launchUrl(Uri.parse('tel:$phone'));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.message, color: Colors.blue),
+              title: const Text('SMS'),
+              subtitle: Text(phone),
+              onTap: () {
+                Navigator.pop(ctx);
+                launchUrl(Uri.parse('sms:$phone'));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _handleStartRide(BuildContext context, Ride ride) {
-
-    print('Starting ride ${ride.id}');
+    context.read<RideBloc>().add(RideStatusUpdateRequested(
+      rideId: ride.id,
+      status: RideStatus.inProgress,
+    ));
+    NavigationHelper.showSnackBar(context, 'Ride started');
   }
 
   void _handleCompleteRide(BuildContext context, Ride ride) {
-
-    print('Completing ride ${ride.id}');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Complete Ride'),
+        content: Text('Mark ride from ${ride.from.address} to ${ride.to.address} as completed?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<RideBloc>().add(RideStatusUpdateRequested(
+                rideId: ride.id,
+                status: RideStatus.completed,
+              ));
+              NavigationHelper.showSnackBar(context, 'Ride completed');
+            },
+            child: const Text('Complete'),
+          ),
+        ],
+      ),
+    );
   }
 
   List<Ride> getTodayRides(List<Ride> rides) {

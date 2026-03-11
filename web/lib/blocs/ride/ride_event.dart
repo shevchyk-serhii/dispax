@@ -76,3 +76,17 @@ class RideStatusUpdateRequested extends RideEvent {
   @override
   List<Object> get props => [rideId, status];
 }
+
+class RideLoadPendingRequested extends RideEvent {
+  const RideLoadPendingRequested();
+}
+
+class RideAssignRequested extends RideEvent {
+  final String rideId;
+  final String driverId;
+
+  const RideAssignRequested({required this.rideId, required this.driverId});
+
+  @override
+  List<Object> get props => [rideId, driverId];
+}

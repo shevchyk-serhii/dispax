@@ -9,6 +9,7 @@ import '../../modules/ride_management/services/ride_service.dart';
 import '../modules/core/models/location.dart' as loc;
 import '../modules/core/services/location_service.dart';
 import '../modules/core/services/mapbox_service.dart';
+import '../modules/core/services/websocket_service.dart';
 import '../theme/app_theme.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
@@ -28,28 +29,77 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   CircleAnnotationManager? _circleAnnotationManager;
 
   StreamSubscription<geo.Position>? _locationSubscription;
+  StreamSubscription? _wsSubscription;
   geo.Position? _currentPosition;
   Ride? _activeRide;
 
   final LocationService _locationService = LocationService.instance;
-  Timer? _driverLocationTimer;
+  bool _sharingLocation = false;
+  final RideService _rideService = RideService();
 
   @override
   void initState() {
     super.initState();
     _initializeLocation();
+    _listenToWebSocket();
   }
 
   @override
   void dispose() {
     _locationSubscription?.cancel();
-    _driverLocationTimer?.cancel();
+    _wsSubscription?.cancel();
     _locationService.dispose();
     super.dispose();
   }
 
-  Future<void> _initializeLocation() async {
+  void _listenToWebSocket() {
+    _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
+      if (!mounted || _activeRide == null) return;
 
+      if (event.isLocationUpdated &&
+          event.locationType == 'driver' &&
+          event.driverId == _activeRide!.driverId &&
+          event.latitude != null &&
+          event.longitude != null) {
+        setState(() {
+          _activeRide = _activeRide!.copyWith(
+            driverLocation: loc.Location(
+              address: '',
+              latitude: event.latitude,
+              longitude: event.longitude,
+            ),
+          );
+        });
+        _updateMapMarkers();
+
+        // Check if driver is approaching (< 500m)
+        if (_currentPosition != null) {
+          final distance = geo.Geolocator.distanceBetween(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+            event.latitude!,
+            event.longitude!,
+          );
+          if (distance < 500 && !_driverApproachingShown) {
+            _driverApproachingShown = true;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Your driver is approaching! ~${distance.toInt()}m',
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                backgroundColor: AppColors.success,
+                duration: const Duration(seconds: 8),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> _initializeLocation() async {
     final position = await _locationService.getCurrentPosition();
     if (position != null) {
       setState(() {
@@ -64,6 +114,15 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           _currentPosition = position;
         });
         _updateCurrentLocationMarker();
+
+        // Share client location if toggle is on
+        if (_sharingLocation && _activeRide != null) {
+          _rideService.updateClientLocation(
+            _activeRide!.id,
+            position.latitude,
+            position.longitude,
+          );
+        }
       });
     }
   }
@@ -86,7 +145,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     }
 
     _updateMapMarkers();
-    _startDriverLocationUpdates();
   }
 
   void _updateCurrentLocationMarker() {
@@ -139,63 +197,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   bool _driverApproachingShown = false;
-  final RideService _rideService = RideService();
-
-  void _startDriverLocationUpdates() {
-    _driverLocationTimer?.cancel();
-
-    if (_activeRide != null &&
-        (_activeRide!.status == RideStatus.assigned ||
-         _activeRide!.status == RideStatus.inProgress)) {
-      _updateDriverLocation(); // immediate first poll
-      _driverLocationTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-        _updateDriverLocation();
-      });
-    }
-  }
-
-  void _updateDriverLocation() async {
-    if (_activeRide == null) return;
-
-    final proximity = await _rideService.getDriverProximity(_activeRide!.id);
-    if (proximity == null || !mounted) return;
-
-    final driverLoc = proximity['driverLocation'];
-    final approaching = proximity['driverApproaching'] == true;
-    final distanceMeters = proximity['driverDistanceMeters'];
-
-    if (driverLoc != null &&
-        driverLoc['latitude'] != null &&
-        driverLoc['longitude'] != null) {
-      setState(() {
-        _activeRide = _activeRide!.copyWith(
-          driverLocation: loc.Location(
-            address: '',
-            latitude: (driverLoc['latitude'] as num).toDouble(),
-            longitude: (driverLoc['longitude'] as num).toDouble(),
-          ),
-        );
-        _updateMapMarkers();
-      });
-    }
-
-    // Show "driver approaching" notification once
-    if (approaching && !_driverApproachingShown && mounted) {
-      _driverApproachingShown = true;
-      final distanceText = distanceMeters != null ? '~${distanceMeters}m' : '';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Your driver is approaching! $distanceText',
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-          ),
-          backgroundColor: AppColors.success,
-          duration: const Duration(seconds: 8),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +216,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                 _activeRide = activeRide;
               });
               _updateMapMarkers();
-              _startDriverLocationUpdates();
             }
           }
         },
@@ -265,6 +265,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           if (_activeRide != null) ...[
             const SizedBox(height: AppDimensions.paddingMedium),
             _buildActiveRideInfo(),
+            const SizedBox(height: AppDimensions.paddingMedium),
+            _buildLocationSharingToggle(),
           ] else ...[
             const SizedBox(height: AppDimensions.paddingSmall),
             Text(
@@ -274,6 +276,39 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildLocationSharingToggle() {
+    return Row(
+      children: [
+        Icon(
+          _sharingLocation ? Icons.location_on : Icons.location_off,
+          color: _sharingLocation ? AppColors.success : AppColors.textOnPrimary.withAlpha(150),
+          size: AppDimensions.iconSmall,
+        ),
+        const SizedBox(width: AppDimensions.paddingSmall),
+        Expanded(
+          child: Text(
+            'Share my location',
+            style: AppStyles.bodySmall.copyWith(color: AppColors.textOnPrimary),
+          ),
+        ),
+        Switch(
+          value: _sharingLocation,
+          onChanged: (value) {
+            setState(() => _sharingLocation = value);
+            if (value && _currentPosition != null && _activeRide != null) {
+              _rideService.updateClientLocation(
+                _activeRide!.id,
+                _currentPosition!.latitude,
+                _currentPosition!.longitude,
+              );
+            }
+          },
+          activeColor: AppColors.success,
+        ),
+      ],
     );
   }
 
@@ -319,7 +354,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             const SizedBox(width: AppDimensions.paddingSmall),
             Expanded(
               child: Text(
-                '${_activeRide!.from.address} → ${_activeRide!.to.address}',
+                '${_activeRide!.from.address} -> ${_activeRide!.to.address}',
                 style: AppStyles.bodySmall.copyWith(color: AppColors.textOnPrimary),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
