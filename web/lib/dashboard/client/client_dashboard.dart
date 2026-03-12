@@ -4,15 +4,14 @@ import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../modules/core/date_utils.dart';
-import '../../screens/flight_screen.dart';
 import '../../screens/ride_details_screen.dart';
 import '../../screens/settings_screen.dart';
+import '../../screens/create_ride_screen.dart';
 import 'dart:io';
 
 import '../../screens/simple_map_screen.dart';
 import '../../screens/android_map_screen.dart';
 import '../../constants/app_colors.dart';
-import '../../modules/flight_management/widgets/airport_entry_timer.dart';
 import 'client_ride_history_screen.dart';
 
 class ClientDashboard extends StatelessWidget {
@@ -31,8 +30,8 @@ class ClientDashboard extends StatelessWidget {
             children: [
               const MyRidesTab(),
               const ClientRideHistoryScreen(),
+              const CreateRideScreen(),
               Platform.isAndroid ? const AndroidMapScreen() : const SimpleMapScreen(),
-              const FlightScreen(),
               const SettingsScreen(),
             ],
           );
@@ -43,29 +42,35 @@ class ClientDashboard extends StatelessWidget {
         builder: (context, selectedIndex, child) {
           return BottomNavigationBar(
             currentIndex: selectedIndex,
+            selectedItemColor: AppColors.clientColor,
             onTap: (index) {
               selectedIndexNotifier.value = index;
             },
             type: BottomNavigationBarType.fixed,
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.list),
-                label: 'My Rides',
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home),
+                label: 'Home',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.history),
-                label: 'History',
+                icon: Icon(Icons.list_outlined),
+                activeIcon: Icon(Icons.list),
+                label: 'Rides',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.map),
+                icon: Icon(Icons.add_circle_outline),
+                activeIcon: Icon(Icons.add_circle),
+                label: 'Book',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.map_outlined),
+                activeIcon: Icon(Icons.map),
                 label: 'Map',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.flight),
-                label: 'Flights',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.settings),
+                icon: Icon(Icons.settings_outlined),
+                activeIcon: Icon(Icons.settings),
                 label: 'Settings',
               ),
             ],
@@ -143,9 +148,25 @@ class MyRidesTab extends StatelessWidget {
         ).toList();
 
         if (activeRides.isEmpty) {
-          return const EmptyStateWidget(
-            message: 'You have no active rides',
-            icon: Icons.event_available,
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.event_available, size: 56, color: Colors.grey.shade400),
+                const SizedBox(height: 12),
+                Text('You have no active rides', style: TextStyle(color: Colors.grey.shade600)),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => ClientDashboard.selectedIndexNotifier.value = 2,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Book a Ride'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.clientColor,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           );
         }
 
@@ -252,6 +273,42 @@ class MyRidesTab extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (ride.driverName != null &&
+                            (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.driverColor.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.driverColor.withValues(alpha: 0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.person, color: AppColors.driverColor, size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Driver: ${ride.driverName}',
+                                  style: TextStyle(fontSize: 12, color: AppColors.driverColor, fontWeight: FontWeight.w500),
+                                ),
+                                if (ride.driverApproaching) ...[
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.success.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'Approaching${ride.driverDistanceMeters != null ? ' (${(ride.driverDistanceMeters! / 1000).toStringAsFixed(1)} km)' : ''}',
+                                      style: const TextStyle(fontSize: 10, color: AppColors.success, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                         if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           Container(
@@ -312,15 +369,15 @@ class MyRidesTab extends StatelessWidget {
   Color getStatusColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
-        return Colors.orange;
+        return AppColors.rideRequested;
       case RideStatus.assigned:
-        return Colors.blue;
+        return AppColors.rideAssigned;
       case RideStatus.inProgress:
-        return Colors.green;
+        return AppColors.rideInProgress;
       case RideStatus.completed:
-        return Colors.grey;
+        return AppColors.rideCompleted;
       case RideStatus.cancelled:
-        return Colors.red;
+        return AppColors.rideCancelled;
     }
   }
 
@@ -339,4 +396,3 @@ class MyRidesTab extends StatelessWidget {
     }
   }
 }
-

@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'calendar/calendar_schedule_screen.dart';
 import 'today_rides_screen.dart';
-import 'upcoming_rides_screen.dart';
-import 'ride_history_screen.dart';
-import '../../screens/flight_screen.dart';
 import '../../screens/settings_screen.dart';
-
 import '../../screens/simple_map_screen.dart';
+import '../../constants/app_colors.dart';
 
 class DriverDashboard extends StatelessWidget {
   const DriverDashboard({super.key});
@@ -21,46 +18,45 @@ class DriverDashboard extends StatelessWidget {
         return Scaffold(
           body: IndexedStack(
             index: selectedIndex,
-            children: [
-              const TodayRidesScreen(),
-              const CalendarScheduleScreen(),
-              const UpcomingRidesScreen(),
-              const RideHistoryScreen(),
-              const FlightScreen(),
-              const SimpleMapScreen(),
-              const SettingsScreen(),
+            children: const [
+              TodayRidesScreen(),
+              CalendarScheduleScreen(),
+              SimpleMapScreen(),
+              Center(child: Text('Chat coming soon', style: TextStyle(color: Colors.grey))),
+              SettingsScreen(),
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
             currentIndex: selectedIndex,
+            selectedItemColor: AppColors.driverColor,
             onTap: (index) {
               selectedIndexNotifier.value = index;
             },
             items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.today), label: 'Today'),
               BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_month),
+                icon: Icon(Icons.today_outlined),
+                activeIcon: Icon(Icons.today),
+                label: 'Today',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.calendar_month_outlined),
+                activeIcon: Icon(Icons.calendar_month),
                 label: 'Calendar',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.event_note),
-                label: 'Upcoming',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.history),
-                label: 'History',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.flight),
-                label: 'Flights',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.map),
+                icon: Icon(Icons.map_outlined),
+                activeIcon: Icon(Icons.map),
                 label: 'Map',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.settings),
+                icon: Icon(Icons.chat_bubble_outline),
+                activeIcon: Icon(Icons.chat_bubble),
+                label: 'Chat',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.settings_outlined),
+                activeIcon: Icon(Icons.settings),
                 label: 'Settings',
               ),
             ],

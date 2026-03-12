@@ -9,6 +9,8 @@ import zio.*
 trait DriverLocationRepository:
   def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit]
   def getLocation(driverId: PersonId): Task[Option[DriverLocation]]
+  def updateAvailability(driverId: PersonId, status: String): Task[Unit]
+  def findAvailableByCompanyId(companyId: CompanyId): Task[List[(PersonId, String, Option[Double], Option[Double])]]
 
 object DriverLocationRepository:
 

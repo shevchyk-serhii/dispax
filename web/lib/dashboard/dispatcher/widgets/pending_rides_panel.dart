@@ -7,6 +7,7 @@ import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../utils/conflict_detector.dart';
+import '../../../widgets/common/notification_bell.dart';
 import 'assignment_dialog.dart';
 
 class PendingRidesPanel extends StatefulWidget {
@@ -239,6 +240,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                     ],
                   ),
                 ),
+                const NotificationBell(),
                 IconButton(
                   icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
                   onPressed: () => context.read<RideBloc>().add(const RideLoadPendingRequested()),

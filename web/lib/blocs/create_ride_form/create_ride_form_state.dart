@@ -14,6 +14,8 @@ class CreateRideFormState extends Equatable {
   final String? selectedTerminal;
   final CreateRideFormStatus status;
   final String? errorMessage;
+  final String notes;
+  final List<String> specialRequirements;
 
   const CreateRideFormState({
     required this.clientName,
@@ -27,6 +29,8 @@ class CreateRideFormState extends Equatable {
     this.selectedTerminal,
     this.status = CreateRideFormStatus.initial,
     this.errorMessage,
+    this.notes = '',
+    this.specialRequirements = const [],
   });
 
   factory CreateRideFormState.initial() {
@@ -41,6 +45,8 @@ class CreateRideFormState extends Equatable {
       selectedGate: null,
       selectedTerminal: null,
       status: CreateRideFormStatus.initial,
+      notes: '',
+      specialRequirements: const [],
     );
   }
 
@@ -56,6 +62,8 @@ class CreateRideFormState extends Equatable {
     String? selectedTerminal,
     CreateRideFormStatus? status,
     String? errorMessage,
+    String? notes,
+    List<String>? specialRequirements,
   }) {
     return CreateRideFormState(
       clientName: clientName ?? this.clientName,
@@ -69,6 +77,8 @@ class CreateRideFormState extends Equatable {
       selectedTerminal: selectedTerminal ?? this.selectedTerminal,
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
+      notes: notes ?? this.notes,
+      specialRequirements: specialRequirements ?? this.specialRequirements,
     );
   }
 
@@ -92,5 +102,7 @@ class CreateRideFormState extends Equatable {
     selectedTerminal,
     status,
     errorMessage,
+    notes,
+    specialRequirements,
   ];
 }

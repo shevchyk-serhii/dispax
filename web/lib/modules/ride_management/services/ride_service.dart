@@ -92,25 +92,9 @@ class RideService {
     }
   }
 
-  Future<bool> deleteRide(String id) async {
-    try {
-      final response = await privateApiClient.delete('/rides/$id');
-
-      if (response.statusCode == 204) {
-        return true;
-      } else if (response.statusCode == 404) {
-        return false;
-      } else {
-        throw ApiException('Failed to delete ride: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw ApiException('Error deleting ride: $e');
-    }
-  }
-
   Future<bool> updateRideStatus(String id, RideStatus status) async {
     try {
-      final response = await privateApiClient.patch('/rides/$id/status', {
+      final response = await privateApiClient.put('/rides/$id/status', {
         'status': status.value,
       });
 

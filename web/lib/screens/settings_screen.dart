@@ -5,6 +5,8 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/models/person.dart';
+import 'gdpr_screen.dart';
+import 'session_management_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -65,6 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildAppearanceSection(),
           _buildLanguageSection(),
           _buildSecuritySection(authState),
+          _buildPrivacySection(),
           _buildAboutSection(),
           const SizedBox(height: 24),
           _buildLogoutButton(),
@@ -264,6 +267,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ));
             },
           ),
+        ListTile(
+          leading: const Icon(Icons.devices),
+          title: const Text('Active Sessions'),
+          subtitle: const Text('Manage logged-in devices', style: TextStyle(fontSize: 12)),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SessionManagementScreen()),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPrivacySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Privacy'),
+        ListTile(
+          leading: const Icon(Icons.privacy_tip_outlined),
+          title: const Text('Privacy & Data (GDPR)'),
+          subtitle: const Text('Manage consent, export & delete data', style: TextStyle(fontSize: 12)),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GdprScreen()),
+          ),
+        ),
       ],
     );
   }

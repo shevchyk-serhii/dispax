@@ -6,6 +6,7 @@ import 'create_ride_basic_info_section.dart';
 import 'create_ride_location_section.dart';
 import 'create_ride_schedule_section.dart';
 import 'create_ride_airport_section.dart';
+import 'create_ride_notes_section.dart';
 import 'create_ride_actions_section.dart';
 
 class CreateRideFormSections extends StatelessWidget {
@@ -38,6 +39,11 @@ class CreateRideFormSections extends StatelessWidget {
               flightNumber: state.flightNumber,
               selectedGate: state.selectedGate,
               selectedTerminal: state.selectedTerminal,
+            ),
+            const SizedBox(height: AppDimensions.paddingMedium),
+            CreateRideNotesSection(
+              notes: state.notes,
+              specialRequirements: state.specialRequirements,
             ),
             const SizedBox(height: AppDimensions.paddingLarge),
             CreateRideActionsSection(formKey: formKey),

@@ -12,6 +12,7 @@ trait RideRepository {
   def findAll(): Task[List[Ride]]
   def findByClientId(clientId: PersonId): Task[List[Ride]]
   def findByDriverId(driverId: PersonId): Task[List[Ride]]
+  def findByCompanyId(companyId: CompanyId): Task[List[Ride]]
   def update(ride: Ride): Task[Ride]
   def delete(id: RideId): Task[Unit]
 }

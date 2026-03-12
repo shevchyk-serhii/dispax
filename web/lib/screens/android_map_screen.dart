@@ -9,6 +9,7 @@ class AndroidMapScreen extends StatefulWidget {
 }
 
 class _AndroidMapScreenState extends State<AndroidMapScreen> {
+  // ignore: unused_field
   GoogleMapController? _controller;
 
   static const CameraPosition _initialPosition = CameraPosition(

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
-import 'package:oktopus/modules/core/models/person.dart';
 import 'package:oktopus/modules/core/services/api_client.dart';
 import 'package:oktopus/modules/ride_management/models/ride.dart';
 import 'package:oktopus/modules/ride_management/services/ride_service.dart';
@@ -137,27 +136,9 @@ void main() {
       });
     });
 
-    group('deleteRide', () {
-      test('204 returns true', () async {
-        when(() => mockApiClient.delete('/rides/ride-1')).thenAnswer(
-          (_) async => http.Response('', 204),
-        );
-
-        expect(await rideService.deleteRide('ride-1'), isTrue);
-      });
-
-      test('404 returns false', () async {
-        when(() => mockApiClient.delete('/rides/missing')).thenAnswer(
-          (_) async => jsonResponse({}, statusCode: 404),
-        );
-
-        expect(await rideService.deleteRide('missing'), isFalse);
-      });
-    });
-
     group('updateRideStatus', () {
       test('200 returns true', () async {
-        when(() => mockApiClient.patch('/rides/ride-1/status', any()))
+        when(() => mockApiClient.put('/rides/ride-1/status', any()))
             .thenAnswer((_) async => jsonResponse({}));
 
         expect(
@@ -167,7 +148,7 @@ void main() {
       });
 
       test('404 returns false', () async {
-        when(() => mockApiClient.patch('/rides/missing/status', any()))
+        when(() => mockApiClient.put('/rides/missing/status', any()))
             .thenAnswer((_) async => jsonResponse({}, statusCode: 404));
 
         expect(

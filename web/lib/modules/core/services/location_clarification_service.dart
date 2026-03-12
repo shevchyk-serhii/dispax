@@ -1,7 +1,5 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import '../../ride_management/models/ride.dart';
 import 'api_client.dart';
 import 'location_service.dart';
 

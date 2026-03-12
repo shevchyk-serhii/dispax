@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../ride_management/models/ride.dart';
 import '../../core/models/person.dart';
 import '../../../constants/app_colors.dart';
 

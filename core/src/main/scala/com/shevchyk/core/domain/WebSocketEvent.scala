@@ -43,5 +43,23 @@ object WebSocketEvent:
       companyId: UUID
   ) extends WebSocketEvent
 
+  final case class GeofenceTriggered(
+      geofenceId: UUID,
+      geofenceName: String,
+      driverId: UUID,
+      alertType: String, // "entry" or "exit"
+      latitude: Double,
+      longitude: Double,
+      companyId: UUID
+  ) extends WebSocketEvent
+
+  final case class DriverApproaching(
+      rideId: UUID,
+      driverId: UUID,
+      distanceMeters: Int,
+      threshold: String, // "2km", "500m", "100m"
+      companyId: UUID
+  ) extends WebSocketEvent
+
   given JsonEncoder[WebSocketEvent] = DeriveJsonEncoder.gen[WebSocketEvent]
   given JsonDecoder[WebSocketEvent] = DeriveJsonDecoder.gen[WebSocketEvent]

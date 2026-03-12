@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/modules/core/models/location.dart';
 import 'package:oktopus/modules/core/models/person.dart';
 import 'package:oktopus/modules/ride_management/models/ride.dart';
 import '../helpers/test_fixtures.dart';

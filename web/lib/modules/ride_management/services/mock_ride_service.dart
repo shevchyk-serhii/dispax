@@ -85,15 +85,8 @@ class MockRideService {
     return null;
   }
 
-  Future<bool> deleteRide(String id) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    final index = mockRides.indexWhere((r) => r.id == id);
-    if (index != -1) {
-      mockRides.removeAt(index);
-      return true;
-    }
-    return false;
-  }
+  // NOTE: deleteRide removed — backend does not support DELETE /rides/:id
+  // Future<bool> deleteRide(String id) async { ... }
 
   void dispose() {
 

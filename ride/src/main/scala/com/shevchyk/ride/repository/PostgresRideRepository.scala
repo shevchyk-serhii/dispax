@@ -182,6 +182,26 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  def findByCompanyId(companyId: CompanyId): Task[List[Ride]] = {
+    sql"""
+      SELECT
+        id, client_id, creator_id, company_id, driver_id,
+        pickup_datetime, scheduled_time, request_time, start_time, end_time,
+        from_address, from_lat, from_lng,
+        to_address, to_lat, to_lng,
+        status, tariff_id,
+        estimated_price_amount, final_price_amount,
+        notes, specifics
+      FROM rides
+      WHERE company_id = ${companyId.value}
+      ORDER BY request_time DESC
+    """
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
   override def update(ride: Ride): Task[Ride] = {
     sql"""
       UPDATE rides SET

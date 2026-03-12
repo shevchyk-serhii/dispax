@@ -103,7 +103,8 @@ lazy val ride = (project in file("ride"))
   )
   .settings(
     name := "oktopus-ride",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies,
+    scalacOptions += "-Xmax-inlines:64"
   )
 
 lazy val driver = (project in file("driver"))

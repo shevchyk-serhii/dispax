@@ -12,7 +12,8 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       super(RideState.initial()) {
     on<RideLoadRequested>(onLoadRequested);
     on<RideRefreshRequested>(onRefreshRequested);
-    on<RideDeleteRequested>(onDeleteRequested);
+    // NOTE: RideDeleteRequested removed — backend does not support DELETE /rides/:id
+    // on<RideDeleteRequested>(onDeleteRequested);
     on<RideAdded>(onRideAdded);
     on<RideUpdated>(onRideUpdated);
     on<RideCreateRequested>(onCreateRequested);
@@ -52,43 +53,8 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     }
   }
 
-  Future<void> onDeleteRequested(
-    RideDeleteRequested event,
-    Emitter<RideState> emit,
-  ) async {
-    emit(
-      state.copyWith(
-        status: RideStateStatus.deleting,
-        deletingRideId: event.rideId,
-      ),
-    );
-
-    try {
-      final success = await privateRideService.deleteRide(event.rideId);
-      if (success) {
-        final updatedRides = state.rides
-            .where((ride) => ride.id != event.rideId)
-            .toList();
-        emit(RideState.loaded(updatedRides));
-      } else {
-        emit(
-          state.copyWith(
-            status: RideStateStatus.error,
-            errorMessage: 'Failed to delete ride',
-            deletingRideId: null,
-          ),
-        );
-      }
-    } catch (e) {
-      emit(
-        state.copyWith(
-          status: RideStateStatus.error,
-          errorMessage: 'Delete error: $e',
-          deletingRideId: null,
-        ),
-      );
-    }
-  }
+  // NOTE: onDeleteRequested removed — backend does not support DELETE /rides/:id
+  // The entire delete handler has been removed. See git history for original code.
 
   void onRideAdded(RideAdded event, Emitter<RideState> emit) {
     final updatedRides = List<Ride>.from(state.rides)..add(event.ride);

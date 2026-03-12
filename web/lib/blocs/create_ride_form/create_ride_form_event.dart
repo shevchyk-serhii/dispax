@@ -88,6 +88,24 @@ class TerminalSelected extends CreateRideFormEvent {
   List<Object?> get props => [terminal];
 }
 
+class NotesChanged extends CreateRideFormEvent {
+  final String notes;
+
+  const NotesChanged(this.notes);
+
+  @override
+  List<Object?> get props => [notes];
+}
+
+class SpecialRequirementToggled extends CreateRideFormEvent {
+  final String requirement;
+
+  const SpecialRequirementToggled(this.requirement);
+
+  @override
+  List<Object?> get props => [requirement];
+}
+
 class FormCleared extends CreateRideFormEvent {
   const FormCleared();
 }

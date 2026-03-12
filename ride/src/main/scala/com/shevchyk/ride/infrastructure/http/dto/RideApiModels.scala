@@ -1,7 +1,10 @@
 package com.shevchyk.ride.infrastructure.http.dto
 
-import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId}
+import com.shevchyk.auth.middleware.UuidParser
+import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId, RidePoolId}
 import com.shevchyk.ride.domain.{Ride, CreateRideRequest, RideSpecifics, RideStatus, UpdateRideDetailsRequest}
+import zio.*
+import zio.http.*
 import zio.json.*
 import java.time.Instant
 import java.util.UUID
@@ -39,8 +42,22 @@ case class RideDto(
     driverLocation: Option[LocationDto] = None,
     driverApproaching: Boolean = false,
     driverDistanceMeters: Option[Int] = None,
-    price: Option[Double] = None
-) derives JsonCodec
+    price: Option[Double] = None,
+    notes: Option[String] = None,
+    specialRequirements: Option[String] = None,
+    paymentStatus: Option[String] = None,
+    paymentMethod: Option[String] = None,
+    paidAt: Option[String] = None,
+    cancellationReason: Option[String] = None,
+    cancellationFee: Option[Double] = None,
+    cancelledBy: Option[String] = None,
+    isVipRide: Boolean = false,
+    preferredDriverUsed: Boolean = false,
+    poolId: Option[String] = None
+)
+
+given JsonEncoder[RideDto] = DeriveJsonEncoder.gen[RideDto]
+given JsonDecoder[RideDto] = DeriveJsonDecoder.gen[RideDto]
 
 case class CreateRideApiRequest(
     clientId: String,
@@ -57,7 +74,9 @@ case class CreateRideApiRequest(
     isArrival: Boolean = false,
     gate: Option[String] = None,
     terminal: Option[String] = None,
-    price: Option[Double] = None
+    price: Option[Double] = None,
+    notes: Option[String] = None,
+    specialRequirements: Option[String] = None
 ) derives JsonCodec
 
 case class UpdateRideApiRequest(
@@ -86,7 +105,8 @@ case class UpdateRideDetailsApiRequest(
     pickupDateTime: Option[String] = None,
     notes: Option[String] = None,
     flightNumber: Option[String] = None,
-    isAirportTransfer: Option[Boolean] = None
+    isAirportTransfer: Option[Boolean] = None,
+    specialRequirements: Option[String] = None
 ) derives JsonCodec
 
 object UpdateRideDetailsApiRequest:
@@ -104,7 +124,8 @@ object UpdateRideDetailsApiRequest:
       dropoffLocation = request.to.map(LocationDto.toDomain),
       scheduledTime = request.pickupDateTime.flatMap(dt => scala.util.Try(Instant.parse(dt)).toOption),
       notes = request.notes,
-      specifics = specifics
+      specifics = specifics,
+      specialRequirements = request.specialRequirements
     )
 
 case class UpdateClientLocationRequest(
@@ -118,6 +139,16 @@ case class AssignDriverRequest(
 
 case class SendChatMessageRequest(
     message: String
+) derives JsonCodec
+
+case class MarkPaymentRequest(
+    paymentStatus: String,
+    paymentMethod: Option[String] = None
+) derives JsonCodec
+
+case class CancelRideApiRequest(
+    reason: String,
+    fee: Option[Double] = None
 ) derives JsonCodec
 
 case class ValidationErrorsResponse(
@@ -147,9 +178,13 @@ object RideDto:
 
   private val APPROACHING_THRESHOLD_METERS = 500
 
-  def fromDomain(ride: Ride): RideDto = fromDomain(ride, driverLat = None, driverLng = None)
-
-  def fromDomain(ride: Ride, driverLat: Option[Double], driverLng: Option[Double]): RideDto =
+  def fromDomain(
+      ride: Ride,
+      driverLat: Option[Double] = None,
+      driverLng: Option[Double] = None,
+      clientName: Option[String] = None,
+      driverName: Option[String] = None
+  ): RideDto =
     val (flightNumber, isAirportTransfer) =
       ride.specifics match {
         case Some(RideSpecifics.AirportTransfer(_, flight)) => (Some(flight), true)
@@ -184,7 +219,7 @@ object RideDto:
       from = LocationDto.fromDomain(ride.pickupLocation),
       to = LocationDto.fromDomain(ride.dropoffLocation),
       status = ride.status.toString,
-      clientName = "Unknown Client",
+      clientName = clientName.getOrElse("Unknown Client"),
       flightNumber = flightNumber,
       flightTime = ride.scheduledTime.map(_.toString),
       isAirportTransfer = isAirportTransfer,
@@ -192,11 +227,22 @@ object RideDto:
       gate = None,
       terminal = None,
       flightStatus = None,
-      driverName = None,
+      driverName = driverName,
       driverLocation = driverLoc,
       driverApproaching = approaching,
       driverDistanceMeters = distanceMeters,
-      price = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue)
+      price = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue),
+      notes = ride.notes,
+      specialRequirements = ride.specialRequirements,
+      paymentStatus = ride.paymentStatus,
+      paymentMethod = ride.paymentMethod,
+      paidAt = ride.paidAt.map(_.toString),
+      cancellationReason = ride.cancellationReason,
+      cancellationFee = ride.cancellationFee.map(_.doubleValue),
+      cancelledBy = ride.cancelledBy.map(_.value.toString),
+      isVipRide = ride.isVipRide,
+      preferredDriverUsed = ride.preferredDriverUsed,
+      poolId = ride.poolId.map(_.value.toString)
     )
 
   private def distanceMetersHaversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Int =
@@ -212,7 +258,7 @@ object RideDto:
 
 object CreateRideApiRequest:
 
-  def toDomain(request: CreateRideApiRequest, companyId: CompanyId): CreateRideRequest =
+  def toDomain(request: CreateRideApiRequest, companyId: CompanyId): IO[Response, CreateRideRequest] =
     // Create AirportTransfer if either isAirportTransfer is true OR flightNumber is provided
     val specifics =
       if (request.isAirportTransfer || request.flightNumber.isDefined) {
@@ -227,15 +273,18 @@ object CreateRideApiRequest:
         None
       }
 
-    CreateRideRequest(
-      clientId = PersonId(UUID.fromString(request.clientId)),
-      companyId = companyId,
-      pickupLocation = LocationDto.toDomain(request.from),
-      dropoffLocation = LocationDto.toDomain(request.to),
-      scheduledTime = scala.util.Try(Instant.parse(request.pickupDateTime)).toOption,
-      notes = None,
-      specifics = specifics
-    )
+    UuidParser.parsePersonId(request.clientId).map { clientId =>
+      CreateRideRequest(
+        clientId = clientId,
+        companyId = companyId,
+        pickupLocation = LocationDto.toDomain(request.from),
+        dropoffLocation = LocationDto.toDomain(request.to),
+        scheduledTime = scala.util.Try(Instant.parse(request.pickupDateTime)).toOption,
+        notes = request.notes,
+        specifics = specifics,
+        specialRequirements = request.specialRequirements
+      )
+    }
 
   private def extractAirportCode(request: CreateRideApiRequest): String =
     // Simple heuristic: try to extract from address

@@ -5,6 +5,7 @@ import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../modules/core/navigation_helper.dart';
+import '../../constants/app_colors.dart';
 
 class UpcomingRidesScreen extends StatelessWidget {
   const UpcomingRidesScreen({super.key});
@@ -465,15 +466,15 @@ class UpcomingRidesScreen extends StatelessWidget {
   Color getStatusColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
-        return Colors.orange;
+        return AppColors.rideRequested;
       case RideStatus.assigned:
-        return Colors.blue;
+        return AppColors.rideAssigned;
       case RideStatus.inProgress:
-        return Colors.green;
+        return AppColors.rideInProgress;
       case RideStatus.completed:
-        return Colors.grey;
+        return AppColors.rideCompleted;
       case RideStatus.cancelled:
-        return Colors.red;
+        return AppColors.rideCancelled;
     }
   }
 

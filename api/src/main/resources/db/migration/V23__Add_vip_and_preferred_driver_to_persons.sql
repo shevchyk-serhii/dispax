@@ -1,0 +1,2 @@
+ALTER TABLE persons ADD COLUMN is_vip BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE persons ADD COLUMN preferred_driver_id UUID REFERENCES persons(id);

@@ -9,6 +9,7 @@ import '../../modules/ride_management/services/ride_service.dart';
 import '../modules/core/models/location.dart' as loc;
 import '../modules/core/services/location_service.dart';
 import '../modules/core/services/mapbox_service.dart';
+import '../modules/core/models/websocket_event.dart';
 import '../modules/core/services/websocket_service.dart';
 import '../theme/app_theme.dart';
 import '../constants/app_colors.dart';
@@ -25,6 +26,7 @@ class ClientMapScreen extends StatefulWidget {
 
 class _ClientMapScreenState extends State<ClientMapScreen> {
   MapboxMap? _mapboxMap;
+  // ignore: unused_field
   PointAnnotationManager? _pointAnnotationManager;
   CircleAnnotationManager? _circleAnnotationManager;
 
@@ -36,6 +38,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   final LocationService _locationService = LocationService.instance;
   bool _sharingLocation = false;
   final RideService _rideService = RideService();
+  String? _approachingBannerMessage;
 
   @override
   void initState() {
@@ -96,7 +99,25 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           }
         }
       }
+
+      _handleDriverApproachingEvent(event);
     });
+  }
+
+  void _handleDriverApproachingEvent(WebSocketEvent event) {
+    if (!event.isDriverApproaching) return;
+
+    final distance = event.distanceMeters ?? 0;
+    String message;
+    if (distance <= 100) {
+      message = 'Your driver has arrived!';
+    } else if (distance <= 500) {
+      message = 'Your driver is nearby!';
+    } else {
+      final km = (distance / 1000).toStringAsFixed(1);
+      message = 'Your driver is about ${km}km away';
+    }
+    setState(() => _approachingBannerMessage = message);
   }
 
   Future<void> _initializeLocation() async {
@@ -228,7 +249,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             ),
 
             SafeArea(
-              child: _buildInfoPanel(),
+              child: Column(
+                children: [
+                  _buildInfoPanel(),
+                  if (_approachingBannerMessage != null)
+                    _buildApproachingBanner(),
+                ],
+              ),
             ),
 
             Positioned(
@@ -377,6 +404,43 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildApproachingBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingMedium),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.paddingLarge,
+        vertical: AppDimensions.paddingSmall,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.success,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowMedium,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.directions_car, color: Colors.white, size: 20),
+          const SizedBox(width: AppDimensions.paddingSmall),
+          Expanded(
+            child: Text(
+              _approachingBannerMessage!,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() => _approachingBannerMessage = null),
+            child: const Icon(Icons.close, color: Colors.white, size: 18),
+          ),
+        ],
+      ),
     );
   }
 

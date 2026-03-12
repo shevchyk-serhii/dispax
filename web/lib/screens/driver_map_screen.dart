@@ -8,6 +8,7 @@ import '../../modules/ride_management/models/ride.dart';
 import '../../modules/ride_management/services/ride_service.dart';
 import '../modules/core/services/location_service.dart';
 import '../modules/core/services/mapbox_service.dart';
+import '../modules/core/services/websocket_service.dart';
 import '../theme/app_theme.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
@@ -24,6 +25,7 @@ class DriverMapScreen extends StatefulWidget {
 
 class _DriverMapScreenState extends State<DriverMapScreen> {
   MapboxMap? _mapboxMap;
+  // ignore: unused_field
   PointAnnotationManager? _pointAnnotationManager;
   CircleAnnotationManager? _circleAnnotationManager;
 
@@ -34,19 +36,43 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
   final LocationService _locationService = LocationService.instance;
   Timer? _locationUpdateTimer;
+  StreamSubscription? _wsSubscription;
+  String? _geofenceOverlayMessage;
+  Timer? _geofenceOverlayTimer;
 
   @override
   void initState() {
     super.initState();
     _initializeLocation();
+    _listenToGeofenceEvents();
   }
 
   @override
   void dispose() {
     _locationSubscription?.cancel();
     _locationUpdateTimer?.cancel();
+    _wsSubscription?.cancel();
+    _geofenceOverlayTimer?.cancel();
     _locationService.dispose();
     super.dispose();
+  }
+
+  void _listenToGeofenceEvents() {
+    _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
+      if (!mounted) return;
+      if (event.isGeofenceTriggered) {
+        final geofenceName = event.geofenceName ?? 'Unknown zone';
+        final isEntry = event.alertType == 'entry';
+        final message = isEntry
+            ? 'Entered $geofenceName'
+            : 'Left $geofenceName';
+        setState(() => _geofenceOverlayMessage = message);
+        _geofenceOverlayTimer?.cancel();
+        _geofenceOverlayTimer = Timer(const Duration(seconds: 4), () {
+          if (mounted) setState(() => _geofenceOverlayMessage = null);
+        });
+      }
+    });
   }
 
   Future<void> _initializeLocation() async {
@@ -221,6 +247,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                 children: [
                   _buildInfoPanel(),
 
+                  if (_geofenceOverlayMessage != null)
+                    _buildGeofenceOverlay(),
+
                   if (_assignedRides.any((ride) => ride.isAirportTransfer && ride.status == RideStatus.assigned))
                     ..._assignedRides
                         .where((ride) => ride.isAirportTransfer && ride.status == RideStatus.assigned)
@@ -247,6 +276,48 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildGeofenceOverlay() {
+    final isEntry = _geofenceOverlayMessage?.startsWith('Entered') ?? false;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingMedium),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.paddingLarge,
+        vertical: AppDimensions.paddingSmall,
+      ),
+      decoration: BoxDecoration(
+        color: isEntry ? AppColors.success : AppColors.error,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowMedium,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isEntry ? Icons.arrow_downward : Icons.arrow_upward,
+            color: Colors.white,
+            size: 18,
+          ),
+          const SizedBox(width: AppDimensions.paddingSmall),
+          Expanded(
+            child: Text(
+              _geofenceOverlayMessage!,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() => _geofenceOverlayMessage = null),
+            child: const Icon(Icons.close, color: Colors.white, size: 18),
+          ),
+        ],
       ),
     );
   }

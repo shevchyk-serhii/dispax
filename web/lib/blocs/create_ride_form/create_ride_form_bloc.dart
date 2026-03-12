@@ -13,8 +13,24 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
     on<ArrivalToggled>(_onArrivalToggled);
     on<GateSelected>(_onGateSelected);
     on<TerminalSelected>(_onTerminalSelected);
+    on<NotesChanged>(_onNotesChanged);
+    on<SpecialRequirementToggled>(_onSpecialRequirementToggled);
     on<FormCleared>(_onFormCleared);
     on<FormSubmitted>(_onFormSubmitted);
+  }
+
+  void _onNotesChanged(NotesChanged event, Emitter<CreateRideFormState> emit) {
+    emit(state.copyWith(notes: event.notes));
+  }
+
+  void _onSpecialRequirementToggled(SpecialRequirementToggled event, Emitter<CreateRideFormState> emit) {
+    final current = List<String>.from(state.specialRequirements);
+    if (current.contains(event.requirement)) {
+      current.remove(event.requirement);
+    } else {
+      current.add(event.requirement);
+    }
+    emit(state.copyWith(specialRequirements: current));
   }
 
   void _onClientNameChanged(ClientNameChanged event, Emitter<CreateRideFormState> emit) {

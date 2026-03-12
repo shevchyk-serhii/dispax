@@ -1,6 +1,8 @@
 package com.shevchyk.ride.infrastructure.http
 
 import com.shevchyk.TestDataGenerator
+import com.shevchyk.auth.middleware.AuthMiddleware
+import com.shevchyk.auth.service.JwtService
 import zio.*
 import zio.http.*
 
@@ -55,25 +57,31 @@ object MockRideRoutes {
     "notes": "Terminal 2, Gate B3 - Allow extra time for security during peak hours"
   }"""
 
-  val routes: Routes[Any, Response] = Routes(
+  val routes: Routes[JwtService, Response] = Routes(
     Method.GET / "api" / "v2" / "health"                               -> handler { (_: Request) =>
       ZIO.succeed(Response.text("Ride service is healthy"))
     },
-    Method.GET / "api" / "rides" / "mock"                              -> handler { (_: Request) =>
-      ZIO.succeed(Response.json(mockRides))
+    Method.GET / "api" / "rides" / "mock"                              -> handler { (request: Request) =>
+      AuthMiddleware.authenticateRequest(request) *>
+        ZIO.succeed(Response.json(mockRides))
     },
-    Method.GET / "api" / "flights" / string("airport") / "arrivals"    -> handler { (airport: String, _: Request) =>
-      ZIO.succeed(Response.json(mockArrivals))
+    Method.GET / "api" / "flights" / string("airport") / "arrivals"    -> handler { (airport: String, request: Request) =>
+      AuthMiddleware.authenticateRequest(request) *>
+        ZIO.succeed(Response.json(mockArrivals))
     },
-    Method.GET / "api" / "flights" / string("airport") / "departures"  -> handler { (airport: String, _: Request) =>
-      ZIO.succeed(Response.json(mockDepartures))
+    Method.GET / "api" / "flights" / string("airport") / "departures"  -> handler {
+      (airport: String, request: Request) =>
+        AuthMiddleware.authenticateRequest(request) *>
+          ZIO.succeed(Response.json(mockDepartures))
     },
     Method.GET / "api" / "airport" / "timing"                          -> handler { (request: Request) =>
-      ZIO.succeed(Response.json(mockAirportTiming))
+      AuthMiddleware.authenticateRequest(request) *>
+        ZIO.succeed(Response.json(mockAirportTiming))
     },
     Method.GET / "api" / "airport" / "timing" / string("flightNumber") -> handler {
-      (flightNumber: String, _: Request) =>
-        ZIO.succeed(Response.json(mockAirportTiming))
+      (flightNumber: String, request: Request) =>
+        AuthMiddleware.authenticateRequest(request) *>
+          ZIO.succeed(Response.json(mockAirportTiming))
     }
   )
 }

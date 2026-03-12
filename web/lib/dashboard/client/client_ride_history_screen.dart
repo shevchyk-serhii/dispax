@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
+import '../../widgets/common/rate_ride_dialog.dart';
 import '../../modules/core/date_utils.dart';
 import '../../screens/ride_details_screen.dart';
 import '../../theme/app_theme.dart';
@@ -517,12 +518,82 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                     ),
                   ),
                 ],
+
+                // Rating display or Rate button
+                if (ride.status == RideStatus.completed) ...[
+                  const SizedBox(height: AppDimensions.paddingSmall),
+                  if (ride.rating != null)
+                    Row(
+                      children: [
+                        ...List.generate(5, (i) => Icon(
+                          i < ride.rating! ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 16,
+                        )),
+                        if (ride.ratingComment != null && ride.ratingComment!.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              ride.ratingComment!,
+                              style: AppStyles.bodySmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    )
+                  else
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showRateDialog(context, ride),
+                        icon: const Icon(Icons.star, size: 16),
+                        label: const Text('Rate this ride'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.amber.shade700,
+                          side: BorderSide(color: Colors.amber.shade300),
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ),
+                ],
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _showRateDialog(BuildContext context, Ride ride) async {
+    final result = await showDialog<Map<String, dynamic>?>(
+      context: context,
+      builder: (_) => RateRideDialog(rideId: ride.id),
+    );
+
+    if (result != null) {
+      try {
+        final apiClient = context.read<AuthBloc>().apiClient;
+        await apiClient.post('/rides/${ride.id}/rate', {
+          'rating': result['rating'],
+          'comment': result['comment'],
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Thank you for your rating!'), backgroundColor: Colors.green),
+          );
+          loadRides(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to submit rating: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
   }
 
   bool _isSameDay(DateTime date1, DateTime date2) {

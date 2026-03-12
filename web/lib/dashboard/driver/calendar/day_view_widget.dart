@@ -7,6 +7,7 @@ import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../modules/core/navigation_utils.dart';
 import '../../../modules/core/navigation_helper.dart';
+import '../../../constants/app_colors.dart';
 
 class DayViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -554,15 +555,15 @@ class DayViewWidget extends StatelessWidget {
   Color getStatusColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
-        return Colors.orange;
+        return AppColors.rideRequested;
       case RideStatus.assigned:
-        return Colors.blue;
+        return AppColors.rideAssigned;
       case RideStatus.inProgress:
-        return Colors.green;
+        return AppColors.rideInProgress;
       case RideStatus.completed:
-        return Colors.grey;
+        return AppColors.rideCompleted;
       case RideStatus.cancelled:
-        return Colors.red;
+        return AppColors.rideCancelled;
     }
   }
 

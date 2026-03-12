@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../core/services/api_client.dart';
 
 class FlightData {
@@ -37,37 +36,33 @@ class FlightData {
 }
 
 class FlightService {
-  static String get baseUrl => '${ApiClient.privateBaseUrl}/flights';
+  final ApiClient _apiClient;
+
+  FlightService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
 
   Future<List<FlightData>> getArrivals({String airport = 'default', int? hours}) async {
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final begin = now - (hours ?? 1) * 3600;
-
-    final response = await http.get(
-      Uri.parse('$baseUrl/$airport/arrivals?begin=$begin&end=$now'),
-    );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((flight) => FlightData.fromJson(flight)).toList();
-    } else {
-      throw Exception('Failed to load arrivals');
+    try {
+      final response = await _apiClient.get('/flights/$airport/arrivals');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => FlightData.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
     }
   }
 
   Future<List<FlightData>> getDepartures({String airport = 'default', int? hours}) async {
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final begin = now - (hours ?? 1) * 3600;
-
-    final response = await http.get(
-      Uri.parse('$baseUrl/$airport/departures?begin=$begin&end=$now'),
-    );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((flight) => FlightData.fromJson(flight)).toList();
-    } else {
-      throw Exception('Failed to load departures');
+    try {
+      final response = await _apiClient.get('/flights/$airport/departures');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => FlightData.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
     }
   }
 

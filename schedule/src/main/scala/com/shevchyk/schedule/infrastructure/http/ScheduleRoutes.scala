@@ -1,7 +1,7 @@
 package com.shevchyk.schedule.infrastructure.http
 
 import com.shevchyk.auth.infrastructure.http.AuthenticatedHandlers.*
-import com.shevchyk.auth.middleware.AuthMiddleware
+import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{CompanyId, PersonId, ScheduleDayId}
 import com.shevchyk.schedule.application.ScheduleService
@@ -14,7 +14,6 @@ import zio.http.*
 import zio.json.*
 
 import java.time.LocalDate
-import java.util.UUID
 
 object ScheduleRoutes:
 
@@ -23,15 +22,15 @@ object ScheduleRoutes:
     Method.POST / "api" / "schedules" -> authenticatedJsonHandler[ScheduleService, CreateScheduleDayApiRequest] {
       (user, apiRequest) =>
         (for {
-          _            <-
-            ZIO.when(user.companyId.isEmpty)(
-              ZIO.fail(ScheduleError.ValidationError("User must belong to a company"))
-            )
-          validRequest <- apiRequest.validate
-          domainRequest = CreateScheduleDayApiRequest.toDomain(validRequest, CompanyId(user.companyId.get))
-          service      <- ZIO.service[ScheduleService]
-          scheduleDay  <- service.createScheduleDay(domainRequest)
-          dto           = ScheduleDayDto.fromDomain(scheduleDay)
+          companyId     <- ZIO
+                             .fromOption(user.companyId)
+                             .mapError(_ => ScheduleError.ValidationError("User must belong to a company"))
+                             .map(CompanyId(_))
+          validRequest  <- apiRequest.validate
+          domainRequest <- CreateScheduleDayApiRequest.toDomain(validRequest, companyId)
+          service       <- ZIO.service[ScheduleService]
+          scheduleDay   <- service.createScheduleDay(domainRequest)
+          dto            = ScheduleDayDto.fromDomain(scheduleDay)
         } yield Response(Status.Created, body = Body.fromString(dto.toJson)))
           .catchAll(handleScheduleError)
     },
@@ -42,15 +41,15 @@ object ScheduleRoutes:
       CreateScheduleBatchApiRequest
     ] { (user, apiRequest) =>
       (for {
-        _            <-
-          ZIO.when(user.companyId.isEmpty)(
-            ZIO.fail(ScheduleError.ValidationError("User must belong to a company"))
-          )
-        validRequest <- apiRequest.validate
-        domainRequest = CreateScheduleBatchApiRequest.toDomain(validRequest, CompanyId(user.companyId.get))
-        service      <- ZIO.service[ScheduleService]
-        days         <- service.createBatch(domainRequest)
-        dtos          = days.map(ScheduleDayDto.fromDomain)
+        companyId     <- ZIO
+                           .fromOption(user.companyId)
+                           .mapError(_ => ScheduleError.ValidationError("User must belong to a company"))
+                           .map(CompanyId(_))
+        validRequest  <- apiRequest.validate
+        domainRequest <- CreateScheduleBatchApiRequest.toDomain(validRequest, companyId)
+        service       <- ZIO.service[ScheduleService]
+        days          <- service.createBatch(domainRequest)
+        dtos           = days.map(ScheduleDayDto.fromDomain)
       } yield Response(Status.Created, body = Body.fromString(dtos.toJson)))
         .catchAll(handleScheduleError)
     },
@@ -59,17 +58,18 @@ object ScheduleRoutes:
     Method.GET / "api" / "schedules" / "driver" / string("driverId") -> handler {
       (driverId: String, request: Request) =>
         (for {
-          user    <- AuthMiddleware.authenticateRequest(request)
-          _       <-
-            ZIO.when(user.companyId.isEmpty)(
-              ZIO.fail(ScheduleError.ValidationError("User must belong to a company"))
-            )
-          service <- ZIO.service[ScheduleService]
-          days    <- service.getDriverSchedule(
-                       PersonId(UUID.fromString(driverId)),
-                       CompanyId(user.companyId.get)
-                     )
-          dtos     = days.map(ScheduleDayDto.fromDomain)
+          user      <- AuthMiddleware.authenticateRequest(request)
+          companyId <- ZIO
+                         .fromOption(user.companyId)
+                         .mapError(_ => ScheduleError.ValidationError("User must belong to a company"))
+                         .map(CompanyId(_))
+          driverPid <- UuidParser.parsePersonId(driverId)
+          service   <- ZIO.service[ScheduleService]
+          days      <- service.getDriverSchedule(
+                         driverPid,
+                         companyId
+                       )
+          dtos       = days.map(ScheduleDayDto.fromDomain)
         } yield Response.json(dtos.toJson)).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      => handleScheduleError(ex)
@@ -80,15 +80,15 @@ object ScheduleRoutes:
     Method.GET / "api" / "schedules" / "day" / string("date") -> handler { (date: String, request: Request) =>
       (for {
         user      <- AuthMiddleware.authenticateRequest(request)
-        _         <-
-          ZIO.when(user.companyId.isEmpty)(
-            ZIO.fail(ScheduleError.ValidationError("User must belong to a company"))
-          )
+        companyId <- ZIO
+                       .fromOption(user.companyId)
+                       .mapError(_ => ScheduleError.ValidationError("User must belong to a company"))
+                       .map(CompanyId(_))
         localDate <- ZIO
                        .attempt(LocalDate.parse(date))
                        .orElseFail(ScheduleError.ValidationError(s"Invalid date format: $date"))
         service   <- ZIO.service[ScheduleService]
-        days      <- service.getScheduleForDate(CompanyId(user.companyId.get), localDate)
+        days      <- service.getScheduleForDate(companyId, localDate)
         dtos       = days.map(ScheduleDayDto.fromDomain)
       } yield Response.json(dtos.toJson)).catchAll {
         case response: Response => ZIO.succeed(response)
@@ -100,10 +100,10 @@ object ScheduleRoutes:
     Method.GET / "api" / "schedules" -> handler { (request: Request) =>
       (for {
         user      <- AuthMiddleware.authenticateRequest(request)
-        _         <-
-          ZIO.when(user.companyId.isEmpty)(
-            ZIO.fail(ScheduleError.ValidationError("User must belong to a company"))
-          )
+        companyId <- ZIO
+                       .fromOption(user.companyId)
+                       .mapError(_ => ScheduleError.ValidationError("User must belong to a company"))
+                       .map(CompanyId(_))
         fromParam <- ZIO
                        .fromOption(request.url.queryParams.queryParam("from"))
                        .orElseFail(ScheduleError.ValidationError("Query parameter 'from' is required"))
@@ -117,7 +117,7 @@ object ScheduleRoutes:
                        .attempt(LocalDate.parse(toParam))
                        .orElseFail(ScheduleError.ValidationError(s"Invalid 'to' date format: $toParam"))
         service   <- ZIO.service[ScheduleService]
-        days      <- service.getScheduleForDateRange(CompanyId(user.companyId.get), fromDate, toDate)
+        days      <- service.getScheduleForDateRange(companyId, fromDate, toDate)
         dtos       = days.map(ScheduleDayDto.fromDomain)
       } yield Response.json(dtos.toJson)).catchAll {
         case response: Response => ZIO.succeed(response)
@@ -129,21 +129,22 @@ object ScheduleRoutes:
     Method.PUT / "api" / "schedules" / string("id") -> handler { (id: String, request: Request) =>
       (for {
         user       <- AuthMiddleware.authenticateRequest(request)
-        _          <-
-          ZIO.when(user.companyId.isEmpty)(
-            ZIO.fail(ScheduleError.ValidationError("User must belong to a company"))
-          )
+        companyId  <- ZIO
+                        .fromOption(user.companyId)
+                        .mapError(_ => ScheduleError.ValidationError("User must belong to a company"))
+                        .map(CompanyId(_))
         bodyStr    <- request.body.asString
         apiRequest <- ZIO
                         .fromEither(bodyStr.fromJson[UpdateScheduleDayApiRequest])
                         .mapError(err => ScheduleError.ValidationError(s"Invalid JSON: $err"))
         validated  <- apiRequest.validate
         domainReq   = UpdateScheduleDayApiRequest.toDomain(validated)
+        schedId    <- UuidParser.parse(id).map(ScheduleDayId(_))
         service    <- ZIO.service[ScheduleService]
         updated    <- service.updateScheduleDay(
-                        ScheduleDayId(UUID.fromString(id)),
+                        schedId,
                         domainReq,
-                        CompanyId(user.companyId.get)
+                        companyId
                       )
         dto         = ScheduleDayDto.fromDomain(updated)
       } yield Response.json(dto.toJson)).catchAll {
@@ -155,17 +156,18 @@ object ScheduleRoutes:
     // DELETE /api/schedules/{id} — Cancel schedule day
     Method.DELETE / "api" / "schedules" / string("id") -> handler { (id: String, request: Request) =>
       (for {
-        user    <- AuthMiddleware.authenticateRequest(request)
-        _       <-
-          ZIO.when(user.companyId.isEmpty)(
-            ZIO.fail(ScheduleError.ValidationError("User must belong to a company"))
-          )
-        service <- ZIO.service[ScheduleService]
-        updated <- service.cancelScheduleDay(
-                     ScheduleDayId(UUID.fromString(id)),
-                     CompanyId(user.companyId.get)
-                   )
-        dto      = ScheduleDayDto.fromDomain(updated)
+        user      <- AuthMiddleware.authenticateRequest(request)
+        companyId <- ZIO
+                       .fromOption(user.companyId)
+                       .mapError(_ => ScheduleError.ValidationError("User must belong to a company"))
+                       .map(CompanyId(_))
+        schedId   <- UuidParser.parse(id).map(ScheduleDayId(_))
+        service   <- ZIO.service[ScheduleService]
+        updated   <- service.cancelScheduleDay(
+                       schedId,
+                       companyId
+                     )
+        dto        = ScheduleDayDto.fromDomain(updated)
       } yield Response.json(dto.toJson)).catchAll {
         case response: Response => ZIO.succeed(response)
         case ex: Throwable      => handleScheduleError(ex)
@@ -185,9 +187,8 @@ object ScheduleRoutes:
           (Status.Conflict, s"Cannot transition from $from to $to")
         case ScheduleError.CompanyMismatch(expected, actual)    =>
           (Status.Forbidden, "Schedule day belongs to a different company")
-        case ScheduleError.DatabaseError(cause)                 =>
-          (Status.InternalServerError, Option(cause.getMessage).getOrElse("Database error"))
-        case other                                              => (Status.InternalServerError, Option(other.getMessage).getOrElse(other.toString))
+        case ScheduleError.DatabaseError(_)                     => (Status.InternalServerError, "Internal server error")
+        case _                                                  => (Status.InternalServerError, "Internal server error")
 
     ZIO
       .logError(s"Schedule error: $msg")

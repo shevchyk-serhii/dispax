@@ -101,6 +101,59 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
       if (event.isRideAssigned || event.isRideStatusChanged || event.isRideCreated) {
         _refreshRides();
       }
+
+      if (event.isGeofenceTriggered) {
+        final geofenceName = event.geofenceName ?? 'Unknown zone';
+        final isEntry = event.alertType == 'entry';
+        final message = isEntry
+            ? 'Driver entered $geofenceName'
+            : 'Driver left $geofenceName';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  isEntry ? Icons.arrow_downward : Icons.arrow_upward,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: Text(message)),
+              ],
+            ),
+            backgroundColor: isEntry ? Colors.green : Colors.red.shade700,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      if (event.isDriverApproaching) {
+        final distance = event.distanceMeters ?? 0;
+        String message;
+        if (distance <= 100) {
+          message = 'Your driver has arrived!';
+        } else if (distance <= 500) {
+          message = 'Your driver is nearby!';
+        } else {
+          final km = (distance / 1000).toStringAsFixed(1);
+          message = 'Your driver is about ${km}km away';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.directions_car, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(message)),
+              ],
+            ),
+            backgroundColor: distance <= 100 ? Colors.green : Colors.blue,
+            duration: const Duration(seconds: 5),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     });
 
     _fcmSubscription = PushNotificationService.instance.onMessage.listen((message) {

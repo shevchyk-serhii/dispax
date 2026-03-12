@@ -6,6 +6,7 @@ import com.shevchyk.auth.infrastructure.http.AuthenticatedHandlers.*
 import com.shevchyk.auth.middleware.{AuthMiddleware, AuthenticatedUser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.repository.PersonRepository
+import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.core.domain.{Person, PersonId, PersonRole}
 import com.shevchyk.notification.application.FcmService
 import com.shevchyk.notification.domain.RegisterFcmTokenRequest
@@ -21,12 +22,10 @@ object UserRoutes {
 
   private def handleAuthError(ex: Throwable): UIO[Response] =
     ex match
-      case UserNotFound(email)       =>
-        val msg = s"User not found: $email"
-        ZIO.succeed(Response(Status.NotFound, body = Body.fromString(s"""{"error":"$msg"}""")))
-      case UserAlreadyExists(email)  =>
-        val msg = s"User already exists: $email"
-        ZIO.succeed(Response(Status.Conflict, body = Body.fromString(s"""{"error":"$msg"}""")))
+      case UserNotFound(_)           =>
+        ZIO.succeed(Response(Status.NotFound, body = Body.fromString(s"""{"error":"User not found"}""")))
+      case UserAlreadyExists(_)      =>
+        ZIO.succeed(Response(Status.Conflict, body = Body.fromString(s"""{"error":"Operation failed"}""")))
       case InvalidCredentials(_)     =>
         ZIO.succeed(Response(Status.Unauthorized, body = Body.fromString(s"""{"error":"Invalid credentials"}""")))
       case WeakPassword(reason)      =>
@@ -51,13 +50,17 @@ object UserRoutes {
           _                   <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           rideService         <- ZIO.service[RideService]
           personRepo          <- ZIO.service[PersonRepository]
-          requested           <- rideService.getRidesByStatus(RideStatus.Requested)
-          assigned            <- rideService.getRidesByStatus(RideStatus.Assigned)
-          inProgress          <- rideService.getRidesByStatus(RideStatus.InProgress)
-          completed           <- rideService.getRidesByStatus(RideStatus.Completed)
-          cancelled           <- rideService.getRidesByStatus(RideStatus.Cancelled)
-          drivers             <- personRepo.findByRole(PersonRole.Driver)
-          clients             <- personRepo.findByRole(PersonRole.Client)
+          companyId           <- UuidParser.requireCompanyId(user.companyId)
+          allRides            <- rideService.getRidesByCompany(companyId)
+          requested            = allRides.filter(_.status == RideStatus.Requested)
+          assigned             = allRides.filter(_.status == RideStatus.Assigned)
+          inProgress           = allRides.filter(_.status == RideStatus.InProgress)
+          completed            = allRides.filter(_.status == RideStatus.Completed)
+          cancelled            = allRides.filter(_.status == RideStatus.Cancelled)
+          allDrivers          <- personRepo.findByRole(PersonRole.Driver)
+          drivers              = allDrivers.filter(_.companyId.contains(companyId))
+          allClients          <- personRepo.findByRole(PersonRole.Client)
+          clients              = allClients.filter(_.companyId.contains(companyId))
           totalRides           = requested.length + assigned.length + inProgress.length + completed.length + cancelled.length
           revenue              = completed.map(r => r.finalPrice.orElse(r.estimatedPrice).getOrElse(BigDecimal(0))).sum
           today                = LocalDate.now()
@@ -66,13 +69,11 @@ object UserRoutes {
               .filter(r => r.endTime.exists(t => t.atZone(ZoneId.systemDefault()).toLocalDate == today))
               .map(r => r.finalPrice.orElse(r.estimatedPrice).getOrElse(BigDecimal(0)))
               .sum
-          ridesWithAssignment  = (assigned ++ inProgress ++ completed).filter(_.startTime.isDefined)
           avgAssignmentMillis  =
-            if ridesWithAssignment.nonEmpty then
-              ridesWithAssignment
-                .map(r => java.time.Duration.between(r.requestTime, r.startTime.get).toMillis)
-                .sum
-                .toDouble / ridesWithAssignment.length
+            val durations = (assigned ++ inProgress ++ completed).flatMap { r =>
+              r.startTime.map(st => java.time.Duration.between(r.requestTime, st).toMillis)
+            }
+            if durations.nonEmpty then durations.sum.toDouble / durations.length
             else 0.0
           avgAssignmentMinutes = avgAssignmentMillis / 60000.0
           statsJson            =
@@ -101,7 +102,8 @@ object UserRoutes {
           _           <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           rideService <- ZIO.service[RideService]
           days         = request.url.queryParams.queryParam("days").flatMap(_.toIntOption).getOrElse(7)
-          allRides    <- rideService.getAllRides
+          companyId   <- UuidParser.requireCompanyId(user.companyId)
+          allRides    <- rideService.getRidesByCompany(companyId)
           today        = LocalDate.now()
           dailyStats   = (0 until days).map { offset =>
                            val date           = today.minusDays(offset.toLong)
@@ -127,8 +129,10 @@ object UserRoutes {
           _           <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           rideService <- ZIO.service[RideService]
           personRepo  <- ZIO.service[PersonRepository]
-          drivers     <- personRepo.findByRole(PersonRole.Driver)
-          allRides    <- rideService.getAllRides
+          companyId   <- UuidParser.requireCompanyId(user.companyId)
+          allDrivers  <- personRepo.findByRole(PersonRole.Driver)
+          drivers      = allDrivers.filter(_.companyId.contains(companyId))
+          allRides    <- rideService.getRidesByCompany(companyId)
           driverStats  = drivers.map { driver =>
                            val driverRides    = allRides.filter(_.driverId.contains(driver.id))
                            val completedRides = driverRides.filter(_.status == RideStatus.Completed)
@@ -190,9 +194,10 @@ object UserRoutes {
       Method.GET / "api" / "users" / string("id") -> handler { (userId: String, request: Request) =>
         (for {
           user       <- AuthMiddleware.authenticateRequest(request)
-          _          <- AuthMiddleware.checkRoleOrOwner(user, UUID.fromString(userId), "DISPATCHER", "ADMIN")
+          uid        <- UuidParser.parse(userId)
+          _          <- AuthMiddleware.checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
           personRepo <- ZIO.service[PersonRepository]
-          userOpt    <- personRepo.findById(PersonId(UUID.fromString(userId)))
+          userOpt    <- personRepo.findById(PersonId(uid))
           response   <-
             userOpt match {
               case Some(u) => ZIO.succeed(Response.json(u.toJson))
@@ -207,7 +212,8 @@ object UserRoutes {
         (for {
           _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           personRepo <- ZIO.service[PersonRepository]
-          users      <- personRepo.findAll()
+          companyId  <- UuidParser.requireCompanyId(user.companyId)
+          users      <- personRepo.findByCompanyId(companyId)
         } yield Response.json(users.toJson)).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      => handleAuthError(ex)
@@ -230,13 +236,14 @@ object UserRoutes {
       Method.PUT / "api" / "users" / string("id") -> handler { (userId: String, request: Request) =>
         (for {
           user      <- AuthMiddleware.authenticateRequest(request)
-          _         <- AuthMiddleware.checkRoleOrOwner(user, UUID.fromString(userId), "DISPATCHER", "ADMIN")
+          uid       <- UuidParser.parse(userId)
+          _         <- AuthMiddleware.checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
           bodyStr   <- request.body.asString
           updateReq <- ZIO
                          .fromEither(bodyStr.fromJson[UpdateUserRequest])
                          .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
           service   <- ZIO.service[AuthService]
-          userDto   <- service.updateUser(UUID.fromString(userId), updateReq)
+          userDto   <- service.updateUser(uid, updateReq)
         } yield Response.json(userDto.toJson)).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      => handleAuthError(ex)
@@ -248,9 +255,66 @@ object UserRoutes {
         (for {
           user    <- AuthMiddleware.authenticateRequest(request)
           _       <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
+          uid     <- UuidParser.parse(userId)
           service <- ZIO.service[AuthService]
-          _       <- service.updateUser(UUID.fromString(userId), UpdateUserRequest(status = Some("INACTIVE")))
+          _       <- service.updateUser(uid, UpdateUserRequest(status = Some("INACTIVE")))
         } yield Response(Status.NoContent)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleAuthError(ex)
+        }
+      },
+
+      // PUT /api/users/{id}/role — change user role (dispatcher only, cannot change own role)
+      Method.PUT / "api" / "users" / string("id") / "role" -> handler { (userId: String, request: Request) =>
+        (for {
+          user    <- AuthMiddleware.authenticateRequest(request)
+          _       <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          uid     <- UuidParser.parse(userId)
+          _       <- ZIO
+                       .fail(new RuntimeException("Cannot change your own role"))
+                       .when(user.userId == uid)
+          bodyStr <- request.body.asString
+          roleReq <- ZIO
+                       .fromEither(bodyStr.fromJson[UpdateUserRequest])
+                       .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+          service <- ZIO.service[AuthService]
+          userDto <- service.updateUser(uid, UpdateUserRequest(role = roleReq.role))
+        } yield Response.json(userDto.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleAuthError(ex)
+        }
+      },
+
+      // PUT /api/users/{id}/status — activate/suspend/deactivate user (dispatcher)
+      Method.PUT / "api" / "users" / string("id") / "status" -> handler { (userId: String, request: Request) =>
+        (for {
+          user      <- AuthMiddleware.authenticateRequest(request)
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          bodyStr   <- request.body.asString
+          statusReq <- ZIO
+                         .fromEither(bodyStr.fromJson[UpdateUserRequest])
+                         .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+          uid       <- UuidParser.parse(userId)
+          service   <- ZIO.service[AuthService]
+          userDto   <- service.updateUser(uid, UpdateUserRequest(status = statusReq.status))
+        } yield Response.json(userDto.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleAuthError(ex)
+        }
+      },
+
+      // GET /api/users/stats — user counts by role and status (dispatcher)
+      Method.GET / "api" / "users" / "stats" -> handler { (request: Request) =>
+        (for {
+          user       <- AuthMiddleware.authenticateRequest(request)
+          _          <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          personRepo <- ZIO.service[PersonRepository]
+          companyId  <- UuidParser.requireCompanyId(user.companyId)
+          all        <- personRepo.findByCompanyId(companyId)
+          byRole      = all.groupBy(_.role).map((role, persons) => s""""${role.toString}":${persons.size}""").mkString(",")
+          total       = all.size
+          statsJson   = s"""{"total":$total,"byRole":{$byRole}}"""
+        } yield Response.json(statsJson)).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      => handleAuthError(ex)
         }

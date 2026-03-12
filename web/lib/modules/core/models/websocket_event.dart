@@ -43,4 +43,12 @@ class WebSocketEvent {
   bool get isRideCreated => type == 'RideCreated';
   bool get isLocationUpdated => type == 'LocationUpdated';
   bool get isChatMessage => type == 'ChatMessageSent';
+  bool get isGeofenceTriggered => type == 'GeofenceTriggered';
+  bool get isDriverApproaching => type == 'DriverApproaching';
+  bool get isPoolUpdate => type == 'RideStatusChanged' && data['newStatus'] == 'PooledRide';
+
+  String? get geofenceName => data['geofenceName'];
+  String? get alertType => data['alertType'];
+  int? get distanceMeters => data['distanceMeters'];
+  int? get threshold => data['threshold'];
 }

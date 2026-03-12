@@ -15,5 +15,6 @@ object RideMapper:
     scheduledTime = request.scheduledTime,
     requestTime = Instant.now(),
     notes = request.notes,
-    specifics = request.specifics
+    specifics = request.specifics,
+    specialRequirements = request.specialRequirements
   )

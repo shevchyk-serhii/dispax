@@ -99,11 +99,11 @@ class AppTheme {
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondary,
+        unselectedItemColor: AppColors.textLight,
         type: BottomNavigationBarType.fixed,
-        elevation: 8,
-        selectedLabelStyle: AppStyles.labelMedium,
-        unselectedLabelStyle: AppStyles.labelSmall,
+        elevation: 0,
+        selectedLabelStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.3),
+        unselectedLabelStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, letterSpacing: 0.3),
       ),
 
       floatingActionButtonTheme: const FloatingActionButtonThemeData(

@@ -18,6 +18,8 @@ class CreateRideRequest {
   final String clientName;      // Required by API, but ignored by backend
   final String? flightNumber;
   final bool isAirportTransfer;
+  final String? notes;
+  final List<String>? specialRequirements;
 
   const CreateRideRequest({
     required this.clientId,
@@ -29,6 +31,8 @@ class CreateRideRequest {
     required this.clientName,
     this.flightNumber,
     this.isAirportTransfer = false,
+    this.notes,
+    this.specialRequirements,
   });
 
   Map<String, dynamic> toJson() {
@@ -43,6 +47,8 @@ class CreateRideRequest {
       'clientName': clientName,
       'flightNumber': flightNumber,
       'isAirportTransfer': isAirportTransfer,
+      'notes': notes,
+      'specialRequirements': specialRequirements,
     };
   }
 

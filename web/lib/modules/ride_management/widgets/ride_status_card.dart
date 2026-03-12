@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
-import '../../core/extensions.dart';
 import '../../../utils/ride_status_styles.dart';
 
 class RideStatusCard extends StatelessWidget {

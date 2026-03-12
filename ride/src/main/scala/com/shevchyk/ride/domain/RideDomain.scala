@@ -64,7 +64,17 @@ final case class Ride(
     estimatedPrice: Option[BigDecimal] = None,
     finalPrice: Option[BigDecimal] = None,
     notes: Option[String] = None,
-    specifics: Option[RideSpecifics] = None
+    specifics: Option[RideSpecifics] = None,
+    specialRequirements: Option[String] = None,
+    paymentStatus: Option[String] = None,
+    paymentMethod: Option[String] = None,
+    paidAt: Option[Instant] = None,
+    cancellationReason: Option[String] = None,
+    cancellationFee: Option[BigDecimal] = None,
+    cancelledBy: Option[PersonId] = None,
+    isVipRide: Boolean = false,
+    preferredDriverUsed: Boolean = false,
+    poolId: Option[RidePoolId] = None
 ):
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
@@ -83,7 +93,8 @@ final case class CreateRideRequest(
     dropoffLocation: Location,
     scheduledTime: Option[Instant] = None,
     notes: Option[String] = None,
-    specifics: Option[RideSpecifics] = None
+    specifics: Option[RideSpecifics] = None,
+    specialRequirements: Option[String] = None
 )
 
 final case class UpdateRideStatusRequest(
@@ -91,12 +102,18 @@ final case class UpdateRideStatusRequest(
     notes: Option[String] = None
 )
 
+final case class CancelRideRequest(
+    reason: String,
+    fee: Option[BigDecimal] = None
+)
+
 final case class UpdateRideDetailsRequest(
     pickupLocation: Option[Location] = None,
     dropoffLocation: Option[Location] = None,
     scheduledTime: Option[Instant] = None,
     notes: Option[String] = None,
-    specifics: Option[RideSpecifics] = None
+    specifics: Option[RideSpecifics] = None,
+    specialRequirements: Option[String] = None
 )
 
 enum RideError extends Throwable:

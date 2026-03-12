@@ -28,14 +28,13 @@ class RideRefreshRequested extends RideEvent {
   List<Object> get props => [user];
 }
 
-class RideDeleteRequested extends RideEvent {
-  final String rideId;
-
-  const RideDeleteRequested({required this.rideId});
-
-  @override
-  List<Object> get props => [rideId];
-}
+// NOTE: RideDeleteRequested removed — backend does not support DELETE /rides/:id
+// class RideDeleteRequested extends RideEvent {
+//   final String rideId;
+//   const RideDeleteRequested({required this.rideId});
+//   @override
+//   List<Object> get props => [rideId];
+// }
 
 class RideAdded extends RideEvent {
   final Ride ride;

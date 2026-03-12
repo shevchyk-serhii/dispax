@@ -51,6 +51,27 @@ final class PostgresDriverLocationRepository(xa: Transactor[Task]) extends Drive
       .transact(xa)
       .map(_.map { case (id, lat, lng, updatedAt) => DriverLocation(PersonId(id), lat, lng, updatedAt) })
 
+  override def updateAvailability(driverId: PersonId, status: String): Task[Unit] =
+    sql"""
+      UPDATE drivers SET status = ${status}::driver_status
+      WHERE id = ${driverId.value}
+    """.update.run
+      .transact(xa)
+      .unit
+
+  override def findAvailableByCompanyId(
+      companyId: CompanyId
+  ): Task[List[(PersonId, String, Option[Double], Option[Double])]] =
+    sql"""
+      SELECT id, status::text, current_location_lat, current_location_lng
+      FROM drivers
+      WHERE company_id = ${companyId.value} AND status = 'Available'
+    """
+      .query[(UUID, String, Option[Double], Option[Double])]
+      .to[List]
+      .transact(xa)
+      .map(_.map { case (id, status, lat, lng) => (PersonId(id), status, lat, lng) })
+
 object PostgresDriverLocationRepository:
 
   val layer: ZLayer[Transactor[Task], Nothing, DriverLocationRepository] = ZLayer.fromFunction(

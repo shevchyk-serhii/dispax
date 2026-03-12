@@ -59,6 +59,20 @@ class Ride {
   final bool driverApproaching;
   final int? driverDistanceMeters;
   final double? price;
+  final String? notes;
+  final String? specialRequirements;
+  final String? paymentStatus;
+  final String? paymentMethod;
+  final DateTime? paidAt;
+  final bool confirmationSent;
+  final String? cancellationReason;
+  final double? cancellationFee;
+  final String? cancelledBy;
+  final int? rating;
+  final String? ratingComment;
+  final bool isVipRide;
+  final bool preferredDriverUsed;
+  final String? poolId;
 
   const Ride({
     required this.id,
@@ -84,6 +98,20 @@ class Ride {
     this.driverApproaching = false,
     this.driverDistanceMeters,
     this.price,
+    this.notes,
+    this.specialRequirements,
+    this.paymentStatus,
+    this.paymentMethod,
+    this.paidAt,
+    this.confirmationSent = false,
+    this.cancellationReason,
+    this.cancellationFee,
+    this.cancelledBy,
+    this.rating,
+    this.ratingComment,
+    this.isVipRide = false,
+    this.preferredDriverUsed = false,
+    this.poolId,
   });
 
   factory Ride.fromJson(Map<String, dynamic> json) {
@@ -113,6 +141,20 @@ class Ride {
       driverApproaching: json['driverApproaching'] ?? false,
       driverDistanceMeters: json['driverDistanceMeters'],
       price: json['price']?.toDouble(),
+      notes: json['notes'],
+      specialRequirements: json['specialRequirements'],
+      paymentStatus: json['paymentStatus'],
+      paymentMethod: json['paymentMethod'],
+      paidAt: json['paidAt'] != null ? DateTime.parse(json['paidAt']) : null,
+      confirmationSent: json['confirmationSent'] ?? false,
+      cancellationReason: json['cancellationReason'],
+      cancellationFee: json['cancellationFee']?.toDouble(),
+      cancelledBy: json['cancelledBy'],
+      rating: json['rating'],
+      ratingComment: json['ratingComment'],
+      isVipRide: json['isVipRide'] ?? false,
+      preferredDriverUsed: json['preferredDriverUsed'] ?? false,
+      poolId: json['poolId'],
     );
   }
 
@@ -141,6 +183,20 @@ class Ride {
       'driverApproaching': driverApproaching,
       'driverDistanceMeters': driverDistanceMeters,
       'price': price,
+      'notes': notes,
+      'specialRequirements': specialRequirements,
+      'paymentStatus': paymentStatus,
+      'paymentMethod': paymentMethod,
+      'paidAt': paidAt?.toIso8601String(),
+      'confirmationSent': confirmationSent,
+      'cancellationReason': cancellationReason,
+      'cancellationFee': cancellationFee,
+      'cancelledBy': cancelledBy,
+      'rating': rating,
+      'ratingComment': ratingComment,
+      'isVipRide': isVipRide,
+      'preferredDriverUsed': preferredDriverUsed,
+      'poolId': poolId,
     };
   }
 
@@ -168,6 +224,20 @@ class Ride {
     bool? driverApproaching,
     int? driverDistanceMeters,
     double? price,
+    String? notes,
+    String? specialRequirements,
+    String? paymentStatus,
+    String? paymentMethod,
+    DateTime? paidAt,
+    bool? confirmationSent,
+    String? cancellationReason,
+    double? cancellationFee,
+    String? cancelledBy,
+    int? rating,
+    String? ratingComment,
+    bool? isVipRide,
+    bool? preferredDriverUsed,
+    String? poolId,
   }) {
     return Ride(
       id: id ?? this.id,
@@ -193,6 +263,20 @@ class Ride {
       driverApproaching: driverApproaching ?? this.driverApproaching,
       driverDistanceMeters: driverDistanceMeters ?? this.driverDistanceMeters,
       price: price ?? this.price,
+      notes: notes ?? this.notes,
+      specialRequirements: specialRequirements ?? this.specialRequirements,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      paidAt: paidAt ?? this.paidAt,
+      confirmationSent: confirmationSent ?? this.confirmationSent,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
+      cancellationFee: cancellationFee ?? this.cancellationFee,
+      cancelledBy: cancelledBy ?? this.cancelledBy,
+      rating: rating ?? this.rating,
+      ratingComment: ratingComment ?? this.ratingComment,
+      isVipRide: isVipRide ?? this.isVipRide,
+      preferredDriverUsed: preferredDriverUsed ?? this.preferredDriverUsed,
+      poolId: poolId ?? this.poolId,
     );
   }
 
@@ -302,15 +386,8 @@ class Ride {
     return Person(
       id: driverId!,
       name: driverName!,
-      email: 'driver@oktopus.ua',
+      email: '',
       role: PersonRole.driver,
-      phone: '+380123456789',
-      vehicleInfo: const VehicleInfo(
-        make: 'Toyota',
-        model: 'Camry',
-        color: 'Black',
-        licensePlate: 'AA1234BB',
-      ),
     );
   }
 
@@ -318,9 +395,8 @@ class Ride {
     return Person(
       id: clientId,
       name: clientName,
-      email: 'client@oktopus.ua',
+      email: '',
       role: PersonRole.client,
-      phone: '+380987654321',
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -7,9 +8,40 @@ import '../../modules/ride_management/models/ride.dart';
 import '../../modules/driver_management/widgets/widgets.dart';
 import '../../modules/core/widgets/widgets.dart';
 import '../../modules/core/navigation_helper.dart';
+import '../../constants/app_colors.dart';
+import '../../modules/core/services/websocket_service.dart';
+import '../../widgets/common/notification_bell.dart';
+import 'widgets/availability_toggle.dart';
 
-class TodayRidesScreen extends StatelessWidget {
+class TodayRidesScreen extends StatefulWidget {
   const TodayRidesScreen({super.key});
+
+  @override
+  State<TodayRidesScreen> createState() => _TodayRidesScreenState();
+}
+
+class _TodayRidesScreenState extends State<TodayRidesScreen> {
+  StreamSubscription? _wsSubscription;
+  final Map<String, int> _approachingDistances = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
+      if (!mounted) return;
+      if (event.isDriverApproaching && event.rideId != null) {
+        setState(() {
+          _approachingDistances[event.rideId!] = event.distanceMeters ?? 0;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _wsSubscription?.cancel();
+    super.dispose();
+  }
 
   void loadTodayRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
@@ -52,6 +84,7 @@ class TodayRidesScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          const NotificationBell(),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => refreshRides(context),
@@ -120,6 +153,7 @@ class TodayRidesScreen extends StatelessWidget {
       onRefresh: () async => refreshRides(context),
       child: CustomScrollView(
         slivers: [
+          const SliverToBoxAdapter(child: AvailabilityToggle()),
           SliverToBoxAdapter(child: TodayStatsCard(todayRides: todayRides)),
           SliverPadding(
             padding: const EdgeInsets.all(16),
@@ -129,7 +163,7 @@ class TodayRidesScreen extends StatelessWidget {
                 return TodayRideCard(
                   ride: ride,
                   isLast: index == todayRides.length - 1,
-
+                  approachingDistanceMeters: _approachingDistances[ride.id],
                   onCallClient: () => _handleCallClient(context, ride),
                   onStartRide: () => _handleStartRide(context, ride),
                   onCompleteRide: () => _handleCompleteRide(context, ride),
@@ -237,15 +271,15 @@ class TodayRidesScreen extends StatelessWidget {
   Color getStatusColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
-        return Colors.orange;
+        return AppColors.rideRequested;
       case RideStatus.assigned:
-        return Colors.blue;
+        return AppColors.rideAssigned;
       case RideStatus.inProgress:
-        return Colors.green;
+        return AppColors.rideInProgress;
       case RideStatus.completed:
-        return Colors.grey;
+        return AppColors.rideCompleted;
       case RideStatus.cancelled:
-        return Colors.red;
+        return AppColors.rideCancelled;
     }
   }
 

@@ -12,6 +12,7 @@ class TodayRideCard extends StatelessWidget {
   final VoidCallback? onCallClient;
   final VoidCallback? onStartRide;
   final VoidCallback? onCompleteRide;
+  final int? approachingDistanceMeters;
 
   const TodayRideCard({
     Key? key,
@@ -20,6 +21,7 @@ class TodayRideCard extends StatelessWidget {
     this.onCallClient,
     this.onStartRide,
     this.onCompleteRide,
+    this.approachingDistanceMeters,
   }) : super(key: key);
 
   @override
@@ -102,6 +104,41 @@ class TodayRideCard extends StatelessWidget {
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
+                  ),
+                ),
+              if (approachingDistanceMeters != null)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: approachingDistanceMeters! <= 100
+                        ? Colors.green
+                        : approachingDistanceMeters! <= 500
+                            ? Colors.teal
+                            : Colors.blue,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.directions_car, color: Colors.white, size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        approachingDistanceMeters! <= 100
+                            ? 'Arrived'
+                            : approachingDistanceMeters! < 1000
+                                ? '${approachingDistanceMeters}m'
+                                : '${(approachingDistanceMeters! / 1000).toStringAsFixed(1)}km',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],

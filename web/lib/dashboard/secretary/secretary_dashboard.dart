@@ -7,6 +7,8 @@ import '../../theme/app_theme.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
+import '../../screens/settings_screen.dart';
+import '../../widgets/common/notification_bell.dart';
 import 'widgets/client_list_panel.dart';
 import 'widgets/secretary_reports_panel.dart';
 
@@ -32,10 +34,12 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
       child: Scaffold(
         body: IndexedStack(
           index: _selectedIndex,
-          children: const [_CreateRidesTab(), ClientListPanel(), SecretaryReportsPanel()],
+          children: const [_CreateRidesTab(), SecretaryReportsPanel(), CreateRideScreen(), SettingsScreen()],
         ),
         bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
           currentIndex: _selectedIndex,
+          selectedItemColor: AppColors.secretaryColor,
           onTap: (index) {
             setState(() {
               _selectedIndex = index;
@@ -43,13 +47,24 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
           },
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle),
-              label: 'Create Ride',
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Home',
             ),
-            BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Clients'),
             BottomNavigationBarItem(
-              icon: Icon(Icons.analytics),
-              label: 'Reports',
+              icon: Icon(Icons.list_outlined),
+              activeIcon: Icon(Icons.list),
+              label: 'Rides',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.add_circle_outline),
+              activeIcon: Icon(Icons.add_circle),
+              label: 'Create',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings),
+              label: 'Settings',
             ),
           ],
         ),
@@ -63,15 +78,31 @@ class _CreateRidesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Create New Ride', style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary)),
-        backgroundColor: AppColors.secretaryColor,
-        foregroundColor: AppColors.textOnPrimary,
-        elevation: AppDimensions.appBarElevation,
-        automaticallyImplyLeading: false,
-      ),
-      body: AppTheme.buildGradientContainer(
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: AppColors.secretaryGradient),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Create New Ride',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const NotificationBell(),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: AppTheme.buildGradientContainer(
         colors: AppColors.secretaryGradient,
         stops: const [0.0, 1.0],
         begin: Alignment.topCenter,
@@ -155,7 +186,9 @@ class _CreateRidesTab extends StatelessWidget {
             ),
           ),
         ),
-      ),
+          ),
+        ),
+      ],
     );
   }
 

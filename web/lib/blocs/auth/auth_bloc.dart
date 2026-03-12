@@ -15,6 +15,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   late ApiClient privateApiClient;
   late BiometricService privateBiometricService;
   final FlutterSecureStorage privateSecureStorage;
+  final bool _apiClientInjected;
 
   static const String privateUserKey = 'current_user';
   static const String privateTokenKey = 'auth_token';
@@ -33,6 +34,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     BiometricService? biometricService,
     FlutterSecureStorage? secureStorage,
   }) : privateSecureStorage = secureStorage ?? _defaultSecureStorage,
+       _apiClientInjected = apiClient != null,
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();
     privateBiometricService = biometricService ?? BiometricService();
@@ -94,7 +96,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthState.loading());
 
     try {
-      privateApiClient = ApiClient();
+      if (!_apiClientInjected) {
+        privateApiClient = ApiClient();
+      }
 
       final loginResponse = await privateApiClient.login(
         event.email,

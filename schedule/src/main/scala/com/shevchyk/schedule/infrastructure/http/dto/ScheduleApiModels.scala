@@ -6,8 +6,10 @@ import com.shevchyk.schedule.domain.{
   CreateScheduleBatchRequest,
   CreateScheduleDayRequest,
   ScheduleDay,
-  ScheduleDayStatus
+  ScheduleDayStatus,
+  ScheduleError
 }
+import zio.*
 import zio.json.*
 import java.time.{LocalDate, LocalTime}
 import java.util.UUID
@@ -69,31 +71,45 @@ object ScheduleDayDto:
 
 object CreateScheduleDayApiRequest:
 
-  def toDomain(request: CreateScheduleDayApiRequest, companyId: CompanyId): CreateScheduleDayRequest =
-    CreateScheduleDayRequest(
-      driverId = PersonId(UUID.fromString(request.driverId)),
-      companyId = companyId,
-      date = LocalDate.parse(request.date),
-      startTime = LocalTime.parse(request.startTime),
-      endTime = LocalTime.parse(request.endTime),
-      notes = request.notes
-    )
+  def toDomain(
+      request: CreateScheduleDayApiRequest,
+      companyId: CompanyId
+  ): IO[ScheduleError, CreateScheduleDayRequest] = ZIO
+    .attempt(UUID.fromString(request.driverId))
+    .mapError(_ => ScheduleError.ValidationError(s"Invalid driver UUID format: ${request.driverId}"))
+    .map { uuid =>
+      CreateScheduleDayRequest(
+        driverId = PersonId(uuid),
+        companyId = companyId,
+        date = LocalDate.parse(request.date),
+        startTime = LocalTime.parse(request.startTime),
+        endTime = LocalTime.parse(request.endTime),
+        notes = request.notes
+      )
+    }
 
 object CreateScheduleBatchApiRequest:
 
-  def toDomain(request: CreateScheduleBatchApiRequest, companyId: CompanyId): CreateScheduleBatchRequest =
-    CreateScheduleBatchRequest(
-      driverId = PersonId(UUID.fromString(request.driverId)),
-      companyId = companyId,
-      days = request.days.map { day =>
-        CreateScheduleBatchDay(
-          date = LocalDate.parse(day.date),
-          startTime = LocalTime.parse(day.startTime),
-          endTime = LocalTime.parse(day.endTime),
-          notes = day.notes
-        )
-      }
-    )
+  def toDomain(
+      request: CreateScheduleBatchApiRequest,
+      companyId: CompanyId
+  ): IO[ScheduleError, CreateScheduleBatchRequest] = ZIO
+    .attempt(UUID.fromString(request.driverId))
+    .mapError(_ => ScheduleError.ValidationError(s"Invalid driver UUID format: ${request.driverId}"))
+    .map { uuid =>
+      CreateScheduleBatchRequest(
+        driverId = PersonId(uuid),
+        companyId = companyId,
+        days = request.days.map { day =>
+          CreateScheduleBatchDay(
+            date = LocalDate.parse(day.date),
+            startTime = LocalTime.parse(day.startTime),
+            endTime = LocalTime.parse(day.endTime),
+            notes = day.notes
+          )
+        }
+      )
+    }
 
 object UpdateScheduleDayApiRequest:
 

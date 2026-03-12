@@ -36,8 +36,9 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       else
         person
     sql"""
-      INSERT INTO persons (id, name, email, role, company_id, license_number, phone) 
-      VALUES (${personWithId.id.value}, ${personWithId.name}, ${personWithId.email}, ${personWithId.role}, ${personWithId.companyId}, ${personWithId.licenseNumber}, ${personWithId.phone})
+      INSERT INTO persons (id, name, email, role, company_id, license_number, phone, is_vip, preferred_driver_id)
+      VALUES (${personWithId.id.value}, ${personWithId.name}, ${personWithId.email}, ${personWithId.role}, ${personWithId.companyId}, ${personWithId.licenseNumber}, ${personWithId.phone}, ${personWithId.isVip}, ${personWithId.preferredDriverId
+        .map(_.value)})
     """.update.run
       .transact(xa)
       .as(personWithId)
@@ -45,8 +46,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
 
   override def findById(id: PersonId): Task[Option[Person]] = {
     sql"""
-      SELECT id, name, email, role, company_id, license_number, phone
-      FROM persons 
+      SELECT id, name, email, role, company_id, license_number, phone, is_vip, preferred_driver_id
+      FROM persons
       WHERE id = ${id.value}
     """
       .query[Person]
@@ -56,8 +57,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
 
   override def findByEmail(email: String): Task[Option[Person]] = {
     sql"""
-      SELECT id, name, email, role, company_id, license_number, phone
-      FROM persons 
+      SELECT id, name, email, role, company_id, license_number, phone, is_vip, preferred_driver_id
+      FROM persons
       WHERE email = $email
     """
       .query[Person]
@@ -67,8 +68,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
 
   override def findByRole(role: PersonRole): Task[List[Person]] = {
     sql"""
-      SELECT id, name, email, role, company_id, license_number, phone
-      FROM persons 
+      SELECT id, name, email, role, company_id, license_number, phone, is_vip, preferred_driver_id
+      FROM persons
       WHERE role = $role
     """
       .query[Person]
@@ -78,8 +79,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
 
   override def findByCompanyId(companyId: CompanyId): Task[List[Person]] = {
     sql"""
-      SELECT id, name, email, role, company_id, license_number, phone
-      FROM persons 
+      SELECT id, name, email, role, company_id, license_number, phone, is_vip, preferred_driver_id
+      FROM persons
       WHERE company_id = ${companyId.value}
     """
       .query[Person]
@@ -89,7 +90,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
 
   override def findAll(): Task[List[Person]] = {
     sql"""
-      SELECT id, name, email, role, company_id, license_number, phone
+      SELECT id, name, email, role, company_id, license_number, phone, is_vip, preferred_driver_id
       FROM persons
       ORDER BY id
     """
@@ -100,13 +101,15 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
 
   override def update(person: Person): Task[Person] = {
     sql"""
-      UPDATE persons 
-      SET name = ${person.name}, 
-          email = ${person.email}, 
+      UPDATE persons
+      SET name = ${person.name},
+          email = ${person.email},
           role = ${person.role},
           company_id = ${person.companyId},
           license_number = ${person.licenseNumber},
-          phone = ${person.phone}
+          phone = ${person.phone},
+          is_vip = ${person.isVip},
+          preferred_driver_id = ${person.preferredDriverId.map(_.value)}
       WHERE id = ${person.id.value}
     """.update.run
       .transact(xa)
@@ -122,8 +125,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
   }
 
   implicit val personRead: Read[Person] =
-    Read[(UUID, String, String, PersonRole, Option[UUID], Option[String], Option[String])].map {
-      case (id, name, email, role, companyId, licenseNumber, phone) =>
+    Read[(UUID, String, String, PersonRole, Option[UUID], Option[String], Option[String], Boolean, Option[UUID])].map {
+      case (id, name, email, role, companyId, licenseNumber, phone, isVip, preferredDriverId) =>
         Person(
           id = PersonId(id),
           name = name,
@@ -131,7 +134,9 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           role = role,
           companyId = companyId.map(CompanyId.apply),
           licenseNumber = licenseNumber,
-          phone = phone
+          phone = phone,
+          isVip = isVip,
+          preferredDriverId = preferredDriverId.map(PersonId.apply)
         )
     }
 }

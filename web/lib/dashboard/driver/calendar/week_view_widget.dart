@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
+import '../../../constants/app_colors.dart';
 
 class WeekViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -249,15 +250,15 @@ class WeekViewWidget extends StatelessWidget {
   Color getStatusColor(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
-        return Colors.orange;
+        return AppColors.rideRequested;
       case RideStatus.assigned:
-        return Colors.blue;
+        return AppColors.rideAssigned;
       case RideStatus.inProgress:
-        return Colors.green;
+        return AppColors.rideInProgress;
       case RideStatus.completed:
-        return Colors.grey;
+        return AppColors.rideCompleted;
       case RideStatus.cancelled:
-        return Colors.red;
+        return AppColors.rideCancelled;
     }
   }
 

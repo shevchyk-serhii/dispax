@@ -1,7 +1,8 @@
 package com.shevchyk.ride.application
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.EventHub
+import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData}
+import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.repository.{PersonRepository, MockPersonRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.RideService
@@ -60,7 +61,18 @@ object RideServiceSpec extends ZIOSpecDefault {
     clientPerson.id -> clientPerson
   ))
 
-  val standardLayers = InMemoryRideRepository.layer ++ ZLayer.succeed[PersonRepository](testPersonRepo) ++ EventHub.layer >>> RideService.layer
+  private val noopEmailSms: ZLayer[Any, Nothing, EmailSmsService] = ZLayer.succeed(new EmailSmsService:
+    def sendRideConfirmation(data: RideConfirmationData): Task[Unit] = ZIO.unit
+    def sendDriverAssignment(data: RideConfirmationData): Task[Unit] = ZIO.unit
+  )
+
+  val standardLayers =
+    (InMemoryRideRepository.layer ++
+    ZLayer.succeed[PersonRepository](testPersonRepo) ++
+    EventHub.layer ++
+    noopEmailSms ++
+    AuditService.inMemory ++
+    BlacklistRepository.inMemory) >+> RideService.layer
 
   def spec = suite("RideService")(
     suite("getRideById")(
@@ -73,6 +85,9 @@ object RideServiceSpec extends ZIOSpecDefault {
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
         EventHub.layer,
+        noopEmailSms,
+        AuditService.inMemory,
+        BlacklistRepository.inMemory,
         RideService.layer
       )
     ),
@@ -101,6 +116,9 @@ object RideServiceSpec extends ZIOSpecDefault {
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
         EventHub.layer,
+        noopEmailSms,
+        AuditService.inMemory,
+        BlacklistRepository.inMemory,
         RideService.layer
       ),
 
@@ -127,6 +145,9 @@ object RideServiceSpec extends ZIOSpecDefault {
         InMemoryRideRepository.layer,
         ZLayer.succeed[PersonRepository](MockPersonRepository()),
         EventHub.layer,
+        noopEmailSms,
+        AuditService.inMemory,
+        BlacklistRepository.inMemory,
         RideService.layer
       )
     ),

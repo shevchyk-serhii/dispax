@@ -13,6 +13,11 @@ trait FcmTokenRepository:
   def deleteByToken(token: String): Task[Unit]
   def deleteByPersonId(personId: PersonId): Task[Unit]
 
+object FcmTokenRepository:
+
+  val layer: ZLayer[Any, Throwable, FcmTokenRepository] =
+    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresFcmTokenRepository.postgresLayer
+
 object InMemoryFcmTokenRepository:
 
   val layer: ZLayer[Any, Nothing, FcmTokenRepository] = ZLayer.succeed {

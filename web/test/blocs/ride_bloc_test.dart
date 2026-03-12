@@ -12,11 +12,6 @@ import '../helpers/test_fixtures.dart';
 
 class FakePerson extends Fake implements Person {}
 
-class FakeCreateRideRequest extends Fake
-    implements
-        // ignore: undefined_class
-        dynamic {}
-
 void main() {
   late MockRideService mockRideService;
   late Person testUser;
@@ -113,54 +108,6 @@ void main() {
       act: (bloc) => bloc.add(RideRefreshRequested(user: testUser)),
       expect: () => [
         RideState.loading(),
-        isA<RideState>().having((s) => s.hasError, 'hasError', true),
-      ],
-    );
-
-    blocTest<RideBloc, RideState>(
-      'RideDeleteRequested emits deleting then loaded with ride removed',
-      build: () {
-        when(() => mockRideService.deleteRide('ride-1'))
-            .thenAnswer((_) async => true);
-        return buildBloc();
-      },
-      seed: () => RideState.loaded(testRides),
-      act: (bloc) => bloc.add(const RideDeleteRequested(rideId: 'ride-1')),
-      expect: () => [
-        isA<RideState>().having((s) => s.isDeleting, 'isDeleting', true),
-        isA<RideState>()
-            .having((s) => s.isLoaded, 'isLoaded', true)
-            .having((s) => s.rides.length, 'rides.length', 1)
-            .having((s) => s.rides.first.id, 'first ride id', 'ride-2'),
-      ],
-    );
-
-    blocTest<RideBloc, RideState>(
-      'RideDeleteRequested emits error when service returns false',
-      build: () {
-        when(() => mockRideService.deleteRide('ride-1'))
-            .thenAnswer((_) async => false);
-        return buildBloc();
-      },
-      seed: () => RideState.loaded(testRides),
-      act: (bloc) => bloc.add(const RideDeleteRequested(rideId: 'ride-1')),
-      expect: () => [
-        isA<RideState>().having((s) => s.isDeleting, 'isDeleting', true),
-        isA<RideState>().having((s) => s.hasError, 'hasError', true),
-      ],
-    );
-
-    blocTest<RideBloc, RideState>(
-      'RideDeleteRequested emits error on exception',
-      build: () {
-        when(() => mockRideService.deleteRide('ride-1'))
-            .thenThrow(ApiException('fail'));
-        return buildBloc();
-      },
-      seed: () => RideState.loaded(testRides),
-      act: (bloc) => bloc.add(const RideDeleteRequested(rideId: 'ride-1')),
-      expect: () => [
-        isA<RideState>().having((s) => s.isDeleting, 'isDeleting', true),
         isA<RideState>().having((s) => s.hasError, 'hasError', true),
       ],
     );

@@ -3,10 +3,11 @@ package com.shevchyk.ride.integration
 import com.shevchyk.auth.domain.UserRole
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{PersonId, RideId}
-import com.shevchyk.core.application.EventHub
+import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData}
+import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.repository.PersonRepository
 import com.shevchyk.ride.application.service.RideService
-import com.shevchyk.ride.infrastructure.http.dto.RideDto
+import com.shevchyk.ride.infrastructure.http.dto.{RideDto, given}
 import com.shevchyk.ride.helpers.{TestData, TestJWT}
 import com.shevchyk.ride.infrastructure.http.RideRoutes
 import com.shevchyk.ride.repository.{InMemoryPersonRepository, InMemoryRideRepository, RideRepository}
@@ -16,6 +17,11 @@ import zio.json.*
 import zio.test.*
 
 object RideApiSpec extends ZIOSpecDefault {
+
+  private val noopEmailSms: ZLayer[Any, Nothing, EmailSmsService] = ZLayer.succeed(new EmailSmsService:
+    def sendRideConfirmation(data: RideConfirmationData): Task[Unit] = ZIO.unit
+    def sendDriverAssignment(data: RideConfirmationData): Task[Unit] = ZIO.unit
+  )
 
   private def runRequest(request: Request): ZIO[RideService & JwtService, Nothing, Response] =
     RideRoutes.authenticatedRoutes.run(request).either.map {
@@ -118,7 +124,7 @@ object RideApiSpec extends ZIOSpecDefault {
 
         } yield assertTrue(
           response.status == Status.BadRequest,
-          bodyStr.contains("User must belong to a company to create rides")
+          bodyStr.contains("User must belong to a company")
         )
       },
 
@@ -244,6 +250,9 @@ object RideApiSpec extends ZIOSpecDefault {
     InMemoryRideRepository.layer,
     InMemoryPersonRepository.layer,
     EventHub.layer,
+    noopEmailSms,
+    AuditService.inMemory,
+    BlacklistRepository.inMemory,
     RideService.layer,
     TestJWT.testJwtService
   ) @@ TestAspect.sequential
