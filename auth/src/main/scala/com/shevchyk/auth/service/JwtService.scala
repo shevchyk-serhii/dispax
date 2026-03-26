@@ -23,21 +23,6 @@ object JwtPayload:
   implicit val encoder: JsonEncoder[JwtPayload] = DeriveJsonEncoder.gen[JwtPayload]
   implicit val decoder: JsonDecoder[JwtPayload] = DeriveJsonDecoder.gen[JwtPayload]
 
-  implicit val personRoleEncoder: JsonEncoder[PersonRole] = JsonEncoder[String].contramap(_.toString)
-
-  implicit val personRoleDecoder: JsonDecoder[PersonRole] = JsonDecoder[String].mapOrFail { s =>
-    // Support both legacy UPPERCASE (CLIENT) and new PascalCase (Client)
-    val normalized =
-      s match
-        case "CLIENT"     => "Client"
-        case "DRIVER"     => "Driver"
-        case "DISPATCHER" => "Dispatcher"
-        case "SECRETARY"  => "Secretary"
-        case "ADMIN"      => "Admin"
-        case other        => other
-    scala.util.Try(PersonRole.valueOf(normalized)).toEither.left.map(_ => s"Invalid role: $s")
-  }
-
 trait JwtService:
   def generateToken(person: Person): ZIO[Any, JwtError, String]
   def validateToken(token: String): ZIO[Any, JwtError, JwtPayload]

@@ -36,8 +36,23 @@ final case class Location(
 object Location:
   def apply(address: String): Location = Location(address, None, None)
 
-enum PersonRole derives JsonCodec:
+enum PersonRole:
   case Driver, Client, Secretary, Dispatcher, Admin
+
+object PersonRole:
+  given JsonEncoder[PersonRole] = JsonEncoder[String].contramap(_.toString)
+
+  given JsonDecoder[PersonRole] = JsonDecoder[String].mapOrFail { s =>
+    val normalized =
+      s match
+        case "CLIENT"     => "Client"
+        case "DRIVER"     => "Driver"
+        case "DISPATCHER" => "Dispatcher"
+        case "SECRETARY"  => "Secretary"
+        case "ADMIN"      => "Admin"
+        case other        => other
+    scala.util.Try(PersonRole.valueOf(normalized)).toEither.left.map(_ => s"Invalid PersonRole: $s")
+  }
 
 enum UserStatus derives JsonCodec:
   case ACTIVE, INACTIVE, SUSPENDED

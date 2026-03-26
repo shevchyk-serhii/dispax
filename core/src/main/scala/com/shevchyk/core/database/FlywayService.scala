@@ -25,6 +25,7 @@ class FlywayServiceImpl(config: DatabaseConfig, environment: String = "developme
                       .dataSource(config.url, config.user, config.password)
                       .locations(locations: _*)
                       .baselineOnMigrate(true)
+                      .outOfOrder(true)
                       .load()
 
                     flyway.migrate().migrationsExecuted
