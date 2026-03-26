@@ -6,10 +6,10 @@ import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.domain.RepositoryExtensions.*
 import com.shevchyk.ride.repository.RideRepository
-import com.shevchyk.repository.PersonRepository
+import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.core.application.{EmailSmsService, RideConfirmationData}
 import zio.*
-import java.time.Instant
+import java.time.{Duration, Instant}
 import monocle.syntax.all.*
 
 trait RideService:
@@ -40,16 +40,29 @@ trait RideService:
   def getClientRides(clientId: PersonId): IO[RideError, List[Ride]]
   def getAllRides: IO[RideError, List[Ride]]
   def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]
+  def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]]
+  def getDriverRidesPaginated(driverId: PersonId, offset: Int, limit: Int): IO[RideError, List[Ride]]
 
   def updateRideDetails(
       rideId: RideId,
       request: UpdateRideDetailsRequest,
       userId: PersonId,
-      userRole: PersonRole
+      userRole: PersonRole,
+      companyId: Option[CompanyId] = None
   ): IO[RideError, Ride]
   def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride]
-  def markPayment(rideId: RideId, paymentStatus: String, paymentMethod: Option[String]): IO[RideError, Ride]
+
+  def markPayment(
+      rideId: RideId,
+      paymentStatus: PaymentStatus,
+      paymentMethod: Option[PaymentMethod]
+  ): IO[RideError, Ride]
   def getUnpaidCompletedRides: IO[RideError, List[Ride]]
+  def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]
+  def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]
+  def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]
+  def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]
+  def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]]
 
 class RideServiceImpl(
     rideRepository: RideRepository,
@@ -70,6 +83,18 @@ class RideServiceImpl(
 
   def createRide(request: CreateRideRequest): IO[RideError, Ride] =
     for {
+      // Validate pickup is in the future (allow 5 min tolerance for clock skew)
+      _             <-
+        request.scheduledTime match
+          case Some(t) if t.isBefore(Instant.now().minusSeconds(300)) =>
+            ZIO.fail(RideError.ValidationError("Pickup time must be in the future"))
+          case _                                                      => ZIO.unit
+      // Validate addresses differ
+      _             <-
+        ZIO
+          .fail(RideError.ValidationError("Pickup and dropoff addresses must be different"))
+          .when(request.pickupLocation.address == request.dropoffLocation.address)
+          .unit
       ride          <- ZIO.succeed(RideMapper.fromRequest(request))
       persistedRide <- rideRepository.create(ride).mapDatabaseError
       _             <-
@@ -94,6 +119,7 @@ class RideServiceImpl(
               estimatedPrice = persistedRide.estimatedPrice
             )
           )
+          .tapError(e => ZIO.logError(s"Failed to send ride confirmation for ride ${persistedRide.id.value}: $e"))
           .ignore
       _             <-
         auditService
@@ -107,6 +133,7 @@ class RideServiceImpl(
               entityId = persistedRide.id.value
             )
           )
+          .tapError(e => ZIO.logWarning(s"Failed to write audit log: $e"))
           .ignore
     } yield persistedRide
 
@@ -118,16 +145,30 @@ class RideServiceImpl(
   def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride] =
     for {
       ride <- getRideById(rideId)
-      _    <- ZIO.fail(RideError.DriverNotFound(driverId)).when(!ride.canBeStarted).unit
+      _    <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.InProgress))
+          .when(!ride.canBeStarted)
+          .unit
+      // Verify the driver starting the ride is the one assigned
+      _    <-
+        ZIO
+          .fail(RideError.UnauthorizedAccess(driverId, rideId))
+          .when(!ride.driverId.contains(driverId))
+          .unit
 
       driverOpt <- personRepository.findById(driverId).mapDatabaseError
-      _         <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(driverId))
+      driver    <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(driverId))
+      // Company isolation
+      _         <-
+        ZIO
+          .fail(RideError.BusinessRuleViolation("company_isolation", "Driver belongs to a different company"))
+          .when(!driver.companyId.contains(ride.companyId))
+          .unit
 
       updatedRide = ride
                       .focus(_.status)
                       .replace(RideStatus.InProgress)
-                      .focus(_.driverId)
-                      .replace(Some(driverId))
                       .focus(_.startTime)
                       .replace(Some(Instant.now()))
 
@@ -152,7 +193,14 @@ class RideServiceImpl(
   def cancelRide(rideId: RideId, userId: PersonId, userRole: PersonRole): IO[RideError, Ride] =
     for {
       ride <- getRideById(rideId)
+      _    <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled))
+          .when(ride.status == RideStatus.Cancelled)
+          .unit
       _    <- ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.status == RideStatus.Completed).unit
+      // Ownership: client can only cancel own rides, driver only assigned rides, dispatcher can cancel any
+      _    <- validateCancelPermission(ride, userId, userRole)
 
       updatedRide    = ride.focus(_.status).replace(RideStatus.Cancelled)
       persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
@@ -166,7 +214,14 @@ class RideServiceImpl(
   ): IO[RideError, Ride] =
     for {
       ride <- getRideById(rideId)
+      _    <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled))
+          .when(ride.status == RideStatus.Cancelled)
+          .unit
       _    <- ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.status == RideStatus.Completed).unit
+      // Ownership: client can only cancel own rides, driver only assigned rides, dispatcher can cancel any
+      _    <- validateCancelPermission(ride, userId, userRole)
 
       updatedRide    = ride
                          .focus(_.status)
@@ -202,6 +257,7 @@ class RideServiceImpl(
               newValue = Some(s"reason=${request.reason}")
             )
           )
+          .tapError(e => ZIO.logWarning(s"Failed to write audit log: $e"))
           .ignore
     } yield persistedRide
 
@@ -289,6 +345,7 @@ class RideServiceImpl(
               newValue = Some(persistedRide.status.toString)
             )
           )
+          .tapError(e => ZIO.logWarning(s"Failed to write audit log for status change: $e"))
           .ignore
     } yield persistedRide
 
@@ -296,7 +353,8 @@ class RideServiceImpl(
       rideId: RideId,
       request: UpdateRideDetailsRequest,
       userId: PersonId,
-      userRole: PersonRole
+      userRole: PersonRole,
+      companyId: Option[CompanyId] = None
   ): IO[RideError, Ride] =
     for {
       ride <- getRideById(rideId)
@@ -306,6 +364,11 @@ class RideServiceImpl(
           .fail(RideError.UnauthorizedAccess(userId, rideId))
           .when(ride.creatorId != userId && userRole != PersonRole.Dispatcher)
           .unit
+      // Company isolation: ensure ride belongs to user's company
+      _    <-
+        companyId match
+          case Some(cid) => ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.companyId != cid).unit
+          case None      => ZIO.unit
 
       updatedRide = ride
                       .focus(_.pickupLocation)
@@ -332,24 +395,27 @@ class RideServiceImpl(
       driverOpt <- personRepository.findById(driverId).mapDatabaseError
       driver    <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(driverId))
 
-      _                <-
+      _       <-
         ZIO
           .fail(RideError.BusinessRuleViolation("driver_role", "Person is not a driver"))
           .when(driver.role != PersonRole.Driver)
           .unit
-      _                <-
+      _       <-
         ZIO
           .fail(RideError.BusinessRuleViolation("company_isolation", "Driver belongs to a different company"))
           .when(!driver.companyId.contains(ride.companyId))
           .unit
 
       // Check blacklist
-      blocked          <- blacklistRepository.isBlacklisted(ride.clientId, driverId).mapDatabaseError
-      _                <-
+      blocked <- blacklistRepository.isBlacklisted(ride.clientId, driverId).mapDatabaseError
+      _       <-
         ZIO
           .fail(RideError.BusinessRuleViolation("blacklist", "This driver is blacklisted for the ride's client"))
           .when(blocked)
           .unit
+
+      // Check scheduling conflicts
+      _       <- checkScheduleConflict(driverId, ride)
 
       // Check VIP and preferred driver
       clientOpt        <- personRepository.findById(ride.clientId).mapDatabaseError
@@ -389,6 +455,9 @@ class RideServiceImpl(
               driverName = Some(driver.name)
             )
           )
+          .tapError(e =>
+            ZIO.logError(s"Failed to send driver assignment notification for ride ${persistedRide.id.value}: $e")
+          )
           .ignore
       _             <-
         auditService
@@ -403,6 +472,7 @@ class RideServiceImpl(
               newValue = Some(s"driverId=${driverId.value}")
             )
           )
+          .tapError(e => ZIO.logWarning(s"Failed to write audit log for ride assignment: $e"))
           .ignore
     } yield persistedRide
 
@@ -434,6 +504,9 @@ class RideServiceImpl(
           .when(blocked)
           .unit
 
+      // Check scheduling conflicts (exclude current ride from conflict check)
+      _       <- checkScheduleConflict(newDriverId, ride)
+
       updatedRide = ride
                       .focus(_.driverId)
                       .replace(Some(newDriverId))
@@ -463,6 +536,7 @@ class RideServiceImpl(
               newValue = Some(s"driverId=${newDriverId.value}")
             )
           )
+          .tapError(e => ZIO.logWarning(s"Failed to write audit log for ride reassignment: $e"))
           .ignore
     } yield persistedRide
 
@@ -480,7 +554,22 @@ class RideServiceImpl(
   def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]] =
     rideRepository.findByCompanyId(companyId).mapDatabaseError
 
-  def markPayment(rideId: RideId, paymentStatus: String, paymentMethod: Option[String]): IO[RideError, Ride] =
+  def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]] =
+    rideRepository
+      .findByCompanyId(companyId)
+      .mapDatabaseError
+      .map(_.sortBy(_.requestTime).reverse.drop(offset).take(limit))
+
+  def getDriverRidesPaginated(driverId: PersonId, offset: Int, limit: Int): IO[RideError, List[Ride]] = rideRepository
+    .findByDriverId(driverId)
+    .mapDatabaseError
+    .map(_.sortBy(_.requestTime).reverse.drop(offset).take(limit))
+
+  def markPayment(
+      rideId: RideId,
+      paymentStatus: PaymentStatus,
+      paymentMethod: Option[PaymentMethod]
+  ): IO[RideError, Ride] =
     for {
       ride          <- getRideById(rideId)
       updatedRide    = ride
@@ -489,14 +578,88 @@ class RideServiceImpl(
                          .focus(_.paymentMethod)
                          .replace(paymentMethod.orElse(ride.paymentMethod))
                          .focus(_.paidAt)
-                         .replace(if paymentStatus == "paid" then Some(Instant.now()) else ride.paidAt)
+                         .replace(if paymentStatus == PaymentStatus.Paid then Some(Instant.now()) else ride.paidAt)
       persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
     } yield persistedRide
 
   def getUnpaidCompletedRides: IO[RideError, List[Ride]] = rideRepository
     .findByStatus(RideStatus.Completed)
     .mapDatabaseError
-    .map(_.filter(r => r.paymentStatus.isEmpty || r.paymentStatus.contains("unpaid")))
+    .map(_.filter(r => r.paymentStatus.isEmpty || r.paymentStatus.contains(PaymentStatus.Unpaid)))
+
+  def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]] =
+    rideRepository.countByCompanyGroupedByStatus(companyId).mapDatabaseError
+
+  def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal] =
+    rideRepository.sumRevenueByCompany(companyId).mapDatabaseError
+
+  def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal] =
+    rideRepository.sumTodayRevenueByCompany(companyId).mapDatabaseError
+
+  def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double] =
+    rideRepository.avgAssignmentMinutesByCompany(companyId).mapDatabaseError
+
+  def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]] =
+    rideRepository.countDailyStatsByCompany(companyId, days).mapDatabaseError
+
+  // -- Cancel permission --------------------------------------------------
+
+  private def validateCancelPermission(ride: Ride, userId: PersonId, userRole: PersonRole): IO[RideError, Unit] =
+    userRole match
+      case PersonRole.Dispatcher | PersonRole.Secretary | PersonRole.Admin => ZIO.unit
+      case PersonRole.Client                                               =>
+        ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(ride.clientId != userId).unit
+      case PersonRole.Driver                                               =>
+        ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(!ride.driverId.contains(userId)).unit
+
+  // -- Schedule conflict detection ----------------------------------------
+
+  /**
+   * Minimum buffer between rides (travel time + buffer).
+   */
+  private val MinBufferMinutes = 30L
+
+  /**
+   * Checks whether ``driverId`` has any active ride (Assigned / InProgress) whose time window overlaps with
+   * ``candidateRide``.
+   *
+   * A ride's "occupied window" is: [scheduledTime − buffer, scheduledTime + estimatedDuration + buffer]
+   *
+   * Without real ETA data we assume a default ride duration of 60 min.
+   */
+  private def checkScheduleConflict(driverId: PersonId, candidateRide: Ride): IO[RideError, Unit] =
+    val candidateTime = candidateRide.scheduledTime.getOrElse(candidateRide.requestTime)
+    for {
+      driverRides <- rideRepository.findByDriverId(driverId).mapDatabaseError
+      activeRides  = driverRides.filter(r =>
+                       (r.status == RideStatus.Assigned || r.status == RideStatus.InProgress) &&
+                         r.id != candidateRide.id // exclude self (relevant for reassign)
+                     )
+      conflict     = activeRides.find { existing =>
+                       val existingTime = existing.scheduledTime.getOrElse(existing.requestTime)
+                       ridesOverlap(candidateTime, existingTime)
+                     }
+      _           <-
+        conflict match
+          case Some(conflicting) =>
+            val conflictTime = conflicting.scheduledTime.getOrElse(conflicting.requestTime)
+            ZIO.fail(
+              RideError.BusinessRuleViolation(
+                "schedule_conflict",
+                s"Driver already has ride ${conflicting.id.value} " +
+                  s"at ${conflictTime} — insufficient buffer (min ${MinBufferMinutes} min)"
+              )
+            )
+          case None              => ZIO.unit
+    } yield ()
+
+  /**
+   * Two rides overlap when the gap between their scheduled times is less than the buffer.
+   */
+  private def ridesOverlap(t1: Instant, t2: Instant): Boolean =
+    val DefaultRideDurationMinutes = 60L
+    val gap                        = Math.abs(Duration.between(t1, t2).toMinutes)
+    gap < (DefaultRideDurationMinutes + MinBufferMinutes)
 
 object RideService:
 

@@ -129,9 +129,11 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
       }
 
       if (event.isDriverApproaching) {
-        final distance = event.distanceMeters ?? 0;
+        final distance = event.distanceMeters;
         String message;
-        if (distance <= 100) {
+        if (distance == null) {
+          message = 'Your driver is en route';
+        } else if (distance <= 100) {
           message = 'Your driver has arrived!';
         } else if (distance <= 500) {
           message = 'Your driver is nearby!';
@@ -148,7 +150,7 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
                 Expanded(child: Text(message)),
               ],
             ),
-            backgroundColor: distance <= 100 ? Colors.green : Colors.blue,
+            backgroundColor: (distance != null && distance <= 100) ? Colors.green : Colors.blue,
             duration: const Duration(seconds: 5),
             behavior: SnackBarBehavior.floating,
           ),
@@ -156,14 +158,16 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
       }
     });
 
-    _fcmSubscription = PushNotificationService.instance.onMessage.listen((message) {
-      if (!mounted) return;
+    if (PushNotificationService.instance.isInitialized) {
+      _fcmSubscription = PushNotificationService.instance.onMessage.listen((message) {
+        if (!mounted) return;
 
-      final type = message.data['type'];
-      if (type == 'ride_assigned' || type == 'ride_status_changed' || type == 'ride_created') {
-        _refreshRides();
-      }
-    });
+        final type = message.data['type'];
+        if (type == 'ride_assigned' || type == 'ride_status_changed' || type == 'ride_created') {
+          _refreshRides();
+        }
+      });
+    }
   }
 
   void _refreshRides() {

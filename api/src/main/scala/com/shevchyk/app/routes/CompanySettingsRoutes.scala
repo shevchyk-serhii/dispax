@@ -3,7 +3,8 @@ package com.shevchyk.app.routes
 import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
-import com.shevchyk.repository.CompanySettingsRepository
+import com.shevchyk.core.repository.CompanySettingsRepository
+import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -12,11 +13,7 @@ import java.time.Instant
 
 object CompanySettingsRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] =
-    val msg = Option(ex.getMessage).getOrElse(ex.toString)
-    ZIO
-      .logError(s"Company settings error: $msg")
-      .as(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}""")))
+  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("CompanySettings")(ex)
 
   val authenticatedRoutes: Routes[CompanySettingsRepository & JwtService, Response] = Routes(
     // GET /api/company/settings

@@ -16,7 +16,7 @@ trait FcmTokenRepository:
 object FcmTokenRepository:
 
   val layer: ZLayer[Any, Throwable, FcmTokenRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresFcmTokenRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresFcmTokenRepository.postgresLayer
 
 object InMemoryFcmTokenRepository:
 

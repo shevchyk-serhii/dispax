@@ -34,13 +34,22 @@ class _GdprScreenState extends State<GdprScreen> {
       final apiClient = context.read<AuthBloc>().apiClient;
       final consentsResp = await apiClient.get('/gdpr/consents');
       final requestsResp = await apiClient.get('/gdpr/requests');
+      if (!mounted) return;
 
-      setState(() {
-        _consents = (jsonDecode(consentsResp.body) as List).cast<Map<String, dynamic>>();
-        _requests = (jsonDecode(requestsResp.body) as List).cast<Map<String, dynamic>>();
-        _isLoading = false;
-      });
+      if (consentsResp.statusCode == 200 && requestsResp.statusCode == 200) {
+        setState(() {
+          _consents = (jsonDecode(consentsResp.body) as List).cast<Map<String, dynamic>>();
+          _requests = (jsonDecode(requestsResp.body) as List).cast<Map<String, dynamic>>();
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _error = 'Failed to load GDPR data (${consentsResp.statusCode}/${requestsResp.statusCode})';
+        });
+      }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = e.toString();
@@ -62,11 +71,10 @@ class _GdprScreenState extends State<GdprScreen> {
       });
       _loadData();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 
@@ -77,18 +85,16 @@ class _GdprScreenState extends State<GdprScreen> {
 
       if (resp.statusCode == 200) {
         await Clipboard.setData(ClipboardData(text: resp.body));
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Data export copied to clipboard')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
+          const SnackBar(content: Text('Data export copied to clipboard')),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export failed: $e')),
+      );
     }
   }
 
@@ -117,24 +123,24 @@ class _GdprScreenState extends State<GdprScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       final resp = await apiClient.post('/gdpr/deletion-request', {});
+      if (!mounted) return;
 
-      if (resp.statusCode == 201 && mounted) {
+      if (resp.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Deletion request submitted')),
         );
         _loadData();
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 

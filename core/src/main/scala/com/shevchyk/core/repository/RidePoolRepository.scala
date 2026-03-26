@@ -21,7 +21,7 @@ object RidePoolRepository:
   val inMemory: ZLayer[Any, Nothing, RidePoolRepository] = ZLayer.succeed(InMemoryRidePoolRepository())
 
   val layer: ZLayer[Any, Throwable, RidePoolRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresRidePoolRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresRidePoolRepository.postgresLayer
 
 class InMemoryRidePoolRepository extends RidePoolRepository:
   private var pools: Map[RidePoolId, RidePool] = Map.empty

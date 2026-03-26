@@ -14,7 +14,7 @@ object NotificationPreferenceRepository:
   )
 
   val layer: ZLayer[Any, Throwable, NotificationPreferenceRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresNotificationPreferenceRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresNotificationPreferenceRepository.postgresLayer
 
 class InMemoryNotificationPreferenceRepository extends NotificationPreferenceRepository:
   private var prefs: Map[PersonId, NotificationPreference] = Map.empty

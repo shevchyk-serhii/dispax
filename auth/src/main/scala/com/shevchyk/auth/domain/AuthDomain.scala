@@ -1,26 +1,8 @@
 package com.shevchyk.auth.domain
 
+import com.shevchyk.core.domain.{Person, PersonRole}
 import zio.json.*
 import java.util.UUID
-import com.github.f4b6a3.uuid.UuidCreator
-
-case class User(
-    id: UUID,
-    email: String,
-    name: String,
-    role: UserRole,
-    passwordHash: String,
-    phone: Option[String] = None,
-    status: UserStatus = UserStatus.ACTIVE,
-    createdAt: java.time.Instant,
-    updatedAt: Option[java.time.Instant] = None
-) derives JsonCodec
-
-enum UserRole derives JsonCodec:
-  case CLIENT, DRIVER, DISPATCHER, SECRETARY, ADMIN
-
-enum UserStatus derives JsonCodec:
-  case ACTIVE, INACTIVE, SUSPENDED
 
 case class LoginRequest(
     email: String,
@@ -105,13 +87,12 @@ case class TokenNotEligibleForRefresh(message: String) extends JwtError
 
 object UserDto:
 
-  def fromDomain(user: User, companyId: Option[UUID] = None): UserDto = UserDto(
-    id = user.id,
-    email = user.email,
-    name = user.name,
-    role = user.role.toString,
-    phone = user.phone,
-    status = Some(user.status.toString),
-    companyId = companyId,
-    createdAt = Some(user.createdAt.toString)
+  def fromPerson(person: Person): UserDto = UserDto(
+    id = person.id.value,
+    email = person.email,
+    name = person.name,
+    role = person.role.toString.toUpperCase,
+    phone = person.phone,
+    status = Some(person.status.toString),
+    companyId = person.companyId.map(_.value)
   )

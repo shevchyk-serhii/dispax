@@ -4,7 +4,7 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.schedule.domain.*
 import com.shevchyk.schedule.domain.RepositoryExtensions.*
 import com.shevchyk.schedule.repository.ScheduleDayRepository
-import com.shevchyk.repository.PersonRepository
+import com.shevchyk.core.repository.PersonRepository
 import zio.*
 import java.time.{Instant, LocalDate}
 

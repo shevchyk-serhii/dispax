@@ -43,4 +43,4 @@ object RideRatingRepository:
   val inMemory: ZLayer[Any, Nothing, RideRatingRepository] = ZLayer.succeed(new InMemoryRideRatingRepository)
 
   val layer: ZLayer[Any, Throwable, RideRatingRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresRideRatingRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresRideRatingRepository.postgresLayer

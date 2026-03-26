@@ -1,14 +1,17 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../constants/app_constants.dart';
 
 class TestDataService {
   static const String baseUrl = AppConstants.baseUrl;
 
-  /// Seeds the database with test data
+  /// Seeds the database with test data (debug only)
   static Future<bool> seedTestData() async {
+    if (!kDebugMode) return false;
     try {
-      print('🌱 Seeding database with test data...');
+      developer.log('Seeding database with test data...', name: 'TestDataService');
 
       final response = await http.post(
         Uri.parse('$baseUrl/api/test/seed'),
@@ -17,17 +20,17 @@ class TestDataService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Test data seeded successfully: ${data['message']}');
-        print('   Users created: ${data['users_created']}');
-        print('   Rides created: ${data['rides_created']}');
+        developer.log('Test data seeded successfully: ${data['message']}', name: 'TestDataService');
+        developer.log('Users created: ${data['users_created']}', name: 'TestDataService');
+        developer.log('Rides created: ${data['rides_created']}', name: 'TestDataService');
         return true;
       } else {
-        print('❌ Failed to seed test data: ${response.statusCode}');
-        print('Response: ${response.body}');
+        developer.log('Failed to seed test data: ${response.statusCode}', name: 'TestDataService');
+        developer.log('Response: ${response.body}', name: 'TestDataService');
         return false;
       }
     } catch (e) {
-      print('❌ Error seeding test data: $e');
+      developer.log('Error seeding test data: $e', name: 'TestDataService');
       return false;
     }
   }
@@ -43,19 +46,20 @@ class TestDataService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        print('Failed to get test data status: ${response.statusCode}');
+        developer.log('Failed to get test data status: ${response.statusCode}', name: 'TestDataService');
         return null;
       }
     } catch (e) {
-      print('Error getting test data status: $e');
+      developer.log('Error getting test data status: $e', name: 'TestDataService');
       return null;
     }
   }
 
-  /// Clears all test data from the database
+  /// Clears all test data from the database (debug only)
   static Future<bool> clearTestData() async {
+    if (!kDebugMode) return false;
     try {
-      print('🗑️ Clearing test data...');
+      developer.log('Clearing test data...', name: 'TestDataService');
 
       final response = await http.delete(
         Uri.parse('$baseUrl/api/test/clear'),
@@ -63,14 +67,14 @@ class TestDataService {
       ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
-        print('✅ Test data cleared successfully');
+        developer.log('Test data cleared successfully', name: 'TestDataService');
         return true;
       } else {
-        print('❌ Failed to clear test data: ${response.statusCode}');
+        developer.log('Failed to clear test data: ${response.statusCode}', name: 'TestDataService');
         return false;
       }
     } catch (e) {
-      print('❌ Error clearing test data: $e');
+      developer.log('Error clearing test data: $e', name: 'TestDataService');
       return false;
     }
   }
@@ -84,7 +88,7 @@ class TestDataService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Server not available: $e');
+      developer.log('Server not available: $e', name: 'TestDataService');
       return false;
     }
   }

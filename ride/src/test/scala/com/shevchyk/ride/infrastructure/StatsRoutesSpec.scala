@@ -1,16 +1,17 @@
 package com.shevchyk.ride.infrastructure
 
-import com.shevchyk.auth.domain.UserRole
+import com.shevchyk.core.domain.PersonRole
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData}
 import com.shevchyk.core.repository.BlacklistRepository
-import com.shevchyk.repository.PersonRepository
+import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.helpers.{TestData, TestJWT}
 import com.shevchyk.ride.infrastructure.http.StatsRoutes
-import com.shevchyk.ride.repository.{InMemoryPersonRepository, InMemoryRideRepository, ExpenseRepository, RideRatingRepository}
+import com.shevchyk.core.repository.InMemoryPersonRepository
+import com.shevchyk.ride.repository.{InMemoryRideRepository, ExpenseRepository, RideRatingRepository}
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -70,7 +71,7 @@ object StatsRoutesSpec extends ZIOSpecDefault {
           token      <- TestJWT.generateToken(
                            userId = TestData.testUserId,
                            email = "dispatcher@example.com",
-                           role = UserRole.DISPATCHER,
+                           role = PersonRole.Dispatcher,
                            companyId = Some(TestData.testCompanyId)
                          )
 
@@ -110,7 +111,7 @@ object StatsRoutesSpec extends ZIOSpecDefault {
           token      <- TestJWT.generateToken(
                            userId = TestData.testUserId,
                            email = "dispatcher@example.com",
-                           role = UserRole.DISPATCHER,
+                           role = PersonRole.Dispatcher,
                            companyId = Some(TestData.testCompanyId)
                          )
 
@@ -140,7 +141,7 @@ object StatsRoutesSpec extends ZIOSpecDefault {
           token      <- TestJWT.generateToken(
                            userId = TestData.testUserId,
                            email = "dispatcher@example.com",
-                           role = UserRole.DISPATCHER,
+                           role = PersonRole.Dispatcher,
                            companyId = Some(TestData.testCompanyId)
                          )
 
@@ -169,7 +170,7 @@ object StatsRoutesSpec extends ZIOSpecDefault {
           token      <- TestJWT.generateToken(
                            userId = TestData.testUserId,
                            email = "dispatcher@example.com",
-                           role = UserRole.DISPATCHER,
+                           role = PersonRole.Dispatcher,
                            companyId = Some(TestData.testCompanyId)
                          )
 
@@ -202,7 +203,7 @@ object StatsRoutesSpec extends ZIOSpecDefault {
           token      <- TestJWT.generateToken(
                            userId = TestData.testUserId,
                            email = "dispatcher@example.com",
-                           role = UserRole.DISPATCHER,
+                           role = PersonRole.Dispatcher,
                            companyId = Some(TestData.testCompanyId)
                          )
 
@@ -229,7 +230,7 @@ object StatsRoutesSpec extends ZIOSpecDefault {
           token      <- TestJWT.generateToken(
                            userId = TestData.testUserId,
                            email = "dispatcher@example.com",
-                           role = UserRole.DISPATCHER,
+                           role = PersonRole.Dispatcher,
                            companyId = Some(TestData.testCompanyId)
                          )
 
@@ -247,7 +248,7 @@ object StatsRoutesSpec extends ZIOSpecDefault {
           token    <- TestJWT.generateToken(
                         userId = TestData.testUserId,
                         email = "client@example.com",
-                        role = UserRole.CLIENT,
+                        role = PersonRole.Client,
                         companyId = Some(TestData.testCompanyId)
                       )
 

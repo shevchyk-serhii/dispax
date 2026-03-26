@@ -76,4 +76,4 @@ object GeofenceRepository:
   val inMemory: ZLayer[Any, Nothing, GeofenceRepository] = ZLayer.succeed(new InMemoryGeofenceRepository)
 
   val layer: ZLayer[Any, Throwable, GeofenceRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresGeofenceRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresGeofenceRepository.postgresLayer

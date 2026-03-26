@@ -1,12 +1,22 @@
+import 'dart:convert';
+import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart' as geo;
+import 'package:http/http.dart' as http;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../../ride_management/models/ride.dart';
 import '../models/location.dart' as app_location;
 
 class MapboxService {
-  static const String _accessToken = 'MAPBOX_PUBLIC_TOKEN_REMOVED';
+  static const String _accessToken = String.fromEnvironment(
+    'MAPBOX_ACCESS_TOKEN',
+    defaultValue: '',
+  );
 
-  static String get accessToken => _accessToken;
+  static String get accessToken {
+    assert(_accessToken.isNotEmpty, 'MAPBOX_ACCESS_TOKEN must be set via --dart-define');
+    return _accessToken;
+  }
 
   static const double defaultLatitude = 50.4501;
   static const double defaultLongitude = 30.5234;
@@ -40,22 +50,36 @@ class MapboxService {
   }
 
   static Future<List<double>?> geocodeAddress(String address) async {
-
-    if (address.toLowerCase().contains('downtown')) {
-      return [50.4501, 30.5234];
-    } else if (address.toLowerCase().contains('airport')) {
-      return [50.3457, 30.8944];
-    } else if (address.toLowerCase().contains('railway')) {
-      return [50.4433, 30.4914];
-    } else if (address.toLowerCase().contains('university')) {
-      return [50.4434, 30.5059];
-    } else if (address.toLowerCase().contains('independence')) {
-      return [50.4501, 30.5241];
-    } else if (address.toLowerCase().contains('golden')) {
-      return [50.4484, 30.5134];
+    if (_accessToken.isEmpty) {
+      debugPrint('MapboxService: MAPBOX_ACCESS_TOKEN not set, geocoding unavailable');
+      return null;
     }
 
-    return [defaultLatitude, defaultLongitude];
+    try {
+      final encoded = Uri.encodeComponent(address);
+      final url = Uri.parse(
+        'https://api.mapbox.com/geocoding/v5/mapbox.places/$encoded.json'
+        '?access_token=$_accessToken&limit=1',
+      );
+
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final features = data['features'] as List?;
+        if (features != null && features.isNotEmpty) {
+          final coordinates = features[0]['center'] as List;
+          // Mapbox returns [longitude, latitude], we return [latitude, longitude]
+          return [coordinates[1].toDouble(), coordinates[0].toDouble()];
+        }
+      } else {
+        debugPrint('MapboxService: Geocoding failed with status ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('MapboxService: Geocoding error: $e');
+    }
+
+    return null;
   }
 
   static CameraOptions createCameraOptions({
@@ -235,7 +259,7 @@ class MapboxService {
     try {
 
     } catch (e) {
-      print('Error adding marker images: $e');
+      developer.log('Error adding marker images: $e', name: 'MapboxService');
     }
   }
 }

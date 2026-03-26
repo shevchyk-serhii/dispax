@@ -19,7 +19,7 @@ object SessionRepository:
   val inMemory: ZLayer[Any, Nothing, SessionRepository] = ZLayer.succeed(InMemorySessionRepository())
 
   val layer: ZLayer[Any, Throwable, SessionRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresSessionRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresSessionRepository.postgresLayer
 
 class InMemorySessionRepository extends SessionRepository:
   private var sessions: List[Session] = List.empty

@@ -6,6 +6,7 @@ import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.core.domain.*
 import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.core.repository.SessionRepository
+import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -14,11 +15,7 @@ import java.time.Instant
 
 object SessionRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] =
-    val msg = Option(ex.getMessage).getOrElse(ex.toString)
-    ZIO
-      .logError(s"Session error: $msg")
-      .as(Response(Status.InternalServerError, body = Body.fromString("""{"error":"Internal server error"}""")))
+  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Session")(ex)
 
   val authenticatedRoutes: Routes[SessionRepository & TokenRepository & JwtService, Response] = Routes(
     // GET /api/sessions — list active sessions for current user

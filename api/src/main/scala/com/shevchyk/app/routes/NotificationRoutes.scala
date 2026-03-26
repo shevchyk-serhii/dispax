@@ -6,17 +6,14 @@ import com.shevchyk.core.domain.PersonId
 import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId, UnreadCountResponse}
 import com.shevchyk.notification.repository.NotificationRepository
+import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
 
 object NotificationRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] =
-    val msg = Option(ex.getMessage).getOrElse(ex.toString)
-    ZIO
-      .logError(s"Notification error: $msg")
-      .as(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}""")))
+  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Notification")(ex)
 
   val authenticatedRoutes: Routes[NotificationRepository & JwtService, Response] = Routes(
     // GET /api/notifications — get user's notifications (paginated, filterable by type)

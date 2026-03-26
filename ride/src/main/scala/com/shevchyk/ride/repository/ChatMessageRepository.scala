@@ -11,7 +11,7 @@ trait ChatMessageRepository:
   def findByRideId(rideId: RideId): Task[List[ChatMessage]]
 
 object ChatMessageRepository:
-  import com.shevchyk.database.DatabaseConfig
+  import com.shevchyk.core.database.DatabaseConfig
 
   val layer: ZLayer[Any, Throwable, ChatMessageRepository] =
     DatabaseConfig.liveTransactorWithMigrations >>> PostgresChatMessageRepository.layer

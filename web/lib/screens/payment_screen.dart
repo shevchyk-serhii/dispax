@@ -107,7 +107,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
@@ -115,25 +115,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
         'paymentMethod': selectedMethod,
         'paymentStatus': 'Paid',
       });
+      if (!mounted) return;
 
-      if (mounted) {
-        if (response.statusCode == 200) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Payment recorded'), backgroundColor: AppColors.success),
-          );
-          _loadUnpaidRides();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed: ${response.body}'), backgroundColor: AppColors.error),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+      if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+          const SnackBar(content: Text('Payment recorded'), backgroundColor: AppColors.success),
+        );
+        _loadUnpaidRides();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: ${response.body}'), backgroundColor: AppColors.error),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+      );
     }
   }
 

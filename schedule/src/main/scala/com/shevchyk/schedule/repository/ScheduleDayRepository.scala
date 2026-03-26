@@ -2,7 +2,7 @@ package com.shevchyk.schedule.repository
 
 import com.shevchyk.core.domain.{CompanyId, PersonId, ScheduleDayId}
 import com.shevchyk.schedule.domain.ScheduleDay
-import com.shevchyk.database.DatabaseConfig
+import com.shevchyk.core.database.DatabaseConfig
 import doobie.Transactor
 import zio.*
 import java.time.LocalDate

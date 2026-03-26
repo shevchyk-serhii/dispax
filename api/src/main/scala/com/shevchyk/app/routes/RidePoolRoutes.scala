@@ -7,6 +7,7 @@ import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.core.repository.RidePoolRepository
 import com.shevchyk.core.application.{AuditService, EventHub}
 import com.shevchyk.ride.application.service.RideService
+import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -15,11 +16,7 @@ import java.time.Instant
 
 object RidePoolRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] =
-    val msg = Option(ex.getMessage).getOrElse(ex.toString)
-    ZIO
-      .logError(s"RidePool error: $msg")
-      .as(Response(Status.InternalServerError, body = Body.fromString("""{"error":"Internal server error"}""")))
+  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("RidePool")(ex)
 
   val authenticatedRoutes: Routes[RidePoolRepository & RideService & AuditService & EventHub & JwtService, Response] =
     Routes(

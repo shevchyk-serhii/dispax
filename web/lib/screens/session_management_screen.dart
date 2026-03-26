@@ -31,12 +31,21 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       final resp = await apiClient.get('/sessions');
+      if (!mounted) return;
 
-      setState(() {
-        _sessions = (jsonDecode(resp.body) as List).cast<Map<String, dynamic>>();
-        _isLoading = false;
-      });
+      if (resp.statusCode == 200) {
+        setState(() {
+          _sessions = (jsonDecode(resp.body) as List).cast<Map<String, dynamic>>();
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _error = 'Failed to load sessions (${resp.statusCode})';
+        });
+      }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = e.toString();
@@ -64,23 +73,21 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.delete('/sessions/$sessionId');
       _loadSessions();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Session revoked')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Session revoked')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 
@@ -106,23 +113,21 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.delete('/sessions');
       _loadSessions();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All other sessions revoked')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All other sessions revoked')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 

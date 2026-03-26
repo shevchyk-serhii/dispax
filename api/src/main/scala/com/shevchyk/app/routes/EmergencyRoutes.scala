@@ -7,7 +7,8 @@ import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.core.repository.{EmergencyReassignmentRepository, BlacklistRepository}
 import com.shevchyk.core.application.{AuditService, EventHub}
 import com.shevchyk.ride.application.service.RideService
-import com.shevchyk.repository.PersonRepository
+import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -16,11 +17,7 @@ import java.time.Instant
 
 object EmergencyRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] =
-    val msg = Option(ex.getMessage).getOrElse(ex.toString)
-    ZIO
-      .logError(s"Emergency error: $msg")
-      .as(Response(Status.InternalServerError, body = Body.fromString("""{"error":"Internal server error"}""")))
+  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Emergency")(ex)
 
   val authenticatedRoutes
       : Routes[EmergencyReassignmentRepository & BlacklistRepository & RideService & PersonRepository & AuditService & EventHub & JwtService, Response] =

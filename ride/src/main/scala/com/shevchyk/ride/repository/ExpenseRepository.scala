@@ -46,4 +46,4 @@ object ExpenseRepository:
   val inMemory: ZLayer[Any, Nothing, ExpenseRepository] = ZLayer.succeed(new InMemoryExpenseRepository)
 
   val layer: ZLayer[Any, Throwable, ExpenseRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresExpenseRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresExpenseRepository.postgresLayer

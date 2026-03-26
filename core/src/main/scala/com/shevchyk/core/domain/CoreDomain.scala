@@ -37,9 +37,28 @@ object Location:
   def apply(address: String): Location = Location(address, None, None)
 
 enum PersonRole derives JsonCodec:
-  case Driver, Client, Secretary, Dispatcher
+  case Driver, Client, Secretary, Dispatcher, Admin
+
+enum UserStatus derives JsonCodec:
+  case ACTIVE, INACTIVE, SUSPENDED
 
 final case class Person(
+    id: PersonId,
+    name: String,
+    email: String,
+    role: PersonRole,
+    companyId: Option[CompanyId] = None,
+    passwordHash: String = "",
+    licenseNumber: Option[String] = None,
+    phone: Option[String] = None,
+    isVip: Boolean = false,
+    preferredDriverId: Option[PersonId] = None,
+    status: UserStatus = UserStatus.ACTIVE,
+    lastLoginAt: Option[Instant] = None
+)
+
+// DTO for safe serialization — excludes passwordHash
+final case class PersonDto(
     id: PersonId,
     name: String,
     email: String,
@@ -48,8 +67,24 @@ final case class Person(
     licenseNumber: Option[String] = None,
     phone: Option[String] = None,
     isVip: Boolean = false,
-    preferredDriverId: Option[PersonId] = None
+    preferredDriverId: Option[PersonId] = None,
+    status: UserStatus = UserStatus.ACTIVE
 ) derives JsonCodec
+
+object PersonDto:
+
+  def fromPerson(p: Person): PersonDto = PersonDto(
+    id = p.id,
+    name = p.name,
+    email = p.email,
+    role = p.role,
+    companyId = p.companyId,
+    licenseNumber = p.licenseNumber,
+    phone = p.phone,
+    isVip = p.isVip,
+    preferredDriverId = p.preferredDriverId,
+    status = p.status
+  )
 
 final case class Company(
     id: CompanyId,

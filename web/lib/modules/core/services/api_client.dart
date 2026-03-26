@@ -104,7 +104,7 @@ class ApiClient {
         Uri.parse('$privateBaseUrl$endpoint'),
         headers: privateHeaders,
         body: jsonEncode(data),
-      );
+      ).timeout(const Duration(seconds: 15));
       return response;
     } catch (e) {
       throw ApiException('Failed to perform POST request: $e');
@@ -117,7 +117,7 @@ class ApiClient {
         Uri.parse('$privateBaseUrl$endpoint'),
         headers: privateHeaders,
         body: jsonEncode(data),
-      );
+      ).timeout(const Duration(seconds: 15));
       return response;
     } catch (e) {
       throw ApiException('Failed to perform PUT request: $e');
@@ -130,7 +130,7 @@ class ApiClient {
         Uri.parse('$privateBaseUrl$endpoint'),
         headers: privateHeaders,
         body: jsonEncode(data),
-      );
+      ).timeout(const Duration(seconds: 15));
       return response;
     } catch (e) {
       throw ApiException('Failed to perform PATCH request: $e');
@@ -142,7 +142,7 @@ class ApiClient {
       final response = await privateClient.delete(
         Uri.parse('$privateBaseUrl$endpoint'),
         headers: privateHeaders,
-      );
+      ).timeout(const Duration(seconds: 15));
       return response;
     } catch (e) {
       throw ApiException('Failed to perform DELETE request: $e');

@@ -37,6 +37,61 @@ class InMemoryRideRepository extends RideRepository:
   override def delete(id: RideId): Task[Unit] =
     rides.update(_.removed(id)).unit
 
+  override def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]] =
+    rides.get.map(_.values.filter(_.companyId == companyId).groupBy(_.status.toString).map((k, v) => k -> v.size))
+
+  override def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal] =
+    rides.get.map(
+      _.values
+        .filter(r => r.companyId == companyId && r.status == RideStatus.Completed)
+        .flatMap(r => r.finalPrice.orElse(r.estimatedPrice))
+        .sum
+    )
+
+  override def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal] =
+    val todayStart = java.time.LocalDate.now().atStartOfDay(java.time.ZoneOffset.UTC).toInstant
+    rides.get.map(
+      _.values
+        .filter(r =>
+          r.companyId == companyId &&
+            r.status == RideStatus.Completed &&
+            r.endTime.exists(!_.isBefore(todayStart))
+        )
+        .flatMap(r => r.finalPrice.orElse(r.estimatedPrice))
+        .sum
+    )
+
+  override def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double] =
+    rides.get.map { all =>
+      val assigned = all.values.filter(r =>
+        r.companyId == companyId &&
+          r.driverId.isDefined &&
+          r.startTime.isDefined
+      )
+      if assigned.isEmpty then 0.0
+      else
+        val totalMinutes = assigned.map { r =>
+          java.time.Duration.between(r.requestTime, r.startTime.get).toMinutes.toDouble
+        }.sum
+        totalMinutes / assigned.size
+    }
+
+  override def countDailyStatsByCompany(companyId: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]] =
+    val cutoff = Instant.now().minusSeconds(days.toLong * 86400)
+    rides.get.map { all =>
+      val relevant = all.values.filter(r => r.companyId == companyId && r.requestTime.isAfter(cutoff))
+      relevant
+        .groupBy(r => r.requestTime.atZone(java.time.ZoneOffset.UTC).toLocalDate.toString)
+        .map { case (date, rides) =>
+          val total     = rides.size
+          val completed = rides.count(_.status == RideStatus.Completed)
+          val cancelled = rides.count(_.status == RideStatus.Cancelled)
+          (date, total, completed, cancelled)
+        }
+        .toList
+        .sortBy(_._1)
+    }
+
 object InMemoryRideRepository:
   val layer: ZLayer[Any, Nothing, RideRepository] =
     ZLayer.succeed(new InMemoryRideRepository)

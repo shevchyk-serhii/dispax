@@ -3,7 +3,8 @@ package com.shevchyk.ride.infrastructure.http
 import com.shevchyk.auth.infrastructure.http.AuthenticatedHandlers.*
 import com.shevchyk.auth.middleware.{AuthMiddleware, AuthenticatedUser, UuidParser}
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.domain.{CompanyId, PersonId, PersonRole, RideId}
+import com.shevchyk.core.application.AuditService
+import com.shevchyk.core.domain.{AuditAction, AuditLogEntry, AuditLogId, CompanyId, PersonId, PersonRole, RideId}
 import com.shevchyk.ride.application.service.{RideService, ClientLocationService, ChatService}
 import com.shevchyk.ride.repository.RideRatingRepository
 import com.shevchyk.ride.domain.{RideRating, RideRatingId, CreateRatingRequest}
@@ -16,50 +17,65 @@ import zio.http.*
 import zio.json.*
 
 object RideRoutes {
-  import com.shevchyk.repository.PersonRepository
+  import com.shevchyk.core.repository.PersonRepository
+
+  private object AirportTimingConfig:
+    val travelTimeMinutes: Int        = 45
+    val bufferTimeMinutes: Int        = 30
+    val optimalParkingCost: Double    = 12.50
+    val earlyEntryParkingCost: Double = 25.00
 
   private def handleRideError(ex: Throwable): UIO[Response] =
     ex match
-      case RideError.ValidationError(msg)              =>
+      case RideError.ValidationError(msg)               =>
         val userMsg = s"Validation error: $msg"
         ZIO
           .logError(s"Ride error: $userMsg")
           .as(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$userMsg"}""")))
-      case RideError.RideNotFound(id)                  =>
+      case RideError.RideNotFound(id)                   =>
         val userMsg = s"Ride not found: ${id.value}"
         ZIO
           .logError(s"Ride error: $userMsg")
           .as(Response(Status.NotFound, body = Body.fromString(s"""{"error":"$userMsg"}""")))
-      case RideError.PersonNotFound(id)                =>
+      case RideError.PersonNotFound(id)                 =>
         val userMsg = s"Person not found: ${id.value}"
         ZIO
           .logError(s"Ride error: $userMsg")
           .as(Response(Status.NotFound, body = Body.fromString(s"""{"error":"$userMsg"}""")))
-      case RideError.DriverNotFound(id)                =>
+      case RideError.DriverNotFound(id)                 =>
         val userMsg = s"Driver not found: ${id.value}"
         ZIO
           .logError(s"Ride error: $userMsg")
           .as(Response(Status.NotFound, body = Body.fromString(s"""{"error":"$userMsg"}""")))
-      case RideError.UnauthorizedAccess(_, _)          =>
+      case RideError.UnauthorizedAccess(userId, rideId) =>
         ZIO
-          .logError(s"Ride error: Access denied")
+          .logError(s"Ride error: Access denied for user=${userId.value} ride=${rideId.value}")
           .as(Response(Status.Forbidden, body = Body.fromString(s"""{"error":"Access denied"}""")))
-      case RideError.InvalidStatusTransition(from, to) =>
+      case RideError.InvalidStatusTransition(from, to)  =>
         val userMsg = s"Cannot transition from $from to $to"
         ZIO
           .logError(s"Ride error: $userMsg")
           .as(Response(Status.Conflict, body = Body.fromString(s"""{"error":"$userMsg"}""")))
-      case RideError.RideAlreadyAssigned(_, _)         =>
+      case RideError.RideAlreadyAssigned(_, _)          =>
         ZIO
           .logError(s"Ride error: Ride already assigned")
           .as(Response(Status.Conflict, body = Body.fromString(s"""{"error":"Ride already assigned"}""")))
-      case RideError.BusinessRuleViolation(_, msg)     =>
+      case RideError.BusinessRuleViolation(_, msg)      =>
         ZIO
           .logError(s"Ride error: $msg")
           .as(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"$msg"}""")))
-      case other                                       =>
+      case RideError.DatabaseError(cause)               =>
+        val causeMsg = Option(cause.getMessage).getOrElse(cause.toString)
         ZIO
-          .logError(s"Unhandled error: ${Option(other.getMessage).getOrElse(other.toString)}")
+          .logError(s"Database error: $causeMsg")
+          .as(
+            Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+          )
+      case other                                        =>
+        val errorDetail = Option(other.getMessage).getOrElse(other.toString)
+        val causeDetail = Option(other.getCause).map(c => s" caused by: ${c.getMessage}").getOrElse("")
+        ZIO
+          .logError(s"Unhandled error: $errorDetail$causeDetail")
           .as(
             Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
           )
@@ -199,12 +215,14 @@ object RideRoutes {
                           .fromEither(bodyStr.fromJson[UpdateRideDetailsApiRequest])
                           .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
         parsedRideId <- UuidParser.parseRideId(rideId)
+        companyId    <- UuidParser.requireCompanyId(user.companyId)
         service      <- ZIO.service[RideService]
         ride         <- service.updateRideDetails(
                           parsedRideId,
                           UpdateRideDetailsApiRequest.toDomain(apiRequest),
                           PersonId(user.userId),
-                          toPersonRole(user.role)
+                          toPersonRole(user.role),
+                          Some(companyId)
                         )
         rideDto       = RideDto.fromDomain(ride)
       } yield Response.json(rideDto.toJson)).catchAll {
@@ -222,6 +240,15 @@ object RideRoutes {
         companyId    <- UuidParser.requireCompanyId(user.companyId)
         _            <-
           ZIO.when(ride.companyId != companyId)(
+            ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
+          )
+        // Clients can only see their own rides; drivers only their assigned rides
+        _            <-
+          ZIO.when(user.role.toUpperCase == "CLIENT" && ride.clientId.value != user.userId)(
+            ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
+          )
+        _            <-
+          ZIO.when(user.role.toUpperCase == "DRIVER" && !ride.driverId.exists(_.value == user.userId))(
             ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
           )
         rideDto       = RideDto.fromDomain(ride)
@@ -245,14 +272,14 @@ object RideRoutes {
             )
           now           = java.time.Instant.now()
           flightTime    = ride.scheduledTime.getOrElse(now.plusSeconds(7200))
-          travelTime    = 45
-          bufferTime    = 30
+          travelTime    = AirportTimingConfig.travelTimeMinutes
+          bufferTime    = AirportTimingConfig.bufferTimeMinutes
           totalTime     = travelTime + bufferTime
           optimalEntry  = flightTime.minusSeconds(totalTime * 60)
           latestEntry   = flightTime.minusSeconds(bufferTime * 60)
           timeToDepart  = java.time.Duration.between(now, optimalEntry).toMinutes.toInt
-          optimalCost   = 12.50
-          earlyCost     = 25.00
+          optimalCost   = AirportTimingConfig.optimalParkingCost
+          earlyCost     = AirportTimingConfig.earlyEntryParkingCost
           savings       = earlyCost - optimalCost
           response      =
             s"""{
@@ -326,12 +353,19 @@ object RideRoutes {
         case ex: Throwable      => handleRideError(ex)
       }
     },
-    Method.GET / "api" / "rides"                                        -> authenticatedHandler[RideService] { (user, _) =>
-      for {
-        service <- ZIO.service[RideService]
-        rides   <- service.getRidesForUser(PersonId(user.userId))
-        rideDtos = rides.map(r => RideDto.fromDomain(r))
-      } yield Response.json(rideDtos.toJson)
+    Method.GET / "api" / "rides"                                        -> handler { (request: Request) =>
+      (for {
+        user      <- AuthMiddleware.authenticateRequest(request)
+        offset     = request.url.queryParams.queryParam("offset").flatMap(_.toIntOption).getOrElse(0)
+        limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50)
+        companyId <- UuidParser.requireCompanyId(user.companyId)
+        service   <- ZIO.service[RideService]
+        rides     <- service.getRidesByCompanyPaginated(companyId, offset, limit)
+        rideDtos   = rides.map(r => RideDto.fromDomain(r))
+      } yield Response.json(rideDtos.toJson)).catchAll {
+        case response: Response => ZIO.succeed(response)
+        case ex: Throwable      => handleRideError(ex)
+      }
     }
   )
 
@@ -468,7 +502,4 @@ object RideRoutes {
     }
   )
 
-  val routes: Routes[JwtService, Response] = MockRideRoutes.routes
-
-  val routesWithPersonRepo: Routes[JwtService, Response] = MockRideRoutes.routes
 }

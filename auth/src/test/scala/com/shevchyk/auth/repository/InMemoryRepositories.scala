@@ -1,6 +1,7 @@
 package com.shevchyk.auth.repository
 
-import com.shevchyk.auth.domain.*
+import com.shevchyk.core.domain.{Person, PersonId, PersonRole, UserStatus}
+import com.shevchyk.core.repository.PersonRepository
 import zio.*
 import java.time.Instant
 import java.util.UUID
@@ -12,56 +13,37 @@ object TestUUIDs:
   val testUserId10 = UUID.fromString("10101010-1010-1010-1010-101010101010")
   val testUserId99 = UUID.fromString("99999999-9999-9999-9999-999999999999")
 
-final class InMemoryUserRepository extends UserRepository:
+/** InMemoryPersonRepository with pre-seeded test users for auth tests */
+final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
   import TestUUIDs._
 
   private def hashPassword(password: String): String =
     BCrypt.hashpw(password, BCrypt.gensalt(12))
 
-  private val users = Unsafe.unsafe { implicit u =>
+  private val people = Unsafe.unsafe { implicit u =>
     Runtime.default.unsafe
       .run(
         Ref.Synchronized.make(
-          Map[UUID, User](
-            testUserId1  -> User(
-              testUserId1,
-              "test@example.com",
-              "Test User",
-              UserRole.CLIENT,
-              hashPassword("password123"),
-              Some("+1234567890"),
-              UserStatus.ACTIVE,
-              Instant.now()
+          Map[PersonId, Person](
+            PersonId(testUserId1)  -> Person(
+              PersonId(testUserId1), "Test User", "test@example.com",
+              PersonRole.Client, passwordHash = hashPassword("Password123"),
+              phone = Some("+1234567890"), status = UserStatus.ACTIVE
             ),
-            testUserId50 -> User(
-              testUserId50,
-              "client@example.com",
-              "Client User",
-              UserRole.CLIENT,
-              hashPassword("password123"),
-              Some("+1111111111"),
-              UserStatus.ACTIVE,
-              Instant.now()
+            PersonId(testUserId50) -> Person(
+              PersonId(testUserId50), "Client User", "client@example.com",
+              PersonRole.Client, passwordHash = hashPassword("Password123"),
+              phone = Some("+1111111111"), status = UserStatus.ACTIVE
             ),
-            testUserId10 -> User(
-              testUserId10,
-              "driver@example.com",
-              "Driver User",
-              UserRole.DRIVER,
-              hashPassword("password123"),
-              Some("+2222222222"),
-              UserStatus.ACTIVE,
-              Instant.now()
+            PersonId(testUserId10) -> Person(
+              PersonId(testUserId10), "Driver User", "driver@example.com",
+              PersonRole.Driver, passwordHash = hashPassword("Password123"),
+              phone = Some("+2222222222"), status = UserStatus.ACTIVE
             ),
-            testUserId99 -> User(
-              testUserId99,
-              "admin@example.com",
-              "Admin User",
-              UserRole.ADMIN,
-              hashPassword("password123"),
-              Some("+3333333333"),
-              UserStatus.ACTIVE,
-              Instant.now()
+            PersonId(testUserId99) -> Person(
+              PersonId(testUserId99), "Admin User", "admin@example.com",
+              PersonRole.Admin, passwordHash = hashPassword("Password123"),
+              phone = Some("+3333333333"), status = UserStatus.ACTIVE
             )
           )
         )
@@ -69,59 +51,45 @@ final class InMemoryUserRepository extends UserRepository:
       .getOrThrow()
   }
 
-  override def create(user: User): Task[User] =
-    for
-      userMap <- users.get
-      newId    = UUID.randomUUID()
-      newUser  = user.copy(id = newId, createdAt = Instant.now())
-      _       <- users.update(_.updated(newId, newUser))
-    yield newUser
+  override def create(person: Person): Task[Person] =
+    val p = if person.id.value == null then person.copy(id = PersonId.generate()) else person
+    people.update(_.updated(p.id, p)).as(p)
 
-  override def findById(id: UUID): Task[Option[User]] =
-    for
-      userMap <- users.get
-    yield userMap.get(id)
+  override def findById(id: PersonId): Task[Option[Person]] =
+    people.get.map(_.get(id))
 
-  override def findByEmail(email: String): Task[Option[User]] =
-    for
-      userMap <- users.get
-    yield userMap.values.find(_.email == email)
+  override def findByEmail(email: String): Task[Option[Person]] =
+    people.get.map(_.values.find(_.email == email))
 
-  override def findAll(): Task[List[User]] =
-    for
-      userMap <- users.get
-    yield userMap.values.toList.sortBy(_.id.toString)
+  override def findAll(): Task[List[Person]] =
+    people.get.map(_.values.toList.sortBy(_.id.value.toString))
 
-  override def findByRole(role: UserRole): Task[List[User]] =
-    for
-      userMap <- users.get
-    yield userMap.values.filter(_.role == role).toList.sortBy(_.id.toString)
+  override def findByRole(role: PersonRole): Task[List[Person]] =
+    people.get.map(_.values.filter(_.role == role).toList.sortBy(_.id.value.toString))
 
-  override def findByStatus(status: UserStatus): Task[List[User]] =
-    for
-      userMap <- users.get
-    yield userMap.values.filter(_.status == status).toList.sortBy(_.id.toString)
+  override def findByRoleAndCompany(role: PersonRole, companyId: com.shevchyk.core.domain.CompanyId): Task[List[Person]] =
+    people.get.map(_.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList)
 
-  override def update(user: User): Task[User] =
-    for
-      updatedUser <- ZIO.succeed(user.copy(updatedAt = Some(Instant.now())))
-      _          <- users.update(_.updated(user.id, updatedUser))
-    yield updatedUser
+  override def findByCompanyId(companyId: com.shevchyk.core.domain.CompanyId): Task[List[Person]] =
+    people.get.map(_.values.filter(_.companyId.contains(companyId)).toList)
 
-  override def delete(id: UUID): Task[Unit] =
-    for
-      _ <- users.update(_ - id)
-    yield ()
+  override def findByStatus(status: UserStatus): Task[List[Person]] =
+    people.get.map(_.values.filter(_.status == status).toList.sortBy(_.id.value.toString))
 
-  override def searchByQuery(query: String): Task[List[User]] =
-    for
-      userMap <- users.get
-      matchingUsers =
-        userMap.values.filter { user =>
-          user.name.toLowerCase.contains(query.toLowerCase) ||
-          user.email.toLowerCase.contains(query.toLowerCase)
-        }.toList.sortBy(_.id.toString)
-    yield matchingUsers
+  override def update(person: Person): Task[Person] =
+    people.update(_.updated(person.id, person)).as(person)
+
+  override def delete(id: PersonId): Task[Unit] =
+    people.update(_.removed(id)).unit
+
+  override def searchByQuery(query: String): Task[List[Person]] =
+    people.get.map(_.values.filter { p =>
+      p.name.toLowerCase.contains(query.toLowerCase) ||
+      p.email.toLowerCase.contains(query.toLowerCase)
+    }.toList.sortBy(_.id.value.toString))
+
+  override def updateLastLogin(id: PersonId): Task[Unit] =
+    people.update(m => m.get(id).fold(m)(p => m.updated(id, p.copy(lastLoginAt = Some(Instant.now()))))).unit
 
 final class InMemoryTokenRepository extends TokenRepository:
   import TestUUIDs._

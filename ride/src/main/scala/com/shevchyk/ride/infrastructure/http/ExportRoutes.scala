@@ -4,9 +4,10 @@ import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
 import com.shevchyk.ride.application.service.RideService
-import com.shevchyk.ride.domain.{Expense, ExpenseCategory, RideStatus, Ride}
+import com.shevchyk.ride.domain.{Expense, ExpenseCategory, PaymentMethod, RideStatus, Ride}
 import com.shevchyk.ride.repository.ExpenseRepository
-import com.shevchyk.repository.PersonRepository
+import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -37,11 +38,7 @@ case class DatevExportResponse(
 
 object ExportRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] =
-    val msg = Option(ex.getMessage).getOrElse(ex.toString)
-    ZIO
-      .logError(s"Export error: $msg")
-      .as(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}""")))
+  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Export")(ex)
 
   /**
    * Parse month query param (YYYY-MM) or default to current month
@@ -61,12 +58,12 @@ object ExportRoutes:
   /**
    * Determine DATEV counter account based on payment method
    */
-  private def counterAccountForPayment(paymentMethod: Option[String]): String =
-    paymentMethod.map(_.toLowerCase) match
-      case Some("cash")                         => "10000"
-      case Some("card") | Some("bank")          => "12000"
-      case Some("invoice") | Some("receivable") => "14000"
-      case _                                    => "10000" // default to cash
+  private def counterAccountForPayment(paymentMethod: Option[PaymentMethod]): String =
+    paymentMethod match
+      case Some(PaymentMethod.Cash)                                     => "10000"
+      case Some(PaymentMethod.Card) | Some(PaymentMethod.Bank)          => "12000"
+      case Some(PaymentMethod.Invoice) | Some(PaymentMethod.Receivable) => "14000"
+      case _                                                            => "10000" // default to cash
 
   /**
    * DATEV expense account by category

@@ -8,7 +8,9 @@ class PushNotificationService {
 
   PushNotificationService._();
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  FirebaseMessaging get _messaging => FirebaseMessaging.instance;
+  bool _initialized = false;
+  bool get isInitialized => _initialized;
   final ApiClient _apiClient = ApiClient();
   StreamSubscription? _tokenRefreshSubscription;
   String? _currentToken;
@@ -19,37 +21,43 @@ class PushNotificationService {
   Stream<RemoteMessage> get onMessage => _messageController.stream;
 
   Future<void> initialize() async {
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    try {
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional) {
-      await _getAndRegisterToken();
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        await _getAndRegisterToken();
 
-      _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((token) {
-        _currentToken = token;
-        _registerTokenWithBackend(token);
-      });
+        _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((token) {
+          _currentToken = token;
+          _registerTokenWithBackend(token);
+        });
 
-      FirebaseMessaging.onMessage.listen((message) {
-        debugPrint('FCM foreground message: ${message.messageId}');
-        _messageController.add(message);
-      });
+        FirebaseMessaging.onMessage.listen((message) {
+          debugPrint('FCM foreground message: ${message.messageId}');
+          _messageController.add(message);
+        });
 
-      FirebaseMessaging.onMessageOpenedApp.listen((message) {
-        debugPrint('FCM message opened app: ${message.messageId}');
-        _messageController.add(message);
-      });
+        FirebaseMessaging.onMessageOpenedApp.listen((message) {
+          debugPrint('FCM message opened app: ${message.messageId}');
+          _messageController.add(message);
+        });
 
-      final initialMessage = await _messaging.getInitialMessage();
-      if (initialMessage != null) {
-        _messageController.add(initialMessage);
+        final initialMessage = await _messaging.getInitialMessage();
+        if (initialMessage != null) {
+          _messageController.add(initialMessage);
+        }
+
+        _initialized = true;
+      } else {
+        debugPrint('Push notification permission denied');
       }
-    } else {
-      debugPrint('Push notification permission denied');
+    } catch (e) {
+      debugPrint('Push notification initialization failed: $e');
     }
   }
 

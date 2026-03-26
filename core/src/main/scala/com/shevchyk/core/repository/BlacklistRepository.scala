@@ -17,7 +17,7 @@ object BlacklistRepository:
   val inMemory: ZLayer[Any, Nothing, BlacklistRepository] = ZLayer.succeed(InMemoryBlacklistRepository())
 
   val layer: ZLayer[Any, Throwable, BlacklistRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresBlacklistRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresBlacklistRepository.postgresLayer
 
 class InMemoryBlacklistRepository extends BlacklistRepository:
   private var entries: List[BlacklistEntry] = List.empty

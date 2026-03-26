@@ -9,7 +9,6 @@ import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
 import '../../screens/settings_screen.dart';
 import '../../widgets/common/notification_bell.dart';
-import 'widgets/client_list_panel.dart';
 import 'widgets/secretary_reports_panel.dart';
 
 class SecretaryDashboard extends StatefulWidget {

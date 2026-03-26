@@ -131,14 +131,21 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       final countResp = await apiClient.get('/notifications/unread-count');
 
       if (mounted) {
-        final List<dynamic> data = jsonDecode(resp.body);
-        final countData = jsonDecode(countResp.body);
-        setState(() {
-          _notifications =
-              data.map((e) => _Notification.fromJson(e)).toList();
-          _unreadCount = countData['count'] ?? 0;
-          _isLoading = false;
-        });
+        if (resp.statusCode == 200 && countResp.statusCode == 200) {
+          final List<dynamic> data = jsonDecode(resp.body);
+          final countData = jsonDecode(countResp.body);
+          setState(() {
+            _notifications =
+                data.map((e) => _Notification.fromJson(e)).toList();
+            _unreadCount = countData['count'] ?? 0;
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _isLoading = false;
+            _error = 'Failed to load notifications (${resp.statusCode})';
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -156,11 +163,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       await apiClient.put('/notifications/$id/read', {});
       _loadNotifications();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: $e')),
+      );
     }
   }
 
@@ -170,11 +176,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       await apiClient.put('/notifications/read-all', {});
       _loadNotifications();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: $e')),
+      );
     }
   }
 
@@ -184,11 +189,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       await apiClient.delete('/notifications/$id');
       _loadNotifications();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: $e')),
+      );
     }
   }
 
@@ -212,18 +216,17 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.delete('/notifications');
       _loadNotifications();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: $e')),
+      );
     }
   }
 
@@ -613,10 +616,17 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
       final apiClient = context.read<AuthBloc>().apiClient;
       final resp = await apiClient.get('/notification-preferences');
       if (mounted) {
-        setState(() {
-          _prefs = _NotifPrefs.fromJson(jsonDecode(resp.body));
-          _isLoading = false;
-        });
+        if (resp.statusCode == 200) {
+          setState(() {
+            _prefs = _NotifPrefs.fromJson(jsonDecode(resp.body));
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _prefs = _NotifPrefs();
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {

@@ -74,6 +74,11 @@ lazy val uuidDependencies = Seq(
   "com.github.f4b6a3" % "uuid-creator" % "5.3.2"
 )
 
+lazy val testcontainersDependencies = Seq(
+  "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.41.4" % Test,
+  "com.dimafeng" %% "testcontainers-scala-core"       % "0.41.4" % Test
+)
+
 lazy val testDependencies = Seq(
   "io.cucumber"        % "cucumber-core"          % "7.15.0" % Test,
   "io.cucumber"       %% "cucumber-scala"         % "8.20.0" % Test,
@@ -86,7 +91,7 @@ lazy val testDependencies = Seq(
 lazy val core = (project in file("core"))
   .settings(
     name := "oktopus-core",
-    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ dbDependencies ++ uuidDependencies
+    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ httpDependencies ++ dbDependencies ++ uuidDependencies ++ testcontainersDependencies
   )
 
 lazy val auth = (project in file("auth"))
@@ -103,7 +108,7 @@ lazy val ride = (project in file("ride"))
   )
   .settings(
     name := "oktopus-ride",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies,
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies ++ testcontainersDependencies,
     scalacOptions += "-Xmax-inlines:64"
   )
 

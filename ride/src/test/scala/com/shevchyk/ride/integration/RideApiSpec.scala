@@ -1,16 +1,17 @@
 package com.shevchyk.ride.integration
 
-import com.shevchyk.auth.domain.UserRole
+import com.shevchyk.core.domain.PersonRole
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{PersonId, RideId}
 import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData}
 import com.shevchyk.core.repository.BlacklistRepository
-import com.shevchyk.repository.PersonRepository
+import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.infrastructure.http.dto.{RideDto, given}
 import com.shevchyk.ride.helpers.{TestData, TestJWT}
 import com.shevchyk.ride.infrastructure.http.RideRoutes
-import com.shevchyk.ride.repository.{InMemoryPersonRepository, InMemoryRideRepository, RideRepository}
+import com.shevchyk.core.repository.InMemoryPersonRepository
+import com.shevchyk.ride.repository.{InMemoryRideRepository, RideRepository}
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -40,7 +41,7 @@ object RideApiSpec extends ZIOSpecDefault {
           token    <- TestJWT.generateToken(
                         userId = TestData.testUserId,
                         email = "client@example.com",
-                        role = UserRole.CLIENT,
+                        role = PersonRole.Client,
                         companyId = Some(TestData.testCompanyId)
                       )
 
@@ -110,7 +111,7 @@ object RideApiSpec extends ZIOSpecDefault {
           token    <- TestJWT.generateToken(
                         userId = TestData.testUserId,
                         email = "client@example.com",
-                        role = UserRole.CLIENT,
+                        role = PersonRole.Client,
                         companyId = None
                       )
 
@@ -200,7 +201,10 @@ object RideApiSpec extends ZIOSpecDefault {
           _        <- repo.create(ride1)
           _        <- repo.create(ride2)
 
-          token    <- TestJWT.generateToken(userId = TestData.testUserId)
+          token    <- TestJWT.generateToken(
+                        userId = TestData.testUserId,
+                        companyId = Some(TestData.testCompanyId)
+                      )
 
           request   = Request
                         .get(URL.decode("/api/rides").toOption.get)
@@ -219,7 +223,10 @@ object RideApiSpec extends ZIOSpecDefault {
 
       test(" returns empty array when user has no rides") {
         for {
-          token    <- TestJWT.generateToken(userId = java.util.UUID.randomUUID())
+          token    <- TestJWT.generateToken(
+                        userId = java.util.UUID.randomUUID(),
+                        companyId = Some(java.util.UUID.fromString("00000000-0000-0000-0000-ffffffffffff"))
+                      )
 
           request   = Request
                         .get(URL.decode("/api/rides").toOption.get)

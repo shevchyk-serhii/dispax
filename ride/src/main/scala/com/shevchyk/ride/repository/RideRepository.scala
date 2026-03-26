@@ -15,10 +15,15 @@ trait RideRepository {
   def findByCompanyId(companyId: CompanyId): Task[List[Ride]]
   def update(ride: Ride): Task[Ride]
   def delete(id: RideId): Task[Unit]
+  def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]
+  def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]
+  def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]
+  def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double]
+  def countDailyStatsByCompany(companyId: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]]
 }
 
 object RideRepository {
-  import com.shevchyk.database.DatabaseConfig
+  import com.shevchyk.core.database.DatabaseConfig
   import doobie.Transactor
 
   val postgresLayer: ZLayer[Transactor[Task], Nothing, RideRepository] = ZLayer.fromFunction(

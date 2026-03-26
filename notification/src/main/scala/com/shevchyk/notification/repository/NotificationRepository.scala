@@ -69,7 +69,7 @@ class InMemoryNotificationRepository extends NotificationRepository:
 object NotificationRepository:
 
   val layer: ZLayer[Any, Throwable, NotificationRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresNotificationRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresNotificationRepository.postgresLayer
 
 object InMemoryNotificationRepository:
   val layer: ZLayer[Any, Nothing, NotificationRepository] = ZLayer.succeed(new InMemoryNotificationRepository)

@@ -2,7 +2,7 @@ package com.shevchyk.ride.repository
 
 import com.shevchyk.core.domain.{RideId, PersonId}
 import com.shevchyk.ride.domain.ClientLocation
-import com.shevchyk.database.DatabaseConfig
+import com.shevchyk.core.database.DatabaseConfig
 import doobie.Transactor
 import zio.*
 

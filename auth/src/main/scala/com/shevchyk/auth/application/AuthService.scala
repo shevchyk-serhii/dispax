@@ -3,8 +3,8 @@ package com.shevchyk.auth.application
 import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.repository.*
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.repository.PersonRepository
-import com.shevchyk.core.domain.PersonId
+import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.domain.{Person, PersonId, PersonRole, UserStatus}
 import zio.*
 import zio.json.*
 import java.time.Instant
@@ -22,116 +22,132 @@ trait AuthService:
   def changePassword(userId: UUID, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit]
   def validateToken(token: String): ZIO[Any, AuthError, UserDto]
   def refreshToken(token: String): ZIO[Any, AuthError, String]
-  def getAllUsers(role: Option[UserRole] = None, status: Option[UserStatus] = None): ZIO[Any, AuthError, List[UserDto]]
+
+  def getAllUsers(
+      role: Option[PersonRole] = None,
+      status: Option[UserStatus] = None
+  ): ZIO[Any, AuthError, List[UserDto]]
   def searchUsers(query: String): ZIO[Any, AuthError, List[UserDto]]
 
 class AuthServiceImpl(
-    userRepository: UserRepository,
+    personRepository: PersonRepository,
     tokenRepository: TokenRepository,
-    jwtService: JwtService,
-    personRepository: PersonRepository
+    jwtService: JwtService
 ) extends AuthService:
 
   private def hashPassword(password: String): String = BCrypt.hashpw(password, BCrypt.gensalt(12))
 
   private def checkPassword(password: String, hash: String): Boolean = BCrypt.checkpw(password, hash)
 
-  private def validateEmail(email: String): Boolean = email.contains("@") && email.length > 5
+  private val emailRegex = """^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$""".r
 
-  private def validatePassword(password: String): Boolean = password.length >= 6
+  private def validateEmail(email: String): Boolean = emailRegex.matches(email)
+
+  private def parseRole(s: String): Either[Throwable, PersonRole] =
+    val normalized = s.trim.toLowerCase.capitalize
+    scala.util.Try(PersonRole.valueOf(normalized)).toEither
+
+  private def validatePassword(password: String): Boolean =
+    password.length >= 8 &&
+      password.exists(_.isUpper) &&
+      password.exists(_.isLower) &&
+      password.exists(_.isDigit)
 
   override def login(email: String, password: String): ZIO[Any, AuthError, LoginResponse] =
     for
-      userOpt   <- userRepository.findByEmail(email).orElseFail(UserNotFound(email))
-      user      <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(email))
-      _         <- ZIO.when(!checkPassword(password, user.passwordHash))(ZIO.fail(InvalidCredentials(email)))
-      personOpt <- personRepository.findById(PersonId(user.id)).orElseFail(UserNotFound(email))
-      companyId  = personOpt.flatMap(_.companyId.map(_.value))
-      token     <- jwtService.generateToken(user, companyId).mapError(identity)
-      _         <- tokenRepository.create(token, user.id).orElseFail(ValidationError("token", "Failed to store token"))
-    yield LoginResponse(UserDto.fromDomain(user, companyId), token)
+      personOpt <- personRepository.findByEmail(email).orElseFail(UserNotFound(email))
+      person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(email))
+      _         <- ZIO.when(person.status != UserStatus.ACTIVE)(ZIO.fail(UserNotFound(email)))
+      _         <- ZIO.when(!checkPassword(password, person.passwordHash))(ZIO.fail(InvalidCredentials(email)))
+      token     <- jwtService.generateToken(person).mapError(identity)
+      _         <- tokenRepository.create(token, person.id.value).orElseFail(ValidationError("token", "Failed to store token"))
+      _         <- personRepository.updateLastLogin(person.id).ignore
+    yield LoginResponse(UserDto.fromPerson(person), token)
 
   override def createUser(request: CreateUserRequest): ZIO[Any, AuthError, UserDto] =
     for
-      _           <- ZIO.when(!validateEmail(request.email))(ZIO.fail(ValidationError("email", "Invalid email format")))
-      _           <-
-        ZIO.when(!validatePassword(request.password))(ZIO.fail(WeakPassword("Password must be at least 6 characters")))
-      _           <- ZIO.when(request.name.trim.isEmpty)(ZIO.fail(ValidationError("name", "Name cannot be empty")))
-      existing    <- userRepository.findByEmail(request.email).orElseFail(ValidationError("email", "Database error"))
-      _           <- ZIO.when(existing.isDefined)(ZIO.fail(UserAlreadyExists(request.email)))
-      role        <- ZIO.attempt(UserRole.valueOf(request.role)).orElseFail(ValidationError("role", "Invalid role"))
-      newUser      = User(
-                       id = UuidCreator.getTimeOrderedEpoch(),
-                       email = request.email,
-                       name = request.name,
-                       role = role,
-                       passwordHash = hashPassword(request.password),
-                       phone = request.phone,
-                       status = UserStatus.ACTIVE,
-                       createdAt = Instant.now()
-                     )
-      createdUser <- userRepository.create(newUser).orElseFail(ValidationError("user", "Failed to create user"))
-    yield UserDto.fromDomain(createdUser)
+      _        <- ZIO.when(!validateEmail(request.email))(ZIO.fail(ValidationError("email", "Invalid email format")))
+      _        <-
+        ZIO.when(!validatePassword(request.password))(
+          ZIO.fail(WeakPassword("Password must be at least 8 characters with uppercase, lowercase, and digit"))
+        )
+      _        <- ZIO.when(request.name.trim.isEmpty)(ZIO.fail(ValidationError("name", "Name cannot be empty")))
+      existing <- personRepository.findByEmail(request.email).orElseFail(ValidationError("email", "Database error"))
+      _        <- ZIO.when(existing.isDefined)(ZIO.fail(UserAlreadyExists(request.email)))
+      role     <- ZIO.fromEither(parseRole(request.role)).orElseFail(ValidationError("role", "Invalid role"))
+      person    = Person(
+                    id = PersonId.generate(),
+                    name = request.name,
+                    email = request.email,
+                    role = role,
+                    passwordHash = hashPassword(request.password),
+                    phone = request.phone,
+                    status = UserStatus.ACTIVE
+                  )
+      created  <- personRepository.create(person).orElseFail(ValidationError("user", "Failed to create user"))
+    yield UserDto.fromPerson(created)
 
   override def getUserById(id: UUID): ZIO[Any, AuthError, UserDto] =
     for
-      userOpt <- userRepository.findById(id).orElseFail(UserNotFound(s"ID: $id"))
-      user    <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(s"ID: $id"))
-    yield UserDto.fromDomain(user)
+      personOpt <- personRepository.findById(PersonId(id)).orElseFail(UserNotFound(s"ID: $id"))
+      person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(s"ID: $id"))
+    yield UserDto.fromPerson(person)
 
   override def getUserByEmail(email: String): ZIO[Any, AuthError, UserDto] =
     for
-      userOpt <- userRepository.findByEmail(email).orElseFail(UserNotFound(email))
-      user    <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(email))
-    yield UserDto.fromDomain(user)
+      personOpt <- personRepository.findByEmail(email).orElseFail(UserNotFound(email))
+      person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(email))
+    yield UserDto.fromPerson(person)
 
   override def updateUser(id: UUID, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto] =
     for
-      existingUserOpt <- userRepository.findById(id).orElseFail(UserNotFound(s"ID: $id"))
-      existingUser    <- ZIO.fromOption(existingUserOpt).orElseFail(UserNotFound(s"ID: $id"))
-      _               <-
+      existingOpt <- personRepository.findById(PersonId(id)).orElseFail(UserNotFound(s"ID: $id"))
+      existing    <- ZIO.fromOption(existingOpt).orElseFail(UserNotFound(s"ID: $id"))
+      _           <-
         request.email.fold(ZIO.unit)(email =>
           ZIO.when(!validateEmail(email))(ZIO.fail(ValidationError("email", "Invalid email format")))
         )
-      role            <-
-        request.role.fold(ZIO.succeed(existingUser.role))(r =>
-          ZIO.attempt(UserRole.valueOf(r)).orElseFail(ValidationError("role", "Invalid role"))
+      role        <-
+        request.role.fold(ZIO.succeed(existing.role))(r =>
+          ZIO.fromEither(parseRole(r)).orElseFail(ValidationError("role", "Invalid role"))
         )
-      status          <-
-        request.status.fold(ZIO.succeed(existingUser.status))(s =>
+      status      <-
+        request.status.fold(ZIO.succeed(existing.status))(s =>
           ZIO.attempt(UserStatus.valueOf(s)).orElseFail(ValidationError("status", "Invalid status"))
         )
-      updatedUser      = existingUser.copy(
-                           email = request.email.getOrElse(existingUser.email),
-                           name = request.name.getOrElse(existingUser.name),
-                           role = role,
-                           phone = request.phone.orElse(existingUser.phone),
-                           status = status,
-                           updatedAt = Some(Instant.now())
-                         )
-      saved           <- userRepository.update(updatedUser).orElseFail(ValidationError("user", "Failed to update user"))
-    yield UserDto.fromDomain(saved)
+      updated      = existing.copy(
+                       email = request.email.getOrElse(existing.email),
+                       name = request.name.getOrElse(existing.name),
+                       role = role,
+                       phone = request.phone.orElse(existing.phone),
+                       status = status
+                     )
+      saved       <- personRepository.update(updated).orElseFail(ValidationError("user", "Failed to update user"))
+    yield UserDto.fromPerson(saved)
 
   override def deleteUser(id: UUID): ZIO[Any, AuthError, Unit] =
     for
-      userOpt <- userRepository.findById(id).orElseFail(UserNotFound(s"ID: $id"))
-      _       <- ZIO.when(userOpt.isEmpty)(ZIO.fail(UserNotFound(s"ID: $id")))
-      _       <- userRepository.delete(id).orElseFail(ValidationError("user", "Failed to delete user"))
-      _       <- tokenRepository.deleteByUserId(id).orElseFail(ValidationError("token", "Failed to delete tokens"))
+      personOpt <- personRepository.findById(PersonId(id)).orElseFail(UserNotFound(s"ID: $id"))
+      _         <- ZIO.when(personOpt.isEmpty)(ZIO.fail(UserNotFound(s"ID: $id")))
+      _         <- personRepository.delete(PersonId(id)).orElseFail(ValidationError("user", "Failed to delete user"))
+      _         <- tokenRepository.deleteByUserId(id).orElseFail(ValidationError("token", "Failed to delete tokens"))
     yield ()
 
   override def changePassword(userId: UUID, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit] =
     for
-      _          <-
+      _         <-
         ZIO.when(!validatePassword(request.newPassword))(
-          ZIO.fail(WeakPassword("Password must be at least 6 characters"))
+          ZIO.fail(WeakPassword("Password must be at least 8 characters with uppercase, lowercase, and digit"))
         )
-      userOpt    <- userRepository.findById(userId).orElseFail(UserNotFound(s"ID: $userId"))
-      user       <- ZIO.fromOption(userOpt).orElseFail(UserNotFound(s"ID: $userId"))
-      _          <-
-        ZIO.when(!checkPassword(request.currentPassword, user.passwordHash))(ZIO.fail(InvalidCredentials(user.email)))
-      updatedUser = user.copy(passwordHash = hashPassword(request.newPassword), updatedAt = Some(Instant.now()))
-      _          <- userRepository.update(updatedUser).orElseFail(ValidationError("user", "Failed to update password"))
+      personOpt <- personRepository.findById(PersonId(userId)).orElseFail(UserNotFound(s"ID: $userId"))
+      person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(s"ID: $userId"))
+      _         <-
+        ZIO.when(!checkPassword(request.currentPassword, person.passwordHash))(
+          ZIO.fail(InvalidCredentials(person.email))
+        )
+      updated    = person.copy(passwordHash = hashPassword(request.newPassword))
+      _         <- personRepository.update(updated).orElseFail(ValidationError("user", "Failed to update password"))
+      _         <- tokenRepository.deleteByUserId(userId).orElseFail(ValidationError("token", "Failed to invalidate tokens"))
     yield ()
 
   override def validateToken(token: String): ZIO[Any, AuthError, UserDto] =
@@ -141,19 +157,19 @@ class AuthServiceImpl(
       _       <- ZIO.when(user.email != payload.email)(ZIO.fail(InvalidToken(token)))
     yield user
 
-  override def getAllUsers(role: Option[UserRole], status: Option[UserStatus]): ZIO[Any, AuthError, List[UserDto]] =
+  override def getAllUsers(role: Option[PersonRole], status: Option[UserStatus]): ZIO[Any, AuthError, List[UserDto]] =
     for
-      allUsers     <- userRepository.findAll().orElseFail(ValidationError("user", "Failed to fetch users"))
-      filteredUsers = allUsers.filter { user =>
-                        role.forall(_ == user.role) && status.forall(_ == user.status)
+      all          <- personRepository.findAll().orElseFail(ValidationError("user", "Failed to fetch users"))
+      filteredUsers = all.filter { person =>
+                        role.forall(_ == person.role) && status.forall(_ == person.status)
                       }
-    yield filteredUsers.map(user => UserDto.fromDomain(user, None))
+    yield filteredUsers.map(UserDto.fromPerson)
 
   override def searchUsers(query: String): ZIO[Any, AuthError, List[UserDto]] =
-    for matchingUsers <- userRepository
-                           .searchByQuery(query)
-                           .orElseFail(ValidationError("user", "Failed to search users"))
-    yield matchingUsers.map(user => UserDto.fromDomain(user, None))
+    for matching <- personRepository
+                      .searchByQuery(query)
+                      .orElseFail(ValidationError("user", "Failed to search users"))
+    yield matching.map(UserDto.fromPerson)
 
   override def refreshToken(token: String): ZIO[Any, AuthError, String] = jwtService
     .refreshToken(token)
@@ -161,5 +177,5 @@ class AuthServiceImpl(
 
 object AuthService:
 
-  val live: ZLayer[UserRepository & TokenRepository & JwtService & PersonRepository, Nothing, AuthService] = ZLayer
+  val live: ZLayer[PersonRepository & TokenRepository & JwtService, Nothing, AuthService] = ZLayer
     .fromFunction(AuthServiceImpl.apply)

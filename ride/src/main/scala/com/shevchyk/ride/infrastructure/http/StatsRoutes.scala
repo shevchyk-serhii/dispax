@@ -6,7 +6,8 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.RideStatus
 import com.shevchyk.ride.repository.{ExpenseRepository, RideRatingRepository}
-import com.shevchyk.repository.PersonRepository
+import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -60,15 +61,16 @@ case class DriverRatingEntry(
     totalRatings: Int
 ) derives JsonCodec
 
+case class CancellationStatsEntry(
+    reason: String,
+    count: Int
+) derives JsonCodec
+
 object StatsRoutes:
 
   private val COMMISSION_RATE = 0.15
 
-  private def handleError(ex: Throwable): UIO[Response] =
-    val msg = Option(ex.getMessage).getOrElse(ex.toString)
-    ZIO
-      .logError(s"Stats error: $msg")
-      .as(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}""")))
+  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Stats")(ex)
 
   val authenticatedRoutes
       : Routes[RideService & ExpenseRepository & PersonRepository & RideRatingRepository & JwtService, Response] =
@@ -133,9 +135,8 @@ object StatsRoutes:
           companyId <- UuidParser.requireCompanyId(user.companyId)
           service   <- ZIO.service[RideService]
           stats     <- service.getCancellationStats(companyId)
-          entries    = stats.map { case (reason, count) => s"""{"reason":"$reason","count":$count}""" }
-          json       = entries.mkString("[", ",", "]")
-        } yield Response.json(json)).catchAll {
+          entries    = stats.map { case (reason, count) => CancellationStatsEntry(reason, count) }.toList
+        } yield Response.json(entries.toJson)).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      => handleError(ex)
         }
@@ -175,7 +176,7 @@ object StatsRoutes:
           service    <- ZIO.service[RideService]
           personRepo <- ZIO.service[PersonRepository]
           allRides   <- service.getRidesByCompany(companyId)
-          clients    <- personRepo.findByRole(PersonRole.Client)
+          clients    <- personRepo.findByRoleAndCompany(PersonRole.Client, companyId)
           clientMap   = clients.map(c => c.id -> c.name).toMap
           byClient    = allRides.groupBy(_.clientId)
           entries     =
@@ -212,9 +213,9 @@ object StatsRoutes:
           personRepo <- ZIO.service[PersonRepository]
           ratingRepo <- ZIO.service[RideRatingRepository]
           allRides   <- service.getRidesByCompany(companyId)
-          drivers    <- personRepo.findByRole(PersonRole.Driver)
+          drivers    <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId)
           entries    <-
-            ZIO.foreach(drivers.filter(_.companyId.contains(companyId))) { driver =>
+            ZIO.foreach(drivers) { driver =>
               val driverRides    = allRides.filter(_.driverId.contains(driver.id))
               val completedRides = driverRides.filter(_.status == RideStatus.Completed)
               val cancelledRides = driverRides.count(_.status == RideStatus.Cancelled)
@@ -250,9 +251,9 @@ object StatsRoutes:
           companyId  <- UuidParser.requireCompanyId(user.companyId)
           personRepo <- ZIO.service[PersonRepository]
           ratingRepo <- ZIO.service[RideRatingRepository]
-          drivers    <- personRepo.findByRole(PersonRole.Driver)
+          drivers    <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId)
           entries    <-
-            ZIO.foreach(drivers.filter(_.companyId.contains(companyId))) { driver =>
+            ZIO.foreach(drivers) { driver =>
               for {
                 ratings <- ratingRepo.findByDriverId(driver.id)
                 avgOpt  <- ratingRepo.getDriverAvgRating(driver.id)

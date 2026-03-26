@@ -2,6 +2,7 @@ package com.shevchyk.auth.service
 
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.domain.*
+import com.shevchyk.core.domain.{Person, PersonRole}
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
 import zio.*
 import zio.json.*
@@ -11,24 +12,34 @@ import java.util.UUID
 final case class JwtPayload(
     userId: UUID,
     email: String,
-    role: UserRole,
+    role: PersonRole,
     companyId: Option[UUID] = None,
-    iat: Long, // issued at
-    exp: Long  // expires at
+    iat: Long,                       // issued at
+    exp: Long,                       // expires at
+    originalIat: Option[Long] = None // original session start (for absolute expiration)
 )
 
 object JwtPayload:
   implicit val encoder: JsonEncoder[JwtPayload] = DeriveJsonEncoder.gen[JwtPayload]
   implicit val decoder: JsonDecoder[JwtPayload] = DeriveJsonDecoder.gen[JwtPayload]
 
-  implicit val userRoleEncoder: JsonEncoder[UserRole] = JsonEncoder[String].contramap(_.toString)
+  implicit val personRoleEncoder: JsonEncoder[PersonRole] = JsonEncoder[String].contramap(_.toString)
 
-  implicit val userRoleDecoder: JsonDecoder[UserRole] = JsonDecoder[String].mapOrFail(s =>
-    scala.util.Try(UserRole.valueOf(s)).toEither.left.map(_ => s"Invalid role: $s")
-  )
+  implicit val personRoleDecoder: JsonDecoder[PersonRole] = JsonDecoder[String].mapOrFail { s =>
+    // Support both legacy UPPERCASE (CLIENT) and new PascalCase (Client)
+    val normalized =
+      s match
+        case "CLIENT"     => "Client"
+        case "DRIVER"     => "Driver"
+        case "DISPATCHER" => "Dispatcher"
+        case "SECRETARY"  => "Secretary"
+        case "ADMIN"      => "Admin"
+        case other        => other
+    scala.util.Try(PersonRole.valueOf(normalized)).toEither.left.map(_ => s"Invalid role: $s")
+  }
 
 trait JwtService:
-  def generateToken(user: User, companyId: Option[UUID] = None): ZIO[Any, JwtError, String]
+  def generateToken(person: Person): ZIO[Any, JwtError, String]
   def validateToken(token: String): ZIO[Any, JwtError, JwtPayload]
   def refreshToken(token: String): ZIO[Any, JwtError, String]
 
@@ -36,18 +47,19 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
 
   private val algorithm = JwtAlgorithm.HS256
 
-  override def generateToken(user: User, companyId: Option[UUID] = None): ZIO[Any, JwtError, String] = ZIO
+  override def generateToken(person: Person): ZIO[Any, JwtError, String] = ZIO
     .attempt {
       val now = Instant.now()
       val exp = now.plusSeconds(config.expirationTime.toSeconds)
 
       val payload = JwtPayload(
-        userId = user.id,
-        email = user.email,
-        role = user.role,
-        companyId = companyId,
+        userId = person.id.value,
+        email = person.email,
+        role = person.role,
+        companyId = person.companyId.map(_.value),
         iat = now.getEpochSecond,
-        exp = exp.getEpochSecond
+        exp = exp.getEpochSecond,
+        originalIat = Some(now.getEpochSecond)
       )
 
       val claim = JwtClaim(
@@ -88,9 +100,16 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
     for {
       payload <- validateToken(token)
 
-      _ <-
+      _           <-
         ZIO.when(payload.exp - Instant.now().getEpochSecond > 3600)(
           ZIO.fail(TokenNotEligibleForRefresh("Token not eligible for refresh yet"))
+        )
+
+      // Enforce absolute session expiration — require re-login after maxSessionDuration
+      sessionStart = payload.originalIat.getOrElse(payload.iat)
+      _           <-
+        ZIO.when(Instant.now().getEpochSecond - sessionStart > config.maxSessionDuration.toSeconds)(
+          ZIO.fail(ExpiredTokenError("Session has exceeded maximum duration. Please log in again."))
         )
 
       now = Instant.now()
@@ -99,7 +118,8 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
       refreshedPayload = payload.copy(
                            iat = now.getEpochSecond,
                            exp = exp.getEpochSecond,
-                           companyId = payload.companyId
+                           companyId = payload.companyId,
+                           originalIat = Some(sessionStart)
                          )
 
       claim = JwtClaim(

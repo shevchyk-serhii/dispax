@@ -7,6 +7,7 @@ import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.infrastructure.http.dto.{RideDto, given}
 import com.shevchyk.ride.repository.RideTemplateRepository
 import com.shevchyk.ride.application.service.RideService
+import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -15,11 +16,7 @@ import java.time.{Instant, LocalDate, LocalTime}
 
 object RideTemplateRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] =
-    val msg = Option(ex.getMessage).getOrElse(ex.toString)
-    ZIO
-      .logError(s"RideTemplate error: $msg")
-      .as(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}""")))
+  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("RideTemplate")(ex)
 
   val authenticatedRoutes: Routes[RideTemplateRepository & RideService & JwtService, Response] = Routes(
     // POST /api/ride-templates — create template

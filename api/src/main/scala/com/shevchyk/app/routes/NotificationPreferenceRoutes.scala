@@ -4,6 +4,7 @@ import com.shevchyk.auth.middleware.AuthMiddleware
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.NotificationPreferenceRepository
+import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -12,11 +13,7 @@ import java.time.Instant
 
 object NotificationPreferenceRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] =
-    val msg = Option(ex.getMessage).getOrElse(ex.toString)
-    ZIO
-      .logError(s"NotificationPreference error: $msg")
-      .as(Response(Status.InternalServerError, body = Body.fromString("""{"error":"Internal server error"}""")))
+  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("NotificationPreference")(ex)
 
   val authenticatedRoutes: Routes[NotificationPreferenceRepository & JwtService, Response] = Routes(
     // GET /api/notification-preferences — get user's preferences

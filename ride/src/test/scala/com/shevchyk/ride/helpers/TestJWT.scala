@@ -2,7 +2,7 @@ package com.shevchyk.ride.helpers
 
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.auth.domain.{User, UserRole}
+import com.shevchyk.core.domain.{Person, PersonId, PersonRole, CompanyId, UserStatus}
 import zio.*
 import java.util.UUID
 import scala.concurrent.duration.Duration
@@ -12,21 +12,19 @@ object TestJWT {
   def generateToken(
       userId: UUID,
       email: String = "test@example.com",
-      role: UserRole = UserRole.CLIENT,
+      role: PersonRole = PersonRole.Client,
       companyId: Option[UUID] = None
   ): ZIO[JwtService, Throwable, String] = {
-    val user = User(
-      id = userId,
+    val person = Person(
+      id = PersonId(userId),
       email = email,
       name = "Test User",
       role = role,
       passwordHash = "test-hash",
-      phone = None,
-      status = com.shevchyk.auth.domain.UserStatus.ACTIVE,
-      createdAt = java.time.Instant.now(),
-      updatedAt = None
+      companyId = companyId.map(CompanyId.apply),
+      status = UserStatus.ACTIVE
     )
-    ZIO.serviceWithZIO[JwtService](_.generateToken(user, companyId))
+    ZIO.serviceWithZIO[JwtService](_.generateToken(person))
   }
 
   val testConfig: ZLayer[Any, Nothing, JwtConfig] = ZLayer.succeed(

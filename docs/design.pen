@@ -538,7 +538,8 @@
                           "fill": "#64748B",
                           "content": "Pending",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -590,7 +591,8 @@
                           "fill": "#64748B",
                           "content": "Completed",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -642,7 +644,8 @@
                           "fill": "#64748B",
                           "content": "Online",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -1563,8 +1566,13 @@
                       "name": "op1",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FFFBEB",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCD34D40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -1584,8 +1592,8 @@
                           "type": "icon_font",
                           "id": "SM5vJ",
                           "name": "op1i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "credit-card",
                           "iconFontFamily": "lucide",
                           "fill": "#F59E0B"
@@ -1609,8 +1617,13 @@
                       "name": "op2",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FFFBEB",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCD34D40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -1630,8 +1643,8 @@
                           "type": "icon_font",
                           "id": "wdfal",
                           "name": "op2i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "receipt",
                           "iconFontFamily": "lucide",
                           "fill": "#F59E0B"
@@ -1655,8 +1668,13 @@
                       "name": "op3",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FFFBEB",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCD34D40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -1676,8 +1694,8 @@
                           "type": "icon_font",
                           "id": "2P7Ip",
                           "name": "op3i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "credit-card",
                           "iconFontFamily": "lucide",
                           "fill": "#F59E0B"
@@ -1701,8 +1719,13 @@
                       "name": "op4",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FFFBEB",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCD34D40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -1722,8 +1745,8 @@
                           "type": "icon_font",
                           "id": "cSrYd",
                           "name": "op4i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "wallet",
                           "iconFontFamily": "lucide",
                           "fill": "#F59E0B"
@@ -1756,8 +1779,13 @@
                       "name": "op5",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FFFBEB",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCD34D40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -1777,8 +1805,8 @@
                           "type": "icon_font",
                           "id": "QqsXe",
                           "name": "op5i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "landmark",
                           "iconFontFamily": "lucide",
                           "fill": "#F59E0B"
@@ -1802,8 +1830,13 @@
                       "name": "op6",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FFFBEB",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCD34D40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -1823,8 +1856,8 @@
                           "type": "icon_font",
                           "id": "l8Vak",
                           "name": "op6i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "download",
                           "iconFontFamily": "lucide",
                           "fill": "#F59E0B"
@@ -1878,8 +1911,13 @@
                       "name": "mg1",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#EFF6FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#93C5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -1899,8 +1937,8 @@
                           "type": "icon_font",
                           "id": "yZyo9",
                           "name": "mg1i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "users",
                           "iconFontFamily": "lucide",
                           "fill": "#3B82F6"
@@ -1924,8 +1962,13 @@
                       "name": "mg2",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#EFF6FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#93C5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -1945,8 +1988,8 @@
                           "type": "icon_font",
                           "id": "5u2mW",
                           "name": "mg2i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "star",
                           "iconFontFamily": "lucide",
                           "fill": "#3B82F6"
@@ -1970,8 +2013,13 @@
                       "name": "mg3",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#EFF6FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#93C5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -1991,8 +2039,8 @@
                           "type": "icon_font",
                           "id": "YW7YQ",
                           "name": "mg3i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "diamond",
                           "iconFontFamily": "lucide",
                           "fill": "#3B82F6"
@@ -2016,8 +2064,13 @@
                       "name": "mg4",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#EFF6FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#93C5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2037,8 +2090,8 @@
                           "type": "icon_font",
                           "id": "TWZcL",
                           "name": "mg4i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "star",
                           "iconFontFamily": "lucide",
                           "fill": "#3B82F6"
@@ -2071,8 +2124,13 @@
                       "name": "mg5",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#EFF6FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#93C5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2092,8 +2150,8 @@
                           "type": "icon_font",
                           "id": "wPaCH",
                           "name": "mg5i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "zap",
                           "iconFontFamily": "lucide",
                           "fill": "#3B82F6"
@@ -2117,8 +2175,13 @@
                       "name": "mg6",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#EFF6FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#93C5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2138,8 +2201,8 @@
                           "type": "icon_font",
                           "id": "4LMFm",
                           "name": "mg6i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 24,
+                          "height": 24,
                           "iconFontName": "trending-up",
                           "iconFontFamily": "lucide",
                           "fill": "#3B82F6"
@@ -2193,8 +2256,13 @@
                       "name": "cfg1",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#F5F3FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#C4B5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2218,7 +2286,7 @@
                           "height": 22,
                           "iconFontName": "settings",
                           "iconFontFamily": "lucide",
-                          "fill": "#64748B"
+                          "fill": "#8B5CF6"
                         },
                         {
                           "type": "text",
@@ -2239,8 +2307,13 @@
                       "name": "cfg2",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#F5F3FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#C4B5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2264,7 +2337,7 @@
                           "height": 22,
                           "iconFontName": "map-pin",
                           "iconFontFamily": "lucide",
-                          "fill": "#64748B"
+                          "fill": "#8B5CF6"
                         },
                         {
                           "type": "text",
@@ -2285,8 +2358,13 @@
                       "name": "cfg3",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#F5F3FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#C4B5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2310,7 +2388,7 @@
                           "height": 22,
                           "iconFontName": "file-text",
                           "iconFontFamily": "lucide",
-                          "fill": "#64748B"
+                          "fill": "#8B5CF6"
                         },
                         {
                           "type": "text",
@@ -2331,8 +2409,13 @@
                       "name": "cfg4",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#F5F3FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#C4B5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2356,7 +2439,7 @@
                           "height": 22,
                           "iconFontName": "users",
                           "iconFontFamily": "lucide",
-                          "fill": "#64748B"
+                          "fill": "#8B5CF6"
                         },
                         {
                           "type": "text",
@@ -2386,8 +2469,13 @@
                       "name": "cfg5",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#F5F3FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#C4B5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2411,7 +2499,7 @@
                           "height": 22,
                           "iconFontName": "bell",
                           "iconFontFamily": "lucide",
-                          "fill": "#64748B"
+                          "fill": "#8B5CF6"
                         },
                         {
                           "type": "text",
@@ -2432,8 +2520,13 @@
                       "name": "cfg6",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#F5F3FF",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#C4B5FD40"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2457,7 +2550,7 @@
                           "height": 22,
                           "iconFontName": "building-2",
                           "iconFontFamily": "lucide",
-                          "fill": "#64748B"
+                          "fill": "#8B5CF6"
                         },
                         {
                           "type": "text",
@@ -2508,8 +2601,13 @@
                       "name": "comp1",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FEF2F2",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCA5A540"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2529,8 +2627,8 @@
                           "type": "icon_font",
                           "id": "X2rjx",
                           "name": "comp1i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 20,
+                          "height": 20,
                           "iconFontName": "scroll-text",
                           "iconFontFamily": "lucide",
                           "fill": "#EF4444"
@@ -2554,8 +2652,13 @@
                       "name": "comp2",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FEF2F2",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCA5A540"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2575,8 +2678,8 @@
                           "type": "icon_font",
                           "id": "ygR7B",
                           "name": "comp2i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 20,
+                          "height": 20,
                           "iconFontName": "ban",
                           "iconFontFamily": "lucide",
                           "fill": "#EF4444"
@@ -2600,8 +2703,13 @@
                       "name": "comp3",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FEF2F2",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCA5A540"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2621,8 +2729,8 @@
                           "type": "icon_font",
                           "id": "SpvQq",
                           "name": "comp3i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 20,
+                          "height": 20,
                           "iconFontName": "shield",
                           "iconFontFamily": "lucide",
                           "fill": "#EF4444"
@@ -2646,8 +2754,13 @@
                       "name": "comp4",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FEF2F2",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCA5A540"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2667,8 +2780,8 @@
                           "type": "icon_font",
                           "id": "SjPJV",
                           "name": "comp4i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 20,
+                          "height": 20,
                           "iconFontName": "monitor-smartphone",
                           "iconFontFamily": "lucide",
                           "fill": "#EF4444"
@@ -2701,8 +2814,13 @@
                       "name": "comp5",
                       "width": "fill_container",
                       "height": 76,
-                      "fill": "#FFFFFF",
+                      "fill": "#FEF2F2",
                       "cornerRadius": 14,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FCA5A540"
+                      },
                       "effect": {
                         "type": "shadow",
                         "shadowType": "outer",
@@ -2722,8 +2840,8 @@
                           "type": "icon_font",
                           "id": "tt3Pm",
                           "name": "comp5i",
-                          "width": 22,
-                          "height": 22,
+                          "width": 20,
+                          "height": 20,
                           "iconFontName": "siren",
                           "iconFontFamily": "lucide",
                           "fill": "#EF4444"
@@ -4911,7 +5029,8 @@
                       "fill": "#64748B",
                       "content": "Today",
                       "fontFamily": "Inter",
-                      "fontSize": 11
+                      "fontSize": 11,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -4962,7 +5081,8 @@
                       "fill": "#64748B",
                       "content": "This Week",
                       "fontFamily": "Inter",
-                      "fontSize": 11
+                      "fontSize": 11,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -5013,7 +5133,8 @@
                       "fill": "#64748B",
                       "content": "Clients",
                       "fontFamily": "Inter",
-                      "fontSize": 11
+                      "fontSize": 11,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -5845,7 +5966,8 @@
                           "fill": "#059669",
                           "content": "M-AB 1234",
                           "fontFamily": "Inter",
-                          "fontSize": 11
+                          "fontSize": 11,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -5934,13 +6056,27 @@
                       "fill": "#64748B",
                       "content": "Yesterday, 10 Mar",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "id": "oiSY2",
                       "type": "ref",
                       "ref": "WOLDk",
-                      "name": "rr1badge"
+                      "name": "rr1badge",
+                      "width": "fit_content",
+                      "height": "fit_content",
+                      "x": 239,
+                      "descendants": {
+                        "ELYlx": {
+                          "x": 10,
+                          "y": 8.5
+                        },
+                        "CcEtj": {
+                          "x": 22,
+                          "y": 4
+                        }
+                      }
                     }
                   ]
                 },
@@ -6002,13 +6138,27 @@
                       "fill": "#64748B",
                       "content": "9 Mar, 14:30",
                       "fontFamily": "Inter",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "fontWeight": "normal"
                     },
                     {
                       "id": "5BK2t",
                       "type": "ref",
                       "ref": "WOLDk",
-                      "name": "rr2badge"
+                      "name": "rr2badge",
+                      "width": "fit_content",
+                      "height": "fit_content",
+                      "x": 239,
+                      "descendants": {
+                        "ELYlx": {
+                          "x": 10,
+                          "y": 8.5
+                        },
+                        "CcEtj": {
+                          "x": 22,
+                          "y": 4
+                        }
+                      }
                     }
                   ]
                 },
@@ -7867,10 +8017,14 @@
                       "name": "editBtn",
                       "descendants": {
                         "QvgIh": {
-                          "iconFontName": "pencil"
+                          "iconFontName": "pencil",
+                          "x": 53,
+                          "y": 13
                         },
                         "DFi38": {
-                          "content": "Edit"
+                          "content": "Edit",
+                          "x": 79,
+                          "y": 13.5
                         }
                       }
                     },
@@ -7881,12 +8035,17 @@
                       "width": "fill_container",
                       "height": 44,
                       "name": "cancelBtn",
+                      "x": 168,
                       "descendants": {
                         "OenDg": {
-                          "iconFontName": "circle-x"
+                          "iconFontName": "circle-x",
+                          "x": 42.5,
+                          "y": 13
                         },
                         "sWce9": {
-                          "content": "Cancel"
+                          "content": "Cancel",
+                          "x": 68.5,
+                          "y": 13.5
                         }
                       }
                     }
@@ -7908,10 +8067,14 @@
                       "name": "reassignBtn",
                       "descendants": {
                         "Pp9IX": {
-                          "iconFontName": "user-plus"
+                          "iconFontName": "user-plus",
+                          "x": 35.5,
+                          "y": 13
                         },
                         "tasrb": {
-                          "content": "Reassign"
+                          "content": "Reassign",
+                          "x": 61.5,
+                          "y": 13.5
                         }
                       }
                     },
@@ -7922,12 +8085,17 @@
                       "width": "fill_container",
                       "height": 44,
                       "name": "mapBtn",
+                      "x": 168,
                       "descendants": {
                         "Pp9IX": {
-                          "iconFontName": "map"
+                          "iconFontName": "map",
+                          "x": 51,
+                          "y": 13
                         },
                         "tasrb": {
-                          "content": "Map"
+                          "content": "Map",
+                          "x": 77,
+                          "y": 13.5
                         }
                       }
                     }
@@ -22751,7 +22919,8 @@
                       "fill": "#94A3B8",
                       "content": "Mercedes",
                       "fontFamily": "Inter",
-                      "fontSize": 9
+                      "fontSize": 9,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -22789,7 +22958,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "07:00–08:30",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -22827,7 +22997,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "09:15–10:30",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -22936,7 +23107,8 @@
                       "fill": "#94A3B8",
                       "content": "BMW 5",
                       "fontFamily": "Inter",
-                      "fontSize": 9
+                      "fontSize": 9,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -22974,7 +23146,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "07:30–09:45",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23012,7 +23185,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "10:00–11:00",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23050,7 +23224,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "11:30–12:30",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23129,7 +23304,8 @@
                       "fill": "#94A3B8",
                       "content": "Audi A6",
                       "fontFamily": "Inter",
-                      "fontSize": 9
+                      "fontSize": 9,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23167,7 +23343,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "06:30–07:45",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23235,7 +23412,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "10:30–12:00",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23314,7 +23492,8 @@
                       "fill": "#94A3B8",
                       "content": "VW Touran",
                       "fontFamily": "Inter",
-                      "fontSize": 9
+                      "fontSize": 9,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23352,7 +23531,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "06:00–09:00",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23390,7 +23570,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "09:30–11:30",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23428,7 +23609,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "12:00–13:00",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23507,7 +23689,8 @@
                       "fill": "#94A3B8",
                       "content": "Tesla 3",
                       "fontFamily": "Inter",
-                      "fontSize": 9
+                      "fontSize": 9,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23545,7 +23728,8 @@
                       "fill": "#FFFFFFCC",
                       "content": "09:00–10:30",
                       "fontFamily": "Inter",
-                      "fontSize": 8
+                      "fontSize": 8,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23633,7 +23817,8 @@
                       "fill": "#64748B",
                       "content": "Assigned",
                       "fontFamily": "Inter",
-                      "fontSize": 10
+                      "fontSize": 10,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23659,7 +23844,8 @@
                       "fill": "#64748B",
                       "content": "In Progress",
                       "fontFamily": "Inter",
-                      "fontSize": 10
+                      "fontSize": 10,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23685,7 +23871,8 @@
                       "fill": "#64748B",
                       "content": "Pending",
                       "fontFamily": "Inter",
-                      "fontSize": 10
+                      "fontSize": 10,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -23717,7 +23904,8 @@
                       "fill": "#64748B",
                       "content": "Free",
                       "fontFamily": "Inter",
-                      "fontSize": 10
+                      "fontSize": 10,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -23973,7 +24161,8 @@
               "fill": "#FFFFFFBB",
               "content": "K. Weber · Tue, 12 Mar · 08:00–10:00",
               "fontFamily": "Inter",
-              "fontSize": 12
+              "fontSize": 12,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -24119,7 +24308,20 @@
                       "id": "3zLx1",
                       "type": "ref",
                       "ref": "WWykM",
-                      "name": "c1badge"
+                      "name": "c1badge",
+                      "width": "fit_content",
+                      "height": "fit_content",
+                      "x": 236,
+                      "descendants": {
+                        "RN1aa": {
+                          "x": 10,
+                          "y": 8.5
+                        },
+                        "0TSjr": {
+                          "x": 22,
+                          "y": 4
+                        }
+                      }
                     }
                   ]
                 },
@@ -24155,7 +24357,8 @@
                           "fill": "#64748B",
                           "content": "Maximilianstr. 12, München",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -24183,7 +24386,8 @@
                           "fill": "#64748B",
                           "content": "Airport MUC, Terminal 2",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -24317,7 +24521,20 @@
                       "id": "YvTLx",
                       "type": "ref",
                       "ref": "WWykM",
-                      "name": "c2badge"
+                      "name": "c2badge",
+                      "width": "fit_content",
+                      "height": "fit_content",
+                      "x": 236,
+                      "descendants": {
+                        "RN1aa": {
+                          "x": 10,
+                          "y": 8.5
+                        },
+                        "0TSjr": {
+                          "x": 22,
+                          "y": 4
+                        }
+                      }
                     }
                   ]
                 },
@@ -24353,7 +24570,8 @@
                           "fill": "#64748B",
                           "content": "Leopoldstr. 45, München",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -24381,7 +24599,8 @@
                           "fill": "#64748B",
                           "content": "Stachus, München",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -24515,7 +24734,20 @@
                       "id": "jDTmp",
                       "type": "ref",
                       "ref": "WWykM",
-                      "name": "c3badge"
+                      "name": "c3badge",
+                      "width": "fit_content",
+                      "height": "fit_content",
+                      "x": 236,
+                      "descendants": {
+                        "RN1aa": {
+                          "x": 10,
+                          "y": 8.5
+                        },
+                        "0TSjr": {
+                          "x": 22,
+                          "y": 4
+                        }
+                      }
                     }
                   ]
                 },
@@ -24551,7 +24783,8 @@
                           "fill": "#64748B",
                           "content": "Hotel Vier Jahreszeiten",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -24579,7 +24812,8 @@
                           "fill": "#64748B",
                           "content": "Messe München",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -24946,7 +25180,8 @@
               "fill": "#FFFFFFBB",
               "content": "Fill in the ride details below",
               "fontFamily": "Inter",
-              "fontSize": 12
+              "fontSize": 12,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -25015,7 +25250,8 @@
                       "fill": "#94A3B8",
                       "content": "Search client...",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -25076,7 +25312,8 @@
                       "fill": "#94A3B8",
                       "content": "Enter pickup address",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -25137,7 +25374,8 @@
                       "fill": "#94A3B8",
                       "content": "Enter destination address",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -25196,7 +25434,8 @@
                           "fill": "#0F172A",
                           "content": "12 Mar 2026",
                           "fontFamily": "Inter",
-                          "fontSize": 14
+                          "fontSize": 14,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "icon_font",
@@ -25258,7 +25497,8 @@
                           "fill": "#0F172A",
                           "content": "08:30",
                           "fontFamily": "Inter",
-                          "fontSize": 14
+                          "fontSize": 14,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "icon_font",
@@ -25465,7 +25705,8 @@
                       "fill": "#94A3B8",
                       "content": "Add notes for the driver...",
                       "fontFamily": "Inter",
-                      "fontSize": 14
+                      "fontSize": 14,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -25914,7 +26155,8 @@
                           "fill": "#64748B",
                           "content": "Mercedes E-Class · M-AB 1234",
                           "fontFamily": "Inter",
-                          "fontSize": 12
+                          "fontSize": 12,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -26444,7 +26686,8 @@
                       "fill": "#64748B",
                       "content": "Gate B24 · Terminal 2",
                       "fontFamily": "Inter",
-                      "fontSize": 11
+                      "fontSize": 11,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
@@ -26647,7 +26890,8 @@
                           "fill": "#64748B",
                           "content": "2.3 km away",
                           "fontFamily": "Inter",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     },
@@ -26690,7 +26934,8 @@
                           "fill": "#64748B",
                           "content": "At Terminal 2",
                           "fontFamily": "Inter",
-                          "fontSize": 10
+                          "fontSize": 10,
+                          "fontWeight": "normal"
                         }
                       ]
                     }
@@ -26832,7 +27077,8 @@
               "fill": "#FFFFFFBB",
               "content": "Manage your driver team",
               "fontFamily": "Inter",
-              "fontSize": 13
+              "fontSize": 13,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -26894,7 +27140,8 @@
               "content": "You haven't added any drivers yet. Add your first driver to start assigning rides.",
               "textAlign": "center",
               "fontFamily": "Inter",
-              "fontSize": 14
+              "fontSize": 14,
+              "fontWeight": "normal"
             },
             {
               "type": "frame",
@@ -27110,7 +27357,8 @@
               "fill": "#FFFFFFBB",
               "content": "Performance insights",
               "fontFamily": "Inter",
-              "fontSize": 13
+              "fontSize": 13,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -27172,7 +27420,8 @@
               "content": "Complete your first rides to see performance analytics and revenue insights here.",
               "textAlign": "center",
               "fontFamily": "Inter",
-              "fontSize": 14
+              "fontSize": 14,
+              "fontWeight": "normal"
             },
             {
               "type": "frame",

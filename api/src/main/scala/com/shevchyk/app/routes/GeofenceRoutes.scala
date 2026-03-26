@@ -6,17 +6,14 @@ import com.shevchyk.core.application.GeofenceService
 import com.shevchyk.core.domain.*
 import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.core.repository.GeofenceRepository
+import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
 
 object GeofenceRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] =
-    val msg = Option(ex.getMessage).getOrElse(ex.toString)
-    ZIO
-      .logError(s"Geofence error: $msg")
-      .as(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}""")))
+  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Geofence")(ex)
 
   val authenticatedRoutes: Routes[GeofenceRepository & GeofenceService & JwtService, Response] = Routes(
     // POST /api/geofences - create geofence

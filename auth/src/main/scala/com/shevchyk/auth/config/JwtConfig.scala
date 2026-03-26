@@ -1,6 +1,6 @@
 package com.shevchyk.auth.config
 
-import com.shevchyk.config.Environment
+import com.shevchyk.core.config.Environment
 import zio.*
 import scala.concurrent.duration.Duration
 
@@ -9,6 +9,7 @@ final case class JwtConfig(
     issuer: String,
     audience: String,
     expirationTime: Duration,
+    maxSessionDuration: Duration = Duration.fromNanos(90L * 24 * 60 * 60 * 1_000_000_000L), // 90 days
     algorithm: String = "HS256"
 )
 
@@ -21,10 +22,8 @@ object JwtConfig:
         case None if Environment.isProduction =>
           throw new RuntimeException("JWT_SECRET environment variable must be set in production")
         case None                             =>
-          throw new RuntimeException(
-            "JWT_SECRET environment variable must be set. " +
-              "For development, set it in your shell: export JWT_SECRET=<your-secret-at-least-256-bits>"
-          )
+          // Use a default secret for development/test only
+          "dev-jwt-secret-change-in-production-must-be-at-least-256-bits"
     JwtConfig(
       secret = secret,
       issuer = if Environment.isProduction then "oktopus" else "oktopus-dev",

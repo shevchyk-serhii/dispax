@@ -6,6 +6,12 @@ import java.time.Instant
 enum RideStatus:
   case Requested, Assigned, InProgress, Completed, Cancelled
 
+enum PaymentStatus:
+  case Unpaid, Pending, Paid
+
+enum PaymentMethod:
+  case Cash, Card, Invoice, Bank, Receivable
+
 sealed trait RideSpecifics
 
 object RideSpecifics:
@@ -66,8 +72,8 @@ final case class Ride(
     notes: Option[String] = None,
     specifics: Option[RideSpecifics] = None,
     specialRequirements: Option[String] = None,
-    paymentStatus: Option[String] = None,
-    paymentMethod: Option[String] = None,
+    paymentStatus: Option[PaymentStatus] = None,
+    paymentMethod: Option[PaymentMethod] = None,
     paidAt: Option[Instant] = None,
     cancellationReason: Option[String] = None,
     cancellationFee: Option[BigDecimal] = None,

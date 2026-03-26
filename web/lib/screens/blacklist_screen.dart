@@ -31,11 +31,21 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       final resp = await apiClient.get('/blacklist');
-      setState(() {
-        _entries = (jsonDecode(resp.body) as List).cast<Map<String, dynamic>>();
-        _isLoading = false;
-      });
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        final decoded = jsonDecode(resp.body);
+        setState(() {
+          _entries = (decoded is List) ? decoded.cast<Map<String, dynamic>>() : [];
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _error = 'Failed to load blacklist (${resp.statusCode})';
+        });
+      }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = e.toString();
@@ -138,18 +148,17 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.delete('/blacklist/$id');
       _loadEntries();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 

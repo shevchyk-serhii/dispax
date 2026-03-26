@@ -28,13 +28,19 @@ class RideDetailsScreen extends StatefulWidget {
 
 class _RideDetailsScreenState extends State<RideDetailsScreen> {
   late Ride _currentRide;
-  final RideService _rideService = RideService();
+  late RideService _rideService;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _currentRide = widget.ride;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rideService = RideService(apiClient: context.read<AuthBloc>().apiClient);
   }
 
   @override
@@ -360,7 +366,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       builder: (_) => CancelRideDialog(isDispatcher: isDispatcher),
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
       setState(() => _isLoading = true);
       try {
         final apiClient = context.read<AuthBloc>().apiClient;
@@ -395,7 +401,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       builder: (_) => RateRideDialog(rideId: _currentRide.id),
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
       setState(() => _isLoading = true);
       try {
         final apiClient = context.read<AuthBloc>().apiClient;

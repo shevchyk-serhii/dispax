@@ -55,7 +55,7 @@ object AuthMiddleware:
   def getAuthenticatedUser: ZIO[AuthenticatedUser, Nothing, AuthenticatedUser] = ZIO.service[AuthenticatedUser]
 
   def requireRole(role: String): ZIO[AuthenticatedUser, Response, Unit] = getAuthenticatedUser.flatMap { user =>
-    if (user.role != role)
+    if (user.role.toUpperCase != role.toUpperCase)
       ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Insufficient permissions"}""")))
     else
       ZIO.unit
@@ -73,7 +73,8 @@ object AuthMiddleware:
    * Check that the user has one of the allowed roles
    */
   def checkRole(user: AuthenticatedUser, roles: String*): IO[Response, Unit] =
-    if (roles.contains(user.role))
+    val userRoleUpper = user.role.toUpperCase
+    if (roles.exists(_.toUpperCase == userRoleUpper))
       ZIO.unit
     else
       ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Insufficient permissions"}""")))
@@ -82,7 +83,8 @@ object AuthMiddleware:
    * Check that the user has one of the allowed roles OR is the resource owner
    */
   def checkRoleOrOwner(user: AuthenticatedUser, resourceOwnerId: UUID, roles: String*): IO[Response, Unit] =
-    if (roles.contains(user.role) || user.userId == resourceOwnerId)
+    val userRoleUpper = user.role.toUpperCase
+    if (roles.exists(_.toUpperCase == userRoleUpper) || user.userId == resourceOwnerId)
       ZIO.unit
     else
       ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Access denied"}""")))

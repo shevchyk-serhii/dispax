@@ -21,7 +21,7 @@ object EmergencyReassignmentRepository:
   )
 
   val layer: ZLayer[Any, Throwable, EmergencyReassignmentRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresEmergencyReassignmentRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresEmergencyReassignmentRepository.postgresLayer
 
 class InMemoryEmergencyReassignmentRepository extends EmergencyReassignmentRepository:
   private var reassignments: List[EmergencyReassignment] = List.empty

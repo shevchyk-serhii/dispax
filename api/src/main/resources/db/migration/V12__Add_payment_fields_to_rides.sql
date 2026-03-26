@@ -1,3 +1,0 @@
-ALTER TABLE rides ADD COLUMN payment_status VARCHAR(20) DEFAULT 'unpaid';
-ALTER TABLE rides ADD COLUMN payment_method VARCHAR(20);
-ALTER TABLE rides ADD COLUMN paid_at TIMESTAMP;

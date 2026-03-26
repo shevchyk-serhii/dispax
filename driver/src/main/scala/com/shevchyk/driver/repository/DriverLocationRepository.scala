@@ -2,7 +2,7 @@ package com.shevchyk.driver.repository
 
 import com.shevchyk.core.domain.*
 import com.shevchyk.driver.domain.DriverLocation
-import com.shevchyk.database.DatabaseConfig
+import com.shevchyk.core.database.DatabaseConfig
 import doobie.Transactor
 import zio.*
 

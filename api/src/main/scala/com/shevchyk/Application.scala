@@ -40,11 +40,12 @@ import com.shevchyk.app.routes.{
   RidePoolRoutes,
   NotificationPreferenceRoutes
 }
-import com.shevchyk.repository.{PersonRepository, CompanySettingsRepository, PostgresCompanySettingsRepository}
+import com.shevchyk.core.repository.{PersonRepository, CompanySettingsRepository, PostgresCompanySettingsRepository}
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.infrastructure.http.AuthRoutes
-import com.shevchyk.auth.repository.{TokenRepository, UserRepository}
+import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.auth.config.JwtConfig
+import com.shevchyk.auth.middleware.RateLimiter
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.{EventHub, AuditService, PostgresAuditService, GeofenceService}
 import com.shevchyk.core.repository.{
@@ -75,8 +76,8 @@ import com.shevchyk.notification.repository.{
 }
 import com.shevchyk.app.routes.NotificationRoutes
 import com.shevchyk.core.application.EmailSmsService
-import com.shevchyk.database.DatabaseConfig
-import com.shevchyk.config.ServerConfig
+import com.shevchyk.core.database.DatabaseConfig
+import com.shevchyk.core.config.ServerConfig
 import zio.*
 import zio.http.*
 import zio.logging.backend.SLF4J
@@ -113,9 +114,9 @@ object Application extends ZIOAppDefault:
   private val ridePoolRoutes        = RidePoolRoutes.authenticatedRoutes
   private val notifPrefRoutes       = NotificationPreferenceRoutes.authenticatedRoutes
 
-  private val mockRoutes            =
+  private val mockRoutes =
     if sys.env.getOrElse("ENABLE_MOCK_ROUTES", "false") == "true" then MockRideRoutes.routes else Routes.empty
-  private val wsRoutes              = WebSocketRoutes.wsRoutes
+  private val wsRoutes   = WebSocketRoutes.wsRoutes
 
   def run: ZIO[Any, Throwable, Nothing] = ZIO
     .serviceWithZIO[ServerConfig] { serverConfig =>
@@ -160,7 +161,6 @@ object Application extends ZIOAppDefault:
       ) >>> Server.live,
       ServerConfig.liveLayer,
       PersonRepository.layer,
-      UserRepository.layer,
       TokenRepository.layer,
       RideRepository.layer,
       RideService.layer,
@@ -193,5 +193,6 @@ object Application extends ZIOAppDefault:
       NotificationPreferenceRepository.layer,
       JwtConfig.live,
       JwtService.live,
-      AuthService.live
+      AuthService.live,
+      RateLimiter.layer
     )

@@ -1,6 +1,6 @@
 package com.shevchyk.auth.repository
 
-import com.shevchyk.database.DatabaseConfig
+import com.shevchyk.core.database.DatabaseConfig
 import doobie.Transactor
 import zio.*
 import java.util.UUID

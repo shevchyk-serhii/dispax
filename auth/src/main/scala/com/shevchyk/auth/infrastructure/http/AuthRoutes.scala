@@ -2,6 +2,7 @@ package com.shevchyk.auth.infrastructure.http
 
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.domain.*
+import com.shevchyk.auth.middleware.RateLimiter
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -24,16 +25,36 @@ object AuthRoutes:
     }
   }
 
-  val routes: Routes[AuthService, Response] = Routes(
-    Method.POST / "api" / "auth" / "login" -> jsonHandler[LoginRequest] { loginReq =>
+  val routes: Routes[AuthService & RateLimiter, Response] = Routes(
+    Method.POST / "api" / "auth" / "login" -> handler { (req: Request) =>
       (for {
+        rateLimiter   <- ZIO.service[RateLimiter]
+        // Prefer remoteAddress to prevent X-Forwarded-For spoofing
+        ip             = req.remoteAddress
+                           .map(_.toString)
+                           .getOrElse("unknown")
+        allowed       <- rateLimiter.checkRate(ip)
+        _             <-
+          ZIO.when(!allowed)(
+            ZIO.fail(
+              Response(
+                Status.TooManyRequests,
+                body = Body.fromString("""{"error":"Too many requests. Please try again later."}""")
+              )
+            )
+          )
+        bodyStr       <- req.body.asString
+        loginReq      <- ZIO
+                           .fromEither(bodyStr.fromJson[LoginRequest])
+                           .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
         _             <- ZIO.logInfo(s"Login request received")
         authService   <- ZIO.service[AuthService]
         loginResponse <- authService.login(loginReq.email, loginReq.password)
       } yield Response.json(loginResponse.toJson)).catchAll {
+        case response: Response                      => ZIO.succeed(response)
         case _: UserNotFound | _: InvalidCredentials =>
           ZIO.succeed(Response(Status.Unauthorized, body = Body.fromString("""{"error":"Invalid credentials"}""")))
-        case ex                                      =>
+        case ex: Throwable                           =>
           ZIO
             .logError(s"Login error: ${ex.toString}")
             .as(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}""")))

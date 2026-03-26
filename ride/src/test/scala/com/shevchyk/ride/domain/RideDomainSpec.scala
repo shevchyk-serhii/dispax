@@ -124,6 +124,136 @@ object RideDomainSpec extends ZIOSpecDefault {
           case _ => false
         })
       }
+    ),
+
+    suite("Ride state matrix")(
+      test("Requested: canBeAssigned=true, canBeReassigned=false, canBeStarted=false, canBeCompleted=false, canBeCancelled=true, canBeEdited=true") {
+        val ride = Ride(
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
+          status = RideStatus.Requested,
+          pickupLocation = Location("Start"),
+          dropoffLocation = Location("End")
+        )
+        assertTrue(
+          ride.canBeAssigned &&
+          !ride.canBeReassigned &&
+          !ride.canBeStarted &&
+          !ride.canBeCompleted &&
+          ride.canBeCancelled &&
+          ride.canBeEdited
+        )
+      },
+
+      test("Assigned with driver: all predicates verified") {
+        val ride = Ride(
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
+          driverId = Some(PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200"))),
+          status = RideStatus.Assigned,
+          pickupLocation = Location("Start"),
+          dropoffLocation = Location("End")
+        )
+        assertTrue(
+          !ride.canBeAssigned &&
+          ride.canBeReassigned &&
+          ride.canBeStarted &&
+          !ride.canBeCompleted &&
+          ride.canBeCancelled &&
+          ride.canBeEdited
+        )
+      },
+
+      test("InProgress: canBeCancelled=true, canBeCompleted=true, canBeEdited=false") {
+        val ride = Ride(
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
+          driverId = Some(PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200"))),
+          status = RideStatus.InProgress,
+          pickupLocation = Location("Start"),
+          dropoffLocation = Location("End")
+        )
+        assertTrue(
+          !ride.canBeAssigned &&
+          !ride.canBeReassigned &&
+          !ride.canBeStarted &&
+          ride.canBeCompleted &&
+          ride.canBeCancelled &&
+          !ride.canBeEdited
+        )
+      },
+
+      test("Completed: all false") {
+        val ride = Ride(
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
+          driverId = Some(PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200"))),
+          status = RideStatus.Completed,
+          pickupLocation = Location("Start"),
+          dropoffLocation = Location("End")
+        )
+        assertTrue(
+          !ride.canBeAssigned &&
+          !ride.canBeReassigned &&
+          !ride.canBeStarted &&
+          !ride.canBeCompleted &&
+          !ride.canBeCancelled &&
+          !ride.canBeEdited
+        )
+      },
+
+      test("Cancelled: all false") {
+        val ride = Ride(
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
+          status = RideStatus.Cancelled,
+          pickupLocation = Location("Start"),
+          dropoffLocation = Location("End")
+        )
+        assertTrue(
+          !ride.canBeAssigned &&
+          !ride.canBeReassigned &&
+          !ride.canBeStarted &&
+          !ride.canBeCompleted &&
+          !ride.canBeCancelled &&
+          !ride.canBeEdited
+        )
+      },
+
+      test("isAirportTransfer true when specifics is AirportTransfer") {
+        val ride = Ride(
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
+          pickupLocation = Location("Airport"),
+          dropoffLocation = Location("Hotel"),
+          specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123"))
+        )
+        assertTrue(ride.isAirportTransfer)
+      },
+
+      test("isAirportTransfer false when no specifics") {
+        val ride = Ride(
+          id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+          clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+          companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
+          pickupLocation = Location("A"),
+          dropoffLocation = Location("B")
+        )
+        assertTrue(!ride.isAirportTransfer)
+      }
     )
   )
 }

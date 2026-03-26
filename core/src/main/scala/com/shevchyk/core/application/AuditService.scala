@@ -42,4 +42,4 @@ object AuditService:
   val inMemory: ZLayer[Any, Nothing, AuditService] = ZLayer.succeed(new InMemoryAuditService)
 
   val layer: ZLayer[Any, Throwable, AuditService] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresAuditService.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresAuditService.postgresLayer

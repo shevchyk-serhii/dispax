@@ -67,11 +67,10 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
       await apiClient.put('/ride-templates/$templateId/deactivate', {});
       _loadData();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to deactivate: $e'), backgroundColor: AppColors.error),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to deactivate: $e'), backgroundColor: AppColors.error),
+      );
     }
   }
 
@@ -82,7 +81,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
 
-    if (dateRange == null) return;
+    if (dateRange == null || !mounted) return;
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
@@ -91,23 +90,21 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
         'to': dateRange.end.toIso8601String(),
       });
 
-      if (mounted) {
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Rides generated successfully'), backgroundColor: AppColors.success),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to generate rides: ${response.body}'), backgroundColor: AppColors.error),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+      if (!mounted) return;
+      if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+          const SnackBar(content: Text('Rides generated successfully'), backgroundColor: AppColors.success),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate rides: ${response.body}'), backgroundColor: AppColors.error),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+      );
     }
   }
 
@@ -118,6 +115,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
     final timeController = TextEditingController(text: '08:00');
     final notesController = TextEditingController();
     final priceController = TextEditingController();
+    final apiClient = context.read<AuthBloc>().apiClient;
     String? selectedClientId;
     String recurrencePattern = 'Daily';
     final formKey = GlobalKey<FormState>();
@@ -224,25 +222,22 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                 );
 
                 try {
-                  final apiClient = context.read<AuthBloc>().apiClient;
                   final response = await apiClient.post('/ride-templates', request.toJson());
 
-                  if (mounted) {
-                    Navigator.pop(ctx);
-                    if (response.statusCode == 200 || response.statusCode == 201) {
-                      _loadData();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed: ${response.body}'), backgroundColor: AppColors.error),
-                      );
-                    }
-                  }
-                } catch (e) {
-                  if (mounted) {
+                  if (!mounted) return;
+                  Navigator.pop(ctx);
+                  if (response.statusCode == 200 || response.statusCode == 201) {
+                    _loadData();
+                  } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+                      SnackBar(content: Text('Failed: ${response.body}'), backgroundColor: AppColors.error),
                     );
                   }
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+                  );
                 }
               },
               style: ElevatedButton.styleFrom(

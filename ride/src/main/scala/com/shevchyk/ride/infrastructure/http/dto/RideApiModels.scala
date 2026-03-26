@@ -2,7 +2,15 @@ package com.shevchyk.ride.infrastructure.http.dto
 
 import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId, RidePoolId}
-import com.shevchyk.ride.domain.{Ride, CreateRideRequest, RideSpecifics, RideStatus, UpdateRideDetailsRequest}
+import com.shevchyk.ride.domain.{
+  Ride,
+  CreateRideRequest,
+  RideSpecifics,
+  RideStatus,
+  PaymentStatus,
+  PaymentMethod,
+  UpdateRideDetailsRequest
+}
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -12,6 +20,16 @@ import java.util.UUID
 given JsonCodec[RideStatus] = JsonCodec.string.transform(
   str => RideStatus.valueOf(str),
   status => status.toString
+)
+
+given JsonCodec[PaymentStatus] = JsonCodec.string.transform(
+  str => PaymentStatus.valueOf(str),
+  status => status.toString
+)
+
+given JsonCodec[PaymentMethod] = JsonCodec.string.transform(
+  str => PaymentMethod.valueOf(str),
+  method => method.toString
 )
 
 case class LocationDto(
@@ -142,8 +160,8 @@ case class SendChatMessageRequest(
 ) derives JsonCodec
 
 case class MarkPaymentRequest(
-    paymentStatus: String,
-    paymentMethod: Option[String] = None
+    paymentStatus: PaymentStatus,
+    paymentMethod: Option[PaymentMethod] = None
 ) derives JsonCodec
 
 case class CancelRideApiRequest(
@@ -234,8 +252,8 @@ object RideDto:
       price = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue),
       notes = ride.notes,
       specialRequirements = ride.specialRequirements,
-      paymentStatus = ride.paymentStatus,
-      paymentMethod = ride.paymentMethod,
+      paymentStatus = ride.paymentStatus.map(_.toString),
+      paymentMethod = ride.paymentMethod.map(_.toString),
       paidAt = ride.paidAt.map(_.toString),
       cancellationReason = ride.cancellationReason,
       cancellationFee = ride.cancellationFee.map(_.doubleValue),

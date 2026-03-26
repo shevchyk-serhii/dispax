@@ -18,7 +18,7 @@ object GdprRepository:
   val inMemory: ZLayer[Any, Nothing, GdprRepository] = ZLayer.succeed(InMemoryGdprRepository())
 
   val layer: ZLayer[Any, Throwable, GdprRepository] =
-    com.shevchyk.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresGdprRepository.postgresLayer
+    com.shevchyk.core.database.DatabaseConfig.liveTransactorWithMigrations >>> PostgresGdprRepository.postgresLayer
 
 class InMemoryGdprRepository extends GdprRepository:
   private var consents: List[GdprConsent] = List.empty
