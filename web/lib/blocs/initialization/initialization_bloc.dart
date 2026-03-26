@@ -33,42 +33,9 @@ class InitializationBloc extends Bloc<InitializationEvent, InitializationState> 
       if (!isServerAvailable) {
         emit(const InitializationLoading('Server offline, using cached data...'));
         await Future.delayed(const Duration(milliseconds: 1000));
-        emit(const InitializationCompleted());
-        return;
       }
 
-      emit(const InitializationLoading('Checking database status...'));
-
-      final status = await TestDataService.getTestDataStatus();
-      if (status != null) {
-        final userCount = status['users_count'] ?? 0;
-        final rideCount = status['rides_count'] ?? 0;
-
-        emit(InitializationLoading('Found $userCount users, $rideCount rides'));
-        await Future.delayed(const Duration(milliseconds: 500));
-
-        if (userCount == 0 || rideCount == 0) {
-          emit(const InitializationLoading('Setting up test data...'));
-
-          final seedSuccess = await TestDataService.seedTestData();
-          if (seedSuccess) {
-            emit(const InitializationLoading('Test data loaded successfully!'));
-          } else {
-            emit(const InitializationLoading('Using default configuration...'));
-          }
-        } else {
-          emit(const InitializationLoading('Database ready!'));
-        }
-      } else {
-        emit(const InitializationLoading('Initializing database...'));
-        await TestDataService.seedTestData();
-      }
-
-      await Future.delayed(const Duration(milliseconds: 1000));
-      emit(const InitializationLoading('Welcome to Oktopus Taxi!'));
-      await Future.delayed(const Duration(milliseconds: 500));
       emit(const InitializationCompleted());
-
     } catch (e) {
       print('Error during initialization: $e');
       emit(InitializationError('Initialization failed: ${e.toString()}'));
