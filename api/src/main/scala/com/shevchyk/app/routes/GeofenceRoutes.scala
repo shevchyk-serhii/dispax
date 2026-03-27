@@ -128,7 +128,7 @@ object GeofenceRoutes:
         user      <- AuthMiddleware.authenticateRequest(request)
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         companyId <- UuidParser.requireCompanyId(user.companyId)
-        limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50)
+        limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
         repo      <- ZIO.service[GeofenceRepository]
         alerts    <- repo.findAlertsByCompany(companyId, limit)
       } yield Response.json(alerts.toJson)).catchAll {
@@ -143,7 +143,7 @@ object GeofenceRoutes:
         (for {
           user   <- AuthMiddleware.authenticateRequest(request)
           _      <- AuthMiddleware.checkRole(user, "DISPATCHER")
-          limit   = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50)
+          limit   = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
           repo   <- ZIO.service[GeofenceRepository]
           dPid   <- UuidParser.parsePersonId(driverId)
           alerts <- repo.findAlertsByDriver(dPid, limit)

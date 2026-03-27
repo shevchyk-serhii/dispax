@@ -1,4 +1,4 @@
-enum PersonRole { driver, client, secretary, dispatcher }
+enum PersonRole { driver, client, secretary, dispatcher, admin }
 
 class Person {
   final String id;
@@ -11,6 +11,7 @@ class Person {
   final VehicleInfo? vehicleInfo;
   final bool isVip;
   final String? preferredDriverId;
+  final String status;
 
   Person({
     required this.id,
@@ -23,25 +24,27 @@ class Person {
     this.vehicleInfo,
     this.isVip = false,
     this.preferredDriverId,
+    this.status = 'ACTIVE',
   });
 
   factory Person.fromJson(Map<String, dynamic> json) {
     return Person(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
       role: PersonRole.values.firstWhere(
         (e) => e.toString().split('.').last.toLowerCase() == json['role'].toString().toLowerCase(),
         orElse: () => PersonRole.client,
       ),
-      companyId: json['companyId'],
-      licenseNumber: json['licenseNumber'],
-      phone: json['phone'],
+      companyId: json['companyId']?.toString(),
+      licenseNumber: json['licenseNumber']?.toString(),
+      phone: json['phone']?.toString(),
       vehicleInfo: json['vehicleInfo'] != null
           ? VehicleInfo.fromJson(json['vehicleInfo'])
           : null,
       isVip: json['isVip'] ?? false,
-      preferredDriverId: json['preferredDriverId'],
+      preferredDriverId: json['preferredDriverId']?.toString(),
+      status: json['status']?.toString() ?? 'ACTIVE',
     );
   }
 
@@ -57,6 +60,7 @@ class Person {
       'vehicleInfo': vehicleInfo?.toJson(),
       'isVip': isVip,
       'preferredDriverId': preferredDriverId,
+      'status': status,
     };
   }
 
@@ -64,6 +68,8 @@ class Person {
   bool get isClient => role == PersonRole.client;
   bool get isSecretary => role == PersonRole.secretary;
   bool get isDispatcher => role == PersonRole.dispatcher;
+  bool get isAdmin => role == PersonRole.admin;
+  bool get isActive => status == 'ACTIVE';
 }
 
 class VehicleInfo {

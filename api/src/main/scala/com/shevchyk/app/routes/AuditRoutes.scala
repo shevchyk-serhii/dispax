@@ -41,8 +41,8 @@ object AuditRoutes:
         user      <- AuthMiddleware.authenticateRequest(request)
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         companyId <- UuidParser.requireCompanyId(user.companyId)
-        limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50)
-        offset     = request.url.queryParams.queryParam("offset").flatMap(_.toIntOption).getOrElse(0)
+        limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
+        offset     = request.url.queryParams.queryParam("offset").flatMap(_.toIntOption).getOrElse(0).max(0)
         service   <- ZIO.service[AuditService]
         entries   <- service.findByCompany(companyId, limit, offset)
       } yield Response.json(entries.toJson)).catchAll {

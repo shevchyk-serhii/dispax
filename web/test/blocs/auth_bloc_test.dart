@@ -32,7 +32,6 @@ void main() {
   AuthBloc buildBloc() => AuthBloc(
         apiClient: mockApiClient,
         biometricService: mockBiometricService,
-        secureStorage: mockSecureStorage,
       );
 
   group('AuthBloc', () {

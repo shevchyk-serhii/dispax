@@ -79,11 +79,7 @@ object UserRoutes {
   private def checkRateLimit(request: Request): ZIO[RateLimiter, Response, Unit] =
     for {
       rateLimiter <- ZIO.service[RateLimiter]
-      ip           = request.headers
-                       .get("X-Forwarded-For")
-                       .flatMap(_.split(",").headOption.map(_.trim))
-                       .orElse(request.remoteAddress.map(_.toString))
-                       .getOrElse("unknown")
+      ip           = request.remoteAddress.map(_.toString).getOrElse("unknown")
       allowed     <- rateLimiter.checkRate(ip)
       _           <-
         ZIO.when(!allowed)(
@@ -141,7 +137,7 @@ object UserRoutes {
       (for {
         _           <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         rideService <- ZIO.service[RideService]
-        days         = request.url.queryParams.queryParam("days").flatMap(_.toIntOption).getOrElse(7)
+        days         = request.url.queryParams.queryParam("days").flatMap(_.toIntOption).getOrElse(7).min(365).max(1)
         companyId   <- UuidParser.requireCompanyId(user.companyId)
         rawStats    <- rideService.getDailyStats(companyId, days)
         dailyStats   = rawStats.map { case (date, completed, cancelled, total) =>

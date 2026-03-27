@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../modules/core/models/person.dart';
 import '../../modules/core/services/api_client.dart';
 import '../../modules/core/services/location_clarification_service.dart';
@@ -11,29 +13,69 @@ import '../../modules/flight_management/services/airport_timing_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
+/// Storage abstraction that falls back to SharedPreferences on macOS
+/// where Keychain requires signing entitlements not available in debug.
+class _TokenStorage {
+  final FlutterSecureStorage? _secure;
+  final bool _useFallback;
+
+  _TokenStorage() : _useFallback = Platform.isMacOS, _secure = Platform.isMacOS ? null : const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
+  );
+
+  Future<String?> read(String key) async {
+    try {
+      if (_useFallback) {
+        final prefs = await SharedPreferences.getInstance();
+        return prefs.getString(key);
+      }
+      return await _secure!.read(key: key);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> write(String key, String value) async {
+    try {
+      if (_useFallback) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(key, value);
+        return;
+      }
+      await _secure!.write(key: key, value: value);
+    } catch (_) {
+      // Storage write failed — token won't persist across restarts
+    }
+  }
+
+  Future<void> delete(String key) async {
+    try {
+      if (_useFallback) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(key);
+        return;
+      }
+      await _secure!.delete(key: key);
+    } catch (_) {
+      // Ignore delete failures
+    }
+  }
+}
+
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   late ApiClient privateApiClient;
   late BiometricService privateBiometricService;
-  final FlutterSecureStorage privateSecureStorage;
+  final _TokenStorage _storage;
   final bool _apiClientInjected;
 
   static const String privateUserKey = 'current_user';
   static const String privateTokenKey = 'auth_token';
 
-  static const FlutterSecureStorage _defaultSecureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock_this_device,
-    ),
-  );
-
   AuthBloc({
     ApiClient? apiClient,
     BiometricService? biometricService,
-    FlutterSecureStorage? secureStorage,
-  }) : privateSecureStorage = secureStorage ?? _defaultSecureStorage,
+  }) : _storage = _TokenStorage(),
        _apiClientInjected = apiClient != null,
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();
@@ -56,11 +98,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthState.loading());
 
     try {
-      final userData = await privateSecureStorage.read(key: privateUserKey);
-      final token = await privateSecureStorage.read(key: privateTokenKey);
+      String? userData;
+      String? token;
+      try {
+        userData = await _storage.read(privateUserKey);
+        token = await _storage.read(privateTokenKey);
+      } catch (e) {
+        // Corrupted storage data — clear and start fresh
+        try { await _storage.delete(privateUserKey); } catch (_) {}
+        try { await _storage.delete(privateTokenKey); } catch (_) {}
+      }
 
-      final biometricAvailable = await privateBiometricService.isAvailable;
-      final biometricEnabled = await privateBiometricService.isBiometricEnabled;
+      bool biometricAvailable = false;
+      bool biometricEnabled = false;
+      try {
+        biometricAvailable = await privateBiometricService.isAvailable;
+        biometricEnabled = await privateBiometricService.isBiometricEnabled;
+      } catch (_) {
+        // Biometric not available on this platform
+      }
 
       if (userData != null && token != null) {
         final userJson = jsonDecode(userData);
@@ -106,11 +162,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
 
       if (loginResponse != null) {
-        await privateSecureStorage.write(
-          key: privateUserKey,
-          value: jsonEncode(loginResponse['person']),
-        );
-        await privateSecureStorage.write(key: privateTokenKey, value: loginResponse['token']);
+        await _storage.write(privateUserKey, jsonEncode(loginResponse['person']));
+        await _storage.write(privateTokenKey, loginResponse['token']);
 
         privateApiClient.setAuthToken(loginResponse['token']);
 
@@ -138,8 +191,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthState.loading());
 
     try {
-      await privateSecureStorage.delete(key: privateUserKey);
-      await privateSecureStorage.delete(key: privateTokenKey);
+      await _storage.delete(privateUserKey);
+      await _storage.delete(privateTokenKey);
 
       privateApiClient.clearAuthToken();
 
@@ -192,8 +245,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final result = await privateBiometricService.authenticate();
 
       if (result.isSuccess) {
-        final userData = await privateSecureStorage.read(key: privateUserKey);
-        final token = await privateSecureStorage.read(key: privateTokenKey);
+        final userData = await _storage.read(privateUserKey);
+        final token = await _storage.read(privateTokenKey);
 
         if (userData != null && token != null) {
           final userJson = jsonDecode(userData);

@@ -20,8 +20,8 @@ object NotificationRoutes:
     Method.GET / "api" / "notifications"                         -> handler { (request: Request) =>
       (for {
         user          <- AuthMiddleware.authenticateRequest(request)
-        limit          = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(20)
-        offset         = request.url.queryParams.queryParam("offset").flatMap(_.toIntOption).getOrElse(0)
+        limit          = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(20).min(100).max(1)
+        offset         = request.url.queryParams.queryParam("offset").flatMap(_.toIntOption).getOrElse(0).max(0)
         typeFilter     = request.url.queryParams.queryParam("type")
         repo          <- ZIO.service[NotificationRepository]
         notifications <- repo.findByPersonId(PersonId(user.userId), limit, offset)
