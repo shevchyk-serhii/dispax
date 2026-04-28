@@ -19,10 +19,15 @@ class CreateRideScreen extends StatelessWidget {
   }
 }
 
-class CreateRideScreenContent extends StatelessWidget {
+class CreateRideScreenContent extends StatefulWidget {
   const CreateRideScreenContent({super.key});
 
-  static final formKey = GlobalKey<FormState>();
+  @override
+  State<CreateRideScreenContent> createState() => _CreateRideScreenContentState();
+}
+
+class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
+  final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +48,7 @@ class CreateRideScreenContent extends StatelessWidget {
           foregroundColor: AppColors.textOnPrimary,
           elevation: AppDimensions.appBarElevation,
         ),
-        body: CreateRideFormBody(formKey: formKey),
+        body: CreateRideFormBody(formKey: _formKey),
       ),
     );
   }

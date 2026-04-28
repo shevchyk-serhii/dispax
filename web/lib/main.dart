@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart';
 
 import 'l10n/app_localizations.dart';
 import 'blocs/blocs.dart';
@@ -19,20 +22,30 @@ import 'blocs/app_state/app_state_bloc.dart';
 import 'blocs/app_state/app_state_event.dart';
 import 'blocs/app_state/app_state_state.dart';
 import 'theme/app_theme.dart';
+import 'constants/app_colors.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  debugPrint('FCM background message: ${message.messageId}');
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await Firebase.initializeApp();
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    await PushNotificationService.instance.initialize();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    // Skip messaging on iOS simulator
+    final bool isIosSimulator = !kIsWeb && Platform.isIOS && !Platform.environment.containsKey('SIMULATOR_DEVICE_NAME');
+    
+    if (!isIosSimulator) {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      await PushNotificationService.instance.initialize();
+    }
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
   }
@@ -50,33 +63,62 @@ class MyApp extends StatelessWidget {
         BlocProvider<AuthBloc>(
           create: (context) => AuthBloc()..add(const AuthInitializeRequested()),
         ),
-        BlocProvider<AppStateBloc>(
-          create: (context) => AppStateBloc(),
-        ),
+        BlocProvider<AppStateBloc>(create: (context) => AppStateBloc()),
       ],
-      child: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, authState) {
-          return BlocProvider<RideBloc>(
-            key: ValueKey(authState.isAuthenticated),
-            create: (context) {
-              final authBloc = context.read<AuthBloc>();
-              return RideBloc(
-                rideService: RideService(apiClient: authBloc.apiClient),
-              );
-            },
-            child: BlocProvider<ScheduleBloc>(
-              key: ValueKey('schedule_${authState.isAuthenticated}'),
-              create: (context) {
-                final authBloc = context.read<AuthBloc>();
-                return ScheduleBloc(
-                  scheduleService: ScheduleService(apiClient: authBloc.apiClient),
-                );
-              },
-              child: const _AppWithWebSocket(),
+      child: MaterialApp(
+        title: 'Oktopus Taxi',
+        theme: AppTheme.theme,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const AppRoot(),
+      ),
+    );
+  }
+}
+
+class AppRoot extends StatelessWidget {
+  const AppRoot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        if (authState.status == AuthStatus.initial || authState.status == AuthStatus.loading) {
+          return const Scaffold(
+            backgroundColor: AppColors.brand900,
+            body: Center(
+              child: CircularProgressIndicator(color: Colors.white),
             ),
           );
-        },
-      ),
+        }
+
+        if (authState.isAuthenticated) {
+          final authBloc = context.read<AuthBloc>();
+          return MultiBlocProvider(
+            key: ValueKey('auth_zone_${authState.user?.id}'),
+            providers: [
+              BlocProvider<RideBloc>(
+                create: (context) => RideBloc(
+                  rideService: RideService(apiClient: authBloc.apiClient),
+                ),
+              ),
+              BlocProvider<ScheduleBloc>(
+                create: (context) => ScheduleBloc(
+                  scheduleService: ScheduleService(apiClient: authBloc.apiClient),
+                ),
+              ),
+            ],
+            child: const _AppWithWebSocket(),
+          );
+        }
+
+        return const LoginScreen();
+      },
     );
   }
 }
@@ -90,84 +132,16 @@ class _AppWithWebSocket extends StatefulWidget {
 
 class _AppWithWebSocketState extends State<_AppWithWebSocket> {
   StreamSubscription? _wsSubscription;
-  StreamSubscription? _fcmSubscription;
 
   @override
   void initState() {
     super.initState();
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
-
       if (event.isRideAssigned || event.isRideStatusChanged || event.isRideCreated) {
         _refreshRides();
       }
-
-      if (event.isGeofenceTriggered) {
-        final geofenceName = event.geofenceName ?? 'Unknown zone';
-        final isEntry = event.alertType == 'entry';
-        final message = isEntry
-            ? 'Driver entered $geofenceName'
-            : 'Driver left $geofenceName';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  isEntry ? Icons.arrow_downward : Icons.arrow_upward,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: Text(message)),
-              ],
-            ),
-            backgroundColor: isEntry ? Colors.green : Colors.red.shade700,
-            duration: const Duration(seconds: 4),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-
-      if (event.isDriverApproaching) {
-        final distance = event.distanceMeters;
-        String message;
-        if (distance == null) {
-          message = 'Your driver is en route';
-        } else if (distance <= 100) {
-          message = 'Your driver has arrived!';
-        } else if (distance <= 500) {
-          message = 'Your driver is nearby!';
-        } else {
-          final km = (distance / 1000).toStringAsFixed(1);
-          message = 'Your driver is about ${km}km away';
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.directions_car, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Expanded(child: Text(message)),
-              ],
-            ),
-            backgroundColor: (distance != null && distance <= 100) ? Colors.green : Colors.blue,
-            duration: const Duration(seconds: 5),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
     });
-
-    if (PushNotificationService.instance.isInitialized) {
-      _fcmSubscription = PushNotificationService.instance.onMessage.listen((message) {
-        if (!mounted) return;
-
-        final type = message.data['type'];
-        if (type == 'ride_assigned' || type == 'ride_status_changed' || type == 'ride_created') {
-          _refreshRides();
-        }
-      });
-    }
   }
 
   void _refreshRides() {
@@ -180,47 +154,11 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
   @override
   void dispose() {
     _wsSubscription?.cancel();
-    _fcmSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Oktopus Taxi',
-      theme: AppTheme.theme,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: BlocBuilder<AppStateBloc, AppState>(
-        builder: (context, appState) {
-          if (!appState.isInitialized) {
-            return SplashScreen(
-              onInitializationComplete: () {
-                context.read<AppStateBloc>().add(const AppInitialized());
-              },
-            );
-          }
-
-          return BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, authState) {
-              if (authState.isLoading) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              return authState.isAuthenticated
-                  ? const DashboardScreen()
-                  : const LoginScreen();
-            },
-          );
-        },
-      ),
-    );
+    return const DashboardScreen();
   }
 }

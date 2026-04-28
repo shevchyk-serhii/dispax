@@ -103,7 +103,6 @@ class _CreateRidesTab extends StatelessWidget {
         Expanded(
           child: AppTheme.buildGradientContainer(
         colors: AppColors.secretaryGradient,
-        stops: const [0.0, 1.0],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         child: Center(

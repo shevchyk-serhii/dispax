@@ -35,20 +35,26 @@ class ApiClient {
 
     if (Platform.isAndroid) {
       if (isPhysicalDevice) {
-
+        // Physical Android device
         const physicalDeviceUrl = String.fromEnvironment('PHYSICAL_DEVICE_URL');
         return physicalDeviceUrl.isNotEmpty
             ? physicalDeviceUrl
-            : 'http://10.0.2.2:8080/api';
+            : 'http://192.168.0.188:8080/api';
       } else {
-
+        // Android emulator
         return 'http://10.0.2.2:8080/api';
       }
     } else if (Platform.isIOS) {
-
-      return 'http://127.0.0.1:8080/api';
+      if (isPhysicalDevice) {
+        // Physical iOS device
+        return 'http://192.168.0.188:8080/api';
+      } else {
+        // iOS simulator
+        return 'http://127.0.0.1:8080/api';
+      }
     } else {
-      return 'http://localhost:8080/api';
+      // Desktop or Web
+      return 'http://192.168.0.188:8080/api';
     }
   }
 

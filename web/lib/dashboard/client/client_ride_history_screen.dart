@@ -45,13 +45,16 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           r.pickupDateTime.month == now.month &&
           r.pickupDateTime.day == now.day
         ).toList();
+        break;
       case _ClientPeriodFilter.week:
         final weekStart = now.subtract(Duration(days: now.weekday - 1));
         final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
         filtered = filtered.where((r) => r.pickupDateTime.isAfter(start)).toList();
+        break;
       case _ClientPeriodFilter.month:
         final start = DateTime(now.year, now.month, 1);
         filtered = filtered.where((r) => r.pickupDateTime.isAfter(start)).toList();
+        break;
       case _ClientPeriodFilter.all:
         break;
     }

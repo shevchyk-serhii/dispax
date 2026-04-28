@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,13 +14,15 @@ import '../../modules/flight_management/services/airport_timing_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
-/// Storage abstraction that falls back to SharedPreferences on macOS
+/// Storage abstraction that falls back to SharedPreferences on macOS/Web
 /// where Keychain requires signing entitlements not available in debug.
 class _TokenStorage {
   final FlutterSecureStorage? _secure;
   final bool _useFallback;
 
-  _TokenStorage() : _useFallback = Platform.isMacOS, _secure = Platform.isMacOS ? null : const FlutterSecureStorage(
+  _TokenStorage() 
+      : _useFallback = kIsWeb || Platform.isMacOS, 
+        _secure = (kIsWeb || Platform.isMacOS) ? null : const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
   );

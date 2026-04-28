@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'api_client.dart';
@@ -21,6 +22,15 @@ class PushNotificationService {
   Stream<RemoteMessage> get onMessage => _messageController.stream;
 
   Future<void> initialize() async {
+    // Skip initialization on iOS Simulator as APNS is not supported and it causes noisy logs
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final isSimulator = !Platform.environment.containsKey('SIMULATOR_DEVICE_NAME');
+      if (isSimulator) {
+        debugPrint('PushNotificationService: Skipping initialization on iOS Simulator');
+        return;
+      }
+    }
+
     try {
       final settings = await _messaging.requestPermission(
         alert: true,
@@ -68,7 +78,12 @@ class PushNotificationService {
         await _registerTokenWithBackend(_currentToken!);
       }
     } catch (e) {
-      debugPrint('Error getting FCM token: $e');
+      final errorMessage = e.toString();
+      if (!errorMessage.contains('apns-token-not-set')) {
+        debugPrint('Error getting FCM token: $e');
+      } else {
+        debugPrint('FCM token not available (expected on iOS Simulator)');
+      }
     }
   }
 

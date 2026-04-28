@@ -4,14 +4,14 @@
 
 | Module         | Description                                         |
 |----------------|-----------------------------------------------------|
-| **core**       | Shared domain: IDs, Location, Person, Company       |
+| **core**       | Shared domain: IDs, Location, Person, Company, Sessions, Blacklist, Geofences, GDPR, Audit, CompanySettings, RidePools, EmergencyReassignments, NotificationPreferences       |
 | **auth**       | Authentication: JWT login, user management, tokens  |
 | **ride**       | Ride lifecycle: CRUD, assignment, status transitions |
 | **driver**     | Driver location tracking, proximity calculation     |
 | **schedule**   | Driver schedule management (daily shifts)            |
-| **notification** | Notification infrastructure (stub)                |
+| **notification** | Push notifications (FCM), orchestrator, preferences                |
 | **api**        | HTTP entry point, route aggregation, config, DB migrations |
-| **web** (app/) | Flutter/Dart mobile client                          |
+| **web** | Flutter/Dart mobile client (iOS, Android, macOS)                          |
 
 ## Module Dependencies
 
@@ -73,7 +73,7 @@ oktopus/
 ├── driver/src/main/scala/.../driver/    # domain, application, infrastructure
 ├── schedule/src/main/scala/.../schedule/
 ├── notification/src/main/scala/.../notification/
-├── app/                                 # Flutter mobile app
+├── web/                                 # Flutter mobile app
 ├── docs/                                # Documentation
 └── build.sbt                            # SBT multi-module build
 ```

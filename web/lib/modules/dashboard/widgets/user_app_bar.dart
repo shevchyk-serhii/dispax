@@ -21,12 +21,7 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       title: Row(
         children: [
-          Image.asset(
-            'assets/oktopus_icon.png',
-            height: 32,
-            width: 32,
-            fit: BoxFit.contain,
-          ),
+          const Icon(Icons.local_taxi, size: 32),
           const SizedBox(width: 12),
           Text(getAppBarTitle(user.role)),
         ],
@@ -89,6 +84,8 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
         return 'Secretary Dashboard';
       case PersonRole.dispatcher:
         return 'Dispatcher Dashboard';
+      case PersonRole.admin:
+        throw UnimplementedError();
     }
   }
 }

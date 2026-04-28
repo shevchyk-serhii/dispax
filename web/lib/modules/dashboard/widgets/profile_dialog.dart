@@ -122,6 +122,8 @@ class ProfileDialog extends StatelessWidget {
         return 'Secretary';
       case PersonRole.dispatcher:
         return 'Dispatcher';
+      case PersonRole.admin:
+        throw UnimplementedError();
     }
   }
 }

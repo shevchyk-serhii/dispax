@@ -128,6 +128,70 @@ object GeofenceServiceSpec extends ZIOSpecDefault {
         } yield assertTrue(alerts.isEmpty)
       }.provide(layers),
 
+      test("inactive geofence is ignored") {
+        for {
+          repo    <- ZIO.service[GeofenceRepository]
+          _       <- createGeofence(repo, isActive = false)
+          service <- ZIO.service[GeofenceService]
+          alerts  <- service.checkDriverLocation(testDriverId, testCompanyId, insideLat, insideLng)
+        } yield assertTrue(alerts.isEmpty)
+      }.provide(layers),
+
+      test("publishes GeofenceTriggered event on entry") {
+        for {
+          repo     <- ZIO.service[GeofenceRepository]
+          _        <- createGeofence(repo)
+          eventHub <- ZIO.service[EventHub]
+          events   <- ZIO.scoped {
+                        for {
+                          dequeue <- eventHub.subscribe
+                          service <- ZIO.service[GeofenceService]
+                          _       <- service.checkDriverLocation(testDriverId, testCompanyId, insideLat, insideLng)
+                          evts    <- dequeue.takeAll
+                        } yield evts
+                      }
+          triggered = events.collect { case e: WebSocketEvent.GeofenceTriggered => e }
+        } yield assertTrue(
+          triggered.size == 1 &&
+          triggered.head.alertType == "entry" &&
+          triggered.head.driverId == testDriverId.value
+        )
+      }.provide(layers),
+
+      test("publishes GeofenceTriggered event on exit") {
+        for {
+          repo     <- ZIO.service[GeofenceRepository]
+          _        <- createGeofence(repo, notifyOnExit = true)
+          eventHub <- ZIO.service[EventHub]
+          events   <- ZIO.scoped {
+                        for {
+                          dequeue <- eventHub.subscribe
+                          service <- ZIO.service[GeofenceService]
+                          _       <- service.checkDriverLocation(testDriverId, testCompanyId, insideLat, insideLng)
+                          _       <- service.checkDriverLocation(testDriverId, testCompanyId, outsideLat, outsideLng)
+                          evts    <- dequeue.takeAll
+                        } yield evts
+                      }
+          exitEvents = events.collect { case e: WebSocketEvent.GeofenceTriggered if e.alertType == "exit" => e }
+        } yield assertTrue(
+          exitEvents.size == 1 &&
+          exitEvents.head.geofenceName == "Munich Airport"
+        )
+      }.provide(layers),
+
+      test("entry and exit both enabled on same geofence") {
+        for {
+          repo    <- ZIO.service[GeofenceRepository]
+          _       <- createGeofence(repo, notifyOnEntry = true, notifyOnExit = true)
+          service <- ZIO.service[GeofenceService]
+          entry   <- service.checkDriverLocation(testDriverId, testCompanyId, insideLat, insideLng)
+          exit    <- service.checkDriverLocation(testDriverId, testCompanyId, outsideLat, outsideLng)
+        } yield assertTrue(
+          entry.size == 1 && entry.head.alertType == "entry" &&
+          exit.size == 1 && exit.head.alertType == "exit"
+        )
+      }.provide(layers),
+
       test("saves alert to repository") {
         for {
           repo    <- ZIO.service[GeofenceRepository]
@@ -239,6 +303,13 @@ object GeofenceServiceSpec extends ZIOSpecDefault {
           approaching = events.collect { case e: WebSocketEvent.DriverApproaching => e }
           distinctRides = approaching.map(_.rideId).toSet
         } yield assertTrue(approaching.nonEmpty && distinctRides.size >= 2)
+      }.provide(layers),
+
+      test("empty rides list is a no-op") {
+        for {
+          service <- ZIO.service[GeofenceService]
+          _       <- service.checkClientProximity(testDriverId, insideLat, insideLng, List.empty)
+        } yield assertCompletes
       }.provide(layers),
 
       test("triggers all thresholds when at exact pickup location") {

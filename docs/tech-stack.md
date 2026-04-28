@@ -19,14 +19,24 @@
 | UUID Creator      | 5.3.2     | Time-ordered UUID v7 generation  |
 | ZIO-Interop-Cats  | 23.1.0.3  | Cats interop (Doobie bridge)     |
 | Logback           | 1.5.15    | Logging implementation           |
+| Firebase Admin  | 9.3.0     | Push notifications (FCM)       |
+| JBCrypt         | 0.4       | Password hashing               |
 
 ## Frontend
 
-| Technology | Purpose                        |
-|------------|--------------------------------|
-| Flutter/Dart | Cross-platform mobile app    |
-| Mapbox     | Map rendering & navigation     |
-| BLoC       | State management pattern       |
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Flutter/Dart | 3.8.1+ | Cross-platform mobile app |
+| flutter_bloc | 8.1.6 | State management (BLoC pattern) |
+| google_maps_flutter | 2.2.0 | Google Maps integration |
+| mapbox_maps_flutter | 2.4.0 | Mapbox maps |
+| geolocator | 13.0.1 | GPS location services |
+| firebase_messaging | 15.1.6 | Push notifications |
+| web_socket_channel | 3.0.1 | Real-time WebSocket updates |
+| flutter_secure_storage | 9.2.2 | Secure token storage |
+| local_auth | 2.1.6 | Biometric authentication |
+| table_calendar | 3.1.2 | Calendar widget |
+| intl | 0.20.2 | Internationalization (DE, EN, UK) |
 
 ## Build & Tooling
 
@@ -45,6 +55,9 @@
 | Cucumber        | 7.15.0  | BDD acceptance tests           |
 | Cucumber-Scala  | 8.20.0  | Scala step definitions         |
 | JUnit           | 4.13.2  | Test runner bridge             |
+| Testcontainers  |         | PostgreSQL integration tests   |
+| bloc_test       | 9.1.7   | BLoC testing utilities         |
+| mocktail         | 1.0.4   | Mocking library (Flutter)     |
 
 Testing approach: Cucumber BDD scenarios with in-memory repository implementations for isolated testing.
 

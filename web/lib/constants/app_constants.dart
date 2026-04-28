@@ -1,6 +1,7 @@
 class AppConstants {
 
-  static const String baseUrl = 'http://localhost:8080';
+  // Use your local machine IP address here for local network testing with physical devices
+  static const String baseUrl = 'http://192.168.0.188:8080';
 
   static const double defaultPadding = 16.0;
   static const double largePadding = 24.0;

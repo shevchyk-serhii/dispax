@@ -1,60 +1,57 @@
 # Testing Setup
 
-## In-Memory Database for Testing
+## Test Framework
 
-All mock repositories are now located in test sources, not in main sources. This ensures proper separation of production and test code.
+- **ZIO Test** — Primary unit/integration test framework
+- **Cucumber 7.15.0** — BDD acceptance tests
+- **Testcontainers** — PostgreSQL integration tests
 
-### Structure
+## Test Architecture
 
 **Production (main sources):**
-- `PersonRepository` - PostgreSQL implementation only
-- `UserRepository` and `TokenRepository` - PostgreSQL implementations only
-- `AuthService` - main layer only
+- `PersonRepository` — PostgreSQL implementation
+- `TokenRepository` — PostgreSQL implementation
+- `AuthService`, `RideService`, etc. — ZIO service layers
 
 **Testing (test sources):**
-- `MockPersonRepository` - in `/core/src/test/scala/com/shevchyk/repository/`
-- `InMemoryUserRepository` and `InMemoryTokenRepository` - in `/auth/src/test/scala/com/shevchyk/auth/repository/`
-- `TestApplication` - in `/api/src/test/scala/com/shevchyk/`
+- `MockPersonRepository` — in `core/src/test/scala/`
+- `InMemoryTokenRepository` — in `auth/src/test/scala/`
+- In-memory implementations for all repositories used in unit tests
 
-### Running Tests
+## Running Tests
 
-1. **Running the test server:**
-   ```bash
-   sbt testServer
-   ```
-   This will start a server with in-memory data on localhost:8080
+```bash
+# Unit tests (ZIO Test)
+sbt test
 
-2. **Running Cucumber tests:**
-   ```bash
-   # In another terminal, after starting testServer
-   sbt test
-   ```
+# BDD acceptance tests (Cucumber)
+sbt cucumber
 
-3. **Running production server:**
-   ```bash
-   sbt run
-   ```
-   This will start a server with PostgreSQL database
+# Run development server with test data
+sbt runDev
+```
 
-### Test Data
+Development mode (`sbt runDev`) loads test data via Flyway dev migration: `api/src/main/resources/db/migration-dev/V1001__Insert_dev_data.sql`
 
-TestApplication contains the same mock data that was in the original implementation:
+## Test Data
 
-**Users:**
-- ID: 1, Email: test@example.com, Password: password123, Role: CLIENT
-- ID: 50, Email: client@example.com, Password: password123, Role: CLIENT  
-- ID: 10, Email: driver@example.com, Password: password123, Role: DRIVER
-- ID: 99, Email: admin@example.com, Password: password123, Role: ADMIN
+Test data is seeded via Flyway dev migration (V1001) and includes sample persons, companies, rides, and schedules with UUID identifiers. Authentication uses JWT tokens generated at login.
 
-**Tokens:**
-- valid-token-1 -> User ID 1
-- valid-token-50 -> User ID 50
-- valid-token-10 -> User ID 10
-- valid-token-99 -> User ID 99
+## Test Coverage
 
-### Benefits
+| Module | Coverage | Notes |
+|--------|----------|-------|
+| auth | ~80% | JWT, AuthService, RateLimiter, integration |
+| ride | ~60% | Service, domain, API, statistics |
+| core | ~50% | Geofence, domain, person repo |
+| schedule | ~40% | Service only |
+| notification | ~30% | Orchestrator only |
+| driver | ~20% | No dedicated tests |
+
+## Test Principles
 
 1. **Clean Architecture**: production code does not contain test data
-2. **Fast Tests**: in-memory implementations work fast
-3. **Predictability**: test data is always the same
-4. **Isolation**: tests do not depend on database state
+2. **Fast Tests**: in-memory implementations for unit tests
+3. **Predictability**: test data via Flyway migration is always the same
+4. **Isolation**: unit tests do not depend on database state
+5. **Integration**: Testcontainers for DB-dependent tests

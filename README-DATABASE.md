@@ -2,12 +2,12 @@
 
 ## PostgreSQL with Doobie
 
-This project now supports both in-memory and PostgreSQL persistence layers.
+PostgreSQL is the sole persistence layer. Schema is managed by Flyway migrations.
 
 ### Architecture
 
 - **Domain Layer**: Repository interfaces (ports)
-- **Infrastructure Layer**: Doobie implementations (adapters)
+- **Infrastructure Layer**: PostgreSQL implementations via Doobie (adapters)
 - **Application Layer**: Business services using repository contracts
 
 ### Setup
@@ -17,25 +17,36 @@ This project now supports both in-memory and PostgreSQL persistence layers.
 docker-compose up -d postgres
 ```
 
-2. Run with PostgreSQL:
+2. Run in development mode:
 ```bash
-USE_POSTGRES=true sbt run
+sbt runDev
 ```
 
-3. Run with in-memory (default):
+3. Run in production mode:
 ```bash
-sbt run
+sbt runProd
 ```
+
+Flyway migrations run automatically on startup.
 
 ### Database Schema
 
-The schema is managed by Flyway migrations in `api/src/main/resources/db/migration/`:
+Managed by Flyway in `api/src/main/resources/db/migration/`:
 
-- **V1__Create_tables.sql**: Initial schema with tables for rides, persons, drivers, companies, tariffs
+| Migration | Description |
+|-----------|-------------|
+| V1__Create_schema.sql | Initial schema: persons, companies, rides, drivers, tariffs, schedules, notifications, chat, ratings, expenses, geofences, blacklist, GDPR, audit, sessions, pools |
+| V2__Add_admin_to_person_role.sql | Add `admin` to person_role enum |
+| V3__Placeholder.sql | Placeholder |
+| V4__Fix_paid_at_column_type.sql | Fix timestamp column type |
+| V5__Add_payment_enums.sql | Add payment_status and payment_method enums |
+| V6__Merge_users_into_persons.sql | Consolidate users table into persons |
+
+Development data: `api/src/main/resources/db/migration-dev/V1001__Insert_dev_data.sql` (loaded only in development profile).
 
 ### Configuration
 
-Database configuration is in `application.conf`:
+Base config in `api/src/main/resources/application.conf`:
 
 ```hocon
 database {
@@ -43,24 +54,52 @@ database {
   url = "jdbc:postgresql://localhost:5432/oktopus"
   user = "oktopus"
   password = "oktopus"
+  maxPoolSize = 10
+  minIdle = 2
 }
 ```
 
-Environment variables override:
+Environment variable overrides:
 - `DATABASE_URL`
-- `DATABASE_USER` 
+- `DATABASE_USER`
 - `DATABASE_PASSWORD`
-- `USE_POSTGRES=true`
+
+Production profile (`application-production.conf`) increases pool sizes: maxPoolSize=20, minIdle=5.
+
+### Environment Profiles
+
+| Profile | Config file | Test data | Pool size |
+|---------|------------|-----------|-----------|
+| development | application-development.conf | Yes (V1001) | 10/2 |
+| production | application-production.conf | No | 20/5 |
 
 ### Testing
 
-Tests use in-memory repositories for fast execution.
+- Unit tests use in-memory repository implementations (in test sources)
+- Integration tests use Testcontainers (PostgreSQL)
+- Development mode loads test data via Flyway dev migration
 
 ### Repository Implementations
 
-- `DoobieRideRepository`: Ride persistence with complex queries
-- `DoobiePersonRepository`: Person management
-- `DoobieDriverRepository`: Driver location and availability tracking
-- `DoobieTariffRepository`: Pricing configuration
+- `PostgresPersonRepository` — Person CRUD, search, role/status filtering
+- `PostgresRideRepository` — Ride persistence, status queries, assignment
+- `PostgresDriverLocationRepository` — Driver GPS location tracking
+- `PostgresScheduleDayRepository` — Driver schedule management
+- `PostgresRideRatingRepository` — Ride ratings
+- `PostgresChatMessageRepository` — In-ride chat
+- `PostgresExpenseRepository` — Driver expenses
+- `PostgresRideTemplateRepository` — Recurring ride templates
+- `PostgresClientLocationRepository` — Client location sharing
+- `PostgresNotificationRepository` — Push notifications
+- `PostgresFcmTokenRepository` — Firebase device tokens
+- `PostgresSessionRepository` — User sessions
+- `PostgresBlacklistRepository` — Client-driver blacklist
+- `PostgresGeofenceRepository` — Geofence zones
+- `PostgresGdprRepository` — GDPR consents and requests
+- `PostgresCompanySettingsRepository` — Company configuration
+- `PostgresRidePoolRepository` — Ride pooling
+- `PostgresEmergencyReassignmentRepository` — Emergency reassignments
+- `PostgresNotificationPreferenceRepository` — Notification preferences
+- `PostgresAuditService` — Audit trail
 
-All repositories implement domain interfaces and handle SQL mapping transparently.
+All repositories implement domain interfaces and use Doobie's parameterized queries for SQL injection protection.
