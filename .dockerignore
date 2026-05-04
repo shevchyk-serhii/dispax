@@ -1,0 +1,10 @@
+target/
+web/
+.git/
+.env
+.env.example
+*.md
+.idea/
+.vscode/
+*.log
+node_modules/

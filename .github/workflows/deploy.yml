@@ -1,0 +1,56 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: taxi-app-98671
+  REGION: europe-west1
+  REGISTRY: europe-west1-docker.pkg.dev
+  IMAGE: europe-west1-docker.pkg.dev/taxi-app-98671/oktopus-docker/oktopus-server
+
+jobs:
+  deploy:
+    name: Build, Push, Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: oktopus
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}
