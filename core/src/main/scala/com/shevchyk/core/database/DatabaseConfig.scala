@@ -79,16 +79,22 @@ object DatabaseConfig {
 
   val liveTransactor: ZLayer[Any, Throwable, Transactor[Task]] = layer.catchAll(_ => defaultLayer) >>> transactorLayer
 
-  val liveTransactorWithMigrations: ZLayer[Any, Throwable, Transactor[Task]] = ZLayer.makeSome[Any, Transactor[Task]](
-    layer.catchAll(_ => defaultLayer),
-    FlywayService.development, // Default to development (includes dev data)
-    transactorWithMigrations
-  )
-
   val productionTransactorWithMigrations: ZLayer[Any, Throwable, Transactor[Task]] = ZLayer
     .makeSome[Any, Transactor[Task]](
       layer.catchAll(_ => defaultLayer),
-      FlywayService.production, // Production (schema only, no test data)
+      FlywayService.production,
       transactorWithMigrations
     )
+
+  private val developmentTransactorWithMigrations: ZLayer[Any, Throwable, Transactor[Task]] = ZLayer
+    .makeSome[Any, Transactor[Task]](
+      layer.catchAll(_ => defaultLayer),
+      FlywayService.development,
+      transactorWithMigrations
+    )
+
+  // Switches between production (schema only) and development (with seed data) based on APP_ENV env var
+  val liveTransactorWithMigrations: ZLayer[Any, Throwable, Transactor[Task]] =
+    if sys.env.getOrElse("APP_ENV", "development") == "production" then productionTransactorWithMigrations
+    else developmentTransactorWithMigrations
 }
