@@ -86,6 +86,11 @@ web/linux/flutter/
 ### Server logs ###
 server.log
 
+### Service keys ###
+key.json
+*-key.json
+*-credentials.json
+
 ### Terraform ###
 infra/**/.terraform/
 infra/**/.terraform.lock.hcl

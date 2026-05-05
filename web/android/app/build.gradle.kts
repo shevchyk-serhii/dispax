@@ -43,8 +43,5 @@ android {
 }
 
 flutter {
-    source = "src"
+    source = "../.."
 }
-
-// Temporary fix for Flutter 3.32.5 native assets crash
-android.buildFeatures.buildConfig = false
