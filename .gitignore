@@ -62,6 +62,8 @@ web/pubspec.lock
 web/ios/Flutter/flutter_export_environment.sh
 web/ios/Flutter/Generated.xcconfig
 web/ios/Flutter/ephemeral/
+web/ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+web/ios/Runner.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
 
 ### Flutter Android ###
 web/android/.gradle/

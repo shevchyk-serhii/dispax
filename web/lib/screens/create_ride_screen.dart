@@ -8,12 +8,17 @@ import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
 
 class CreateRideScreen extends StatelessWidget {
-  const CreateRideScreen({super.key});
+  final RideBloc rideBloc;
+
+  const CreateRideScreen({super.key, required this.rideBloc});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => CreateRideFormBloc(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => CreateRideFormBloc()),
+        BlocProvider.value(value: rideBloc),
+      ],
       child: const CreateRideScreenContent(),
     );
   }

@@ -23,6 +23,13 @@ class ClientDashboard extends StatefulWidget {
 
 class _ClientDashboardState extends State<ClientDashboard> {
   int _selectedIndex = 0;
+  late RideBloc _rideBloc;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rideBloc = context.read<RideBloc>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +82,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
       case 1:
         return const ClientRideHistoryScreen();
       case 2:
-        return const CreateRideScreen();
+        return CreateRideScreen(rideBloc: _rideBloc);
       case 3:
         return Platform.isAndroid ? const AndroidMapScreen() : const SimpleMapScreen();
       case 4:

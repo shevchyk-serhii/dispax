@@ -86,8 +86,8 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       final response = await apiClient.post('/ride-templates/$templateId/generate', {
-        'from': dateRange.start.toIso8601String(),
-        'to': dateRange.end.toIso8601String(),
+        'from': dateRange.start.toUtc().toIso8601String(),
+        'to': dateRange.end.toUtc().toIso8601String(),
       });
 
       if (!mounted) return;

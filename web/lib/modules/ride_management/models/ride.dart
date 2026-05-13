@@ -166,7 +166,7 @@ class Ride {
       'driverId': driverId,
       'companyId': companyId,
       'scheduleDayId': scheduleDayId,
-      'pickupDateTime': pickupDateTime.toIso8601String(),
+      'pickupDateTime': pickupDateTime.toUtc().toIso8601String(),
       'from': from.toJson(),
       'to': to.toJson(),
       'status': status.value,

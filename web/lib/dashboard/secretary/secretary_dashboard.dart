@@ -20,6 +20,13 @@ class SecretaryDashboard extends StatefulWidget {
 
 class _SecretaryDashboardState extends State<SecretaryDashboard> {
   int _selectedIndex = 0;
+  late RideBloc _rideBloc;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rideBloc = context.read<RideBloc>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +40,12 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
       child: Scaffold(
         body: IndexedStack(
           index: _selectedIndex,
-          children: const [_CreateRidesTab(), SecretaryReportsPanel(), CreateRideScreen(), SettingsScreen()],
+          children: [
+            const _CreateRidesTab(),
+            const SecretaryReportsPanel(),
+            CreateRideScreen(rideBloc: _rideBloc),
+            const SettingsScreen(),
+          ],
         ),
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
@@ -138,9 +150,10 @@ class _CreateRidesTab extends StatelessWidget {
                         height: AppDimensions.buttonHeightMedium,
                         child: ElevatedButton.icon(
                           onPressed: () {
+                            final rideBloc = context.read<RideBloc>();
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => const CreateRideScreen(),
+                                builder: (_) => CreateRideScreen(rideBloc: rideBloc),
                               ),
                             );
                           },

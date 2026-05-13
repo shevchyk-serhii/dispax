@@ -40,7 +40,7 @@ class CreateRideRequest {
       'clientId': clientId,
       'creatorId': creatorId,
       'companyId': companyId,
-      'pickupDateTime': pickupDateTime.toIso8601String(),
+      'pickupDateTime': pickupDateTime.toUtc().toIso8601String(),
       'from': from.toJson(),
       'to': to.toJson(),
       'status': 'Requested',

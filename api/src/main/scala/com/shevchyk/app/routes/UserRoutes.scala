@@ -94,10 +94,10 @@ object UserRoutes {
 
   val authenticatedRoutes
       : Routes[AuthService & PersonRepository & JwtService & FcmService & RideService & RateLimiter, Response] = Routes(
-    // GET /api/stats/rides — real ride statistics (dispatcher)
+    // GET /api/stats/rides — real ride statistics (dispatcher, secretary)
     Method.GET / "api" / "stats" / "rides" -> authenticatedHandler[RideService & PersonRepository] { (user, _) =>
       (for {
-        _                    <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
+        _                    <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN", "SECRETARY")
         rideService          <- ZIO.service[RideService]
         personRepo           <- ZIO.service[PersonRepository]
         companyId            <- UuidParser.requireCompanyId(user.companyId)

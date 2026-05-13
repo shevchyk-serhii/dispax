@@ -75,9 +75,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.secretaryColor,
         onPressed: () {
+          final rideBloc = context.read<RideBloc>();
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => const CreateRideScreen(),
+              builder: (_) => CreateRideScreen(rideBloc: rideBloc),
             ),
           );
         },
