@@ -1,6 +1,16 @@
 ThisBuild / version      := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "3.3.7"
 
+ThisBuild / assembly / assemblyMergeStrategy := {
+  case x if x.endsWith("module-info.class")            => MergeStrategy.discard
+  case x if x.contains("io.netty.versions.properties") => MergeStrategy.first
+  case x if x.contains("deriving.conf")                => MergeStrategy.first
+  case PathList("META-INF", "services", xs @ _*)       => MergeStrategy.filterDistinctLines
+  case PathList("META-INF", "versions", _*)            => MergeStrategy.first
+  case PathList("META-INF", xs @ _*)                   => MergeStrategy.discard
+  case x                                               => MergeStrategy.first
+}
+
 addCommandAlias("fmt", "; scalafmt ; scalafmtSbt")
 addCommandAlias("fmtDart", "! dart format /Users/shevchyk/projects/private/oktopus/app/lib/ --set-exit-if-changed")
 addCommandAlias("fmtAll", "; fmt ; fmtDart")
@@ -148,25 +158,20 @@ lazy val root = (project in file("."))
   .aggregate(core, auth, ride, driver, notification, schedule)
   .dependsOn(core, auth, ride, driver, notification, schedule)
   .settings(
-    name                             := "oktopus",
-    Compile / scalaSource            := baseDirectory.value / "api" / "src" / "main" / "scala",
-    Compile / resourceDirectory      := baseDirectory.value / "api" / "src" / "main" / "resources",
-    Test / scalaSource               := baseDirectory.value / "api" / "src" / "test" / "scala",
-    Test / resourceDirectory         := baseDirectory.value / "api" / "src" / "test" / "resources",
+    name                        := "oktopus",
+    Compile / scalaSource       := baseDirectory.value / "api" / "src" / "main" / "scala",
+    Compile / resourceDirectory := baseDirectory.value / "api" / "src" / "main" / "resources",
+    Test / scalaSource          := baseDirectory.value / "api" / "src" / "test" / "scala",
+    Test / resourceDirectory    := baseDirectory.value / "api" / "src" / "test" / "resources",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies ++ bcryptDependencies ++ testDependencies,
     testFrameworks ++= Seq(
       new TestFramework("zio.test.sbt.ZTestFramework"),
       new TestFramework("com.novocode.junit.JUnitFramework")
     ),
-    Compile / mainClass              := Some("com.shevchyk.Application"),
-    assembly / mainClass             := Some("com.shevchyk.Application"),
-    assembly / assemblyJarName       := "oktopus-server.jar",
-    assembly / assemblyMergeStrategy := {
-      case "module-info.class"                     => MergeStrategy.discard
-      case "META-INF/io.netty.versions.properties" => MergeStrategy.first
-      case x                                       => (assembly / assemblyMergeStrategy).value(x)
-    },
-    fork                             := true,
+    Compile / mainClass         := Some("com.shevchyk.Application"),
+    assembly / mainClass        := Some("com.shevchyk.Application"),
+    assembly / assemblyJarName  := "oktopus-server.jar",
+    fork                        := true,
     Compile / run / javaOptions ++= Seq(
       "-Djava.util.logging.config.file=logging.properties",
       "-Dcom.sun.management.jmxremote=false",

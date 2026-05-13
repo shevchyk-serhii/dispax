@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "taxi-app-98671-terraform-state"
+    bucket = "project-6efcac64-terraform-state"
     prefix = "oktopus/prod"
   }
 }

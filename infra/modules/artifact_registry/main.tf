@@ -1,6 +1,15 @@
-variable "project_id" { type = string }
-variable "region" { type = string }
-variable "repository_id" { type = string; default = "oktopus-docker" }
+variable "project_id" {
+  type = string
+}
+
+variable "region" {
+  type = string
+}
+
+variable "repository_id" {
+  type    = string
+  default = "oktopus-docker"
+}
 
 resource "google_artifact_registry_repository" "docker" {
   project       = var.project_id

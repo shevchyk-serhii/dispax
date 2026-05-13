@@ -58,7 +58,8 @@ class AuthServiceImpl(
       personOpt <- personRepository.findByEmail(email).orElseFail(UserNotFound(email))
       person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(email))
       _         <- ZIO.when(person.status != UserStatus.ACTIVE)(ZIO.fail(UserNotFound(email)))
-      _         <- ZIO.when(!checkPassword(password, person.passwordHash))(ZIO.fail(InvalidCredentials(email)))
+      pwMatch   <- ZIO.attempt(checkPassword(password, person.passwordHash)).orElseFail(InvalidCredentials(email))
+      _         <- ZIO.when(!pwMatch)(ZIO.fail(InvalidCredentials(email)))
       token     <- jwtService.generateToken(person).mapError(identity)
       _         <- tokenRepository.create(token, person.id.value).orElseFail(ValidationError("token", "Failed to store token"))
       _         <- personRepository.updateLastLogin(person.id).ignore

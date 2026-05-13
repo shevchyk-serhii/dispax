@@ -98,3 +98,4 @@ infra/**/terraform.tfstate
 infra/**/terraform.tfstate.backup
 infra/**/secrets.tfvars
 *.tfvars.json
+web/android/app/src/flutter_*.log

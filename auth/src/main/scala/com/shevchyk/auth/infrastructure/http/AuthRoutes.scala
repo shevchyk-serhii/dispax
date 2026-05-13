@@ -50,14 +50,23 @@ object AuthRoutes:
         _             <- ZIO.logInfo(s"Login request received")
         authService   <- ZIO.service[AuthService]
         loginResponse <- authService.login(loginReq.email, loginReq.password)
-      } yield Response.json(loginResponse.toJson)).catchAll {
-        case response: Response                      => ZIO.succeed(response)
-        case _: UserNotFound | _: InvalidCredentials =>
-          ZIO.succeed(Response(Status.Unauthorized, body = Body.fromString("""{"error":"Invalid credentials"}""")))
-        case ex: Throwable                           =>
-          ZIO
-            .logError(s"Login error: ${ex.toString}")
-            .as(Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}""")))
+      } yield Response.json(loginResponse.toJson)).catchAllCause { cause =>
+        cause.failureOrCause match
+          case Left(response: Response)                      => ZIO.succeed(response)
+          case Left(_: UserNotFound | _: InvalidCredentials) =>
+            ZIO.succeed(Response(Status.Unauthorized, body = Body.fromString("""{"error":"Invalid credentials"}""")))
+          case Left(ex: Throwable)                           =>
+            ZIO
+              .logError(s"Login error: ${ex.getClass.getName}: ${ex.getMessage}")
+              .as(
+                Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+              )
+          case Right(cause)                                  =>
+            ZIO
+              .logError(s"Login defect: ${cause.prettyPrint}")
+              .as(
+                Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+              )
       }
     }
   )
