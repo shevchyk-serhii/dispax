@@ -33,29 +33,7 @@ class ApiClient {
       return 'http://127.0.0.1:8080/api';
     }
 
-    if (Platform.isAndroid) {
-      if (isPhysicalDevice) {
-        // Physical Android device
-        const physicalDeviceUrl = String.fromEnvironment('PHYSICAL_DEVICE_URL');
-        return physicalDeviceUrl.isNotEmpty
-            ? physicalDeviceUrl
-            : 'http://192.168.0.188:8080/api';
-      } else {
-        // Android emulator
-        return 'http://10.0.2.2:8080/api';
-      }
-    } else if (Platform.isIOS) {
-      if (isPhysicalDevice) {
-        // Physical iOS device
-        return 'http://192.168.0.188:8080/api';
-      } else {
-        // iOS simulator
-        return 'http://127.0.0.1:8080/api';
-      }
-    } else {
-      // Desktop or Web
-      return 'http://192.168.0.188:8080/api';
-    }
+    return 'https://oktopus-456043977402.europe-west1.run.app/api';
   }
 
   final http.Client privateClient;

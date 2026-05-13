@@ -1,7 +1,6 @@
 class AppConstants {
 
-  // Use your local machine IP address here for local network testing with physical devices
-  static const String baseUrl = 'http://192.168.0.188:8080';
+  static const String baseUrl = 'https://oktopus-456043977402.europe-west1.run.app';
 
   static const double defaultPadding = 16.0;
   static const double largePadding = 24.0;
