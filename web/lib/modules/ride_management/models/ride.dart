@@ -116,11 +116,11 @@ class Ride {
 
   factory Ride.fromJson(Map<String, dynamic> json) {
     return Ride(
-      id: json['id'] ?? '',
-      clientId: json['clientId'] ?? '',
-      creatorId: json['creatorId'] ?? '',
-      driverId: json['driverId'],
-      companyId: json['companyId'] ?? '',
+      id: json['id']?.toString() ?? '',
+      clientId: json['clientId']?.toString() ?? '',
+      creatorId: json['creatorId']?.toString() ?? '',
+      driverId: json['driverId']?.toString(),
+      companyId: json['companyId']?.toString() ?? '',
       scheduleDayId: json['scheduleDayId'],
       pickupDateTime: DateTime.parse(json['pickupDateTime']),
       from: Location.fromJson(json['from']),
