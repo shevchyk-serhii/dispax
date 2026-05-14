@@ -42,5 +42,28 @@ void main() {
       expect(json['from']['address'], isA<String>());
       expect(json['to']['address'], isA<String>());
     });
+
+    test('toJson serializes local DateTime as UTC (ends with Z)', () {
+      final localTime = DateTime(2026, 3, 15, 10, 0); // local, not UTC
+      final request = TestFixtures.createRideRequest(pickupDateTime: localTime);
+
+      final json = request.toJson();
+      final dateStr = json['pickupDateTime'] as String;
+
+      expect(dateStr.endsWith('Z'), isTrue,
+          reason: 'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr');
+    });
+
+    test('toJson serializes UTC DateTime as UTC (ends with Z)', () {
+      final utcTime = DateTime.utc(2026, 3, 15, 10, 0);
+      final request = TestFixtures.createRideRequest(pickupDateTime: utcTime);
+
+      final json = request.toJson();
+      final dateStr = json['pickupDateTime'] as String;
+
+      expect(dateStr.endsWith('Z'), isTrue,
+          reason: 'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr');
+      expect(dateStr, '2026-03-15T10:00:00.000Z');
+    });
   });
 }

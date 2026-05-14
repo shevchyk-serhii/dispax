@@ -98,5 +98,5 @@ object TestApplication extends ZIOAppDefault:
         JwtConfig.live,
         JwtService.live,
         AuthService.live,
-        RateLimiter.layer,
+        ZLayer.fromZIO(RateLimiter.make(maxRequests = 1000, windowSeconds = 60)),
       )

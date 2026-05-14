@@ -30,6 +30,29 @@ void main() {
       expect(json['to'], isA<Map>());
     });
 
+    test('toJson serializes local DateTime as UTC (ends with Z)', () {
+      final localTime = DateTime(2026, 3, 15, 10, 0); // local, not UTC
+      final ride = TestFixtures.ride(pickupDateTime: localTime);
+
+      final json = ride.toJson();
+      final dateStr = json['pickupDateTime'] as String;
+
+      expect(dateStr.endsWith('Z'), isTrue,
+          reason: 'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr');
+    });
+
+    test('toJson serializes UTC DateTime as UTC (ends with Z)', () {
+      final utcTime = DateTime.utc(2026, 3, 15, 10, 0);
+      final ride = TestFixtures.ride(pickupDateTime: utcTime);
+
+      final json = ride.toJson();
+      final dateStr = json['pickupDateTime'] as String;
+
+      expect(dateStr.endsWith('Z'), isTrue,
+          reason: 'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr');
+      expect(dateStr, '2026-03-15T10:00:00.000Z');
+    });
+
     test('fromJson/toJson roundtrip preserves data', () {
       final original = TestFixtures.ride(
         flightNumber: 'LH100',

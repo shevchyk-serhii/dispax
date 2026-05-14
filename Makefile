@@ -1,5 +1,6 @@
 .PHONY: fmt fmt-watch dev prod test clean rebuild \
         flutter-dev flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
+        flutter-test-integration test-all \
         deploy logs
 
 PROD_URL := https://oktopus-456043977402.europe-west1.run.app
@@ -16,9 +17,30 @@ FLUTTER_DIR := web
 dev:
 	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run
 
-# Run tests
+# Run Scala unit + Cucumber tests
 test:
 	sbt test
+
+# Run Flutter integration tests against local TestApplication (port 8080)
+flutter-test-integration:
+	@echo "🚀 Starting test backend..."
+	@sbt testServer &
+	@echo "⏳ Waiting for backend to be ready..."
+	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
+	@echo "✅ Backend ready, running Flutter integration tests..."
+	@cd $(FLUTTER_DIR) && flutter test test/integration/ ; \
+	  STATUS=$$? ; \
+	  pkill -f "testServer" 2>/dev/null || true ; \
+	  exit $$STATUS
+
+# Run all tests: Cucumber backend + Flutter integration
+test-all:
+	@echo "▶ Running Cucumber tests..."
+	sbt cucumber
+	@pkill -f "runMain com.shevchyk.TestApplication" 2>/dev/null || true
+	@sleep 2
+	@echo "▶ Running Flutter integration tests..."
+	$(MAKE) flutter-test-integration
 
 # Format all Scala code
 fmt:
