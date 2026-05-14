@@ -20,21 +20,52 @@ object ApiStepDefinitions {
   def startServerIfNeeded(): Unit = synchronized {
     if (!serverStarted) {
       println("🚀 Starting test server for Cucumber tests...")
-      
-      val serverApp = com.shevchyk.TestApplication.run.provide(ZIOAppArgs.empty).mapError(_.asInstanceOf[Throwable])
-      
+
+      val serverApp = com.shevchyk.TestApplication.run
+        .provide(ZIOAppArgs.empty)
+        .mapError(_.asInstanceOf[Throwable])
+
       serverFiber = Some(Unsafe.unsafe { implicit u =>
         runtime.unsafe.fork(serverApp)
       })
-      
-      Thread.sleep(3000)
+
+      waitForServer(maxWaitMs = 15000, intervalMs = 500)
       serverStarted = true
-      
+
       sys.addShutdownHook {
         stopServer()
       }
-      
+
       println("✅ Test server started successfully")
+    }
+  }
+
+  private def waitForServer(maxWaitMs: Int, intervalMs: Int): Unit = {
+    val deadline = java.lang.System.currentTimeMillis() + maxWaitMs
+    var connected = false
+    while (!connected && java.lang.System.currentTimeMillis() < deadline) {
+      connected = tryConnect()
+      if (!connected) Thread.sleep(intervalMs)
+    }
+    if (!connected)
+      throw new RuntimeException(
+        s"❌ Failed to connect to test server after ${maxWaitMs}ms"
+      )
+  }
+
+  private def tryConnect(): Boolean = {
+    import java.net.{HttpURLConnection, URL}
+    try {
+      val url = new URL("http://localhost:8080/health")
+      val connection = url.openConnection().asInstanceOf[HttpURLConnection]
+      connection.setRequestMethod("GET")
+      connection.setConnectTimeout(1000)
+      connection.setReadTimeout(1000)
+      val code = connection.getResponseCode
+      connection.disconnect()
+      code == 200
+    } catch {
+      case _: Exception => false
     }
   }
 
@@ -74,31 +105,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
   Given("""^the API is running$""") { () =>
     startServerIfNeeded()
-    
-    import java.net.{HttpURLConnection, URL}
-    import java.io.IOException
-    
-    try {
-      val url = new URL("http://localhost:8080/health")
-      val connection = url.openConnection().asInstanceOf[HttpURLConnection]
-      connection.setRequestMethod("GET")
-      connection.setConnectTimeout(5000)
-      connection.setReadTimeout(5000)
-      
-      val responseCode = connection.getResponseCode
-      if (responseCode == 200) {
-        testData("api_running") = true
-        println("✅ API health check passed - server is running")
-      } else {
-        throw new RuntimeException(s"API health check failed with status: $responseCode")
-      }
-      connection.disconnect()
-    } catch {
-      case _: IOException =>
-        throw new RuntimeException(
-          "❌ Failed to connect to test server after startup attempt"
-        )
-    }
+    testData("api_running") = true
   }
 
   Given("""^I am authenticated as a (client|dispatcher|admin) with ID (\d+)$""") { 

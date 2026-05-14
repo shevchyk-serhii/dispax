@@ -92,7 +92,7 @@ object TestApplication extends ZIOAppDefault:
         ZLayer.service[ServerConfig] >>> ZLayer.fromFunction((config: ServerConfig) =>
           Server.Config.default.binding(config.host, config.port)
         ) >>> Server.live,
-        ServerConfig.liveLayer,
+        ServerConfig.defaultLayer,
         ZLayer.succeed[PersonRepository](mockPersonRepository),
         ZLayer.succeed[TokenRepository](mockTokenRepository),
         JwtConfig.live,
