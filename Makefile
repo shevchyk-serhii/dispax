@@ -3,6 +3,7 @@
         deploy logs
 
 PROD_URL := https://oktopus-456043977402.europe-west1.run.app
+MAC_IP := 192.168.0.188
 GCP_PROJECT := project-6efcac64-991b-49f4-946
 GCP_REGION := europe-west1
 GCP_SERVICE := oktopus
@@ -56,7 +57,7 @@ logs:
 # Run Flutter on any connected device against local backend
 flutter-dev:
 	cd $(FLUTTER_DIR) && flutter run \
-		--dart-define=API_BASE_URL=http://localhost:8080/api
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
 
 # Run Flutter on Android emulator against local backend
 flutter-dev-android:
@@ -66,7 +67,7 @@ flutter-dev-android:
 # Run Flutter on iOS simulator against local backend
 flutter-dev-ios:
 	cd $(FLUTTER_DIR) && flutter run -d 09021E1A-BC6A-4D86-A2EA-06A5894E4AEC \
-		--dart-define=API_BASE_URL=http://localhost:8080/api
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
 
 # Run Flutter against production backend
 flutter-prod:
