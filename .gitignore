@@ -88,6 +88,11 @@ web/linux/flutter/
 ### Server logs ###
 server.log
 
+### Env files ###
+.env
+.env.*
+!.env.example
+
 ### Service keys ###
 key.json
 *-key.json
