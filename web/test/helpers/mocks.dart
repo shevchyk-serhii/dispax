@@ -4,6 +4,7 @@ import 'package:oktopus/modules/schedule_management/services/schedule_service.da
 import 'package:oktopus/modules/core/services/user_service.dart';
 import 'package:oktopus/modules/core/services/api_client.dart';
 import 'package:oktopus/modules/auth/services/biometric_service.dart';
+import 'package:oktopus/blocs/auth/auth_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -18,5 +19,7 @@ class MockApiClient extends Mock implements ApiClient {}
 class MockBiometricService extends Mock implements BiometricService {}
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
+
+class MockTokenStorage extends Mock implements TokenStorage {}
 
 class MockHttpClient extends Mock implements http.Client {}

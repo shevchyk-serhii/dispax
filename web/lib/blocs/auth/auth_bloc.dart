@@ -14,19 +14,26 @@ import '../../modules/flight_management/services/airport_timing_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
+abstract class TokenStorage {
+  Future<String?> read(String key);
+  Future<void> write(String key, String value);
+  Future<void> delete(String key);
+}
+
 /// Storage abstraction that falls back to SharedPreferences on macOS/Web
 /// where Keychain requires signing entitlements not available in debug.
-class _TokenStorage {
+class _TokenStorage implements TokenStorage {
   final FlutterSecureStorage? _secure;
   final bool _useFallback;
 
-  _TokenStorage() 
-      : _useFallback = kIsWeb || Platform.isMacOS, 
+  _TokenStorage()
+      : _useFallback = kIsWeb || Platform.isMacOS,
         _secure = (kIsWeb || Platform.isMacOS) ? null : const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
   );
 
+  @override
   Future<String?> read(String key) async {
     try {
       if (_useFallback) {
@@ -39,6 +46,7 @@ class _TokenStorage {
     }
   }
 
+  @override
   Future<void> write(String key, String value) async {
     try {
       if (_useFallback) {
@@ -52,6 +60,7 @@ class _TokenStorage {
     }
   }
 
+  @override
   Future<void> delete(String key) async {
     try {
       if (_useFallback) {
@@ -69,7 +78,7 @@ class _TokenStorage {
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   late ApiClient privateApiClient;
   late BiometricService privateBiometricService;
-  final _TokenStorage _storage;
+  final TokenStorage _storage;
   final bool _apiClientInjected;
 
   static const String privateUserKey = 'current_user';
@@ -78,7 +87,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({
     ApiClient? apiClient,
     BiometricService? biometricService,
-  }) : _storage = _TokenStorage(),
+    TokenStorage? storage,
+  }) : _storage = storage ?? _TokenStorage(),
        _apiClientInjected = apiClient != null,
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();

@@ -13,12 +13,12 @@ import '../helpers/test_fixtures.dart';
 void main() {
   late MockApiClient mockApiClient;
   late MockBiometricService mockBiometricService;
-  late MockFlutterSecureStorage mockSecureStorage;
+  late MockTokenStorage mockStorage;
 
   setUp(() {
     mockApiClient = MockApiClient();
     mockBiometricService = MockBiometricService();
-    mockSecureStorage = MockFlutterSecureStorage();
+    mockStorage = MockTokenStorage();
 
     when(() => mockApiClient.dispose()).thenReturn(null);
     when(() => mockApiClient.setAuthToken(any())).thenReturn(null);
@@ -27,11 +27,15 @@ void main() {
         .thenAnswer((_) async => false);
     when(() => mockBiometricService.isBiometricEnabled)
         .thenAnswer((_) async => false);
+    when(() => mockStorage.read(any())).thenAnswer((_) async => null);
+    when(() => mockStorage.write(any(), any())).thenAnswer((_) async {});
+    when(() => mockStorage.delete(any())).thenAnswer((_) async {});
   });
 
   AuthBloc buildBloc() => AuthBloc(
         apiClient: mockApiClient,
         biometricService: mockBiometricService,
+        storage: mockStorage,
       );
 
   group('AuthBloc', () {
@@ -51,16 +55,6 @@ void main() {
             'token': 'test-token',
           },
         );
-        when(() => mockSecureStorage.write(
-              key: any(named: 'key'),
-              value: any(named: 'value'),
-              iOptions: any(named: 'iOptions'),
-              aOptions: any(named: 'aOptions'),
-              lOptions: any(named: 'lOptions'),
-              wOptions: any(named: 'wOptions'),
-              webOptions: any(named: 'webOptions'),
-              mOptions: any(named: 'mOptions'),
-            )).thenAnswer((_) async {});
         return buildBloc();
       },
       act: (bloc) => bloc.add(
@@ -110,25 +104,13 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'AuthLogoutRequested emits loading then unauthenticated or error (due to Firebase)',
-      build: () {
-        when(() => mockSecureStorage.delete(
-              key: any(named: 'key'),
-              iOptions: any(named: 'iOptions'),
-              aOptions: any(named: 'aOptions'),
-              lOptions: any(named: 'lOptions'),
-              wOptions: any(named: 'wOptions'),
-              webOptions: any(named: 'webOptions'),
-              mOptions: any(named: 'mOptions'),
-            )).thenAnswer((_) async {});
-        return buildBloc();
-      },
+      'AuthLogoutRequested emits loading then unauthenticated',
+      build: buildBloc,
       act: (bloc) => bloc.add(const AuthLogoutRequested()),
       expect: () => [
         AuthState.loading(),
-        // PushNotificationService requires Firebase which isn't available in tests,
-        // so the logout handler catches the error and emits error state
-        isA<AuthState>().having((s) => s.hasError, 'hasError', true),
+        isA<AuthState>()
+            .having((s) => s.status, 'status', AuthStatus.unauthenticated),
       ],
     );
 
@@ -136,24 +118,10 @@ void main() {
       'AuthInitializeRequested with stored data emits authenticated',
       build: () {
         final person = TestFixtures.person();
-        when(() => mockSecureStorage.read(
-              key: AuthBloc.privateUserKey,
-              iOptions: any(named: 'iOptions'),
-              aOptions: any(named: 'aOptions'),
-              lOptions: any(named: 'lOptions'),
-              wOptions: any(named: 'wOptions'),
-              webOptions: any(named: 'webOptions'),
-              mOptions: any(named: 'mOptions'),
-            )).thenAnswer((_) async => jsonEncode(person.toJson()));
-        when(() => mockSecureStorage.read(
-              key: AuthBloc.privateTokenKey,
-              iOptions: any(named: 'iOptions'),
-              aOptions: any(named: 'aOptions'),
-              lOptions: any(named: 'lOptions'),
-              wOptions: any(named: 'wOptions'),
-              webOptions: any(named: 'webOptions'),
-              mOptions: any(named: 'mOptions'),
-            )).thenAnswer((_) async => 'test-token');
+        when(() => mockStorage.read(AuthBloc.privateUserKey))
+            .thenAnswer((_) async => jsonEncode(person.toJson()));
+        when(() => mockStorage.read(AuthBloc.privateTokenKey))
+            .thenAnswer((_) async => 'test-token');
         return buildBloc();
       },
       act: (bloc) => bloc.add(const AuthInitializeRequested()),
@@ -166,18 +134,7 @@ void main() {
 
     blocTest<AuthBloc, AuthState>(
       'AuthInitializeRequested without stored data emits unauthenticated',
-      build: () {
-        when(() => mockSecureStorage.read(
-              key: any(named: 'key'),
-              iOptions: any(named: 'iOptions'),
-              aOptions: any(named: 'aOptions'),
-              lOptions: any(named: 'lOptions'),
-              wOptions: any(named: 'wOptions'),
-              webOptions: any(named: 'webOptions'),
-              mOptions: any(named: 'mOptions'),
-            )).thenAnswer((_) async => null);
-        return buildBloc();
-      },
+      build: buildBloc,
       act: (bloc) => bloc.add(const AuthInitializeRequested()),
       expect: () => [
         AuthState.loading(),
