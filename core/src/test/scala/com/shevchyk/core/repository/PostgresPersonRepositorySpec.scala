@@ -59,6 +59,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
     test("findByEmail") {
       for {
         xa     <- ZIO.service[Transactor[Task]]
+        _      <- seedCompany(xa)
         _      <- cleanPersons(xa)
         repo    = PostgresPersonRepository(xa)
         person  = makePerson(email = "unique@test.com")
@@ -75,6 +76,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
     test("findByRole filters correctly") {
       for {
         xa   <- ZIO.service[Transactor[Task]]
+        _    <- seedCompany(xa)
         _    <- cleanPersons(xa)
         repo  = PostgresPersonRepository(xa)
         _    <- repo.create(makePerson(role = PersonRole.Driver, email = "d1@test.com"))
@@ -91,6 +93,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
     test("findByRoleAndCompany isolates by company") {
       for {
         xa   <- ZIO.service[Transactor[Task]]
+        _    <- seedCompany(xa)
         _    <- cleanPersons(xa)
         repo  = PostgresPersonRepository(xa)
         _    <- repo.create(makePerson(role = PersonRole.Driver, email = "d@test.com"))
@@ -106,6 +109,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
     test("update modifies fields") {
       for {
         xa      <- ZIO.service[Transactor[Task]]
+        _       <- seedCompany(xa)
         _       <- cleanPersons(xa)
         repo     = PostgresPersonRepository(xa)
         person   = makePerson(name = "Before", email = "update@test.com")
@@ -122,6 +126,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
     test("delete removes person") {
       for {
         xa     <- ZIO.service[Transactor[Task]]
+        _      <- seedCompany(xa)
         _      <- cleanPersons(xa)
         repo    = PostgresPersonRepository(xa)
         person  = makePerson(email = "delete@test.com")
@@ -134,6 +139,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
     test("VIP with preferred driver round-trip") {
       for {
         xa     <- ZIO.service[Transactor[Task]]
+        _      <- seedCompany(xa)
         _      <- cleanPersons(xa)
         repo    = PostgresPersonRepository(xa)
         driver  = makePerson(role = PersonRole.Driver, email = "pdriver@test.com")

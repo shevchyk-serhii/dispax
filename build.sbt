@@ -101,7 +101,8 @@ lazy val testDependencies = Seq(
 lazy val core = (project in file("core"))
   .settings(
     name := "oktopus-core",
-    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ httpDependencies ++ dbDependencies ++ uuidDependencies ++ testcontainersDependencies
+    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ httpDependencies ++ dbDependencies ++ uuidDependencies ++ testcontainersDependencies,
+    Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
 
 lazy val auth = (project in file("auth"))
@@ -119,7 +120,8 @@ lazy val ride = (project in file("ride"))
   .settings(
     name := "oktopus-ride",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies ++ testcontainersDependencies,
-    scalacOptions += "-Xmax-inlines:64"
+    scalacOptions += "-Xmax-inlines:64",
+    Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
 
 lazy val driver = (project in file("driver"))

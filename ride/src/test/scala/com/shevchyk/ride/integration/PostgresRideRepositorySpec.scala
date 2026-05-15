@@ -28,11 +28,11 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     (for {
       _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'test@example.com')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO persons (id, name, email, role, company_id)
-                 VALUES (${clientId.value}, 'Test Client', 'client@test.com', 'client'::person_role, ${testCompanyId.value})
+      _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+                 VALUES (${clientId.value}, 'Test Client', 'client@test.com', 'client'::person_role, ${testCompanyId.value}, 'placeholder')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO persons (id, name, email, role, company_id)
-                 VALUES (${driverId.value}, 'Test Driver', 'driver@test.com', 'driver'::person_role, ${testCompanyId.value})
+      _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+                 VALUES (${driverId.value}, 'Test Driver', 'driver@test.com', 'driver'::person_role, ${testCompanyId.value}, 'placeholder')
                  ON CONFLICT DO NOTHING""".update.run
     } yield ()).transact(xa)
 
@@ -86,6 +86,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("create with AirportTransfer specifics") {
       for {
         xa   <- ZIO.service[Transactor[Task]]
+        _    <- seedTestData(xa)
         _    <- cleanRides(xa)
         repo  = PostgresRideRepository(xa)
         ride  = makeRide(specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH1234")))
@@ -100,6 +101,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("update changes status and driver") {
       for {
         xa     <- ZIO.service[Transactor[Task]]
+        _      <- seedTestData(xa)
         _      <- cleanRides(xa)
         repo    = PostgresRideRepository(xa)
         ride    = makeRide()
@@ -116,6 +118,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("findByCompanyId returns only matching company rides") {
       for {
         xa    <- ZIO.service[Transactor[Task]]
+        _     <- seedTestData(xa)
         _     <- cleanRides(xa)
         repo   = PostgresRideRepository(xa)
         ride1  = makeRide()
@@ -134,6 +137,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("findByDriverId returns assigned rides") {
       for {
         xa   <- ZIO.service[Transactor[Task]]
+        _    <- seedTestData(xa)
         _    <- cleanRides(xa)
         repo  = PostgresRideRepository(xa)
         r1    = makeRide(driver = Some(driverId))
@@ -150,6 +154,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("findByStatus filters correctly") {
       for {
         xa   <- ZIO.service[Transactor[Task]]
+        _    <- seedTestData(xa)
         _    <- cleanRides(xa)
         repo  = PostgresRideRepository(xa)
         r1    = makeRide(status = RideStatus.Requested)
@@ -169,6 +174,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("delete removes ride") {
       for {
         xa   <- ZIO.service[Transactor[Task]]
+        _    <- seedTestData(xa)
         _    <- cleanRides(xa)
         repo  = PostgresRideRepository(xa)
         ride  = makeRide()
@@ -181,6 +187,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("countByCompanyGroupedByStatus aggregates correctly") {
       for {
         xa    <- ZIO.service[Transactor[Task]]
+        _     <- seedTestData(xa)
         _     <- cleanRides(xa)
         repo   = PostgresRideRepository(xa)
         _     <- repo.create(makeRide(status = RideStatus.Requested))
@@ -196,6 +203,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("sumRevenueByCompany sums completed rides") {
       for {
         xa  <- ZIO.service[Transactor[Task]]
+        _   <- seedTestData(xa)
         _   <- cleanRides(xa)
         repo = PostgresRideRepository(xa)
         r1   = makeRide(status = RideStatus.Completed).copy(estimatedPrice = Some(BigDecimal(50)))
@@ -211,6 +219,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("payment fields round-trip") {
       for {
         xa   <- ZIO.service[Transactor[Task]]
+        _    <- seedTestData(xa)
         _    <- cleanRides(xa)
         repo  = PostgresRideRepository(xa)
         now   = Instant.now()
@@ -231,6 +240,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("cancellation fields round-trip") {
       for {
         xa   <- ZIO.service[Transactor[Task]]
+        _    <- seedTestData(xa)
         _    <- cleanRides(xa)
         repo  = PostgresRideRepository(xa)
         ride  = makeRide(status = RideStatus.Cancelled).copy(
@@ -250,6 +260,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     test("VIP fields round-trip") {
       for {
         xa   <- ZIO.service[Transactor[Task]]
+        _    <- seedTestData(xa)
         _    <- cleanRides(xa)
         repo  = PostgresRideRepository(xa)
         ride  = makeRide().copy(isVipRide = true, preferredDriverUsed = true)

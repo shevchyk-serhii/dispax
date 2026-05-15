@@ -20,19 +20,25 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   import io.circe.{Encoder, Decoder}
   import RideSpecifics.{given Encoder[RideSpecifics], given Decoder[RideSpecifics]}
 
-  // Meta instance for JSONB RideSpecifics
-  implicit val rideSpecificsMeta: Meta[Option[RideSpecifics]] =
+  // Meta instance for JSONB RideSpecifics via PGobject string serialization
+  implicit val rideSpecificsMeta: Meta[RideSpecifics] = {
+    import io.circe.syntax.*
+    import io.circe.parser
+    import org.postgresql.util.PGobject
     Meta.Advanced
-      .other[io.circe.Json]("jsonb")
-      .imap { json =>
-        json.as[Option[RideSpecifics]] match {
+      .other[PGobject]("jsonb")
+      .imap { pgo =>
+        parser.parse(pgo.getValue).flatMap(_.as[RideSpecifics]) match {
           case Right(value) => value
-          case Left(err)    => None
+          case Left(err)    => throw new RuntimeException(s"Failed to decode RideSpecifics: $err")
         }
-      } { maybeSpec =>
-        import io.circe.syntax.*
-        maybeSpec.asJson
+      } { spec =>
+        val pgo = new PGobject()
+        pgo.setType("jsonb")
+        pgo.setValue(spec.asJson.noSpaces)
+        pgo
       }
+  }
 
   implicit val rideStatusMeta: Meta[RideStatus] = pgEnumString(
     "ride_status",
