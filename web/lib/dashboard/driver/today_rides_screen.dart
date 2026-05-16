@@ -26,7 +26,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
   StreamSubscription? _locationSubscription;
   DateTime? _lastLocationSent;
   bool _trackingStarted = false;
-  late final RideService _rideService;
+  RideService? _rideService;
   final Map<String, int> _approachingDistances = {};
 
   @override
@@ -45,14 +45,14 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _rideService = RideService(apiClient: context.read<AuthBloc>().apiClient);
+    _rideService ??= RideService(apiClient: context.read<AuthBloc>().apiClient);
   }
 
   @override
   void dispose() {
     _wsSubscription?.cancel();
     _stopLocationTracking();
-    _rideService.dispose();
+    _rideService?.dispose();
     super.dispose();
   }
 
@@ -88,7 +88,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
     final authState = context.read<AuthBloc>().state;
     if (!authState.isAuthenticated || authState.user == null) return;
 
-    _rideService.updateDriverLocation(authState.user!.id, latitude, longitude);
+    _rideService?.updateDriverLocation(authState.user!.id, latitude, longitude);
   }
 
   void loadTodayRides(BuildContext context) {
