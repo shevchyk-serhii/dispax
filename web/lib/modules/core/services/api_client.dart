@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../../../constants/app_constants.dart';
 
 class ApiClient {
 
@@ -22,7 +23,7 @@ class ApiClient {
       return 'http://127.0.0.1:8080/api';
     }
 
-    return 'https://oktopus-456043977402.europe-west1.run.app/api';
+    return '${AppConstants.baseUrl}/api';
   }
 
   final http.Client privateClient;
