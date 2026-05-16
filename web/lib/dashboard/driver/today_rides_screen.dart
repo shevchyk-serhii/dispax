@@ -5,10 +5,12 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
+import '../../modules/ride_management/services/ride_service.dart';
 import '../../modules/driver_management/widgets/widgets.dart';
 import '../../modules/core/widgets/widgets.dart';
 import '../../modules/core/navigation_helper.dart';
 import '../../modules/core/services/websocket_service.dart';
+import '../../modules/core/services/location_service.dart';
 import '../../widgets/common/notification_bell.dart';
 import 'widgets/availability_toggle.dart';
 
@@ -21,6 +23,10 @@ class TodayRidesScreen extends StatefulWidget {
 
 class _TodayRidesScreenState extends State<TodayRidesScreen> {
   StreamSubscription? _wsSubscription;
+  StreamSubscription? _locationSubscription;
+  DateTime? _lastLocationSent;
+  bool _trackingStarted = false;
+  late final RideService _rideService;
   final Map<String, int> _approachingDistances = {};
 
   @override
@@ -37,9 +43,52 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rideService = RideService(apiClient: context.read<AuthBloc>().apiClient);
+  }
+
+  @override
   void dispose() {
     _wsSubscription?.cancel();
+    _stopLocationTracking();
+    _rideService.dispose();
     super.dispose();
+  }
+
+  Future<void> _startLocationTracking() async {
+    _locationSubscription?.cancel();
+    _locationSubscription = null;
+
+    final started = await LocationService.instance.startLocationTracking();
+    _trackingStarted = started;
+    if (!started) return;
+
+    _locationSubscription = LocationService.instance.positionStream.listen((position) {
+      if (!mounted) return;
+      _sendLocationUpdate(position.latitude, position.longitude);
+    });
+  }
+
+  void _stopLocationTracking() {
+    _locationSubscription?.cancel();
+    _locationSubscription = null;
+    _trackingStarted = false;
+    LocationService.instance.stopLocationTracking();
+  }
+
+  void _sendLocationUpdate(double latitude, double longitude) {
+    final now = DateTime.now();
+    if (_lastLocationSent != null &&
+        now.difference(_lastLocationSent!).inSeconds < 10) {
+      return;
+    }
+    _lastLocationSent = now;
+
+    final authState = context.read<AuthBloc>().state;
+    if (!authState.isAuthenticated || authState.user == null) return;
+
+    _rideService.updateDriverLocation(authState.user!.id, latitude, longitude);
   }
 
   void loadTodayRides(BuildContext context) {
@@ -99,6 +148,11 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
               state.errorMessage!,
               isError: true,
             );
+          }
+          // Восстановить трекинг если поездка уже в пути (после перезагрузки экрана)
+          if (state.status == RideStateStatus.loaded && !_trackingStarted) {
+            final hasActiveRide = state.rides.any((r) => r.status == RideStatus.inProgress);
+            if (hasActiveRide) _startLocationTracking();
           }
         },
         child: Container(
@@ -224,6 +278,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
       rideId: ride.id,
       status: RideStatus.inProgress,
     ));
+    _startLocationTracking();
     NavigationHelper.showSnackBar(context, 'Ride started');
   }
 
@@ -245,6 +300,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
                 rideId: ride.id,
                 status: RideStatus.completed,
               ));
+              _stopLocationTracking();
               NavigationHelper.showSnackBar(context, 'Ride completed');
             },
             child: const Text('Complete'),

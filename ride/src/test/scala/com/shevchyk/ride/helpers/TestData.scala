@@ -62,13 +62,10 @@ object TestData {
     status = status,
     pickupLocation = pickupLocation,
     dropoffLocation = dropoffLocation,
-    scheduledTime = Some(Instant.now().plusSeconds(3600)),
+    pickupDateTime = Instant.now().plusSeconds(3600),
+    scheduledTime = None,
     requestTime = Instant.now(),
-    startTime = None,
-    endTime = None,
-    tariffId = None,
     estimatedPrice = Some(BigDecimal(50.0)),
-    finalPrice = None,
     notes = Some("Test ride"),
     specifics = specifics
   )

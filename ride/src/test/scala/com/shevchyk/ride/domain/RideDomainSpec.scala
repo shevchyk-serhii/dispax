@@ -26,7 +26,8 @@ object RideDomainSpec extends ZIOSpecDefault {
           creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
           companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
           pickupLocation = Location("Airport Terminal 1"),
-          dropoffLocation = Location("City Center")
+          dropoffLocation = Location("City Center"),
+          pickupDateTime = Instant.now().plusSeconds(3600)
         )
         assertTrue(ride.status == RideStatus.Requested)
       },
@@ -39,7 +40,8 @@ object RideDomainSpec extends ZIOSpecDefault {
           companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
           status = RideStatus.Requested,
           pickupLocation = Location("Start"),
-          dropoffLocation = Location("End")
+          dropoffLocation = Location("End"),
+          pickupDateTime = Instant.now().plusSeconds(3600)
         )
 
         assertTrue(
@@ -58,7 +60,8 @@ object RideDomainSpec extends ZIOSpecDefault {
           driverId = Some(PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200"))),
           status = RideStatus.Assigned,
           pickupLocation = Location("Start"),
-          dropoffLocation = Location("End")
+          dropoffLocation = Location("End"),
+          pickupDateTime = Instant.now().plusSeconds(3600)
         )
 
         assertTrue(
@@ -77,7 +80,8 @@ object RideDomainSpec extends ZIOSpecDefault {
           driverId = Some(PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200"))),
           status = RideStatus.InProgress,
           pickupLocation = Location("Start"),
-          dropoffLocation = Location("End")
+          dropoffLocation = Location("End"),
+          pickupDateTime = Instant.now().plusSeconds(3600)
         )
 
         assertTrue(
@@ -135,7 +139,8 @@ object RideDomainSpec extends ZIOSpecDefault {
           companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
           status = RideStatus.Requested,
           pickupLocation = Location("Start"),
-          dropoffLocation = Location("End")
+          dropoffLocation = Location("End"),
+          pickupDateTime = Instant.now().plusSeconds(3600)
         )
         assertTrue(
           ride.canBeAssigned &&
@@ -156,7 +161,8 @@ object RideDomainSpec extends ZIOSpecDefault {
           driverId = Some(PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200"))),
           status = RideStatus.Assigned,
           pickupLocation = Location("Start"),
-          dropoffLocation = Location("End")
+          dropoffLocation = Location("End"),
+          pickupDateTime = Instant.now().plusSeconds(3600)
         )
         assertTrue(
           !ride.canBeAssigned &&
@@ -177,7 +183,8 @@ object RideDomainSpec extends ZIOSpecDefault {
           driverId = Some(PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200"))),
           status = RideStatus.InProgress,
           pickupLocation = Location("Start"),
-          dropoffLocation = Location("End")
+          dropoffLocation = Location("End"),
+          pickupDateTime = Instant.now().plusSeconds(3600)
         )
         assertTrue(
           !ride.canBeAssigned &&
@@ -198,7 +205,8 @@ object RideDomainSpec extends ZIOSpecDefault {
           driverId = Some(PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200"))),
           status = RideStatus.Completed,
           pickupLocation = Location("Start"),
-          dropoffLocation = Location("End")
+          dropoffLocation = Location("End"),
+          pickupDateTime = Instant.now().plusSeconds(3600)
         )
         assertTrue(
           !ride.canBeAssigned &&
@@ -218,7 +226,8 @@ object RideDomainSpec extends ZIOSpecDefault {
           companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
           status = RideStatus.Cancelled,
           pickupLocation = Location("Start"),
-          dropoffLocation = Location("End")
+          dropoffLocation = Location("End"),
+          pickupDateTime = Instant.now().plusSeconds(3600)
         )
         assertTrue(
           !ride.canBeAssigned &&
@@ -238,6 +247,7 @@ object RideDomainSpec extends ZIOSpecDefault {
           companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
           pickupLocation = Location("Airport"),
           dropoffLocation = Location("Hotel"),
+          pickupDateTime = Instant.now().plusSeconds(3600),
           specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123"))
         )
         assertTrue(ride.isAirportTransfer)
@@ -250,7 +260,8 @@ object RideDomainSpec extends ZIOSpecDefault {
           creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
           companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
           pickupLocation = Location("A"),
-          dropoffLocation = Location("B")
+          dropoffLocation = Location("B"),
+          pickupDateTime = Instant.now().plusSeconds(3600)
         )
         assertTrue(!ride.isAirportTransfer)
       }

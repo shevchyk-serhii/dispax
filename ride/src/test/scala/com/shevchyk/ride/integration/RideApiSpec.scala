@@ -251,6 +251,216 @@ object RideApiSpec extends ZIOSpecDefault {
         } yield assertTrue(response.status == Status.Unauthorized)
       }
 
+    ) @@ TestAspect.sequential,
+
+    suite("GET /api/rides/driver/:id")(
+
+      test("driver can fetch own rides") {
+        for {
+          repo     <- ZIO.service[RideRepository]
+          driverId  = TestData.testDriverId
+          ride1     = TestData.createRide(clientId = PersonId(TestData.testUserId)).copy(driverId = Some(PersonId(driverId)))
+          ride2     = TestData.createRide(clientId = PersonId(TestData.testUserId)).copy(driverId = Some(PersonId(driverId)))
+          _        <- repo.create(ride1)
+          _        <- repo.create(ride2)
+
+          token    <- TestJWT.generateToken(
+                        userId = driverId,
+                        role = PersonRole.Driver,
+                        companyId = Some(TestData.testCompanyId)
+                      )
+
+          request   = Request
+                        .get(URL.decode(s"/api/rides/driver/$driverId").toOption.get)
+                        .addHeader(Header.Authorization.Bearer(token))
+
+          response <- runRequest(request)
+          bodyStr  <- response.body.asString.orDie
+          rides    <- ZIO.fromEither(bodyStr.fromJson[List[RideDto]]).mapError(new RuntimeException(_)).orDie
+
+        } yield assertTrue(
+          response.status == Status.Ok,
+          rides.length == 2
+        )
+      },
+
+      test("dispatcher can fetch another driver's rides") {
+        for {
+          repo       <- ZIO.service[RideRepository]
+          driverId    = TestData.testDriverId
+          dispatchId  = java.util.UUID.randomUUID()
+          ride        = TestData.createRide().copy(driverId = Some(PersonId(driverId)))
+          _          <- repo.create(ride)
+
+          token      <- TestJWT.generateToken(
+                          userId = dispatchId,
+                          role = PersonRole.Dispatcher,
+                          companyId = Some(TestData.testCompanyId)
+                        )
+
+          request     = Request
+                          .get(URL.decode(s"/api/rides/driver/$driverId").toOption.get)
+                          .addHeader(Header.Authorization.Bearer(token))
+
+          response   <- runRequest(request)
+
+        } yield assertTrue(response.status == Status.Ok)
+      },
+
+      test("client cannot fetch another driver's rides") {
+        val driverId = TestData.testDriverId
+        val otherId  = java.util.UUID.randomUUID()
+        for {
+          token    <- TestJWT.generateToken(
+                        userId = otherId,
+                        role = PersonRole.Client,
+                        companyId = Some(TestData.testCompanyId)
+                      )
+
+          request   = Request
+                        .get(URL.decode(s"/api/rides/driver/$driverId").toOption.get)
+                        .addHeader(Header.Authorization.Bearer(token))
+
+          response <- runRequest(request)
+
+        } yield assertTrue(response.status == Status.Forbidden)
+      },
+
+      test("returns 401 when unauthenticated") {
+        for {
+          response <- runRequest(Request.get(URL.decode(s"/api/rides/driver/${TestData.testDriverId}").toOption.get))
+        } yield assertTrue(response.status == Status.Unauthorized)
+      }
+
+    ) @@ TestAspect.sequential,
+
+    suite("GET /api/rides/client/:id")(
+
+      test("client can fetch own rides") {
+        for {
+          repo      <- ZIO.service[RideRepository]
+          clientId   = TestData.testUserId
+          ride1      = TestData.createRide(clientId = PersonId(clientId))
+          ride2      = TestData.createRide(clientId = PersonId(clientId))
+          _         <- repo.create(ride1)
+          _         <- repo.create(ride2)
+
+          token     <- TestJWT.generateToken(
+                         userId = clientId,
+                         role = PersonRole.Client,
+                         companyId = Some(TestData.testCompanyId)
+                       )
+
+          request    = Request
+                         .get(URL.decode(s"/api/rides/client/$clientId").toOption.get)
+                         .addHeader(Header.Authorization.Bearer(token))
+
+          response  <- runRequest(request)
+          bodyStr   <- response.body.asString.orDie
+          rides     <- ZIO.fromEither(bodyStr.fromJson[List[RideDto]]).mapError(new RuntimeException(_)).orDie
+
+        } yield assertTrue(
+          response.status == Status.Ok,
+          rides.length == 2,
+          rides.forall(_.clientId == clientId.toString)
+        )
+      },
+
+      test("client cannot fetch another client's rides") {
+        val clientId = TestData.testUserId
+        val otherId  = java.util.UUID.randomUUID()
+        for {
+          token    <- TestJWT.generateToken(
+                        userId = otherId,
+                        role = PersonRole.Client,
+                        companyId = Some(TestData.testCompanyId)
+                      )
+
+          request   = Request
+                        .get(URL.decode(s"/api/rides/client/$clientId").toOption.get)
+                        .addHeader(Header.Authorization.Bearer(token))
+
+          response <- runRequest(request)
+
+        } yield assertTrue(response.status == Status.Forbidden)
+      },
+
+      test("dispatcher can fetch any client's rides") {
+        for {
+          repo       <- ZIO.service[RideRepository]
+          clientId    = TestData.testUserId
+          dispatchId  = java.util.UUID.randomUUID()
+          ride        = TestData.createRide(clientId = PersonId(clientId))
+          _          <- repo.create(ride)
+
+          token      <- TestJWT.generateToken(
+                          userId = dispatchId,
+                          role = PersonRole.Dispatcher,
+                          companyId = Some(TestData.testCompanyId)
+                        )
+
+          request     = Request
+                          .get(URL.decode(s"/api/rides/client/$clientId").toOption.get)
+                          .addHeader(Header.Authorization.Bearer(token))
+
+          response   <- runRequest(request)
+          bodyStr    <- response.body.asString.orDie
+          rides      <- ZIO.fromEither(bodyStr.fromJson[List[RideDto]]).mapError(new RuntimeException(_)).orDie
+
+        } yield assertTrue(
+          response.status == Status.Ok,
+          rides.length == 1
+        )
+      },
+
+      test("secretary can fetch any client's rides") {
+        for {
+          repo        <- ZIO.service[RideRepository]
+          clientId     = TestData.testUserId
+          secretaryId  = java.util.UUID.randomUUID()
+          ride         = TestData.createRide(clientId = PersonId(clientId))
+          _           <- repo.create(ride)
+
+          token       <- TestJWT.generateToken(
+                           userId = secretaryId,
+                           role = PersonRole.Secretary,
+                           companyId = Some(TestData.testCompanyId)
+                         )
+
+          request      = Request
+                           .get(URL.decode(s"/api/rides/client/$clientId").toOption.get)
+                           .addHeader(Header.Authorization.Bearer(token))
+
+          response    <- runRequest(request)
+
+        } yield assertTrue(response.status == Status.Ok)
+      },
+
+      test("driver cannot fetch a client's rides") {
+        val clientId = TestData.testUserId
+        val driverId = TestData.testDriverId
+        for {
+          token    <- TestJWT.generateToken(
+                        userId = driverId,
+                        role = PersonRole.Driver,
+                        companyId = Some(TestData.testCompanyId)
+                      )
+
+          request   = Request
+                        .get(URL.decode(s"/api/rides/client/$clientId").toOption.get)
+                        .addHeader(Header.Authorization.Bearer(token))
+
+          response <- runRequest(request)
+
+        } yield assertTrue(response.status == Status.Forbidden)
+      },
+
+      test("returns 401 when unauthenticated") {
+        for {
+          response <- runRequest(Request.get(URL.decode(s"/api/rides/client/${TestData.testUserId}").toOption.get))
+        } yield assertTrue(response.status == Status.Unauthorized)
+      }
+
     ) @@ TestAspect.sequential
 
   ).provide(

@@ -55,6 +55,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     status = status,
     pickupLocation = Location("Munich Airport", Some(48.3537), Some(11.7750)),
     dropoffLocation = Location("Marienplatz", Some(48.1374), Some(11.5755)),
+    pickupDateTime = Instant.now().plusSeconds(3600),
     scheduledTime = scheduledTime,
     requestTime = Instant.now(),
     notes = notes,
