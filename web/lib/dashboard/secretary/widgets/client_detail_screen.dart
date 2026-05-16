@@ -8,8 +8,8 @@ import '../../../modules/core/services/user_service.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../screens/create_ride_screen.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_styles.dart';
 
 class ClientDetailScreen extends StatefulWidget {
@@ -217,7 +217,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 
   Widget _buildRideCard(Ride ride) {
-    final statusColor = _getStatusColor(ride.status);
+    final statusColor = RideStatusStyles.getStatusColor(ride.status);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -317,21 +317,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         ),
       ),
     );
-  }
-
-  Color _getStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:
-        return AppColors.rideRequested;
-      case RideStatus.assigned:
-        return AppColors.rideAssigned;
-      case RideStatus.inProgress:
-        return AppColors.rideInProgress;
-      case RideStatus.completed:
-        return AppColors.rideCompleted;
-      case RideStatus.cancelled:
-        return AppColors.rideCancelled;
-    }
   }
 
   void _showEditDialog(BuildContext context) {

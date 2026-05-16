@@ -7,7 +7,7 @@ import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../modules/core/navigation_utils.dart';
 import '../../../modules/core/navigation_helper.dart';
-import '../../../constants/app_colors.dart';
+import '../../../utils/ride_status_styles.dart';
 
 class DayViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -266,8 +266,8 @@ class DayViewWidget extends StatelessWidget {
   }
 
   Widget buildRideCard(Ride ride, bool isLast) {
-    final statusColor = getStatusColor(ride.status);
-    final statusText = getStatusText(ride.status);
+    final statusColor = RideStatusStyles.getStatusColor(ride.status);
+    final statusText = RideStatusStyles.getStatusLabel(ride.status);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -550,36 +550,6 @@ class DayViewWidget extends StatelessWidget {
       travelTimes.add(travelTime);
     }
     return travelTimes;
-  }
-
-  Color getStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:
-        return AppColors.rideRequested;
-      case RideStatus.assigned:
-        return AppColors.rideAssigned;
-      case RideStatus.inProgress:
-        return AppColors.rideInProgress;
-      case RideStatus.completed:
-        return AppColors.rideCompleted;
-      case RideStatus.cancelled:
-        return AppColors.rideCancelled;
-    }
-  }
-
-  String getStatusText(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:
-        return 'REQUESTED';
-      case RideStatus.assigned:
-        return 'ASSIGNED';
-      case RideStatus.inProgress:
-        return 'IN PROGRESS';
-      case RideStatus.completed:
-        return 'COMPLETED';
-      case RideStatus.cancelled:
-        return 'CANCELLED';
-    }
   }
 
   bool isSameDay(DateTime a, DateTime b) {

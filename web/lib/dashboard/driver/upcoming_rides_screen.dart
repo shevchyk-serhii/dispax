@@ -5,7 +5,7 @@ import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../modules/core/navigation_helper.dart';
-import '../../constants/app_colors.dart';
+import '../../utils/ride_status_styles.dart';
 
 class UpcomingRidesScreen extends StatelessWidget {
   const UpcomingRidesScreen({super.key});
@@ -331,7 +331,7 @@ class UpcomingRidesScreen extends StatelessWidget {
   }
 
   Widget buildUpcomingRideCard(Ride ride) {
-    final statusColor = getStatusColor(ride.status);
+    final statusColor = RideStatusStyles.getStatusColor(ride.status);
     final daysUntilRide = ride.pickupDateTime.difference(DateTime.now()).inDays;
 
     return Container(
@@ -395,7 +395,7 @@ class UpcomingRidesScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      getStatusText(ride.status),
+                      RideStatusStyles.getStatusLabel(ride.status),
                       style: TextStyle(
                         color: statusColor,
                         fontSize: 12,
@@ -463,33 +463,4 @@ class UpcomingRidesScreen extends StatelessWidget {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  Color getStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:
-        return AppColors.rideRequested;
-      case RideStatus.assigned:
-        return AppColors.rideAssigned;
-      case RideStatus.inProgress:
-        return AppColors.rideInProgress;
-      case RideStatus.completed:
-        return AppColors.rideCompleted;
-      case RideStatus.cancelled:
-        return AppColors.rideCancelled;
-    }
-  }
-
-  String getStatusText(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:
-        return 'REQUESTED';
-      case RideStatus.assigned:
-        return 'ASSIGNED';
-      case RideStatus.inProgress:
-        return 'IN PROGRESS';
-      case RideStatus.completed:
-        return 'COMPLETED';
-      case RideStatus.cancelled:
-        return 'CANCELLED';
-    }
-  }
 }

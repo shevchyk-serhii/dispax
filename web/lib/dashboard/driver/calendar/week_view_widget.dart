@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
-import '../../../constants/app_colors.dart';
+import '../../../utils/ride_status_styles.dart';
 
 class WeekViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -188,7 +188,7 @@ class WeekViewWidget extends StatelessWidget {
     final top = ((startHour - 6) * 40.0) + (startMinute / 60 * 40.0);
     final height = duration * 40.0;
 
-    Color color = getStatusColor(ride.status);
+    Color color = RideStatusStyles.getStatusColor(ride.status);
 
     return Positioned(
       top: top,
@@ -245,21 +245,6 @@ class WeekViewWidget extends StatelessWidget {
       final targetDate = DateTime(day.year, day.month, day.day);
       return rideDate == targetDate;
     }).toList();
-  }
-
-  Color getStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:
-        return AppColors.rideRequested;
-      case RideStatus.assigned:
-        return AppColors.rideAssigned;
-      case RideStatus.inProgress:
-        return AppColors.rideInProgress;
-      case RideStatus.completed:
-        return AppColors.rideCompleted;
-      case RideStatus.cancelled:
-        return AppColors.rideCancelled;
-    }
   }
 
   bool isSameDay(DateTime a, DateTime b) {

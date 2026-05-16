@@ -268,33 +268,4 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
     }).toList()..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
   }
 
-  Color getStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:
-        return AppColors.rideRequested;
-      case RideStatus.assigned:
-        return AppColors.rideAssigned;
-      case RideStatus.inProgress:
-        return AppColors.rideInProgress;
-      case RideStatus.completed:
-        return AppColors.rideCompleted;
-      case RideStatus.cancelled:
-        return AppColors.rideCancelled;
-    }
-  }
-
-  String getStatusText(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:
-        return 'REQUESTED';
-      case RideStatus.assigned:
-        return 'ASSIGNED';
-      case RideStatus.inProgress:
-        return 'IN PROGRESS';
-      case RideStatus.completed:
-        return 'COMPLETED';
-      case RideStatus.cancelled:
-        return 'CANCELLED';
-    }
-  }
 }

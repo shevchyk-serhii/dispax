@@ -102,6 +102,10 @@ class RideStatusStyles {
     }
   }
 
+  /// Gets the uppercase label for the given ride status
+  static String getStatusLabel(RideStatus status) =>
+      getStatusDisplayName(status).toUpperCase();
+
   /// Creates a status badge widget for the given ride status
   static Widget createStatusBadge(RideStatus status, {
     double? fontSize,

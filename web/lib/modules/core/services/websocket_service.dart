@@ -20,7 +20,10 @@ class WebSocketService {
 
   Stream<WebSocketEvent> get eventStream => _eventController.stream;
 
-  String get _wsUrl => '$_wsBaseUrl/api/ws?token=$_token';
+  String get _wsUrl {
+    final uri = Uri.parse('$_wsBaseUrl/api/ws').replace(queryParameters: {'token': _token});
+    return uri.toString();
+  }
 
   Future<void> connect(String token, {required String wsBaseUrl}) async {
     _token = token;

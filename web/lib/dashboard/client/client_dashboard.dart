@@ -187,8 +187,8 @@ class MyRidesTab extends StatelessWidget {
                     );
                   },
                   leading: CircleAvatar(
-                    backgroundColor: _getStatusColor(ride.status),
-                    child: Icon(_getStatusIcon(ride.status), color: Colors.white, size: 18),
+                    backgroundColor: RideStatusStyles.getStatusColor(ride.status),
+                    child: Icon(RideStatusStyles.getStatusIcon(ride.status), color: Colors.white, size: 18),
                   ),
                   title: Text('${ride.from.address} → ${ride.to.address}'),
                   subtitle: Text(AppDateUtils.formatDateTime(ride.pickupDateTime)),
@@ -202,25 +202,4 @@ class MyRidesTab extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested: return Colors.orange;
-      case RideStatus.assigned: return Colors.blue;
-      case RideStatus.inProgress: return Colors.teal;
-      case RideStatus.completed: return Colors.green;
-      case RideStatus.cancelled: return Colors.red;
-      default: return Colors.grey;
-    }
-  }
-
-  IconData _getStatusIcon(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested: return Icons.access_time;
-      case RideStatus.assigned: return Icons.person;
-      case RideStatus.inProgress: return Icons.directions_car;
-      case RideStatus.completed: return Icons.check_circle;
-      case RideStatus.cancelled: return Icons.cancel;
-      default: return Icons.help_outline;
-    }
-  }
 }
