@@ -58,13 +58,23 @@ void main() {
     });
 
     group('getRidesForUser', () {
-      test('200 returns parsed list', () async {
+      test('200 returns parsed list for client', () async {
+        final client = TestFixtures.person(); // role: client, id: person-1
+        when(() => mockApiClient.get('/rides/client/${client.id}')).thenAnswer(
+          (_) async => jsonResponse([TestFixtures.rideJson()]),
+        );
+
+        final rides = await rideService.getRidesForUser(client);
+        expect(rides.length, 1);
+      });
+
+      test('200 returns parsed list for secretary (uses /rides)', () async {
+        final secretary = TestFixtures.secretary();
         when(() => mockApiClient.get('/rides')).thenAnswer(
           (_) async => jsonResponse([TestFixtures.rideJson()]),
         );
 
-        final rides =
-            await rideService.getRidesForUser(TestFixtures.person());
+        final rides = await rideService.getRidesForUser(secretary);
         expect(rides.length, 1);
       });
     });

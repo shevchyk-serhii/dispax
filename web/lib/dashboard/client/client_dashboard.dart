@@ -8,7 +8,7 @@ import '../../screens/ride_details_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/create_ride_screen.dart';
 
-import '../../screens/simple_map_screen.dart';
+import '../../screens/client_map_screen.dart';
 import '../../constants/app_colors.dart';
 import '../../utils/ride_status_styles.dart';
 import 'client_ride_history_screen.dart';
@@ -77,23 +77,25 @@ class _ClientDashboardState extends State<ClientDashboard> {
   Widget _buildCurrentTab() {
     switch (_selectedIndex) {
       case 0:
-        return const MyRidesTab();
+        return MyRidesTab(onOpenMap: () => setState(() => _selectedIndex = 3));
       case 1:
         return const ClientRideHistoryScreen();
       case 2:
         return CreateRideScreen(rideBloc: _rideBloc);
       case 3:
-        return const SimpleMapScreen();
+        return const ClientMapScreen();
       case 4:
         return const SettingsScreen();
       default:
-        return const MyRidesTab();
+        return MyRidesTab(onOpenMap: () => setState(() => _selectedIndex = 3));
     }
   }
 }
 
 class MyRidesTab extends StatelessWidget {
-  const MyRidesTab({super.key});
+  final VoidCallback onOpenMap;
+
+  const MyRidesTab({super.key, required this.onOpenMap});
 
   void loadRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
@@ -174,26 +176,46 @@ class MyRidesTab extends StatelessWidget {
 
               final rideIndex = index - 1;
               final ride = activeRides[rideIndex];
+              final isTracking = ride.status == RideStatus.inProgress || ride.status == RideStatus.assigned;
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListTile(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => RideDetailsScreen(
-                          ride: ride,
-                          isClientView: true,
+                child: Column(
+                  children: [
+                    ListTile(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => RideDetailsScreen(
+                              ride: ride,
+                              isClientView: true,
+                            ),
+                          ),
+                        );
+                      },
+                      leading: CircleAvatar(
+                        backgroundColor: RideStatusStyles.getStatusColor(ride.status),
+                        child: Icon(RideStatusStyles.getStatusIcon(ride.status), color: Colors.white, size: 18),
+                      ),
+                      title: Text('${ride.from.address} → ${ride.to.address}'),
+                      subtitle: Text(AppDateUtils.formatDateTime(ride.pickupDateTime)),
+                      trailing: const Icon(Icons.chevron_right),
+                    ),
+                    if (isTracking)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: onOpenMap,
+                            icon: const Icon(Icons.location_on, size: 16),
+                            label: const Text('Track driver on map'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.clientColor,
+                            ),
+                          ),
                         ),
                       ),
-                    );
-                  },
-                  leading: CircleAvatar(
-                    backgroundColor: RideStatusStyles.getStatusColor(ride.status),
-                    child: Icon(RideStatusStyles.getStatusIcon(ride.status), color: Colors.white, size: 18),
-                  ),
-                  title: Text('${ride.from.address} → ${ride.to.address}'),
-                  subtitle: Text(AppDateUtils.formatDateTime(ride.pickupDateTime)),
-                  trailing: const Icon(Icons.chevron_right),
+                  ],
                 ),
               );
             },

@@ -185,6 +185,7 @@ void main() {
       build: CreateRideFormBloc.new,
       seed: () => CreateRideFormState(
         clientName: 'Client',
+        selectedClientId: 'client-1',
         fromAddress: 'From',
         toAddress: 'To',
         flightNumber: '',

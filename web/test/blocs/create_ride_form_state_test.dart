@@ -5,6 +5,7 @@ void main() {
   group('CreateRideFormState.isValid', () {
     CreateRideFormState makeState({
       String clientName = 'Client',
+      String? selectedClientId = 'client-1',
       String fromAddress = 'From',
       String toAddress = 'To',
       String flightNumber = '',
@@ -12,6 +13,7 @@ void main() {
     }) {
       return CreateRideFormState(
         clientName: clientName,
+        selectedClientId: selectedClientId,
         fromAddress: fromAddress,
         toAddress: toAddress,
         flightNumber: flightNumber,
@@ -25,12 +27,8 @@ void main() {
       expect(makeState().isValid, isTrue);
     });
 
-    test('empty clientName returns false', () {
-      expect(makeState(clientName: '').isValid, isFalse);
-    });
-
-    test('whitespace-only clientName returns false', () {
-      expect(makeState(clientName: '   ').isValid, isFalse);
+    test('selectedClientId null returns false', () {
+      expect(makeState(selectedClientId: null).isValid, isFalse);
     });
 
     test('empty fromAddress returns false', () {

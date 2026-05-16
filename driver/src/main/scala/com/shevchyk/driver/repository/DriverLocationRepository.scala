@@ -10,6 +10,7 @@ trait DriverLocationRepository:
   def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit]
   def getLocation(driverId: PersonId): Task[Option[DriverLocation]]
   def updateAvailability(driverId: PersonId, status: String): Task[Unit]
+  def getAvailability(driverId: PersonId): Task[Option[String]]
   def findAvailableByCompanyId(companyId: CompanyId): Task[List[(PersonId, String, Option[Double], Option[Double])]]
 
 object DriverLocationRepository:
