@@ -7,10 +7,8 @@ import '../../modules/core/date_utils.dart';
 import '../../screens/ride_details_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/create_ride_screen.dart';
-import 'dart:io';
 
 import '../../screens/simple_map_screen.dart';
-import '../../screens/android_map_screen.dart';
 import '../../constants/app_colors.dart';
 import 'client_ride_history_screen.dart';
 
@@ -84,7 +82,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
       case 2:
         return CreateRideScreen(rideBloc: _rideBloc);
       case 3:
-        return Platform.isAndroid ? const AndroidMapScreen() : const SimpleMapScreen();
+        return const SimpleMapScreen();
       case 4:
         return const SettingsScreen();
       default:

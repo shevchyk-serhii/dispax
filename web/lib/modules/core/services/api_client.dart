@@ -21,6 +21,8 @@ class ApiClient {
     return false;
   }
 
+  static String get privateBaseUrl => _defaultBaseUrl;
+
   static String get _defaultBaseUrl {
 
     const customUrl = String.fromEnvironment('API_BASE_URL');

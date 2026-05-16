@@ -1,6 +1,7 @@
 .PHONY: fmt fmt-watch dev prod test test-bdd test-all clean rebuild \
         flutter-dev flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
+        flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
         deploy logs
 
 PROD_URL := https://oktopus-456043977402.europe-west1.run.app
@@ -9,7 +10,9 @@ GCP_PROJECT := project-6efcac64-991b-49f4-946
 GCP_REGION := europe-west1
 GCP_SERVICE := oktopus
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/oktopus-docker/oktopus-server:latest
-FLUTTER_DIR := web
+FLUTTER_DIR    := web
+IPHONE_SERGII  := 00008150-000978860ED8401C
+ANDROID_SERGII := 192.168.0.60:5555
 
 # ─── Backend ────────────────────────────────────────────────────────────────
 
@@ -103,3 +106,21 @@ flutter-prod-android:
 	cd $(FLUTTER_DIR) && flutter build apk --release \
 		--dart-define=API_BASE_URL=$(PROD_URL)/api
 	@echo "✅ APK: $(FLUTTER_DIR)/build/app/outputs/flutter-apk/app-release.apk"
+
+# Run Flutter on Sergii's iPhone (wireless) against local backend
+flutter-dev-iphone-sergii:
+	cd $(FLUTTER_DIR) && flutter run -d $(IPHONE_SERGII) \
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
+
+# Run Flutter on Sergii's Android (wireless) against local backend
+flutter-dev-android-sergii:
+	cd $(FLUTTER_DIR) && flutter run -d $(ANDROID_SERGII) \
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
+
+# Run Flutter on both Sergii's devices simultaneously (wireless)
+flutter-dev-sergii:
+	cd $(FLUTTER_DIR) && flutter run -d $(IPHONE_SERGII) \
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
+	cd $(FLUTTER_DIR) && flutter run -d $(ANDROID_SERGII) \
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
+	wait
