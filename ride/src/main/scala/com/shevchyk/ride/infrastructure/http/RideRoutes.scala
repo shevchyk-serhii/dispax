@@ -138,14 +138,12 @@ object RideRoutes {
     },
     Method.GET / "api" / "rides" / "client" / string("clientId")        -> handler { (clientId: String, request: Request) =>
       (for {
-        user         <- AuthMiddleware.authenticateRequest(request)
-        _            <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY")
-        clientPid    <- UuidParser.parsePersonId(clientId)
-        companyId    <- UuidParser.requireCompanyId(user.companyId)
-        service      <- ZIO.service[RideService]
-        rides        <- service.getClientRides(clientPid)
-        filteredRides = rides.filter(_.companyId == companyId)
-        rideDtos      = filteredRides.map(r => RideDto.fromDomain(r))
+        user      <- AuthMiddleware.authenticateRequest(request)
+        clientPid <- UuidParser.parsePersonId(clientId)
+        _         <- AuthMiddleware.checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY")
+        service   <- ZIO.service[RideService]
+        rides     <- service.getClientRides(clientPid)
+        rideDtos   = rides.map(r => RideDto.fromDomain(r))
       } yield Response.json(rideDtos.toJson)).catchAll {
         case response: Response => ZIO.succeed(response)
         case ex: Throwable      => handleRideError(ex)
