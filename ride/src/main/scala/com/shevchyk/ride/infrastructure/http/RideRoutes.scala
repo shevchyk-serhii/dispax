@@ -99,7 +99,7 @@ object RideRoutes {
                            .map { req =>
                              // Clients and drivers always create rides for themselves
                              // Secretaries and dispatchers can specify a clientId from the request
-                             if (user.role == "CLIENT" || user.role == "DRIVER")
+                             if (user.role.toUpperCase == "CLIENT" || user.role.toUpperCase == "DRIVER")
                                req.copy(clientId = PersonId(user.userId))
                              else
                                req

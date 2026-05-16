@@ -27,11 +27,6 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
     _loadClients();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
   Future<void> _loadClients() async {
     setState(() {
       _loading = true;

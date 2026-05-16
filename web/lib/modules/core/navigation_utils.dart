@@ -24,10 +24,14 @@ class NavigationUtils {
   }
 
   static Future<void> openGoogleMapsRoute(Location origin, Location destination) async {
-    final originAddress = Uri.encodeComponent(origin.address);
-    final destinationAddress = Uri.encodeComponent(destination.address);
+    final originParam = origin.latitude != null && origin.longitude != null
+        ? '${origin.latitude},${origin.longitude}'
+        : Uri.encodeComponent(origin.address);
+    final destinationParam = destination.latitude != null && destination.longitude != null
+        ? '${destination.latitude},${destination.longitude}'
+        : Uri.encodeComponent(destination.address);
 
-    final googleMapsUrl = 'https://www.google.com/maps/dir/?api=1&origin=$originAddress&destination=$destinationAddress&travelmode=driving';
+    final googleMapsUrl = 'https://www.google.com/maps/dir/?api=1&origin=$originParam&destination=$destinationParam&travelmode=driving';
 
     try {
       final Uri uri = Uri.parse(googleMapsUrl);
@@ -37,7 +41,6 @@ class NavigationUtils {
         throw 'Could not launch Google Maps';
       }
     } catch (e) {
-
       await _tryGoogleMapsAppWithRoute(origin, destination);
     }
   }
@@ -60,10 +63,14 @@ class NavigationUtils {
   }
 
   static Future<void> _tryGoogleMapsAppWithRoute(Location origin, Location destination) async {
-    final originAddress = Uri.encodeComponent(origin.address);
-    final destinationAddress = Uri.encodeComponent(destination.address);
+    final originParam = origin.latitude != null && origin.longitude != null
+        ? '${origin.latitude},${origin.longitude}'
+        : Uri.encodeComponent(origin.address);
+    final destinationParam = destination.latitude != null && destination.longitude != null
+        ? '${destination.latitude},${destination.longitude}'
+        : Uri.encodeComponent(destination.address);
 
-    final appUrl = 'comgooglemaps://?saddr=$originAddress&daddr=$destinationAddress&directionsmode=driving';
+    final appUrl = 'comgooglemaps://?saddr=$originParam&daddr=$destinationParam&directionsmode=driving';
 
     try {
       final Uri uri = Uri.parse(appUrl);
@@ -139,10 +146,7 @@ class NavigationUtils {
     return null;
   }
 
-  static void navigateToMap(BuildContext context, Ride ride) {
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Map functionality not yet implemented')),
-    );
+  static Future<void> navigateToMap(BuildContext context, Ride ride) async {
+    await openGoogleMapsRoute(ride.from, ride.to);
   }
 }

@@ -47,16 +47,24 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
           },
         ),
         BlocListener<RideBloc, RideState>(
-          listenWhen: (previous, current) =>
-              previous.status != current.status &&
-              current.status == RideStateStatus.error,
+          listenWhen: (previous, current) => previous.status != current.status,
           listener: (context, state) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? 'Failed to create ride'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            if (state.status == RideStateStatus.created) {
+              context.read<CreateRideFormBloc>().add(const FormCleared());
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Ride created successfully!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else if (state.status == RideStateStatus.error) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.errorMessage ?? 'Failed to create ride'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
           },
         ),
       ],

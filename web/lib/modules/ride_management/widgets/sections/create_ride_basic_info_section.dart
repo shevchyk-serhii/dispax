@@ -4,13 +4,30 @@ import '../../../../blocs/blocs.dart';
 import '../../../../modules/core/services/user_service.dart';
 import '../client_search_field.dart';
 
-class CreateRideBasicInfoSection extends StatelessWidget {
+class CreateRideBasicInfoSection extends StatefulWidget {
   const CreateRideBasicInfoSection({super.key});
 
   @override
+  State<CreateRideBasicInfoSection> createState() => _CreateRideBasicInfoSectionState();
+}
+
+class _CreateRideBasicInfoSectionState extends State<CreateRideBasicInfoSection> {
+  late final UserService _userService;
+
+  @override
+  void initState() {
+    super.initState();
+    _userService = UserService(apiClient: context.read<AuthBloc>().apiClient);
+  }
+
+  @override
+  void dispose() {
+    _userService.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final apiClient = context.read<AuthBloc>().apiClient;
-    final userService = UserService(apiClient: apiClient);
-    return ClientSearchField(userService: userService);
+    return ClientSearchField(userService: _userService);
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
+import '../../core/navigation_utils.dart';
 
 class RideRouteCard extends StatelessWidget {
   final Ride ride;
@@ -133,6 +134,27 @@ class RideRouteCard extends StatelessWidget {
                 ],
               ),
             ],
+
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => NavigationUtils.openGoogleMapsRoute(ride.from, ride.to),
+                icon: const Icon(Icons.map_outlined, size: 18),
+                label: const Text('Open in Google Maps'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

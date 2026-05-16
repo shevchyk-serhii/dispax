@@ -79,10 +79,8 @@ class RideBloc extends Bloc<RideEvent, RideState> {
 
     try {
       final createdRide = await privateRideService.createRide(event.request);
-
       final updatedRides = List<Ride>.from(state.rides)..add(createdRide);
-
-      emit(RideState.loaded(updatedRides));
+      emit(RideState(status: RideStateStatus.created, rides: updatedRides));
     } catch (e) {
       emit(state.copyWith(
         status: RideStateStatus.error,

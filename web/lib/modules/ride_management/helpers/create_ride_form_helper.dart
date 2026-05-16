@@ -89,13 +89,5 @@ class CreateRideFormHelper {
     );
 
     context.read<RideBloc>().add(RideCreateRequested(request: createRequest));
-    context.read<CreateRideFormBloc>().add(const FormCleared());
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ride created successfully!'),
-        backgroundColor: Colors.green,
-      ),
-    );
   }
 }

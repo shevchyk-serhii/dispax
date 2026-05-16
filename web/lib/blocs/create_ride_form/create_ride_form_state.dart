@@ -56,6 +56,7 @@ class CreateRideFormState extends Equatable {
   CreateRideFormState copyWith({
     String? clientName,
     String? selectedClientId,
+    bool clearClientId = false,
     String? fromAddress,
     String? toAddress,
     String? flightNumber,
@@ -71,7 +72,7 @@ class CreateRideFormState extends Equatable {
   }) {
     return CreateRideFormState(
       clientName: clientName ?? this.clientName,
-      selectedClientId: selectedClientId ?? this.selectedClientId,
+      selectedClientId: clearClientId ? null : (selectedClientId ?? this.selectedClientId),
       fromAddress: fromAddress ?? this.fromAddress,
       toAddress: toAddress ?? this.toAddress,
       flightNumber: flightNumber ?? this.flightNumber,
@@ -88,8 +89,7 @@ class CreateRideFormState extends Equatable {
   }
 
   bool get isValid {
-    return clientName.trim().isNotEmpty &&
-           selectedClientId != null &&
+    return selectedClientId != null &&
            fromAddress.trim().isNotEmpty &&
            toAddress.trim().isNotEmpty &&
            (!isAirportTransfer || flightNumber.trim().isNotEmpty);
