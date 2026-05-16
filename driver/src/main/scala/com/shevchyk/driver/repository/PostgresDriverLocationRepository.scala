@@ -59,6 +59,14 @@ final class PostgresDriverLocationRepository(xa: Transactor[Task]) extends Drive
       .transact(xa)
       .unit
 
+  override def getAvailability(driverId: PersonId): Task[Option[String]] =
+    sql"""
+      SELECT status::text FROM drivers WHERE id = ${driverId.value}
+    """
+      .query[String]
+      .option
+      .transact(xa)
+
   override def findAvailableByCompanyId(
       companyId: CompanyId
   ): Task[List[(PersonId, String, Option[Double], Option[Double])]] =

@@ -13,6 +13,7 @@ trait DriverLocationService:
   def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit]
   def getLocation(driverId: PersonId): Task[Option[DriverLocation]]
   def updateAvailability(driverId: PersonId, status: String): Task[Unit]
+  def getAvailability(driverId: PersonId): Task[Option[String]]
   def getAvailableDrivers(companyId: CompanyId): Task[List[com.shevchyk.driver.infrastructure.http.AvailableDriverDto]]
 
 class DriverLocationServiceImpl(
@@ -79,6 +80,8 @@ class DriverLocationServiceImpl(
     driverId,
     status
   )
+
+  override def getAvailability(driverId: PersonId): Task[Option[String]] = repository.getAvailability(driverId)
 
   override def getAvailableDrivers(
       companyId: CompanyId
