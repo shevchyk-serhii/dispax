@@ -35,6 +35,9 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
     override def updateAvailability(driverId: PersonId, status: String): Task[Unit] =
       availability.update(_.updated(driverId, status))
 
+    override def getAvailability(driverId: PersonId): Task[Option[String]] =
+      availability.get.map(_.get(driverId))
+
     override def findAvailableByCompanyId(companyId: CompanyId): Task[List[(PersonId, String, Option[Double], Option[Double])]] =
       for {
         avail <- availability.get

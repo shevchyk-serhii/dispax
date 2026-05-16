@@ -86,6 +86,25 @@ object DriverRoutes:
               )
         }
     },
+    Method.GET / "api" / "drivers" / string("driverId") / "availability" -> handler {
+      (driverId: String, request: Request) =>
+        (for {
+          user       <- AuthMiddleware.authenticateRequest(request)
+          driverUuid <- UuidParser.parse(driverId)
+          _          <- AuthMiddleware.checkRoleOrOwner(user, driverUuid, "DISPATCHER", "SECRETARY")
+          service    <- ZIO.service[DriverLocationService]
+          status     <- service.getAvailability(PersonId(driverUuid))
+          statusStr   = status.getOrElse("Offline")
+        } yield Response.json(s"""{"status":"$statusStr"}""")).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      =>
+            ZIO
+              .logError(s"Unhandled error: ${Option(ex.getMessage).getOrElse(ex.toString)}")
+              .as(
+                Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+              )
+        }
+    },
     Method.GET / "api" / "drivers" / "available"                         -> handler { (request: Request) =>
       (for {
         user      <- AuthMiddleware.authenticateRequest(request)
