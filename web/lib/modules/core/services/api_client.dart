@@ -5,22 +5,6 @@ import 'package:http/http.dart' as http;
 
 class ApiClient {
 
-  static bool get isPhysicalDevice {
-    if (Platform.isIOS) {
-
-      return !Platform.environment.containsKey('SIMULATOR_DEVICE_NAME') &&
-             !Platform.environment.containsKey('SIMULATOR_HOST_HOME');
-    } else if (Platform.isAndroid) {
-
-      final fingerprint = Platform.environment['ANDROID_FINGERPRINT'] ?? '';
-      final model = Platform.environment['ANDROID_MODEL'] ?? '';
-      return !fingerprint.contains('generic') &&
-             !model.contains('Emulator') &&
-             !model.contains('google_sdk');
-    }
-    return false;
-  }
-
   static String get wsBaseUrl {
     final base = _defaultBaseUrl.replaceFirst('/api', '');
     return base.replaceFirst('http://', 'ws://').replaceFirst('https://', 'wss://');
