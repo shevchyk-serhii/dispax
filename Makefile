@@ -5,7 +5,7 @@
         deploy logs
 
 PROD_URL := https://oktopus-456043977402.europe-west1.run.app
-MAC_IP := 192.168.0.188
+MAC_IP := $(shell ipconfig getifaddr en0)
 GCP_PROJECT := project-6efcac64-991b-49f4-946
 GCP_REGION := europe-west1
 GCP_SERVICE := oktopus

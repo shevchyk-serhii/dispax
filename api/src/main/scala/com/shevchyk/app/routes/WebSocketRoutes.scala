@@ -64,14 +64,14 @@ object WebSocketRoutes:
           token.value.asString
         }
         val ticketParam     = req.url.queryParams.queryParam("ticket")
+        val tokenParam      = req.url.queryParams.queryParam("token")
 
-        // Resolve the JWT token: either directly from header or by redeeming a ticket
+        // Resolve the JWT token: header → ticket → token query param
         val resolveToken: ZIO[Any, Option[Nothing], String] =
           tokenFromHeader match
             case Some(token) => ZIO.succeed(token)
             case None        =>
               ticketParam match
-                case None           => ZIO.fail(None)
                 case Some(ticketId) =>
                   for {
                     _         <- cleanExpiredTickets
@@ -80,6 +80,10 @@ object WebSocketRoutes:
                     // Consume the ticket (one-time use)
                     _         <- tickets.update(_ - ticketId)
                   } yield wsTicket.token
+                case None           =>
+                  tokenParam match
+                    case Some(token) => ZIO.succeed(token)
+                    case None        => ZIO.fail(None)
 
         resolveToken.foldZIO(
           _ =>
