@@ -8,7 +8,6 @@ import '../../modules/ride_management/models/ride.dart';
 import '../../modules/driver_management/widgets/widgets.dart';
 import '../../modules/core/widgets/widgets.dart';
 import '../../modules/core/navigation_helper.dart';
-import '../../constants/app_colors.dart';
 import '../../modules/core/services/websocket_service.dart';
 import '../../widgets/common/notification_bell.dart';
 import 'widgets/availability_toggle.dart';

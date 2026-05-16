@@ -153,7 +153,7 @@ class TodayRideCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              _getStatusText(ride.status),
+              RideStatusStyles.getStatusLabel(ride.status),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -217,18 +217,4 @@ class TodayRideCard extends StatelessWidget {
     );
   }
 
-  String _getStatusText(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:
-        return 'REQUESTED';
-      case RideStatus.assigned:
-        return 'ASSIGNED';
-      case RideStatus.inProgress:
-        return 'IN PROGRESS';
-      case RideStatus.completed:
-        return 'COMPLETED';
-      case RideStatus.cancelled:
-        return 'CANCELLED';
-    }
-  }
 }

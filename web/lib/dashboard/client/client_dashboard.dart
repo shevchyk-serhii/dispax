@@ -10,6 +10,7 @@ import '../../screens/create_ride_screen.dart';
 
 import '../../screens/simple_map_screen.dart';
 import '../../constants/app_colors.dart';
+import '../../utils/ride_status_styles.dart';
 import 'client_ride_history_screen.dart';
 
 class ClientDashboard extends StatefulWidget {

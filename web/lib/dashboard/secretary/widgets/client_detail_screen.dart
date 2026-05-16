@@ -8,6 +8,7 @@ import '../../../modules/core/services/user_service.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../screens/create_ride_screen.dart';
+import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_styles.dart';
