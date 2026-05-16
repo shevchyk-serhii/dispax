@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../models/ride.dart';
 import '../models/create_ride_request.dart';
 import '../../core/models/person.dart';
@@ -185,12 +186,13 @@ class RideService {
 
   Future<void> updateDriverLocation(String driverId, double latitude, double longitude) async {
     try {
-      await privateApiClient.put('/drivers/$driverId/location', {
+      final response = await privateApiClient.put('/drivers/$driverId/location', {
         'latitude': latitude,
         'longitude': longitude,
       });
+      debugPrint('📍 Location update: ${response.statusCode} ($latitude, $longitude)');
     } catch (e) {
-      // Silently fail - location updates are best-effort
+      debugPrint('📍 Location update failed: $e');
     }
   }
 

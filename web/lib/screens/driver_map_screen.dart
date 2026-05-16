@@ -82,6 +82,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       setState(() {
         _currentPosition = position;
       });
+      _sendLocationUpdate();
     }
 
     final started = await _locationService.startLocationTracking();
@@ -94,6 +95,11 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         _sendLocationUpdate();
       });
     }
+
+    // Fallback: send location every 30s even without movement
+    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _sendLocationUpdate();
+    });
   }
 
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
