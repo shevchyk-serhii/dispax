@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_client.dart';
 
 class PushNotificationService {
@@ -16,13 +17,15 @@ class PushNotificationService {
   StreamSubscription? _tokenRefreshSubscription;
   String? _currentToken;
 
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+
   final StreamController<RemoteMessage> _messageController =
       StreamController<RemoteMessage>.broadcast();
 
   Stream<RemoteMessage> get onMessage => _messageController.stream;
 
   Future<void> initialize() async {
-    // Skip initialization on iOS Simulator as APNS is not supported and it causes noisy logs
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       final isSimulator = !Platform.environment.containsKey('SIMULATOR_DEVICE_NAME');
       if (isSimulator) {
@@ -32,6 +35,8 @@ class PushNotificationService {
     }
 
     try {
+      await _initLocalNotifications();
+
       final settings = await _messaging.requestPermission(
         alert: true,
         badge: true,
@@ -49,6 +54,7 @@ class PushNotificationService {
 
         FirebaseMessaging.onMessage.listen((message) {
           debugPrint('FCM foreground message: ${message.messageId}');
+          _showLocalNotification(message);
           _messageController.add(message);
         });
 
@@ -69,6 +75,61 @@ class PushNotificationService {
     } catch (e) {
       debugPrint('Push notification initialization failed: $e');
     }
+  }
+
+  Future<void> _initLocalNotifications() async {
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+    await _localNotifications.initialize(initSettings);
+
+    // Создать канал уведомлений Android для FCM
+    if (!kIsWeb && Platform.isAndroid) {
+      const channel = AndroidNotificationChannel(
+        'ride_notifications',
+        'Ride Notifications',
+        description: 'Notifications about ride assignments and updates',
+        importance: Importance.high,
+        playSound: true,
+      );
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
+    }
+  }
+
+  Future<void> _showLocalNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    if (notification == null) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      'ride_notifications',
+      'Ride Notifications',
+      channelDescription: 'Notifications about ride assignments and updates',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _localNotifications.show(
+      (message.messageId ?? message.sentTime?.millisecondsSinceEpoch.toString() ?? '').hashCode,
+      notification.title,
+      notification.body,
+      details,
+    );
   }
 
   Future<void> _getAndRegisterToken() async {

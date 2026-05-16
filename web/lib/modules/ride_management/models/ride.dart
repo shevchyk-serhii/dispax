@@ -122,7 +122,7 @@ class Ride {
       driverId: json['driverId']?.toString(),
       companyId: json['companyId']?.toString() ?? '',
       scheduleDayId: json['scheduleDayId'],
-      pickupDateTime: DateTime.parse(json['pickupDateTime']),
+      pickupDateTime: DateTime.parse(json['pickupDateTime']).toLocal(),
       from: Location.fromJson(json['from']),
       to: Location.fromJson(json['to']),
       status: RideStatus.fromString(json['status'] ?? 'Requested'),

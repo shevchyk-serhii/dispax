@@ -62,6 +62,7 @@ final case class Ride(
     status: RideStatus = RideStatus.Requested,
     pickupLocation: Location,
     dropoffLocation: Location,
+    pickupDateTime: Instant,
     scheduledTime: Option[Instant] = None,
     requestTime: Instant = Instant.now(),
     startTime: Option[Instant] = None,

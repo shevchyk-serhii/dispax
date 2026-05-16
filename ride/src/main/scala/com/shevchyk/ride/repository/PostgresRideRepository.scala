@@ -410,6 +410,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         status = status,
         pickupLocation = Location(address = fromAddress, latitude = fromLat, longitude = fromLng),
         dropoffLocation = Location(address = toAddress, latitude = toLat, longitude = toLng),
+        pickupDateTime = pickupDateTime,
         scheduledTime = scheduledTime,
         requestTime = requestTime,
         startTime = startTime,

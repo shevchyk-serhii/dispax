@@ -27,12 +27,21 @@ class RideService {
 
   Future<List<Ride>> getRidesForUser(Person user) async {
     try {
-      final response = await privateApiClient.get('/rides');
+      final String endpoint;
+      switch (user.role) {
+        case PersonRole.driver:
+          endpoint = '/rides/driver/${user.id}';
+        case PersonRole.client:
+          endpoint = '/rides/client/${user.id}';
+        default:
+          endpoint = '/rides';
+      }
+
+      final response = await privateApiClient.get(endpoint);
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
-        final rides = jsonList.map((json) => Ride.fromJson(json)).toList();
-        return rides;
+        return jsonList.map((json) => Ride.fromJson(json)).toList();
       } else {
         throw ApiException(
           'Failed to fetch user rides: ${response.statusCode}',

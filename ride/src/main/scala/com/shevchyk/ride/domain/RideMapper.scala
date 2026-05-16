@@ -12,6 +12,7 @@ object RideMapper:
     companyId = request.companyId,
     pickupLocation = request.pickupLocation,
     dropoffLocation = request.dropoffLocation,
+    pickupDateTime = request.scheduledTime.getOrElse(Instant.now()),
     scheduledTime = request.scheduledTime,
     requestTime = Instant.now(),
     notes = request.notes,

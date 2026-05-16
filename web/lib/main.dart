@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
 
 import 'l10n/app_localizations.dart';
@@ -26,8 +27,37 @@ import 'constants/app_colors.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  final notification = message.notification;
+  if (notification == null) return;
+
+  const androidDetails = AndroidNotificationDetails(
+    'ride_notifications',
+    'Ride Notifications',
+    channelDescription: 'Notifications about ride assignments and updates',
+    importance: Importance.high,
+    priority: Priority.high,
+    icon: '@mipmap/ic_launcher',
+  );
+  const iosDetails = DarwinNotificationDetails(
+    presentAlert: true,
+    presentBadge: true,
+    presentSound: true,
+  );
+
+  final plugin = FlutterLocalNotificationsPlugin();
+  await plugin.initialize(
+    const InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      iOS: DarwinInitializationSettings(),
+    ),
+  );
+  await plugin.show(
+    (message.messageId ?? message.sentTime?.millisecondsSinceEpoch.toString() ?? '').hashCode,
+    notification.title,
+    notification.body,
+    const NotificationDetails(android: androidDetails, iOS: iosDetails),
   );
 }
 
@@ -132,6 +162,7 @@ class _AppWithWebSocket extends StatefulWidget {
 
 class _AppWithWebSocketState extends State<_AppWithWebSocket> {
   StreamSubscription? _wsSubscription;
+  StreamSubscription? _fcmSubscription;
 
   @override
   void initState() {
@@ -139,6 +170,14 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
       if (event.isRideAssigned || event.isRideStatusChanged || event.isRideCreated) {
+        _refreshRides();
+      }
+    });
+
+    _fcmSubscription = PushNotificationService.instance.onMessage.listen((message) {
+      if (!mounted) return;
+      final type = message.data['type'];
+      if (type == 'ride_assigned' || type == 'ride_updated' || type == 'ride_created') {
         _refreshRides();
       }
     });
@@ -154,6 +193,7 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
   @override
   void dispose() {
     _wsSubscription?.cancel();
+    _fcmSubscription?.cancel();
     super.dispose();
   }
 

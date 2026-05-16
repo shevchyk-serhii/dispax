@@ -233,7 +233,7 @@ object RideDto:
       creatorId = ride.creatorId.value.toString,
       driverId = ride.driverId.map(_.value.toString),
       scheduleDayId = None,
-      pickupDateTime = ride.scheduledTime.getOrElse(ride.requestTime).toString,
+      pickupDateTime = ride.pickupDateTime.toString,
       from = LocationDto.fromDomain(ride.pickupLocation),
       to = LocationDto.fromDomain(ride.dropoffLocation),
       status = ride.status.toString,
