@@ -160,7 +160,6 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
   void _sendLocationUpdate() {
     if (_currentPosition == null) return;
-    if (_assignedRides.isEmpty) return;
 
     // Throttle: don't send more than once per 10 seconds
     final now = DateTime.now();
@@ -173,7 +172,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     final authState = context.read<AuthBloc>().state;
     if (!authState.isAuthenticated || authState.user == null) return;
 
-    final rideService = RideService();
+    final rideService = RideService(apiClient: context.read<AuthBloc>().apiClient);
     rideService.updateDriverLocation(
       authState.user!.id,
       _currentPosition!.latitude,

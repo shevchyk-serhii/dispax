@@ -81,11 +81,12 @@ object RideRoutes {
           )
 
   private def toPersonRole(role: String): PersonRole =
-    role match
+    role.toUpperCase match
       case "DRIVER"     => PersonRole.Driver
       case "CLIENT"     => PersonRole.Client
       case "SECRETARY"  => PersonRole.Secretary
       case "DISPATCHER" => PersonRole.Dispatcher
+      case "ADMIN"      => PersonRole.Admin
       case _            => PersonRole.Client
 
   val authenticatedRoutes: Routes[RideService & JwtService, Response] = Routes(

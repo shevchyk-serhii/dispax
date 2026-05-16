@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'firebase_options.dart';
 
 import 'l10n/app_localizations.dart';
@@ -63,6 +64,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  MapboxOptions.setAccessToken(
+    'MAPBOX_PUBLIC_TOKEN_REMOVED',
+  );
 
   try {
     await Firebase.initializeApp(
