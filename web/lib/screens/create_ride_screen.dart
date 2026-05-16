@@ -36,13 +36,30 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<CreateRideFormBloc, CreateRideFormState>(
-      listenWhen: (previous, current) => previous.status != current.status,
-      listener: (context, state) {
-        if (state.status == CreateRideFormStatus.submitting) {
-          CreateRideFormHelper.handleFormSubmission(context, state);
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<CreateRideFormBloc, CreateRideFormState>(
+          listenWhen: (previous, current) => previous.status != current.status,
+          listener: (context, state) {
+            if (state.status == CreateRideFormStatus.submitting) {
+              CreateRideFormHelper.handleFormSubmission(context, state);
+            }
+          },
+        ),
+        BlocListener<RideBloc, RideState>(
+          listenWhen: (previous, current) =>
+              previous.status != current.status &&
+              current.status == RideStateStatus.error,
+          listener: (context, state) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage ?? 'Failed to create ride'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          },
+        ),
+      ],
       child: Scaffold(
         appBar: AppBar(
           title: Text(

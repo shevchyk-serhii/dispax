@@ -48,7 +48,7 @@ class CreateRideRequest {
       'flightNumber': flightNumber,
       'isAirportTransfer': isAirportTransfer,
       'notes': notes,
-      'specialRequirements': specialRequirements,
+      'specialRequirements': specialRequirements?.join(', '),
     };
   }
 

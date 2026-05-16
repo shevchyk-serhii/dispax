@@ -5,6 +5,7 @@ import 'create_ride_form_state.dart';
 class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> {
   CreateRideFormBloc() : super(CreateRideFormState.initial()) {
     on<ClientNameChanged>(_onClientNameChanged);
+    on<ClientSelected>(_onClientSelected);
     on<FromAddressChanged>(_onFromAddressChanged);
     on<ToAddressChanged>(_onToAddressChanged);
     on<FlightNumberChanged>(_onFlightNumberChanged);
@@ -35,6 +36,10 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
 
   void _onClientNameChanged(ClientNameChanged event, Emitter<CreateRideFormState> emit) {
     emit(state.copyWith(clientName: event.clientName));
+  }
+
+  void _onClientSelected(ClientSelected event, Emitter<CreateRideFormState> emit) {
+    emit(state.copyWith(selectedClientId: event.clientId, clientName: event.clientName));
   }
 
   void _onFromAddressChanged(FromAddressChanged event, Emitter<CreateRideFormState> emit) {

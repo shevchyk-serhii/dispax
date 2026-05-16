@@ -96,7 +96,14 @@ object RideRoutes {
         validRequest  <- apiRequest.validate
         domainRequest <- CreateRideApiRequest
                            .toDomain(validRequest, companyId)
-                           .map(_.copy(clientId = PersonId(user.userId)))
+                           .map { req =>
+                             // Clients and drivers always create rides for themselves
+                             // Secretaries and dispatchers can specify a clientId from the request
+                             if (user.role == "CLIENT" || user.role == "DRIVER")
+                               req.copy(clientId = PersonId(user.userId))
+                             else
+                               req
+                           }
         service       <- ZIO.service[RideService]
         ride          <- service.createRide(domainRequest)
         rideDto        = RideDto.fromDomain(ride)

@@ -4,6 +4,7 @@ enum CreateRideFormStatus { initial, submitting, success, failure }
 
 class CreateRideFormState extends Equatable {
   final String clientName;
+  final String? selectedClientId;
   final String fromAddress;
   final String toAddress;
   final String flightNumber;
@@ -19,6 +20,7 @@ class CreateRideFormState extends Equatable {
 
   const CreateRideFormState({
     required this.clientName,
+    this.selectedClientId,
     required this.fromAddress,
     required this.toAddress,
     required this.flightNumber,
@@ -36,6 +38,7 @@ class CreateRideFormState extends Equatable {
   factory CreateRideFormState.initial() {
     return CreateRideFormState(
       clientName: '',
+      selectedClientId: null,
       fromAddress: '',
       toAddress: '',
       flightNumber: '',
@@ -52,6 +55,7 @@ class CreateRideFormState extends Equatable {
 
   CreateRideFormState copyWith({
     String? clientName,
+    String? selectedClientId,
     String? fromAddress,
     String? toAddress,
     String? flightNumber,
@@ -67,6 +71,7 @@ class CreateRideFormState extends Equatable {
   }) {
     return CreateRideFormState(
       clientName: clientName ?? this.clientName,
+      selectedClientId: selectedClientId ?? this.selectedClientId,
       fromAddress: fromAddress ?? this.fromAddress,
       toAddress: toAddress ?? this.toAddress,
       flightNumber: flightNumber ?? this.flightNumber,
@@ -84,6 +89,7 @@ class CreateRideFormState extends Equatable {
 
   bool get isValid {
     return clientName.trim().isNotEmpty &&
+           selectedClientId != null &&
            fromAddress.trim().isNotEmpty &&
            toAddress.trim().isNotEmpty &&
            (!isAirportTransfer || flightNumber.trim().isNotEmpty);
@@ -92,6 +98,7 @@ class CreateRideFormState extends Equatable {
   @override
   List<Object?> get props => [
     clientName,
+    selectedClientId,
     fromAddress,
     toAddress,
     flightNumber,

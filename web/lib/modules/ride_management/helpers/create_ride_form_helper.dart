@@ -60,10 +60,18 @@ class CreateRideFormHelper {
       return;
     }
 
-    // Create simplified request that matches backend expectations
-    // Backend uses only: clientId (from auth), from, to, pickupDateTime, flightNumber, isAirportTransfer
+    if (formState.selectedClientId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a client'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final createRequest = CreateRideRequest(
-      clientId: authState.user!.id,
+      clientId: formState.selectedClientId!,
       creatorId: authState.user!.id,
       companyId: authState.user!.companyId ?? '',
       pickupDateTime: formState.pickupDateTime,
@@ -74,6 +82,10 @@ class CreateRideFormHelper {
           ? formState.flightNumber.trim()
           : null,
       isAirportTransfer: formState.isAirportTransfer,
+      notes: formState.notes.trim().isNotEmpty ? formState.notes.trim() : null,
+      specialRequirements: formState.specialRequirements.isNotEmpty
+          ? formState.specialRequirements
+          : null,
     );
 
     context.read<RideBloc>().add(RideCreateRequested(request: createRequest));

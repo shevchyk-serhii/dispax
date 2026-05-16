@@ -24,7 +24,7 @@ class CreateRideFormSections extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CreateRideBasicInfoSection(clientName: state.clientName),
+            const CreateRideBasicInfoSection(),
             const SizedBox(height: AppDimensions.paddingMedium),
             CreateRideLocationSection(
               fromAddress: state.fromAddress,
