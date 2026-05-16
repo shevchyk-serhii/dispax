@@ -141,7 +141,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         LocationClarificationService.configure(privateApiClient);
 
         /// Connect WebSocket for real-time updates
-        WebSocketService.instance.connect(token);
+        WebSocketService.instance.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
 
         emit(AuthState.authenticated(user,
           biometricEnabled: biometricEnabled,
@@ -185,7 +185,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         LocationClarificationService.configure(privateApiClient);
 
         /// Connect WebSocket for real-time updates
-        WebSocketService.instance.connect(loginResponse['token']);
+        WebSocketService.instance.connect(loginResponse['token'], wsBaseUrl: ApiClient.wsBaseUrl);
 
         final user = Person.fromJson(loginResponse['person']);
         emit(AuthState.authenticated(user));
@@ -266,7 +266,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final user = Person.fromJson(userJson);
           privateApiClient.setAuthToken(token);
 
-          WebSocketService.instance.connect(token);
+          WebSocketService.instance.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
 
           emit(AuthState.authenticated(user,
             biometricEnabled: biometricEnabled,

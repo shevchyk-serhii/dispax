@@ -21,7 +21,10 @@ class ApiClient {
     return false;
   }
 
-  static String get privateBaseUrl => _defaultBaseUrl;
+  static String get wsBaseUrl {
+    final base = _defaultBaseUrl.replaceFirst('/api', '');
+    return base.replaceFirst('http://', 'ws://').replaceFirst('https://', 'wss://');
+  }
 
   static String get _defaultBaseUrl {
 

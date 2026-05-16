@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/websocket_event.dart';
-import 'api_client.dart';
 
 class WebSocketService {
   static final WebSocketService instance = WebSocketService._();
@@ -15,20 +14,17 @@ class WebSocketService {
   final _eventController = StreamController<WebSocketEvent>.broadcast();
   Timer? _reconnectTimer;
   String? _token;
+  String? _wsBaseUrl;
   int _reconnectAttempt = 0;
   bool _shouldReconnect = false;
 
   Stream<WebSocketEvent> get eventStream => _eventController.stream;
 
-  String get _wsUrl {
-    final baseUrl = ApiClient.privateBaseUrl;
-    final httpUrl = baseUrl.replaceFirst('/api', '');
-    final wsUrl = httpUrl.replaceFirst('http://', 'ws://').replaceFirst('https://', 'wss://');
-    return '$wsUrl/api/ws?token=$_token';
-  }
+  String get _wsUrl => '$_wsBaseUrl/api/ws?token=$_token';
 
-  Future<void> connect(String token) async {
+  Future<void> connect(String token, {required String wsBaseUrl}) async {
     _token = token;
+    _wsBaseUrl = wsBaseUrl;
     _shouldReconnect = true;
     _reconnectAttempt = 0;
     await _doConnect();
