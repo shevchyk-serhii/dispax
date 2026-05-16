@@ -21,7 +21,7 @@ class WebSocketService {
   Stream<WebSocketEvent> get eventStream => _eventController.stream;
 
   String get _wsUrl {
-    final uri = Uri.parse('$_wsBaseUrl/api/ws').replace(queryParameters: {'token': _token});
+    final uri = Uri.parse('$_wsBaseUrl/api/ws').replace(queryParameters: {'token': _token!});
     return uri.toString();
   }
 
