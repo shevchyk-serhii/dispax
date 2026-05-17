@@ -10,7 +10,6 @@ import '../modules/core/models/location.dart' as loc;
 import '../modules/core/services/location_service.dart';
 import '../modules/core/services/mapbox_service.dart';
 import '../modules/core/services/websocket_service.dart';
-import '../theme/app_theme.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
@@ -37,10 +36,17 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   Ride? _currentRide;
 
   final LocationService _locationService = LocationService.instance;
+  RideService? _rideService;
   Timer? _locationUpdateTimer;
   StreamSubscription? _wsSubscription;
   String? _geofenceOverlayMessage;
   Timer? _geofenceOverlayTimer;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rideService ??= RideService(apiClient: context.read<AuthBloc>().apiClient);
+  }
 
   @override
   void initState() {
@@ -233,8 +239,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     final authState = context.read<AuthBloc>().state;
     if (!authState.isAuthenticated || authState.user == null) return;
 
-    final rideService = RideService(apiClient: context.read<AuthBloc>().apiClient);
-    rideService.updateDriverLocation(
+    _rideService?.updateDriverLocation(
       authState.user!.id,
       _currentPosition!.latitude,
       _currentPosition!.longitude,
@@ -386,7 +391,17 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     return Container(
       margin: const EdgeInsets.all(AppDimensions.paddingMedium),
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-      decoration: AppTheme.glassDecoration,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,7 +412,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 'Driver Dashboard',
-                style: AppStyles.titleMedium.copyWith(color: AppColors.textOnPrimary),
+                style: AppStyles.titleMedium.copyWith(color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -409,7 +424,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             children: [
               Text(
                 'Assigned Rides: ${_assignedRides.length}',
-                style: AppStyles.bodyMedium.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
+                style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
               ),
               if (_currentRide != null)
                 Container(
