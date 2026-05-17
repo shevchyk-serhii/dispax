@@ -6,6 +6,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../modules/ride_management/services/ride_service.dart';
+import '../modules/core/models/location.dart' as loc;
 import '../modules/core/services/location_service.dart';
 import '../modules/core/services/mapbox_service.dart';
 import '../modules/core/services/websocket_service.dart';
@@ -28,6 +29,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   // ignore: unused_field
   PointAnnotationManager? _pointAnnotationManager;
   CircleAnnotationManager? _circleAnnotationManager;
+  CircleAnnotation? _clientCircleAnnotation;
 
   StreamSubscription<geo.Position>? _locationSubscription;
   geo.Position? _currentPosition;
@@ -60,19 +62,54 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   void _listenToGeofenceEvents() {
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
+
       if (event.isGeofenceTriggered) {
         final geofenceName = event.geofenceName ?? 'Unknown zone';
         final isEntry = event.alertType == 'entry';
-        final message = isEntry
-            ? 'Entered $geofenceName'
-            : 'Left $geofenceName';
+        final message = isEntry ? 'Entered $geofenceName' : 'Left $geofenceName';
         setState(() => _geofenceOverlayMessage = message);
         _geofenceOverlayTimer?.cancel();
         _geofenceOverlayTimer = Timer(const Duration(seconds: 4), () {
           if (mounted) setState(() => _geofenceOverlayMessage = null);
         });
       }
+
+      if (event.isLocationUpdated &&
+          event.locationType == 'client' &&
+          event.latitude != null &&
+          event.longitude != null) {
+        final rideId = event.rideId;
+        if (_currentRide != null && (rideId == null || rideId == _currentRide!.id)) {
+          setState(() {
+            _currentRide = _currentRide!.copyWith(
+              clientLocation: loc.Location(
+                address: '',
+                latitude: event.latitude,
+                longitude: event.longitude,
+              ),
+            );
+          });
+          _updateClientMarker(event.latitude!, event.longitude!);
+        }
+      }
     });
+  }
+
+  Future<void> _updateClientMarker(double latitude, double longitude) async {
+    if (_circleAnnotationManager == null) return;
+
+    if (_clientCircleAnnotation != null) {
+      await _circleAnnotationManager!.delete(_clientCircleAnnotation!);
+      _clientCircleAnnotation = null;
+    }
+
+    final marker = MapboxService.createLocationMarker(
+      latitude: latitude,
+      longitude: longitude,
+      color: '#4CAF50',
+      radius: 12.0,
+    );
+    _clientCircleAnnotation = await _circleAnnotationManager!.create(marker);
   }
 
   Future<void> _initializeLocation() async {
@@ -122,10 +159,11 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     _updateMapMarkers();
   }
 
-  void _updateCurrentLocationMarker() {
+  Future<void> _updateCurrentLocationMarker() async {
     if (_mapboxMap == null || _currentPosition == null) return;
 
     _circleAnnotationManager?.deleteAll();
+    _clientCircleAnnotation = null;
 
     final marker = MapboxService.createLocationMarker(
       latitude: _currentPosition!.latitude,
@@ -135,6 +173,14 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     );
 
     _circleAnnotationManager?.create(marker);
+
+    if (_currentRide?.clientLocation?.latitude != null &&
+        _currentRide?.clientLocation?.longitude != null) {
+      await _updateClientMarker(
+        _currentRide!.clientLocation!.latitude!,
+        _currentRide!.clientLocation!.longitude!,
+      );
+    }
   }
 
   void _updateMapMarkers() {
@@ -152,6 +198,15 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     }
 
     if (_currentRide != null) {
+      if (_currentRide!.clientLocation != null &&
+          _currentRide!.clientLocation!.latitude != null &&
+          _currentRide!.clientLocation!.longitude != null) {
+        _updateClientMarker(
+          _currentRide!.clientLocation!.latitude!,
+          _currentRide!.clientLocation!.longitude!,
+        );
+      }
+
       final cameraOptions = MapboxService.getCameraForRoute(
         from: _currentRide!.from,
         to: _currentRide!.to,

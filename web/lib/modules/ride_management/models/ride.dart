@@ -56,6 +56,7 @@ class Ride {
   final String? flightStatus;
   final String? driverName;
   final Location? driverLocation;
+  final Location? clientLocation;
   final bool driverApproaching;
   final int? driverDistanceMeters;
   final double? price;
@@ -95,6 +96,7 @@ class Ride {
     this.flightStatus,
     this.driverName,
     this.driverLocation,
+    this.clientLocation,
     this.driverApproaching = false,
     this.driverDistanceMeters,
     this.price,
@@ -138,6 +140,9 @@ class Ride {
       driverLocation: json['driverLocation'] != null
         ? Location.fromJson(json['driverLocation'])
         : null,
+      clientLocation: json['clientLocation'] != null
+        ? Location.fromJson(json['clientLocation'])
+        : null,
       driverApproaching: json['driverApproaching'] ?? false,
       driverDistanceMeters: json['driverDistanceMeters'],
       price: json['price']?.toDouble(),
@@ -180,6 +185,7 @@ class Ride {
       'flightStatus': flightStatus,
       'driverName': driverName,
       'driverLocation': driverLocation?.toJson(),
+      'clientLocation': clientLocation?.toJson(),
       'driverApproaching': driverApproaching,
       'driverDistanceMeters': driverDistanceMeters,
       'price': price,
@@ -221,6 +227,7 @@ class Ride {
     String? flightStatus,
     String? driverName,
     Location? driverLocation,
+    Location? clientLocation,
     bool? driverApproaching,
     int? driverDistanceMeters,
     double? price,
@@ -260,6 +267,7 @@ class Ride {
       flightStatus: flightStatus ?? this.flightStatus,
       driverName: driverName ?? this.driverName,
       driverLocation: driverLocation ?? this.driverLocation,
+      clientLocation: clientLocation ?? this.clientLocation,
       driverApproaching: driverApproaching ?? this.driverApproaching,
       driverDistanceMeters: driverDistanceMeters ?? this.driverDistanceMeters,
       price: price ?? this.price,
