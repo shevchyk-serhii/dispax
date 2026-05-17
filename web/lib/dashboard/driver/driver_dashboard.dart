@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'calendar/calendar_schedule_screen.dart';
 import 'today_rides_screen.dart';
 import '../../screens/settings_screen.dart';
-import '../../screens/simple_map_screen.dart';
+import '../../screens/driver_map_screen.dart';
 import '../../constants/app_colors.dart';
 
 class DriverDashboard extends StatelessWidget {
@@ -21,7 +21,7 @@ class DriverDashboard extends StatelessWidget {
             children: const [
               TodayRidesScreen(),
               CalendarScheduleScreen(),
-              SimpleMapScreen(),
+              DriverMapScreen(),
               Center(child: Text('Chat coming soon', style: TextStyle(color: Colors.grey))),
               SettingsScreen(),
             ],
