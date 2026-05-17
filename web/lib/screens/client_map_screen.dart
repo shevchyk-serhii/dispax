@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -11,7 +12,6 @@ import '../modules/core/services/location_service.dart';
 import '../modules/core/services/mapbox_service.dart';
 import '../modules/core/models/websocket_event.dart';
 import '../modules/core/services/websocket_service.dart';
-import '../theme/app_theme.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
@@ -26,8 +26,8 @@ class ClientMapScreen extends StatefulWidget {
 
 class _ClientMapScreenState extends State<ClientMapScreen> {
   MapboxMap? _mapboxMap;
-  // ignore: unused_field
-  PointAnnotationManager? _pointAnnotationManager;
+  PointAnnotationManager? _driverAnnotationManager;
+  PointAnnotation? _driverAnnotation;
   CircleAnnotationManager? _circleAnnotationManager;
 
   StreamSubscription<geo.Position>? _locationSubscription;
@@ -37,7 +37,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   final LocationService _locationService = LocationService.instance;
   bool _sharingLocation = false;
-  final RideService _rideService = RideService();
+  RideService? _rideService;
+  Uint8List? _driverMarkerImage;
   String? _approachingBannerMessage;
 
   @override
@@ -45,6 +46,25 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     super.initState();
     _initializeLocation();
     _listenToWebSocket();
+  }
+
+  @override
+  void didChangeDependencies() {
+    _rideService ??= RideService(apiClient: context.read<AuthBloc>().apiClient);
+    super.didChangeDependencies();
+    if (_activeRide == null) {
+      final authState = context.read<AuthBloc>().state;
+      final rideState = context.read<RideBloc>().state;
+      if (authState.user != null) {
+        final activeRide = rideState.rides.where((ride) =>
+          ride.clientId == authState.user!.id &&
+          (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)
+        ).firstOrNull;
+        if (activeRide != null) {
+          _activeRide = activeRide;
+        }
+      }
+    }
   }
 
   @override
@@ -57,23 +77,25 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   void _listenToWebSocket() {
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
-      if (!mounted || _activeRide == null) return;
+      if (!mounted) return;
 
       if (event.isLocationUpdated &&
           event.locationType == 'driver' &&
-          event.driverId == _activeRide!.driverId &&
+          (_activeRide == null || event.driverId == _activeRide!.driverId) &&
           event.latitude != null &&
           event.longitude != null) {
-        setState(() {
-          _activeRide = _activeRide!.copyWith(
-            driverLocation: loc.Location(
-              address: '',
-              latitude: event.latitude,
-              longitude: event.longitude,
-            ),
-          );
-        });
-        _updateMapMarkers();
+        if (_activeRide != null) {
+          setState(() {
+            _activeRide = _activeRide!.copyWith(
+              driverLocation: loc.Location(
+                address: '',
+                latitude: event.latitude,
+                longitude: event.longitude,
+              ),
+            );
+          });
+        }
+        _updateDriverMarker(event.latitude!, event.longitude!);
 
         // Check if driver is approaching (< 500m)
         if (_currentPosition != null) {
@@ -138,7 +160,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
         // Share client location if toggle is on
         if (_sharingLocation && _activeRide != null) {
-          _rideService.updateClientLocation(
+          _rideService?.updateClientLocation(
             _activeRide!.id,
             position.latitude,
             position.longitude,
@@ -151,10 +173,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
 
-    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    _driverAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
-
-    await MapboxService.addDefaultImages(mapboxMap);
 
     if (_currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
@@ -183,6 +203,26 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _circleAnnotationManager?.create(marker);
   }
 
+  Future<void> _updateDriverMarker(double latitude, double longitude) async {
+    if (_driverAnnotationManager == null) return;
+
+    _driverMarkerImage ??= (await rootBundle.load('assets/driver_marker.png'))
+        .buffer.asUint8List();
+    final Uint8List imageData = _driverMarkerImage!;
+
+    final options = PointAnnotationOptions(
+      geometry: Point(coordinates: Position(longitude, latitude)),
+      image: imageData,
+      iconSize: 2.0,
+    );
+
+    if (_driverAnnotation != null) {
+      await _driverAnnotationManager?.delete(_driverAnnotation!);
+      _driverAnnotation = null;
+    }
+    _driverAnnotation = await _driverAnnotationManager?.create(options);
+  }
+
   void _updateMapMarkers() {
     if (_mapboxMap == null || _circleAnnotationManager == null) return;
 
@@ -199,12 +239,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       if (_activeRide!.driverLocation != null &&
           _activeRide!.driverLocation!.latitude != null &&
           _activeRide!.driverLocation!.longitude != null) {
-        final driverMarker = MapboxService.createDriverMarker(
-          latitude: _activeRide!.driverLocation!.latitude!,
-          longitude: _activeRide!.driverLocation!.longitude!,
-          driverId: _activeRide!.driverId?.toString(),
+        _updateDriverMarker(
+          _activeRide!.driverLocation!.latitude!,
+          _activeRide!.driverLocation!.longitude!,
         );
-        _circleAnnotationManager?.create(driverMarker);
       }
 
       final cameraOptions = MapboxService.getCameraForRoute(
@@ -273,7 +311,17 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     return Container(
       margin: const EdgeInsets.all(AppDimensions.paddingMedium),
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-      decoration: AppTheme.glassDecoration,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,7 +332,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 'Your Location',
-                style: AppStyles.titleMedium.copyWith(color: AppColors.textOnPrimary),
+                style: AppStyles.titleMedium.copyWith(color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -298,7 +346,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             const SizedBox(height: AppDimensions.paddingSmall),
             Text(
               'No active ride',
-              style: AppStyles.bodyMedium.copyWith(color: AppColors.textOnPrimary.withAlpha(204)),
+              style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
             ),
           ],
         ],
@@ -311,14 +359,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       children: [
         Icon(
           _sharingLocation ? Icons.location_on : Icons.location_off,
-          color: _sharingLocation ? AppColors.success : AppColors.textOnPrimary.withAlpha(150),
+          color: _sharingLocation ? AppColors.success : AppColors.textSecondary,
           size: AppDimensions.iconSmall,
         ),
         const SizedBox(width: AppDimensions.paddingSmall),
         Expanded(
           child: Text(
             'Share my location',
-            style: AppStyles.bodySmall.copyWith(color: AppColors.textOnPrimary),
+            style: AppStyles.bodySmall.copyWith(color: AppColors.textPrimary),
           ),
         ),
         Switch(
@@ -326,7 +374,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           onChanged: (value) {
             setState(() => _sharingLocation = value);
             if (value && _currentPosition != null && _activeRide != null) {
-              _rideService.updateClientLocation(
+              _rideService?.updateClientLocation(
                 _activeRide!.id,
                 _currentPosition!.latitude,
                 _currentPosition!.longitude,
@@ -364,11 +412,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
         Row(
           children: [
-            Icon(Icons.schedule, color: AppColors.textOnPrimary, size: AppDimensions.iconSmall),
+            Icon(Icons.schedule, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
             const SizedBox(width: AppDimensions.paddingSmall),
             Text(
               'Pickup: ${AppDateUtils.formatDateTime(_activeRide!.pickupDateTime)}',
-              style: AppStyles.bodySmall.copyWith(color: AppColors.textOnPrimary),
+              style: AppStyles.bodySmall.copyWith(color: AppColors.textPrimary),
             ),
           ],
         ),
@@ -377,12 +425,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
         Row(
           children: [
-            Icon(Icons.route, color: AppColors.textOnPrimary, size: AppDimensions.iconSmall),
+            Icon(Icons.route, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
             const SizedBox(width: AppDimensions.paddingSmall),
             Expanded(
               child: Text(
                 '${_activeRide!.from.address} -> ${_activeRide!.to.address}',
-                style: AppStyles.bodySmall.copyWith(color: AppColors.textOnPrimary),
+                style: AppStyles.bodySmall.copyWith(color: AppColors.textPrimary),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -394,11 +442,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           const SizedBox(height: AppDimensions.paddingSmall),
           Row(
             children: [
-              Icon(Icons.person, color: AppColors.textOnPrimary, size: AppDimensions.iconSmall),
+              Icon(Icons.person, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 'Driver: ${_activeRide!.driverName}',
-                style: AppStyles.bodySmall.copyWith(color: AppColors.textOnPrimary),
+                style: AppStyles.bodySmall.copyWith(color: AppColors.textPrimary),
               ),
             ],
           ),

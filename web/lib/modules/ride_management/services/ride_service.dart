@@ -7,9 +7,11 @@ import '../../core/services/api_client.dart';
 
 class RideService {
   final ApiClient privateApiClient;
+  final bool _ownsClient;
 
   RideService({ApiClient? apiClient})
-    : privateApiClient = apiClient ?? ApiClient();
+    : privateApiClient = apiClient ?? ApiClient(),
+      _ownsClient = apiClient == null;
 
   Future<List<Ride>> getAllRides() async {
     try {
@@ -221,6 +223,6 @@ class RideService {
   }
 
   void dispose() {
-    privateApiClient.dispose();
+    if (_ownsClient) privateApiClient.dispose();
   }
 }

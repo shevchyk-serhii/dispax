@@ -24,17 +24,27 @@ class WebSocketEvent {
   });
 
   factory WebSocketEvent.fromJson(Map<String, dynamic> json) {
+    // ZIO JSON encodes sealed traits as {"TypeName": {payload}}
+    final type = json.keys.firstWhere(
+      (k) => k != 'type',
+      orElse: () => json['type'] ?? '',
+    );
+    final payload = (json[type] is Map<String, dynamic>)
+        ? json[type] as Map<String, dynamic>
+        : json;
+
     return WebSocketEvent(
-      type: json['type'] ?? '',
-      rideId: json['rideId'],
-      driverId: json['driverId'],
-      clientId: json['clientId'],
-      newStatus: json['newStatus'],
-      latitude: json['latitude']?.toDouble(),
-      longitude: json['longitude']?.toDouble(),
-      locationType: json['locationType'],
-      companyId: json['companyId'] ?? '',
-      data: json,
+      type: type,
+      rideId: payload['rideId'],
+      // LocationUpdated uses 'userId' for the driver id
+      driverId: payload['driverId'] ?? payload['userId'],
+      clientId: payload['clientId'],
+      newStatus: payload['newStatus'],
+      latitude: payload['latitude']?.toDouble(),
+      longitude: payload['longitude']?.toDouble(),
+      locationType: payload['locationType'],
+      companyId: payload['companyId'] ?? '',
+      data: payload,
     );
   }
 

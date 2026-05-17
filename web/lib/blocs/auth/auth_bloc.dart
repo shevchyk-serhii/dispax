@@ -79,7 +79,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   late ApiClient privateApiClient;
   late BiometricService privateBiometricService;
   final TokenStorage _storage;
-  final bool _apiClientInjected;
 
   static const String privateUserKey = 'current_user';
   static const String privateTokenKey = 'auth_token';
@@ -89,7 +88,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     BiometricService? biometricService,
     TokenStorage? storage,
   }) : _storage = storage ?? _TokenStorage(),
-       _apiClientInjected = apiClient != null,
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();
     privateBiometricService = biometricService ?? BiometricService();
@@ -165,10 +163,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthState.loading());
 
     try {
-      if (!_apiClientInjected) {
-        privateApiClient = ApiClient();
-      }
-
       final loginResponse = await privateApiClient.login(
         event.email,
         event.password,

@@ -4,9 +4,11 @@ import '../../core/services/api_client.dart';
 
 class ScheduleService {
   final ApiClient _apiClient;
+  final bool _ownsClient;
 
   ScheduleService({ApiClient? apiClient})
-    : _apiClient = apiClient ?? ApiClient();
+    : _apiClient = apiClient ?? ApiClient(),
+      _ownsClient = apiClient == null;
 
   Future<ScheduleDay> createScheduleDay({
     required String driverId,
@@ -148,6 +150,6 @@ class ScheduleService {
   }
 
   void dispose() {
-    _apiClient.dispose();
+    if (_ownsClient) _apiClient.dispose();
   }
 }

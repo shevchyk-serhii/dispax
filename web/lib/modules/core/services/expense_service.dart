@@ -4,9 +4,11 @@ import 'api_client.dart';
 
 class ExpenseService {
   final ApiClient privateApiClient;
+  final bool _ownsClient;
 
   ExpenseService({ApiClient? apiClient})
-    : privateApiClient = apiClient ?? ApiClient();
+    : privateApiClient = apiClient ?? ApiClient(),
+      _ownsClient = apiClient == null;
 
   Future<List<Expense>> getExpenses() async {
     try {
@@ -47,6 +49,6 @@ class ExpenseService {
   }
 
   void dispose() {
-    privateApiClient.dispose();
+    if (_ownsClient) privateApiClient.dispose();
   }
 }

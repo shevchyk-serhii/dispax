@@ -3,17 +3,16 @@ import 'package:oktopus/modules/core/models/websocket_event.dart';
 
 void main() {
   group('WebSocketEvent', () {
-    test('fromJson parses all fields', () {
+    // Server sends ZIO sealed trait format: {"TypeName": {payload}}
+    test('fromJson parses ZIO sealed trait format', () {
       final json = {
-        'type': 'RideStatusChanged',
-        'rideId': 'ride-1',
-        'driverId': 'driver-1',
-        'clientId': 'client-1',
-        'newStatus': 'Completed',
-        'latitude': 48.1,
-        'longitude': 11.5,
-        'locationType': 'driver',
-        'companyId': 'company-1',
+        'RideStatusChanged': {
+          'rideId': 'ride-1',
+          'driverId': 'driver-1',
+          'clientId': 'client-1',
+          'newStatus': 'Completed',
+          'companyId': 'company-1',
+        },
       };
 
       final event = WebSocketEvent.fromJson(json);
@@ -23,6 +22,24 @@ void main() {
       expect(event.driverId, 'driver-1');
       expect(event.clientId, 'client-1');
       expect(event.newStatus, 'Completed');
+      expect(event.companyId, 'company-1');
+    });
+
+    test('fromJson parses LocationUpdated with userId as driverId', () {
+      final json = {
+        'LocationUpdated': {
+          'userId': 'driver-1',
+          'latitude': 48.1,
+          'longitude': 11.5,
+          'locationType': 'driver',
+          'companyId': 'company-1',
+        },
+      };
+
+      final event = WebSocketEvent.fromJson(json);
+
+      expect(event.type, 'LocationUpdated');
+      expect(event.driverId, 'driver-1');
       expect(event.latitude, 48.1);
       expect(event.longitude, 11.5);
       expect(event.locationType, 'driver');
@@ -31,22 +48,25 @@ void main() {
 
     test('fromJson handles missing optional fields', () {
       final json = {
-        'type': 'RideCreated',
-        'companyId': 'company-1',
+        'RideCreated': {
+          'rideId': 'ride-1',
+          'companyId': 'company-1',
+        },
       };
 
       final event = WebSocketEvent.fromJson(json);
 
       expect(event.type, 'RideCreated');
-      expect(event.rideId, isNull);
+      expect(event.rideId, 'ride-1');
       expect(event.driverId, isNull);
       expect(event.newStatus, isNull);
+      expect(event.latitude, isNull);
+      expect(event.longitude, isNull);
     });
 
     test('isRideStatusChanged', () {
       final event = WebSocketEvent.fromJson({
-        'type': 'RideStatusChanged',
-        'companyId': 'c1',
+        'RideStatusChanged': {'companyId': 'c1'},
       });
       expect(event.isRideStatusChanged, isTrue);
       expect(event.isRideAssigned, isFalse);
@@ -54,8 +74,7 @@ void main() {
 
     test('isRideAssigned', () {
       final event = WebSocketEvent.fromJson({
-        'type': 'RideAssigned',
-        'companyId': 'c1',
+        'RideAssigned': {'companyId': 'c1'},
       });
       expect(event.isRideAssigned, isTrue);
       expect(event.isRideCreated, isFalse);
@@ -63,8 +82,7 @@ void main() {
 
     test('isRideCreated', () {
       final event = WebSocketEvent.fromJson({
-        'type': 'RideCreated',
-        'companyId': 'c1',
+        'RideCreated': {'companyId': 'c1'},
       });
       expect(event.isRideCreated, isTrue);
       expect(event.isLocationUpdated, isFalse);
@@ -72,8 +90,7 @@ void main() {
 
     test('isLocationUpdated', () {
       final event = WebSocketEvent.fromJson({
-        'type': 'LocationUpdated',
-        'companyId': 'c1',
+        'LocationUpdated': {'companyId': 'c1'},
       });
       expect(event.isLocationUpdated, isTrue);
       expect(event.isChatMessage, isFalse);
@@ -81,21 +98,45 @@ void main() {
 
     test('isChatMessage', () {
       final event = WebSocketEvent.fromJson({
-        'type': 'ChatMessageSent',
-        'companyId': 'c1',
+        'ChatMessageSent': {'companyId': 'c1'},
       });
       expect(event.isChatMessage, isTrue);
       expect(event.isRideStatusChanged, isFalse);
     });
 
-    test('data stores original json', () {
+    test('data stores payload fields', () {
       final json = {
-        'type': 'RideCreated',
-        'companyId': 'c1',
-        'extra': 'data',
+        'RideCreated': {
+          'companyId': 'c1',
+          'extra': 'value',
+        },
       };
       final event = WebSocketEvent.fromJson(json);
-      expect(event.data['extra'], 'data');
+      expect(event.data['extra'], 'value');
+      expect(event.data['companyId'], 'c1');
+    });
+
+    test('driverId falls back to userId field', () {
+      final json = {
+        'LocationUpdated': {
+          'userId': 'driver-uuid',
+          'companyId': 'c1',
+        },
+      };
+      final event = WebSocketEvent.fromJson(json);
+      expect(event.driverId, 'driver-uuid');
+    });
+
+    test('driverId prefers driverId over userId', () {
+      final json = {
+        'RideAssigned': {
+          'driverId': 'driver-uuid',
+          'userId': 'other-uuid',
+          'companyId': 'c1',
+        },
+      };
+      final event = WebSocketEvent.fromJson(json);
+      expect(event.driverId, 'driver-uuid');
     });
   });
 }

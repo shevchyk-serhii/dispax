@@ -216,6 +216,40 @@ void main() {
       ],
     );
 
+    test('apiClient is the same instance after repeated logins', () async {
+      // Regression: previously a new ApiClient was created on each login,
+      // causing RideBloc (which holds a reference to the original) to lose the token.
+      final person = TestFixtures.person();
+      when(() => mockApiClient.login(any(), any())).thenAnswer(
+        (_) async => {'person': person.toJson(), 'token': 'token-1'},
+      );
+
+      final bloc = buildBloc();
+      final clientBefore = bloc.apiClient;
+
+      bloc.add(const AuthLoginRequested(email: 'a@b.com', password: 'pass'));
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(bloc.apiClient, same(clientBefore));
+      bloc.close();
+    });
+
+    test('setAuthToken is called with new token on repeated login', () async {
+      // Token must be updated on the shared ApiClient instance so all services
+      // that hold a reference to it automatically use the new token.
+      final person = TestFixtures.person();
+      when(() => mockApiClient.login(any(), any())).thenAnswer(
+        (_) async => {'person': person.toJson(), 'token': 'new-token'},
+      );
+
+      final bloc = buildBloc();
+      bloc.add(const AuthLoginRequested(email: 'a@b.com', password: 'pass'));
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      verify(() => mockApiClient.setAuthToken('new-token')).called(1);
+      bloc.close();
+    });
+
     blocTest<AuthBloc, AuthState>(
       'AuthBiometricSetupRequested(false) sets biometricEnabled false',
       build: () {

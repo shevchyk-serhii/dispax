@@ -5,9 +5,11 @@ import 'api_client.dart';
 
 class UserService {
   final ApiClient privateApiClient;
+  final bool _ownsClient;
 
   UserService({ApiClient? apiClient})
-    : privateApiClient = apiClient ?? ApiClient();
+    : privateApiClient = apiClient ?? ApiClient(),
+      _ownsClient = apiClient == null;
 
   Future<List<Person>> getClients() async {
     try {
@@ -94,6 +96,6 @@ class UserService {
   }
 
   void dispose() {
-    privateApiClient.dispose();
+    if (_ownsClient) privateApiClient.dispose();
   }
 }
