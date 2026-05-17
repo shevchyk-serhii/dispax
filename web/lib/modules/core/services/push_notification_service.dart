@@ -27,7 +27,7 @@ class PushNotificationService {
 
   Future<void> initialize() async {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final isSimulator = !Platform.environment.containsKey('SIMULATOR_DEVICE_NAME');
+      final isSimulator = Platform.environment.containsKey('SIMULATOR_DEVICE_NAME');
       if (isSimulator) {
         debugPrint('PushNotificationService: Skipping initialization on iOS Simulator');
         return;
