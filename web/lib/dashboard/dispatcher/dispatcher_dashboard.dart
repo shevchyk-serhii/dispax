@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
+import '../../screens/create_ride_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/expense_screen.dart';
 import '../../screens/ride_export_screen.dart';
@@ -37,9 +40,16 @@ class DispatcherDashboard extends StatefulWidget {
 class _DispatcherDashboardState extends State<DispatcherDashboard> {
   DateTime _selectedDate = DateTime.now();
   int _mobileTabIndex = 0;
+  late RideBloc _rideBloc;
 
   // Primary tabs (shown in bottom nav)
   static const int _primaryTabCount = 4;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rideBloc = context.read<RideBloc>();
+  }
 
   // All screens in order
   List<Widget> get _allScreens => [
@@ -74,6 +84,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     const NotificationCenterScreen(),                // 24
     const GdprScreen(),                               // 25
     const SessionManagementScreen(),                  // 26
+    CreateRideScreen(rideBloc: _rideBloc),            // 27
   ];
 
   @override
@@ -151,6 +162,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   Widget _buildMoreScreen() {
     final items = [
+      _MoreMenuItem(Icons.add_circle, 'New Ride', 27, AppColors.success),
       _MoreMenuItem(Icons.euro, 'Earnings', 4, AppColors.dispatcherColor),
       _MoreMenuItem(Icons.access_time_filled, 'Peak Hours', 5, AppColors.warning),
       _MoreMenuItem(Icons.diamond, 'Client Value', 6, AppColors.clientColor),
