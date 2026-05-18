@@ -718,6 +718,227 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       case (Method.GET, p) if p.contains("/api/flights/") =>
         getMockResponseBody(p, "GET")
       case (Method.PATCH, "/api/v2/health") => """{"error":"Method not allowed"}"""
+
+      // ── Audit ──
+      case (Method.GET, p) if p.startsWith("/api/audit") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","action":"LOGIN","userId":"11111111-1111-1111-1111-111111111111","timestamp":"2026-05-18T10:00:00Z"}]"""
+
+      // ── Blacklist ──
+      case (Method.GET, "/api/blacklist") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","personId":"11111111-1111-1111-1111-111111111111","reason":"Repeated no-shows"}]"""
+      case (Method.GET, p) if p.startsWith("/api/blacklist/check") =>
+        """{"blacklisted":false}"""
+      case (Method.POST, "/api/blacklist") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","personId":"11111111-1111-1111-1111-111111111111"}"""
+
+      // ── Client companies ──
+      case (Method.GET, "/api/client-companies") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","name":"Acme Corp"}]"""
+      case (Method.GET, p) if p.startsWith("/api/client-companies/") && p.endsWith("/members") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","name":"John Doe"}]"""
+      case (Method.GET, p) if p.startsWith("/api/client-companies/") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"Acme Corp","email":"billing@acme.com"}"""
+      case (Method.POST, "/api/client-companies") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"Acme Corp"}"""
+      case (Method.PUT, p) if p.startsWith("/api/client-companies/") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"Acme Corp Updated"}"""
+
+      // ── Company settings ──
+      case (Method.GET, "/api/company/settings") =>
+        """{"companyName":"Oktopus GmbH","timezone":"Europe/Berlin","currency":"EUR"}"""
+      case (Method.PUT, "/api/company/settings") =>
+        """{"companyName":"Oktopus GmbH","timezone":"Europe/Berlin","currency":"EUR"}"""
+      case (Method.GET, "/api/company/tariff") =>
+        """{"baseRate":2.50,"perKmRate":1.20,"minimumFare":5.00}"""
+      case (Method.PUT, "/api/company/tariff") =>
+        """{"baseRate":2.50,"perKmRate":1.20,"minimumFare":5.00}"""
+
+      // ── Emergency ──
+      case (Method.POST, "/api/emergency/reassign") =>
+        """{"rideId":"11111111-1111-1111-1111-111111111111","status":"Reassigned"}"""
+      case (Method.GET, "/api/emergency/reassignments") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","reason":"Driver accident"}]"""
+      case (Method.GET, p) if p.startsWith("/api/emergency/suggest-drivers/") =>
+        """[{"id":"33333333-3333-3333-3333-333333333333","name":"Alex Driver"}]"""
+
+      // ── GDPR ──
+      case (Method.GET, "/api/gdpr/consents") =>
+        """{"marketingConsent":false,"analyticsConsent":true}"""
+      case (Method.PUT, "/api/gdpr/consents") =>
+        """{"marketingConsent":false,"analyticsConsent":true}"""
+      case (Method.GET, "/api/gdpr/export") =>
+        """{"userId":"11111111-1111-1111-1111-111111111111","rides":[],"profile":{}}"""
+      case (Method.POST, "/api/gdpr/deletion-request") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","status":"Pending"}"""
+      case (Method.GET, "/api/gdpr/requests") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","status":"Pending"}]"""
+
+      // ── Geofences ──
+      case (Method.GET, "/api/geofences") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Zone"}]"""
+      case (Method.POST, "/api/geofences") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Zone"}"""
+      case (Method.PUT, p) if p.startsWith("/api/geofences/") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Zone Extended"}"""
+      case (Method.GET, "/api/geofences/alerts") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","type":"Enter"}]"""
+      case (Method.GET, p) if p.startsWith("/api/geofences/alerts/driver/") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","type":"Enter"}]"""
+
+      // ── Notifications ──
+      case (Method.GET, "/api/notifications") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","type":"RideAssignment","read":false}]"""
+      case (Method.GET, "/api/notifications/unread-count") =>
+        """{"count":3}"""
+      case (Method.PUT, p) if p.startsWith("/api/notifications/") && p.endsWith("/read") =>
+        """{"message":"Notification marked as read"}"""
+      case (Method.PUT, "/api/notifications/read-all") =>
+        """{"message":"All notifications marked as read"}"""
+      case (Method.GET, "/api/notification-preferences") =>
+        """{"emailEnabled":true,"smsEnabled":false,"pushEnabled":true}"""
+      case (Method.PUT, "/api/notification-preferences") =>
+        """{"emailEnabled":true,"smsEnabled":false,"pushEnabled":true}"""
+
+      // ── Ride pools ──
+      case (Method.GET, "/api/pools") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Morning Pool","status":"Open"}]"""
+      case (Method.GET, "/api/pools/open") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Morning Pool","status":"Open"}]"""
+      case (Method.GET, p) if p.startsWith("/api/pools/ride/") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Morning Pool","status":"Open"}"""
+      case (Method.GET, p) if p.startsWith("/api/pools/") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Morning Pool","rides":[]}"""
+      case (Method.POST, "/api/pools") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Morning Pool","status":"Open"}"""
+      case (Method.POST, p) if p.matches("/api/pools/.+/rides") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","rides":["22222222-2222-2222-2222-222222222222"]}"""
+      case (Method.PUT, p) if p.matches("/api/pools/.+/assign") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","driverId":"33333333-3333-3333-3333-333333333333"}"""
+      case (Method.PUT, p) if p.matches("/api/pools/.+/status") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","status":"Closed"}"""
+
+      // ── Sessions ──
+      case (Method.GET, "/api/sessions") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","deviceInfo":"iPhone 15"}]"""
+      case (Method.POST, "/api/sessions") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","deviceInfo":"iPhone 15","token":"session-token"}"""
+
+      // ── Users extended ──
+      case (Method.GET, "/api/users/drivers") =>
+        """[{"id":"22222222-2222-2222-2222-222222222222","name":"Jane Driver","role":"DRIVER","status":"ACTIVE"}]"""
+      case (Method.GET, "/api/users/clients") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","name":"John Client","role":"CLIENT","status":"ACTIVE"}]"""
+      case (Method.GET, "/api/users/stats") =>
+        """{"totalUsers":100,"activeDrivers":20,"activeClients":75,"totalRides":500}"""
+      case (Method.PUT, "/api/users/change-password") =>
+        """{"message":"Password changed successfully"}"""
+      case (Method.POST, "/api/users/fcm-token") =>
+        """{"message":"FCM token registered"}"""
+
+      // ── Drivers extended ──
+      case (Method.PUT, p) if p.matches("/api/drivers/.+/location") =>
+        """{"message":"Location updated"}"""
+      case (Method.PUT, p) if p.matches("/api/drivers/.+/availability") =>
+        """{"message":"Availability updated"}"""
+      case (Method.GET, p) if p.matches("/api/drivers/.+/availability") =>
+        """{"available":true,"driverId":"22222222-2222-2222-2222-222222222222"}"""
+      case (Method.GET, "/api/drivers/available") =>
+        """[{"id":"22222222-2222-2222-2222-222222222222","name":"Jane Driver","status":"Available"}]"""
+      case (Method.GET, p) if p.matches("/api/rides/.+/driver-location") =>
+        """{"latitude":48.1351,"longitude":11.5820,"heading":90.0}"""
+
+      // ── Client addresses ──
+      case (Method.GET, p) if p.matches("/api/clients/.+/addresses") =>
+        """[{"id":"22222222-2222-2222-2222-222222222222","label":"Home","address":"Leopoldstraße 1, Munich"}]"""
+      case (Method.POST, p) if p.matches("/api/clients/.+/addresses") =>
+        """{"id":"22222222-2222-2222-2222-222222222222","label":"Home","address":"Leopoldstraße 1, Munich"}"""
+
+      // ── Expenses ──
+      case (Method.GET, "/api/expenses") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","amount":15.50,"category":"Fuel"}]"""
+      case (Method.POST, "/api/expenses") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","amount":15.50,"category":"Fuel"}"""
+
+      // ── Export ──
+      case (Method.GET, p) if p.startsWith("/api/export/datev") =>
+        """{"format":"DATEV","generatedAt":"2026-05-18T10:00:00Z","records":[]}"""
+
+      // ── Rides extended ──
+      case (Method.GET, "/api/rides/pending") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","status":"Pending"}]"""
+      case (Method.GET, "/api/rides/unpaid") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","status":"Completed","paid":false}]"""
+      case (Method.GET, p) if p.startsWith("/api/rides/driver/") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","status":"InProgress"}]"""
+      case (Method.GET, p) if p.startsWith("/api/rides/client/") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","status":"Completed"}]"""
+      case (Method.PUT, p) if p.matches("/api/rides/.+/status") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","status":"InProgress"}"""
+      case (Method.PUT, p) if p.matches("/api/rides/.+/assign-driver") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","status":"Assigned"}"""
+      case (Method.PUT, p) if p.matches("/api/rides/.+/reassign-driver") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","status":"Assigned"}"""
+      case (Method.PUT, p) if p.matches("/api/rides/.+/cancel") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","status":"Cancelled"}"""
+      case (Method.PUT, p) if p.matches("/api/rides/.+/payment") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","paid":true,"amount":45.00}"""
+      case (Method.POST, p) if p.matches("/api/rides/.+/airport-timing") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","flightNumber":"LH1234"}"""
+      case (Method.POST, p) if p.matches("/api/rides/.+/client-location") =>
+        """{"message":"Location recorded"}"""
+      case (Method.GET, p) if p.matches("/api/rides/.+/locations") =>
+        """[{"latitude":48.1351,"longitude":11.5820,"timestamp":"2026-05-18T10:00:00Z"}]"""
+      case (Method.POST, p) if p.matches("/api/rides/.+/chat") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","message":"I am at the entrance"}"""
+      case (Method.GET, p) if p.matches("/api/rides/.+/chat") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","message":"I am at the entrance"}]"""
+      case (Method.POST, p) if p.matches("/api/rides/.+/rate") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","rating":5}"""
+      case (Method.GET, p) if p.matches("/api/rides/.+/rating") =>
+        """{"rating":5,"comment":"Excellent service"}"""
+
+      // ── Ride templates ──
+      case (Method.GET, "/api/ride-templates") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Monday Morning"}]"""
+      case (Method.POST, "/api/ride-templates") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Monday Morning"}"""
+      case (Method.POST, p) if p.matches("/api/ride-templates/.+/generate") =>
+        """{"id":"22222222-2222-2222-2222-222222222222","status":"Pending"}"""
+
+      // ── Stats ──
+      case (Method.GET, "/api/stats/rides") =>
+        """{"totalRides":500,"completedRides":450,"cancelledRides":50}"""
+      case (Method.GET, "/api/stats/rides/daily") =>
+        """[{"date":"2026-05-18","rides":12}]"""
+      case (Method.GET, "/api/stats/drivers") =>
+        """{"totalDrivers":20,"activeDrivers":15,"averageRating":4.7}"""
+      case (Method.GET, "/api/stats/payroll") =>
+        """[{"driverId":"22222222-2222-2222-2222-222222222222","earnings":2500.00}]"""
+      case (Method.GET, "/api/stats/cancellations") =>
+        """{"cancellationRate":0.10,"topReasons":["Client no-show"]}"""
+      case (Method.GET, "/api/stats/peak-hours") =>
+        """[{"hour":8,"rideCount":45},{"hour":17,"rideCount":60}]"""
+      case (Method.GET, "/api/stats/client-value") =>
+        """[{"clientId":"11111111-1111-1111-1111-111111111111","totalSpent":1200.00}]"""
+      case (Method.GET, "/api/stats/driver-performance") =>
+        """[{"driverId":"22222222-2222-2222-2222-222222222222","completedRides":80,"rating":4.8}]"""
+
+      // ── Schedules ──
+      case (Method.GET, "/api/schedules") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","driverId":"22222222-2222-2222-2222-222222222222","date":"2026-06-02"}]"""
+      case (Method.POST, "/api/schedules") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","driverId":"22222222-2222-2222-2222-222222222222"}"""
+      case (Method.POST, "/api/schedules/batch") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111"},{"id":"22222222-2222-2222-2222-222222222222"}]"""
+      case (Method.GET, p) if p.startsWith("/api/schedules/driver/") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","date":"2026-06-02"}]"""
+      case (Method.GET, p) if p.startsWith("/api/schedules/day/") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","shiftStart":"08:00"}]"""
+
+      // ── WebSocket ──
+      case (Method.POST, "/api/ws/ticket") =>
+        """{"ticket":"ws-ticket-abc123","expiresIn":60}"""
+
       case _ => """{"message":"Success"}"""
     }
   }
@@ -1407,6 +1628,27 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       case (Method.POST, "/api/users/avatar") => Status.Ok
       case (Method.GET, _) if authToken.isEmpty => Status.Unauthorized
       case (Method.GET, _) if authToken.contains("invalid-token") => Status.Unauthorized
+      // Admin-only GET endpoints
+      case (Method.GET, p) if authToken.isDefined && authToken.exists(_.contains("client")) &&
+          (p.startsWith("/api/audit") || p.startsWith("/api/gdpr/requests") ||
+           p.startsWith("/api/export") || p.startsWith("/api/geofences/alerts") ||
+           p.startsWith("/api/emergency")) => Status.Forbidden
+      // Public endpoints that don't require auth
+      case (Method.POST, "/api/auth/password/reset-request") => Status.Ok
+      // New endpoints: unauthenticated access returns 401
+      case (_, _) if authToken.isEmpty => Status.Unauthorized
+      // New POST endpoints returning 201 (resource creation)
+      case (Method.POST, p) if authToken.isDefined && (
+          p == "/api/blacklist" || p == "/api/client-companies" ||
+          p.matches("/api/clients/.+/addresses") || p == "/api/expenses" ||
+          p == "/api/gdpr/deletion-request" || p == "/api/geofences" ||
+          p == "/api/pools" || p == "/api/ride-templates" ||
+          p.matches("/api/ride-templates/.+/generate") ||
+          p == "/api/schedules" || p == "/api/schedules/batch" || p == "/api/sessions" ||
+          p.matches("/api/rides/.+/chat") || p.matches("/api/rides/.+/rate")
+        ) => Status.Created
+      // DELETE returns 204 for all new endpoints
+      case (Method.DELETE, _) if authToken.isDefined => Status.NoContent
       case _ => Status.Ok
     }
   }
@@ -1717,19 +1959,12 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       executeRequest(request)
   }
 
-  When("""^I send a (POST|PUT|DELETE|PATCH) request to "(.+)" without authentication$""") {
-    (method: String, endpoint: String) =>
+  When("""^I send a PATCH request to "(.+)" without authentication$""") {
+    (endpoint: String) =>
       val savedToken = authToken
       authToken = None
-      val httpMethod = method.toUpperCase match {
-        case "POST"   => Method.POST
-        case "PUT"    => Method.PUT
-        case "DELETE" => Method.DELETE
-        case "PATCH"  => Method.PATCH
-        case _        => Method.POST
-      }
       val request = Request(
-        method = httpMethod,
+        method = Method.PATCH,
         url = URL.decode(s"http://localhost:8080$endpoint").toOption.get
       )
       executeRequest(request)

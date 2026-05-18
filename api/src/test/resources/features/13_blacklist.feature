@@ -26,7 +26,7 @@ Feature: Blacklist Management
     Given I am authenticated as an admin
     When I send a GET request to "/api/blacklist/check?personId=11111111-1111-1111-1111-111111111111"
     Then the response status should be 200
-    And the response should contain blacklist check result
+    And the response should contain blacklist check details
 
   Scenario: Remove person from blacklist
     Given I am authenticated as an admin
