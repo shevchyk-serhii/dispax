@@ -8,12 +8,14 @@ import com.shevchyk.ride.infrastructure.http.{
   StatsRoutes,
   ExportRoutes
 }
-import com.shevchyk.ride.application.service.{RideService, ClientLocationService, ChatService}
+import com.shevchyk.ride.application.service.{RideService, ClientLocationService, ChatService, ClientAddressService}
 import com.shevchyk.ride.repository.{
   RideRepository,
   PostgresRideRepository,
   ClientLocationRepository,
   PostgresClientLocationRepository,
+  ClientAddressRepository,
+  PostgresClientAddressRepository,
   ChatMessageRepository,
   ExpenseRepository,
   RideTemplateRepository,
@@ -28,6 +30,7 @@ import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.schedule.infrastructure.http.ScheduleRoutes
 import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
 import com.shevchyk.schedule.repository.ScheduleDayRepository
+import com.shevchyk.ride.infrastructure.http.ClientAddressRoutes
 import com.shevchyk.app.routes.{
   UserRoutes,
   WebSocketRoutes,
@@ -113,6 +116,7 @@ object Application extends ZIOAppDefault:
   private val emergencyRoutes       = EmergencyRoutes.authenticatedRoutes
   private val ridePoolRoutes        = RidePoolRoutes.authenticatedRoutes
   private val notifPrefRoutes       = NotificationPreferenceRoutes.authenticatedRoutes
+  private val clientAddressRoutes   = ClientAddressRoutes.authenticatedRoutes
 
   private val mockRoutes =
     if sys.env.getOrElse("ENABLE_MOCK_ROUTES", "false") == "true" then MockRideRoutes.routes else Routes.empty
@@ -145,7 +149,7 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + schedule + notification + PostgreSQL repositories") *>
         ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
         Server.serve(
-          (publicRoutes ++ mockRoutes ++ rideRoutes ++ clientLocationRoutes ++ chatRoutes ++ expenseRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ rideTemplateRoutes ++ notificationRoutes ++ statsRoutes ++ exportRoutes ++ ratingRoutes ++ auditRoutes ++ companySettingsRoutes ++ geofenceRoutes ++ gdprRoutes ++ sessionRoutes ++ blacklistRoutes ++ emergencyRoutes ++ ridePoolRoutes ++ notifPrefRoutes ++ wsRoutes)
+          (publicRoutes ++ mockRoutes ++ rideRoutes ++ clientLocationRoutes ++ chatRoutes ++ expenseRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ rideTemplateRoutes ++ notificationRoutes ++ statsRoutes ++ exportRoutes ++ ratingRoutes ++ auditRoutes ++ companySettingsRoutes ++ geofenceRoutes ++ gdprRoutes ++ sessionRoutes ++ blacklistRoutes ++ emergencyRoutes ++ ridePoolRoutes ++ notifPrefRoutes ++ clientAddressRoutes ++ wsRoutes)
             .handleErrorCauseZIO { cause =>
               ZIO
                 .logErrorCause("Unhandled server error", cause)
@@ -191,6 +195,8 @@ object Application extends ZIOAppDefault:
       EmergencyReassignmentRepository.layer,
       RidePoolRepository.layer,
       NotificationPreferenceRepository.layer,
+      ClientAddressRepository.layer,
+      ClientAddressService.layer,
       JwtConfig.live,
       JwtService.live,
       AuthService.live,

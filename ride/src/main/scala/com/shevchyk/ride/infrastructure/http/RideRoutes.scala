@@ -5,7 +5,7 @@ import com.shevchyk.auth.middleware.{AuthMiddleware, AuthenticatedUser, UuidPars
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.AuditService
 import com.shevchyk.core.domain.{AuditAction, AuditLogEntry, AuditLogId, CompanyId, PersonId, PersonRole, RideId}
-import com.shevchyk.ride.application.service.{RideService, ClientLocationService, ChatService}
+import com.shevchyk.ride.application.service.{RideService, ClientLocationService, ChatService, ClientAddressService}
 import com.shevchyk.ride.repository.RideRatingRepository
 import com.shevchyk.ride.domain.{RideRating, RideRatingId, CreateRatingRequest}
 import com.shevchyk.ride.domain.*
@@ -89,8 +89,11 @@ object RideRoutes {
       case "ADMIN"      => PersonRole.Admin
       case _            => PersonRole.Client
 
-  val authenticatedRoutes: Routes[RideService & JwtService, Response] = Routes(
-    Method.POST / "api" / "rides"                                       -> authenticatedJsonHandler[RideService, CreateRideApiRequest] { (user, apiRequest) =>
+  val authenticatedRoutes: Routes[RideService & ClientAddressService & JwtService, Response] = Routes(
+    Method.POST / "api" / "rides"                                       -> authenticatedJsonHandler[
+      RideService & ClientAddressService,
+      CreateRideApiRequest
+    ] { (user, apiRequest) =>
       (for {
         _             <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER")
         companyId     <- UuidParser.requireCompanyId(user.companyId)
@@ -107,6 +110,18 @@ object RideRoutes {
                            }
         service       <- ZIO.service[RideService]
         ride          <- service.createRide(domainRequest)
+        // Record from/to addresses for the client after successful ride creation
+        addrService   <- ZIO.service[ClientAddressService]
+        _             <-
+          addrService
+            .recordUsage(ride.clientId, ride.pickupLocation.address, "Pickup", None, None)
+            .tapError(e => ZIO.logWarning(s"Failed to record from address: $e"))
+            .ignore
+        _             <-
+          addrService
+            .recordUsage(ride.clientId, ride.dropoffLocation.address, "Dropoff", None, None)
+            .tapError(e => ZIO.logWarning(s"Failed to record to address: $e"))
+            .ignore
         rideDto        = RideDto.fromDomain(ride)
       } yield Response(Status.Created, body = Body.fromString(rideDto.toJson))).catchAll {
         case response: Response => ZIO.succeed(response)
