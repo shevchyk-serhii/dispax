@@ -28,7 +28,7 @@ class AppHeader extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppDimensions.radiusXXLarge),
             child: Image.asset(
-              'assets/oktopus_icon.png',
+              'assets/dispax_icon.png',
               width: AppDimensions.iconLogo,
               height: AppDimensions.iconLogo,
               fit: BoxFit.contain,
@@ -37,7 +37,7 @@ class AppHeader extends StatelessWidget {
         ),
         const SizedBox(height: AppDimensions.paddingLarge),
         Text(
-          'Der Oktopus',
+          'Dispax',
           style: AppStyles.glassHeadlineLarge,
         ),
         const SizedBox(height: AppDimensions.paddingSmall),

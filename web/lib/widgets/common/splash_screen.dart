@@ -89,7 +89,7 @@ class SplashScreenContentState extends State<SplashScreenContent>
               opacity: fadeAnimation,
               child: BlocBuilder<InitializationBloc, InitializationState>(
                 builder: (context, state) {
-                  String statusText = 'Initializing Oktopus Taxi...';
+                  String statusText = 'Initializing Dispax...';
                   bool isLoading = true;
                   bool showRetry = false;
 
@@ -97,7 +97,7 @@ class SplashScreenContentState extends State<SplashScreenContent>
                     statusText = state.statusMessage;
                     isLoading = true;
                   } else if (state is InitializationCompleted) {
-                    statusText = 'Welcome to Oktopus Taxi!';
+                    statusText = 'Welcome to Dispax!';
                     isLoading = false;
                   } else if (state is InitializationError) {
                     statusText = state.errorMessage;
@@ -130,7 +130,7 @@ class SplashScreenContentState extends State<SplashScreenContent>
                       const SizedBox(height: 40),
 
                       const Text(
-                        'Oktopus Taxi',
+                        'Dispax',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 32,

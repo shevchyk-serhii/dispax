@@ -156,9 +156,25 @@ lazy val notification = (project in file("notification"))
     libraryDependencies ++= commonDependencies ++ jsonDependencies ++ firebaseDependencies
   )
 
+lazy val pdfDependencies = Seq(
+  "com.github.librepdf" % "openpdf" % "2.0.3"
+)
+
+lazy val billing = (project in file("billing"))
+  .dependsOn(
+    core % "compile->compile;test->test",
+    auth % "compile->compile;test->test",
+    ride % "compile->compile;test->test"
+  )
+  .settings(
+    name := "oktopus-billing",
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ pdfDependencies ++ testcontainersDependencies,
+    Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
+  )
+
 lazy val root = (project in file("."))
-  .aggregate(core, auth, ride, driver, notification, schedule)
-  .dependsOn(core, auth, ride, driver, notification, schedule)
+  .aggregate(core, auth, ride, driver, notification, schedule, billing)
+  .dependsOn(core, auth, ride, driver, notification, schedule, billing)
   .settings(
     name                        := "oktopus",
     Compile / scalaSource       := baseDirectory.value / "api" / "src" / "main" / "scala",

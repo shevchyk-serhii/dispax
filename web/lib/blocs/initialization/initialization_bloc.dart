@@ -4,7 +4,7 @@ import 'initialization_event.dart';
 import 'initialization_state.dart';
 
 class InitializationBloc extends Bloc<InitializationEvent, InitializationState> {
-  InitializationBloc() : super(const InitializationLoading('Initializing Oktopus Taxi...')) {
+  InitializationBloc() : super(const InitializationLoading('Initializing Dispax...')) {
     on<InitializeApp>(onInitializeApp);
     on<RetryInitialization>(onRetryInitialization);
   }

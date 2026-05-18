@@ -3,16 +3,17 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ─── Brand Core (Deep Navy) ───
-  static const Color brand900 = Color(0xFF0A0E1A);
-  static const Color brand800 = Color(0xFF1E293B);
-  static const Color brand700 = Color(0xFF334155);
-  static const Color brand600 = Color(0xFF475569);
+  // ─── Brand / Primary — Violet ───
+  static const Color primary = Color(0xFF7C3AED);       // Violet 600
+  static const Color primaryLight = Color(0xFFA855F7);  // Violet 500
+  static const Color primaryDark = Color(0xFF5B21B6);   // Violet 800
+  static const Color primarySurface = Color(0xFFF5F3FF); // Violet 50 (light bg tint)
 
-  // Primary (Info Blue)
-  static const Color primary = Color(0xFF3B82F6);
-  static const Color primaryLight = Color(0xFF60A5FA);
-  static const Color primaryDark = Color(0xFF1D4ED8);
+  // ─── Brand Core (Deep Violet-Black) ───
+  static const Color brand900 = Color(0xFF0F0F13);
+  static const Color brand800 = Color(0xFF1C1C24);
+  static const Color brand700 = Color(0xFF26263A);
+  static const Color brand600 = Color(0xFF3A3A55);
 
   // ─── Role Accent Colors ───
   static const Color dispatcherColor = Color(0xFFF59E0B); // Amber
@@ -28,41 +29,37 @@ class AppColors {
 
   // ─── Login Gradient ───
   static const List<Color> primaryGradient = [
-    Color(0xFF1E293B),
-    Color(0xFF0F172A),
-    Color(0xFF020617),
+    Color(0xFF1C1C24),
+    Color(0xFF0F0F13),
+    Color(0xFF0A0A0F),
   ];
 
   // ─── Role Header Gradients ───
-  // Dispatcher: dark navy base (shared dark header style)
   static const List<Color> dispatcherGradient = [
-    Color(0xFF1E293B),
-    Color(0xFF0F172A),
-    Color(0xFF020617),
+    Color(0xFF1C1C24),
+    Color(0xFF0F0F13),
+    Color(0xFF0A0A0F),
   ];
 
-  // Driver: dark navy base
   static const List<Color> driverGradient = [
-    Color(0xFF1E293B),
-    Color(0xFF0F172A),
-    Color(0xFF020617),
+    Color(0xFF1C1C24),
+    Color(0xFF0F0F13),
+    Color(0xFF0A0A0F),
   ];
 
-  // Secretary: dark navy → violet
   static const List<Color> secretaryGradient = [
-    Color(0xFF1E293B),
+    Color(0xFF1C1C24),
     Color(0xFF3B0764),
     Color(0xFF7C3AED),
   ];
 
-  // Client: dark navy base
   static const List<Color> clientGradient = [
-    Color(0xFF1E293B),
-    Color(0xFF0F172A),
-    Color(0xFF020617),
+    Color(0xFF1C1C24),
+    Color(0xFF0F0F13),
+    Color(0xFF0A0A0F),
   ];
 
-  // ─── Role Vivid Gradients (for stat cards, accents) ───
+  // ─── Role Vivid Gradients ───
   static const List<Color> dispatcherVividGradient = [
     Color(0xFFFBBF24),
     Color(0xFFD97706),
@@ -88,23 +85,31 @@ class AppColors {
   ];
 
   // ─── Semantic Colors ───
-  static const Color success = Color(0xFF22C55E);
+  static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
 
   // ─── Status Colors ───
-  static const Color rideRequested = Color(0xFFF59E0B);      // Amber
-  static const Color rideAssigned = Color(0xFF3B82F6);        // Blue
-  static const Color rideInProgress = Color(0xFF14B8A6);      // Teal
-  static const Color rideCompleted = Color(0xFF22C55E);       // Green
-  static const Color rideCancelled = Color(0xFFEF4444);       // Red
+  static const Color rideRequested = Color(0xFFF59E0B);
+  static const Color rideAssigned = Color(0xFF3B82F6);
+  static const Color rideInProgress = Color(0xFF14B8A6);
+  static const Color rideCompleted = Color(0xFF10B981);
+  static const Color rideCancelled = Color(0xFFEF4444);
 
+  // Status — light backgrounds (light mode)
   static const Color rideRequestedBg = Color(0xFFFFFBEB);
   static const Color rideAssignedBg = Color(0xFFEFF6FF);
   static const Color rideInProgressBg = Color(0xFFF0FDFA);
   static const Color rideCompletedBg = Color(0xFFF0FDF4);
   static const Color rideCancelledBg = Color(0xFFFEF2F2);
+
+  // Status — dark backgrounds (dark mode)
+  static const Color rideRequestedBgDark = Color(0xFF292210);
+  static const Color rideAssignedBgDark = Color(0xFF0F1E38);
+  static const Color rideInProgressBgDark = Color(0xFF0D2620);
+  static const Color rideCompletedBgDark = Color(0xFF0B2317);
+  static const Color rideCancelledBgDark = Color(0xFF2A0E0E);
 
   static const Color rideRequestedBorder = Color(0xFFFCD34D);
   static const Color rideAssignedBorder = Color(0xFF93C5FD);
@@ -118,20 +123,39 @@ class AppColors {
   static const Color rideCompletedText = Color(0xFF166534);
   static const Color rideCancelledText = Color(0xFF991B1B);
 
-  // ─── Text Colors ───
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color textLight = Color(0xFF94A3B8);    // text-tertiary
+  // Status text — dark mode
+  static const Color rideRequestedTextDark = Color(0xFFFBBF24);
+  static const Color rideAssignedTextDark = Color(0xFF60A5FA);
+  static const Color rideInProgressTextDark = Color(0xFF2DD4BF);
+  static const Color rideCompletedTextDark = Color(0xFF34D399);
+  static const Color rideCancelledTextDark = Color(0xFFF87171);
+
+  // ─── Text Colors — Light ───
+  static const Color textPrimary = Color(0xFF111111);
+  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color textLight = Color(0xFF9CA3AF);
   static const Color textOnPrimary = Colors.white;
 
-  // ─── Surface Colors ───
-  static const Color background = Color(0xFFF8FAFC);  // surface-secondary
-  static const Color surface = Colors.white;            // surface-primary
-  static const Color surfaceVariant = Color(0xFFF1F5F9); // surface-tertiary
+  // ─── Text Colors — Dark ───
+  static const Color textPrimaryDark = Color(0xFFF9FAFB);
+  static const Color textSecondaryDark = Color(0xFF9CA3AF);
+  static const Color textLightDark = Color(0xFF6B7280);
+
+  // ─── Surface Colors — Light ───
+  static const Color background = Color(0xFFFAFAFA);
+  static const Color surface = Colors.white;
+  static const Color surfaceVariant = Color(0xFFF4F4F8);
+
+  // ─── Surface Colors — Dark ───
+  static const Color backgroundDark = Color(0xFF0F0F13);
+  static const Color surfaceDark = Color(0xFF1C1C24);
+  static const Color surfaceVariantDark = Color(0xFF26263A);
 
   // ─── Border Colors ───
-  static const Color borderPrimary = Color(0xFFE2E8F0);
-  static const Color borderSecondary = Color(0xFFCBD5E1);
+  static const Color borderPrimary = Color(0xFFE5E7EB);
+  static const Color borderSecondary = Color(0xFFD1D5DB);
+  static const Color borderDark = Color(0xFF2E2E42);
+  static const Color borderSecondaryDark = Color(0xFF3A3A55);
 
   // ─── Glass Effect ───
   static Color glassBackground = Colors.white.withValues(alpha: 0.12);

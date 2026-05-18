@@ -161,10 +161,10 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppColors.clientColor : Colors.white.withAlpha(40),
+          color: selected ? AppColors.primary : Colors.white.withAlpha(40),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? AppColors.clientColor : Colors.white.withAlpha(80),
+            color: selected ? AppColors.primary : Colors.white.withAlpha(80),
           ),
         ),
         child: Text(
@@ -554,8 +554,8 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                         icon: const Icon(Icons.star, size: 16),
                         label: const Text('Rate this ride'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.amber.shade700,
-                          side: BorderSide(color: Colors.amber.shade300),
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           visualDensity: VisualDensity.compact,
                         ),
@@ -585,14 +585,14 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Thank you for your rating!'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Thank you for your rating!'), backgroundColor: AppColors.success),
           );
           loadRides(context);
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to submit rating: $e'), backgroundColor: Colors.red),
+            SnackBar(content: Text('Failed to submit rating: $e'), backgroundColor: AppColors.error),
           );
         }
       }

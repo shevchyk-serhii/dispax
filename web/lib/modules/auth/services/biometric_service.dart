@@ -97,7 +97,7 @@ class BiometricService {
       }
 
       final String localizedReason = reason ??
-          'Confirm your identity to sign in to Oktopus';
+          'Confirm your identity to sign in to Dispax';
 
       final bool didAuthenticate = await _localAuth.authenticate(
         localizedReason: localizedReason,
@@ -155,11 +155,11 @@ class BiometricService {
 
     final biometrics = await availableBiometrics;
     if (biometrics.contains(BiometricType.face)) {
-      return 'Use Face ID to sign in to Oktopus';
+      return 'Use Face ID to sign in to Dispax';
     } else if (biometrics.contains(BiometricType.fingerprint)) {
-      return 'Use Touch ID to sign in to Oktopus';
+      return 'Use Touch ID to sign in to Dispax';
     } else {
-      return 'Confirm your identity to sign in to Oktopus';
+      return 'Confirm your identity to sign in to Dispax';
     }
   }
 

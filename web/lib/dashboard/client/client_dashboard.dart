@@ -36,7 +36,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
       body: _buildCurrentTab(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.clientColor,
+        selectedItemColor: AppColors.primary,
         onTap: (index) {
           setState(() {
             _selectedIndex = index;

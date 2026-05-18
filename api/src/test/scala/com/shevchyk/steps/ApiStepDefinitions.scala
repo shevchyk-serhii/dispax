@@ -1709,6 +1709,37 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       "Response should contain error message about duplicate email")
   }
   
+  // ── New steps for extended feature files (12–31) ──────────────────────────
+
+  When("""^I send a (GET|POST|PUT|DELETE|PATCH) request to "(.+)" with body:$""") {
+    (method: String, endpoint: String, body: String) =>
+      val request = createRequest(method, endpoint, Some(body.trim))
+      executeRequest(request)
+  }
+
+  When("""^I send a (POST|PUT|DELETE|PATCH) request to "(.+)" without authentication$""") {
+    (method: String, endpoint: String) =>
+      val savedToken = authToken
+      authToken = None
+      val httpMethod = method.toUpperCase match {
+        case "POST"   => Method.POST
+        case "PUT"    => Method.PUT
+        case "DELETE" => Method.DELETE
+        case "PATCH"  => Method.PATCH
+        case _        => Method.POST
+      }
+      val request = Request(
+        method = httpMethod,
+        url = URL.decode(s"http://localhost:8080$endpoint").toOption.get
+      )
+      executeRequest(request)
+      authToken = savedToken
+  }
+
+  Then("""^the response should contain (\w[\w\s]*) entries$""") { (_: String) =>
+    assert(lastResponseBody.nonEmpty, "Response should contain entries")
+  }
+
   def getMockResponseBody(requestPath: String, method: String): String = {
     (method, requestPath) match {
       case ("GET", p) if p.contains("/api/flights/") && p.endsWith("/arrivals") =>

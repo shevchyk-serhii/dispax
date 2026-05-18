@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
-import '../../../theme/app_theme.dart';
 import 'login_form.dart';
 import 'error_message_card.dart';
 
@@ -30,8 +28,12 @@ class LoginCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: AppTheme.cardDecoration.copyWith(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(AppDimensions.radiusXLarge),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.12),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
@@ -40,13 +42,15 @@ class LoginCard extends StatelessWidget {
           children: [
             Text(
               'Welcome Back',
-              style: AppStyles.headlineMedium,
+              style: AppStyles.headlineMedium.copyWith(color: Colors.white),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppDimensions.paddingSmall),
             Text(
               'Sign in to continue',
-              style: AppStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
+              style: AppStyles.bodyLarge.copyWith(
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppDimensions.paddingXLarge + AppDimensions.paddingSmall),

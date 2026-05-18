@@ -1,5 +1,5 @@
 name: oktopus
-description: "Der Oktopus - Ride booking app"
+description: "Dispax - Ride dispatch platform"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -42,7 +42,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
-    - assets/oktopus_icon.png
+    - assets/dispax_icon.png
     - assets/driver_marker.svg
     - assets/client_marker.svg
     - assets/pickup_marker.svg
@@ -51,7 +51,7 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/oktopus_icon.png"
+  image_path: "assets/dispax_icon.png"
   remove_alpha_ios: true
   adaptive_icon_background: "#1976D2"
-  adaptive_icon_foreground: "assets/oktopus_icon.png"
+  adaptive_icon_foreground: "assets/dispax_icon.png"

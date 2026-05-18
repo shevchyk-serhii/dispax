@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../constants/app_colors.dart';
 
 class QuickLoginButtons extends StatelessWidget {
   final Function(String email) onQuickLogin;
@@ -15,58 +16,20 @@ class QuickLoginButtons extends StatelessWidget {
       crossAxisSpacing: 12,
       childAspectRatio: 2.2,
       children: [
-        _buildQuickLoginButton(
-          'Client',
-          'client1@bmw.de',
-          Icons.person,
-          Colors.green
-        ),
-        _buildQuickLoginButton(
-          'Driver',
-          'driver1@oktopus.de',
-          Icons.drive_eta,
-          Colors.blue
-        ),
-        _buildQuickLoginButton(
-          'Secretary',
-          'secretary@oktopus.de',
-          Icons.business_center,
-          Colors.purple
-        ),
-        _buildQuickLoginButton(
-          'Dispatcher',
-          'dispatcher@oktopus.de',
-          Icons.dashboard,
-          Colors.orange
-        ),
+        _buildButton('Client',     'client1@bmw.de',          Icons.person,           AppColors.clientColor),
+        _buildButton('Driver',     'driver1@oktopus.de',      Icons.drive_eta,        AppColors.driverColor),
+        _buildButton('Secretary',  'secretary@oktopus.de',    Icons.business_center,  AppColors.secretaryColor),
+        _buildButton('Dispatcher', 'dispatcher@oktopus.de',   Icons.dashboard,        AppColors.dispatcherColor),
       ],
     );
   }
 
-  Widget _buildQuickLoginButton(
-    String role,
-    String email,
-    IconData icon,
-    MaterialColor color
-  ) {
+  Widget _buildButton(String role, String email, IconData icon, Color color) {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color[400]!,
-            color[600]!,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color[300]!.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -78,16 +41,12 @@ class QuickLoginButtons extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 24,
-                ),
+                Icon(icon, color: color, size: 22),
                 const SizedBox(height: 4),
                 Text(
                   role,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),

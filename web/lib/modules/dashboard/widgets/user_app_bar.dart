@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/models/person.dart';
+import '../../../constants/app_colors.dart';
 
 class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Person user;
@@ -63,9 +64,10 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: CircleAvatar(
+              backgroundColor: AppColors.primary,
               child: Text(
                 user.name.split(' ').map((e) => e[0]).take(2).join(),
-                style: const TextStyle(fontSize: 12),
+                style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
               ),
             ),
           ),

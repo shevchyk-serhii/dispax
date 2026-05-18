@@ -101,8 +101,10 @@ class MyApp extends StatelessWidget {
         BlocProvider<AppStateBloc>(create: (context) => AppStateBloc()),
       ],
       child: MaterialApp(
-        title: 'Oktopus Taxi',
+        title: 'Dispax',
         theme: AppTheme.theme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
