@@ -43,7 +43,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   late RideBloc _rideBloc;
 
   // Primary tabs (shown in bottom nav)
-  static const int _primaryTabCount = 4;
+  static const int _primaryTabCount = 5;
 
   @override
   void didChangeDependencies() {
@@ -59,32 +59,32 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       onDateChanged: (date) => setState(() => _selectedDate = date),
     ),
     const AnalyticsPanel(),                      // 2: Analytics
-    _buildMoreScreen(),                          // 3: More menu
+    CreateRideScreen(rideBloc: _rideBloc),       // 3: New Ride
+    _buildMoreScreen(),                          // 4: More menu
     // Extended screens (accessed via More)
-    const DriverEarningsPanel(),                 // 4
-    const PeakHoursPanel(),                      // 5
-    const ClientValuePanel(),                    // 6
-    const DriverScorecardPanel(),                // 7
-    const DriverRatingsPanel(),                  // 8
-    const AuditLogScreen(),                      // 9
-    const AdminUsersScreen(),                    // 10
-    const CompanySettingsScreen(),               // 11
-    const ExpenseScreen(),                       // 12
-    const RideExportScreen(),                    // 13
-    const BillingScreen(),                       // 14
-    const RideTemplatesScreen(),                 // 15
-    const PaymentScreen(),                       // 16
-    const PayrollScreen(),                       // 17
-    const SettingsScreen(),                      // 18
-    const GeofenceScreen(),                      // 19
-    const DatevExportScreen(),                    // 20
-    const BlacklistScreen(),                      // 21
-    const EmergencyReassignmentScreen(),           // 22
-    const RidePoolScreen(),                          // 23
-    const NotificationCenterScreen(),                // 24
-    const GdprScreen(),                               // 25
-    const SessionManagementScreen(),                  // 26
-    CreateRideScreen(rideBloc: _rideBloc),            // 27
+    const DriverEarningsPanel(),                 // 5
+    const PeakHoursPanel(),                      // 6
+    const ClientValuePanel(),                    // 7
+    const DriverScorecardPanel(),                // 8
+    const DriverRatingsPanel(),                  // 9
+    const AuditLogScreen(),                      // 10
+    const AdminUsersScreen(),                    // 11
+    const CompanySettingsScreen(),               // 12
+    const ExpenseScreen(),                       // 13
+    const RideExportScreen(),                    // 14
+    const BillingScreen(),                       // 15
+    const RideTemplatesScreen(),                 // 16
+    const PaymentScreen(),                       // 17
+    const PayrollScreen(),                       // 18
+    const SettingsScreen(),                      // 19
+    const GeofenceScreen(),                      // 20
+    const DatevExportScreen(),                   // 21
+    const BlacklistScreen(),                     // 22
+    const EmergencyReassignmentScreen(),         // 23
+    const RidePoolScreen(),                      // 24
+    const NotificationCenterScreen(),            // 25
+    const GdprScreen(),                          // 26
+    const SessionManagementScreen(),             // 27
   ];
 
   @override
@@ -130,7 +130,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         children: _allScreens,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _mobileTabIndex < _primaryTabCount ? _mobileTabIndex : 3,
+        currentIndex: _mobileTabIndex < _primaryTabCount ? _mobileTabIndex : 4,
         onTap: (index) => setState(() => _mobileTabIndex = index),
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.dispatcherColor,
@@ -151,6 +151,11 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
             label: 'Analytics',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.add_circle_outline),
+            activeIcon: Icon(Icons.add_circle),
+            label: 'New Ride',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.grid_view_outlined),
             activeIcon: Icon(Icons.grid_view),
             label: 'More',
@@ -162,30 +167,29 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   Widget _buildMoreScreen() {
     final items = [
-      _MoreMenuItem(Icons.add_circle, 'New Ride', 27, AppColors.success),
-      _MoreMenuItem(Icons.euro, 'Earnings', 4, AppColors.dispatcherColor),
-      _MoreMenuItem(Icons.access_time_filled, 'Peak Hours', 5, AppColors.warning),
-      _MoreMenuItem(Icons.diamond, 'Client Value', 6, AppColors.clientColor),
-      _MoreMenuItem(Icons.leaderboard, 'Drivers', 7, AppColors.driverColor),
-      _MoreMenuItem(Icons.star, 'Ratings', 8, Colors.amber),
-      _MoreMenuItem(Icons.history, 'Audit Log', 9, AppColors.info),
-      _MoreMenuItem(Icons.admin_panel_settings, 'Admin', 10, AppColors.secretaryColor),
-      _MoreMenuItem(Icons.business, 'Company', 11, AppColors.dispatcherColor),
-      _MoreMenuItem(Icons.receipt_long, 'Expenses', 12, Colors.teal),
-      _MoreMenuItem(Icons.download, 'Export', 13, Colors.indigo),
-      _MoreMenuItem(Icons.request_quote, 'Billing', 14, Colors.brown),
-      _MoreMenuItem(Icons.repeat, 'Templates', 15, Colors.deepPurple),
-      _MoreMenuItem(Icons.payment, 'Payments', 16, Colors.cyan),
-      _MoreMenuItem(Icons.account_balance_wallet, 'Payroll', 17, Colors.pink),
-      _MoreMenuItem(Icons.share_location, 'Geofences', 19, Colors.deepOrange),
-      _MoreMenuItem(Icons.account_balance, 'DATEV', 20, Colors.blueGrey),
-      _MoreMenuItem(Icons.block, 'Blacklist', 21, Colors.red),
-      _MoreMenuItem(Icons.emergency, 'Emergency', 22, const Color(0xFFD32F2F)),
-      _MoreMenuItem(Icons.groups, 'Ride Pools', 23, Colors.indigo),
-      _MoreMenuItem(Icons.notifications, 'Notifications', 24, AppColors.primary),
-      _MoreMenuItem(Icons.privacy_tip, 'GDPR', 25, Colors.indigo),
-      _MoreMenuItem(Icons.devices, 'Sessions', 26, Colors.deepPurple),
-      _MoreMenuItem(Icons.settings, 'Settings', 18, AppColors.textSecondary),
+      _MoreMenuItem(Icons.euro, 'Earnings', 5, AppColors.dispatcherColor),
+      _MoreMenuItem(Icons.access_time_filled, 'Peak Hours', 6, AppColors.warning),
+      _MoreMenuItem(Icons.diamond, 'Client Value', 7, AppColors.clientColor),
+      _MoreMenuItem(Icons.leaderboard, 'Drivers', 8, AppColors.driverColor),
+      _MoreMenuItem(Icons.star, 'Ratings', 9, Colors.amber),
+      _MoreMenuItem(Icons.history, 'Audit Log', 10, AppColors.info),
+      _MoreMenuItem(Icons.admin_panel_settings, 'Admin', 11, AppColors.secretaryColor),
+      _MoreMenuItem(Icons.business, 'Company', 12, AppColors.dispatcherColor),
+      _MoreMenuItem(Icons.receipt_long, 'Expenses', 13, Colors.teal),
+      _MoreMenuItem(Icons.download, 'Export', 14, Colors.indigo),
+      _MoreMenuItem(Icons.request_quote, 'Billing', 15, Colors.brown),
+      _MoreMenuItem(Icons.repeat, 'Templates', 16, Colors.deepPurple),
+      _MoreMenuItem(Icons.payment, 'Payments', 17, Colors.cyan),
+      _MoreMenuItem(Icons.account_balance_wallet, 'Payroll', 18, Colors.pink),
+      _MoreMenuItem(Icons.settings, 'Settings', 19, AppColors.textSecondary),
+      _MoreMenuItem(Icons.share_location, 'Geofences', 20, Colors.deepOrange),
+      _MoreMenuItem(Icons.account_balance, 'DATEV', 21, Colors.blueGrey),
+      _MoreMenuItem(Icons.block, 'Blacklist', 22, Colors.red),
+      _MoreMenuItem(Icons.emergency, 'Emergency', 23, const Color(0xFFD32F2F)),
+      _MoreMenuItem(Icons.groups, 'Ride Pools', 24, Colors.indigo),
+      _MoreMenuItem(Icons.notifications, 'Notifications', 25, AppColors.primary),
+      _MoreMenuItem(Icons.privacy_tip, 'GDPR', 26, Colors.indigo),
+      _MoreMenuItem(Icons.devices, 'Sessions', 27, Colors.deepPurple),
     ];
 
     return Column(

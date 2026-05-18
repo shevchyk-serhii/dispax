@@ -6,7 +6,8 @@ import com.shevchyk.core.domain.{PersonId, RideId}
 import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.ride.application.service.RideService
+import com.shevchyk.ride.application.service.{RideService, ClientAddressService}
+import com.shevchyk.ride.repository.helpers.InMemoryClientAddressRepository
 import com.shevchyk.ride.infrastructure.http.dto.{RideDto, given}
 import com.shevchyk.ride.helpers.{TestData, TestJWT}
 import com.shevchyk.ride.infrastructure.http.RideRoutes
@@ -24,7 +25,7 @@ object RideApiSpec extends ZIOSpecDefault {
     def sendDriverAssignment(data: RideConfirmationData): Task[Unit] = ZIO.unit
   )
 
-  private def runRequest(request: Request): ZIO[RideService & JwtService, Nothing, Response] =
+  private def runRequest(request: Request): ZIO[RideService & ClientAddressService & JwtService, Nothing, Response] =
     RideRoutes.authenticatedRoutes.run(request).either.map {
       case Left(either) => either.merge
       case Right(response) => response
@@ -471,6 +472,7 @@ object RideApiSpec extends ZIOSpecDefault {
     AuditService.inMemory,
     BlacklistRepository.inMemory,
     RideService.layer,
-    TestJWT.testJwtService
+    TestJWT.testJwtService,
+    InMemoryClientAddressRepository.layer >>> ClientAddressService.layer
   ) @@ TestAspect.sequential
 }
