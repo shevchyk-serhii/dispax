@@ -1,6 +1,6 @@
 package com.shevchyk.auth.middleware
 
-import com.shevchyk.core.domain.{CompanyId, PersonId, RideId}
+import com.shevchyk.core.domain.{ClientCompanyId, CompanyId, PersonId, RideId}
 import zio.*
 import zio.http.*
 import java.util.UUID
@@ -20,6 +20,8 @@ object UuidParser:
 
   def parseCompanyId(value: String): IO[Response, CompanyId] = parse(value).map(CompanyId(_))
 
+  def parseClientCompanyId(value: String): IO[Response, ClientCompanyId] = parse(value).map(ClientCompanyId(_))
+
   /**
    * Extract companyId from authenticated user, failing with 400 if missing
    */
@@ -27,3 +29,10 @@ object UuidParser:
     .fromOption(companyIdOpt)
     .map(CompanyId(_))
     .orElseFail(Response(Status.BadRequest, body = Body.fromString("""{"error":"User must belong to a company"}""")))
+
+  def requireClientCompanyId(clientCompanyIdOpt: Option[UUID]): IO[Response, ClientCompanyId] = ZIO
+    .fromOption(clientCompanyIdOpt)
+    .map(ClientCompanyId(_))
+    .orElseFail(
+      Response(Status.BadRequest, body = Body.fromString("""{"error":"User must belong to a client company"}"""))
+    )

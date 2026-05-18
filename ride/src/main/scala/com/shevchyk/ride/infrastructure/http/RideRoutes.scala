@@ -82,12 +82,13 @@ object RideRoutes {
 
   private def toPersonRole(role: String): PersonRole =
     role.toUpperCase match
-      case "DRIVER"     => PersonRole.Driver
-      case "CLIENT"     => PersonRole.Client
-      case "SECRETARY"  => PersonRole.Secretary
-      case "DISPATCHER" => PersonRole.Dispatcher
-      case "ADMIN"      => PersonRole.Admin
-      case _            => PersonRole.Client
+      case "DRIVER"           => PersonRole.Driver
+      case "CLIENT"           => PersonRole.Client
+      case "SECRETARY"        => PersonRole.Secretary
+      case "DISPATCHER"       => PersonRole.Dispatcher
+      case "ADMIN"            => PersonRole.Admin
+      case "CLIENT_SECRETARY" => PersonRole.ClientSecretary
+      case _                  => PersonRole.Client
 
   val authenticatedRoutes: Routes[RideService & ClientAddressService & JwtService, Response] = Routes(
     Method.POST / "api" / "rides"                                       -> authenticatedJsonHandler[
@@ -95,14 +96,14 @@ object RideRoutes {
       CreateRideApiRequest
     ] { (user, apiRequest) =>
       (for {
-        _             <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER")
+        _             <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
         companyId     <- UuidParser.requireCompanyId(user.companyId)
         validRequest  <- apiRequest.validate
         domainRequest <- CreateRideApiRequest
                            .toDomain(validRequest, companyId)
                            .map { req =>
                              // Clients and drivers always create rides for themselves
-                             // Secretaries and dispatchers can specify a clientId from the request
+                             // Secretaries, dispatchers and client_secretaries can specify a clientId from the request
                              if (user.role.toUpperCase == "CLIENT" || user.role.toUpperCase == "DRIVER")
                                req.copy(clientId = PersonId(user.userId))
                              else
@@ -156,7 +157,7 @@ object RideRoutes {
       (for {
         user      <- AuthMiddleware.authenticateRequest(request)
         clientPid <- UuidParser.parsePersonId(clientId)
-        _         <- AuthMiddleware.checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY")
+        _         <- AuthMiddleware.checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
         service   <- ZIO.service[RideService]
         rides     <- service.getClientRides(clientPid)
         rideDtos   = rides.map(r => RideDto.fromDomain(r))

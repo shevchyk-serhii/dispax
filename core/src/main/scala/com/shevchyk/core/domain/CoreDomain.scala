@@ -7,6 +7,7 @@ import com.github.f4b6a3.uuid.UuidCreator
 
 case class PersonId(value: UUID) derives JsonCodec
 case class CompanyId(value: UUID) derives JsonCodec
+case class ClientCompanyId(value: UUID) derives JsonCodec
 case class RideId(value: UUID) derives JsonCodec
 case class TariffId(value: UUID) derives JsonCodec
 case class ScheduleDayId(value: UUID) derives JsonCodec
@@ -16,6 +17,9 @@ object PersonId:
 
 object CompanyId:
   def generate(): CompanyId = CompanyId(UuidCreator.getTimeOrderedEpoch())
+
+object ClientCompanyId:
+  def generate(): ClientCompanyId = ClientCompanyId(UuidCreator.getTimeOrderedEpoch())
 
 object RideId:
   def generate(): RideId = RideId(UuidCreator.getTimeOrderedEpoch())
@@ -37,20 +41,26 @@ object Location:
   def apply(address: String): Location = Location(address, None, None)
 
 enum PersonRole:
-  case Driver, Client, Secretary, Dispatcher, Admin
+  case Driver, Client, Secretary, Dispatcher, Admin, ClientSecretary
 
 object PersonRole:
-  given JsonEncoder[PersonRole] = JsonEncoder[String].contramap(_.toString)
+
+  given JsonEncoder[PersonRole] = JsonEncoder[String].contramap {
+    case PersonRole.ClientSecretary => "CLIENT_SECRETARY"
+    case other                      => other.toString
+  }
 
   given JsonDecoder[PersonRole] = JsonDecoder[String].mapOrFail { s =>
     val normalized =
       s match
-        case "CLIENT"     => "Client"
-        case "DRIVER"     => "Driver"
-        case "DISPATCHER" => "Dispatcher"
-        case "SECRETARY"  => "Secretary"
-        case "ADMIN"      => "Admin"
-        case other        => other
+        case "CLIENT"           => "Client"
+        case "DRIVER"           => "Driver"
+        case "DISPATCHER"       => "Dispatcher"
+        case "SECRETARY"        => "Secretary"
+        case "ADMIN"            => "Admin"
+        case "CLIENT_SECRETARY" => "ClientSecretary"
+        case "client_secretary" => "ClientSecretary"
+        case other              => other
     scala.util.Try(PersonRole.valueOf(normalized)).toEither.left.map(_ => s"Invalid PersonRole: $s")
   }
 
@@ -69,7 +79,8 @@ final case class Person(
     isVip: Boolean = false,
     preferredDriverId: Option[PersonId] = None,
     status: UserStatus = UserStatus.ACTIVE,
-    lastLoginAt: Option[Instant] = None
+    lastLoginAt: Option[Instant] = None,
+    clientCompanyId: Option[ClientCompanyId] = None
 )
 
 // DTO for safe serialization — excludes passwordHash
@@ -83,7 +94,8 @@ final case class PersonDto(
     phone: Option[String] = None,
     isVip: Boolean = false,
     preferredDriverId: Option[PersonId] = None,
-    status: UserStatus = UserStatus.ACTIVE
+    status: UserStatus = UserStatus.ACTIVE,
+    clientCompanyId: Option[ClientCompanyId] = None
 ) derives JsonCodec
 
 object PersonDto:
@@ -98,7 +110,8 @@ object PersonDto:
     phone = p.phone,
     isVip = p.isVip,
     preferredDriverId = p.preferredDriverId,
-    status = p.status
+    status = p.status,
+    clientCompanyId = p.clientCompanyId
   )
 
 final case class Company(
@@ -107,4 +120,20 @@ final case class Company(
     email: String,
     phone: String,
     address: String
+) derives JsonCodec
+
+final case class ClientCompany(
+    id: ClientCompanyId,
+    name: String,
+    taxiCompanyId: CompanyId,
+    email: Option[String] = None,
+    phone: Option[String] = None,
+    address: Option[String] = None
+) derives JsonCodec
+
+final case class CreateClientCompanyRequest(
+    name: String,
+    email: Option[String] = None,
+    phone: Option[String] = None,
+    address: Option[String] = None
 ) derives JsonCodec

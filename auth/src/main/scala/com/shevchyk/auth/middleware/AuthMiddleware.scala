@@ -11,7 +11,8 @@ case class AuthenticatedUser(
     userId: UUID,
     email: String,
     role: String,
-    companyId: Option[UUID] = None
+    companyId: Option[UUID] = None,
+    clientCompanyId: Option[UUID] = None
 )
 
 object AuthenticatedUser:
@@ -41,7 +42,8 @@ object AuthMiddleware:
                 userId = payload.userId,
                 email = payload.email,
                 role = payload.role.toString,
-                companyId = payload.companyId
+                companyId = payload.companyId,
+                clientCompanyId = payload.clientCompanyId
               )
             }
           )

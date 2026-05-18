@@ -58,6 +58,7 @@ object TestApplication extends ZIOAppDefault:
       people.values.filter(p => p.name.toLowerCase.contains(query.toLowerCase) || p.email.toLowerCase.contains(query.toLowerCase)).toList
     )
     def updateLastLogin(id: PersonId): Task[Unit] = ZIO.unit
+    def findByClientCompany(clientCompanyId: com.shevchyk.core.domain.ClientCompanyId): Task[List[Person]] = ZIO.succeed(Nil)
   }
 
   private val mockTokenRepository: TokenRepository = new TokenRepository {

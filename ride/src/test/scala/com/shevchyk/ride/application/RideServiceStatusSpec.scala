@@ -84,6 +84,7 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
       ZIO.succeed(persons.values.filter(_.status == status).toList)
     override def searchByQuery(query: String): Task[List[Person]]                                 = ZIO.succeed(Nil)
     override def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
+    override def findByClientCompany(clientCompanyId: com.shevchyk.core.domain.ClientCompanyId): Task[List[Person]] = ZIO.succeed(Nil)
   }
 
   val testPersonRepo = TestPersonRepository(

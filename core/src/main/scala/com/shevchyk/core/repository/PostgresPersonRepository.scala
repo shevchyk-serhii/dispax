@@ -1,6 +1,6 @@
 package com.shevchyk.core.repository
 
-import com.shevchyk.core.domain.{Person, PersonId, PersonRole, CompanyId, UserStatus}
+import com.shevchyk.core.domain.{Person, PersonId, PersonRole, CompanyId, ClientCompanyId, UserStatus}
 import zio.*
 import doobie.*
 import doobie.implicits.*
@@ -17,18 +17,20 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
   implicit val personRoleMeta: Meta[PersonRole] = pgEnumString(
     "person_role",
     {
-      case "driver"     => PersonRole.Driver
-      case "client"     => PersonRole.Client
-      case "secretary"  => PersonRole.Secretary
-      case "dispatcher" => PersonRole.Dispatcher
-      case "admin"      => PersonRole.Admin
+      case "driver"           => PersonRole.Driver
+      case "client"           => PersonRole.Client
+      case "secretary"        => PersonRole.Secretary
+      case "dispatcher"       => PersonRole.Dispatcher
+      case "admin"            => PersonRole.Admin
+      case "client_secretary" => PersonRole.ClientSecretary
     },
     {
-      case PersonRole.Driver     => "driver"
-      case PersonRole.Client     => "client"
-      case PersonRole.Secretary  => "secretary"
-      case PersonRole.Dispatcher => "dispatcher"
-      case PersonRole.Admin      => "admin"
+      case PersonRole.Driver          => "driver"
+      case PersonRole.Client          => "client"
+      case PersonRole.Secretary       => "secretary"
+      case PersonRole.Dispatcher      => "dispatcher"
+      case PersonRole.Admin           => "admin"
+      case PersonRole.ClientSecretary => "client_secretary"
     }
   )
 
@@ -49,14 +51,14 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
     )
 
   private val selectColumns =
-    fr"id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, last_login_at"
+    fr"id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, last_login_at, client_company_id"
 
   override def create(person: Person): Task[Person] = {
     sql"""
-      INSERT INTO persons (id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status)
+      INSERT INTO persons (id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, client_company_id)
       VALUES (${person.id.value}, ${person.name}, ${person.email}, ${person.role}, ${person.companyId},
               ${person.passwordHash}, ${person.licenseNumber}, ${person.phone}, ${person.isVip},
-              ${person.preferredDriverId.map(_.value)}, ${person.status})
+              ${person.preferredDriverId.map(_.value)}, ${person.status}, ${person.clientCompanyId.map(_.value)})
     """.update.run
       .transact(xa)
       .as(person)
@@ -116,7 +118,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           phone = ${person.phone},
           is_vip = ${person.isVip},
           preferred_driver_id = ${person.preferredDriverId.map(_.value)},
-          status = ${person.status}
+          status = ${person.status},
+          client_company_id = ${person.clientCompanyId.map(_.value)}
       WHERE id = ${person.id.value}
     """.update.run
       .transact(xa)
@@ -154,6 +157,13 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       .unit
   }
 
+  override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] = {
+    (fr"SELECT" ++ selectColumns ++ fr"FROM persons WHERE client_company_id = ${clientCompanyId.value}")
+      .query[Person]
+      .to[List]
+      .transact(xa)
+  }
+
   implicit val personRead: Read[Person] =
     Read[
       (
@@ -168,7 +178,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           Boolean,
           Option[UUID],
           UserStatus,
-          Option[Instant]
+          Option[Instant],
+          Option[UUID]
       )
     ].map {
       case (
@@ -183,7 +194,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
             isVip,
             preferredDriverId,
             status,
-            lastLoginAt
+            lastLoginAt,
+            clientCompanyId
           ) =>
         Person(
           id = PersonId(id),
@@ -197,7 +209,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           isVip = isVip,
           preferredDriverId = preferredDriverId.map(PersonId.apply),
           status = status,
-          lastLoginAt = lastLoginAt
+          lastLoginAt = lastLoginAt,
+          clientCompanyId = clientCompanyId.map(ClientCompanyId.apply)
         )
     }
 }

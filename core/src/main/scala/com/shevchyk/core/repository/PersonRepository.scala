@@ -1,6 +1,6 @@
 package com.shevchyk.core.repository
 
-import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole, UserStatus}
+import com.shevchyk.core.domain.{ClientCompanyId, CompanyId, Person, PersonId, PersonRole, UserStatus}
 import com.shevchyk.core.database.DatabaseConfig
 import doobie.Transactor
 import zio.*
@@ -18,6 +18,7 @@ trait PersonRepository {
   def findByStatus(status: UserStatus): Task[List[Person]]
   def searchByQuery(query: String): Task[List[Person]]
   def updateLastLogin(id: PersonId): Task[Unit]
+  def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]
 }
 
 object PersonRepository {

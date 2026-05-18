@@ -14,6 +14,7 @@ final case class JwtPayload(
     email: String,
     role: PersonRole,
     companyId: Option[UUID] = None,
+    clientCompanyId: Option[UUID] = None,
     iat: Long,                       // issued at
     exp: Long,                       // expires at
     originalIat: Option[Long] = None // original session start (for absolute expiration)
@@ -42,6 +43,7 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
         email = person.email,
         role = person.role,
         companyId = person.companyId.map(_.value),
+        clientCompanyId = person.clientCompanyId.map(_.value),
         iat = now.getEpochSecond,
         exp = exp.getEpochSecond,
         originalIat = Some(now.getEpochSecond)

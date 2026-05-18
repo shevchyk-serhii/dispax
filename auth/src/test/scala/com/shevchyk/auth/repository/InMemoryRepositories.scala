@@ -1,6 +1,6 @@
 package com.shevchyk.auth.repository
 
-import com.shevchyk.core.domain.{Person, PersonId, PersonRole, UserStatus}
+import com.shevchyk.core.domain.{ClientCompanyId, Person, PersonId, PersonRole, UserStatus}
 import com.shevchyk.core.repository.PersonRepository
 import zio.*
 import java.time.Instant
@@ -90,6 +90,9 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
 
   override def updateLastLogin(id: PersonId): Task[Unit] =
     people.update(m => m.get(id).fold(m)(p => m.updated(id, p.copy(lastLoginAt = Some(Instant.now()))))).unit
+
+  override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] =
+    people.get.map(_.values.filter(_.clientCompanyId.contains(clientCompanyId)).toList)
 
 final class InMemoryTokenRepository extends TokenRepository:
   import TestUUIDs._

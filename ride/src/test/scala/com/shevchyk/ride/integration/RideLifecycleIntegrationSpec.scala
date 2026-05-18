@@ -68,6 +68,7 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
     override def findByStatus(status: com.shevchyk.core.domain.UserStatus): Task[List[Person]] = ZIO.succeed(persons.values.filter(_.status == status).toList)
     override def searchByQuery(query: String): Task[List[Person]]      = ZIO.succeed(Nil)
     override def updateLastLogin(id: PersonId): Task[Unit]             = ZIO.unit
+    override def findByClientCompany(clientCompanyId: com.shevchyk.core.domain.ClientCompanyId): Task[List[Person]] = ZIO.succeed(Nil)
 
   private val noopEmailSms: ZLayer[Any, Nothing, EmailSmsService] = ZLayer.succeed(new EmailSmsService:
     def sendRideConfirmation(data: RideConfirmationData): Task[Unit] = ZIO.unit

@@ -1,7 +1,7 @@
 package com.shevchyk.core.repository
 
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.core.domain.{PersonId, CompanyId, Person, PersonRole, UserStatus}
+import com.shevchyk.core.domain.{ClientCompanyId, PersonId, CompanyId, Person, PersonRole, UserStatus}
 import zio.*
 
 class InMemoryPersonRepository extends PersonRepository:
@@ -47,6 +47,9 @@ class InMemoryPersonRepository extends PersonRepository:
 
   override def updateLastLogin(id: PersonId): Task[Unit] =
     people.update(m => m.get(id).fold(m)(p => m.updated(id, p.copy(lastLoginAt = Some(java.time.Instant.now()))))).unit
+
+  override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] =
+    people.get.map(_.values.filter(_.clientCompanyId.contains(clientCompanyId)).toList)
 
 object InMemoryPersonRepository:
   val layer: ZLayer[Any, Nothing, PersonRepository] =
