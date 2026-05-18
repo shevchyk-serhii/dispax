@@ -2,6 +2,7 @@
         flutter-dev flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
+        dev-all stop-dev \
         deploy logs
 
 PROD_URL := https://oktopus-456043977402.europe-west1.run.app
@@ -11,8 +12,7 @@ GCP_REGION := europe-west1
 GCP_SERVICE := oktopus
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/oktopus-docker/oktopus-server:latest
 FLUTTER_DIR    := web
-IPHONE_SERGII  := 00008150-000978860ED8401C
-ANDROID_SERGII := 192.168.0.60:5555
+-include .env.dev
 
 # ─── Backend ────────────────────────────────────────────────────────────────
 
@@ -109,18 +109,38 @@ flutter-prod-android:
 
 # Run Flutter on Sergii's iPhone (wireless) against local backend
 flutter-dev-iphone-sergii:
-	cd $(FLUTTER_DIR) && flutter run -d $(IPHONE_SERGII) \
+	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
 
 # Run Flutter on Sergii's Android (wireless) against local backend
 flutter-dev-android-sergii:
-	cd $(FLUTTER_DIR) && flutter run -d $(ANDROID_SERGII) \
+	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
 
 # Run Flutter on both Sergii's devices simultaneously (wireless)
 flutter-dev-sergii:
-	cd $(FLUTTER_DIR) && flutter run -d $(IPHONE_SERGII) \
+	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
-	cd $(FLUTTER_DIR) && flutter run -d $(ANDROID_SERGII) \
+	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
 	wait
+
+# Start local backend + Flutter on both devices in one command
+# Hot reload Flutter: press 'r' in each flutter process terminal
+# To restart backend after Scala changes: make stop-dev && make dev-all
+dev-all:
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
+	@echo "⏳ Waiting for backend on :8080..."
+	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
+	@echo "✅ Backend ready — starting Flutter on both devices"
+	@cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
+	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
+	wait
+
+# Kill all dev processes (backend + flutter)
+stop-dev:
+	@pkill -f "sbt run" 2>/dev/null || true
+	@pkill -f "flutter run" 2>/dev/null || true
+	@echo "✅ Stopped"
