@@ -41,14 +41,48 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   DateTime _selectedDate = DateTime.now();
   int _mobileTabIndex = 0;
   late RideBloc _rideBloc;
+  final CreateRideFormBloc _createRideFormBloc = CreateRideFormBloc();
 
   // Primary tabs (shown in bottom nav)
   static const int _primaryTabCount = 5;
+  static const int _createRideTabIndex = 3;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _rideBloc = context.read<RideBloc>();
+  }
+
+  @override
+  void dispose() {
+    _createRideFormBloc.close();
+    super.dispose();
+  }
+
+  Future<bool> _confirmLeaveCreateRide(BuildContext context) async {
+    if (!_createRideFormBloc.state.isModified) return true;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Discard changes?'),
+        content: const Text('You have unsaved ride details. If you leave, they will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Stay'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (result == true) {
+      _createRideFormBloc.add(FormCleared());
+    }
+    return result ?? false;
   }
 
   // All screens in order
@@ -61,6 +95,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     const AnalyticsPanel(),                      // 2: Analytics
     CreateRideScreen(                             // 3: New Ride
       rideBloc: _rideBloc,
+      formBloc: _createRideFormBloc,
       onCreated: () {
         final user = context.read<AuthBloc>().state.user;
         if (user != null) context.read<RideBloc>().add(RideLoadRequested(user: user));
@@ -138,7 +173,13 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _mobileTabIndex < _primaryTabCount ? _mobileTabIndex : 4,
-        onTap: (index) => setState(() => _mobileTabIndex = index),
+        onTap: (index) async {
+          if (_mobileTabIndex == _createRideTabIndex && index != _createRideTabIndex) {
+            final canLeave = await _confirmLeaveCreateRide(context);
+            if (!canLeave) return;
+          }
+          setState(() => _mobileTabIndex = index);
+        },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.dispatcherColor,
         items: const [

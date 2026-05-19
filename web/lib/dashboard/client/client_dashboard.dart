@@ -25,11 +25,44 @@ class ClientDashboard extends StatefulWidget {
 class _ClientDashboardState extends State<ClientDashboard> {
   int _selectedIndex = 0;
   late RideBloc _rideBloc;
+  final CreateRideFormBloc _createRideFormBloc = CreateRideFormBloc();
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _rideBloc = context.read<RideBloc>();
+  }
+
+  @override
+  void dispose() {
+    _createRideFormBloc.close();
+    super.dispose();
+  }
+
+  Future<bool> _confirmLeaveCreateRide(BuildContext context) async {
+    if (!_createRideFormBloc.state.isModified) return true;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Discard changes?'),
+        content: const Text('You have unsaved ride details. If you leave, they will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Stay'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (result == true) {
+      _createRideFormBloc.add(FormCleared());
+    }
+    return result ?? false;
   }
 
   @override
@@ -39,7 +72,11 @@ class _ClientDashboardState extends State<ClientDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         selectedItemColor: AppColors.primary,
-        onTap: (index) {
+        onTap: (index) async {
+          if (_selectedIndex == 2 && index != 2) {
+            final canLeave = await _confirmLeaveCreateRide(context);
+            if (!canLeave) return;
+          }
           setState(() {
             _selectedIndex = index;
           });
@@ -83,8 +120,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
       case 1:
         return const ClientRideHistoryScreen();
       case 2:
-          return CreateRideScreen(
+        return CreateRideScreen(
           rideBloc: _rideBloc,
+          formBloc: _createRideFormBloc,
           onCreated: () {
             context.read<RideBloc>().add(RideLoadRequested(user: context.read<AuthBloc>().state.user!));
             setState(() => _selectedIndex = 0);

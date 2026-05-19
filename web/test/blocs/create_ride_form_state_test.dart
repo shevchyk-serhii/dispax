@@ -2,6 +2,54 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:oktopus/blocs/create_ride_form/create_ride_form_state.dart';
 
 void main() {
+  group('CreateRideFormState.isModified', () {
+    test('initial state is not modified', () {
+      expect(CreateRideFormState.initial().isModified, isFalse);
+    });
+
+    test('clientName filled marks modified', () {
+      final s = CreateRideFormState.initial().copyWith(clientName: 'Alice');
+      expect(s.isModified, isTrue);
+    });
+
+    test('selectedClientId set marks modified', () {
+      final s = CreateRideFormState.initial().copyWith(selectedClientId: 'c-1');
+      expect(s.isModified, isTrue);
+    });
+
+    test('fromAddress filled marks modified', () {
+      final s = CreateRideFormState.initial().copyWith(fromAddress: 'Airport');
+      expect(s.isModified, isTrue);
+    });
+
+    test('toAddress filled marks modified', () {
+      final s = CreateRideFormState.initial().copyWith(toAddress: 'Hotel');
+      expect(s.isModified, isTrue);
+    });
+
+    test('flightNumber filled marks modified', () {
+      final s = CreateRideFormState.initial().copyWith(flightNumber: 'LH123');
+      expect(s.isModified, isTrue);
+    });
+
+    test('notes filled marks modified', () {
+      final s = CreateRideFormState.initial().copyWith(notes: 'extra bags');
+      expect(s.isModified, isTrue);
+    });
+
+    test('specialRequirements non-empty marks modified', () {
+      final s = CreateRideFormState.initial()
+          .copyWith(specialRequirements: ['wheelchair']);
+      expect(s.isModified, isTrue);
+    });
+
+    test('whitespace-only fields are not modified', () {
+      final s = CreateRideFormState.initial()
+          .copyWith(clientName: '  ', fromAddress: ' ', notes: '\t');
+      expect(s.isModified, isFalse);
+    });
+  });
+
   group('CreateRideFormState.isValid', () {
     CreateRideFormState makeState({
       String clientName = 'Client',

@@ -99,6 +99,15 @@ class CreateRideFormState extends Equatable {
            (!isAirportTransfer || flightNumber.trim().isNotEmpty);
   }
 
+  bool get isModified =>
+      clientName.trim().isNotEmpty ||
+      selectedClientId != null ||
+      fromAddress.trim().isNotEmpty ||
+      toAddress.trim().isNotEmpty ||
+      flightNumber.trim().isNotEmpty ||
+      notes.trim().isNotEmpty ||
+      specialRequirements.isNotEmpty;
+
   @override
   List<Object?> get props => [
     clientName,

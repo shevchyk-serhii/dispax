@@ -10,14 +10,22 @@ import '../constants/app_dimensions.dart';
 class CreateRideScreen extends StatelessWidget {
   final RideBloc rideBloc;
   final VoidCallback? onCreated;
+  final CreateRideFormBloc? formBloc;
 
-  const CreateRideScreen({super.key, required this.rideBloc, this.onCreated});
+  const CreateRideScreen({
+    super.key,
+    required this.rideBloc,
+    this.onCreated,
+    this.formBloc,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => CreateRideFormBloc()),
+        formBloc != null
+            ? BlocProvider.value(value: formBloc!)
+            : BlocProvider(create: (_) => CreateRideFormBloc()),
         BlocProvider.value(value: rideBloc),
       ],
       child: CreateRideScreenContent(onCreated: onCreated),
@@ -69,6 +77,13 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
                 SnackBar(
                   content: Text(state.errorMessage ?? 'Failed to create ride'),
                   backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 8),
+                  action: SnackBarAction(
+                    label: 'Retry',
+                    textColor: Colors.white,
+                    onPressed: () =>
+                        context.read<CreateRideFormBloc>().add(FormSubmitted()),
+                  ),
                 ),
               );
             }
