@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../services/test_data_service.dart';
 import 'initialization_event.dart';
@@ -37,7 +38,7 @@ class InitializationBloc extends Bloc<InitializationEvent, InitializationState> 
 
       emit(const InitializationCompleted());
     } catch (e) {
-      print('Error during initialization: $e');
+      debugPrint('Error during initialization: $e');
       emit(InitializationError('Initialization failed: ${e.toString()}'));
     }
   }

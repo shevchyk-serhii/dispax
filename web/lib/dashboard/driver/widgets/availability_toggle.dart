@@ -117,7 +117,7 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
               Switch(
                 value: _isAvailable,
                 onChanged: _toggleAvailability,
-                activeColor: AppColors.success,
+                activeThumbColor: AppColors.success,
               ),
           ],
         ),

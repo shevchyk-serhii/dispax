@@ -238,10 +238,15 @@ class MapboxService {
     double maxDiff = latDiff > lngDiff ? latDiff : lngDiff;
 
     double zoom = 15.0;
-    if (maxDiff > 0.1) zoom = 10.0;
-    else if (maxDiff > 0.05) zoom = 12.0;
-    else if (maxDiff > 0.02) zoom = 13.0;
-    else if (maxDiff > 0.01) zoom = 14.0;
+    if (maxDiff > 0.1) {
+      zoom = 10.0;
+    } else if (maxDiff > 0.05) {
+      zoom = 12.0;
+    } else if (maxDiff > 0.02) {
+      zoom = 13.0;
+    } else if (maxDiff > 0.01) {
+      zoom = 14.0;
+    }
 
     return CameraOptions(
       center: Point(coordinates: Position(centerLng, centerLat)),

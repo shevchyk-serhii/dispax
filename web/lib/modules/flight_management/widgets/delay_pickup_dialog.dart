@@ -21,22 +21,21 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
         'Delay by how long?',
         style: AppStyles.titleMedium.copyWith(color: AppColors.textPrimary),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: _delayOptions.map((delay) => RadioListTile<int>(
-          title: Text(
-            '$delay minutes',
-            style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
-          ),
-          value: delay,
-          groupValue: _selectedDelay,
-          onChanged: (value) {
-            setState(() {
-              _selectedDelay = value!;
-            });
-          },
-          activeColor: AppColors.clientColor,
-        )).toList(),
+      content: RadioGroup<int>(
+        groupValue: _selectedDelay,
+        onChanged: (value) {
+          if (value != null) setState(() => _selectedDelay = value);
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: _delayOptions.map((delay) => RadioListTile<int>(
+            title: Text(
+              '$delay minutes',
+              style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+            ),
+            value: delay,
+          )).toList(),
+        ),
       ),
       actions: [
         TextButton(
