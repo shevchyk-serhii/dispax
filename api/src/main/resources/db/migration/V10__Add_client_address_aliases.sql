@@ -1,1 +1,0 @@
-ALTER TABLE client_addresses ADD COLUMN IF NOT EXISTS aliases TEXT[] NOT NULL DEFAULT '{}';

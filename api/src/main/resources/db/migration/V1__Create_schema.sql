@@ -1,14 +1,14 @@
--- Oktopus Taxi Database Schema (consolidated)
--- All tables in final state
+-- Oktopus Taxi Database Schema (consolidated from V1-V10)
 
--- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create custom types
+-- Enums
 CREATE TYPE ride_status AS ENUM ('Requested', 'Assigned', 'InProgress', 'Completed', 'Cancelled');
-CREATE TYPE person_role AS ENUM ('driver', 'client', 'secretary', 'dispatcher');
+CREATE TYPE person_role AS ENUM ('driver', 'client', 'secretary', 'dispatcher', 'admin', 'client_secretary');
 CREATE TYPE driver_status AS ENUM ('Available', 'Busy', 'Offline');
 CREATE TYPE schedule_day_status AS ENUM ('Scheduled', 'Active', 'Completed', 'Cancelled');
+CREATE TYPE payment_status AS ENUM ('Unpaid', 'Pending', 'Paid');
+CREATE TYPE payment_method AS ENUM ('Cash', 'Card', 'Invoice', 'Bank', 'Receivable');
 
 -- ============================================================
 -- Companies
@@ -24,7 +24,23 @@ CREATE TABLE companies (
 );
 
 -- ============================================================
--- Persons
+-- Client companies
+-- ============================================================
+CREATE TABLE client_companies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    phone VARCHAR(20),
+    address TEXT,
+    taxi_company_id UUID NOT NULL REFERENCES companies(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_client_companies_taxi_company ON client_companies(taxi_company_id);
+
+-- ============================================================
+-- Persons (single source of truth for all users)
 -- ============================================================
 CREATE TABLE persons (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -32,11 +48,14 @@ CREATE TABLE persons (
     email VARCHAR(255) UNIQUE NOT NULL,
     role person_role NOT NULL,
     company_id UUID REFERENCES companies(id),
-    password_hash VARCHAR(255),
+    client_company_id UUID REFERENCES client_companies(id),
+    password_hash VARCHAR(255) NOT NULL,
     license_number VARCHAR(50),
     phone VARCHAR(20),
     is_vip BOOLEAN NOT NULL DEFAULT FALSE,
     preferred_driver_id UUID REFERENCES persons(id),
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'SUSPENDED')),
+    last_login_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -44,6 +63,63 @@ CREATE TABLE persons (
 CREATE INDEX idx_persons_email ON persons(email);
 CREATE INDEX idx_persons_company_id ON persons(company_id);
 CREATE INDEX idx_persons_role ON persons(role);
+CREATE INDEX idx_persons_status ON persons(status);
+CREATE INDEX idx_persons_client_company ON persons(client_company_id);
+
+-- ============================================================
+-- Tokens
+-- ============================================================
+CREATE TABLE tokens (
+    token VARCHAR(512) PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_tokens_user_id ON tokens(user_id);
+
+-- ============================================================
+-- Sessions
+-- ============================================================
+CREATE TABLE sessions (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES persons(id),
+    token TEXT NOT NULL,
+    device_info VARCHAR(255),
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_active_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX idx_sessions_user ON sessions(user_id);
+CREATE INDEX idx_sessions_token ON sessions(token);
+CREATE INDEX idx_sessions_active ON sessions(user_id, is_active);
+
+-- ============================================================
+-- GDPR
+-- ============================================================
+CREATE TABLE gdpr_consents (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES persons(id),
+    consent_type VARCHAR(50) NOT NULL,
+    granted_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    revoked_at TIMESTAMP WITH TIME ZONE,
+    ip_address VARCHAR(45),
+    UNIQUE(user_id, consent_type)
+);
+
+CREATE TABLE gdpr_requests (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES persons(id),
+    request_type VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    requested_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
+    notes TEXT
+);
+
+CREATE INDEX idx_gdpr_consents_user ON gdpr_consents(user_id);
+CREATE INDEX idx_gdpr_requests_user ON gdpr_requests(user_id);
 
 -- ============================================================
 -- Drivers
@@ -78,38 +154,6 @@ CREATE TABLE tariffs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- ============================================================
--- Users (authentication)
--- ============================================================
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL CHECK (role IN ('CLIENT', 'DRIVER', 'DISPATCHER', 'SECRETARY', 'ADMIN')),
-    password_hash VARCHAR(255) NOT NULL,
-    phone VARCHAR(20),
-    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'SUSPENDED')),
-    company_id UUID REFERENCES companies(id),
-    last_login_at TIMESTAMP,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE
-);
-
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_status ON users(status);
-
--- ============================================================
--- Tokens
--- ============================================================
-CREATE TABLE tokens (
-    token VARCHAR(512) PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX idx_tokens_user_id ON tokens(user_id);
 
 -- ============================================================
 -- Schedule days
@@ -155,6 +199,45 @@ CREATE INDEX idx_ride_pools_company ON ride_pools(company_id);
 CREATE INDEX idx_ride_pools_status ON ride_pools(status);
 
 -- ============================================================
+-- Invoice sequences
+-- ============================================================
+CREATE TABLE invoice_sequences (
+    company_id UUID PRIMARY KEY REFERENCES companies(id),
+    last_number INTEGER NOT NULL DEFAULT 0
+);
+
+-- ============================================================
+-- Client companies invoices
+-- ============================================================
+CREATE TABLE invoices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    number VARCHAR(50) NOT NULL,
+    client_company_id UUID NOT NULL REFERENCES client_companies(id),
+    taxi_company_id UUID NOT NULL REFERENCES companies(id),
+    status VARCHAR(20) NOT NULL DEFAULT 'draft',
+    period_from DATE NOT NULL,
+    period_to DATE NOT NULL,
+    subtotal_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    tax_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+    tax_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    currency VARCHAR(3) NOT NULL DEFAULT 'EUR',
+    notes TEXT,
+    due_date DATE,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    paid_at TIMESTAMP WITH TIME ZONE,
+    pdf_path TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE (number, taxi_company_id)
+);
+
+CREATE INDEX idx_invoices_taxi_company ON invoices(taxi_company_id);
+CREATE INDEX idx_invoices_client_company ON invoices(client_company_id);
+CREATE INDEX idx_invoices_status ON invoices(status);
+CREATE INDEX idx_invoices_period ON invoices(period_from, period_to);
+
+-- ============================================================
 -- Rides
 -- ============================================================
 CREATE TABLE rides (
@@ -163,8 +246,8 @@ CREATE TABLE rides (
     creator_id UUID NOT NULL REFERENCES persons(id),
     driver_id UUID REFERENCES persons(id),
     company_id UUID NOT NULL REFERENCES companies(id),
+    invoice_id UUID REFERENCES invoices(id) ON DELETE SET NULL,
 
-    -- Location
     from_address VARCHAR(500) NOT NULL,
     from_lat DOUBLE PRECISION,
     from_lng DOUBLE PRECISION,
@@ -172,14 +255,12 @@ CREATE TABLE rides (
     to_lat DOUBLE PRECISION,
     to_lng DOUBLE PRECISION,
 
-    -- Time
     pickup_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
     scheduled_time TIMESTAMP WITH TIME ZONE,
     request_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     start_time TIMESTAMP WITH TIME ZONE,
     end_time TIMESTAMP WITH TIME ZONE,
 
-    -- Status and pricing
     status ride_status NOT NULL DEFAULT 'Requested',
     tariff_id UUID REFERENCES tariffs(company_id),
     estimated_price_amount DECIMAL(10,2),
@@ -190,42 +271,32 @@ CREATE TABLE rides (
     price_currency VARCHAR(3),
     estimated_distance_km DOUBLE PRECISION,
 
-    -- Flight information
     flight_number VARCHAR(20),
     flight_time TIMESTAMP WITH TIME ZONE,
     flight_gate VARCHAR(10),
     flight_terminal VARCHAR(10),
     flight_status VARCHAR(50),
     flight_is_arrival BOOLEAN,
-
-    -- JSONB specifics (ride type details, e.g. airport transfer)
     specifics JSONB,
 
-    -- Schedule
     schedule_day_id UUID REFERENCES schedule_days(id),
 
-    -- Additional
     notes TEXT,
     special_requirements TEXT,
 
-    -- Payment
-    payment_status VARCHAR(20) DEFAULT 'unpaid',
-    payment_method VARCHAR(20),
-    paid_at TIMESTAMP,
+    payment_status payment_status NOT NULL DEFAULT 'Unpaid',
+    payment_method payment_method,
+    paid_at TIMESTAMP WITH TIME ZONE,
 
-    -- Cancellation
     cancellation_reason VARCHAR(50),
     cancellation_fee DECIMAL(10,2) DEFAULT 0,
     cancelled_by UUID,
 
-    -- VIP / preferred driver
     is_vip_ride BOOLEAN DEFAULT FALSE,
     preferred_driver_used BOOLEAN DEFAULT FALSE,
 
-    -- Pool
     pool_id UUID REFERENCES ride_pools(id),
 
-    -- Audit
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -240,6 +311,24 @@ CREATE INDEX idx_rides_request_time ON rides(request_time);
 CREATE INDEX idx_rides_specifics ON rides USING gin(specifics);
 CREATE INDEX idx_rides_specifics_type ON rides ((specifics->>'type'));
 CREATE INDEX idx_rides_schedule_day_id ON rides(schedule_day_id);
+CREATE INDEX idx_rides_invoice_id ON rides(invoice_id);
+
+-- ============================================================
+-- Invoice items
+-- ============================================================
+CREATE TABLE invoice_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    invoice_id UUID NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+    ride_id UUID REFERENCES rides(id) ON DELETE SET NULL,
+    description TEXT NOT NULL,
+    quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
+    unit_price DECIMAL(10,2) NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_invoice_items_invoice ON invoice_items(invoice_id);
+CREATE INDEX idx_invoice_items_ride ON invoice_items(ride_id);
 
 -- ============================================================
 -- Client locations
@@ -429,50 +518,6 @@ CREATE INDEX idx_geofence_alerts_company ON geofence_alerts(company_id);
 CREATE INDEX idx_geofence_alerts_created ON geofence_alerts(created_at DESC);
 
 -- ============================================================
--- GDPR
--- ============================================================
-CREATE TABLE gdpr_consents (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id),
-    consent_type VARCHAR(50) NOT NULL,
-    granted_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    revoked_at TIMESTAMP WITH TIME ZONE,
-    ip_address VARCHAR(45),
-    UNIQUE(user_id, consent_type)
-);
-
-CREATE TABLE gdpr_requests (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id),
-    request_type VARCHAR(20) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    requested_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    completed_at TIMESTAMP WITH TIME ZONE,
-    notes TEXT
-);
-
-CREATE INDEX idx_gdpr_consents_user ON gdpr_consents(user_id);
-CREATE INDEX idx_gdpr_requests_user ON gdpr_requests(user_id);
-
--- ============================================================
--- Sessions
--- ============================================================
-CREATE TABLE sessions (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id),
-    token TEXT NOT NULL,
-    device_info VARCHAR(255),
-    ip_address VARCHAR(45),
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_active_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-CREATE INDEX idx_sessions_user ON sessions(user_id);
-CREATE INDEX idx_sessions_token ON sessions(token);
-CREATE INDEX idx_sessions_active ON sessions(user_id, is_active);
-
--- ============================================================
 -- Blacklist
 -- ============================================================
 CREATE TABLE blacklist_entries (
@@ -557,3 +602,21 @@ CREATE TABLE fcm_tokens (
 );
 
 CREATE INDEX idx_fcm_tokens_person ON fcm_tokens(person_id);
+
+-- ============================================================
+-- Client addresses
+-- ============================================================
+CREATE TABLE client_addresses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client_id UUID NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+    label VARCHAR(100) NOT NULL,
+    address TEXT NOT NULL,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    use_count INTEGER NOT NULL DEFAULT 1,
+    aliases TEXT[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_client_addresses_client_id ON client_addresses(client_id);
