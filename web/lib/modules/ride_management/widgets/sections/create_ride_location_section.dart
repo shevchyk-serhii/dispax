@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../blocs/blocs.dart';
@@ -17,6 +18,7 @@ class CreateRideLocationSection extends StatefulWidget {
 class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
   late final ClientAddressService _addressService;
   late final CreateRideFormBloc _formBloc;
+  late final StreamSubscription<CreateRideFormState> _subscription;
   List<ClientAddress> _savedAddresses = [];
   String? _loadedForClientId;
 
@@ -31,7 +33,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
       _loadAddresses(currentClientId);
     }
 
-    _formBloc.stream.listen((state) {
+    _subscription = _formBloc.stream.listen((state) {
       if (!mounted) return;
       final clientId = state.selectedClientId;
       if (clientId == null) {
@@ -47,6 +49,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
 
   @override
   void dispose() {
+    _subscription.cancel();
     _addressService.dispose();
     super.dispose();
   }

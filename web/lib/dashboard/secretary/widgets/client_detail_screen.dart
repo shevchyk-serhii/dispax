@@ -75,13 +75,16 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.secretaryColor,
-        onPressed: () {
+        onPressed: () async {
           final rideBloc = context.read<RideBloc>();
-          Navigator.of(context).push(
+          final authBloc = context.read<AuthBloc>();
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => CreateRideScreen(rideBloc: rideBloc),
             ),
           );
+          final user = authBloc.state.user;
+          if (user != null) rideBloc.add(RideLoadRequested(user: user));
         },
         icon: const Icon(Icons.add),
         label: const Text('New Ride'),

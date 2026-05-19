@@ -61,7 +61,11 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     const AnalyticsPanel(),                      // 2: Analytics
     CreateRideScreen(                             // 3: New Ride
       rideBloc: _rideBloc,
-      onCreated: () => setState(() => _mobileTabIndex = 0),
+      onCreated: () {
+        final user = context.read<AuthBloc>().state.user;
+        if (user != null) context.read<RideBloc>().add(RideLoadRequested(user: user));
+        setState(() => _mobileTabIndex = 0);
+      },
     ),
     _buildMoreScreen(),                          // 4: More menu
     // Extended screens (accessed via More)

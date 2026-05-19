@@ -8,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 
 import 'l10n/app_localizations.dart';
@@ -62,8 +63,19 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
 }
 
+final themeModeNotifier = ValueNotifier<ThemeMode>(ThemeMode.system);
+
+ThemeMode themeFromString(String? value) => switch (value) {
+  'light'  => ThemeMode.light,
+  'dark'   => ThemeMode.dark,
+  _        => ThemeMode.system,
+};
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final prefs = await SharedPreferences.getInstance();
+  themeModeNotifier.value = themeFromString(prefs.getString('theme_mode'));
 
   MapboxOptions.setAccessToken(
     'MAPBOX_PUBLIC_TOKEN_REMOVED',
@@ -100,11 +112,13 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<AppStateBloc>(create: (context) => AppStateBloc()),
       ],
-      child: MaterialApp(
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: themeModeNotifier,
+        builder: (context, themeMode, _) => MaterialApp(
         title: 'Dispax',
         theme: AppTheme.theme,
         darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
+        themeMode: themeMode,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -113,6 +127,7 @@ class MyApp extends StatelessWidget {
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: const AppRoot(),
+      ),
       ),
     );
   }

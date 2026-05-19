@@ -81,7 +81,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
       case 1:
         return const ClientRideHistoryScreen();
       case 2:
-        return CreateRideScreen(rideBloc: _rideBloc);
+          return CreateRideScreen(
+          rideBloc: _rideBloc,
+          onCreated: () {
+            context.read<RideBloc>().add(RideLoadRequested(user: context.read<AuthBloc>().state.user!));
+            setState(() => _selectedIndex = 0);
+          },
+        );
       case 3:
         return const ClientMapScreen();
       case 4:

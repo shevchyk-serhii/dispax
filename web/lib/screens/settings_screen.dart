@@ -5,6 +5,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/models/person.dart';
+import '../main.dart' show themeModeNotifier, themeFromString;
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
 
@@ -214,6 +215,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (v != null) {
                 setState(() => _themeMode = v);
                 _savePreference('theme_mode', v);
+                themeModeNotifier.value = themeFromString(v);
               }
             },
           ),

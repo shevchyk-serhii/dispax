@@ -45,7 +45,11 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
             const SecretaryReportsPanel(),
             CreateRideScreen(
               rideBloc: _rideBloc,
-              onCreated: () => setState(() => _selectedIndex = 0),
+              onCreated: () {
+                final user = context.read<AuthBloc>().state.user;
+                if (user != null) context.read<RideBloc>().add(RideLoadRequested(user: user));
+                setState(() => _selectedIndex = 0);
+              },
             ),
             const SettingsScreen(),
           ],
@@ -152,13 +156,16 @@ class _CreateRidesTab extends StatelessWidget {
                         width: double.infinity,
                         height: AppDimensions.buttonHeightMedium,
                         child: ElevatedButton.icon(
-                          onPressed: () {
+                          onPressed: () async {
                             final rideBloc = context.read<RideBloc>();
-                            Navigator.of(context).push(
+                            final authBloc = context.read<AuthBloc>();
+                            await Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => CreateRideScreen(rideBloc: rideBloc),
                               ),
                             );
+                            final user = authBloc.state.user;
+                            if (user != null) rideBloc.add(RideLoadRequested(user: user));
                           },
                           icon: const Icon(Icons.add),
                           label: const Text('Start Creating'),
