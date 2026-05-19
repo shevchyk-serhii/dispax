@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
@@ -312,7 +315,7 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
     final addressCtrl = TextEditingController(text: existing?.address ?? '');
     final messenger = ScaffoldMessenger.of(context);
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(existing == null ? 'Unternehmen hinzufügen' : 'Unternehmen bearbeiten'),
@@ -354,7 +357,12 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
           ),
         ],
       ),
-    );
+    ).whenComplete(() {
+      nameCtrl.dispose();
+      emailCtrl.dispose();
+      phoneCtrl.dispose();
+      addressCtrl.dispose();
+    });
   }
 
   void _confirmDeleteCompany(ClientCompany company) {
@@ -466,20 +474,32 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
     try {
       final full = await widget.invoiceService.getInvoice(_invoice.id);
       if (mounted) setState(() => _invoice = full);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Failed to reload invoice detail: $e');
+    }
   }
 
   Future<void> _action(Future<dynamic> Function() fn) async {
     setState(() => _loading = true);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       await fn();
       widget.onRefresh();
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _triggerBrowserDownload(Uint8List bytes, String filename) {
+    final blob = html.Blob([bytes], 'application/pdf');
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    html.AnchorElement(href: url)
+      ..setAttribute('download', filename)
+      ..click();
+    html.Url.revokeObjectUrl(url);
   }
 
   String _fmtDate(DateTime d) => '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
@@ -574,7 +594,8 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                     setState(() => _loading = true);
                     final messenger = ScaffoldMessenger.of(context);
                     try {
-                      await widget.invoiceService.downloadPdf(inv.id);
+                      final bytes = await widget.invoiceService.downloadPdf(inv.id);
+                      _triggerBrowserDownload(bytes, 'invoice-${inv.number}.pdf');
                       messenger.showSnackBar(const SnackBar(content: Text('PDF heruntergeladen')));
                     } catch (e) {
                       messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));

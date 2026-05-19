@@ -132,12 +132,12 @@ class Invoice {
 
 class CreateInvoiceRequest {
   final String clientCompanyId;
-  final String periodFrom;
-  final String periodTo;
+  final DateTime periodFrom;
+  final DateTime periodTo;
   final double taxRate;
   final String currency;
   final String? notes;
-  final String? dueDate;
+  final DateTime? dueDate;
 
   const CreateInvoiceRequest({
     required this.clientCompanyId,
@@ -149,13 +149,16 @@ class CreateInvoiceRequest {
     this.dueDate,
   });
 
+  String _fmtDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
   Map<String, dynamic> toJson() => {
         'clientCompanyId': clientCompanyId,
-        'periodFrom': periodFrom,
-        'periodTo': periodTo,
+        'periodFrom': _fmtDate(periodFrom),
+        'periodTo': _fmtDate(periodTo),
         'taxRate': taxRate,
         'currency': currency,
         if (notes != null) 'notes': notes,
-        if (dueDate != null) 'dueDate': dueDate,
+        if (dueDate != null) 'dueDate': _fmtDate(dueDate!),
       };
 }

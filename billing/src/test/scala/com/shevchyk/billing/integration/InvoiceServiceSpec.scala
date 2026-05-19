@@ -2,7 +2,7 @@ package com.shevchyk.billing.integration
 
 import com.shevchyk.billing.application.{InvoiceService, InvoiceServiceImpl}
 import com.shevchyk.billing.domain.*
-import com.shevchyk.billing.repository.{ClientCompanyRepository, InvoiceRepository, PostgresClientCompanyRepository, PostgresInvoiceRepository}
+import com.shevchyk.billing.repository.{PostgresClientCompanyRepository, PostgresInvoiceRepository}
 import com.shevchyk.core.database.PostgresTestContainer
 import com.shevchyk.core.domain.*
 import doobie.*
@@ -213,7 +213,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
       )
     },
 
-    test("recalculate computes totals correctly with tax") {
+    test("items are persisted and summed correctly") {
       for {
         xa   <- ZIO.service[Transactor[Task]]
         _    <- seedTestData(xa)

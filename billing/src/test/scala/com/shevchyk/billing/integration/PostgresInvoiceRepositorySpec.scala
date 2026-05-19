@@ -1,7 +1,7 @@
 package com.shevchyk.billing.integration
 
 import com.shevchyk.billing.domain.*
-import com.shevchyk.billing.repository.{ClientCompanyRepository, InvoiceRepository, PostgresClientCompanyRepository, PostgresInvoiceRepository}
+import com.shevchyk.billing.repository.PostgresInvoiceRepository
 import com.shevchyk.core.database.PostgresTestContainer
 import com.shevchyk.core.domain.*
 import doobie.*
