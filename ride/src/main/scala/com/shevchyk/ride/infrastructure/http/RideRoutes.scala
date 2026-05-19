@@ -90,200 +90,178 @@ object RideRoutes {
       case "CLIENT_SECRETARY" => PersonRole.ClientSecretary
       case _                  => PersonRole.Client
 
-  val authenticatedRoutes: Routes[RideService & ClientAddressService & JwtService, Response] = Routes(
-    Method.POST / "api" / "rides"                                       -> authenticatedJsonHandler[
-      RideService & ClientAddressService,
-      CreateRideApiRequest
-    ] { (user, apiRequest) =>
-      (for {
-        _             <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
-        companyId     <- UuidParser.requireCompanyId(user.companyId)
-        validRequest  <- apiRequest.validate
-        domainRequest <- CreateRideApiRequest
-                           .toDomain(validRequest, companyId)
-                           .map { req =>
-                             // Clients and drivers always create rides for themselves
-                             // Secretaries, dispatchers and client_secretaries can specify a clientId from the request
-                             if (user.role.toUpperCase == "CLIENT" || user.role.toUpperCase == "DRIVER")
-                               req.copy(clientId = PersonId(user.userId))
-                             else
-                               req
-                           }
-        service       <- ZIO.service[RideService]
-        ride          <- service.createRide(domainRequest)
-        // Record from/to addresses for the client after successful ride creation
-        addrService   <- ZIO.service[ClientAddressService]
-        _             <-
-          addrService
-            .recordUsage(ride.clientId, ride.pickupLocation.address, "Pickup", None, None)
-            .tapError(e => ZIO.logWarning(s"Failed to record from address: $e"))
-            .ignore
-        _             <-
-          addrService
-            .recordUsage(ride.clientId, ride.dropoffLocation.address, "Dropoff", None, None)
-            .tapError(e => ZIO.logWarning(s"Failed to record to address: $e"))
-            .ignore
-        rideDto        = RideDto.fromDomain(ride)
-      } yield Response(Status.Created, body = Body.fromString(rideDto.toJson))).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    },
-    Method.GET / "api" / "rides" / "pending"                            -> authenticatedHandler[RideService] { (user, _) =>
-      (for {
-        _       <- AuthMiddleware.checkRole(user, "DISPATCHER")
-        service <- ZIO.service[RideService]
-        rides   <- service.getRidesByStatus(RideStatus.Requested)
-        rideDtos = rides.map(r => RideDto.fromDomain(r))
-      } yield Response.json(rideDtos.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    },
-    Method.GET / "api" / "rides" / "driver" / string("driverId")        -> handler { (driverId: String, request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
-        driverPid <- UuidParser.parsePersonId(driverId)
-        _         <- AuthMiddleware.checkRoleOrOwner(user, driverPid.value, "DISPATCHER")
-        service   <- ZIO.service[RideService]
-        rides     <- service.getDriverRides(driverPid)
-        rideDtos   = rides.map(r => RideDto.fromDomain(r))
-      } yield Response.json(rideDtos.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    },
-    Method.GET / "api" / "rides" / "client" / string("clientId")        -> handler { (clientId: String, request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
-        clientPid <- UuidParser.parsePersonId(clientId)
-        _         <- AuthMiddleware.checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
-        service   <- ZIO.service[RideService]
-        rides     <- service.getClientRides(clientPid)
-        rideDtos   = rides.map(r => RideDto.fromDomain(r))
-      } yield Response.json(rideDtos.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    },
-    Method.PUT / "api" / "rides" / string("rideId") / "status"          -> handler { (rideId: String, request: Request) =>
-      (for {
-        user         <- AuthMiddleware.authenticateRequest(request)
-        _            <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER")
-        bodyStr      <- request.body.asString
-        apiRequest   <- ZIO
-                          .fromEither(bodyStr.fromJson[RideStatusUpdateRequest])
-                          .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
-        validated    <- apiRequest.validate
-        parsedRideId <- UuidParser.parseRideId(rideId)
-        service      <- ZIO.service[RideService]
-        ride         <- service.updateRideStatus(
-                          parsedRideId,
-                          UpdateRideStatusRequest(RideStatus.valueOf(validated.status)),
-                          PersonId(user.userId),
-                          toPersonRole(user.role)
-                        )
-        rideDto       = RideDto.fromDomain(ride)
-      } yield Response.json(rideDto.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    },
-    Method.PUT / "api" / "rides" / string("rideId") / "assign-driver"   -> handler { (rideId: String, request: Request) =>
-      (for {
-        user           <- AuthMiddleware.authenticateRequest(request)
-        _              <- AuthMiddleware.checkRole(user, "DISPATCHER")
-        bodyStr        <- request.body.asString
-        apiRequest     <- ZIO
-                            .fromEither(bodyStr.fromJson[AssignDriverRequest])
-                            .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
-        validated      <- apiRequest.validate
-        parsedRideId   <- UuidParser.parseRideId(rideId)
-        parsedDriverId <- UuidParser.parsePersonId(validated.driverId)
-        service        <- ZIO.service[RideService]
-        ride           <- service.assignDriver(parsedRideId, parsedDriverId)
-        rideDto         = RideDto.fromDomain(ride)
-      } yield Response.json(rideDto.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    },
-    Method.PUT / "api" / "rides" / string("rideId") / "reassign-driver" -> handler {
-      (rideId: String, request: Request) =>
+  val authenticatedRoutes: Routes[RideService & ClientAddressService & PersonRepository & JwtService, Response] =
+    Routes(
+      Method.POST / "api" / "rides"                                       -> authenticatedJsonHandler[
+        RideService & ClientAddressService,
+        CreateRideApiRequest
+      ] { (user, apiRequest) =>
         (for {
-          user           <- AuthMiddleware.authenticateRequest(request)
-          _              <- AuthMiddleware.checkRole(user, "DISPATCHER")
-          bodyStr        <- request.body.asString
-          apiRequest     <- ZIO
-                              .fromEither(bodyStr.fromJson[AssignDriverRequest])
-                              .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
-          validated      <- apiRequest.validate
-          parsedRideId   <- UuidParser.parseRideId(rideId)
-          parsedDriverId <- UuidParser.parsePersonId(validated.driverId)
-          service        <- ZIO.service[RideService]
-          ride           <- service.reassignDriver(parsedRideId, parsedDriverId)
-          rideDto         = RideDto.fromDomain(ride)
+          _             <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
+          companyId     <- UuidParser.requireCompanyId(user.companyId)
+          validRequest  <- apiRequest.validate
+          domainRequest <- CreateRideApiRequest
+                             .toDomain(validRequest, companyId)
+                             .map { req =>
+                               // Clients and drivers always create rides for themselves
+                               // Secretaries, dispatchers and client_secretaries can specify a clientId from the request
+                               if (user.role.toUpperCase == "CLIENT" || user.role.toUpperCase == "DRIVER")
+                                 req.copy(clientId = PersonId(user.userId))
+                               else
+                                 req
+                             }
+          service       <- ZIO.service[RideService]
+          ride          <- service.createRide(domainRequest)
+          // Record from/to addresses for the client after successful ride creation
+          addrService   <- ZIO.service[ClientAddressService]
+          _             <-
+            addrService
+              .recordUsage(ride.clientId, ride.pickupLocation.address, "Pickup", None, None)
+              .tapError(e => ZIO.logWarning(s"Failed to record from address: $e"))
+              .ignore
+          _             <-
+            addrService
+              .recordUsage(ride.clientId, ride.dropoffLocation.address, "Dropoff", None, None)
+              .tapError(e => ZIO.logWarning(s"Failed to record to address: $e"))
+              .ignore
+          rideDto        = RideDto.fromDomain(ride)
+        } yield Response(Status.Created, body = Body.fromString(rideDto.toJson))).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleRideError(ex)
+        }
+      },
+      Method.GET / "api" / "rides" / "pending"                            -> authenticatedHandler[RideService & PersonRepository] { (user, _) =>
+        (for {
+          _          <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          service    <- ZIO.service[RideService]
+          personRepo <- ZIO.service[PersonRepository]
+          rides      <- service.getRidesByStatus(RideStatus.Requested)
+          clientIds   = rides.map(_.clientId).distinct
+          persons    <- ZIO.foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+          clientMap   = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+          rideDtos    = rides.map(r => RideDto.fromDomain(r, clientName = clientMap.get(r.clientId)))
+        } yield Response.json(rideDtos.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleRideError(ex)
+        }
+      },
+      Method.GET / "api" / "rides" / "driver" / string("driverId")        -> handler { (driverId: String, request: Request) =>
+        (for {
+          user      <- AuthMiddleware.authenticateRequest(request)
+          driverPid <- UuidParser.parsePersonId(driverId)
+          _         <- AuthMiddleware.checkRoleOrOwner(user, driverPid.value, "DISPATCHER")
+          service   <- ZIO.service[RideService]
+          rides     <- service.getDriverRides(driverPid)
+          rideDtos   = rides.map(r => RideDto.fromDomain(r))
+        } yield Response.json(rideDtos.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleRideError(ex)
+        }
+      },
+      Method.GET / "api" / "rides" / "client" / string("clientId")        -> handler { (clientId: String, request: Request) =>
+        (for {
+          user      <- AuthMiddleware.authenticateRequest(request)
+          clientPid <- UuidParser.parsePersonId(clientId)
+          _         <- AuthMiddleware.checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
+          service   <- ZIO.service[RideService]
+          rides     <- service.getClientRides(clientPid)
+          rideDtos   = rides.map(r => RideDto.fromDomain(r))
+        } yield Response.json(rideDtos.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleRideError(ex)
+        }
+      },
+      Method.PUT / "api" / "rides" / string("rideId") / "status"          -> handler { (rideId: String, request: Request) =>
+        (for {
+          user         <- AuthMiddleware.authenticateRequest(request)
+          _            <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER")
+          bodyStr      <- request.body.asString
+          apiRequest   <- ZIO
+                            .fromEither(bodyStr.fromJson[RideStatusUpdateRequest])
+                            .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+          validated    <- apiRequest.validate
+          parsedRideId <- UuidParser.parseRideId(rideId)
+          service      <- ZIO.service[RideService]
+          ride         <- service.updateRideStatus(
+                            parsedRideId,
+                            UpdateRideStatusRequest(RideStatus.valueOf(validated.status)),
+                            PersonId(user.userId),
+                            toPersonRole(user.role)
+                          )
+          rideDto       = RideDto.fromDomain(ride)
         } yield Response.json(rideDto.toJson)).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      => handleRideError(ex)
         }
-    },
-    Method.PUT / "api" / "rides" / string("rideId")                     -> handler { (rideId: String, request: Request) =>
-      (for {
-        user         <- AuthMiddleware.authenticateRequest(request)
-        _            <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER", "SECRETARY")
-        bodyStr      <- request.body.asString
-        apiRequest   <- ZIO
-                          .fromEither(bodyStr.fromJson[UpdateRideDetailsApiRequest])
-                          .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
-        parsedRideId <- UuidParser.parseRideId(rideId)
-        companyId    <- UuidParser.requireCompanyId(user.companyId)
-        service      <- ZIO.service[RideService]
-        ride         <- service.updateRideDetails(
-                          parsedRideId,
-                          UpdateRideDetailsApiRequest.toDomain(apiRequest),
-                          PersonId(user.userId),
-                          toPersonRole(user.role),
-                          Some(companyId)
-                        )
-        rideDto       = RideDto.fromDomain(ride)
-      } yield Response.json(rideDto.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    },
-    Method.GET / "api" / "rides" / string("rideId")                     -> handler { (rideId: String, request: Request) =>
-      (for {
-        user         <- AuthMiddleware.authenticateRequest(request)
-        _            <- AuthMiddleware.checkRole(user, "DRIVER", "CLIENT", "DISPATCHER", "SECRETARY")
-        parsedRideId <- UuidParser.parseRideId(rideId)
-        service      <- ZIO.service[RideService]
-        ride         <- service.getRideById(parsedRideId)
-        companyId    <- UuidParser.requireCompanyId(user.companyId)
-        _            <-
-          ZIO.when(ride.companyId != companyId)(
-            ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
-          )
-        // Clients can only see their own rides; drivers only their assigned rides
-        _            <-
-          ZIO.when(user.role.toUpperCase == "CLIENT" && ride.clientId.value != user.userId)(
-            ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
-          )
-        _            <-
-          ZIO.when(user.role.toUpperCase == "DRIVER" && !ride.driverId.exists(_.value == user.userId))(
-            ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
-          )
-        rideDto       = RideDto.fromDomain(ride)
-      } yield Response.json(rideDto.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    },
-    Method.POST / "api" / "rides" / string("rideId") / "airport-timing" -> handler {
-      (rideId: String, request: Request) =>
+      },
+      Method.PUT / "api" / "rides" / string("rideId") / "assign-driver"   -> handler {
+        (rideId: String, request: Request) =>
+          (for {
+            user           <- AuthMiddleware.authenticateRequest(request)
+            _              <- AuthMiddleware.checkRole(user, "DISPATCHER")
+            bodyStr        <- request.body.asString
+            apiRequest     <- ZIO
+                                .fromEither(bodyStr.fromJson[AssignDriverRequest])
+                                .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+            validated      <- apiRequest.validate
+            parsedRideId   <- UuidParser.parseRideId(rideId)
+            parsedDriverId <- UuidParser.parsePersonId(validated.driverId)
+            service        <- ZIO.service[RideService]
+            ride           <- service.assignDriver(parsedRideId, parsedDriverId)
+            rideDto         = RideDto.fromDomain(ride)
+          } yield Response.json(rideDto.toJson)).catchAll {
+            case response: Response => ZIO.succeed(response)
+            case ex: Throwable      => handleRideError(ex)
+          }
+      },
+      Method.PUT / "api" / "rides" / string("rideId") / "reassign-driver" -> handler {
+        (rideId: String, request: Request) =>
+          (for {
+            user           <- AuthMiddleware.authenticateRequest(request)
+            _              <- AuthMiddleware.checkRole(user, "DISPATCHER")
+            bodyStr        <- request.body.asString
+            apiRequest     <- ZIO
+                                .fromEither(bodyStr.fromJson[AssignDriverRequest])
+                                .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+            validated      <- apiRequest.validate
+            parsedRideId   <- UuidParser.parseRideId(rideId)
+            parsedDriverId <- UuidParser.parsePersonId(validated.driverId)
+            service        <- ZIO.service[RideService]
+            ride           <- service.reassignDriver(parsedRideId, parsedDriverId)
+            rideDto         = RideDto.fromDomain(ride)
+          } yield Response.json(rideDto.toJson)).catchAll {
+            case response: Response => ZIO.succeed(response)
+            case ex: Throwable      => handleRideError(ex)
+          }
+      },
+      Method.PUT / "api" / "rides" / string("rideId")                     -> handler { (rideId: String, request: Request) =>
         (for {
           user         <- AuthMiddleware.authenticateRequest(request)
-          _            <- AuthMiddleware.checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
+          _            <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER", "SECRETARY")
+          bodyStr      <- request.body.asString
+          apiRequest   <- ZIO
+                            .fromEither(bodyStr.fromJson[UpdateRideDetailsApiRequest])
+                            .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+          parsedRideId <- UuidParser.parseRideId(rideId)
+          companyId    <- UuidParser.requireCompanyId(user.companyId)
+          service      <- ZIO.service[RideService]
+          ride         <- service.updateRideDetails(
+                            parsedRideId,
+                            UpdateRideDetailsApiRequest.toDomain(apiRequest),
+                            PersonId(user.userId),
+                            toPersonRole(user.role),
+                            Some(companyId)
+                          )
+          rideDto       = RideDto.fromDomain(ride)
+        } yield Response.json(rideDto.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleRideError(ex)
+        }
+      },
+      Method.GET / "api" / "rides" / string("rideId")                     -> handler { (rideId: String, request: Request) =>
+        (for {
+          user         <- AuthMiddleware.authenticateRequest(request)
+          _            <- AuthMiddleware.checkRole(user, "DRIVER", "CLIENT", "DISPATCHER", "SECRETARY")
           parsedRideId <- UuidParser.parseRideId(rideId)
           service      <- ZIO.service[RideService]
           ride         <- service.getRideById(parsedRideId)
@@ -292,19 +270,47 @@ object RideRoutes {
             ZIO.when(ride.companyId != companyId)(
               ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
             )
-          now           = java.time.Instant.now()
-          flightTime    = ride.scheduledTime.getOrElse(now.plusSeconds(7200))
-          travelTime    = AirportTimingConfig.travelTimeMinutes
-          bufferTime    = AirportTimingConfig.bufferTimeMinutes
-          totalTime     = travelTime + bufferTime
-          optimalEntry  = flightTime.minusSeconds(totalTime * 60)
-          latestEntry   = flightTime.minusSeconds(bufferTime * 60)
-          timeToDepart  = java.time.Duration.between(now, optimalEntry).toMinutes.toInt
-          optimalCost   = AirportTimingConfig.optimalParkingCost
-          earlyCost     = AirportTimingConfig.earlyEntryParkingCost
-          savings       = earlyCost - optimalCost
-          response      =
-            s"""{
+          // Clients can only see their own rides; drivers only their assigned rides
+          _            <-
+            ZIO.when(user.role.toUpperCase == "CLIENT" && ride.clientId.value != user.userId)(
+              ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
+            )
+          _            <-
+            ZIO.when(user.role.toUpperCase == "DRIVER" && !ride.driverId.exists(_.value == user.userId))(
+              ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
+            )
+          rideDto       = RideDto.fromDomain(ride)
+        } yield Response.json(rideDto.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleRideError(ex)
+        }
+      },
+      Method.POST / "api" / "rides" / string("rideId") / "airport-timing" -> handler {
+        (rideId: String, request: Request) =>
+          (for {
+            user         <- AuthMiddleware.authenticateRequest(request)
+            _            <- AuthMiddleware.checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
+            parsedRideId <- UuidParser.parseRideId(rideId)
+            service      <- ZIO.service[RideService]
+            ride         <- service.getRideById(parsedRideId)
+            companyId    <- UuidParser.requireCompanyId(user.companyId)
+            _            <-
+              ZIO.when(ride.companyId != companyId)(
+                ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
+              )
+            now           = java.time.Instant.now()
+            flightTime    = ride.scheduledTime.getOrElse(now.plusSeconds(7200))
+            travelTime    = AirportTimingConfig.travelTimeMinutes
+            bufferTime    = AirportTimingConfig.bufferTimeMinutes
+            totalTime     = travelTime + bufferTime
+            optimalEntry  = flightTime.minusSeconds(totalTime * 60)
+            latestEntry   = flightTime.minusSeconds(bufferTime * 60)
+            timeToDepart  = java.time.Duration.between(now, optimalEntry).toMinutes.toInt
+            optimalCost   = AirportTimingConfig.optimalParkingCost
+            earlyCost     = AirportTimingConfig.earlyEntryParkingCost
+            savings       = earlyCost - optimalCost
+            response      =
+              s"""{
           "optimalEntryTime": "${optimalEntry}",
           "latestEntryTime": "${latestEntry}",
           "travelTimeMinutes": $travelTime,
@@ -315,81 +321,89 @@ object RideRoutes {
           "flightStatus": "On time",
           "timeToDepartMinutes": $timeToDepart
         }"""
-        } yield Response.json(response)).catchAll {
+          } yield Response.json(response)).catchAll {
+            case response: Response => ZIO.succeed(response)
+            case ex: Throwable      => handleRideError(ex)
+          }
+      },
+      Method.PUT / "api" / "rides" / string("rideId") / "payment"         -> handler { (rideId: String, request: Request) =>
+        (for {
+          user         <- AuthMiddleware.authenticateRequest(request)
+          _            <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          bodyStr      <- request.body.asString
+          payReq       <- ZIO
+                            .fromEither(bodyStr.fromJson[MarkPaymentRequest])
+                            .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+          parsedRideId <- UuidParser.parseRideId(rideId)
+          service      <- ZIO.service[RideService]
+          ride         <- service.markPayment(
+                            parsedRideId,
+                            payReq.paymentStatus,
+                            payReq.paymentMethod
+                          )
+          rideDto       = RideDto.fromDomain(ride)
+        } yield Response.json(rideDto.toJson)).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      => handleRideError(ex)
         }
-    },
-    Method.PUT / "api" / "rides" / string("rideId") / "payment"         -> handler { (rideId: String, request: Request) =>
-      (for {
-        user         <- AuthMiddleware.authenticateRequest(request)
-        _            <- AuthMiddleware.checkRole(user, "DISPATCHER")
-        bodyStr      <- request.body.asString
-        payReq       <- ZIO
-                          .fromEither(bodyStr.fromJson[MarkPaymentRequest])
-                          .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
-        parsedRideId <- UuidParser.parseRideId(rideId)
-        service      <- ZIO.service[RideService]
-        ride         <- service.markPayment(
-                          parsedRideId,
-                          payReq.paymentStatus,
-                          payReq.paymentMethod
-                        )
-        rideDto       = RideDto.fromDomain(ride)
-      } yield Response.json(rideDto.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
+      },
+      Method.GET / "api" / "rides" / "unpaid"                             -> handler { (request: Request) =>
+        (for {
+          user       <- AuthMiddleware.authenticateRequest(request)
+          _          <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          service    <- ZIO.service[RideService]
+          personRepo <- ZIO.service[PersonRepository]
+          rides      <- service.getUnpaidCompletedRides
+          clientIds   = rides.map(_.clientId).distinct
+          persons    <- ZIO.foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+          clientMap   = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+          rideDtos    = rides.map(r => RideDto.fromDomain(r, clientName = clientMap.get(r.clientId)))
+        } yield Response.json(rideDtos.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleRideError(ex)
+        }
+      },
+      Method.PUT / "api" / "rides" / string("rideId") / "cancel"          -> handler { (rideId: String, request: Request) =>
+        (for {
+          user         <- AuthMiddleware.authenticateRequest(request)
+          _            <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER", "CLIENT")
+          bodyStr      <- request.body.asString
+          cancelReq    <- ZIO
+                            .fromEither(bodyStr.fromJson[CancelRideApiRequest])
+                            .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+          parsedRideId <- UuidParser.parseRideId(rideId)
+          service      <- ZIO.service[RideService]
+          ride         <- service.cancelRideWithReason(
+                            parsedRideId,
+                            PersonId(user.userId),
+                            toPersonRole(user.role),
+                            CancelRideRequest(cancelReq.reason, cancelReq.fee.map(BigDecimal(_)))
+                          )
+          rideDto       = RideDto.fromDomain(ride)
+        } yield Response.json(rideDto.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleRideError(ex)
+        }
+      },
+      Method.GET / "api" / "rides"                                        -> handler { (request: Request) =>
+        (for {
+          user       <- AuthMiddleware.authenticateRequest(request)
+          offset      = request.url.queryParams.queryParam("offset").flatMap(_.toIntOption).getOrElse(0)
+          limit       = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50)
+          companyId  <- UuidParser.requireCompanyId(user.companyId)
+          service    <- ZIO.service[RideService]
+          personRepo <- ZIO.service[PersonRepository]
+          rides      <- service.getRidesByCompanyPaginated(companyId, offset, limit)
+          clientIds   = rides.map(_.clientId).distinct
+          persons    <- ZIO.foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+          clientMap   = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+          rideDtos    = rides.map(r => RideDto.fromDomain(r, clientName = clientMap.get(r.clientId)))
+        } yield Response.json(rideDtos.toJson)).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleRideError(ex)
+        }
       }
-    },
-    Method.GET / "api" / "rides" / "unpaid"                             -> handler { (request: Request) =>
-      (for {
-        user    <- AuthMiddleware.authenticateRequest(request)
-        _       <- AuthMiddleware.checkRole(user, "DISPATCHER")
-        service <- ZIO.service[RideService]
-        rides   <- service.getUnpaidCompletedRides
-        rideDtos = rides.map(r => RideDto.fromDomain(r))
-      } yield Response.json(rideDtos.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    },
-    Method.PUT / "api" / "rides" / string("rideId") / "cancel"          -> handler { (rideId: String, request: Request) =>
-      (for {
-        user         <- AuthMiddleware.authenticateRequest(request)
-        _            <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER", "CLIENT")
-        bodyStr      <- request.body.asString
-        cancelReq    <- ZIO
-                          .fromEither(bodyStr.fromJson[CancelRideApiRequest])
-                          .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
-        parsedRideId <- UuidParser.parseRideId(rideId)
-        service      <- ZIO.service[RideService]
-        ride         <- service.cancelRideWithReason(
-                          parsedRideId,
-                          PersonId(user.userId),
-                          toPersonRole(user.role),
-                          CancelRideRequest(cancelReq.reason, cancelReq.fee.map(BigDecimal(_)))
-                        )
-        rideDto       = RideDto.fromDomain(ride)
-      } yield Response.json(rideDto.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    },
-    Method.GET / "api" / "rides"                                        -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
-        offset     = request.url.queryParams.queryParam("offset").flatMap(_.toIntOption).getOrElse(0)
-        limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50)
-        companyId <- UuidParser.requireCompanyId(user.companyId)
-        service   <- ZIO.service[RideService]
-        rides     <- service.getRidesByCompanyPaginated(companyId, offset, limit)
-        rideDtos   = rides.map(r => RideDto.fromDomain(r))
-      } yield Response.json(rideDtos.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleRideError(ex)
-      }
-    }
-  )
+    )
 
   val clientLocationRoutes: Routes[ClientLocationService & JwtService, Response] = Routes(
     Method.POST / "api" / "rides" / string("rideId") / "client-location" -> handler {

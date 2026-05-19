@@ -25,7 +25,7 @@ object RideApiSpec extends ZIOSpecDefault {
     def sendDriverAssignment(data: RideConfirmationData): Task[Unit] = ZIO.unit
   )
 
-  private def runRequest(request: Request): ZIO[RideService & ClientAddressService & JwtService, Nothing, Response] =
+  private def runRequest(request: Request): ZIO[RideService & ClientAddressService & PersonRepository & JwtService, Nothing, Response] =
     RideRoutes.authenticatedRoutes.run(request).either.map {
       case Left(either) => either.merge
       case Right(response) => response

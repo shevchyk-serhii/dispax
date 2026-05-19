@@ -29,6 +29,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   void initState() {
     super.initState();
     context.read<RideBloc>().add(const RideLoadPendingRequested());
+    context.read<ScheduleBloc>().add(ScheduleLoadForDate(date: DateTime.now()));
   }
 
   List<Ride> _applyFiltersAndSort(List<Ride> rides) {
