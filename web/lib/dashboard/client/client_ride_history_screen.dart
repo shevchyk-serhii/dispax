@@ -573,6 +573,8 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
   Future<void> _showRateDialog(BuildContext context, Ride ride) async {
     final apiClient = context.read<AuthBloc>().apiClient;
     final rideBloc = context.read<RideBloc>();
+    final user = context.read<AuthBloc>().state.user;
+    final messenger = ScaffoldMessenger.of(context);
 
     final result = await showDialog<Map<String, dynamic>?>(
       context: context,
@@ -586,17 +588,16 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           'comment': result['comment'],
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             const SnackBar(content: Text('Thank you for your rating!'), backgroundColor: AppColors.success),
           );
-          final authState = context.read<AuthBloc>().state;
-          if (authState.user != null) {
-            rideBloc.add(RideLoadRequested(user: authState.user!));
+          if (user != null) {
+            rideBloc.add(RideLoadRequested(user: user));
           }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             SnackBar(content: Text('Failed to submit rating: $e'), backgroundColor: AppColors.error),
           );
         }

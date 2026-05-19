@@ -222,11 +222,11 @@ class RideService {
     }
   }
 
-  Future<void> cancelRide(String id, String reason) async {
+  Future<void> cancelRide(String id, String reason, {double? fee}) async {
     try {
-      final response = await privateApiClient.put('/rides/$id/cancel', {
-        'reason': reason,
-      });
+      final body = <String, dynamic>{'reason': reason};
+      if (fee != null) body['fee'] = fee;
+      final response = await privateApiClient.put('/rides/$id/cancel', body);
       if (response.statusCode != 200) {
         throw ApiException('Failed to cancel ride: ${response.statusCode}');
       }

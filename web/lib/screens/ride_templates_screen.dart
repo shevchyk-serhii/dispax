@@ -211,6 +211,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
 
+                final navigator = Navigator.of(ctx);
                 final request = CreateRideTemplateRequest(
                   name: nameController.text,
                   clientId: selectedClientId!,
@@ -226,7 +227,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   final response = await apiClient.post('/ride-templates', request.toJson());
 
                   if (!mounted) return;
-                  Navigator.pop(ctx);
+                  navigator.pop();
                   if (response.statusCode == 200 || response.statusCode == 201) {
                     _loadData();
                   } else {

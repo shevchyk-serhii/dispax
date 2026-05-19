@@ -284,6 +284,33 @@ void main() {
           throwsA(isA<ApiException>()),
         );
       });
+
+      test('sends fee when provided', () async {
+        Map<String, dynamic>? capturedBody;
+        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
+            .thenAnswer((invocation) async {
+          capturedBody = invocation.positionalArguments[1] as Map<String, dynamic>;
+          return jsonResponse({});
+        });
+
+        await rideService.cancelRide('ride-1', 'No show', fee: 25.0);
+
+        expect(capturedBody?['reason'], 'No show');
+        expect(capturedBody?['fee'], 25.0);
+      });
+
+      test('does not send fee when not provided', () async {
+        Map<String, dynamic>? capturedBody;
+        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
+            .thenAnswer((invocation) async {
+          capturedBody = invocation.positionalArguments[1] as Map<String, dynamic>;
+          return jsonResponse({});
+        });
+
+        await rideService.cancelRide('ride-1', 'Client Request');
+
+        expect(capturedBody?.containsKey('fee'), isFalse);
+      });
     });
   });
 }

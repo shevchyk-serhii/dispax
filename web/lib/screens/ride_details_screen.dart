@@ -360,7 +360,6 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   Future<void> _cancelRide(BuildContext context) async {
     final authState = context.read<AuthBloc>().state;
     final isDispatcher = authState.user?.role == PersonRole.dispatcher;
-    final apiClient = context.read<AuthBloc>().apiClient;
 
     final result = await showDialog<Map<String, dynamic>?>(
       context: context,
@@ -370,14 +369,11 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     if (result != null && mounted) {
       setState(() => _isLoading = true);
       try {
-        final body = <String, dynamic>{
-          'status': 'Cancelled',
-          'cancellationReason': result['reason'],
-        };
-        if (result['fee'] != null) {
-          body['cancellationFee'] = result['fee'];
-        }
-        await apiClient.patch('/rides/${_currentRide.id}/status', body);
+        await _rideService.cancelRide(
+          _currentRide.id,
+          result['reason'] as String,
+          fee: result['fee'] as double?,
+        );
         setState(() {
           _currentRide = _currentRide.copyWith(
             status: RideStatus.cancelled,
