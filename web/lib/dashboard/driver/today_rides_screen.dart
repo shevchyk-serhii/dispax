@@ -39,7 +39,53 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
           _approachingDistances[event.rideId!] = event.distanceMeters ?? 0;
         });
       }
+      if (event.isRideAssigned && event.rideId != null) {
+        final authState = context.read<AuthBloc>().state;
+        if (event.driverId == authState.user?.id) {
+          _showRideAssignedDialog(event.rideId!);
+        }
+      }
     });
+  }
+
+  Future<void> _showRideAssignedDialog(String rideId) async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New ride assigned'),
+        content: const Text('You have been assigned a new ride. Do you accept it?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Decline'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Accept'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (accepted == true) {
+      context.read<RideBloc>().add(
+        RideLoadRequested(user: context.read<AuthBloc>().state.user!),
+      );
+    } else {
+      try {
+        await _rideService?.cancelRide(rideId, 'Driver Unavailable');
+        if (mounted) {
+          context.read<RideBloc>().add(
+            RideLoadRequested(user: context.read<AuthBloc>().state.user!),
+          );
+        }
+      } catch (_) {
+        // best-effort
+      }
+    }
   }
 
   @override

@@ -308,5 +308,72 @@ void main() {
         isA<RideState>().having((s) => s.hasError, 'hasError', true),
       ],
     );
+
+    group('RideStatusReceived (task 12: local WS status update)', () {
+      blocTest<RideBloc, RideState>(
+        'updates matching ride status without HTTP call',
+        build: buildBloc,
+        seed: () => RideState.loaded([
+          TestFixtures.ride(id: 'ride-1', status: RideStatus.requested),
+          TestFixtures.ride(id: 'ride-2', status: RideStatus.requested),
+        ]),
+        act: (bloc) => bloc.add(
+          const RideStatusReceived(rideId: 'ride-1', newStatus: RideStatus.assigned),
+        ),
+        expect: () => [
+          isA<RideState>().having(
+            (s) => s.rides.firstWhere((r) => r.id == 'ride-1').status,
+            'ride-1 status',
+            RideStatus.assigned,
+          ),
+        ],
+        verify: (_) {
+          // No HTTP calls should be made
+          verifyNever(() => mockRideService.getRidesForUser(any()));
+          verifyNever(() => mockRideService.updateRideStatus(any(), any()));
+        },
+      );
+
+      blocTest<RideBloc, RideState>(
+        'does not affect other rides',
+        build: buildBloc,
+        seed: () => RideState.loaded([
+          TestFixtures.ride(id: 'ride-1', status: RideStatus.requested),
+          TestFixtures.ride(id: 'ride-2', status: RideStatus.requested),
+        ]),
+        act: (bloc) => bloc.add(
+          const RideStatusReceived(rideId: 'ride-1', newStatus: RideStatus.inProgress),
+        ),
+        expect: () => [
+          isA<RideState>().having(
+            (s) => s.rides.firstWhere((r) => r.id == 'ride-2').status,
+            'ride-2 status unchanged',
+            RideStatus.requested,
+          ),
+        ],
+      );
+
+      blocTest<RideBloc, RideState>(
+        'no-op when rides list is empty',
+        build: buildBloc,
+        seed: () => RideState.loaded([]),
+        act: (bloc) => bloc.add(
+          const RideStatusReceived(rideId: 'ride-1', newStatus: RideStatus.cancelled),
+        ),
+        expect: () => [],
+      );
+
+      blocTest<RideBloc, RideState>(
+        'unknown rideId emits nothing',
+        build: buildBloc,
+        seed: () => RideState.loaded([
+          TestFixtures.ride(id: 'ride-1', status: RideStatus.requested),
+        ]),
+        act: (bloc) => bloc.add(
+          const RideStatusReceived(rideId: 'unknown-id', newStatus: RideStatus.cancelled),
+        ),
+        expect: () => [],
+      );
+    });
   });
 }

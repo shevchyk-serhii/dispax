@@ -99,3 +99,14 @@ class RideReassignRequested extends RideEvent {
   @override
   List<Object> get props => [rideId, newDriverId];
 }
+
+/// Locally applies a status change received via WebSocket — no HTTP call.
+class RideStatusReceived extends RideEvent {
+  final String rideId;
+  final RideStatus newStatus;
+
+  const RideStatusReceived({required this.rideId, required this.newStatus});
+
+  @override
+  List<Object> get props => [rideId, newStatus];
+}

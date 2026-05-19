@@ -16,6 +16,7 @@ import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'modules/ride_management/services/ride_service.dart';
+import 'modules/ride_management/models/ride.dart';
 import 'modules/schedule_management/services/schedule_service.dart';
 import 'modules/core/services/websocket_service.dart';
 import 'modules/core/services/push_notification_service.dart';
@@ -191,7 +192,18 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
     super.initState();
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
-      if (event.isRideAssigned || event.isRideStatusChanged || event.isRideCreated) {
+      if (event.isRideStatusChanged &&
+          event.rideId != null &&
+          event.newStatus != null) {
+        context.read<RideBloc>().add(
+          RideStatusReceived(
+            rideId: event.rideId!,
+            newStatus: RideStatus.fromString(event.newStatus!),
+          ),
+        );
+        return;
+      }
+      if (event.isRideAssigned || event.isRideCreated) {
         _refreshRides();
       }
     });
