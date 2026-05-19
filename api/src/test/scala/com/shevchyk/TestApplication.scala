@@ -1,6 +1,5 @@
 package com.shevchyk
 
-import com.shevchyk.ride.infrastructure.http.MockRideRoutes
 import com.shevchyk.app.routes.UserRoutes
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.auth.repository.TokenRepository
@@ -80,8 +79,7 @@ object TestApplication extends ZIOAppDefault:
       Method.GET / "health" -> handler(Response.text("Der Oktopus Modular API - OK"))
     ) ++
       AuthRoutes.routes ++
-      UserRoutes.routes ++
-      MockRideRoutes.routes
+      UserRoutes.routes
 
   def run: ZIO[ZIOAppArgs, Any, Any] =
     ZIO.serviceWithZIO[ServerConfig] { serverConfig =>

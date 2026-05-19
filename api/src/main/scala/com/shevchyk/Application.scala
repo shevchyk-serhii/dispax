@@ -1,13 +1,6 @@
 package com.shevchyk
 
-import com.shevchyk.ride.infrastructure.http.{
-  RideRoutes,
-  MockRideRoutes,
-  ExpenseRoutes,
-  RideTemplateRoutes,
-  StatsRoutes,
-  ExportRoutes
-}
+import com.shevchyk.ride.infrastructure.http.{RideRoutes, ExpenseRoutes, RideTemplateRoutes, StatsRoutes, ExportRoutes}
 import com.shevchyk.ride.application.service.{RideService, ClientLocationService, ChatService, ClientAddressService}
 import com.shevchyk.ride.repository.{
   RideRepository,
@@ -131,9 +124,7 @@ object Application extends ZIOAppDefault:
   private val invoiceRoutes         = InvoiceRoutes.authenticatedRoutes
   private val billingCompanyRoutes  = BillingCompanyRoutes.authenticatedRoutes
 
-  private val mockRoutes =
-    if sys.env.getOrElse("ENABLE_MOCK_ROUTES", "false") == "true" then MockRideRoutes.routes else Routes.empty
-  private val wsRoutes   = WebSocketRoutes.wsRoutes
+  private val wsRoutes = WebSocketRoutes.wsRoutes
 
   def run: ZIO[Any, Throwable, Nothing] = ZIO
     .serviceWithZIO[ServerConfig] { serverConfig =>
@@ -141,12 +132,9 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("🐙 Starting Der Oktopus API Server (PostgreSQL)...") *>
         ZIO.logInfo("📋 Available APIs:") *>
         ZIO.logInfo("  🔍 /health - Health check") *>
-        ZIO.logInfo("  🚗 /api/v2/health - Ride service health") *>
         ZIO.logInfo("  🔐 /api/auth/login - Simple login endpoint") *>
         ZIO.logInfo("  👥 /api/users - User management endpoints") *>
         ZIO.logInfo("  🚗 /api/rides - Rich ride data (PostgreSQL)") *>
-        ZIO.logInfo("  ✈️ /api/flights/{airport}/arrivals|departures - Flight info") *>
-        ZIO.logInfo("  ⏰ /api/airport/timing - Airport timing calculation") *>
         ZIO.logInfo("  📊 /api/stats/rides - Ride statistics") *>
         ZIO.logInfo("  📅 /api/schedules - Schedule management") *>
         ZIO.logInfo("  🔌 /api/ws - WebSocket real-time updates") *>
@@ -162,7 +150,7 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + schedule + notification + PostgreSQL repositories") *>
         ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
         Server.serve(
-          (publicRoutes ++ mockRoutes ++ rideRoutes ++ clientLocationRoutes ++ chatRoutes ++ expenseRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ rideTemplateRoutes ++ notificationRoutes ++ statsRoutes ++ exportRoutes ++ ratingRoutes ++ auditRoutes ++ companySettingsRoutes ++ geofenceRoutes ++ gdprRoutes ++ sessionRoutes ++ blacklistRoutes ++ emergencyRoutes ++ ridePoolRoutes ++ notifPrefRoutes ++ clientAddressRoutes ++ clientCompanyRoutes ++ invoiceRoutes ++ billingCompanyRoutes ++ wsRoutes)
+          (publicRoutes ++ rideRoutes ++ clientLocationRoutes ++ chatRoutes ++ expenseRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ rideTemplateRoutes ++ notificationRoutes ++ statsRoutes ++ exportRoutes ++ ratingRoutes ++ auditRoutes ++ companySettingsRoutes ++ geofenceRoutes ++ gdprRoutes ++ sessionRoutes ++ blacklistRoutes ++ emergencyRoutes ++ ridePoolRoutes ++ notifPrefRoutes ++ clientAddressRoutes ++ clientCompanyRoutes ++ invoiceRoutes ++ billingCompanyRoutes ++ wsRoutes)
             .handleErrorCauseZIO { cause =>
               ZIO
                 .logErrorCause("Unhandled server error", cause)
