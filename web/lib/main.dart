@@ -21,10 +21,7 @@ import 'modules/schedule_management/services/schedule_service.dart';
 import 'modules/core/services/websocket_service.dart';
 import 'modules/core/services/push_notification_service.dart';
 
-import 'widgets/common/splash_screen.dart';
 import 'blocs/app_state/app_state_bloc.dart';
-import 'blocs/app_state/app_state_event.dart';
-import 'blocs/app_state/app_state_state.dart';
 import 'theme/app_theme.dart';
 import 'constants/app_colors.dart';
 

@@ -574,7 +574,7 @@ class RideServiceImpl(
       ride          <- getRideById(rideId)
       updatedRide    = ride
                          .focus(_.paymentStatus)
-                         .replace(Some(paymentStatus))
+                         .replace(paymentStatus)
                          .focus(_.paymentMethod)
                          .replace(paymentMethod.orElse(ride.paymentMethod))
                          .focus(_.paidAt)
@@ -585,7 +585,7 @@ class RideServiceImpl(
   def getUnpaidCompletedRides: IO[RideError, List[Ride]] = rideRepository
     .findByStatus(RideStatus.Completed)
     .mapDatabaseError
-    .map(_.filter(r => r.paymentStatus.isEmpty || r.paymentStatus.contains(PaymentStatus.Unpaid)))
+    .map(_.filter(r => r.paymentStatus == PaymentStatus.Unpaid))
 
   def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]] =
     rideRepository.countByCompanyGroupedByStatus(companyId).mapDatabaseError

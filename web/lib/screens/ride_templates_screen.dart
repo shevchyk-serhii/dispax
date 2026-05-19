@@ -116,6 +116,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
     final notesController = TextEditingController();
     final priceController = TextEditingController();
     final apiClient = context.read<AuthBloc>().apiClient;
+    final messenger = ScaffoldMessenger.of(context);
     String? selectedClientId;
     String recurrencePattern = 'Daily';
     final formKey = GlobalKey<FormState>();
@@ -229,13 +230,13 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   if (response.statusCode == 200 || response.statusCode == 201) {
                     _loadData();
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(content: Text('Failed: ${response.body}'), backgroundColor: AppColors.error),
                     );
                   }
                 } catch (e) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
                   );
                 }

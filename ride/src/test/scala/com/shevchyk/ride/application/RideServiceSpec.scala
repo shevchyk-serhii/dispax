@@ -597,7 +597,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           completed <- service.completeRide(started.id)
           paid      <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
         } yield assertTrue(
-          paid.paymentStatus.contains(PaymentStatus.Paid) &&
+          paid.paymentStatus == PaymentStatus.Paid &&
           paid.paymentMethod.contains(PaymentMethod.Cash)
         )
       }.provide(standardLayers),

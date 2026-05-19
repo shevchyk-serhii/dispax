@@ -2,6 +2,7 @@ package com.shevchyk.driver.application
 
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.application.{EventHub, GeofenceService, ActiveRideInfo}
+import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.driver.infrastructure.http.AvailableDriverDto
@@ -51,6 +52,24 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
     val layer: ZLayer[Any, Nothing, DriverLocationRepository] =
       ZLayer.succeed(new InMemoryDriverLocationRepository)
 
+  // Noop PersonRepository
+  val noopPersonRepository: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
+    new PersonRepository:
+      def create(person: Person): Task[Person] = ZIO.succeed(person)
+      def findById(id: PersonId): Task[Option[Person]] = ZIO.succeed(None)
+      def findByEmail(email: String): Task[Option[Person]] = ZIO.succeed(None)
+      def findByRole(role: PersonRole): Task[List[Person]] = ZIO.succeed(Nil)
+      def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(Nil)
+      def findByCompanyId(companyId: CompanyId): Task[List[Person]] = ZIO.succeed(Nil)
+      def findAll(): Task[List[Person]] = ZIO.succeed(Nil)
+      def update(person: Person): Task[Person] = ZIO.succeed(person)
+      def delete(id: PersonId): Task[Unit] = ZIO.unit
+      def findByStatus(status: UserStatus): Task[List[Person]] = ZIO.succeed(Nil)
+      def searchByQuery(query: String): Task[List[Person]] = ZIO.succeed(Nil)
+      def updateLastLogin(id: PersonId): Task[Unit] = ZIO.unit
+      def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] = ZIO.succeed(Nil)
+  )
+
   // Noop GeofenceService
   val noopGeofenceService: ZLayer[Any, Nothing, GeofenceService] = ZLayer.succeed(
     new GeofenceService:
@@ -64,7 +83,8 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
     InMemoryDriverLocationRepository.layer ++
     EventHub.layer ++
     noopGeofenceService ++
-    InMemoryRideRepository.layer >>>
+    InMemoryRideRepository.layer ++
+    noopPersonRepository >>>
     DriverLocationService.layer
 
   def spec = suite("DriverLocationService")(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
-import '../../../theme/app_theme.dart';
 
 class AirportTransferCard extends StatelessWidget {
   final bool isAirportTransfer;
@@ -76,41 +75,41 @@ class AirportTransferCard extends StatelessWidget {
             if (isAirportTransfer) ...[
               const Divider(),
               const SizedBox(height: AppDimensions.paddingSmall),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<bool>(
-                      title: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.flight_takeoff, size: 16, color: Colors.blue),
-                          const SizedBox(width: 4),
-                          Flexible(child: Text('Departure', overflow: TextOverflow.ellipsis)),
-                        ],
+              RadioGroup<bool>(
+                groupValue: isArrival,
+                onChanged: (v) { if (v != null) onArrivalChanged(v); },
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<bool>(
+                        title: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.flight_takeoff, size: 16, color: Colors.blue),
+                            const SizedBox(width: 4),
+                            Flexible(child: Text('Departure', overflow: TextOverflow.ellipsis)),
+                          ],
+                        ),
+                        subtitle: const Text('To airport'),
+                        value: false,
                       ),
-                      subtitle: const Text('To airport'),
-                      value: false,
-                      groupValue: isArrival,
-                      onChanged: (value) => onArrivalChanged(value!),
                     ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<bool>(
-                      title: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.flight_land, size: 16, color: Colors.green),
-                          const SizedBox(width: 4),
-                          Flexible(child: Text('Arrival', overflow: TextOverflow.ellipsis)),
-                        ],
+                    Expanded(
+                      child: RadioListTile<bool>(
+                        title: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.flight_land, size: 16, color: Colors.green),
+                            const SizedBox(width: 4),
+                            Flexible(child: Text('Arrival', overflow: TextOverflow.ellipsis)),
+                          ],
+                        ),
+                        subtitle: const Text('From airport'),
+                        value: true,
                       ),
-                      subtitle: const Text('From airport'),
-                      value: true,
-                      groupValue: isArrival,
-                      onChanged: (value) => onArrivalChanged(value!),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: AppDimensions.paddingMedium),
               TextFormField(

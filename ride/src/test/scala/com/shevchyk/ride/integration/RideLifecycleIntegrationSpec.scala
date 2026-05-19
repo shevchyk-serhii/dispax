@@ -114,7 +114,7 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
         started.startTime.isDefined &&
         completed.status == RideStatus.Completed &&
         completed.endTime.isDefined &&
-        paid.paymentStatus.contains(PaymentStatus.Paid) &&
+        paid.paymentStatus == PaymentStatus.Paid &&
         paid.paymentMethod.contains(PaymentMethod.Cash) &&
         paid.paidAt.isDefined
       )

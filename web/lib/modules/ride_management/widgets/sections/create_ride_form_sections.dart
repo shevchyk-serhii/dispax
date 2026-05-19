@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../blocs/blocs.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
-import '../../../../theme/app_theme.dart';
 import 'create_ride_basic_info_section.dart';
 import 'create_ride_location_section.dart';
 import 'create_ride_schedule_section.dart';

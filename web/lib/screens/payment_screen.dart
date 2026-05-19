@@ -79,14 +79,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const SizedBox(height: 16),
               const Text('Payment Method:', style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
-              ...['Cash', 'Card', 'Invoice'].map((method) => RadioListTile<String>(
-                title: Text(method),
-                value: method,
+              RadioGroup<String>(
                 groupValue: selectedMethod,
                 onChanged: (v) => setDialogState(() => selectedMethod = v ?? 'Cash'),
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-              )),
+                child: Column(
+                  children: ['Cash', 'Card', 'Invoice'].map((method) => RadioListTile<String>(
+                    title: Text(method),
+                    value: method,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  )).toList(),
+                ),
+              ),
             ],
           ),
           actions: [

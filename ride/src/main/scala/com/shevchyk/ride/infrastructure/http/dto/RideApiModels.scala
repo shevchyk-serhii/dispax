@@ -252,7 +252,7 @@ object RideDto:
       price = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue),
       notes = ride.notes,
       specialRequirements = ride.specialRequirements,
-      paymentStatus = ride.paymentStatus.map(_.toString),
+      paymentStatus = Some(ride.paymentStatus.toString),
       paymentMethod = ride.paymentMethod.map(_.toString),
       paidAt = ride.paidAt.map(_.toString),
       cancellationReason = ride.cancellationReason,

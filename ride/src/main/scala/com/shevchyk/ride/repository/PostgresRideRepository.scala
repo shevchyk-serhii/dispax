@@ -93,7 +93,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.companyId.value}, ${ride.driverId.map(
         _.value
       )},
-        ${ride.requestTime}, ${ride.scheduledTime}, ${ride.requestTime}, ${ride.startTime}, ${ride.endTime},
+        ${ride.pickupDateTime}, ${ride.scheduledTime}, ${ride.requestTime}, ${ride.startTime}, ${ride.endTime},
         ${ride.pickupLocation.address}, ${ride.pickupLocation.latitude}, ${ride.pickupLocation.longitude},
         ${ride.dropoffLocation.address}, ${ride.dropoffLocation.latitude}, ${ride.dropoffLocation.longitude},
         ${ride.status},
@@ -341,7 +341,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
 
   private val rideReadExtra: Read[
     (
-        Option[PaymentStatus],
+        PaymentStatus,
         Option[PaymentMethod],
         Option[Instant], // payment_status, payment_method, paid_at
         Option[String],
@@ -353,7 +353,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   ] =
     Read[
       (
-          Option[PaymentStatus],
+          PaymentStatus,
           Option[PaymentMethod],
           Option[Instant],
           Option[String],

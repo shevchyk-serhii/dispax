@@ -73,7 +73,7 @@ final case class Ride(
     notes: Option[String] = None,
     specifics: Option[RideSpecifics] = None,
     specialRequirements: Option[String] = None,
-    paymentStatus: Option[PaymentStatus] = None,
+    paymentStatus: PaymentStatus = PaymentStatus.Unpaid,
     paymentMethod: Option[PaymentMethod] = None,
     paidAt: Option[Instant] = None,
     cancellationReason: Option[String] = None,

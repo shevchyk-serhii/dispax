@@ -571,6 +571,9 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
   }
 
   Future<void> _showRateDialog(BuildContext context, Ride ride) async {
+    final apiClient = context.read<AuthBloc>().apiClient;
+    final rideBloc = context.read<RideBloc>();
+
     final result = await showDialog<Map<String, dynamic>?>(
       context: context,
       builder: (_) => RateRideDialog(rideId: ride.id),
@@ -578,7 +581,6 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
     if (result != null) {
       try {
-        final apiClient = context.read<AuthBloc>().apiClient;
         await apiClient.post('/rides/${ride.id}/rate', {
           'rating': result['rating'],
           'comment': result['comment'],
@@ -587,7 +589,10 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Thank you for your rating!'), backgroundColor: AppColors.success),
           );
-          loadRides(context);
+          final authState = context.read<AuthBloc>().state;
+          if (authState.user != null) {
+            rideBloc.add(RideLoadRequested(user: authState.user!));
+          }
         }
       } catch (e) {
         if (mounted) {

@@ -360,6 +360,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   Future<void> _cancelRide(BuildContext context) async {
     final authState = context.read<AuthBloc>().state;
     final isDispatcher = authState.user?.role == PersonRole.dispatcher;
+    final apiClient = context.read<AuthBloc>().apiClient;
 
     final result = await showDialog<Map<String, dynamic>?>(
       context: context,
@@ -369,7 +370,6 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     if (result != null && mounted) {
       setState(() => _isLoading = true);
       try {
-        final apiClient = context.read<AuthBloc>().apiClient;
         final body = <String, dynamic>{
           'status': 'Cancelled',
           'cancellationReason': result['reason'],
@@ -396,6 +396,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _rateRide(BuildContext context) async {
+    final apiClient = context.read<AuthBloc>().apiClient;
+
     final result = await showDialog<Map<String, dynamic>?>(
       context: context,
       builder: (_) => RateRideDialog(rideId: _currentRide.id),
@@ -404,7 +406,6 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     if (result != null && mounted) {
       setState(() => _isLoading = true);
       try {
-        final apiClient = context.read<AuthBloc>().apiClient;
         await apiClient.post('/rides/${_currentRide.id}/rate', {
           'rating': result['rating'],
           'comment': result['comment'],

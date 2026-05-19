@@ -225,14 +225,14 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
         repo  = PostgresRideRepository(xa)
         now   = Instant.now()
         ride  = makeRide().copy(
-                  paymentStatus = Some(PaymentStatus.Paid),
+                  paymentStatus = PaymentStatus.Paid,
                   paymentMethod = Some(PaymentMethod.Cash),
                   paidAt = Some(now)
                 )
         _    <- repo.create(ride)
         found <- repo.findById(ride.id)
       } yield assertTrue(
-        found.get.paymentStatus.contains(PaymentStatus.Paid),
+        found.get.paymentStatus == PaymentStatus.Paid,
         found.get.paymentMethod.contains(PaymentMethod.Cash),
         found.get.paidAt.isDefined
       )

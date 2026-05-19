@@ -276,7 +276,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
           ride    <- service.createRide(mkRide())
           paid    <- service.markPayment(ride.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
         } yield assertTrue(
-          paid.paymentStatus.contains(PaymentStatus.Paid) &&
+          paid.paymentStatus == PaymentStatus.Paid &&
             paid.paymentMethod.contains(PaymentMethod.Cash) &&
             paid.paidAt.isDefined
         )
@@ -287,7 +287,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
           ride    <- service.createRide(mkRide())
           pending <- service.markPayment(ride.id, PaymentStatus.Pending, Some(PaymentMethod.Invoice))
         } yield assertTrue(
-          pending.paymentStatus.contains(PaymentStatus.Pending) &&
+          pending.paymentStatus == PaymentStatus.Pending &&
             pending.paymentMethod.contains(PaymentMethod.Invoice) &&
             pending.paidAt.isEmpty
         )
@@ -299,7 +299,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
           _         <- service.markPayment(ride.id, PaymentStatus.Paid, Some(PaymentMethod.Card))
           retrieved <- service.getRideById(ride.id)
         } yield assertTrue(
-          retrieved.paymentStatus.contains(PaymentStatus.Paid) &&
+          retrieved.paymentStatus == PaymentStatus.Paid &&
             retrieved.paymentMethod.contains(PaymentMethod.Card)
         )
       }.provide(standardLayers)
