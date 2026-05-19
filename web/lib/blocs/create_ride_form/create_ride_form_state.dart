@@ -15,6 +15,7 @@ class CreateRideFormState extends Equatable {
   final String? selectedTerminal;
   final CreateRideFormStatus status;
   final String? errorMessage;
+  final bool showNotes;
   final String notes;
   final List<String> specialRequirements;
 
@@ -31,6 +32,7 @@ class CreateRideFormState extends Equatable {
     this.selectedTerminal,
     this.status = CreateRideFormStatus.initial,
     this.errorMessage,
+    this.showNotes = false,
     this.notes = '',
     this.specialRequirements = const [],
   });
@@ -67,6 +69,7 @@ class CreateRideFormState extends Equatable {
     String? selectedTerminal,
     CreateRideFormStatus? status,
     String? errorMessage,
+    bool? showNotes,
     String? notes,
     List<String>? specialRequirements,
   }) {
@@ -83,6 +86,7 @@ class CreateRideFormState extends Equatable {
       selectedTerminal: selectedTerminal ?? this.selectedTerminal,
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
+      showNotes: showNotes ?? this.showNotes,
       notes: notes ?? this.notes,
       specialRequirements: specialRequirements ?? this.specialRequirements,
     );
@@ -109,6 +113,7 @@ class CreateRideFormState extends Equatable {
     selectedTerminal,
     status,
     errorMessage,
+    showNotes,
     notes,
     specialRequirements,
   ];

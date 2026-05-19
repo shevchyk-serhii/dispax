@@ -43,7 +43,10 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
           children: [
             const _CreateRidesTab(),
             const SecretaryReportsPanel(),
-            CreateRideScreen(rideBloc: _rideBloc),
+            CreateRideScreen(
+              rideBloc: _rideBloc,
+              onCreated: () => setState(() => _selectedIndex = 0),
+            ),
             const SettingsScreen(),
           ],
         ),

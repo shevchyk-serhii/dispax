@@ -19,6 +19,7 @@ final case class ClientAddress(
     latitude: Option[Double] = None,
     longitude: Option[Double] = None,
     useCount: Int = 1,
+    aliases: List[String] = Nil,
     createdAt: Instant = Instant.now(),
     updatedAt: Instant = Instant.now()
 ) derives JsonCodec
@@ -27,5 +28,11 @@ final case class SaveClientAddressRequest(
     label: String,
     address: String,
     latitude: Option[Double] = None,
-    longitude: Option[Double] = None
+    longitude: Option[Double] = None,
+    aliases: List[String] = Nil
+) derives JsonCodec
+
+final case class UpdateClientAddressRequest(
+    label: Option[String] = None,
+    aliases: Option[List[String]] = None
 ) derives JsonCodec

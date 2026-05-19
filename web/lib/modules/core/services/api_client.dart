@@ -42,17 +42,28 @@ class ApiClient {
     privateAuthToken = null;
   }
 
+  static http.Response _utf8Response(http.Response r) => http.Response.bytes(
+        r.bodyBytes,
+        r.statusCode,
+        headers: {'content-type': 'application/json; charset=utf-8', ...r.headers},
+        request: r.request,
+        isRedirect: r.isRedirect,
+        persistentConnection: r.persistentConnection,
+        reasonPhrase: r.reasonPhrase,
+      );
+
   Future<http.Response> get(String endpoint) async {
     try {
       var url = '$_baseUrl$endpoint';
       debugPrint('🌐 GET $endpoint');
 
-      final response = await privateClient
+      final raw = await privateClient
           .get(Uri.parse(url), headers: privateHeaders)
           .timeout(const Duration(seconds: 15));
+      final response = _utf8Response(raw);
 
       debugPrint('✅ Response status: ${response.statusCode}');
-      debugPrint('📄 Response body: ${response.body.length > 200 ? response.body.substring(0, 200) + '...' : response.body}');
+      debugPrint('📄 Response body: ${response.body.length > 200 ? '${response.body.substring(0, 200)}...' : response.body}');
       return response;
     } on SocketException catch (e) {
       debugPrint('❌ SocketException: $e');
@@ -82,7 +93,7 @@ class ApiClient {
         headers: privateHeaders,
         body: jsonEncode(data),
       ).timeout(const Duration(seconds: 15));
-      return response;
+      return _utf8Response(response);
     } catch (e) {
       throw ApiException('Failed to perform POST request: $e');
     }
@@ -95,7 +106,7 @@ class ApiClient {
         headers: privateHeaders,
         body: jsonEncode(data),
       ).timeout(const Duration(seconds: 15));
-      return response;
+      return _utf8Response(response);
     } catch (e) {
       throw ApiException('Failed to perform PUT request: $e');
     }
@@ -108,7 +119,7 @@ class ApiClient {
         headers: privateHeaders,
         body: jsonEncode(data),
       ).timeout(const Duration(seconds: 15));
-      return response;
+      return _utf8Response(response);
     } catch (e) {
       throw ApiException('Failed to perform PATCH request: $e');
     }
@@ -120,7 +131,7 @@ class ApiClient {
         Uri.parse('$_baseUrl$endpoint'),
         headers: privateHeaders,
       ).timeout(const Duration(seconds: 15));
-      return response;
+      return _utf8Response(response);
     } catch (e) {
       throw ApiException('Failed to perform DELETE request: $e');
     }

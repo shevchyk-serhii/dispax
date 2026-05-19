@@ -59,7 +59,10 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       onDateChanged: (date) => setState(() => _selectedDate = date),
     ),
     const AnalyticsPanel(),                      // 2: Analytics
-    CreateRideScreen(rideBloc: _rideBloc),       // 3: New Ride
+    CreateRideScreen(                             // 3: New Ride
+      rideBloc: _rideBloc,
+      onCreated: () => setState(() => _mobileTabIndex = 0),
+    ),
     _buildMoreScreen(),                          // 4: More menu
     // Extended screens (accessed via More)
     const DriverEarningsPanel(),                 // 5

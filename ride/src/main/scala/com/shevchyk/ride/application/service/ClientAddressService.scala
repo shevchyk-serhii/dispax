@@ -1,7 +1,7 @@
 package com.shevchyk.ride.application.service
 
 import com.shevchyk.core.domain.PersonId
-import com.shevchyk.ride.domain.{ClientAddress, ClientAddressId, SaveClientAddressRequest}
+import com.shevchyk.ride.domain.{ClientAddress, ClientAddressId, SaveClientAddressRequest, UpdateClientAddressRequest}
 import com.shevchyk.ride.repository.ClientAddressRepository
 import zio.*
 import java.time.Instant
@@ -9,6 +9,12 @@ import java.time.Instant
 trait ClientAddressService:
   def getAddresses(clientId: PersonId): Task[List[ClientAddress]]
   def saveAddress(clientId: PersonId, req: SaveClientAddressRequest): Task[ClientAddress]
+
+  def updateAddress(
+      id: ClientAddressId,
+      clientId: PersonId,
+      req: UpdateClientAddressRequest
+  ): Task[Option[ClientAddress]]
 
   def recordUsage(
       clientId: PersonId,
@@ -23,6 +29,12 @@ class ClientAddressServiceImpl(repo: ClientAddressRepository) extends ClientAddr
 
   override def getAddresses(clientId: PersonId): Task[List[ClientAddress]] = repo.findByClient(clientId)
 
+  override def updateAddress(
+      id: ClientAddressId,
+      clientId: PersonId,
+      req: UpdateClientAddressRequest
+  ): Task[Option[ClientAddress]] = repo.updateLabelAndAliases(id, clientId, req.label, req.aliases)
+
   override def saveAddress(clientId: PersonId, req: SaveClientAddressRequest): Task[ClientAddress] = repo
     .findByAddressText(clientId, req.address)
     .flatMap {
@@ -35,6 +47,7 @@ class ClientAddressServiceImpl(repo: ClientAddressRepository) extends ClientAddr
           address = req.address,
           latitude = req.latitude,
           longitude = req.longitude,
+          aliases = req.aliases,
           createdAt = Instant.now(),
           updatedAt = Instant.now()
         )

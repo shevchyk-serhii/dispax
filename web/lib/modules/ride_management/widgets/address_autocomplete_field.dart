@@ -28,33 +28,34 @@ class AddressAutocompleteField extends StatefulWidget {
 }
 
 class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
-  late TextEditingController _controller;
+  // Bump this key when initialValue is reset to '' to force Autocomplete to
+  // rebuild and clear its internal controller (e.g. after form clear).
+  late int _resetKey;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initialValue);
+    _resetKey = 0;
   }
 
   @override
   void didUpdateWidget(AddressAutocompleteField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialValue != widget.initialValue && _controller.text != widget.initialValue) {
-      _controller.text = widget.initialValue;
+    // When the parent clears the field (initialValue → ''), force a full rebuild
+    // so Autocomplete's internal controller also clears.
+    if (oldWidget.initialValue.isNotEmpty && widget.initialValue.isEmpty) {
+      setState(() => _resetKey++);
     }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  List<ClientAddress> _getFilteredSuggestions(String query) {
+  List<ClientAddress> _getFiltered(String query) {
     if (query.isEmpty) return widget.suggestions.take(5).toList();
     final lower = query.toLowerCase();
     return widget.suggestions
-        .where((a) => a.address.toLowerCase().contains(lower) || a.label.toLowerCase().contains(lower))
+        .where((a) =>
+            a.address.toLowerCase().contains(lower) ||
+            a.label.toLowerCase().contains(lower) ||
+            a.aliases.any((alias) => alias.toLowerCase().contains(lower)))
         .take(5)
         .toList();
   }
@@ -62,20 +63,17 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
   @override
   Widget build(BuildContext context) {
     return Autocomplete<ClientAddress>(
+      key: ValueKey(_resetKey),
+      initialValue: TextEditingValue(text: widget.initialValue),
       optionsBuilder: (textEditingValue) {
         if (widget.suggestions.isEmpty) return const Iterable.empty();
-        return _getFilteredSuggestions(textEditingValue.text);
+        return _getFiltered(textEditingValue.text);
       },
       displayStringForOption: (addr) => addr.address,
-      onSelected: (addr) {
-        _controller.text = addr.address;
-        widget.onChanged(addr.address);
-      },
-      fieldViewBuilder: (context, fieldController, focusNode, onFieldSubmitted) {
-        // Sync external controller changes into the Autocomplete's internal controller
-        fieldController.text = _controller.text;
+      onSelected: (addr) => widget.onChanged(addr.address),
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
         return TextFormField(
-          controller: fieldController,
+          controller: controller,
           focusNode: focusNode,
           decoration: InputDecoration(
             labelText: widget.labelText,
@@ -86,10 +84,7 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
             ),
           ),
           validator: widget.validator,
-          onChanged: (value) {
-            _controller.text = value;
-            widget.onChanged(value);
-          },
+          onChanged: widget.onChanged,
         );
       },
       optionsViewBuilder: (context, onSelected, options) {
@@ -100,39 +95,28 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
             borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 220, maxWidth: 400),
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                itemCount: options.length,
-                itemBuilder: (context, index) {
-                  final addr = options.elementAt(index);
-                  return InkWell(
-                    onTap: () => onSelected(addr),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      child: Row(
-                        children: [
-                          Icon(Icons.history, size: 16, color: Colors.grey[500]),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(addr.label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                                Text(addr.address, style: const TextStyle(fontSize: 14)),
-                              ],
-                            ),
-                          ),
-                          if (addr.useCount > 1)
-                            Text(
-                              '×${addr.useCount}',
-                              style: TextStyle(fontSize: 11, color: Colors.grey[400]),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: true,
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final addr = options.elementAt(index);
+                    return ListTile(
+                      dense: true,
+                      leading: Icon(Icons.history, size: 16, color: Colors.grey[500]),
+                      title: Text(addr.address, style: const TextStyle(fontSize: 14)),
+                      subtitle: Text(addr.label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      trailing: addr.useCount > 1
+                          ? Text('×${addr.useCount}',
+                              style: TextStyle(fontSize: 11, color: Colors.grey[400]))
+                          : null,
+                      onTap: () => onSelected(addr),
+                    );
+                  },
+                ),
               ),
             ),
           ),

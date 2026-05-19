@@ -4,20 +4,11 @@ import '../../../../blocs/blocs.dart';
 import '../address_autocomplete_field.dart';
 import '../../models/client_address.dart';
 import '../../services/client_address_service.dart';
-import '../../../core/services/api_client.dart';
-import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
 import '../../../../theme/app_theme.dart';
 
 class CreateRideLocationSection extends StatefulWidget {
-  final String fromAddress;
-  final String toAddress;
-
-  const CreateRideLocationSection({
-    super.key,
-    required this.fromAddress,
-    required this.toAddress,
-  });
+  const CreateRideLocationSection({super.key});
 
   @override
   State<CreateRideLocationSection> createState() => _CreateRideLocationSectionState();
@@ -25,14 +16,33 @@ class CreateRideLocationSection extends StatefulWidget {
 
 class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
   late final ClientAddressService _addressService;
+  late final CreateRideFormBloc _formBloc;
   List<ClientAddress> _savedAddresses = [];
   String? _loadedForClientId;
 
   @override
   void initState() {
     super.initState();
-    final apiClient = context.read<AuthBloc>().apiClient;
-    _addressService = ClientAddressService(apiClient: apiClient);
+    _formBloc = context.read<CreateRideFormBloc>();
+    _addressService = ClientAddressService(apiClient: context.read<AuthBloc>().apiClient);
+
+    final currentClientId = _formBloc.state.selectedClientId;
+    if (currentClientId != null) {
+      _loadAddresses(currentClientId);
+    }
+
+    _formBloc.stream.listen((state) {
+      if (!mounted) return;
+      final clientId = state.selectedClientId;
+      if (clientId == null) {
+        setState(() {
+          _savedAddresses = [];
+          _loadedForClientId = null;
+        });
+      } else if (clientId != _loadedForClientId) {
+        _loadAddresses(clientId);
+      }
+    });
   }
 
   @override
@@ -42,11 +52,12 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
   }
 
   Future<void> _loadAddresses(String clientId) async {
-    if (_loadedForClientId == clientId) return;
     _loadedForClientId = clientId;
     try {
       final addresses = await _addressService.getAddresses(clientId);
-      if (mounted) setState(() => _savedAddresses = addresses);
+      if (mounted && _loadedForClientId == clientId) {
+        setState(() => _savedAddresses = addresses);
+      }
     } catch (_) {
       _loadedForClientId = null;
     }
@@ -54,69 +65,62 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<CreateRideFormBloc, CreateRideFormState>(
-      listenWhen: (prev, curr) => prev.selectedClientId != curr.selectedClientId,
-      listener: (context, state) {
-        if (state.selectedClientId != null) {
-          _loadAddresses(state.selectedClientId!);
-        } else {
-          setState(() {
-            _savedAddresses = [];
-            _loadedForClientId = null;
-          });
-        }
-      },
-      child: Container(
-        decoration: AppTheme.cardDecoration,
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.location_on, color: Colors.green[600], size: 24),
-                  const SizedBox(width: AppDimensions.paddingSmall),
-                  const Text(
-                    'Ride Locations',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppDimensions.paddingMedium),
-              AddressAutocompleteField(
-                labelText: 'From',
-                hintText: 'Pick-up location',
-                prefixIconData: Icons.trip_origin,
-                initialValue: widget.fromAddress,
-                suggestions: _savedAddresses,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'Pick-up location is required';
-                  return null;
-                },
-                onChanged: (value) {
-                  context.read<CreateRideFormBloc>().add(FromAddressChanged(value));
-                },
-              ),
-              const SizedBox(height: AppDimensions.paddingMedium),
-              AddressAutocompleteField(
-                labelText: 'To',
-                hintText: 'Drop-off location',
-                prefixIconData: Icons.location_on,
-                initialValue: widget.toAddress,
-                suggestions: _savedAddresses,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'Drop-off location is required';
-                  return null;
-                },
-                onChanged: (value) {
-                  context.read<CreateRideFormBloc>().add(ToAddressChanged(value));
-                },
-              ),
-            ],
+    return BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
+      buildWhen: (prev, curr) =>
+          prev.fromAddress != curr.fromAddress || prev.toAddress != curr.toAddress,
+      builder: (context, state) {
+        return Container(
+          decoration: AppTheme.cardDecoration,
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.location_on, color: Colors.green[600], size: 24),
+                    const SizedBox(width: AppDimensions.paddingSmall),
+                    const Text(
+                      'Ride Locations',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppDimensions.paddingMedium),
+                AddressAutocompleteField(
+                  labelText: 'From',
+                  hintText: 'Pick-up location',
+                  prefixIconData: Icons.trip_origin,
+                  initialValue: state.fromAddress,
+                  suggestions: _savedAddresses,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return 'Pick-up location is required';
+                    return null;
+                  },
+                  onChanged: (value) {
+                    context.read<CreateRideFormBloc>().add(FromAddressChanged(value));
+                  },
+                ),
+                const SizedBox(height: AppDimensions.paddingMedium),
+                AddressAutocompleteField(
+                  labelText: 'To',
+                  hintText: 'Drop-off location',
+                  prefixIconData: Icons.location_on,
+                  initialValue: state.toAddress,
+                  suggestions: _savedAddresses,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return 'Drop-off location is required';
+                    return null;
+                  },
+                  onChanged: (value) {
+                    context.read<CreateRideFormBloc>().add(ToAddressChanged(value));
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

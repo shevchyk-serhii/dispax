@@ -9,8 +9,9 @@ import '../constants/app_dimensions.dart';
 
 class CreateRideScreen extends StatelessWidget {
   final RideBloc rideBloc;
+  final VoidCallback? onCreated;
 
-  const CreateRideScreen({super.key, required this.rideBloc});
+  const CreateRideScreen({super.key, required this.rideBloc, this.onCreated});
 
   @override
   Widget build(BuildContext context) {
@@ -19,13 +20,15 @@ class CreateRideScreen extends StatelessWidget {
         BlocProvider(create: (_) => CreateRideFormBloc()),
         BlocProvider.value(value: rideBloc),
       ],
-      child: const CreateRideScreenContent(),
+      child: CreateRideScreenContent(onCreated: onCreated),
     );
   }
 }
 
 class CreateRideScreenContent extends StatefulWidget {
-  const CreateRideScreenContent({super.key});
+  final VoidCallback? onCreated;
+
+  const CreateRideScreenContent({super.key, this.onCreated});
 
   @override
   State<CreateRideScreenContent> createState() => _CreateRideScreenContentState();
@@ -50,13 +53,17 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
           listenWhen: (previous, current) => previous.status != current.status,
           listener: (context, state) {
             if (state.status == RideStateStatus.created) {
-              context.read<CreateRideFormBloc>().add(const FormCleared());
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Ride created successfully!'),
                   backgroundColor: Colors.green,
                 ),
               );
+              if (widget.onCreated != null) {
+                widget.onCreated!();
+              } else if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
             } else if (state.status == RideStateStatus.error) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

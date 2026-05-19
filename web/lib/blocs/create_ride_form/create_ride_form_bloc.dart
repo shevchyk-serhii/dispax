@@ -14,10 +14,15 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
     on<ArrivalToggled>(_onArrivalToggled);
     on<GateSelected>(_onGateSelected);
     on<TerminalSelected>(_onTerminalSelected);
+    on<NotesToggled>(_onNotesToggled);
     on<NotesChanged>(_onNotesChanged);
     on<SpecialRequirementToggled>(_onSpecialRequirementToggled);
     on<FormCleared>(_onFormCleared);
     on<FormSubmitted>(_onFormSubmitted);
+  }
+
+  void _onNotesToggled(NotesToggled event, Emitter<CreateRideFormState> emit) {
+    emit(state.copyWith(showNotes: !state.showNotes));
   }
 
   void _onNotesChanged(NotesChanged event, Emitter<CreateRideFormState> emit) {

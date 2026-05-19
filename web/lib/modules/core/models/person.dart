@@ -27,16 +27,22 @@ class Person {
     this.status = 'ACTIVE',
   });
 
+  static String _extractId(dynamic raw) {
+    if (raw == null) return '';
+    if (raw is Map) return raw['value']?.toString() ?? '';
+    return raw.toString();
+  }
+
   factory Person.fromJson(Map<String, dynamic> json) {
     return Person(
-      id: json['id']?.toString() ?? '',
+      id: _extractId(json['id']),
       name: json['name']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       role: PersonRole.values.firstWhere(
         (e) => e.toString().split('.').last.toLowerCase() == json['role'].toString().toLowerCase(),
         orElse: () => PersonRole.client,
       ),
-      companyId: json['companyId']?.toString(),
+      companyId: json['companyId'] != null ? _extractId(json['companyId']) : null,
       licenseNumber: json['licenseNumber']?.toString(),
       phone: json['phone']?.toString(),
       vehicleInfo: json['vehicleInfo'] != null

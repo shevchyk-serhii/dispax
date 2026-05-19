@@ -11,7 +11,7 @@ class ClientAddressService {
         _ownsClient = apiClient == null;
 
   Future<List<ClientAddress>> getAddresses(String clientId) async {
-    final response = await _apiClient.get('/api/clients/$clientId/addresses');
+    final response = await _apiClient.get('/clients/$clientId/addresses');
     if (response.statusCode == 200) {
       final List<dynamic> list = jsonDecode(response.body) as List<dynamic>;
       return list.map((e) => ClientAddress.fromJson(e as Map<String, dynamic>)).toList();
@@ -32,15 +32,32 @@ class ClientAddressService {
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
     };
-    final response = await _apiClient.post('/api/clients/$clientId/addresses', body);
+    final response = await _apiClient.post('/clients/$clientId/addresses', body);
     if (response.statusCode == 201) {
       return ClientAddress.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     }
     return null;
   }
 
+  Future<ClientAddress?> updateAddress({
+    required String clientId,
+    required String addressId,
+    String? label,
+    List<String>? aliases,
+  }) async {
+    final body = <String, dynamic>{
+      if (label != null) 'label': label,
+      if (aliases != null) 'aliases': aliases,
+    };
+    final response = await _apiClient.patch('/clients/$clientId/addresses/$addressId', body);
+    if (response.statusCode == 200) {
+      return ClientAddress.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    }
+    return null;
+  }
+
   Future<bool> deleteAddress(String clientId, String addressId) async {
-    final response = await _apiClient.delete('/api/clients/$clientId/addresses/$addressId');
+    final response = await _apiClient.delete('/clients/$clientId/addresses/$addressId');
     return response.statusCode == 204;
   }
 

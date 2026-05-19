@@ -26,6 +26,7 @@ final class PostgresClientAddressRepository(xa: Transactor[Task]) extends Client
       lat: Option[Double],
       lng: Option[Double],
       useCount: Int,
+      aliases: List[String],
       createdAt: Instant,
       updatedAt: Instant
   ): ClientAddress = ClientAddress(
@@ -36,27 +37,29 @@ final class PostgresClientAddressRepository(xa: Transactor[Task]) extends Client
     latitude = lat,
     longitude = lng,
     useCount = useCount,
+    aliases = aliases,
     createdAt = createdAt,
     updatedAt = updatedAt
   )
 
   override def findByClient(clientId: PersonId): Task[List[ClientAddress]] =
     sql"""
-      SELECT id, client_id, label, address, latitude, longitude, use_count, created_at, updated_at
+      SELECT id, client_id, label, address, latitude, longitude, use_count, aliases, created_at, updated_at
       FROM client_addresses
       WHERE client_id = ${clientId.value}
       ORDER BY use_count DESC, updated_at DESC
     """
-      .query[(UUID, UUID, String, String, Option[Double], Option[Double], Int, Instant, Instant)]
+      .query[(UUID, UUID, String, String, Option[Double], Option[Double], Int, List[String], Instant, Instant)]
       .to[List]
       .transact(xa)
       .map(_.map(toClientAddress.tupled))
 
   override def save(addr: ClientAddress): Task[ClientAddress] =
     sql"""
-      INSERT INTO client_addresses (id, client_id, label, address, latitude, longitude, use_count, created_at, updated_at)
+      INSERT INTO client_addresses (id, client_id, label, address, latitude, longitude, use_count, aliases, created_at, updated_at)
       VALUES (${addr.id.value}, ${addr.clientId.value}, ${addr.label}, ${addr.address},
-              ${addr.latitude}, ${addr.longitude}, ${addr.useCount}, ${addr.createdAt}, ${addr.updatedAt})
+              ${addr.latitude}, ${addr.longitude}, ${addr.useCount}, ${addr.aliases},
+              ${addr.createdAt}, ${addr.updatedAt})
     """.update.run
       .transact(xa)
       .as(addr)
@@ -70,6 +73,25 @@ final class PostgresClientAddressRepository(xa: Transactor[Task]) extends Client
       .transact(xa)
       .unit
 
+  override def updateLabelAndAliases(
+      id: ClientAddressId,
+      clientId: PersonId,
+      label: Option[String],
+      aliases: Option[List[String]]
+  ): Task[Option[ClientAddress]] =
+    sql"""
+      UPDATE client_addresses
+      SET label     = COALESCE(${label}, label),
+          aliases   = COALESCE(${aliases}, aliases),
+          updated_at = NOW()
+      WHERE id = ${id.value} AND client_id = ${clientId.value}
+      RETURNING id, client_id, label, address, latitude, longitude, use_count, aliases, created_at, updated_at
+    """
+      .query[(UUID, UUID, String, String, Option[Double], Option[Double], Int, List[String], Instant, Instant)]
+      .option
+      .transact(xa)
+      .map(_.map(toClientAddress.tupled))
+
   override def delete(id: ClientAddressId, clientId: PersonId): Task[Boolean] =
     sql"""
       DELETE FROM client_addresses
@@ -80,11 +102,11 @@ final class PostgresClientAddressRepository(xa: Transactor[Task]) extends Client
 
   override def findByAddressText(clientId: PersonId, address: String): Task[Option[ClientAddress]] =
     sql"""
-      SELECT id, client_id, label, address, latitude, longitude, use_count, created_at, updated_at
+      SELECT id, client_id, label, address, latitude, longitude, use_count, aliases, created_at, updated_at
       FROM client_addresses
       WHERE client_id = ${clientId.value} AND address = $address
     """
-      .query[(UUID, UUID, String, String, Option[Double], Option[Double], Int, Instant, Instant)]
+      .query[(UUID, UUID, String, String, Option[Double], Option[Double], Int, List[String], Instant, Instant)]
       .option
       .transact(xa)
       .map(_.map(toClientAddress.tupled))

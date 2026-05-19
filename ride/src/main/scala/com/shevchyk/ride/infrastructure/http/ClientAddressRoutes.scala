@@ -3,7 +3,7 @@ package com.shevchyk.ride.infrastructure.http
 import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.PersonId
-import com.shevchyk.ride.domain.{ClientAddressId, SaveClientAddressRequest}
+import com.shevchyk.ride.domain.{ClientAddressId, SaveClientAddressRequest, UpdateClientAddressRequest}
 import com.shevchyk.ride.application.service.ClientAddressService
 import zio.*
 import zio.http.*
@@ -53,6 +53,33 @@ object ClientAddressRoutes:
           service <- ZIO.service[ClientAddressService]
           saved   <- service.saveAddress(pid, req)
         } yield Response(Status.Created, body = Body.fromString(saved.toJson))).catchAll {
+          case response: Response => ZIO.succeed(response)
+          case ex: Throwable      => handleError(ex)
+        }
+    },
+
+    // PATCH /api/clients/:clientId/addresses/:addressId
+    Method.PATCH / "api" / "clients" / string("clientId") / "addresses" / string("addressId") -> handler {
+      (clientId: String, addressId: String, request: Request) =>
+        (for {
+          user    <- AuthMiddleware.authenticateRequest(request)
+          pid     <- ZIO
+                       .attempt(PersonId(UUID.fromString(clientId)))
+                       .mapError(e => new RuntimeException(s"Invalid clientId: $e"))
+          _       <- AuthMiddleware.checkRoleOrOwner(user, pid.value, "DISPATCHER", "SECRETARY")
+          aid     <- ZIO
+                       .attempt(ClientAddressId(UUID.fromString(addressId)))
+                       .mapError(e => new RuntimeException(s"Invalid addressId: $e"))
+          bodyStr <- request.body.asString
+          req     <- ZIO
+                       .fromEither(bodyStr.fromJson[UpdateClientAddressRequest])
+                       .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+          service <- ZIO.service[ClientAddressService]
+          result  <- service.updateAddress(aid, pid, req)
+        } yield result match
+          case Some(addr) => Response(Status.Ok, body = Body.fromString(addr.toJson))
+          case None       => Response(Status.NotFound, body = Body.fromString("""{"error":"Address not found"}"""))
+        ).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      => handleError(ex)
         }

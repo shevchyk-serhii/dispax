@@ -1,7 +1,6 @@
-import 'dart:typed_data';
-// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import '../modules/billing/pdf_download_stub.dart'
+    if (dart.library.html) '../modules/billing/pdf_download_web.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
@@ -493,15 +492,6 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
     }
   }
 
-  void _triggerBrowserDownload(Uint8List bytes, String filename) {
-    final blob = html.Blob([bytes], 'application/pdf');
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    html.AnchorElement(href: url)
-      ..setAttribute('download', filename)
-      ..click();
-    html.Url.revokeObjectUrl(url);
-  }
-
   String _fmtDate(DateTime d) => '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
 
   @override
@@ -595,7 +585,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                     final messenger = ScaffoldMessenger.of(context);
                     try {
                       final bytes = await widget.invoiceService.downloadPdf(inv.id);
-                      _triggerBrowserDownload(bytes, 'invoice-${inv.number}.pdf');
+                      triggerPdfDownload(bytes, 'invoice-${inv.number}.pdf');
                       messenger.showSnackBar(const SnackBar(content: Text('PDF heruntergeladen')));
                     } catch (e) {
                       messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));

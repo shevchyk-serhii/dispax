@@ -116,6 +116,10 @@ class SpecialRequirementToggled extends CreateRideFormEvent {
   List<Object?> get props => [requirement];
 }
 
+class NotesToggled extends CreateRideFormEvent {
+  const NotesToggled();
+}
+
 class FormCleared extends CreateRideFormEvent {
   const FormCleared();
 }

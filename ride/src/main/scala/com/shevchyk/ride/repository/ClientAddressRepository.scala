@@ -10,6 +10,13 @@ trait ClientAddressRepository:
   def findByClient(clientId: PersonId): Task[List[ClientAddress]]
   def save(address: ClientAddress): Task[ClientAddress]
   def incrementUseCount(id: ClientAddressId): Task[Unit]
+
+  def updateLabelAndAliases(
+      id: ClientAddressId,
+      clientId: PersonId,
+      label: Option[String],
+      aliases: Option[List[String]]
+  ): Task[Option[ClientAddress]]
   def delete(id: ClientAddressId, clientId: PersonId): Task[Boolean]
   def findByAddressText(clientId: PersonId, address: String): Task[Option[ClientAddress]]
 
