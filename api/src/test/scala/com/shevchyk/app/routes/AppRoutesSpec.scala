@@ -233,28 +233,62 @@ object AppRoutesSpec extends ZIOSpecDefault {
       def findCompletedByDateRange(companyId: CompanyId, from: java.time.Instant, to: java.time.Instant): Task[List[Ride]] = ZIO.succeed(Nil)
       def findByPoolId(poolId: RidePoolId): Task[List[Ride]] = ZIO.succeed(Nil)
       def findActiveRidesNearLocation(lat: Double, lng: Double, radiusMeters: Int, companyId: CompanyId): Task[List[Ride]] = ZIO.succeed(Nil)
+      def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double] = ZIO.succeed(0.0)
+      def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal] = ZIO.succeed(BigDecimal(0))
+      def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal] = ZIO.succeed(BigDecimal(0))
+    }
+  }
+
+  private val noopPersonRepository: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed {
+    new PersonRepository {
+      def create(person: Person): Task[Person] = ZIO.succeed(person)
+      def findById(id: PersonId): Task[Option[Person]] = ZIO.succeed(None)
+      def findByEmail(email: String): Task[Option[Person]] = ZIO.succeed(None)
+      def findByRole(role: PersonRole): Task[List[Person]] = ZIO.succeed(Nil)
+      def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(Nil)
+      def findByCompanyId(companyId: CompanyId): Task[List[Person]] = ZIO.succeed(Nil)
+      def findAll(): Task[List[Person]] = ZIO.succeed(Nil)
+      def update(person: Person): Task[Person] = ZIO.succeed(person)
+      def delete(id: PersonId): Task[Unit] = ZIO.unit
+      def findByStatus(status: UserStatus): Task[List[Person]] = ZIO.succeed(Nil)
+      def searchByQuery(query: String): Task[List[Person]] = ZIO.succeed(Nil)
+      def updateLastLogin(id: PersonId): Task[Unit] = ZIO.unit
+      def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] = ZIO.succeed(Nil)
     }
   }
 
   private val gdprLayers =
     GdprRepository.inMemory ++
-    InMemoryPersonRepository.layer ++
+    noopPersonRepository ++
     noopRideRepository ++
     ExpenseRepository.inMemory ++
     testJwtService
 
   private val gdprSuite = suite("GdprRoutes")(
-    test("returns 401 without auth header") {
-      val request = Request.delete(URL.decode("/api/gdpr/me").toOption.get)
+    test("returns 401 without auth header on GET /api/gdpr/consents") {
+      val request = Request.get(URL.decode("/api/gdpr/consents").toOption.get)
       run(GdprRoutes.authenticatedRoutes)(request).map(r => assertTrue(r.status == Status.Unauthorized))
     }.provide(gdprLayers),
 
-    test("authenticated user can request data export (200 or 202)") {
+    test("authenticated user can get consents") {
       for {
         token    <- generateToken(PersonRole.Client, uid = clientId, cid = Some(companyId))
-        request   = bearer(token)(Request.get(URL.decode("/api/gdpr/me/export").toOption.get))
+        request   = bearer(token)(Request.get(URL.decode("/api/gdpr/consents").toOption.get))
         response <- run(GdprRoutes.authenticatedRoutes)(request)
-      } yield assertTrue(response.status == Status.Ok || response.status == Status.Accepted || response.status == Status.Created || response.status.code < 500)
+      } yield assertTrue(response.status == Status.Ok)
+    }.provide(gdprLayers),
+
+    test("returns 401 without auth on GET /api/gdpr/export") {
+      val request = Request.get(URL.decode("/api/gdpr/export").toOption.get)
+      run(GdprRoutes.authenticatedRoutes)(request).map(r => assertTrue(r.status == Status.Unauthorized))
+    }.provide(gdprLayers),
+
+    test("authenticated user can request GDPR export") {
+      for {
+        token    <- generateToken(PersonRole.Client, uid = clientId, cid = Some(companyId))
+        request   = bearer(token)(Request.get(URL.decode("/api/gdpr/export").toOption.get))
+        response <- run(GdprRoutes.authenticatedRoutes)(request)
+      } yield assertTrue(response.status.code < 500)
     }.provide(gdprLayers)
   )
 
