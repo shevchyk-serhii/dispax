@@ -1,3 +1,6 @@
+@Tags(['integration'])
+library;
+
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'helpers.dart';
@@ -7,7 +10,7 @@ void main() {
   late String clientToken;
 
   setUpAll(() async {
-    clientToken = await loginAs(kClientEmail, kPassword);
+    clientToken = await tryLoginAs(kClientEmail, kPassword);
   });
 
   group('Ride endpoints integration', () {

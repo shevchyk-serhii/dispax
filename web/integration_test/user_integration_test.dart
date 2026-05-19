@@ -1,3 +1,6 @@
+@Tags(['integration'])
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'helpers.dart';
 
@@ -9,9 +12,11 @@ void main() {
   late String adminToken;
 
   setUpAll(() async {
-    clientToken = await loginAs(kClientEmail, kPassword);
-    driverToken = await loginAs(kDriverEmail, kPassword);
-    adminToken = await loginAs(kAdminEmail, kPassword);
+    clientToken = await tryLoginAs(kClientEmail, kPassword);
+    await Future.delayed(const Duration(milliseconds: 300));
+    driverToken = await tryLoginAs(kDriverEmail, kPassword);
+    await Future.delayed(const Duration(milliseconds: 300));
+    adminToken = await tryLoginAs(kAdminEmail, kPassword);
   });
 
   group('Auth token integration', () {
