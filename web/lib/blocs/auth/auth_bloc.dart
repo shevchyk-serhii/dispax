@@ -90,6 +90,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }) : _storage = storage ?? _TokenStorage(),
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();
+    privateApiClient.onUnauthorized = () => add(AuthLogoutRequested());
     privateBiometricService = biometricService ?? BiometricService();
 
     on<AuthInitializeRequested>(_onInitializeRequested);

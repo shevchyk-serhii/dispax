@@ -4,7 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../constants/app_constants.dart';
 
+class UnauthorizedException extends ApiException {
+  UnauthorizedException() : super('Unauthorized: session expired');
+}
+
 class ApiClient {
+  VoidCallback? onUnauthorized;
 
   static String get wsBaseUrl {
     final base = _defaultBaseUrl.replaceFirst('/api', '');
@@ -64,7 +69,10 @@ class ApiClient {
 
       debugPrint('✅ Response status: ${response.statusCode}');
       debugPrint('📄 Response body: ${response.body.length > 200 ? '${response.body.substring(0, 200)}...' : response.body}');
+      if (response.statusCode == 401) _handleUnauthorized();
       return response;
+    } on UnauthorizedException {
+      rethrow;
     } on SocketException catch (e) {
       debugPrint('❌ SocketException: $e');
       throw ApiException(
@@ -88,12 +96,15 @@ class ApiClient {
 
   Future<http.Response> post(String endpoint, Map<String, dynamic> data) async {
     try {
-      final response = await privateClient.post(
+      final response = _utf8Response(await privateClient.post(
         Uri.parse('$_baseUrl$endpoint'),
         headers: privateHeaders,
         body: jsonEncode(data),
-      ).timeout(const Duration(seconds: 15));
-      return _utf8Response(response);
+      ).timeout(const Duration(seconds: 15)));
+      if (response.statusCode == 401) _handleUnauthorized();
+      return response;
+    } on UnauthorizedException {
+      rethrow;
     } catch (e) {
       throw ApiException('Failed to perform POST request: $e');
     }
@@ -101,12 +112,15 @@ class ApiClient {
 
   Future<http.Response> put(String endpoint, Map<String, dynamic> data) async {
     try {
-      final response = await privateClient.put(
+      final response = _utf8Response(await privateClient.put(
         Uri.parse('$_baseUrl$endpoint'),
         headers: privateHeaders,
         body: jsonEncode(data),
-      ).timeout(const Duration(seconds: 15));
-      return _utf8Response(response);
+      ).timeout(const Duration(seconds: 15)));
+      if (response.statusCode == 401) _handleUnauthorized();
+      return response;
+    } on UnauthorizedException {
+      rethrow;
     } catch (e) {
       throw ApiException('Failed to perform PUT request: $e');
     }
@@ -114,12 +128,15 @@ class ApiClient {
 
   Future<http.Response> patch(String endpoint, Map<String, dynamic> data) async {
     try {
-      final response = await privateClient.patch(
+      final response = _utf8Response(await privateClient.patch(
         Uri.parse('$_baseUrl$endpoint'),
         headers: privateHeaders,
         body: jsonEncode(data),
-      ).timeout(const Duration(seconds: 15));
-      return _utf8Response(response);
+      ).timeout(const Duration(seconds: 15)));
+      if (response.statusCode == 401) _handleUnauthorized();
+      return response;
+    } on UnauthorizedException {
+      rethrow;
     } catch (e) {
       throw ApiException('Failed to perform PATCH request: $e');
     }
@@ -127,11 +144,14 @@ class ApiClient {
 
   Future<http.Response> delete(String endpoint) async {
     try {
-      final response = await privateClient.delete(
+      final response = _utf8Response(await privateClient.delete(
         Uri.parse('$_baseUrl$endpoint'),
         headers: privateHeaders,
-      ).timeout(const Duration(seconds: 15));
-      return _utf8Response(response);
+      ).timeout(const Duration(seconds: 15)));
+      if (response.statusCode == 401) _handleUnauthorized();
+      return response;
+    } on UnauthorizedException {
+      rethrow;
     } catch (e) {
       throw ApiException('Failed to perform DELETE request: $e');
     }
@@ -179,6 +199,11 @@ class ApiClient {
     } catch (e) {
       throw ApiException('Login failed: $e');
     }
+  }
+
+  void _handleUnauthorized() {
+    onUnauthorized?.call();
+    throw UnauthorizedException();
   }
 
   void dispose() {
