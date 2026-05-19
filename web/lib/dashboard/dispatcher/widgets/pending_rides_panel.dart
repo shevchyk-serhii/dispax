@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
+import '../../../modules/core/models/person.dart';
+import '../../../modules/core/services/user_service.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
@@ -257,18 +259,12 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   void _showDriverSelectionSheet(BuildContext context, Ride ride) {
     final scheduleState = context.read<ScheduleBloc>().state;
     final rideState = context.read<RideBloc>().state;
+    final authBloc = context.read<AuthBloc>();
 
-    final availableDrivers = scheduleState.scheduleDays
+    final scheduledDriverIds = scheduleState.scheduleDays
         .where((d) => d.status != ScheduleDayStatus.cancelled)
-        .toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
-
-    if (availableDrivers.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No drivers scheduled. Load schedules first.')),
-      );
-      return;
-    }
+        .map((d) => d.driverId)
+        .toSet();
 
     showModalBottomSheet(
       context: context,
@@ -276,123 +272,29 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (_, scrollController) => Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40, height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white54,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Select Driver',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${ride.clientName} — ${DateFormat('dd.MM HH:mm').format(ride.pickupDateTime)}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
-              ),
+      builder: (ctx) => _DriverSelectionSheet(
+        ride: ride,
+        rideState: rideState,
+        scheduledDriverIds: scheduledDriverIds,
+        userService: UserService(apiClient: authBloc.apiClient),
+        onAssign: (driverId, driverLabel, conflicts) {
+          Navigator.pop(ctx);
+          showDialog(
+            context: context,
+            builder: (_) => AssignmentDialog(
+              ride: ride,
+              driverLabel: driverLabel,
+              driverId: driverId,
+              conflicts: conflicts,
+              onConfirm: () {
+                context.read<RideBloc>().add(RideAssignRequested(
+                  rideId: ride.id,
+                  driverId: driverId,
+                ));
+              },
             ),
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                padding: const EdgeInsets.all(12),
-                itemCount: availableDrivers.length,
-                itemBuilder: (_, index) {
-                  final schedule = availableDrivers[index];
-                  final driverRides = rideState.rides
-                      .where((r) => r.driverId == schedule.driverId &&
-                                    r.status != RideStatus.cancelled &&
-                                    r.status != RideStatus.completed)
-                      .toList();
-                  final conflicts = ConflictDetector.findConflicts(ride, driverRides);
-                  final rideCount = driverRides.length;
-                  final loadColor = rideCount == 0
-                      ? Colors.green
-                      : rideCount <= 2
-                          ? Colors.orange
-                          : Colors.red;
-
-                  final driverLabel = schedule.notes?.isNotEmpty == true
-                      ? schedule.notes!
-                      : 'Driver ${schedule.driverId.length > 8 ? schedule.driverId.substring(0, 8) : schedule.driverId}...';
-
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: conflicts.isNotEmpty ? Colors.red.withAlpha(100) : Colors.transparent,
-                      ),
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: loadColor.withAlpha(40),
-                        child: Icon(Icons.person, color: loadColor),
-                      ),
-                      title: Text(driverLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${schedule.startTime} — ${schedule.endTime}'),
-                          Text(
-                            '$rideCount ride${rideCount == 1 ? '' : 's'} assigned',
-                            style: TextStyle(color: loadColor, fontSize: 12),
-                          ),
-                          if (conflicts.isNotEmpty)
-                            Text(
-                              '${conflicts.length} time conflict${conflicts.length == 1 ? '' : 's'}',
-                              style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                        ],
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        showDialog(
-                          context: context,
-                          builder: (_) => AssignmentDialog(
-                            ride: ride,
-                            driverLabel: driverLabel,
-                            driverId: schedule.driverId,
-                            conflicts: conflicts,
-                            onConfirm: () {
-                              context.read<RideBloc>().add(RideAssignRequested(
-                                rideId: ride.id,
-                                driverId: schedule.driverId,
-                              ));
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -496,6 +398,187 @@ class _PendingRideCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _DriverSelectionSheet extends StatefulWidget {
+  final Ride ride;
+  final RideState rideState;
+  final Set<String> scheduledDriverIds;
+  final UserService userService;
+  final void Function(String driverId, String driverLabel, List<Ride> conflicts) onAssign;
+
+  const _DriverSelectionSheet({
+    required this.ride,
+    required this.rideState,
+    required this.scheduledDriverIds,
+    required this.userService,
+    required this.onAssign,
+  });
+
+  @override
+  State<_DriverSelectionSheet> createState() => _DriverSelectionSheetState();
+}
+
+class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
+  List<Person>? _drivers;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDrivers();
+  }
+
+  Future<void> _loadDrivers() async {
+    try {
+      final drivers = await widget.userService.getDrivers();
+      if (mounted) setState(() => _drivers = drivers);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (_, scrollController) => Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white54,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Select Driver',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${widget.ride.clientName} — ${DateFormat('dd.MM HH:mm').format(widget.ride.pickupDateTime)}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: _buildBody(scrollController)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(ScrollController scrollController) {
+    if (_error != null) {
+      return Center(child: Text('Error: $_error', style: const TextStyle(color: Colors.red)));
+    }
+    if (_drivers == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_drivers!.isEmpty) {
+      return const Center(child: Text('No drivers found'));
+    }
+
+    final drivers = List<Person>.from(_drivers!)
+      ..sort((a, b) {
+        final aScheduled = widget.scheduledDriverIds.contains(a.id) ? 0 : 1;
+        final bScheduled = widget.scheduledDriverIds.contains(b.id) ? 0 : 1;
+        if (aScheduled != bScheduled) return aScheduled - bScheduled;
+        return a.name.compareTo(b.name);
+      });
+
+    return ListView.builder(
+      controller: scrollController,
+      padding: const EdgeInsets.all(12),
+      itemCount: drivers.length,
+      itemBuilder: (_, index) {
+        final driver = drivers[index];
+        final isScheduled = widget.scheduledDriverIds.contains(driver.id);
+        final driverRides = widget.rideState.rides
+            .where((r) =>
+                r.driverId == driver.id &&
+                r.status != RideStatus.cancelled &&
+                r.status != RideStatus.completed)
+            .toList();
+        final conflicts = ConflictDetector.findConflicts(widget.ride, driverRides);
+        final rideCount = driverRides.length;
+        final loadColor = rideCount == 0
+            ? Colors.green
+            : rideCount <= 2
+                ? Colors.orange
+                : Colors.red;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(
+              color: conflicts.isNotEmpty ? Colors.red.withAlpha(100) : Colors.transparent,
+            ),
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: loadColor.withAlpha(40),
+              child: Icon(Icons.person, color: loadColor),
+            ),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(driver.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                if (isScheduled)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withAlpha(30),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.green.withAlpha(80)),
+                    ),
+                    child: const Text(
+                      'Scheduled',
+                      style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$rideCount ride${rideCount == 1 ? '' : 's'} assigned',
+                  style: TextStyle(color: loadColor, fontSize: 12),
+                ),
+                if (conflicts.isNotEmpty)
+                  Text(
+                    '${conflicts.length} time conflict${conflicts.length == 1 ? '' : 's'}',
+                    style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+              ],
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => widget.onAssign(driver.id, driver.name, conflicts),
+          ),
+        );
+      },
     );
   }
 }
