@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:oktopus/blocs/auth/auth_bloc.dart';
 import 'package:oktopus/blocs/auth/auth_event.dart';
@@ -269,5 +271,37 @@ void main() {
             .having((s) => s.biometricEnabled, 'biometricEnabled', false),
       ],
     );
+
+    test('ApiClient 401 triggers auto-logout via onUnauthorized callback', () async {
+      final httpClient = MockClient((_) async => http.Response('', 401));
+      final realApiClient = ApiClient(
+        client: httpClient,
+        baseUrl: 'http://localhost:8080/api',
+      );
+      realApiClient.setAuthToken('expired-token');
+
+      final bloc = AuthBloc(
+        apiClient: realApiClient,
+        biometricService: mockBiometricService,
+        storage: mockStorage,
+      );
+
+      // Trigger 401 — onUnauthorized fires → AuthLogoutRequested dispatched
+      try {
+        await realApiClient.get('/rides');
+      } on UnauthorizedException {
+        // expected
+      }
+
+      // Give the bloc time to process the dispatched event
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        bloc.state.status,
+        anyOf(AuthStatus.loading, AuthStatus.unauthenticated),
+      );
+
+      await bloc.close();
+    });
   });
 }
