@@ -18,8 +18,8 @@ class MapboxService {
     return _accessToken;
   }
 
-  static const double defaultLatitude = 50.4501;
-  static const double defaultLongitude = 30.5234;
+  static const double defaultLatitude = 48.1351;
+  static const double defaultLongitude = 11.5820;
 
   static Future<geo.Position?> getCurrentLocation() async {
     bool serviceEnabled;

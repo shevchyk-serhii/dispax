@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -25,10 +26,15 @@ class DriverMapScreen extends StatefulWidget {
 
 class _DriverMapScreenState extends State<DriverMapScreen> {
   MapboxMap? _mapboxMap;
-  // ignore: unused_field
   PointAnnotationManager? _pointAnnotationManager;
   CircleAnnotationManager? _circleAnnotationManager;
   CircleAnnotation? _clientCircleAnnotation;
+  PointAnnotation? _clientLabelAnnotation;
+  Uint8List? _clientMarkerImage;
+  Uint8List? _driverMarkerImage;
+  PointAnnotation? _driverSelfAnnotation;
+  Timer? _pulseTimer;
+  bool _pulseState = false;
 
   StreamSubscription<geo.Position>? _locationSubscription;
   geo.Position? _currentPosition;
@@ -53,6 +59,23 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     super.initState();
     _initializeLocation();
     _listenToGeofenceEvents();
+    _startPulse();
+  }
+
+  void _startPulse() {
+    _pulseTimer = Timer.periodic(const Duration(milliseconds: 700), (_) {
+      if (!mounted) return;
+      _pulseState = !_pulseState;
+      final size = _pulseState ? 2.0 : 1.5;
+      if (_clientLabelAnnotation != null) {
+        _clientLabelAnnotation!.iconSize = size;
+        _pointAnnotationManager?.update(_clientLabelAnnotation!);
+      }
+      if (_driverSelfAnnotation != null) {
+        _driverSelfAnnotation!.iconSize = size;
+        _pointAnnotationManager?.update(_driverSelfAnnotation!);
+      }
+    });
   }
 
   @override
@@ -61,6 +84,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     _locationUpdateTimer?.cancel();
     _wsSubscription?.cancel();
     _geofenceOverlayTimer?.cancel();
+    _pulseTimer?.cancel();
     _locationService.dispose();
     super.dispose();
   }
@@ -102,20 +126,31 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   Future<void> _updateClientMarker(double latitude, double longitude) async {
-    if (_circleAnnotationManager == null) return;
+    if (_pointAnnotationManager == null) return;
 
     if (_clientCircleAnnotation != null) {
-      await _circleAnnotationManager!.delete(_clientCircleAnnotation!);
+      await _circleAnnotationManager?.delete(_clientCircleAnnotation!);
       _clientCircleAnnotation = null;
     }
+    if (_clientLabelAnnotation != null) {
+      await _pointAnnotationManager!.delete(_clientLabelAnnotation!);
+      _clientLabelAnnotation = null;
+    }
 
-    final marker = MapboxService.createLocationMarker(
-      latitude: latitude,
-      longitude: longitude,
-      color: '#4CAF50',
-      radius: 12.0,
-    );
-    _clientCircleAnnotation = await _circleAnnotationManager!.create(marker);
+    _clientMarkerImage ??= (await rootBundle.load('assets/client_marker.png'))
+        .buffer.asUint8List();
+
+    _clientLabelAnnotation = await _pointAnnotationManager!.create(PointAnnotationOptions(
+      geometry: Point(coordinates: Position(longitude, latitude)),
+      image: _clientMarkerImage,
+      iconSize: 1.5,
+      textField: _currentRide?.clientName,
+      textSize: 13.0,
+      textColor: 0xFF1B5E20,
+      textHaloColor: 0xFFFFFFFF,
+      textHaloWidth: 2.0,
+      textOffset: [0.0, -2.5],
+    ));
   }
 
   Future<void> _initializeLocation() async {
@@ -168,17 +203,30 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   Future<void> _updateCurrentLocationMarker() async {
     if (_mapboxMap == null || _currentPosition == null) return;
 
-    _circleAnnotationManager?.deleteAll();
-    _clientCircleAnnotation = null;
+    final driverName = context.read<AuthBloc>().state.user?.name;
 
-    final marker = MapboxService.createLocationMarker(
-      latitude: _currentPosition!.latitude,
-      longitude: _currentPosition!.longitude,
-      color: 'blue',
-      radius: 15.0,
-    );
+    if (_driverSelfAnnotation != null) {
+      await _pointAnnotationManager?.delete(_driverSelfAnnotation!);
+      _driverSelfAnnotation = null;
+    }
 
-    _circleAnnotationManager?.create(marker);
+    _driverMarkerImage ??= (await rootBundle.load('assets/driver_marker.png'))
+        .buffer.asUint8List();
+
+    _driverSelfAnnotation = await _pointAnnotationManager?.create(PointAnnotationOptions(
+      geometry: Point(coordinates: Position(
+        _currentPosition!.longitude,
+        _currentPosition!.latitude,
+      )),
+      image: _driverMarkerImage,
+      iconSize: 2.0,
+      textField: driverName,
+      textSize: 13.0,
+      textColor: 0xFF0D47A1,
+      textHaloColor: 0xFFFFFFFF,
+      textHaloWidth: 2.0,
+      textOffset: [0.0, 2.5],
+    ));
 
     if (_currentRide?.clientLocation?.latitude != null &&
         _currentRide?.clientLocation?.longitude != null) {
@@ -192,34 +240,76 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   void _updateMapMarkers() {
     if (_mapboxMap == null || _circleAnnotationManager == null) return;
 
-    for (final ride in _assignedRides) {
-      final rideMarkers = MapboxService.createRideMarkers(
-        from: ride.from,
-        to: ride.to,
-      );
+    _circleAnnotationManager!.deleteAll();
+    _clientCircleAnnotation = null;
+    _pointAnnotationManager?.deleteAll();
+    _clientLabelAnnotation = null;
+    _driverSelfAnnotation = null;
 
-      for (final marker in rideMarkers) {
-        _circleAnnotationManager?.create(marker);
+    _updateCurrentLocationMarker();
+
+    // Background rides (not the priority one) — small grey markers
+    for (final ride in _assignedRides) {
+      if (ride.id == _currentRide?.id) continue;
+      if (ride.from.latitude != null && ride.from.longitude != null) {
+        _circleAnnotationManager?.create(CircleAnnotationOptions(
+          geometry: Point(coordinates: Position(ride.from.longitude!, ride.from.latitude!)),
+          circleRadius: 5.0,
+          circleColor: 0xFF9E9E9E,
+          circleStrokeWidth: 1.5,
+          circleStrokeColor: 0xFFFFFFFF,
+        ));
+      }
+      if (ride.to.latitude != null && ride.to.longitude != null) {
+        _circleAnnotationManager?.create(CircleAnnotationOptions(
+          geometry: Point(coordinates: Position(ride.to.longitude!, ride.to.latitude!)),
+          circleRadius: 5.0,
+          circleColor: 0xFF9E9E9E,
+          circleStrokeWidth: 1.5,
+          circleStrokeColor: 0xFFFFFFFF,
+        ));
       }
     }
 
-    if (_currentRide != null) {
-      if (_currentRide!.clientLocation != null &&
-          _currentRide!.clientLocation!.latitude != null &&
-          _currentRide!.clientLocation!.longitude != null) {
-        _updateClientMarker(
-          _currentRide!.clientLocation!.latitude!,
-          _currentRide!.clientLocation!.longitude!,
-        );
-      }
+    if (_currentRide == null) return;
 
-      final cameraOptions = MapboxService.getCameraForRoute(
-        from: _currentRide!.from,
-        to: _currentRide!.to,
-        currentPosition: _currentPosition,
+    // Priority ride: large pickup marker (client location), smaller drop-off
+    if (_currentRide!.from.latitude != null && _currentRide!.from.longitude != null) {
+      _circleAnnotationManager?.create(CircleAnnotationOptions(
+        geometry: Point(coordinates: Position(_currentRide!.from.longitude!, _currentRide!.from.latitude!)),
+        circleRadius: 16.0,
+        circleColor: 0xFF4CAF50,
+        circleStrokeWidth: 3.0,
+        circleStrokeColor: 0xFFFFFFFF,
+      ));
+    }
+
+    if (_currentRide!.to.latitude != null && _currentRide!.to.longitude != null) {
+      _circleAnnotationManager?.create(CircleAnnotationOptions(
+        geometry: Point(coordinates: Position(_currentRide!.to.longitude!, _currentRide!.to.latitude!)),
+        circleRadius: 10.0,
+        circleColor: 0xFFF44336,
+        circleStrokeWidth: 2.0,
+        circleStrokeColor: 0xFFFFFFFF,
+      ));
+    }
+
+    // Real-time client location (if shared via WebSocket)
+    if (_currentRide!.clientLocation?.latitude != null &&
+        _currentRide!.clientLocation?.longitude != null) {
+      _updateClientMarker(
+        _currentRide!.clientLocation!.latitude!,
+        _currentRide!.clientLocation!.longitude!,
       );
+    }
 
-      _mapboxMap?.setCamera(cameraOptions);
+    // Focus camera on pickup point of priority ride
+    final pickup = _currentRide!.from;
+    if (pickup.latitude != null && pickup.longitude != null) {
+      _mapboxMap?.setCamera(CameraOptions(
+        center: Point(coordinates: Position(pickup.longitude!, pickup.latitude!)),
+        zoom: 14.0,
+      ));
     }
   }
 
@@ -286,9 +376,11 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
               (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)
             ).toList();
 
-            final currentRide = driverRides.where((ride) =>
-              ride.status == RideStatus.inProgress
-            ).firstOrNull;
+            // inProgress first, then earliest assigned
+            final currentRide = driverRides.where((r) => r.status == RideStatus.inProgress).firstOrNull
+              ?? (driverRides.where((r) => r.status == RideStatus.assigned).toList()
+                  ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime)))
+                  .firstOrNull;
 
             if (driverRides != _assignedRides || currentRide != _currentRide) {
               setState(() {

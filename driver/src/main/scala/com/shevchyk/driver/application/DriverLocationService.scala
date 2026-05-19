@@ -2,6 +2,7 @@ package com.shevchyk.driver.application
 
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.application.{EventHub, GeofenceService, ActiveRideInfo}
+import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.domain.{Ride, RideStatus}
@@ -20,14 +21,15 @@ class DriverLocationServiceImpl(
     repository: DriverLocationRepository,
     eventHub: EventHub,
     geofenceService: GeofenceService,
-    rideRepository: RideRepository
+    rideRepository: RideRepository,
+    personRepository: PersonRepository
 ) extends DriverLocationService:
 
   override def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit] =
     for {
       _           <- repository.updateLocation(driverId, latitude, longitude)
-      driverRides <- rideRepository.findByDriverId(driverId)
-      companyIdOpt = driverRides.headOption.map(_.companyId)
+      personOpt   <- personRepository.findById(driverId)
+      companyIdOpt = personOpt.flatMap(_.companyId)
       _           <-
         companyIdOpt match
           case Some(companyId) =>
@@ -99,7 +101,7 @@ class DriverLocationServiceImpl(
 object DriverLocationService:
 
   val layer
-      : ZLayer[DriverLocationRepository & EventHub & GeofenceService & RideRepository, Nothing, DriverLocationService] =
+      : ZLayer[DriverLocationRepository & EventHub & GeofenceService & RideRepository & PersonRepository, Nothing, DriverLocationService] =
     ZLayer.fromFunction(DriverLocationServiceImpl.apply)
 
   val providerLayer: ZLayer[DriverLocationRepository, Nothing, DriverLocationProvider] = ZLayer.fromFunction {

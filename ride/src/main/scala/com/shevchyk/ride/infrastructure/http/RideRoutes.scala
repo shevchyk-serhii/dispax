@@ -171,7 +171,15 @@ object RideRoutes {
           personRepo <- ZIO.service[PersonRepository]
           rides      <- service.getClientRides(clientPid)
           clientName <- personRepo.findById(clientPid).map(_.map(_.name))
-          rideDtos    = rides.map(r => RideDto.fromDomain(r, clientName = clientName))
+          rideDtos   <-
+            ZIO.foreach(rides) { r =>
+              r.driverId match
+                case Some(dId) =>
+                  personRepo
+                    .findById(dId)
+                    .map(d => RideDto.fromDomain(r, clientName = clientName, driverName = d.map(_.name)))
+                case None      => ZIO.succeed(RideDto.fromDomain(r, clientName = clientName))
+            }
         } yield Response.json(rideDtos.toJson)).catchAll {
           case response: Response => ZIO.succeed(response)
           case ex: Throwable      => handleRideError(ex)

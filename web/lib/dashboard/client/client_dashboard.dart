@@ -12,6 +12,8 @@ import '../../screens/client_map_screen.dart';
 import '../../constants/app_colors.dart';
 import '../../utils/ride_status_styles.dart';
 import 'client_ride_history_screen.dart';
+import '../../widgets/common/cancel_ride_dialog.dart';
+import '../../modules/ride_management/services/ride_service.dart';
 
 class ClientDashboard extends StatefulWidget {
   const ClientDashboard({super.key});
@@ -183,6 +185,7 @@ class MyRidesTab extends StatelessWidget {
               final rideIndex = index - 1;
               final ride = activeRides[rideIndex];
               final isTracking = ride.status == RideStatus.inProgress || ride.status == RideStatus.assigned;
+              final canCancel = ride.status == RideStatus.requested || ride.status == RideStatus.assigned;
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
@@ -206,19 +209,36 @@ class MyRidesTab extends StatelessWidget {
                       subtitle: Text(AppDateUtils.formatDateTime(ride.pickupDateTime)),
                       trailing: const Icon(Icons.chevron_right),
                     ),
-                    if (isTracking)
+                    if (isTracking || canCancel)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: onOpenMap,
-                            icon: const Icon(Icons.location_on, size: 16),
-                            label: const Text('Track driver on map'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.clientColor,
-                            ),
-                          ),
+                        child: Row(
+                          children: [
+                            if (isTracking)
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: onOpenMap,
+                                  icon: const Icon(Icons.location_on, size: 16),
+                                  label: const Text('Track driver'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.clientColor,
+                                  ),
+                                ),
+                              ),
+                            if (isTracking && canCancel)
+                              const SizedBox(width: 8),
+                            if (canCancel)
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _cancelRide(context, ride),
+                                  icon: const Icon(Icons.cancel_outlined, size: 16),
+                                  label: const Text('Cancel'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.error,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                   ],
@@ -229,6 +249,30 @@ class MyRidesTab extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _cancelRide(BuildContext context, Ride ride) async {
+    final result = await showDialog<Map<String, dynamic>?>(
+      context: context,
+      builder: (_) => const CancelRideDialog(isDispatcher: false),
+    );
+    if (result != null && context.mounted) {
+      final rideService = RideService(apiClient: context.read<AuthBloc>().apiClient);
+      try {
+        await rideService.cancelRide(ride.id, result['reason'] as String);
+        if (context.mounted) {
+          context.read<RideBloc>().add(
+            RideLoadRequested(user: context.read<AuthBloc>().state.user!),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to cancel ride: $e')),
+          );
+        }
+      }
+    }
   }
 
 }

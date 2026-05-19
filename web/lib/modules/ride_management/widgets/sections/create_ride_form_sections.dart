@@ -60,8 +60,11 @@ class _NotesSectionToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          decoration: AppTheme.cardDecoration,
+        Material(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+          elevation: 2,
+          shadowColor: AppColors.shadowMedium,
           child: SwitchListTile(
             value: state.showNotes,
             onChanged: (_) => context.read<CreateRideFormBloc>().add(const NotesToggled()),

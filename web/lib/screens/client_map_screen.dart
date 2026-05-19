@@ -28,6 +28,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   MapboxMap? _mapboxMap;
   PointAnnotationManager? _driverAnnotationManager;
   PointAnnotation? _driverAnnotation;
+  PointAnnotationManager? _selfAnnotationManager;
+  PointAnnotation? _selfAnnotation;
+  Uint8List? _clientMarkerImage;
   CircleAnnotationManager? _circleAnnotationManager;
 
   StreamSubscription<geo.Position>? _locationSubscription;
@@ -40,12 +43,30 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   RideService? _rideService;
   Uint8List? _driverMarkerImage;
   String? _approachingBannerMessage;
+  Timer? _pulseTimer;
+  bool _pulseState = false;
 
   @override
   void initState() {
     super.initState();
     _initializeLocation();
     _listenToWebSocket();
+    _startPulse();
+  }
+
+  void _startPulse() {
+    _pulseTimer = Timer.periodic(const Duration(milliseconds: 700), (_) {
+      if (!mounted) return;
+      _pulseState = !_pulseState;
+      if (_driverAnnotation != null) {
+        _driverAnnotation!.iconSize = _pulseState ? 2.4 : 1.8;
+        _driverAnnotationManager?.update(_driverAnnotation!);
+      }
+      if (_selfAnnotation != null) {
+        _selfAnnotation!.iconSize = _pulseState ? 1.8 : 1.3;
+        _selfAnnotationManager?.update(_selfAnnotation!);
+      }
+    });
   }
 
   @override
@@ -71,6 +92,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   void dispose() {
     _locationSubscription?.cancel();
     _wsSubscription?.cancel();
+    _pulseTimer?.cancel();
     _locationService.dispose();
     super.dispose();
   }
@@ -96,6 +118,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           });
         }
         _updateDriverMarker(event.latitude!, event.longitude!);
+        _centerOnDriverAndClient(event.latitude!, event.longitude!);
 
         // Check if driver is approaching (< 500m)
         if (_currentPosition != null) {
@@ -148,6 +171,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       setState(() {
         _currentPosition = position;
       });
+      if (_mapboxMap != null) {
+        _mapboxMap!.setCamera(MapboxService.createCameraOptions(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          zoom: 15.0,
+        ));
+      }
     }
 
     final started = await _locationService.startLocationTracking();
@@ -156,6 +186,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         setState(() {
           _currentPosition = position;
         });
+        if (_firstGpsFix) {
+          _firstGpsFix = false;
+          _mapboxMap?.setCamera(MapboxService.createCameraOptions(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            zoom: 15.0,
+          ));
+        }
         _updateCurrentLocationMarker();
 
         // Share client location if toggle is on
@@ -174,6 +212,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _mapboxMap = mapboxMap;
 
     _driverAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    _selfAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
 
     if (_currentPosition != null) {
@@ -188,19 +227,33 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _updateMapMarkers();
   }
 
-  void _updateCurrentLocationMarker() {
+  Future<void> _updateCurrentLocationMarker() async {
     if (_mapboxMap == null || _currentPosition == null) return;
 
-    _circleAnnotationManager?.deleteAll();
+    final name = context.read<AuthBloc>().state.user?.name;
 
-    final marker = MapboxService.createLocationMarker(
-      latitude: _currentPosition!.latitude,
-      longitude: _currentPosition!.longitude,
-      color: 'blue',
-      radius: 12.0,
-    );
+    if (_selfAnnotation != null) {
+      await _selfAnnotationManager?.delete(_selfAnnotation!);
+      _selfAnnotation = null;
+    }
 
-    _circleAnnotationManager?.create(marker);
+    _clientMarkerImage ??= (await rootBundle.load('assets/client_marker.png'))
+        .buffer.asUint8List();
+
+    _selfAnnotation = await _selfAnnotationManager?.create(PointAnnotationOptions(
+      geometry: Point(coordinates: Position(
+        _currentPosition!.longitude,
+        _currentPosition!.latitude,
+      )),
+      image: _clientMarkerImage,
+      iconSize: 1.5,
+      textField: name,
+      textSize: 13.0,
+      textColor: 0xFF1B5E20,
+      textHaloColor: 0xFFFFFFFF,
+      textHaloWidth: 2.0,
+      textOffset: [0.0, -2.5],
+    ));
   }
 
   Future<void> _updateDriverMarker(double latitude, double longitude) async {
@@ -210,21 +263,27 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         .buffer.asUint8List();
     final Uint8List imageData = _driverMarkerImage!;
 
-    final options = PointAnnotationOptions(
-      geometry: Point(coordinates: Position(longitude, latitude)),
-      image: imageData,
-      iconSize: 2.0,
-    );
-
     if (_driverAnnotation != null) {
       await _driverAnnotationManager?.delete(_driverAnnotation!);
       _driverAnnotation = null;
     }
-    _driverAnnotation = await _driverAnnotationManager?.create(options);
+    _driverAnnotation = await _driverAnnotationManager?.create(PointAnnotationOptions(
+      geometry: Point(coordinates: Position(longitude, latitude)),
+      image: imageData,
+      iconSize: 2.0,
+      textField: _activeRide?.driverName,
+      textSize: 13.0,
+      textColor: 0xFF0D47A1,
+      textHaloColor: 0xFFFFFFFF,
+      textHaloWidth: 2.0,
+      textOffset: [0.0, 2.5],
+    ));
   }
 
   void _updateMapMarkers() {
     if (_mapboxMap == null || _circleAnnotationManager == null) return;
+
+    _updateCurrentLocationMarker();
 
     if (_activeRide != null) {
       final rideMarkers = MapboxService.createRideMarkers(
@@ -255,7 +314,48 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     }
   }
 
+  void _centerOnDriverAndClient(double driverLat, double driverLng) {
+    if (_mapboxMap == null) return;
+
+    final List<double> lats = [driverLat];
+    final List<double> lngs = [driverLng];
+
+    if (_currentPosition != null) {
+      lats.add(_currentPosition!.latitude);
+      lngs.add(_currentPosition!.longitude);
+    }
+
+    final minLat = lats.reduce((a, b) => a < b ? a : b);
+    final maxLat = lats.reduce((a, b) => a > b ? a : b);
+    final minLng = lngs.reduce((a, b) => a < b ? a : b);
+    final maxLng = lngs.reduce((a, b) => a > b ? a : b);
+
+    final centerLat = (minLat + maxLat) / 2;
+    final centerLng = (minLng + maxLng) / 2;
+
+    final latDiff = (maxLat - minLat).abs();
+    final lngDiff = (maxLng - minLng).abs();
+    final maxDiff = latDiff > lngDiff ? latDiff : lngDiff;
+
+    double zoom;
+    if (maxDiff < 0.005) {
+      zoom = 15.0;
+    } else if (maxDiff < 0.02) {
+      zoom = 13.5;
+    } else if (maxDiff < 0.05) {
+      zoom = 12.0;
+    } else {
+      zoom = 11.0;
+    }
+
+    _mapboxMap!.setCamera(CameraOptions(
+      center: Point(coordinates: Position(centerLng, centerLat)),
+      zoom: zoom,
+    ));
+  }
+
   bool _driverApproachingShown = false;
+  bool _firstGpsFix = true;
 
   @override
   Widget build(BuildContext context) {
@@ -381,7 +481,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               );
             }
           },
-          activeColor: AppColors.success,
+          activeThumbColor: AppColors.success,
         ),
       ],
     );

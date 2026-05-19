@@ -222,6 +222,19 @@ class RideService {
     }
   }
 
+  Future<void> cancelRide(String id, String reason) async {
+    try {
+      final response = await privateApiClient.put('/rides/$id/cancel', {
+        'reason': reason,
+      });
+      if (response.statusCode != 200) {
+        throw ApiException('Failed to cancel ride: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw ApiException('Error cancelling ride: $e');
+    }
+  }
+
   void dispose() {
     if (_ownsClient) privateApiClient.dispose();
   }

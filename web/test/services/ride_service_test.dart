@@ -239,5 +239,51 @@ void main() {
         await rideService.updateDriverLocation('driver-1', 48.1, 11.5);
       });
     });
+
+    group('cancelRide', () {
+      test('200 completes without error', () async {
+        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
+            .thenAnswer((_) async => jsonResponse({}));
+
+        await expectLater(
+          rideService.cancelRide('ride-1', 'Client Request'),
+          completes,
+        );
+      });
+
+      test('sends reason to correct endpoint', () async {
+        Map<String, dynamic>? capturedBody;
+        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
+            .thenAnswer((invocation) async {
+          capturedBody = invocation.positionalArguments[1] as Map<String, dynamic>;
+          return jsonResponse({});
+        });
+
+        await rideService.cancelRide('ride-1', 'Client Request');
+
+        expect(capturedBody?['reason'], 'Client Request');
+        expect(capturedBody?.containsKey('status'), isFalse);
+      });
+
+      test('non-200 throws ApiException', () async {
+        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
+            .thenAnswer((_) async => jsonResponse({}, statusCode: 400));
+
+        expect(
+          () => rideService.cancelRide('ride-1', 'Other'),
+          throwsA(isA<ApiException>()),
+        );
+      });
+
+      test('network error throws ApiException', () async {
+        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
+            .thenThrow(ApiException('Network error'));
+
+        expect(
+          () => rideService.cancelRide('ride-1', 'Other'),
+          throwsA(isA<ApiException>()),
+        );
+      });
+    });
   });
 }

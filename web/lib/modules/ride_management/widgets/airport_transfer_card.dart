@@ -37,8 +37,11 @@ class AirportTransferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.cardDecoration,
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      elevation: 2,
+      shadowColor: AppColors.shadowMedium,
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.paddingLarge),
         child: Column(

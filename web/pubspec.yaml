@@ -40,6 +40,8 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  config:
+    swift-package-manager: false
   assets:
     - assets/
     - assets/dispax_icon.png

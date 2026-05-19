@@ -22,7 +22,6 @@ class DriverDashboard extends StatelessWidget {
               TodayRidesScreen(),
               CalendarScheduleScreen(),
               DriverMapScreen(),
-              Center(child: Text('Chat coming soon', style: TextStyle(color: Colors.grey))),
               SettingsScreen(),
             ],
           ),
@@ -48,11 +47,6 @@ class DriverDashboard extends StatelessWidget {
                 icon: Icon(Icons.map_outlined),
                 activeIcon: Icon(Icons.map),
                 label: 'Map',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.chat_bubble_outline),
-                activeIcon: Icon(Icons.chat_bubble),
-                label: 'Chat',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.settings_outlined),
