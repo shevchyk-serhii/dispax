@@ -9,12 +9,12 @@ class RidePersonCard extends StatelessWidget {
   final VoidCallback? onMessage;
 
   const RidePersonCard({
-    Key? key,
+    super.key,
     required this.person,
     this.isDriver = false,
     this.onCall,
     this.onMessage,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

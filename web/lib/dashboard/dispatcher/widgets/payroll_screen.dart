@@ -196,7 +196,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
           // Driver picker
           DropdownButtonFormField<String>(
             decoration: const InputDecoration(labelText: 'Select Driver'),
-            value: _selectedDriverId,
+            initialValue: _selectedDriverId,
             items: _drivers.map((d) => DropdownMenuItem(
               value: d.id,
               child: Text(d.name),

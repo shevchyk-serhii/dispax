@@ -41,7 +41,7 @@ class _CancelRideDialogState extends State<CancelRideDialog> {
             const Text('Please select a reason for cancellation:'),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedReason,
+              initialValue: _selectedReason,
               decoration: const InputDecoration(
                 labelText: 'Reason',
                 border: OutlineInputBorder(),

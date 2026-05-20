@@ -12,12 +12,12 @@ class LocationSelectionCard extends StatelessWidget {
   final List<String> locationOptions;
 
   const LocationSelectionCard({
-    Key? key,
+    super.key,
     required this.selectedLocation,
     required this.customLocationController,
     required this.onLocationSelected,
     required this.locationOptions,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

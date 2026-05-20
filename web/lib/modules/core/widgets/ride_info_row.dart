@@ -6,11 +6,11 @@ class RideInfoRow extends StatelessWidget {
   final String label;
 
   const RideInfoRow({
-    Key? key,
+    super.key,
     required this.icon,
     required this.text,
     required this.label,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

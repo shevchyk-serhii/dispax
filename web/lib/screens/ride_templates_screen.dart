@@ -142,7 +142,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                     const SizedBox(height: AppDimensions.paddingSmall),
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Client'),
-                      value: selectedClientId,
+                      initialValue: selectedClientId,
                       items: _clients.map((c) => DropdownMenuItem(
                         value: c.id,
                         child: Text(c.name),
@@ -171,7 +171,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                     const SizedBox(height: AppDimensions.paddingSmall),
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Recurrence'),
-                      value: recurrencePattern,
+                      initialValue: recurrencePattern,
                       items: const [
                         DropdownMenuItem(value: 'Daily', child: Text('Daily')),
                         DropdownMenuItem(value: 'Weekdays', child: Text('Weekdays')),

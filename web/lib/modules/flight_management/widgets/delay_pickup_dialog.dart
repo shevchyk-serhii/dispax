@@ -3,7 +3,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 
 class DelayPickupDialog extends StatefulWidget {
-  const DelayPickupDialog({Key? key}) : super(key: key);
+  const DelayPickupDialog({super.key});
 
   @override
   State<DelayPickupDialog> createState() => _DelayPickupDialogState();

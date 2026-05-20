@@ -8,9 +8,9 @@ class RideRouteCard extends StatelessWidget {
   final Ride ride;
 
   const RideRouteCard({
-    Key? key,
+    super.key,
     required this.ride,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -5,9 +5,9 @@ class TodayStatsCard extends StatelessWidget {
   final List<Ride> todayRides;
 
   const TodayStatsCard({
-    Key? key,
+    super.key,
     required this.todayRides,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -9,11 +9,11 @@ class FlightActionButtons extends StatelessWidget {
   final VoidCallback onDelayPickup;
 
   const FlightActionButtons({
-    Key? key,
+    super.key,
     required this.isLoading,
     required this.onConfirmArrival,
     required this.onDelayPickup,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

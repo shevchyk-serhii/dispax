@@ -15,14 +15,14 @@ class TodayRideCard extends StatelessWidget {
   final int? approachingDistanceMeters;
 
   const TodayRideCard({
-    Key? key,
+    super.key,
     required this.ride,
     this.isLast = false,
     this.onCallClient,
     this.onStartRide,
     this.onCompleteRide,
     this.approachingDistanceMeters,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

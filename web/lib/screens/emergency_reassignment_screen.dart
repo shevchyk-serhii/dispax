@@ -119,7 +119,7 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: selectedReason,
+                    initialValue: selectedReason,
                     decoration: const InputDecoration(
                       labelText: 'Reason',
                       border: OutlineInputBorder(),

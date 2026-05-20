@@ -9,11 +9,11 @@ class LocationOptionItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const LocationOptionItem({
-    Key? key,
+    super.key,
     required this.location,
     required this.isSelected,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

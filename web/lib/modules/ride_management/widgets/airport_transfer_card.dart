@@ -18,7 +18,7 @@ class AirportTransferCard extends StatelessWidget {
   final String? Function(String?)? flightNumberValidator;
 
   const AirportTransferCard({
-    Key? key,
+    super.key,
     required this.isAirportTransfer,
     required this.isArrival,
     required this.flightNumber,
@@ -32,7 +32,7 @@ class AirportTransferCard extends StatelessWidget {
     required this.onGateChanged,
     required this.onTerminalChanged,
     this.flightNumberValidator,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +146,7 @@ class AirportTransferCard extends StatelessWidget {
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                       ),
-                      value: selectedGate,
+                      initialValue: selectedGate,
                       items: gates.map((gate) => DropdownMenuItem(
                         value: gate,
                         child: Text(gate),
@@ -165,7 +165,7 @@ class AirportTransferCard extends StatelessWidget {
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                       ),
-                      value: selectedTerminal,
+                      initialValue: selectedTerminal,
                       items: terminals.map((terminal) => DropdownMenuItem(
                         value: terminal,
                         child: Text(terminal),

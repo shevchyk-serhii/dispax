@@ -14,7 +14,7 @@ class RideActionsCard extends StatelessWidget {
   final VoidCallback? onShareRide;
 
   const RideActionsCard({
-    Key? key,
+    super.key,
     required this.ride,
     this.isClientView = false,
     this.onEditRide,
@@ -24,7 +24,7 @@ class RideActionsCard extends StatelessWidget {
     this.onAssignDriver,
     this.onViewOnMap,
     this.onShareRide,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

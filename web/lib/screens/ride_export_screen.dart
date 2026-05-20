@@ -197,7 +197,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
         children: [
           Expanded(
             child: DropdownButtonFormField<String>(
-              value: _filterStatus,
+              initialValue: _filterStatus,
               decoration: const InputDecoration(
                 labelText: 'Status',
                 border: OutlineInputBorder(),

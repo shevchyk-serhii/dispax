@@ -17,10 +17,10 @@ class RideDetailsScreen extends StatefulWidget {
   final bool isClientView;
 
   const RideDetailsScreen({
-    Key? key,
+    super.key,
     required this.ride,
     this.isClientView = false,
-  }) : super(key: key);
+  });
 
   @override
   State<RideDetailsScreen> createState() => _RideDetailsScreenState();

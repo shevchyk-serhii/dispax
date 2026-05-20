@@ -7,9 +7,9 @@ class ErrorMessageWidget extends StatelessWidget {
   final String message;
 
   const ErrorMessageWidget({
-    Key? key,
+    super.key,
     required this.message,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

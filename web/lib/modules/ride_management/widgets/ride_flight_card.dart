@@ -7,9 +7,9 @@ class RideFlightCard extends StatelessWidget {
   final Ride ride;
 
   const RideFlightCard({
-    Key? key,
+    super.key,
     required this.ride,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

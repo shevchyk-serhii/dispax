@@ -167,7 +167,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: selectedRole,
+                  initialValue: selectedRole,
                   decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
                   items: ['driver', 'client', 'secretary', 'dispatcher']
                       .map((r) => DropdownMenuItem(value: r, child: Text(r)))

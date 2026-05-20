@@ -10,12 +10,12 @@ class RideQuickActions extends StatelessWidget {
   final VoidCallback? onCompleteRide;
 
   const RideQuickActions({
-    Key? key,
+    super.key,
     required this.ride,
     this.onCallClient,
     this.onStartRide,
     this.onCompleteRide,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

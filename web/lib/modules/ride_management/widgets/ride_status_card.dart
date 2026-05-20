@@ -8,10 +8,10 @@ class RideStatusCard extends StatelessWidget {
   final bool isClientView;
 
   const RideStatusCard({
-    Key? key,
+    super.key,
     required this.ride,
     this.isClientView = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

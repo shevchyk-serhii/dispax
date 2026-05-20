@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../modules/flight_management/services/flight_service.dart';
 
 class FlightScreen extends StatefulWidget {
-  const FlightScreen({Key? key}) : super(key: key);
+  const FlightScreen({super.key});
 
   @override
   State<FlightScreen> createState() => _FlightScreenState();
