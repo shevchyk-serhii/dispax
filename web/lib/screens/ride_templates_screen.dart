@@ -64,7 +64,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
   Future<void> _deactivateTemplate(String templateId) async {
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
-      await apiClient.put('/ride-templates/$templateId/deactivate', {});
+      await apiClient.delete('/ride-templates/$templateId');
       _loadData();
     } catch (e) {
       if (!mounted) return;
