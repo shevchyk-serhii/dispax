@@ -87,7 +87,7 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
       case PersonRole.dispatcher:
         return 'Dispatcher Dashboard';
       case PersonRole.admin:
-        throw UnimplementedError();
+        return 'Admin Dashboard';
     }
   }
 }
