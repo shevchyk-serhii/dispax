@@ -506,7 +506,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case PersonRole.dispatcher:
         return AppColors.dispatcherGradient;
       case PersonRole.admin:
-        throw UnimplementedError();
+        return AppColors.dispatcherGradient;
     }
   }
 }

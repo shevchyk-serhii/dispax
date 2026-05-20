@@ -58,7 +58,7 @@ class DashboardScreen extends StatelessWidget {
       case PersonRole.dispatcher:
         return const DispatcherDashboard();
       case PersonRole.admin:
-        throw UnimplementedError();
+        return const DispatcherDashboard();
     }
   }
 }

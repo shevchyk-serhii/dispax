@@ -9,6 +9,7 @@ import com.shevchyk.driver.application.DriverLocationService
 import com.shevchyk.driver.infrastructure.http.DriverRoutes
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.application.service.RideService
+import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.repository.InMemoryRideRepository
 import zio.*
 import zio.http.*
@@ -33,7 +34,7 @@ object DriverRoutesSpec extends ZIOSpecDefault {
 
   private def token(role: PersonRole, uid: UUID, cid: Option[UUID] = Some(companyId)): ZIO[JwtService, Throwable, String] =
     ZIO.serviceWithZIO[JwtService](_.generateToken(
-      Person(PersonId(uid), "test@example.com", "Test", role, "hash", cid.map(CompanyId.apply), UserStatus.ACTIVE)
+      Person(PersonId(uid), "Test", "test@example.com", role, cid.map(CompanyId.apply))
     ))
 
   private val noopGeofenceService: ZLayer[Any, Nothing, GeofenceService] = ZLayer.succeed(
@@ -66,28 +67,36 @@ object DriverRoutesSpec extends ZIOSpecDefault {
       noopPersonRepo) >>>
     DriverLocationService.layer
 
-  private val noopRideServiceLayer: ZLayer[Any, Nothing, RideService] = ZLayer.succeed(
-    new RideService(
-      rideRepository = new InMemoryRideRepository {},
-      personRepository = new PersonRepository {
-        def create(p: Person): Task[Person]                                             = ZIO.succeed(p)
-        def findById(id: PersonId): Task[Option[Person]]                               = ZIO.succeed(None)
-        def findByEmail(email: String): Task[Option[Person]]                           = ZIO.succeed(None)
-        def findByRole(role: PersonRole): Task[List[Person]]                           = ZIO.succeed(Nil)
-        def findByRoleAndCompany(role: PersonRole, cid: CompanyId): Task[List[Person]] = ZIO.succeed(Nil)
-        def findByCompanyId(cid: CompanyId): Task[List[Person]]                        = ZIO.succeed(Nil)
-        def findAll(): Task[List[Person]]                                               = ZIO.succeed(Nil)
-        def update(p: Person): Task[Person]                                            = ZIO.succeed(p)
-        def delete(id: PersonId): Task[Unit]                                           = ZIO.unit
-        def findByStatus(s: UserStatus): Task[List[Person]]                            = ZIO.succeed(Nil)
-        def searchByQuery(q: String): Task[List[Person]]                               = ZIO.succeed(Nil)
-        def updateLastLogin(id: PersonId): Task[Unit]                                  = ZIO.unit
-        def findByClientCompany(cid: ClientCompanyId): Task[List[Person]]             = ZIO.succeed(Nil)
-      },
-      eventHub = null, auditService = null, emailSmsService = null,
-      chatMessageRepository = null, clientLocationRepository = null, rideRatingRepository = null
-    )
-  )
+  private val noopRideServiceLayer: ZLayer[Any, Nothing, RideService] = ZLayer.succeed {
+    new RideService {
+      def getRideById(rideId: RideId): IO[RideError, Ride]                                                                            = ZIO.fail(RideError.RideNotFound(rideId))
+      def createRide(request: CreateRideRequest): IO[RideError, Ride]                                                                 = ZIO.fail(RideError.ValidationError("noop"))
+      def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                                                = ZIO.succeed(Nil)
+      def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                                          = ZIO.fail(RideError.RideNotFound(rideId))
+      def completeRide(rideId: RideId): IO[RideError, Ride]                                                                           = ZIO.fail(RideError.RideNotFound(rideId))
+      def cancelRide(rideId: RideId, userId: PersonId, userRole: PersonRole): IO[RideError, Ride]                                     = ZIO.fail(RideError.RideNotFound(rideId))
+      def cancelRideWithReason(rideId: RideId, userId: PersonId, userRole: PersonRole, req: CancelRideRequest): IO[RideError, Ride]   = ZIO.fail(RideError.RideNotFound(rideId))
+      def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]                                                 = ZIO.succeed(Map.empty)
+      def updateRideStatus(rideId: RideId, req: UpdateRideStatusRequest, userId: PersonId, userRole: PersonRole): IO[RideError, Ride]  = ZIO.fail(RideError.RideNotFound(rideId))
+      def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                                       = ZIO.fail(RideError.RideNotFound(rideId))
+      def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]                                                             = ZIO.succeed(Nil)
+      def getDriverRides(driverId: PersonId): IO[RideError, List[Ride]]                                                               = ZIO.succeed(Nil)
+      def getClientRides(clientId: PersonId): IO[RideError, List[Ride]]                                                               = ZIO.succeed(Nil)
+      def getAllRides: IO[RideError, List[Ride]]                                                                                       = ZIO.succeed(Nil)
+      def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]                                                          = ZIO.succeed(Nil)
+      def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]]                        = ZIO.succeed(Nil)
+      def getDriverRidesPaginated(driverId: PersonId, offset: Int, limit: Int): IO[RideError, List[Ride]]                             = ZIO.succeed(Nil)
+      def updateRideDetails(rideId: RideId, req: UpdateRideDetailsRequest, userId: PersonId, userRole: PersonRole, companyId: Option[CompanyId]): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
+      def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride]                                                  = ZIO.fail(RideError.RideNotFound(rideId))
+      def markPayment(rideId: RideId, paymentStatus: PaymentStatus, paymentMethod: Option[PaymentMethod]): IO[RideError, Ride]        = ZIO.fail(RideError.RideNotFound(rideId))
+      def getUnpaidCompletedRides: IO[RideError, List[Ride]]                                                                          = ZIO.succeed(Nil)
+      def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                                                = ZIO.succeed(Map.empty)
+      def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                                            = ZIO.succeed(BigDecimal(0))
+      def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                                            = ZIO.succeed(BigDecimal(0))
+      def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                                        = ZIO.succeed(0.0)
+      def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]]                                = ZIO.succeed(Nil)
+    }
+  }
 
   private val testLayers = driverLocationServiceLayer ++ noopRideServiceLayer ++ testJwtService
 

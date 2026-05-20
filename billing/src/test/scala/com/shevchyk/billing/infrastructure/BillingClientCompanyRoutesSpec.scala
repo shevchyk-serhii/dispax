@@ -10,6 +10,8 @@ import zio.http.*
 import zio.test.*
 
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import scala.jdk.CollectionConverters.*
 
 object BillingClientCompanyRoutesSpec extends ZIOSpecDefault {
 
@@ -28,10 +30,31 @@ object BillingClientCompanyRoutesSpec extends ZIOSpecDefault {
 
   private def token(role: PersonRole, uid: UUID, cid: Option[UUID] = Some(companyId)): ZIO[JwtService, Throwable, String] =
     ZIO.serviceWithZIO[JwtService](_.generateToken(
-      Person(PersonId(uid), "test@example.com", "Test", role, "hash", cid.map(CompanyId.apply), UserStatus.ACTIVE)
+      Person(PersonId(uid), "Test", "test@example.com", role, cid.map(CompanyId.apply))
     ))
 
-  private val testLayers = ClientCompanyRepository.inMemory ++ testJwtService
+  private val inMemoryClientCompanyRepo: ZLayer[Any, Nothing, ClientCompanyRepository] = ZLayer.succeed {
+    new ClientCompanyRepository {
+      private val store = new ConcurrentHashMap[ClientCompanyId, ClientCompany]()
+      def findById(id: ClientCompanyId): Task[Option[ClientCompany]]                              = ZIO.succeed(Option(store.get(id)))
+      def findByTaxiCompany(taxiCompanyId: CompanyId): Task[List[ClientCompany]]                 = ZIO.succeed(store.values().asScala.filter(_.taxiCompanyId == taxiCompanyId).toList)
+      def create(req: CreateClientCompanyRequest, taxiCompanyId: CompanyId): Task[ClientCompany] = ZIO.succeed {
+        val cc = ClientCompany(ClientCompanyId.generate(), req.name, taxiCompanyId, req.email, req.phone, req.address)
+        store.put(cc.id, cc)
+        cc
+      }
+      def update(id: ClientCompanyId, req: CreateClientCompanyRequest): Task[Option[ClientCompany]] = ZIO.succeed {
+        Option(store.get(id)).map { cc =>
+          val updated = cc.copy(name = req.name, email = req.email, phone = req.phone, address = req.address)
+          store.put(id, updated)
+          updated
+        }
+      }
+      def delete(id: ClientCompanyId): Task[Boolean] = ZIO.succeed(Option(store.remove(id)).isDefined)
+    }
+  }
+
+  private val testLayers = inMemoryClientCompanyRepo ++ testJwtService
 
   private def run(req: Request): ZIO[ClientCompanyRepository & JwtService, Nothing, Response] =
     ClientCompanyRoutes.authenticatedRoutes.run(req).either.map {
@@ -39,7 +62,7 @@ object BillingClientCompanyRoutesSpec extends ZIOSpecDefault {
       case Right(r) => r
     }
 
-  private val validCompanyJson = """{"name":"Acme Corp","vatNumber":"DE123456789","address":"Berlin"}"""
+  private val validCompanyJson = """{"name":"Acme Corp","address":"Berlin"}"""
 
   def spec = suite("billing/ClientCompanyRoutes")(
 

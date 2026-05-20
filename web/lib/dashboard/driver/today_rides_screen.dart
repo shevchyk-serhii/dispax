@@ -76,7 +76,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
       );
     } else {
       try {
-        await _rideService?.cancelRide(rideId, 'Driver Unavailable');
+        await _rideService?.updateRideStatus(rideId, RideStatus.requested);
         if (mounted) {
           context.read<RideBloc>().add(
             RideLoadRequested(user: context.read<AuthBloc>().state.user!),

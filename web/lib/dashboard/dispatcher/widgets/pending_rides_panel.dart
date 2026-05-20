@@ -26,6 +26,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   _SortMode _sortMode = _SortMode.timeAsc;
   _FilterMode _filterMode = _FilterMode.all;
   String _searchQuery = '';
+  int _tabIndex = 0; // 0 = Pending, 1 = Assigned
 
   @override
   void initState() {
@@ -35,7 +36,8 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   }
 
   List<Ride> _applyFiltersAndSort(List<Ride> rides) {
-    var filtered = rides.where((r) => r.status == RideStatus.requested).toList();
+    final statusFilter = _tabIndex == 0 ? RideStatus.requested : RideStatus.assigned;
+    var filtered = rides.where((r) => r.status == statusFilter).toList();
 
     // Apply filter
     switch (_filterMode) {
@@ -81,6 +83,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     return Column(
       children: [
         _buildHeader(),
+        _buildTabBar(),
         _buildFilterBar(),
         Expanded(
           child: BlocBuilder<RideBloc, RideState>(
@@ -89,9 +92,9 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final pendingRides = _applyFiltersAndSort(state.rides);
+              final rides = _applyFiltersAndSort(state.rides);
 
-              if (pendingRides.isEmpty) {
+              if (rides.isEmpty) {
                 return _buildEmptyState();
               }
 
@@ -101,9 +104,15 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-                  itemCount: pendingRides.length,
+                  itemCount: rides.length,
                   itemBuilder: (context, index) {
-                    final ride = pendingRides[index];
+                    final ride = rides[index];
+                    if (_tabIndex == 1) {
+                      return _AssignedRideCard(
+                        ride: ride,
+                        onReassign: () => _showDriverSelectionSheet(context, ride, isReassign: true),
+                      );
+                    }
                     return Draggable<Ride>(
                       data: ride,
                       feedback: Material(
@@ -130,6 +139,75 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTabBar() {
+    return BlocBuilder<RideBloc, RideState>(
+      builder: (context, state) {
+        final pendingCount = state.rides.where((r) => r.status == RideStatus.requested).length;
+        final assignedCount = state.rides.where((r) => r.status == RideStatus.assigned).length;
+        return Container(
+          color: Colors.white,
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildTab(0, 'Pending', pendingCount),
+              ),
+              Expanded(
+                child: _buildTab(1, 'Assigned', assignedCount),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTab(int index, String label, int count) {
+    final selected = _tabIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _tabIndex = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: selected ? AppColors.primary : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? AppColors.primary : Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: selected ? AppColors.primary : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  color: selected ? Colors.white : Colors.grey.shade700,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -221,9 +299,8 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         bottom: false,
         child: BlocBuilder<RideBloc, RideState>(
           builder: (context, state) {
-            final count = state.rides
-                .where((r) => r.status == RideStatus.requested)
-                .length;
+            final pendingCount = state.rides.where((r) => r.status == RideStatus.requested).length;
+            final assignedCount = state.rides.where((r) => r.status == RideStatus.assigned).length;
             return Row(
               children: [
                 const Icon(Icons.pending_actions, color: Colors.white, size: 24),
@@ -233,11 +310,11 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Pending Rides',
+                        'Ride Management',
                         style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '$count ride${count == 1 ? '' : 's'} awaiting assignment',
+                        '$pendingCount pending · $assignedCount assigned',
                         style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 13),
                       ),
                     ],
@@ -256,7 +333,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     );
   }
 
-  void _showDriverSelectionSheet(BuildContext context, Ride ride) {
+  void _showDriverSelectionSheet(BuildContext context, Ride ride, {bool isReassign = false}) {
     final scheduleState = context.read<ScheduleBloc>().state;
     final rideState = context.read<RideBloc>().state;
     final authBloc = context.read<AuthBloc>();
@@ -277,6 +354,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         rideState: rideState,
         scheduledDriverIds: scheduledDriverIds,
         userService: UserService(apiClient: authBloc.apiClient),
+        isReassign: isReassign,
         onAssign: (driverId, driverLabel, conflicts) {
           Navigator.pop(ctx);
           showDialog(
@@ -287,10 +365,17 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               driverId: driverId,
               conflicts: conflicts,
               onConfirm: () {
-                context.read<RideBloc>().add(RideAssignRequested(
-                  rideId: ride.id,
-                  driverId: driverId,
-                ));
+                if (isReassign) {
+                  context.read<RideBloc>().add(RideReassignRequested(
+                    rideId: ride.id,
+                    newDriverId: driverId,
+                  ));
+                } else {
+                  context.read<RideBloc>().add(RideAssignRequested(
+                    rideId: ride.id,
+                    driverId: driverId,
+                  ));
+                }
               },
             ),
           );
@@ -300,6 +385,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   }
 
   Widget _buildEmptyState() {
+    final isPending = _tabIndex == 0;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -307,12 +393,12 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           Icon(Icons.check_circle_outline, size: 56, color: Colors.green.shade300),
           const SizedBox(height: 12),
           Text(
-            'No pending rides',
+            isPending ? 'No pending rides' : 'No assigned rides',
             style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 6),
           Text(
-            'All rides have been assigned',
+            isPending ? 'All rides have been assigned' : 'No rides currently assigned to drivers',
             style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
           ),
         ],
@@ -402,11 +488,105 @@ class _PendingRideCard extends StatelessWidget {
   }
 }
 
+class _AssignedRideCard extends StatelessWidget {
+  final Ride ride;
+  final VoidCallback onReassign;
+
+  const _AssignedRideCard({required this.ride, required this.onReassign});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.access_time, size: 16, color: Colors.blue.shade600),
+                    const SizedBox(width: 6),
+                    Text(
+                      DateFormat('dd.MM HH:mm').format(ride.pickupDateTime),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Text(
+                    'ASSIGNED',
+                    style: TextStyle(color: Colors.blue.shade700, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildInfoRow(Icons.person, ride.clientName),
+            if (ride.driverName != null) ...[
+              const SizedBox(height: 4),
+              _buildInfoRow(Icons.drive_eta, ride.driverName!),
+            ],
+            const SizedBox(height: 4),
+            _buildInfoRow(Icons.location_on, ride.from.address),
+            const SizedBox(height: 4),
+            _buildInfoRow(Icons.flag, ride.to.address),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: onReassign,
+                icon: const Icon(Icons.swap_horiz, size: 16),
+                label: const Text('Reassign'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.orange.shade700,
+                  side: BorderSide(color: Colors.orange.shade400),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: Colors.grey.shade600),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _DriverSelectionSheet extends StatefulWidget {
   final Ride ride;
   final RideState rideState;
   final Set<String> scheduledDriverIds;
   final UserService userService;
+  final bool isReassign;
   final void Function(String driverId, String driverLabel, List<Ride> conflicts) onAssign;
 
   const _DriverSelectionSheet({
@@ -415,6 +595,7 @@ class _DriverSelectionSheet extends StatefulWidget {
     required this.scheduledDriverIds,
     required this.userService,
     required this.onAssign,
+    this.isReassign = false,
   });
 
   @override
@@ -469,9 +650,9 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Select Driver',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  widget.isReassign ? 'Reassign Driver' : 'Select Driver',
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
