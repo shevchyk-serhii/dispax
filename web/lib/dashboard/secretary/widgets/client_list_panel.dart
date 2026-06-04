@@ -117,7 +117,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
+                        Icon(Icons.people_outline, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                         const SizedBox(height: 16),
                         Text(
                           state.searchQuery.isNotEmpty ? 'No clients match your search' : 'No clients yet',

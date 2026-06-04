@@ -21,10 +21,11 @@ class _CreateRideBasicInfoSectionState extends State<CreateRideBasicInfoSection>
     final authBloc = context.read<AuthBloc>();
     _userService = UserService(apiClient: authBloc.apiClient);
 
-    // For CLIENT role: auto-select themselves, no need to search
+    // For CLIENT and DRIVER roles: auto-select themselves, no need to search
     final authState = authBloc.state;
+    final role = authState.user?.role;
     if (authState.status == AuthStatus.authenticated &&
-        authState.user?.role == PersonRole.client) {
+        (role == PersonRole.client || role == PersonRole.driver)) {
       final user = authState.user!;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -45,10 +46,11 @@ class _CreateRideBasicInfoSectionState extends State<CreateRideBasicInfoSection>
   Widget build(BuildContext context) {
     final authBloc = context.read<AuthBloc>();
     final authState = authBloc.state;
-    final isClient = authState.status == AuthStatus.authenticated &&
-        authState.user?.role == PersonRole.client;
+    final isSelfBooking = authState.status == AuthStatus.authenticated &&
+        (authState.user?.role == PersonRole.client ||
+         authState.user?.role == PersonRole.driver);
 
-    if (isClient) {
+    if (isSelfBooking) {
       return const SizedBox.shrink();
     }
 

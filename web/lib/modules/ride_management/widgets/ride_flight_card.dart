@@ -92,7 +92,7 @@ class RideFlightCard extends StatelessWidget {
                     Text(
                       'Status',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -125,13 +125,13 @@ class RideFlightCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.note, color: Colors.grey[600], size: 20),
+                  Icon(Icons.note, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       flight.notes!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[700],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -161,7 +161,7 @@ class RideFlightCard extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),

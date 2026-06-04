@@ -37,7 +37,7 @@ class _RateRideDialogState extends State<RateRideDialog> {
                 return IconButton(
                   icon: Icon(
                     starIndex <= _rating ? Icons.star : Icons.star_border,
-                    color: starIndex <= _rating ? Colors.amber : Colors.grey,
+                    color: starIndex <= _rating ? Colors.amber : Theme.of(context).colorScheme.outlineVariant,
                     size: 36,
                   ),
                   onPressed: () => setState(() => _rating = starIndex),

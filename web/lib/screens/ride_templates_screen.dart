@@ -327,16 +327,16 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.repeat, size: 56, color: Colors.grey.shade400),
+            Icon(Icons.repeat, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
             Text(
               'No active templates',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 6),
             Text(
               'Create a template to schedule recurring rides',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outlineVariant),
             ),
           ],
         ),
@@ -387,17 +387,17 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.person, size: 14, color: Colors.grey.shade600),
+                      Icon(Icons.person, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
-                      Text(clientName, style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+                      Text(clientName, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.schedule, size: 14, color: Colors.grey.shade600),
+                      Icon(Icons.schedule, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
-                      Text(template.pickupTime, style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+                      Text(template.pickupTime, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -408,7 +408,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                       Expanded(
                         child: Text(
                           '${template.fromAddress} -> ${template.toAddress}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -419,11 +419,11 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.euro, size: 14, color: Colors.grey.shade600),
+                        Icon(Icons.euro, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Text(
                           template.price!.toStringAsFixed(2),
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),

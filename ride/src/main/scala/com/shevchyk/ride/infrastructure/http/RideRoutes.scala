@@ -112,6 +112,13 @@ object RideRoutes {
                              }
           service       <- ZIO.service[RideService]
           ride          <- service.createRide(domainRequest)
+          ride          <-
+            validRequest.driverId match
+              case Some(driverIdStr) =>
+                UuidParser.parsePersonId(driverIdStr).flatMap { driverPid =>
+                  service.assignDriver(ride.id, driverPid).mapError(e => new RuntimeException(e.toString))
+                }
+              case None              => ZIO.succeed(ride)
           // Record from/to addresses for the client after successful ride creation
           addrService   <- ZIO.service[ClientAddressService]
           _             <-

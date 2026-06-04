@@ -29,16 +29,16 @@ class AssignmentDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSection('Ride Details', [
-              _buildRow('Client', ride.clientName),
-              _buildRow('Time', DateFormat('dd.MM.yyyy HH:mm').format(ride.pickupDateTime)),
-              _buildRow('From', ride.from.address),
-              _buildRow('To', ride.to.address),
+              _buildRow(context, 'Client', ride.clientName),
+              _buildRow(context, 'Time', DateFormat('dd.MM.yyyy HH:mm').format(ride.pickupDateTime)),
+              _buildRow(context, 'From', ride.from.address),
+              _buildRow(context, 'To', ride.to.address),
               if (ride.flightNumber != null)
-                _buildRow('Flight', ride.flightNumber!),
+                _buildRow(context, 'Flight', ride.flightNumber!),
             ]),
             const SizedBox(height: 16),
             _buildSection('Assign To', [
-              _buildRow('Driver', driverLabel),
+              _buildRow(context, 'Driver', driverLabel),
             ]),
             if (conflicts.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -113,7 +113,7 @@ class AssignmentDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildRow(String label, String value) {
+  Widget _buildRow(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
@@ -121,7 +121,7 @@ class AssignmentDialog extends StatelessWidget {
         children: [
           SizedBox(
             width: 60,
-            child: Text('$label:', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            child: Text('$label:', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
           ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
         ],

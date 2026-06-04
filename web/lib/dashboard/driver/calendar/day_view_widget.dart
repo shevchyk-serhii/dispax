@@ -21,6 +21,8 @@ class DayViewWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) {
         return BlocBuilder<ScheduleBloc, ScheduleState>(
@@ -38,11 +40,11 @@ class DayViewWidget extends StatelessWidget {
             return Container(
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withAlpha(25),
+                    color: Colors.black.withAlpha(25),
                     spreadRadius: 1,
                     blurRadius: 8,
                     offset: const Offset(0, 2),
@@ -52,13 +54,13 @@ class DayViewWidget extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  buildDayHeader(),
+                  buildDayHeader(context),
                   if (daySchedules.isNotEmpty)
-                    _buildScheduleBlock(daySchedules),
+                    _buildScheduleBlock(context, daySchedules),
                   Expanded(
                     child: dayRides.isEmpty
-                        ? buildEmptyState()
-                        : buildRidesList(dayRides),
+                        ? buildEmptyState(context)
+                        : buildRidesList(context, dayRides),
                   ),
                 ],
               ),
@@ -69,28 +71,30 @@ class DayViewWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildScheduleBlock(List<ScheduleDay> schedules) {
+  Widget _buildScheduleBlock(BuildContext context, List<ScheduleDay> schedules) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: colorScheme.primaryContainer.withAlpha(80),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: colorScheme.primary.withAlpha(80)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.work_outline, size: 16, color: Colors.blue.shade700),
+              Icon(Icons.work_outline, size: 16, color: colorScheme.primary),
               const SizedBox(width: 6),
               Text(
                 'Work Schedule',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
+                  color: colorScheme.primary,
                 ),
               ),
             ],
@@ -100,14 +104,14 @@ class DayViewWidget extends StatelessWidget {
             padding: const EdgeInsets.only(top: 2),
             child: Row(
               children: [
-                Icon(Icons.schedule, size: 14, color: Colors.blue.shade600),
+                Icon(Icons.schedule, size: 14, color: colorScheme.primary),
                 const SizedBox(width: 6),
                 Text(
                   '${s.startTime} — ${s.endTime}',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.blue.shade800,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -131,7 +135,7 @@ class DayViewWidget extends StatelessWidget {
                   Expanded(
                     child: Text(
                       s.notes!,
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -157,11 +161,13 @@ class DayViewWidget extends StatelessWidget {
     }
   }
 
-  Widget buildDayHeader() {
+  Widget buildDayHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: colorScheme.primaryContainer.withAlpha(60),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
@@ -178,12 +184,12 @@ class DayViewWidget extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade800,
+                  color: colorScheme.onSurface,
                 ),
               ),
               Text(
                 DateFormat.yMMMd().format(selectedDay),
-                style: TextStyle(fontSize: 16, color: Colors.blue.shade600),
+                style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -207,65 +213,66 @@ class DayViewWidget extends StatelessWidget {
     );
   }
 
-  Widget buildEmptyState() {
+  Widget buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_available, size: 64, color: Colors.grey.shade400),
+          Icon(Icons.event_available, size: 64, color: colorScheme.onSurfaceVariant),
           const SizedBox(height: 16),
           Text(
             'No rides scheduled',
             style: TextStyle(
               fontSize: 18,
-              color: Colors.grey.shade600,
+              color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Enjoy your free day!',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
           ),
         ],
       ),
     );
   }
 
-  Widget buildRidesList(List<Ride> rides) {
+  Widget buildRidesList(BuildContext context, List<Ride> rides) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: rides.length + getTravelTimeSlots(rides).length,
       itemBuilder: (context, index) {
-        final items = buildTimelineItems(rides);
+        final items = buildTimelineItems(context, rides);
         if (index >= items.length) return const SizedBox.shrink();
-
         return items[index];
       },
     );
   }
 
-  List<Widget> buildTimelineItems(List<Ride> rides) {
+  List<Widget> buildTimelineItems(BuildContext context, List<Ride> rides) {
     final items = <Widget>[];
 
     for (int i = 0; i < rides.length; i++) {
       final ride = rides[i];
-
-      items.add(buildRideCard(ride, i == rides.length - 1));
+      items.add(buildRideCard(context, ride, i == rides.length - 1));
 
       if (i < rides.length - 1) {
         final nextRide = rides[i + 1];
         final travelTime = nextRide.pickupDateTime
             .difference(ride.pickupDateTime)
             .inMinutes;
-        items.add(buildTravelTimeIndicator(travelTime));
+        items.add(buildTravelTimeIndicator(context, travelTime));
       }
     }
 
     return items;
   }
 
-  Widget buildRideCard(Ride ride, bool isLast) {
+  Widget buildRideCard(BuildContext context, Ride ride, bool isLast) {
+    final colorScheme = Theme.of(context).colorScheme;
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
     final statusText = RideStatusStyles.getStatusLabel(ride.status);
 
@@ -289,9 +296,10 @@ class DayViewWidget extends StatelessWidget {
                 children: [
                   Text(
                     DateFormat.Hm().format(ride.pickupDateTime),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   Container(
@@ -315,13 +323,13 @@ class DayViewWidget extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              buildLocationRow(Icons.person, 'Client', ride.clientName),
+              buildLocationRow(context, Icons.person, 'Client', ride.clientName),
               const SizedBox(height: 8),
-              buildLocationRow(Icons.location_on, 'From', ride.from.address),
+              buildLocationRow(context, Icons.location_on, 'From', ride.from.address),
               const SizedBox(height: 8),
-              buildLocationRow(Icons.flag, 'To', ride.to.address),
+              buildLocationRow(context, Icons.flag, 'To', ride.to.address),
               const SizedBox(height: 12),
-              buildActionButtons(ride),
+              buildActionButtons(context, ride),
             ],
           ),
         ),
@@ -329,87 +337,90 @@ class DayViewWidget extends StatelessWidget {
     );
   }
 
-  Widget buildLocationRow(IconData icon, String label, String value) {
+  Widget buildLocationRow(BuildContext context, IconData icon, String label, String value) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: Colors.grey.shade600),
+        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 8),
         Text(
           '$label: ',
           style: TextStyle(
-            color: Colors.grey.shade600,
+            color: colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w500,
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onSurface,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget buildActionButtons(Ride ride) {
-    return Builder(
-      builder: (context) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+  Widget buildActionButtons(BuildContext context, Ride ride) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                onPressed: () => _handleCall(context, ride),
+                icon: const Icon(Icons.phone, color: Colors.green),
+                tooltip: 'Call Client',
+              ),
+              IconButton(
+                onPressed: () => _handleNavigation(context, ride),
+                icon: const Icon(Icons.navigation, color: Colors.blue),
+                tooltip: 'Start Navigation',
+              ),
+            ],
+          ),
+        ),
+        if (ride.status == RideStatus.assigned)
           Flexible(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  onPressed: () => _handleCall(context, ride),
-                  icon: const Icon(Icons.phone, color: Colors.green),
-                  tooltip: 'Call Client',
-                ),
-                IconButton(
-                  onPressed: () => _handleNavigation(context, ride),
-                  icon: const Icon(Icons.navigation, color: Colors.blue),
-                  tooltip: 'Start Navigation',
-                ),
-              ],
+            child: ElevatedButton.icon(
+              onPressed: () {
+                context.read<RideBloc>().add(RideStatusUpdateRequested(
+                  rideId: ride.id,
+                  status: RideStatus.inProgress,
+                ));
+              },
+              icon: const Icon(Icons.play_arrow, size: 18),
+              label: const Text('Start'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          )
+        else if (ride.status == RideStatus.inProgress)
+          Flexible(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                context.read<RideBloc>().add(RideStatusUpdateRequested(
+                  rideId: ride.id,
+                  status: RideStatus.completed,
+                ));
+              },
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('Complete'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
             ),
           ),
-          if (ride.status == RideStatus.assigned)
-            Flexible(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  context.read<RideBloc>().add(RideStatusUpdateRequested(
-                    rideId: ride.id,
-                    status: RideStatus.inProgress,
-                  ));
-                },
-                icon: const Icon(Icons.play_arrow, size: 18),
-                label: const Text('Start'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            )
-          else if (ride.status == RideStatus.inProgress)
-            Flexible(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  context.read<RideBloc>().add(RideStatusUpdateRequested(
-                    rideId: ride.id,
-                    status: RideStatus.completed,
-                  ));
-                },
-                icon: const Icon(Icons.check, size: 18),
-                label: const Text('Complete'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -501,7 +512,9 @@ class DayViewWidget extends StatelessWidget {
     }
   }
 
-  Widget buildTravelTimeIndicator(int minutes) {
+  Widget buildTravelTimeIndicator(BuildContext context, int minutes) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -509,15 +522,15 @@ class DayViewWidget extends StatelessWidget {
           Container(
             width: 2,
             height: 30,
-            color: Colors.grey.shade300,
+            color: colorScheme.outlineVariant,
             margin: const EdgeInsets.symmetric(horizontal: 16),
           ),
-          Icon(Icons.directions_car, size: 16, color: Colors.grey.shade500),
+          Icon(Icons.directions_car, size: 16, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Text(
             '$minutes min travel time',
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: colorScheme.onSurfaceVariant,
               fontSize: 12,
               fontStyle: FontStyle.italic,
             ),

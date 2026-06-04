@@ -37,7 +37,7 @@ class AirportTransferCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
       elevation: 2,
       shadowColor: AppColors.shadowMedium,

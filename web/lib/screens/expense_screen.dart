@@ -216,9 +216,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.receipt_long, size: 64, color: Colors.grey.shade300),
+                              Icon(Icons.receipt_long, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                               const SizedBox(height: 12),
-                              Text('No expenses yet', style: TextStyle(color: Colors.grey.shade600)),
+                              Text('No expenses yet', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                             ],
                           ),
                         )
@@ -321,10 +321,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (expense.description != null)
-              Text(expense.description!, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              Text(expense.description!, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             Text(
               '${expense.createdAt.day}.${expense.createdAt.month}.${expense.createdAt.year}',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
             ),
           ],
         ),

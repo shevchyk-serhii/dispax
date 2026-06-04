@@ -86,7 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: Colors.grey.shade600,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
         ),
       ),
@@ -310,7 +310,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ListTile(
           leading: const Icon(Icons.info_outline),
           title: const Text('Version'),
-          trailing: Text('1.0.0', style: TextStyle(color: Colors.grey.shade600)),
+          trailing: Text('1.0.0', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ),
       ],
     );

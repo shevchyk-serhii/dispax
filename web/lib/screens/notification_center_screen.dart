@@ -238,7 +238,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
         TabBar(
           controller: _tabController,
           labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           tabs: [
             Tab(
               child: Row(
@@ -386,13 +386,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.notifications_off,
-                                  size: 56, color: Colors.grey.shade400),
+                                  size: 56, color: Theme.of(context).colorScheme.outlineVariant),
                               const SizedBox(height: 12),
                               Text(
                                 'No notifications',
                                 style: TextStyle(
                                     fontSize: 16,
-                                    color: Colors.grey.shade600,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     fontWeight: FontWeight.w500),
                               ),
                             ],
@@ -442,7 +442,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                 style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade600),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
             ...entry.value.map(_buildNotificationCard),
@@ -513,7 +513,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                   Text(
                     _timeAgo(n.createdAt),
                     style:
-                        TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                        TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                 ],
               ),
@@ -798,7 +798,7 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
     return SwitchListTile(
       title: Text(title, style: const TextStyle(fontSize: 13)),
       subtitle:
-          Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          Text(subtitle, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       value: value,
       onChanged: onChanged,
       contentPadding: EdgeInsets.zero,

@@ -5,7 +5,6 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/services/user_service.dart';
-import '../../../theme/app_theme.dart';
 
 class ClientSearchField extends StatefulWidget {
   final UserService userService;
@@ -53,7 +52,17 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: AppTheme.cardDecoration,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.paddingLarge),
         child: Column(

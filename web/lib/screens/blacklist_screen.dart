@@ -187,9 +187,9 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.block, size: 64, color: Colors.grey.shade300),
+                              Icon(Icons.block, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                               const SizedBox(height: 12),
-                              Text('No blacklist entries', style: TextStyle(color: Colors.grey.shade600)),
+                              Text('No blacklist entries', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                             ],
                           ),
                         )
@@ -265,10 +265,10 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
               style: const TextStyle(fontSize: 12),
             ),
             if (reason != null && reason.isNotEmpty)
-              Text(reason, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+              Text(reason, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             Text(
               _formatDate(createdAt),
-              style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.outlineVariant),
             ),
           ],
         ),

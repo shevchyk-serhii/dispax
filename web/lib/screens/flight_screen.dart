@@ -83,12 +83,12 @@ class _FlightScreenState extends State<FlightScreen>
             Icon(
               isArrival ? Icons.flight_land : Icons.flight_takeoff,
               size: 64,
-              color: Colors.grey,
+              color: Theme.of(context).colorScheme.outlineVariant,
             ),
             const SizedBox(height: 16),
             Text(
               'No ${isArrival ? 'arrivals' : 'departures'} found',
-              style: const TextStyle(fontSize: 18, color: Colors.grey),
+              style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),

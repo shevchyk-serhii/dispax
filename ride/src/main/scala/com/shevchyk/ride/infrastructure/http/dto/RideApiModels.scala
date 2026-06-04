@@ -94,7 +94,8 @@ case class CreateRideApiRequest(
     terminal: Option[String] = None,
     price: Option[Double] = None,
     notes: Option[String] = None,
-    specialRequirements: Option[String] = None
+    specialRequirements: Option[String] = None,
+    driverId: Option[String] = None
 ) derives JsonCodec
 
 case class UpdateRideApiRequest(

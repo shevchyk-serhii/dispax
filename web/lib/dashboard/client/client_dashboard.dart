@@ -183,9 +183,9 @@ class MyRidesTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.event_available, size: 56, color: Colors.grey.shade400),
+                Icon(Icons.event_available, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
                 const SizedBox(height: 12),
-                Text('You have no active rides', style: TextStyle(color: Colors.grey.shade600)),
+                Text('You have no active rides', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 16),
                 const Text('Use "Book" tab to create one', style: TextStyle(fontSize: 12)),
               ],

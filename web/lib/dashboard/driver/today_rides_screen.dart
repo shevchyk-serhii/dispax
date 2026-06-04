@@ -206,7 +206,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.blue.shade600, Colors.grey.shade50],
+              colors: [Colors.blue.shade600, Theme.of(context).colorScheme.surface],
               stops: const [0.0, 0.2],
             ),
           ),

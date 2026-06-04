@@ -124,6 +124,15 @@ class FormCleared extends CreateRideFormEvent {
   const FormCleared();
 }
 
+class DriverSelected extends CreateRideFormEvent {
+  final String? driverId;
+
+  const DriverSelected(this.driverId);
+
+  @override
+  List<Object?> get props => [driverId];
+}
+
 class FormSubmitted extends CreateRideFormEvent {
   const FormSubmitted();
 }

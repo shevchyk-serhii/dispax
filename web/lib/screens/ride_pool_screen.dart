@@ -198,8 +198,8 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 const SizedBox(height: 8),
                 if (members.isEmpty)
-                  const Text('No rides in this pool yet',
-                      style: TextStyle(color: Colors.grey, fontSize: 12))
+                  Text('No rides in this pool yet',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12))
                 else
                   ...members.map((m) => ListTile(
                         dense: true,
@@ -253,7 +253,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
             child: Text('$label:',
                 style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500)),
           ),
           Expanded(
@@ -294,16 +294,16 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.group_off,
-                                  size: 64, color: Colors.grey.shade300),
+                                  size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                               const SizedBox(height: 12),
                               Text('No ride pools',
                                   style: TextStyle(
-                                      color: Colors.grey.shade600)),
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
                               const SizedBox(height: 8),
                               Text('Create a pool to combine rides',
                                   style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade500)),
+                                      color: Theme.of(context).colorScheme.outlineVariant)),
                             ],
                           ),
                         )
@@ -414,7 +414,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
               // Passenger progress bar
               Row(
                 children: [
-                  const Icon(Icons.person, size: 16, color: Colors.grey),
+                  Icon(Icons.person, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text('$current/$max',
                       style: const TextStyle(
@@ -425,7 +425,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
                         value: max > 0 ? current / max : 0,
-                        backgroundColor: Colors.grey.shade200,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           current >= max ? AppColors.error : AppColors.success,
                         ),
@@ -439,12 +439,12 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
               if (direction != null)
                 Row(
                   children: [
-                    Icon(Icons.route, size: 14, color: Colors.grey.shade600),
+                    Icon(Icons.route, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(direction,
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade600)),
+                              fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ),
                   ],
                 ),
@@ -467,7 +467,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
               const SizedBox(height: 4),
               Text(
                 _formatDate(createdAt),
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.outlineVariant),
               ),
             ],
           ),

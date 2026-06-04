@@ -5,6 +5,7 @@ enum CreateRideFormStatus { initial, submitting, success, failure }
 class CreateRideFormState extends Equatable {
   final String clientName;
   final String? selectedClientId;
+  final String? selectedDriverId;
   final String fromAddress;
   final String toAddress;
   final String flightNumber;
@@ -22,6 +23,7 @@ class CreateRideFormState extends Equatable {
   const CreateRideFormState({
     required this.clientName,
     this.selectedClientId,
+    this.selectedDriverId,
     required this.fromAddress,
     required this.toAddress,
     required this.flightNumber,
@@ -41,6 +43,7 @@ class CreateRideFormState extends Equatable {
     return CreateRideFormState(
       clientName: '',
       selectedClientId: null,
+      selectedDriverId: null,
       fromAddress: '',
       toAddress: '',
       flightNumber: '',
@@ -59,6 +62,8 @@ class CreateRideFormState extends Equatable {
     String? clientName,
     String? selectedClientId,
     bool clearClientId = false,
+    String? selectedDriverId,
+    bool clearDriverId = false,
     String? fromAddress,
     String? toAddress,
     String? flightNumber,
@@ -76,6 +81,7 @@ class CreateRideFormState extends Equatable {
     return CreateRideFormState(
       clientName: clientName ?? this.clientName,
       selectedClientId: clearClientId ? null : (selectedClientId ?? this.selectedClientId),
+      selectedDriverId: clearDriverId ? null : (selectedDriverId ?? this.selectedDriverId),
       fromAddress: fromAddress ?? this.fromAddress,
       toAddress: toAddress ?? this.toAddress,
       flightNumber: flightNumber ?? this.flightNumber,
@@ -102,6 +108,7 @@ class CreateRideFormState extends Equatable {
   bool get isModified =>
       clientName.trim().isNotEmpty ||
       selectedClientId != null ||
+      selectedDriverId != null ||
       fromAddress.trim().isNotEmpty ||
       toAddress.trim().isNotEmpty ||
       flightNumber.trim().isNotEmpty ||
@@ -112,6 +119,7 @@ class CreateRideFormState extends Equatable {
   List<Object?> get props => [
     clientName,
     selectedClientId,
+    selectedDriverId,
     fromAddress,
     toAddress,
     flightNumber,

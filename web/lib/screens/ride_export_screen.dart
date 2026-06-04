@@ -259,7 +259,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
         Icon(icon, size: 20, color: AppColors.success),
         const SizedBox(height: 4),
         Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        Text(label, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }
@@ -280,7 +280,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(date, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  Text(time, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                  Text(time, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -292,7 +292,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
                   Text(ride.clientName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                   Text(
                     '${ride.from.address} \u2192 ${ride.to.address}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

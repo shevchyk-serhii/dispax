@@ -218,7 +218,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
       decoration: BoxDecoration(
-        color: AppColors.surface.withAlpha(150),
+        color: Theme.of(context).colorScheme.surface.withAlpha(150),
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
       ),
       child: Column(

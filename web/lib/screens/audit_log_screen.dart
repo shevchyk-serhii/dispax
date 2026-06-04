@@ -211,9 +211,9 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.history, size: 56, color: Colors.grey.shade400),
+            Icon(Icons.history, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
-            Text('No audit entries found', style: TextStyle(color: Colors.grey.shade600)),
+            Text('No audit entries found', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       );
@@ -242,7 +242,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                     child: Icon(_getActionIcon(entry.action), color: color, size: 18),
                   ),
                   if (index < _filteredEntries.length - 1)
-                    Container(width: 2, height: 40, color: Colors.grey.shade200),
+                    Container(width: 2, height: 40, color: Theme.of(context).colorScheme.surfaceContainerHighest),
                 ],
               ),
               const SizedBox(width: 12),
@@ -251,9 +251,9 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHighest),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,15 +265,15 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                       const SizedBox(height: 4),
                       Text(
                         '${entry.entityType} #${entry.entityId}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       Text(
                         'By: ${entry.actorId}',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                        style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
                       ),
                       Text(
                         _formatTimestamp(entry.createdAt),
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                        style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
                       ),
                     ],
                   ),

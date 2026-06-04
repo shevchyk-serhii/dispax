@@ -132,7 +132,17 @@ class _CreateRidesTab extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
-                  decoration: AppTheme.cardDecoration,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
                   child: Column(
                     children: [
                       Icon(
@@ -186,6 +196,7 @@ class _CreateRidesTab extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _buildQuickStatCard(
+                        context,
                         'Today\'s Rides',
                         '12',
                         Icons.today,
@@ -195,6 +206,7 @@ class _CreateRidesTab extends StatelessWidget {
                     const SizedBox(width: AppDimensions.paddingMedium),
                     Expanded(
                       child: _buildQuickStatCard(
+                        context,
                         'This Week',
                         '47',
                         Icons.date_range,
@@ -213,11 +225,19 @@ class _CreateRidesTab extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickStatCard(String title, String count, IconData icon, Color color) {
+  Widget _buildQuickStatCard(BuildContext context, String title, String count, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-      decoration: AppTheme.cardDecoration.copyWith(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         children: [

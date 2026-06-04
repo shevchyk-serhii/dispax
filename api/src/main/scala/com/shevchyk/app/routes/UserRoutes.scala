@@ -203,7 +203,7 @@ object UserRoutes {
     // GET /api/users — list all users (dispatcher/admin)
     Method.GET / "api" / "users" / "drivers"    -> authenticatedHandler[PersonRepository] { (user, _) =>
       (for {
-        _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
+        _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN", "DRIVER")
         personRepo <- ZIO.service[PersonRepository]
         companyId  <- UuidParser.requireCompanyId(user.companyId)
         drivers    <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId)

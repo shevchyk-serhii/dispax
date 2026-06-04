@@ -148,7 +148,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         final pendingCount = state.rides.where((r) => r.status == RideStatus.requested).length;
         final assignedCount = state.rides.where((r) => r.status == RideStatus.assigned).length;
         return Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: Row(
             children: [
               Expanded(
@@ -166,6 +166,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
 
   Widget _buildTab(int index, String label, int count) {
     final selected = _tabIndex == index;
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => setState(() => _tabIndex = index),
       child: Container(
@@ -186,20 +187,20 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: selected ? AppColors.primary : Colors.grey.shade600,
+                color: selected ? AppColors.primary : colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: selected ? AppColors.primary : Colors.grey.shade300,
+                color: selected ? AppColors.primary : colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '$count',
                 style: TextStyle(
-                  color: selected ? Colors.white : Colors.grey.shade700,
+                  color: selected ? Colors.white : colorScheme.onSurfaceVariant,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
@@ -212,9 +213,10 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   }
 
   Widget _buildFilterBar() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: Colors.white,
+      color: colorScheme.surface,
       child: Column(
         children: [
           // Search
@@ -223,16 +225,16 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search client, address...',
-                hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                hintStyle: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
                 prefixIcon: const Icon(Icons.search, size: 18),
                 contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: colorScheme.outlineVariant),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: colorScheme.outlineVariant),
                 ),
               ),
               style: const TextStyle(fontSize: 13),
@@ -250,7 +252,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               _buildFilterChip('Airport', _FilterMode.airport),
               const Spacer(),
               PopupMenuButton<_SortMode>(
-                icon: Icon(Icons.sort, size: 20, color: Colors.grey.shade700),
+                icon: Icon(Icons.sort, size: 20, color: colorScheme.onSurfaceVariant),
                 tooltip: 'Sort',
                 onSelected: (mode) => setState(() => _sortMode = mode),
                 itemBuilder: (_) => [
@@ -268,12 +270,13 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
 
   Widget _buildFilterChip(String label, _FilterMode mode) {
     final selected = _filterMode == mode;
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => setState(() => _filterMode = mode),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.grey.shade100,
+          color: selected ? AppColors.primary : colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Text(
@@ -281,7 +284,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : Colors.grey.shade700,
+            color: selected ? Colors.white : colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -386,6 +389,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
 
   Widget _buildEmptyState() {
     final isPending = _tabIndex == 0;
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -394,12 +398,12 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           const SizedBox(height: 12),
           Text(
             isPending ? 'No pending rides' : 'No assigned rides',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 6),
           Text(
             isPending ? 'All rides have been assigned' : 'No rides currently assigned to drivers',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -452,14 +456,15 @@ class _PendingRideCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.person, ride.clientName),
+            _buildInfoRow(context, Icons.person, ride.clientName),
             const SizedBox(height: 4),
-            _buildInfoRow(Icons.location_on, ride.from.address),
+            _buildInfoRow(context, Icons.location_on, ride.from.address),
             const SizedBox(height: 4),
-            _buildInfoRow(Icons.flag, ride.to.address),
+            _buildInfoRow(context, Icons.flag, ride.to.address),
             if (ride.isAirportTransfer && ride.flightNumber != null) ...[
               const SizedBox(height: 4),
               _buildInfoRow(
+                context,
                 ride.isArrival ? Icons.flight_land : Icons.flight_takeoff,
                 ride.flightNumber!,
               ),
@@ -470,10 +475,10 @@ class _PendingRideCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String value) {
+  Widget _buildInfoRow(BuildContext context, IconData icon, String value) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Colors.grey.shade600),
+        Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -533,15 +538,15 @@ class _AssignedRideCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.person, ride.clientName),
+            _buildInfoRow(context, Icons.person, ride.clientName),
             if (ride.driverName != null) ...[
               const SizedBox(height: 4),
-              _buildInfoRow(Icons.drive_eta, ride.driverName!),
+              _buildInfoRow(context, Icons.drive_eta, ride.driverName!),
             ],
             const SizedBox(height: 4),
-            _buildInfoRow(Icons.location_on, ride.from.address),
+            _buildInfoRow(context, Icons.location_on, ride.from.address),
             const SizedBox(height: 4),
-            _buildInfoRow(Icons.flag, ride.to.address),
+            _buildInfoRow(context, Icons.flag, ride.to.address),
             const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerRight,
@@ -563,10 +568,10 @@ class _AssignedRideCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String value) {
+  Widget _buildInfoRow(BuildContext context, IconData icon, String value) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Colors.grey.shade600),
+        Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: 6),
         Expanded(
           child: Text(

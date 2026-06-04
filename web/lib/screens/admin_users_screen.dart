@@ -293,7 +293,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Column(
       children: [
         Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),
-        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+        Text(label, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }
@@ -339,9 +339,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline, size: 56, color: Colors.grey.shade400),
+            Icon(Icons.people_outline, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
-            Text('No users found', style: TextStyle(color: Colors.grey.shade600)),
+            Text('No users found', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       );
@@ -361,9 +361,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHighest),
           ),
           child: Row(
             children: [
@@ -381,7 +381,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    Text(email, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    Text(email, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     const SizedBox(height: 4),
                     Row(
                       children: [

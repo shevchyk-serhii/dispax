@@ -20,6 +20,7 @@ class CreateRideRequest {
   final bool isAirportTransfer;
   final String? notes;
   final List<String>? specialRequirements;
+  final String? driverId;
 
   const CreateRideRequest({
     required this.clientId,
@@ -33,6 +34,7 @@ class CreateRideRequest {
     this.isAirportTransfer = false,
     this.notes,
     this.specialRequirements,
+    this.driverId,
   });
 
   Map<String, dynamic> toJson() {
@@ -49,6 +51,7 @@ class CreateRideRequest {
       'isAirportTransfer': isAirportTransfer,
       'notes': notes,
       'specialRequirements': specialRequirements?.join(', '),
+      if (driverId != null) 'driverId': driverId,
     };
   }
 

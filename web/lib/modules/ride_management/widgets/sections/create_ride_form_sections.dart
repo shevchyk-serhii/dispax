@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../blocs/blocs.dart';
+import '../../../../modules/core/models/person.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
 import 'create_ride_basic_info_section.dart';
@@ -9,6 +10,7 @@ import 'create_ride_schedule_section.dart';
 import 'create_ride_airport_section.dart';
 import 'create_ride_notes_section.dart';
 import 'create_ride_actions_section.dart';
+import 'create_ride_driver_section.dart';
 
 class CreateRideFormSections extends StatelessWidget {
   final GlobalKey<FormState> formKey;
@@ -20,6 +22,8 @@ class CreateRideFormSections extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDriver = context.read<AuthBloc>().state.user?.role == PersonRole.driver;
+
     return BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
       builder: (context, state) {
         return Column(
@@ -28,6 +32,10 @@ class CreateRideFormSections extends StatelessWidget {
             const CreateRideBasicInfoSection(),
             const SizedBox(height: AppDimensions.paddingMedium),
             const CreateRideLocationSection(),
+            if (isDriver) ...[
+              const SizedBox(height: AppDimensions.paddingMedium),
+              const CreateRideDriverSection(),
+            ],
             const SizedBox(height: AppDimensions.paddingMedium),
             CreateRideScheduleSection(pickupDateTime: state.pickupDateTime),
             const SizedBox(height: AppDimensions.paddingMedium),
@@ -60,7 +68,7 @@ class _NotesSectionToggle extends StatelessWidget {
     return Column(
       children: [
         Material(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
           elevation: 2,
           shadowColor: AppColors.shadowMedium,

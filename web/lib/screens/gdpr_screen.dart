@@ -186,7 +186,7 @@ class _GdprScreenState extends State<GdprScreen> {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: Colors.grey.shade600,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
         ),
       ),
@@ -208,7 +208,7 @@ class _GdprScreenState extends State<GdprScreen> {
         ...consentTypes.map((ct) {
           final granted = _isConsentGranted(ct.$1);
           return SwitchListTile(
-            secondary: Icon(ct.$4, color: granted ? AppColors.success : Colors.grey),
+            secondary: Icon(ct.$4, color: granted ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant),
             title: Text(ct.$2),
             subtitle: Text(ct.$3, style: const TextStyle(fontSize: 12)),
             value: granted,
@@ -249,7 +249,7 @@ class _GdprScreenState extends State<GdprScreen> {
         _buildSectionHeader('Data Deletion'),
         ListTile(
           leading: Icon(Icons.delete_forever,
-              color: hasPendingDeletion ? Colors.grey : AppColors.error),
+              color: hasPendingDeletion ? Theme.of(context).colorScheme.onSurfaceVariant : AppColors.error),
           title: const Text('Request Data Deletion'),
           subtitle: Text(
             hasPendingDeletion

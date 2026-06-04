@@ -19,7 +19,7 @@ class SimpleMapScreen extends StatelessWidget {
           margin: const EdgeInsets.all(AppDimensions.paddingLarge),
           padding: const EdgeInsets.all(AppDimensions.paddingLarge),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
             boxShadow: [
               BoxShadow(

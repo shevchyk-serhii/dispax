@@ -27,18 +27,24 @@ class CreateRideFormHelper {
     );
 
     if (date != null && context.mounted) {
+      final initialTime = TimeOfDay.fromDateTime(currentDateTime);
+      final roundedInitial = TimeOfDay(
+        hour: initialTime.hour,
+        minute: (initialTime.minute / 5).round() * 5 % 60,
+      );
       final time = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay.fromDateTime(currentDateTime),
+        initialTime: roundedInitial,
       );
 
       if (time != null && context.mounted) {
+        final roundedMinute = (time.minute / 5).round() * 5;
         final newDateTime = DateTime(
           date.year,
           date.month,
           date.day,
-          time.hour,
-          time.minute,
+          time.hour + (roundedMinute == 60 ? 1 : 0),
+          roundedMinute == 60 ? 0 : roundedMinute,
         );
         context.read<CreateRideFormBloc>().add(PickupDateTimeChanged(newDateTime));
       }
@@ -86,6 +92,7 @@ class CreateRideFormHelper {
       specialRequirements: formState.specialRequirements.isNotEmpty
           ? formState.specialRequirements
           : null,
+      driverId: formState.selectedDriverId,
     );
 
     context.read<RideBloc>().add(RideCreateRequested(request: createRequest));

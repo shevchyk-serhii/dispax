@@ -5,8 +5,8 @@ import '../../../../blocs/blocs.dart';
 import '../address_autocomplete_field.dart';
 import '../../models/client_address.dart';
 import '../../services/client_address_service.dart';
+import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
-import '../../../../theme/app_theme.dart';
 
 class CreateRideLocationSection extends StatefulWidget {
   const CreateRideLocationSection({super.key});
@@ -73,7 +73,17 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
           prev.fromAddress != curr.fromAddress || prev.toAddress != curr.toAddress,
       builder: (context, state) {
         return Container(
-          decoration: AppTheme.cardDecoration,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadowMedium,
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
           child: Padding(
             padding: const EdgeInsets.all(AppDimensions.paddingLarge),
             child: Column(

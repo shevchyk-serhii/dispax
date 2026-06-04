@@ -132,9 +132,9 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
         Container(
           padding: const EdgeInsets.all(AppDimensions.paddingMedium),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,9 +157,9 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
         Container(
           padding: const EdgeInsets.all(AppDimensions.paddingMedium),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,7 +208,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
                   ),
                   Text(label,
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -225,7 +225,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade700)),
+          Text(label, style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -249,7 +249,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
       children: [
         SizedBox(
           width: 80,
-          child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+          child: Text(label, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -258,7 +258,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
               Container(
                 height: 18,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -280,7 +280,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
           width: 50,
           child: Text(
             '$value ($percentage%)',
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       ],

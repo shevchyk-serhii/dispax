@@ -123,14 +123,16 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
   }
 
   Widget _buildContent() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (_data == null || _data!.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline, size: 56, color: Colors.grey.shade400),
+            Icon(Icons.people_outline, size: 56, color: colorScheme.outlineVariant),
             const SizedBox(height: 12),
-            Text('No client value data available', style: TextStyle(color: Colors.grey.shade600)),
+            Text('No client value data available', style: TextStyle(color: colorScheme.onSurfaceVariant)),
           ],
         ),
       );
@@ -147,11 +149,11 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
         // Summary
         Row(
           children: [
-            _buildSummaryCard('Clients', totalClients.toString(), AppColors.clientColor),
+            _buildSummaryCard('Clients', totalClients.toString(), AppColors.clientColor, colorScheme),
             const SizedBox(width: 12),
-            _buildSummaryCard('Total Rev.', '\u20AC${totalRevenue.toStringAsFixed(0)}', AppColors.success),
+            _buildSummaryCard('Total Rev.', '\u20AC${totalRevenue.toStringAsFixed(0)}', AppColors.success, colorScheme),
             const SizedBox(width: 12),
-            _buildSummaryCard('Avg Value', '\u20AC${avgValue.toStringAsFixed(0)}', AppColors.primary),
+            _buildSummaryCard('Avg Value', '\u20AC${avgValue.toStringAsFixed(0)}', AppColors.primary, colorScheme),
           ],
         ),
         const SizedBox(height: 16),
@@ -186,10 +188,10 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isTop3 ? Colors.amber.shade50 : Colors.white,
+              color: isTop3 ? Colors.amber.shade50 : colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isTop3 ? Colors.amber.shade300 : Colors.grey.shade200,
+                color: isTop3 ? Colors.amber.shade300 : colorScheme.surfaceContainerHighest,
               ),
             ),
             child: Row(
@@ -227,15 +229,15 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Text('$rides rides', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                          Text('$rides rides', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
                           const SizedBox(width: 8),
-                          Text('avg \u20AC${avgPrice.toStringAsFixed(0)}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                          Text('avg \u20AC${avgPrice.toStringAsFixed(0)}', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
                         ],
                       ),
                       if (firstRide != null || lastRide != null)
                         Text(
                           '${firstRide != null ? _formatDate(firstRide) : '?'} - ${lastRide != null ? _formatDate(lastRide) : 'present'}',
-                          style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+                          style: TextStyle(fontSize: 10, color: colorScheme.outlineVariant),
                         ),
                     ],
                   ),
@@ -256,7 +258,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
     );
   }
 
-  Widget _buildSummaryCard(String label, String value, Color color) {
+  Widget _buildSummaryCard(String label, String value, Color color, ColorScheme colorScheme) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -269,7 +271,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
           children: [
             Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+            Text(label, style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant)),
           ],
         ),
       ),

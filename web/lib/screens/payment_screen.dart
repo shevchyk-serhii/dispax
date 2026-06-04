@@ -209,7 +209,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             const SizedBox(height: 12),
             Text(
               'All rides are paid',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -255,11 +255,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.schedule, size: 14, color: Colors.grey.shade600),
+                      Icon(Icons.schedule, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         DateFormat('dd.MM.yyyy HH:mm').format(ride.pickupDateTime),
-                        style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                        style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -271,7 +271,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       Expanded(
                         child: Text(
                           '${ride.from.address} -> ${ride.to.address}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

@@ -57,7 +57,7 @@ class FlightInfoCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppDimensions.paddingMedium),
             decoration: BoxDecoration(
-              color: AppColors.surface.withAlpha(150),
+              color: Theme.of(context).colorScheme.surface.withAlpha(150),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
               border: Border.all(
                 color: AppColors.primary.withAlpha(100),

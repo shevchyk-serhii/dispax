@@ -44,7 +44,7 @@ class RidePersonCard extends StatelessWidget {
                       Text(
                         isDriver ? 'Driver' : 'Client',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -58,7 +58,7 @@ class RidePersonCard extends StatelessWidget {
                         Text(
                           person.phone!,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                     ],
@@ -132,7 +132,7 @@ class RidePersonCard extends StatelessWidget {
 
         Row(
           children: [
-            Icon(Icons.directions_car, color: Colors.grey[600], size: 18),
+            Icon(Icons.directions_car, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
             const SizedBox(width: 8),
             Text(
               '${vehicle.make} ${vehicle.model}',
@@ -147,7 +147,7 @@ class RidePersonCard extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.palette, color: Colors.grey[600], size: 18),
+              Icon(Icons.palette, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
               const SizedBox(width: 8),
               Text(
                 vehicle.color!,
@@ -161,14 +161,14 @@ class RidePersonCard extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.confirmation_number, color: Colors.grey[600], size: 18),
+              Icon(Icons.confirmation_number, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.grey[400]!),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 child: Text(
                   vehicle.licensePlate!,

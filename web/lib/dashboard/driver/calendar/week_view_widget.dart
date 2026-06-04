@@ -19,6 +19,7 @@ class WeekViewWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) {
         final weekDays = getWeekDays(selectedDay);
@@ -27,11 +28,11 @@ class WeekViewWidget extends StatelessWidget {
           height: 400,
           margin: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withAlpha(25),
+                color: Colors.black.withAlpha(15),
                 spreadRadius: 1,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
@@ -40,8 +41,8 @@ class WeekViewWidget extends StatelessWidget {
           ),
           child: Column(
             children: [
-              buildWeekHeader(weekDays),
-              Expanded(child: buildWeekTimeline(weekDays, rideState.rides)),
+              buildWeekHeader(context, weekDays),
+              Expanded(child: buildWeekTimeline(context, weekDays, rideState.rides)),
             ],
           ),
         );
@@ -54,7 +55,8 @@ class WeekViewWidget extends StatelessWidget {
     return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
   }
 
-  Widget buildWeekHeader(List<DateTime> weekDays) {
+  Widget buildWeekHeader(BuildContext context, List<DateTime> weekDays) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 60,
       decoration: BoxDecoration(
@@ -90,7 +92,7 @@ class WeekViewWidget extends StatelessWidget {
                               ? Colors.white
                               : (day.weekday >= 6
                                     ? Colors.red.shade600
-                                    : Colors.grey.shade700),
+                                    : colorScheme.onSurfaceVariant),
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
@@ -102,7 +104,7 @@ class WeekViewWidget extends StatelessWidget {
                               ? Colors.white
                               : (isSameDay(day, DateTime.now())
                                     ? Colors.orange
-                                    : Colors.black87),
+                                    : colorScheme.onSurface),
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -118,15 +120,15 @@ class WeekViewWidget extends StatelessWidget {
     );
   }
 
-  Widget buildWeekTimeline(List<DateTime> weekDays, List<Ride> rides) {
+  Widget buildWeekTimeline(BuildContext context, List<DateTime> weekDays, List<Ride> rides) {
     return SingleChildScrollView(
       child: SizedBox(
         height: 17 * 40.0,
         child: Row(
           children: [
-            buildTimeColumn(),
+            buildTimeColumn(context),
             ...weekDays.map(
-              (day) => Expanded(child: buildDayColumn(day, rides)),
+              (day) => Expanded(child: buildDayColumn(context, day, rides)),
             ),
           ],
         ),
@@ -134,7 +136,8 @@ class WeekViewWidget extends StatelessWidget {
     );
   }
 
-  Widget buildTimeColumn() {
+  Widget buildTimeColumn(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: 60,
       child: Column(
@@ -146,7 +149,7 @@ class WeekViewWidget extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8),
             child: Text(
               '${hour.toString().padLeft(2, '0')}:00',
-              style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
             ),
           );
         }),
@@ -154,12 +157,13 @@ class WeekViewWidget extends StatelessWidget {
     );
   }
 
-  Widget buildDayColumn(DateTime day, List<Ride> rides) {
+  Widget buildDayColumn(BuildContext context, DateTime day, List<Ride> rides) {
+    final colorScheme = Theme.of(context).colorScheme;
     final dayRides = getRidesForDay(rides, day);
 
     return Container(
       decoration: BoxDecoration(
-        border: Border(left: BorderSide(color: Colors.grey.shade200)),
+        border: Border(left: BorderSide(color: colorScheme.surfaceContainerHighest)),
       ),
       child: Stack(
         children: [
@@ -170,7 +174,7 @@ class WeekViewWidget extends StatelessWidget {
               top: index * 40.0,
               left: 0,
               right: 0,
-              child: Container(height: 1, color: Colors.grey.shade100),
+              child: Container(height: 1, color: colorScheme.surfaceContainerLow),
             ),
           ),
 

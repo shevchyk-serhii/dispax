@@ -102,7 +102,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   Widget _buildClientInfo() {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-      color: AppColors.surface,
+      color: Theme.of(context).colorScheme.surface,
       child: Row(
         children: [
           CircleAvatar(
@@ -200,7 +200,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.directions_car_outlined, size: 64, color: Colors.grey.shade400),
+            Icon(Icons.directions_car_outlined, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 16),
             Text('No rides yet', style: AppStyles.bodyLarge.copyWith(color: AppColors.textSecondary)),
           ],
@@ -263,7 +263,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                 Expanded(
                   child: Text(
                     ride.from.address,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -278,7 +278,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                 Expanded(
                   child: Text(
                     ride.to.address,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -293,7 +293,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   if (ride.driverName != null)
                     Text(
                       'Driver: ${ride.driverName}',
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   if (ride.price != null)
                     Text(

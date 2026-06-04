@@ -152,11 +152,11 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
                           radius: 16,
-                          backgroundColor: isPreferred ? AppColors.warning.withAlpha(30) : Colors.grey.shade200,
+                          backgroundColor: isPreferred ? AppColors.warning.withAlpha(30) : Theme.of(context).colorScheme.surfaceContainerHighest,
                           child: Icon(
                             isPreferred ? Icons.star : Icons.person,
                             size: 16,
-                            color: isPreferred ? AppColors.warning : Colors.grey,
+                            color: isPreferred ? AppColors.warning : Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         title: Text(d['name'] ?? '', style: const TextStyle(fontSize: 13)),
@@ -270,9 +270,9 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.emergency, size: 64, color: Colors.grey.shade300),
+                              Icon(Icons.emergency, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
                               const SizedBox(height: 12),
-                              Text('No emergency reassignments', style: TextStyle(color: Colors.grey.shade600)),
+                              Text('No emergency reassignments', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                             ],
                           ),
                         )
@@ -369,7 +369,7 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
             Text('Ride: ${_shortId(rideId.toString())}', style: const TextStyle(fontSize: 12)),
             Text(
               'Original driver: ${_shortId(originalDriverId.toString())}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             if (newDriverId != null)
               Text(
@@ -379,12 +379,12 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
             if (notes != null && notes.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(notes, style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+                child: Text(notes, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic)),
               ),
             const SizedBox(height: 4),
             Text(
               _formatDate(createdAt),
-              style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.outlineVariant),
             ),
           ],
         ),

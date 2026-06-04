@@ -97,12 +97,17 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: _isAvailable ? AppColors.success : Colors.grey.shade600,
+                      color: _isAvailable
+                          ? AppColors.success
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   Text(
                     _isAvailable ? 'You are accepting rides' : 'You are not accepting rides',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                 ],
               ),

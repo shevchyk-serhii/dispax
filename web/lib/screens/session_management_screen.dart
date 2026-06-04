@@ -238,7 +238,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'IP: $ipAddress',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -248,16 +248,16 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                Icon(Icons.access_time, size: 14, color: Theme.of(context).colorScheme.outlineVariant),
                 const SizedBox(width: 4),
                 Text(
                   'Created: ${_formatDateTime(createdAt)}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Last active: ${_formatDateTime(lastActive)}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
                 ),
               ],
             ),

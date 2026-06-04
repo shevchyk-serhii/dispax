@@ -13,6 +13,7 @@ class TodayRideCard extends StatelessWidget {
   final VoidCallback? onStartRide;
   final VoidCallback? onCompleteRide;
   final int? approachingDistanceMeters;
+  final VoidCallback? onViewDetails;
 
   const TodayRideCard({
     super.key,
@@ -22,6 +23,7 @@ class TodayRideCard extends StatelessWidget {
     this.onStartRide,
     this.onCompleteRide,
     this.approachingDistanceMeters,
+    this.onViewDetails,
   });
 
   @override
@@ -37,7 +39,7 @@ class TodayRideCard extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () {
+          onTap: onViewDetails ?? () {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => RideDetailsScreen(ride: ride),
@@ -197,7 +199,7 @@ class TodayRideCard extends StatelessWidget {
                 ),
               ),
               TextButton.icon(
-                onPressed: () {
+                onPressed: onViewDetails ?? () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => RideDetailsScreen(ride: ride),

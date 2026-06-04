@@ -61,7 +61,7 @@ class UpcomingRidesScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.blue.shade600, Colors.grey.shade50],
+              colors: [Colors.blue.shade600, Theme.of(context).colorScheme.surface],
               stops: const [0.0, 0.2],
             ),
           ),
@@ -108,10 +108,10 @@ class UpcomingRidesScreen extends StatelessWidget {
       onRefresh: () async => refreshRides(context),
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: buildUpcomingStats(upcomingRides)),
+          SliverToBoxAdapter(child: buildUpcomingStats(context, upcomingRides)),
           ...groupedRides.entries.map((entry) {
             return SliverToBoxAdapter(
-              child: buildDateGroup(entry.key, entry.value),
+              child: buildDateGroup(context, entry.key, entry.value),
             );
           }),
         ],
@@ -144,7 +144,8 @@ class UpcomingRidesScreen extends StatelessWidget {
     );
   }
 
-  Widget buildUpcomingStats(List<Ride> upcomingRides) {
+  Widget buildUpcomingStats(BuildContext context, List<Ride> upcomingRides) {
+    final colorScheme = Theme.of(context).colorScheme;
     final next7Days = upcomingRides.where((ride) {
       final difference = ride.pickupDateTime.difference(DateTime.now()).inDays;
       return difference <= 7;
@@ -168,11 +169,11 @@ class UpcomingRidesScreen extends StatelessWidget {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(25),
+            color: Colors.black.withAlpha(15),
             spreadRadius: 1,
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -182,33 +183,41 @@ class UpcomingRidesScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Upcoming Overview',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               buildStatItem(
+                context: context,
                 icon: Icons.today,
                 count: next7Days,
                 label: 'Next 7 Days',
                 color: Colors.orange,
               ),
               buildStatItem(
+                context: context,
                 icon: Icons.view_week,
                 count: thisWeek,
                 label: 'This Week',
                 color: Colors.blue,
               ),
               buildStatItem(
+                context: context,
                 icon: Icons.calendar_month,
                 count: thisMonth,
                 label: 'This Month',
                 color: Colors.green,
               ),
               buildStatItem(
+                context: context,
                 icon: Icons.event,
                 count: upcomingRides.length,
                 label: 'Total',
@@ -222,11 +231,13 @@ class UpcomingRidesScreen extends StatelessWidget {
   }
 
   Widget buildStatItem({
+    required BuildContext context,
     required IconData icon,
     required int count,
     required String label,
     required Color color,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         Container(
@@ -249,14 +260,15 @@ class UpcomingRidesScreen extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
           textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Widget buildDateGroup(String dateKey, List<Ride> rides) {
+  Widget buildDateGroup(BuildContext context, String dateKey, List<Ride> rides) {
+    final colorScheme = Theme.of(context).colorScheme;
     final date = DateTime.parse(dateKey);
     final isToday = isSameDay(date, DateTime.now());
     final isTomorrow = isSameDay(
@@ -289,7 +301,7 @@ class UpcomingRidesScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isToday || isTomorrow
                       ? Colors.blue.shade600
-                      : Colors.grey.shade600,
+                      : colorScheme.onSurfaceVariant,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -305,13 +317,13 @@ class UpcomingRidesScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${rides.length} rides',
                   style: TextStyle(
-                    color: Colors.grey.shade700,
+                    color: colorScheme.onSurfaceVariant,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -323,14 +335,14 @@ class UpcomingRidesScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
-            children: rides.map((ride) => buildUpcomingRideCard(ride)).toList(),
+            children: rides.map((ride) => buildUpcomingRideCard(context, ride)).toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget buildUpcomingRideCard(Ride ride) {
+  Widget buildUpcomingRideCard(BuildContext context, Ride ride) {
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
     final daysUntilRide = ride.pickupDateTime.difference(DateTime.now()).inDays;
 
@@ -406,11 +418,11 @@ class UpcomingRidesScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              buildCompactRideInfo(Icons.person, ride.clientName),
+              buildCompactRideInfo(context, Icons.person, ride.clientName),
               const SizedBox(height: 6),
-              buildCompactRideInfo(Icons.location_on, ride.from.address),
+              buildCompactRideInfo(context, Icons.location_on, ride.from.address),
               const SizedBox(height: 6),
-              buildCompactRideInfo(Icons.flag, ride.to.address),
+              buildCompactRideInfo(context, Icons.flag, ride.to.address),
             ],
           ),
         ),
@@ -418,15 +430,16 @@ class UpcomingRidesScreen extends StatelessWidget {
     );
   }
 
-  Widget buildCompactRideInfo(IconData icon, String text) {
+  Widget buildCompactRideInfo(BuildContext context, IconData icon, String text) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey.shade600),
+        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+            style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
             overflow: TextOverflow.ellipsis,
           ),
         ),

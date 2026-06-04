@@ -58,7 +58,7 @@ class LocationSelectionCard extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: 'Specify your location',
                 filled: true,
-                fillColor: AppColors.surface.withAlpha(100),
+                fillColor: Theme.of(context).colorScheme.surface.withAlpha(100),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
                   borderSide: BorderSide.none,

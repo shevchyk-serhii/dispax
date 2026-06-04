@@ -92,7 +92,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       title: Row(
         children: [
           Icon(
@@ -277,7 +277,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
       },
       selectedColor: AppColors.primary,
       checkmarkColor: AppColors.textOnPrimary,
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       side: BorderSide(
         color: isSelected
             ? AppColors.primary

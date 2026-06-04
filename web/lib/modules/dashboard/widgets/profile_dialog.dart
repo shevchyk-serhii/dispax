@@ -76,7 +76,7 @@ class ProfileDialog extends StatelessWidget {
                     : 'Use biometrics for quick login',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

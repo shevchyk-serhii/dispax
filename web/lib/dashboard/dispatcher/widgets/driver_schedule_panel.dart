@@ -156,9 +156,10 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
   }
 
   Widget _buildFilterBar() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: Colors.white,
+      color: colorScheme.surface,
       child: Column(
         children: [
           SizedBox(
@@ -166,16 +167,16 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search driver name...',
-                hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                hintStyle: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
                 prefixIcon: const Icon(Icons.search, size: 18),
                 contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: colorScheme.outlineVariant),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: colorScheme.outlineVariant),
                 ),
               ),
               style: const TextStyle(fontSize: 13),
@@ -185,13 +186,13 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
           const SizedBox(height: 6),
           Row(
             children: [
-              _buildLoadChip('All', _LoadFilter.all, Colors.grey),
+              _buildLoadChip('All', _LoadFilter.all, Colors.grey, colorScheme),
               const SizedBox(width: 6),
-              _buildLoadChip('Available', _LoadFilter.available, Colors.green),
+              _buildLoadChip('Available', _LoadFilter.available, Colors.green, colorScheme),
               const SizedBox(width: 6),
-              _buildLoadChip('Moderate', _LoadFilter.moderate, Colors.orange),
+              _buildLoadChip('Moderate', _LoadFilter.moderate, Colors.orange, colorScheme),
               const SizedBox(width: 6),
-              _buildLoadChip('Busy', _LoadFilter.busy, Colors.red),
+              _buildLoadChip('Busy', _LoadFilter.busy, Colors.red, colorScheme),
             ],
           ),
         ],
@@ -199,14 +200,14 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
     );
   }
 
-  Widget _buildLoadChip(String label, _LoadFilter filter, Color color) {
+  Widget _buildLoadChip(String label, _LoadFilter filter, Color color, ColorScheme colorScheme) {
     final selected = _loadFilter == filter;
     return GestureDetector(
       onTap: () => setState(() => _loadFilter = filter),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: selected ? color : Colors.grey.shade100,
+          color: selected ? color : colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Text(
@@ -214,7 +215,7 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : Colors.grey.shade700,
+            color: selected ? Colors.white : colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -255,7 +256,7 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -302,20 +303,21 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
   }
 
   Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_busy, size: 56, color: Colors.grey.shade400),
+          Icon(Icons.event_busy, size: 56, color: colorScheme.outlineVariant),
           const SizedBox(height: 12),
           Text(
             'No drivers scheduled',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 6),
           Text(
             DateFormat.yMMMd().format(widget.selectedDate),
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -526,6 +528,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
           },
           builder: (context, candidateData, rejectedData) {
             final isHovering = candidateData.isNotEmpty;
+            final colorScheme = Theme.of(context).colorScheme;
 
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
@@ -551,7 +554,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.person, size: 18, color: Colors.grey.shade700),
+                            Icon(Icons.person, size: 18, color: colorScheme.onSurfaceVariant),
                             const SizedBox(width: 6),
                             Text(
                               'Driver ${scheduleDay.driverId.length > 8 ? scheduleDay.driverId.substring(0, 8) : scheduleDay.driverId}...',
@@ -600,7 +603,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.schedule, size: 14, color: Colors.grey.shade600),
+                        Icon(Icons.schedule, size: 14, color: colorScheme.onSurfaceVariant),
                         const SizedBox(width: 6),
                         Text(
                           '${scheduleDay.startTime} — ${scheduleDay.endTime}',
@@ -619,7 +622,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 '${DateFormat('HH:mm').format(ride.pickupDateTime)} ${ride.from.address}',
-                                style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                                style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -638,7 +641,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                       if (driverRides.length > 3)
                         Text(
                           '+${driverRides.length - 3} more',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                          style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
                         ),
                     ],
                     if (isHovering)

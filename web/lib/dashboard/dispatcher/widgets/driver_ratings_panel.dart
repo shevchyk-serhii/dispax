@@ -104,14 +104,16 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
   }
 
   Widget _buildContent() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (_data == null || _data!.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.star_border, size: 56, color: Colors.grey.shade400),
+            Icon(Icons.star_border, size: 56, color: colorScheme.outlineVariant),
             const SizedBox(height: 12),
-            Text('No ratings data available', style: TextStyle(color: Colors.grey.shade600)),
+            Text('No ratings data available', style: TextStyle(color: colorScheme.onSurfaceVariant)),
           ],
         ),
       );
@@ -131,9 +133,9 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: colorScheme.surfaceContainerHighest),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +156,7 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text('$reviewCount reviews', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                          Text('$reviewCount reviews', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
                         ],
                       ),
                     ),
@@ -205,11 +207,11 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 if (comment != null && comment.isNotEmpty)
-                                  Text(comment, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                                  Text(comment, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
                                 if (date != null)
                                   Text(
                                     _formatDate(date),
-                                    style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+                                    style: TextStyle(fontSize: 10, color: colorScheme.outlineVariant),
                                   ),
                               ],
                             ),

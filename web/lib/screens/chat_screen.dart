@@ -123,7 +123,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: Text(
                     '${widget.ride.from.address} → ${widget.ride.to.address}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -140,16 +140,16 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.chat_bubble_outline, size: 56, color: Colors.grey.shade400),
+                            Icon(Icons.chat_bubble_outline, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
                             const SizedBox(height: 12),
                             Text(
                               'No messages yet',
-                              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               'Start the conversation',
-                              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outlineVariant),
                             ),
                           ],
                         ),
@@ -170,8 +170,8 @@ class _ChatScreenState extends State<ChatScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                color: Theme.of(context).colorScheme.surface,
+                border: Border(top: BorderSide(color: Theme.of(context).colorScheme.surfaceContainerHighest)),
               ),
               child: SafeArea(
                 top: false,
@@ -182,10 +182,10 @@ class _ChatScreenState extends State<ChatScreen> {
                         controller: _messageCtrl,
                         decoration: InputDecoration(
                           hintText: 'Type a message...',
-                          hintStyle: TextStyle(color: Colors.grey.shade500),
+                          hintStyle: TextStyle(color: Theme.of(context).colorScheme.outlineVariant),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                           ),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         ),
@@ -208,11 +208,11 @@ class _ChatScreenState extends State<ChatScreen> {
           else
             Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.grey.shade100,
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
               child: Text(
                 'Chat is available only during active rides',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
         ],
@@ -228,7 +228,7 @@ class _ChatScreenState extends State<ChatScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: isMe ? AppColors.primary : Colors.grey.shade200,
+          color: isMe ? AppColors.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -242,7 +242,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               msg.message,
               style: TextStyle(
-                color: isMe ? Colors.white : Colors.black87,
+                color: isMe ? Colors.white : Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
               ),
             ),
@@ -250,7 +250,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               _formatTime(msg.sentAt),
               style: TextStyle(
-                color: isMe ? Colors.white.withAlpha(180) : Colors.grey.shade600,
+                color: isMe ? Colors.white.withAlpha(180) : Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 10,
               ),
             ),

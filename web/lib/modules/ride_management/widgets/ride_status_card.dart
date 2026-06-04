@@ -43,7 +43,7 @@ class RideStatusCard extends StatelessWidget {
             Text(
               _getStatusDescription(),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             if (ride.estimatedPrice != null) ...[

@@ -123,7 +123,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                       ),
                       subtitle: Text(
                         '${ride.from.address} → ${ride.to.address}',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -191,7 +191,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                             title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                             subtitle: Text(
                               '$rideCount ride${rideCount == 1 ? '' : 's'} • ${schedule.startTime}–${schedule.endTime}',
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                             trailing: isSelected
                                 ? const Icon(Icons.check_circle, color: AppColors.primary)
@@ -214,7 +214,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                border: Border(top: BorderSide(color: Theme.of(context).colorScheme.surfaceContainerHighest)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,

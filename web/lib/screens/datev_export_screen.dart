@@ -241,11 +241,11 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.account_balance, size: 64, color: Colors.grey.shade300),
+            Icon(Icons.account_balance, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
             Text(
               'Keine Daten f\u00fcr $monthLabel',
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -313,7 +313,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -321,7 +321,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontFamily: 'monospace',
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -374,7 +374,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -382,7 +382,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontFamily: 'monospace',
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -493,10 +493,10 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(15),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -518,7 +518,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             const SizedBox(height: 6),
             Text(
               'DATEV Buchungsstapel Format \u2013 Import via DATEV Unternehmen Online',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
               textAlign: TextAlign.center,
             ),
           ],

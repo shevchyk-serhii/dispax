@@ -93,18 +93,18 @@ class _BiometricButtonState extends State<BiometricButton>
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: Divider(color: Colors.grey.shade300)),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     'or',
                     style: TextStyle(
-                      color: Colors.grey,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 14,
                     ),
                   ),
                 ),
-                Expanded(child: Divider(color: Colors.grey.shade300)),
+                Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
               ],
             ),
             const SizedBox(height: 16),
@@ -155,7 +155,7 @@ class _BiometricButtonState extends State<BiometricButton>
             Text(
               _getBiometricText(),
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),

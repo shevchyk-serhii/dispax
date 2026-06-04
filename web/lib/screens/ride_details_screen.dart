@@ -311,7 +311,14 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   bool _canEditRide() {
-    return _currentRide.status == RideStatus.requested;
+    final editableStatus = _currentRide.status == RideStatus.requested ||
+        _currentRide.status == RideStatus.assigned;
+    if (!editableStatus) return false;
+    final authState = context.read<AuthBloc>().state;
+    final user = authState.user;
+    if (user == null) return false;
+    return user.role == PersonRole.dispatcher ||
+        _currentRide.creatorId == user.id;
   }
 
   bool _canCancelRide() {

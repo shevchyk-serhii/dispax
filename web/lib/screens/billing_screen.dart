@@ -79,7 +79,7 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
         TabBar(
           controller: _tabController,
           labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           indicatorColor: AppColors.primary,
           tabs: const [
             Tab(icon: Icon(Icons.receipt_long, size: 18), text: 'Rechnungen'),
@@ -199,10 +199,10 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(companyName, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            Text(companyName, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
             Text(
               '${_fmtDate(invoice.periodFrom)} – ${_fmtDate(invoice.periodTo)}',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+              style: TextStyle(color: Theme.of(context).colorScheme.outlineVariant, fontSize: 11),
             ),
           ],
         ),
@@ -413,9 +413,9 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 64, color: Colors.grey.shade300),
+            Icon(icon, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
-            Text(msg, style: TextStyle(color: Colors.grey.shade600)),
+            Text(msg, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       );
@@ -510,7 +510,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
         child: ListView(
           controller: scrollCtrl,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -520,7 +520,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                     children: [
                       Text(inv.number, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                       Text('${_fmtDate(inv.periodFrom)} – ${_fmtDate(inv.periodTo)}',
-                          style: TextStyle(color: Colors.grey.shade600)),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ],
                   ),
                 ),

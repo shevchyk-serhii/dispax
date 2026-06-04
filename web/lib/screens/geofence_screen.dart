@@ -404,9 +404,9 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.share_location, size: 56, color: Colors.grey.shade400),
+            Icon(Icons.share_location, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
-            Text('No geofences yet', style: TextStyle(color: Colors.grey.shade600)),
+            Text('No geofences yet', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _showCreateDialog,
@@ -467,7 +467,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
                     border: Border.all(color: typeColor.withAlpha(60)),
                   ),
@@ -493,7 +493,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                             const SizedBox(height: 4),
                             Text(
                               '${geofence.geofenceType} - ${geofence.radiusMeters}m radius',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                           ],
                         ),
@@ -523,7 +523,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: geofence.isActive ? AppColors.success.withAlpha(25) : Colors.grey.shade100,
+                              color: geofence.isActive ? AppColors.success.withAlpha(25) : Theme.of(context).colorScheme.surfaceContainerLow,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -619,9 +619,9 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.notifications_none, size: 56, color: Colors.grey.shade400),
+                      Icon(Icons.notifications_none, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
                       const SizedBox(height: 12),
-                      Text('No alerts found', style: TextStyle(color: Colors.grey.shade600)),
+                      Text('No alerts found', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ],
                   ),
                 )
@@ -659,7 +659,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                                   child: Icon(icon, color: color, size: 18),
                                 ),
                                 if (index < filteredAlerts.length - 1)
-                                  Container(width: 2, height: 40, color: Colors.grey.shade200),
+                                  Container(width: 2, height: 40, color: Theme.of(context).colorScheme.surfaceContainerHighest),
                               ],
                             ),
                             const SizedBox(width: 12),
@@ -668,9 +668,9 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                                 margin: const EdgeInsets.only(bottom: 8),
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade200),
+                                  border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHighest),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,11 +682,11 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                                     const SizedBox(height: 4),
                                     Text(
                                       'Driver: $driverLabel',
-                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                     ),
                                     Text(
                                       _formatTimestamp(alert.createdAt),
-                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                                      style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
                                     ),
                                   ],
                                 ),

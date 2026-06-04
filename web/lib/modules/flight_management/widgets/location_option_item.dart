@@ -27,7 +27,7 @@ class LocationOptionItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? AppColors.clientColor.withAlpha(100)
-                : AppColors.surface.withAlpha(50),
+                : Theme.of(context).colorScheme.surface.withAlpha(50),
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
             border: Border.all(
               color: isSelected

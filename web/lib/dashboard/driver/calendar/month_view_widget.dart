@@ -19,15 +19,16 @@ class MonthViewWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) {
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withAlpha(25),
+                color: Colors.black.withAlpha(15),
                 spreadRadius: 1,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
@@ -52,10 +53,10 @@ class MonthViewWidget extends StatelessWidget {
             headerStyle: HeaderStyle(
               formatButtonVisible: false,
               titleCentered: true,
-              titleTextStyle: const TextStyle(
+              titleTextStyle: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: colorScheme.onSurface,
               ),
               leftChevronIcon: const Icon(
                 Icons.chevron_left,
@@ -105,7 +106,7 @@ class MonthViewWidget extends StatelessWidget {
                     style: TextStyle(
                       color: day.weekday >= 6
                           ? Colors.red.shade600
-                          : Colors.grey.shade700,
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

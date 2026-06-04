@@ -158,15 +158,16 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
 
   Widget _buildContent() {
     final stats = _sortedStats;
+    final colorScheme = Theme.of(context).colorScheme;
 
     if (stats.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.bar_chart, size: 56, color: Colors.grey.shade400),
+            Icon(Icons.bar_chart, size: 56, color: colorScheme.outlineVariant),
             const SizedBox(height: 12),
-            Text('No driver data available', style: TextStyle(color: Colors.grey.shade600)),
+            Text('No driver data available', style: TextStyle(color: colorScheme.onSurfaceVariant)),
           ],
         ),
       );
@@ -200,7 +201,7 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                       style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.success),
                     ),
                     const SizedBox(height: 4),
-                    Text('Total Earnings', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                    Text('Total Earnings', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -221,7 +222,7 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                       style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primary),
                     ),
                     const SizedBox(height: 4),
-                    Text('Total Rides', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                    Text('Total Rides', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -243,9 +244,9 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: colorScheme.surfaceContainerHighest),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,7 +281,7 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                     Container(
                       height: 12,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color: colorScheme.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -301,11 +302,11 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildMiniStat('Total', total.toString(), AppColors.primary),
+                    _buildMiniStat('Total', total.toString(), AppColors.primary, colorScheme),
                     const SizedBox(width: 16),
-                    _buildMiniStat('Done', completed.toString(), AppColors.success),
+                    _buildMiniStat('Done', completed.toString(), AppColors.success, colorScheme),
                     const SizedBox(width: 16),
-                    _buildMiniStat('Cancelled', cancelled.toString(), AppColors.error),
+                    _buildMiniStat('Cancelled', cancelled.toString(), AppColors.error, colorScheme),
                   ],
                 ),
               ],
@@ -316,12 +317,12 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
     );
   }
 
-  Widget _buildMiniStat(String label, String value, Color color) {
+  Widget _buildMiniStat(String label, String value, Color color, ColorScheme colorScheme) {
     return Row(
       children: [
         Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        Text(label, style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
       ],
     );
   }

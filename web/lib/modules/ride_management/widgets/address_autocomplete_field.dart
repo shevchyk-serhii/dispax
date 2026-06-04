@@ -106,12 +106,12 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
                     final addr = options.elementAt(index);
                     return ListTile(
                       dense: true,
-                      leading: Icon(Icons.history, size: 16, color: Colors.grey[500]),
+                      leading: Icon(Icons.history, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       title: Text(addr.address, style: const TextStyle(fontSize: 14)),
-                      subtitle: Text(addr.label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      subtitle: Text(addr.label, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       trailing: addr.useCount > 1
                           ? Text('×${addr.useCount}',
-                              style: TextStyle(fontSize: 11, color: Colors.grey[400]))
+                              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant))
                           : null,
                       onTap: () => onSelected(addr),
                     );

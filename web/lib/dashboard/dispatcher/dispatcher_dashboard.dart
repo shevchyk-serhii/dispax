@@ -135,7 +135,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= 800) {
-            return _buildSplitView();
+            return _buildSplitView(context);
           }
           return _buildMobileView();
         },
@@ -143,16 +143,16 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     );
   }
 
-  Widget _buildSplitView() {
+  Widget _buildSplitView(BuildContext context) {
     return Container(
-      color: AppColors.background,
+      color: Theme.of(context).colorScheme.surface,
       child: Row(
         children: [
           Expanded(
             flex: 2,
             child: const PendingRidesPanel(),
           ),
-          Container(width: 1, color: Colors.grey.shade300),
+          Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
           Expanded(
             flex: 3,
             child: DriverSchedulePanel(

@@ -122,6 +122,15 @@ class RideActionsCard extends StatelessWidget {
           ));
         }
 
+        if (onEditRide != null) {
+          actions.add(_buildActionButton(
+            icon: Icons.edit,
+            label: 'Edit Ride',
+            onPressed: onEditRide!,
+            color: Colors.orange,
+          ));
+        }
+
         if (onCancelRide != null) {
           actions.add(_buildActionButton(
             icon: Icons.cancel,

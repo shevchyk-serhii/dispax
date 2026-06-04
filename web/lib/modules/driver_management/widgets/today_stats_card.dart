@@ -21,15 +21,17 @@ class TodayStatsCard extends StatelessWidget {
         .where((r) => r.status == RideStatus.inProgress)
         .length;
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(25),
+            color: Colors.black.withAlpha(15),
             spreadRadius: 1,
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -39,37 +41,45 @@ class TodayStatsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Today\'s Overview',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStatItem(
+                context: context,
                 icon: Icons.event,
                 count: todayRides.length,
                 label: 'Total',
                 color: Colors.blue,
               ),
               _buildStatItem(
+                context: context,
                 icon: Icons.play_arrow,
                 count: upcomingRides,
                 label: 'Upcoming',
                 color: Colors.orange,
               ),
               _buildStatItem(
+                context: context,
                 icon: Icons.directions_car,
                 count: inProgressRides,
                 label: 'Active',
                 color: Colors.green,
               ),
               _buildStatItem(
+                context: context,
                 icon: Icons.check_circle,
                 count: completedRides,
                 label: 'Done',
-                color: Colors.grey,
+                color: colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -79,11 +89,13 @@ class TodayStatsCard extends StatelessWidget {
   }
 
   Widget _buildStatItem({
+    required BuildContext context,
     required IconData icon,
     required int count,
     required String label,
     required Color color,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         Container(
@@ -106,7 +118,7 @@ class TodayStatsCard extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
         ),
       ],
     );

@@ -16,7 +16,7 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       title: Text(
         'Delay by how long?',
         style: AppStyles.titleMedium.copyWith(color: AppColors.textPrimary),

@@ -153,11 +153,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.notifications_off, size: 56, color: Colors.grey.shade400),
+            Icon(Icons.notifications_off, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
             Text(
               'No notifications',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -178,7 +178,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: ListTile(
               leading: Icon(
                 n.isRead ? Icons.notifications_none : Icons.notifications_active,
-                color: n.isRead ? Colors.grey : AppColors.primary,
+                color: n.isRead ? Theme.of(context).colorScheme.onSurfaceVariant : AppColors.primary,
               ),
               title: Text(
                 n.title,
@@ -194,7 +194,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   const SizedBox(height: 4),
                   Text(
                     DateFormat('MMM d, HH:mm').format(n.createdAt),
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                 ],
               ),

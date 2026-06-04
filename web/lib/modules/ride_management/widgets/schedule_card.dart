@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
-import '../../../theme/app_theme.dart';
 
 class ScheduleCard extends StatelessWidget {
   final DateTime pickupDateTime;
@@ -16,7 +15,17 @@ class ScheduleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: AppTheme.cardDecoration,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowMedium,
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.paddingLarge),
         child: Column(
@@ -38,7 +47,7 @@ class ScheduleCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(AppDimensions.paddingMedium),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                 ),
                 child: Row(
@@ -49,7 +58,7 @@ class ScheduleCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Pickup Date & Time', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text('Pickup Date & Time', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                           const SizedBox(height: 4),
                           Text(
                             '${pickupDateTime.day}.${pickupDateTime.month}.${pickupDateTime.year} at ${pickupDateTime.hour.toString().padLeft(2, '0')}:${pickupDateTime.minute.toString().padLeft(2, '0')}',
@@ -58,7 +67,7 @@ class ScheduleCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                    Icon(Icons.arrow_forward_ios, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ],
                 ),
               ),
