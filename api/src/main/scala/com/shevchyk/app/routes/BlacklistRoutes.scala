@@ -15,27 +15,20 @@ import java.time.Instant
 
 object BlacklistRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Blacklist")(ex)
-
   val authenticatedRoutes: Routes[BlacklistRepository & AuditService & JwtService, Response] = Routes(
     // GET /api/blacklist — list blacklist entries for company
-    Method.GET / "api" / "blacklist" -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "blacklist" -> RouteHelpers.authHandler("Blacklist") { (user, _) =>
+      for {
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         repo      <- ZIO.service[BlacklistRepository]
         companyId <- UuidParser.requireCompanyId(user.companyId)
         entries   <- repo.findByCompanyId(companyId)
-      } yield Response.json(entries.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(entries.toJson)
     },
 
     // POST /api/blacklist — add blacklist entry
-    Method.POST / "api" / "blacklist" -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
+    Method.POST / "api" / "blacklist" -> RouteHelpers.authHandler("Blacklist") { (user, request) =>
+      for {
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         bodyStr   <- request.body.asString
         req       <- ZIO
@@ -69,16 +62,12 @@ object BlacklistRoutes:
               )
             )
             .ignore
-      } yield Response(Status.Created, body = Body.fromString(created.toJson))).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response(Status.Created, body = Body.fromString(created.toJson))
     },
 
     // GET /api/blacklist/check?clientId=...&driverId=... — check if pair is blacklisted
-    Method.GET / "api" / "blacklist" / "check" -> handler { (request: Request) =>
-      (for {
-        user     <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "blacklist" / "check" -> RouteHelpers.authHandler("Blacklist") { (user, request) =>
+      for {
         _        <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY")
         clientId <- ZIO
                       .fromOption(request.url.queryParams.queryParam("clientId"))
@@ -90,23 +79,17 @@ object BlacklistRoutes:
         cPid     <- UuidParser.parsePersonId(clientId)
         dPid     <- UuidParser.parsePersonId(driverId)
         blocked  <- repo.isBlacklisted(cPid, dPid)
-      } yield Response.json(s"""{"blacklisted":$blocked}""")).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(s"""{"blacklisted":$blocked}""")
     },
 
     // DELETE /api/blacklist/{id} — remove blacklist entry
-    Method.DELETE / "api" / "blacklist" / string("id") -> handler { (id: String, request: Request) =>
-      (for {
-        user    <- AuthMiddleware.authenticateRequest(request)
-        _       <- AuthMiddleware.checkRole(user, "DISPATCHER")
-        repo    <- ZIO.service[BlacklistRepository]
-        entryId <- UuidParser.parse(id).map(BlacklistEntryId(_))
-        deleted <- repo.deactivate(entryId)
-      } yield if deleted then Response.status(Status.NoContent) else Response.status(Status.NotFound)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+    Method.DELETE / "api" / "blacklist" / string("id") -> RouteHelpers.authPathHandler("Blacklist") {
+      (user, id: String, _) =>
+        for {
+          _       <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          repo    <- ZIO.service[BlacklistRepository]
+          entryId <- UuidParser.parse(id).map(BlacklistEntryId(_))
+          deleted <- repo.deactivate(entryId)
+        } yield if deleted then Response.status(Status.NoContent) else Response.status(Status.NotFound)
     }
   )

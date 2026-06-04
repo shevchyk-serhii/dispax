@@ -12,13 +12,10 @@ import zio.json.*
 
 object AuditRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Audit")(ex)
-
   val authenticatedRoutes: Routes[AuditService & JwtService, Response] = Routes(
     // GET /api/audit?entityType=ride&entityId={id}
-    Method.GET / "api" / "audit" -> handler { (request: Request) =>
-      (for {
-        user       <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "audit" -> RouteHelpers.authHandler("Audit") { (user, request) =>
+      for {
         _          <- AuthMiddleware.checkRole(user, "DISPATCHER")
         entityType <- ZIO
                         .fromOption(request.url.queryParams.queryParam("entityType"))
@@ -29,25 +26,18 @@ object AuditRoutes:
         service    <- ZIO.service[AuditService]
         parsedId   <- UuidParser.parse(entityId)
         entries    <- service.findByEntity(entityType, parsedId)
-      } yield Response.json(entries.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(entries.toJson)
     },
 
     // GET /api/audit/recent?limit=50
-    Method.GET / "api" / "audit" / "recent" -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "audit" / "recent" -> RouteHelpers.authHandler("Audit") { (user, request) =>
+      for {
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
         offset     = request.url.queryParams.queryParam("offset").flatMap(_.toIntOption).getOrElse(0).max(0)
         service   <- ZIO.service[AuditService]
         entries   <- service.findByCompany(companyId, limit, offset)
-      } yield Response.json(entries.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(entries.toJson)
     }
   )

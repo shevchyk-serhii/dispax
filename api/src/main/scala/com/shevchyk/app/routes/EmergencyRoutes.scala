@@ -8,7 +8,6 @@ import com.shevchyk.core.repository.{EmergencyReassignmentRepository, BlacklistR
 import com.shevchyk.core.application.{AuditService, EventHub}
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -17,27 +16,23 @@ import java.time.Instant
 
 object EmergencyRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Emergency")(ex)
-
   val authenticatedRoutes
       : Routes[EmergencyReassignmentRepository & BlacklistRepository & RideService & PersonRepository & AuditService & EventHub & JwtService, Response] =
     Routes(
       // POST /api/emergency/reassign — initiate emergency reassignment
-      Method.POST / "api" / "emergency" / "reassign" -> handler { (request: Request) =>
-        (for {
-          user             <- AuthMiddleware.authenticateRequest(request)
-          _                <- AuthMiddleware.checkRole(user, "DISPATCHER")
-          bodyStr          <- request.body.asString
-          req              <- ZIO
-                                .fromEither(bodyStr.fromJson[EmergencyReassignRequest])
-                                .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
-          rideService      <- ZIO.service[RideService]
-          rideId           <- UuidParser.parseRideId(req.rideId)
-          ride             <- rideService
-                                .getRideById(rideId)
-                                .mapError(e => new RuntimeException(e.toString))
+      Method.POST / "api" / "emergency" / "reassign" -> RouteHelpers.authHandler("Emergency") { (user, request) =>
+        for {
+          _           <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          bodyStr     <- request.body.asString
+          req         <- ZIO
+                           .fromEither(bodyStr.fromJson[EmergencyReassignRequest])
+                           .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+          rideService <- ZIO.service[RideService]
+          rideId      <- UuidParser.parseRideId(req.rideId)
+          ride        <- rideService
+                           .getRideById(rideId)
+                           .mapError(e => new RuntimeException(e.toString))
 
-          // Ride must be assigned or in progress
           _                <- ZIO
                                 .fail(new RuntimeException("Ride must be assigned or in progress for emergency reassignment"))
                                 .when(
@@ -65,13 +60,11 @@ object EmergencyRoutes:
                             )
           created        <- emergRepo.create(reassignment)
 
-          // If new driver specified, do the reassignment immediately
           _ <-
             req.newDriverId match
               case Some(newId) =>
                 for {
                   newDriverPid <- UuidParser.parsePersonId(newId)
-                  // Check blacklist
                   blRepo       <- ZIO.service[BlacklistRepository]
                   blocked      <- blRepo.isBlacklisted(ride.clientId, newDriverPid)
                   _            <- ZIO
@@ -82,9 +75,7 @@ object EmergencyRoutes:
                                     .mapError(e => new RuntimeException(e.toString))
                   _            <- emergRepo.updateStatus(created.id, ReassignmentStatus.REASSIGNED, Some(newDriverPid))
                 } yield ()
-              case None        =>
-                // Unassign driver, set ride back to Requested
-                ZIO.unit // Leave as PENDING for dispatcher to manually reassign
+              case None        => ZIO.unit
 
           audit <- ZIO.service[AuditService]
           _     <-
@@ -115,31 +106,23 @@ object EmergencyRoutes:
                 )
               )
               .ignore
-        } yield Response(Status.Created, body = Body.fromString(created.toJson))).catchAll {
-          case response: Response => ZIO.succeed(response)
-          case ex: Throwable      => handleError(ex)
-        }
+        } yield Response(Status.Created, body = Body.fromString(created.toJson))
       },
 
       // GET /api/emergency/reassignments — list emergency reassignments for company
-      Method.GET / "api" / "emergency" / "reassignments" -> handler { (request: Request) =>
-        (for {
-          user          <- AuthMiddleware.authenticateRequest(request)
+      Method.GET / "api" / "emergency" / "reassignments" -> RouteHelpers.authHandler("Emergency") { (user, _) =>
+        for {
           _             <- AuthMiddleware.checkRole(user, "DISPATCHER")
           repo          <- ZIO.service[EmergencyReassignmentRepository]
           companyId     <- UuidParser.requireCompanyId(user.companyId)
           reassignments <- repo.findByCompanyId(companyId)
-        } yield Response.json(reassignments.toJson)).catchAll {
-          case response: Response => ZIO.succeed(response)
-          case ex: Throwable      => handleError(ex)
-        }
+        } yield Response.json(reassignments.toJson)
       },
 
       // GET /api/emergency/suggest-drivers/{rideId} — suggest available drivers for reassignment
-      Method.GET / "api" / "emergency" / "suggest-drivers" / string("rideId") -> handler {
-        (rideId: String, request: Request) =>
-          (for {
-            user         <- AuthMiddleware.authenticateRequest(request)
+      Method.GET / "api" / "emergency" / "suggest-drivers" / string("rideId") ->
+        RouteHelpers.authPathHandler("Emergency") { (user, rideId: String, request) =>
+          for {
             _            <- AuthMiddleware.checkRole(user, "DISPATCHER")
             rideService  <- ZIO.service[RideService]
             parsedRideId <- UuidParser.parseRideId(rideId)
@@ -149,16 +132,14 @@ object EmergencyRoutes:
             personRepo   <- ZIO.service[PersonRepository]
             drivers      <- personRepo.findByCompanyId(ride.companyId)
             blackRepo    <- ZIO.service[BlacklistRepository]
-            // Filter out current driver, blacklisted, and non-drivers
             candidates   <-
               ZIO.filter(
                 drivers.filter(d => d.role == PersonRole.Driver && !ride.driverId.contains(d.id))
               )(d => blackRepo.isBlacklisted(ride.clientId, d.id).map(!_))
 
-            // Sort: preferred driver first, then by name
-            clientRepo   <- personRepo.findById(ride.clientId)
-            preferredId   = clientRepo.flatMap(_.preferredDriverId)
-            sorted        = candidates.sortBy(d => if preferredId.contains(d.id) then 0 else 1)
+            clientRepo <- personRepo.findById(ride.clientId)
+            preferredId = clientRepo.flatMap(_.preferredDriverId)
+            sorted      = candidates.sortBy(d => if preferredId.contains(d.id) then 0 else 1)
 
             result = sorted.map(d =>
                        Map(
@@ -168,9 +149,6 @@ object EmergencyRoutes:
                          "isPreferred" -> preferredId.contains(d.id).toString
                        )
                      )
-          } yield Response.json(result.toJson)).catchAll {
-            case response: Response => ZIO.succeed(response)
-            case ex: Throwable      => handleError(ex)
-          }
-      }
+          } yield Response.json(result.toJson)
+        }
     )

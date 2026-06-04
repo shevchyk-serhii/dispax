@@ -1,12 +1,10 @@
 package com.shevchyk.app.routes
 
-import com.shevchyk.auth.middleware.AuthMiddleware
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.core.domain.*
 import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.core.repository.SessionRepository
-import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -15,13 +13,10 @@ import java.time.Instant
 
 object SessionRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Session")(ex)
-
   val authenticatedRoutes: Routes[SessionRepository & TokenRepository & JwtService, Response] = Routes(
     // GET /api/sessions — list active sessions for current user
-    Method.GET / "api" / "sessions" -> handler { (request: Request) =>
-      (for {
-        user        <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "sessions" -> RouteHelpers.authHandler("Session") { (user, request) =>
+      for {
         repo        <- ZIO.service[SessionRepository]
         sessions    <- repo.findByUserId(PersonId(user.userId))
         currentToken = request.header(Header.Authorization).map(_.renderedValue.stripPrefix("Bearer "))
@@ -36,35 +31,28 @@ object SessionRoutes:
                            isCurrent = currentToken.contains(s.token)
                          )
                        }
-      } yield Response.json(dtos.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(dtos.toJson)
     },
 
     // DELETE /api/sessions/{id} — revoke a specific session
-    Method.DELETE / "api" / "sessions" / string("id") -> handler { (id: String, request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
-        repo      <- ZIO.service[SessionRepository]
-        sessionId <- UuidParser.parse(id).map(SessionId(_))
-        sessions  <- repo.findByUserId(PersonId(user.userId))
-        session   <- ZIO
-                       .fromOption(sessions.find(_.id == sessionId))
-                       .orElseFail(new RuntimeException("Session not found"))
-        tokenRepo <- ZIO.service[TokenRepository]
-        _         <- tokenRepo.deleteByToken(session.token)
-        _         <- repo.deactivate(sessionId)
-      } yield Response.status(Status.NoContent)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+    Method.DELETE / "api" / "sessions" / string("id") -> RouteHelpers.authPathHandler("Session") {
+      (user, id: String, _) =>
+        for {
+          repo      <- ZIO.service[SessionRepository]
+          sessionId <- UuidParser.parse(id).map(SessionId(_))
+          sessions  <- repo.findByUserId(PersonId(user.userId))
+          session   <- ZIO
+                         .fromOption(sessions.find(_.id == sessionId))
+                         .orElseFail(new RuntimeException("Session not found"))
+          tokenRepo <- ZIO.service[TokenRepository]
+          _         <- tokenRepo.deleteByToken(session.token)
+          _         <- repo.deactivate(sessionId)
+        } yield Response.status(Status.NoContent)
     },
 
     // DELETE /api/sessions — revoke all sessions except current
-    Method.DELETE / "api" / "sessions" -> handler { (request: Request) =>
-      (for {
-        user        <- AuthMiddleware.authenticateRequest(request)
+    Method.DELETE / "api" / "sessions" -> RouteHelpers.authHandler("Session") { (user, request) =>
+      for {
         repo        <- ZIO.service[SessionRepository]
         currentToken = request.header(Header.Authorization).map(_.renderedValue.stripPrefix("Bearer "))
         currentSess <-
@@ -75,16 +63,12 @@ object SessionRoutes:
           currentSess match
             case Some(s) => repo.deactivateAllExcept(PersonId(user.userId), s.id)
             case None    => repo.deactivateAllForUser(PersonId(user.userId))
-      } yield Response.json(s"""{"revokedCount":$count}""")).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(s"""{"revokedCount":$count}""")
     },
 
     // POST /api/sessions — register a new session (called on login)
-    Method.POST / "api" / "sessions" -> handler { (request: Request) =>
-      (for {
-        user    <- AuthMiddleware.authenticateRequest(request)
+    Method.POST / "api" / "sessions" -> RouteHelpers.authHandler("Session") { (user, request) =>
+      for {
         bodyStr <- request.body.asString
         info     = bodyStr.fromJson[Map[String, String]].getOrElse(Map.empty)
         repo    <- ZIO.service[SessionRepository]
@@ -112,9 +96,6 @@ object SessionRoutes:
             isCurrent = true
           ).toJson
         )
-      )).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      )
     }
   )

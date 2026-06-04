@@ -6,20 +6,16 @@ import com.shevchyk.core.application.GeofenceService
 import com.shevchyk.core.domain.*
 import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.core.repository.GeofenceRepository
-import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
 
 object GeofenceRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("Geofence")(ex)
-
   val authenticatedRoutes: Routes[GeofenceRepository & GeofenceService & JwtService, Response] = Routes(
     // POST /api/geofences - create geofence
-    Method.POST / "api" / "geofences" -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
+    Method.POST / "api" / "geofences" -> RouteHelpers.authHandler("Geofence") { (user, request) =>
+      for {
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         bodyStr   <- request.body.asString
@@ -46,110 +42,89 @@ object GeofenceRoutes:
                      )
         repo      <- ZIO.service[GeofenceRepository]
         created   <- repo.create(geofence)
-      } yield Response.json(created.toJson).status(Status.Created)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(created.toJson).status(Status.Created)
     },
 
     // GET /api/geofences - list geofences for company
-    Method.GET / "api" / "geofences" -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "geofences" -> RouteHelpers.authHandler("Geofence") { (user, _) =>
+      for {
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         repo      <- ZIO.service[GeofenceRepository]
         geofences <- repo.findByCompanyId(companyId)
-      } yield Response.json(geofences.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(geofences.toJson)
     },
 
     // PUT /api/geofences/{id} - update geofence
-    Method.PUT / "api" / "geofences" / string("id") -> handler { (id: String, request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
-        companyId <- UuidParser.requireCompanyId(user.companyId)
-        geoId     <- UuidParser.parse(id).map(GeofenceId(_))
-        repo      <- ZIO.service[GeofenceRepository]
-        existing  <- repo.findById(geoId)
-        geofence  <- ZIO.fromOption(existing).orElseFail(new RuntimeException("Geofence not found"))
-        _         <- ZIO
-                       .fail(new RuntimeException("Geofence belongs to different company"))
-                       .when(geofence.companyId != companyId)
-        bodyStr   <- request.body.asString
-        req       <- ZIO
-                       .fromEither(bodyStr.fromJson[CreateGeofenceRequest])
-                       .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
-        gfType    <- ZIO
-                       .attempt(GeofenceType.valueOf(req.geofenceType))
-                       .mapError(_ => new RuntimeException(s"Invalid geofence type: ${req.geofenceType}"))
-        updated    = geofence.copy(
-                       name = req.name,
-                       geofenceType = gfType,
-                       centerLatitude = req.centerLatitude,
-                       centerLongitude = req.centerLongitude,
-                       radiusMeters = req.radiusMeters,
-                       notifyOnEntry = req.notifyOnEntry,
-                       notifyOnExit = req.notifyOnExit
-                     )
-        result    <- repo.update(updated)
-      } yield Response.json(result.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+    Method.PUT / "api" / "geofences" / string("id") -> RouteHelpers.authPathHandler("Geofence") {
+      (user, id: String, request) =>
+        for {
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          companyId <- UuidParser.requireCompanyId(user.companyId)
+          geoId     <- UuidParser.parse(id).map(GeofenceId(_))
+          repo      <- ZIO.service[GeofenceRepository]
+          existing  <- repo.findById(geoId)
+          geofence  <- ZIO.fromOption(existing).orElseFail(new RuntimeException("Geofence not found"))
+          _         <- ZIO
+                         .fail(new RuntimeException("Geofence belongs to different company"))
+                         .when(geofence.companyId != companyId)
+          bodyStr   <- request.body.asString
+          req       <- ZIO
+                         .fromEither(bodyStr.fromJson[CreateGeofenceRequest])
+                         .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+          gfType    <- ZIO
+                         .attempt(GeofenceType.valueOf(req.geofenceType))
+                         .mapError(_ => new RuntimeException(s"Invalid geofence type: ${req.geofenceType}"))
+          updated    = geofence.copy(
+                         name = req.name,
+                         geofenceType = gfType,
+                         centerLatitude = req.centerLatitude,
+                         centerLongitude = req.centerLongitude,
+                         radiusMeters = req.radiusMeters,
+                         notifyOnEntry = req.notifyOnEntry,
+                         notifyOnExit = req.notifyOnExit
+                       )
+          result    <- repo.update(updated)
+        } yield Response.json(result.toJson)
     },
 
     // DELETE /api/geofences/{id} - delete geofence
-    Method.DELETE / "api" / "geofences" / string("id") -> handler { (id: String, request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
-        companyId <- UuidParser.requireCompanyId(user.companyId)
-        geoId     <- UuidParser.parse(id).map(GeofenceId(_))
-        repo      <- ZIO.service[GeofenceRepository]
-        existing  <- repo.findById(geoId)
-        geofence  <- ZIO.fromOption(existing).orElseFail(new RuntimeException("Geofence not found"))
-        _         <- ZIO
-                       .fail(new RuntimeException("Geofence belongs to different company"))
-                       .when(geofence.companyId != companyId)
-        deleted   <- repo.delete(geoId)
-      } yield if deleted then Response(Status.NoContent) else Response(Status.NotFound)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+    Method.DELETE / "api" / "geofences" / string("id") -> RouteHelpers.authPathHandler("Geofence") {
+      (user, id: String, _) =>
+        for {
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          companyId <- UuidParser.requireCompanyId(user.companyId)
+          geoId     <- UuidParser.parse(id).map(GeofenceId(_))
+          repo      <- ZIO.service[GeofenceRepository]
+          existing  <- repo.findById(geoId)
+          geofence  <- ZIO.fromOption(existing).orElseFail(new RuntimeException("Geofence not found"))
+          _         <- ZIO
+                         .fail(new RuntimeException("Geofence belongs to different company"))
+                         .when(geofence.companyId != companyId)
+          deleted   <- repo.delete(geoId)
+        } yield if deleted then Response(Status.NoContent) else Response(Status.NotFound)
     },
 
     // GET /api/geofences/alerts?limit=50 - recent alerts for company
-    Method.GET / "api" / "geofences" / "alerts" -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "geofences" / "alerts" -> RouteHelpers.authHandler("Geofence") { (user, request) =>
+      for {
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
         repo      <- ZIO.service[GeofenceRepository]
         alerts    <- repo.findAlertsByCompany(companyId, limit)
-      } yield Response.json(alerts.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(alerts.toJson)
     },
 
     // GET /api/geofences/alerts/driver/{driverId} - alerts for specific driver
-    Method.GET / "api" / "geofences" / "alerts" / "driver" / string("driverId") -> handler {
-      (driverId: String, request: Request) =>
-        (for {
-          user   <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "geofences" / "alerts" / "driver" / string("driverId") ->
+      RouteHelpers.authPathHandler("Geofence") { (user, driverId: String, request) =>
+        for {
           _      <- AuthMiddleware.checkRole(user, "DISPATCHER")
           limit   = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
           repo   <- ZIO.service[GeofenceRepository]
           dPid   <- UuidParser.parsePersonId(driverId)
           alerts <- repo.findAlertsByDriver(dPid, limit)
-        } yield Response.json(alerts.toJson)).catchAll {
-          case response: Response => ZIO.succeed(response)
-          case ex: Throwable      => handleError(ex)
-        }
-    }
+        } yield Response.json(alerts.toJson)
+      }
   )

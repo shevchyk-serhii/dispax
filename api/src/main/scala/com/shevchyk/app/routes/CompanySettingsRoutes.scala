@@ -4,7 +4,6 @@ import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.CompanySettingsRepository
-import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -13,28 +12,21 @@ import java.time.Instant
 
 object CompanySettingsRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("CompanySettings")(ex)
-
   val authenticatedRoutes: Routes[CompanySettingsRepository & JwtService, Response] = Routes(
     // GET /api/company/settings
-    Method.GET / "api" / "company" / "settings" -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "company" / "settings" -> RouteHelpers.authHandler("CompanySettings") { (user, _) =>
+      for {
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         repo      <- ZIO.service[CompanySettingsRepository]
         settings  <- repo.findByCompanyId(companyId)
         result     = settings.getOrElse(CompanySettings(companyId = companyId))
-      } yield Response.json(result.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(result.toJson)
     },
 
     // PUT /api/company/settings
-    Method.PUT / "api" / "company" / "settings" -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
+    Method.PUT / "api" / "company" / "settings" -> RouteHelpers.authHandler("CompanySettings") { (user, request) =>
+      for {
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         bodyStr   <- request.body.asString
@@ -55,16 +47,12 @@ object CompanySettingsRoutes:
                        updatedAt = Instant.now()
                      )
         saved     <- repo.upsert(updated)
-      } yield Response.json(saved.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(saved.toJson)
     },
 
     // GET /api/company/tariff
-    Method.GET / "api" / "company" / "tariff" -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "company" / "tariff" -> RouteHelpers.authHandler("CompanySettings") { (user, _) =>
+      for {
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "DRIVER", "CLIENT", "SECRETARY")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         repo      <- ZIO.service[CompanySettingsRepository]
@@ -77,16 +65,12 @@ object CompanySettingsRoutes:
           "cancellationFeeDefault": ${result.cancellationFeeDefault},
           "noShowFee": ${result.noShowFee}
         }"""
-      } yield Response.json(tariffJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(tariffJson)
     },
 
     // PUT /api/company/tariff
-    Method.PUT / "api" / "company" / "tariff" -> handler { (request: Request) =>
-      (for {
-        user      <- AuthMiddleware.authenticateRequest(request)
+    Method.PUT / "api" / "company" / "tariff" -> RouteHelpers.authHandler("CompanySettings") { (user, request) =>
+      for {
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         bodyStr   <- request.body.asString
@@ -104,9 +88,6 @@ object CompanySettingsRoutes:
                        updatedAt = Instant.now()
                      )
         saved     <- repo.upsert(updated)
-      } yield Response.json(saved.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(saved.toJson)
     }
   )

@@ -6,7 +6,6 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.GdprRepository
 import com.shevchyk.ride.repository.{RideRepository, ExpenseRepository}
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.core.infrastructure.http.RouteErrorHandler
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -16,26 +15,19 @@ import java.util.UUID
 
 object GdprRoutes:
 
-  private def handleError(ex: Throwable): UIO[Response] = RouteErrorHandler.handleError("GDPR")(ex)
-
   val authenticatedRoutes
       : Routes[GdprRepository & PersonRepository & RideRepository & ExpenseRepository & JwtService, Response] = Routes(
     // GET /api/gdpr/consents — get user's consents
-    Method.GET / "api" / "gdpr" / "consents" -> handler { (request: Request) =>
-      (for {
-        user     <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "gdpr" / "consents" -> RouteHelpers.authHandler("GDPR") { (user, _) =>
+      for {
         repo     <- ZIO.service[GdprRepository]
         consents <- repo.findConsentsByUserId(PersonId(user.userId))
-      } yield Response.json(consents.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(consents.toJson)
     },
 
     // PUT /api/gdpr/consents — update consent
-    Method.PUT / "api" / "gdpr" / "consents" -> handler { (request: Request) =>
-      (for {
-        user    <- AuthMiddleware.authenticateRequest(request)
+    Method.PUT / "api" / "gdpr" / "consents" -> RouteHelpers.authHandler("GDPR") { (user, request) =>
+      for {
         bodyStr <- request.body.asString
         req     <- ZIO
                      .fromEither(bodyStr.fromJson[UpdateConsentRequest])
@@ -58,16 +50,12 @@ object GdprRoutes:
             repo
               .revokeConsent(PersonId(user.userId), cType)
               .map(ok => if ok then Response.json("""{"success":true}""") else Response.status(Status.NotFound))
-      } yield result).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield result
     },
 
     // GET /api/gdpr/export — export all user data
-    Method.GET / "api" / "gdpr" / "export" -> handler { (request: Request) =>
-      (for {
-        user       <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "gdpr" / "export" -> RouteHelpers.authHandler("GDPR") { (user, _) =>
+      for {
         personRepo <- ZIO.service[PersonRepository]
         rideRepo   <- ZIO.service[RideRepository]
         expRepo    <- ZIO.service[ExpenseRepository]
@@ -115,16 +103,12 @@ object GdprRoutes:
                        consents = consents,
                        exportedAt = Instant.now()
                      )
-      } yield Response.json(dataExport.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(dataExport.toJson)
     },
 
     // POST /api/gdpr/deletion-request — request data deletion
-    Method.POST / "api" / "gdpr" / "deletion-request" -> handler { (request: Request) =>
-      (for {
-        user    <- AuthMiddleware.authenticateRequest(request)
+    Method.POST / "api" / "gdpr" / "deletion-request" -> RouteHelpers.authHandler("GDPR") { (user, _) =>
+      for {
         repo    <- ZIO.service[GdprRepository]
         req      = GdprRequest(
                      id = GdprRequestId.generate(),
@@ -133,21 +117,14 @@ object GdprRoutes:
                      requestedAt = Instant.now()
                    )
         created <- repo.createRequest(req)
-      } yield Response(Status.Created, body = Body.fromString(created.toJson))).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response(Status.Created, body = Body.fromString(created.toJson))
     },
 
     // GET /api/gdpr/requests — get user's GDPR requests
-    Method.GET / "api" / "gdpr" / "requests" -> handler { (request: Request) =>
-      (for {
-        user     <- AuthMiddleware.authenticateRequest(request)
+    Method.GET / "api" / "gdpr" / "requests" -> RouteHelpers.authHandler("GDPR") { (user, _) =>
+      for {
         repo     <- ZIO.service[GdprRepository]
         requests <- repo.findRequestsByUserId(PersonId(user.userId))
-      } yield Response.json(requests.toJson)).catchAll {
-        case response: Response => ZIO.succeed(response)
-        case ex: Throwable      => handleError(ex)
-      }
+      } yield Response.json(requests.toJson)
     }
   )
