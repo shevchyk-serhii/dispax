@@ -20,19 +20,28 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   import io.circe.{Encoder, Decoder}
   import RideSpecifics.{given Encoder[RideSpecifics], given Decoder[RideSpecifics]}
 
-  // Meta instance for JSONB RideSpecifics via PGobject string serialization
-  implicit val rideSpecificsMeta: Meta[RideSpecifics] = {
-    import io.circe.syntax.*
+  // Get + Put for RideSpecifics JSONB — doobie derives Read[Option[RideSpecifics]] from Get[RideSpecifics] automatically
+  implicit val rideSpecificsGet: Get[RideSpecifics] = {
     import io.circe.parser
     import org.postgresql.util.PGobject
-    Meta.Advanced
-      .other[PGobject]("jsonb")
-      .imap { pgo =>
+    import cats.data.NonEmptyList
+    Get.Advanced
+      .other[PGobject](NonEmptyList.of("jsonb"))
+      .tmap { pgo =>
         parser.parse(pgo.getValue).flatMap(_.as[RideSpecifics]) match {
           case Right(value) => value
           case Left(err)    => throw new RuntimeException(s"Failed to decode RideSpecifics: $err")
         }
-      } { spec =>
+      }
+  }
+
+  implicit val rideSpecificsPut: Put[RideSpecifics] = {
+    import io.circe.syntax.*
+    import org.postgresql.util.PGobject
+    import cats.data.NonEmptyList
+    Put.Advanced
+      .other[PGobject](NonEmptyList.of("jsonb"))
+      .tcontramap { spec =>
         val pgo = new PGobject()
         pgo.setType("jsonb")
         pgo.setValue(spec.asJson.noSpaces)
@@ -85,10 +94,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         status,
         estimated_price_amount, estimated_price_currency,
         final_price_amount, final_price_currency,
-        notes, specifics,
+        notes, specifics, special_requirements,
         payment_status, payment_method, paid_at,
         cancellation_reason, cancellation_fee, cancelled_by,
-        is_vip_ride, preferred_driver_used
+        is_vip_ride, preferred_driver_used,
+        pool_id, tariff_id, schedule_day_id, invoice_id
       ) VALUES (
         ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.companyId.value}, ${ride.driverId.map(
         _.value
@@ -99,10 +109,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         ${ride.status},
         ${ride.estimatedPrice}, ${"EUR"},
         ${ride.finalPrice}, ${"EUR"},
-        ${ride.notes}, ${ride.specifics},
+        ${ride.notes}, ${ride.specifics}, ${ride.specialRequirements},
         ${ride.paymentStatus}, ${ride.paymentMethod}, ${ride.paidAt},
         ${ride.cancellationReason}, ${ride.cancellationFee}, ${ride.cancelledBy.map(_.value)},
-        ${ride.isVipRide}, ${ride.preferredDriverUsed}
+        ${ride.isVipRide}, ${ride.preferredDriverUsed},
+        ${ride.poolId.map(_.value)}, ${ride.tariffId.map(_.value)}, ${ride.scheduleDayId}, ${ride.invoiceId}
       )
     """.update.run
       .transact(xa)
@@ -120,7 +131,9 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         notes, specifics,
         payment_status, payment_method, paid_at,
         cancellation_reason, cancellation_fee, cancelled_by,
-        is_vip_ride, preferred_driver_used"""
+        is_vip_ride, preferred_driver_used,
+        special_requirements, pool_id,
+        schedule_day_id, invoice_id"""
 
   override def findById(id: RideId): Task[Option[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE id = ${id.value}")
@@ -195,6 +208,12 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         cancelled_by = ${ride.cancelledBy.map(_.value)},
         is_vip_ride = ${ride.isVipRide},
         preferred_driver_used = ${ride.preferredDriverUsed},
+        special_requirements = ${ride.specialRequirements},
+        pool_id = ${ride.poolId.map(_.value)},
+        tariff_id = ${ride.tariffId.map(_.value)},
+        estimated_price_amount = ${ride.estimatedPrice},
+        schedule_day_id = ${ride.scheduleDayId},
+        invoice_id = ${ride.invoiceId},
         updated_at = NOW()
       WHERE id = ${ride.id.value}
     """.update.run
@@ -341,26 +360,34 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
 
   private val rideReadExtra: Read[
     (
-        PaymentStatus,
+        Option[PaymentStatus],
         Option[PaymentMethod],
         Option[Instant], // payment_status, payment_method, paid_at
         Option[String],
         Option[BigDecimal],
         Option[UUID],    // cancellation_reason, cancellation_fee, cancelled_by
         Boolean,
-        Boolean          // is_vip_ride, preferred_driver_used
+        Boolean,         // is_vip_ride, preferred_driver_used
+        Option[String],
+        Option[UUID],    // special_requirements, pool_id
+        Option[UUID],
+        Option[UUID]     // schedule_day_id, invoice_id
     )
   ] =
     Read[
       (
-          PaymentStatus,
+          Option[PaymentStatus],
           Option[PaymentMethod],
           Option[Instant],
           Option[String],
           Option[BigDecimal],
           Option[UUID],
           Boolean,
-          Boolean
+          Boolean,
+          Option[String],
+          Option[UUID],
+          Option[UUID],
+          Option[UUID]
       )
     ]
 
@@ -398,7 +425,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
             cancellationFee,
             cancelledBy,
             isVipRide,
-            preferredDriverUsed
+            preferredDriverUsed,
+            specialRequirements,
+            poolId,
+            scheduleDayId,
+            invoiceId
           )
         ) =>
       Ride(
@@ -420,14 +451,18 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         finalPrice = finalPrice,
         notes = notes,
         specifics = specifics,
-        paymentStatus = paymentStatus,
+        specialRequirements = specialRequirements,
+        paymentStatus = paymentStatus.getOrElse(PaymentStatus.Unpaid),
         paymentMethod = paymentMethod,
         paidAt = paidAt,
         cancellationReason = cancellationReason,
         cancellationFee = cancellationFee,
         cancelledBy = cancelledBy.map(PersonId.apply),
         isVipRide = isVipRide,
-        preferredDriverUsed = preferredDriverUsed
+        preferredDriverUsed = preferredDriverUsed,
+        poolId = poolId.map(RidePoolId.apply),
+        scheduleDayId = scheduleDayId,
+        invoiceId = invoiceId
       )
   }
 }

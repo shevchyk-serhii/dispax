@@ -9,7 +9,7 @@
   <logger name="java.rmi" level="ERROR" />
   <logger name="sun.rmi.transport.tcp" level="ERROR" />
   
-  <root level="INFO">
+  <root level="DEBUG">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>

@@ -271,6 +271,92 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
         found.get.isVipRide,
         found.get.preferredDriverUsed
       )
+    },
+
+    test("all Ride fields survive create→findById round-trip") {
+      for {
+        xa     <- ZIO.service[Transactor[Task]]
+        _      <- seedTestData(xa)
+        _      <- cleanRides(xa)
+        repo    = PostgresRideRepository(xa)
+        now          = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
+        poolId        = RidePoolId(UUID.randomUUID())
+        scheduleDayId = UUID.randomUUID()
+        clientCompanyId = UUID.randomUUID()
+        invoiceId     = UUID.randomUUID()
+        _      <- sql"""INSERT INTO ride_pools (id, company_id, created_by, max_passengers, current_passengers)
+                        VALUES (${poolId.value}, ${testCompanyId.value}, ${clientId.value}, 4, 0)"""
+                    .update.run.transact(xa)
+        _      <- sql"""INSERT INTO schedule_days (id, driver_id, company_id, date, start_time, end_time, status)
+                        VALUES ($scheduleDayId, ${driverId.value}, ${testCompanyId.value}, CURRENT_DATE, '08:00', '16:00', 'Scheduled')"""
+                    .update.run.transact(xa)
+        _      <- sql"""INSERT INTO client_companies (id, name, taxi_company_id)
+                        VALUES ($clientCompanyId, 'Test Client Co', ${testCompanyId.value})"""
+                    .update.run.transact(xa)
+        _      <- sql"""INSERT INTO invoices (id, number, client_company_id, taxi_company_id, period_from, period_to)
+                        VALUES ($invoiceId, 'INV-001', $clientCompanyId, ${testCompanyId.value}, CURRENT_DATE, CURRENT_DATE)"""
+                    .update.run.transact(xa)
+        ride  = Ride(
+                  id                  = RideId(UUID.randomUUID()),
+                  clientId            = clientId,
+                  creatorId           = creatorId,
+                  companyId           = testCompanyId,
+                  driverId            = Some(driverId),
+                  status              = RideStatus.Assigned,
+                  pickupLocation      = Location("From Street 1", Some(48.1), Some(11.5)),
+                  dropoffLocation     = Location("To Street 2", Some(48.2), Some(11.6)),
+                  pickupDateTime      = now.plusSeconds(7200),
+                  scheduledTime       = Some(now.plusSeconds(3600)),
+                  requestTime         = now,
+                  startTime           = Some(now.plusSeconds(100)),
+                  endTime             = Some(now.plusSeconds(200)),
+                  tariffId            = None,
+                  estimatedPrice      = Some(BigDecimal("42.50")),
+                  finalPrice          = Some(BigDecimal("45.00")),
+                  notes               = Some("Please ring bell"),
+                  specifics           = Some(RideSpecifics.AirportTransfer("MUC", "LH100")),
+                  specialRequirements = Some("Wheelchair access"),
+                  paymentStatus       = PaymentStatus.Paid,
+                  paymentMethod       = Some(PaymentMethod.Card),
+                  paidAt              = Some(now),
+                  cancellationReason  = None,
+                  cancellationFee     = None,
+                  cancelledBy         = None,
+                  isVipRide           = true,
+                  preferredDriverUsed = true,
+                  poolId              = Some(poolId),
+                  scheduleDayId       = Some(scheduleDayId),
+                  invoiceId           = Some(invoiceId)
+                )
+        _    <- repo.create(ride)
+        found <- repo.findById(ride.id).map(_.get)
+      } yield assertTrue(
+        found.id                  == ride.id,
+        found.clientId            == ride.clientId,
+        found.creatorId           == ride.creatorId,
+        found.companyId           == ride.companyId,
+        found.driverId            == ride.driverId,
+        found.status              == ride.status,
+        found.pickupLocation      == ride.pickupLocation,
+        found.dropoffLocation     == ride.dropoffLocation,
+        found.pickupDateTime      == ride.pickupDateTime,
+        found.scheduledTime       == ride.scheduledTime,
+        found.startTime           == ride.startTime,
+        found.endTime             == ride.endTime,
+        found.estimatedPrice      == ride.estimatedPrice,
+        found.finalPrice          == ride.finalPrice,
+        found.notes               == ride.notes,
+        found.specifics           == ride.specifics,
+        found.specialRequirements == ride.specialRequirements,
+        found.paymentStatus       == ride.paymentStatus,
+        found.paymentMethod       == ride.paymentMethod,
+        found.paidAt.isDefined,
+        found.isVipRide           == ride.isVipRide,
+        found.preferredDriverUsed == ride.preferredDriverUsed,
+        found.poolId              == ride.poolId,
+        found.scheduleDayId       == ride.scheduleDayId,
+        found.invoiceId           == ride.invoiceId
+      )
     }
 
   ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock

@@ -8,8 +8,8 @@ VALUES ('10101010-1010-1010-1010-101010101010', 'Oktopus München', 'info@oktopu
 ON CONFLICT (id) DO NOTHING;
 
 -- Tariff for test company
-INSERT INTO tariffs (company_id, base_price_amount, base_price_currency, price_per_km_amount, price_per_km_currency, airport_surcharge_amount, night_surcharge_amount)
-VALUES ('10101010-1010-1010-1010-101010101010', 5.00, 'EUR', 2.50, 'EUR', 10.00, 5.00)
+INSERT INTO tariffs (company_id, base_price_amount, base_price_currency, price_per_km_amount, price_per_km_currency, airport_surcharge_amount, airport_surcharge_currency, night_surcharge_amount, night_surcharge_currency)
+VALUES ('10101010-1010-1010-1010-101010101010', 5.00, 'EUR', 2.50, 'EUR', 10.00, 'EUR', 5.00, 'EUR')
 ON CONFLICT (company_id) DO NOTHING;
 
 -- Company settings

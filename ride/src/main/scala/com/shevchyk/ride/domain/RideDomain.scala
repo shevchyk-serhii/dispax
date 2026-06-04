@@ -81,7 +81,9 @@ final case class Ride(
     cancelledBy: Option[PersonId] = None,
     isVipRide: Boolean = false,
     preferredDriverUsed: Boolean = false,
-    poolId: Option[RidePoolId] = None
+    poolId: Option[RidePoolId] = None,
+    scheduleDayId: Option[java.util.UUID] = None,
+    invoiceId: Option[java.util.UUID] = None
 ):
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
