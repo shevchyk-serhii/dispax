@@ -135,6 +135,35 @@ class RideRouteCard extends StatelessWidget {
               ),
             ],
 
+            if (ride.etaMinutes != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.timer_outlined, color: AppColors.accent, size: 20),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'До клиента',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '~${ride.etaMinutes} мин',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 8),
