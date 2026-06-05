@@ -44,6 +44,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   final LocationService _locationService = LocationService.instance;
   RideService? _rideService;
   Timer? _locationUpdateTimer;
+  Timer? _etaTimer;
   StreamSubscription? _wsSubscription;
   String? _geofenceOverlayMessage;
   Timer? _geofenceOverlayTimer;
@@ -60,6 +61,47 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     _initializeLocation();
     _listenToGeofenceEvents();
     _startPulse();
+    // Sync rides from current BLoC state immediately (BlocListener only fires on changes)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncRidesFromBloc();
+      _refreshEta();
+    });
+    _etaTimer = Timer.periodic(const Duration(seconds: 90), (_) => _refreshEta());
+  }
+
+  Future<void> _refreshEta() async {
+    if (!mounted || _rideService == null || _currentRide == null) return;
+    final data = await _rideService!.getDriverProximity(_currentRide!.id);
+    if (!mounted) return;
+    final eta = data?['etaMinutes'] as int?;
+    if (eta != null && _currentRide != null) {
+      setState(() {
+        _currentRide = _currentRide!.copyWith(etaMinutes: eta);
+      });
+    }
+  }
+
+  void _syncRidesFromBloc() {
+    if (!mounted) return;
+    final authState = context.read<AuthBloc>().state;
+    final rideState = context.read<RideBloc>().state;
+    if (!authState.isAuthenticated || authState.user == null) return;
+
+    final driverRides = rideState.rides.where((ride) =>
+      ride.driverId == authState.user!.id &&
+      (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)
+    ).toList();
+
+    final currentRide = driverRides.where((r) => r.status == RideStatus.inProgress).firstOrNull
+      ?? (driverRides.where((r) => r.status == RideStatus.assigned).toList()
+          ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime)))
+          .firstOrNull;
+
+    setState(() {
+      _assignedRides = driverRides;
+      _currentRide = currentRide;
+    });
+    _updateMapMarkers();
   }
 
   void _startPulse() {
@@ -82,6 +124,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   void dispose() {
     _locationSubscription?.cancel();
     _locationUpdateTimer?.cancel();
+    _etaTimer?.cancel();
     _wsSubscription?.cancel();
     _geofenceOverlayTimer?.cancel();
     _pulseTimer?.cancel();
@@ -166,11 +209,20 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     final started = await _locationService.startLocationTracking();
     if (started) {
       _locationSubscription = _locationService.positionStream.listen((geo.Position position) {
+        final isFirst = _currentPosition == null;
         setState(() {
           _currentPosition = position;
         });
         _updateCurrentLocationMarker();
         _sendLocationUpdate();
+        // Center map on first real GPS fix if map was created without position
+        if (isFirst && _mapboxMap != null && _currentRide == null) {
+          _mapboxMap!.setCamera(MapboxService.createCameraOptions(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            zoom: 15.0,
+          ));
+        }
       });
     }
 
@@ -303,12 +355,24 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       );
     }
 
-    // Focus camera on pickup point of priority ride
+    // Focus camera: pickup coords → driver position → Munich (default)
     final pickup = _currentRide!.from;
     if (pickup.latitude != null && pickup.longitude != null) {
       _mapboxMap?.setCamera(CameraOptions(
         center: Point(coordinates: Position(pickup.longitude!, pickup.latitude!)),
         zoom: 14.0,
+      ));
+    } else if (_currentPosition != null) {
+      _mapboxMap?.setCamera(MapboxService.createCameraOptions(
+        latitude: _currentPosition!.latitude,
+        longitude: _currentPosition!.longitude,
+        zoom: 14.0,
+      ));
+    } else {
+      // Munich fallback when no coordinates available yet
+      _mapboxMap?.setCamera(CameraOptions(
+        center: Point(coordinates: Position(11.5820, 48.1351)),
+        zoom: 12.0,
       ));
     }
   }
@@ -382,12 +446,13 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                   ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime)))
                   .firstOrNull;
 
-            if (driverRides != _assignedRides || currentRide != _currentRide) {
+            if (driverRides != _assignedRides || currentRide?.id != _currentRide?.id) {
               setState(() {
                 _assignedRides = driverRides;
                 _currentRide = currentRide;
               });
               _updateMapMarkers();
+              _refreshEta();
             }
           }
         },

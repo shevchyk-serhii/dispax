@@ -36,6 +36,19 @@ case class DriverProximityDto(
 
 object DriverRoutes:
 
+  // Fallback ETA estimate when HERE API key is not configured (~50 km/h urban speed)
+  private def estimateEtaMinutes(dLat: Double, dLng: Double, pickLat: Double, pickLng: Double): Option[Int] =
+    val R     = 6371000.0
+    val dPhi  = math.toRadians(pickLat - dLat)
+    val dLam  = math.toRadians(pickLng - dLng)
+    val a     =
+      math.sin(dPhi / 2) * math.sin(dPhi / 2) +
+        math.cos(math.toRadians(dLat)) * math.cos(math.toRadians(pickLat)) *
+        math.sin(dLam / 2) * math.sin(dLam / 2)
+    val distM = R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    val eta   = math.ceil(distM / (50000.0 / 60.0)).toInt // 50 km/h → minutes
+    Some(math.max(1, eta))
+
   val authenticatedRoutes
       : Routes[DriverLocationService & RideService & HereRoutingService & GeocodingService & JwtService, Response]     =
     Routes(
@@ -172,7 +185,9 @@ object DriverRoutes:
                 pickLng <- ride.pickupLocation.longitude
               } yield (dLat, dLng, pickLat, pickLng)) match {
                 case Some((dLat, dLng, pickLat, pickLng)) =>
-                  ZIO.serviceWithZIO[HereRoutingService](_.getEtaMinutes(dLat, dLng, pickLat, pickLng))
+                  ZIO
+                    .serviceWithZIO[HereRoutingService](_.getEtaMinutes(dLat, dLng, pickLat, pickLng))
+                    .map(_.orElse(estimateEtaMinutes(dLat, dLng, pickLat, pickLng)))
                 case None                                 => ZIO.none
               }
             proximity     = DriverProximityDto(
