@@ -60,6 +60,7 @@ case class RideDto(
     driverLocation: Option[LocationDto] = None,
     driverApproaching: Boolean = false,
     driverDistanceMeters: Option[Int] = None,
+    etaMinutes: Option[Int] = None,
     price: Option[Double] = None,
     notes: Option[String] = None,
     specialRequirements: Option[String] = None,
@@ -208,7 +209,8 @@ object RideDto:
       driverLat: Option[Double] = None,
       driverLng: Option[Double] = None,
       clientName: Option[String] = None,
-      driverName: Option[String] = None
+      driverName: Option[String] = None,
+      etaMinutes: Option[Int] = None
   ): RideDto =
     val (flightNumber, isAirportTransfer) =
       ride.specifics match {
@@ -256,6 +258,7 @@ object RideDto:
       driverLocation = driverLoc,
       driverApproaching = approaching,
       driverDistanceMeters = distanceMeters,
+      etaMinutes = etaMinutes,
       price = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue),
       notes = ride.notes,
       specialRequirements = ride.specialRequirements,
