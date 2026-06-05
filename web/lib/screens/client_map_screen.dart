@@ -481,7 +481,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               );
             }
           },
-          activeThumbColor: AppColors.success,
+          activeThumbColor: Colors.white,
+          activeTrackColor: AppColors.success,
+          inactiveThumbColor: Colors.white,
+          inactiveTrackColor: AppColors.textSecondary,
         ),
       ],
     );

@@ -492,7 +492,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
               ),
 
             Positioned(
-              bottom: _currentRide != null ? 200 : 100,
+              bottom: _currentRide != null ? 260 : 100,
               right: 16,
               child: _buildControlButtons(),
             ),
