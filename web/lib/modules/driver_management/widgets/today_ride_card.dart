@@ -163,7 +163,7 @@ class TodayRideCard extends StatelessWidget {
                       const Icon(Icons.timer_outlined, color: Colors.white, size: 12),
                       const SizedBox(width: 4),
                       Text(
-                        '~${etaMinutes} мин',
+                        '~$etaMinutes мин',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,

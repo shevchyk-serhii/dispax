@@ -29,6 +29,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
   bool _trackingStarted = false;
   RideService? _rideService;
   final Map<String, int> _approachingDistances = {};
+  final Map<String, int> _etaMinutes = {};
+  Timer? _etaTimer;
 
   @override
   void initState() {
@@ -47,6 +49,23 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
         }
       }
     });
+    _etaTimer = Timer.periodic(const Duration(seconds: 90), (_) => _refreshEta());
+  }
+
+  Future<void> _refreshEta() async {
+    if (!mounted || _rideService == null) return;
+    final rideState = context.read<RideBloc>().state;
+    final activeRides = rideState.rides.where(
+      (r) => r.status == RideStatus.assigned || r.status == RideStatus.inProgress,
+    );
+    for (final ride in activeRides) {
+      final data = await _rideService!.getDriverProximity(ride.id);
+      if (!mounted) return;
+      final eta = data?['etaMinutes'] as int?;
+      if (eta != null) {
+        setState(() => _etaMinutes[ride.id] = eta);
+      }
+    }
   }
 
   Future<void> _showRideAssignedDialog(String rideId) async {
@@ -98,6 +117,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
   @override
   void dispose() {
     _wsSubscription?.cancel();
+    _etaTimer?.cancel();
     _stopLocationTracking();
     _rideService?.dispose();
     super.dispose();
@@ -264,6 +284,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
                   ride: ride,
                   isLast: index == todayRides.length - 1,
                   approachingDistanceMeters: _approachingDistances[ride.id],
+                  etaMinutes: _etaMinutes[ride.id],
                   onCallClient: () => _handleCallClient(context, ride),
                   onStartRide: () => _handleStartRide(context, ride),
                   onCompleteRide: () => _handleCompleteRide(context, ride),
