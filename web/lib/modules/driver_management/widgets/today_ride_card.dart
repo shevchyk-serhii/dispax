@@ -5,6 +5,7 @@ import '../../../screens/ride_details_screen.dart';
 import '../../core/widgets/ride_info_row.dart';
 import 'ride_quick_actions.dart';
 import '../../../utils/ride_status_styles.dart';
+import '../../../constants/app_colors.dart';
 
 class TodayRideCard extends StatelessWidget {
   final Ride ride;
@@ -96,7 +97,7 @@ class TodayRideCard extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.orange,
+                    color: AppColors.warning,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Text(
@@ -117,10 +118,10 @@ class TodayRideCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: approachingDistanceMeters! <= 100
-                        ? Colors.green
+                        ? AppColors.success
                         : approachingDistanceMeters! <= 500
-                            ? Colors.teal
-                            : Colors.blue,
+                            ? AppColors.accent
+                            : AppColors.info,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
@@ -209,7 +210,7 @@ class TodayRideCard extends StatelessWidget {
                 icon: const Icon(Icons.info_outline, size: 16),
                 label: const Text('Details'),
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.blue,
+                  foregroundColor: AppColors.info,
                 ),
               ),
             ],

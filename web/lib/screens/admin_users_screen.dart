@@ -104,13 +104,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       _loadUsers();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Role updated to $newRole'), backgroundColor: Colors.green),
+          SnackBar(content: Text('Role updated to $newRole'), backgroundColor: AppColors.success),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
         );
       }
     }
@@ -123,13 +123,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       _loadUsers();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Status updated to $newStatus'), backgroundColor: Colors.green),
+          SnackBar(content: Text('Status updated to $newStatus'), backgroundColor: AppColors.success),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
         );
       }
     }
@@ -194,7 +194,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+                      SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
                     );
                   }
                 }
@@ -222,7 +222,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           const SizedBox(height: 12),

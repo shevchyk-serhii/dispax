@@ -108,10 +108,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
           CircleAvatar(
             radius: 28,
             backgroundColor: _client.isVip
-                ? Colors.amber.shade100
+                ? AppColors.warningBorder
                 : AppColors.secretaryColor.withAlpha(30),
             child: _client.isVip
-                ? const Icon(Icons.star, color: Colors.amber, size: 28)
+                ? const Icon(Icons.star, color: AppColors.warning, size: 28)
                 : Text(
                     _client.name.isNotEmpty ? _client.name[0].toUpperCase() : '?',
                     style: TextStyle(
@@ -136,13 +136,13 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.amber.shade100,
+                          color: AppColors.warningBorder,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.amber.shade400),
+                          border: Border.all(color: AppColors.warning),
                         ),
                         child: const Text(
                           'VIP',
-                          style: TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -185,7 +185,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
             Text(_error!, style: AppStyles.bodyMedium),
             const SizedBox(height: 12),
@@ -258,7 +258,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.circle, size: 8, color: Colors.green.shade400),
+                Icon(Icons.circle, size: 8, color: AppColors.success),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -273,7 +273,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.circle, size: 8, color: Colors.red.shade400),
+                Icon(Icons.circle, size: 8, color: AppColors.error),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -384,7 +384,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         subtitle: const Text('Priority service and preferred driver'),
                         secondary: Icon(
                           Icons.star,
-                          color: isVip ? Colors.amber : Colors.grey,
+                          color: isVip ? AppColors.warning : AppColors.textSecondary,
                         ),
                         value: isVip,
                         onChanged: (v) => setDialogState(() => isVip = v),

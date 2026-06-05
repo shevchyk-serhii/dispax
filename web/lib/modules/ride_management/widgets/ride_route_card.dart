@@ -34,7 +34,7 @@ class RideRouteCard extends StatelessWidget {
               icon: Icons.trip_origin,
               label: 'From',
               location: ride.pickupLocation,
-              color: Colors.green,
+              color: AppColors.success,
             ),
 
             const SizedBox(height: 12),
@@ -44,7 +44,7 @@ class RideRouteCard extends StatelessWidget {
               icon: Icons.location_on,
               label: 'To',
               location: ride.dropoffLocation,
-              color: Colors.red,
+              color: AppColors.error,
             ),
 
             const SizedBox(height: 16),

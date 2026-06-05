@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../constants/app_colors.dart';
 
 class AndroidMapScreen extends StatefulWidget {
   const AndroidMapScreen({super.key});
@@ -22,7 +23,7 @@ class _AndroidMapScreenState extends State<AndroidMapScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Map (Android)'),
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColors.info,
         foregroundColor: Colors.white,
       ),
       body: GoogleMap(

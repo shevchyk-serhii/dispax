@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../ride_management/models/ride.dart';
 import '../../core/navigation_helper.dart';
 import '../../core/navigation_utils.dart';
+import '../../../constants/app_colors.dart';
 
 class RideQuickActions extends StatelessWidget {
   final Ride ride;
@@ -26,7 +27,7 @@ class RideQuickActions extends StatelessWidget {
 
           },
           icon: const Icon(Icons.phone, size: 20),
-          color: Colors.green,
+          color: AppColors.success,
           tooltip: 'Call Client',
           padding: const EdgeInsets.all(8),
           constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
@@ -34,7 +35,7 @@ class RideQuickActions extends StatelessWidget {
         IconButton(
           onPressed: () => _handleNavigation(context, ride),
           icon: const Icon(Icons.navigation, size: 20),
-          color: Colors.blue,
+          color: AppColors.info,
           tooltip: 'Navigate',
           padding: const EdgeInsets.all(8),
           constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
@@ -58,7 +59,7 @@ class RideQuickActions extends StatelessWidget {
         icon: const Icon(Icons.play_arrow, size: 14),
         label: const Text('Start', style: TextStyle(fontSize: 12)),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           minimumSize: const Size(60, 32),
@@ -72,7 +73,7 @@ class RideQuickActions extends StatelessWidget {
         icon: const Icon(Icons.check, size: 14),
         label: const Text('Done', style: TextStyle(fontSize: 12)),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           minimumSize: const Size(60, 32),
@@ -93,7 +94,7 @@ class RideQuickActions extends StatelessWidget {
               SimpleDialogOption(
                 onPressed: () => Navigator.of(context).pop('pickup'),
                 child: ListTile(
-                  leading: const Icon(Icons.location_on, color: Colors.green),
+                  leading: const Icon(Icons.location_on, color: AppColors.success),
                   title: Text(ride.from.address),
                   subtitle: const Text('Google Maps — Pickup'),
                 ),
@@ -101,7 +102,7 @@ class RideQuickActions extends StatelessWidget {
               SimpleDialogOption(
                 onPressed: () => Navigator.of(context).pop('destination'),
                 child: ListTile(
-                  leading: const Icon(Icons.flag, color: Colors.red),
+                  leading: const Icon(Icons.flag, color: AppColors.error),
                   title: Text(ride.to.address),
                   subtitle: const Text('Google Maps — Drop-off'),
                 ),
@@ -109,7 +110,7 @@ class RideQuickActions extends StatelessWidget {
               SimpleDialogOption(
                 onPressed: () => Navigator.of(context).pop('waze_pickup'),
                 child: const ListTile(
-                  leading: Icon(Icons.map, color: Colors.teal),
+                  leading: Icon(Icons.map, color: AppColors.accent),
                   title: Text('Waze — Pickup'),
                 ),
               ),

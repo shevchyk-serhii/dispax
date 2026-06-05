@@ -7,6 +7,7 @@ export '../../../modules/core/widgets/calendar_controls.dart' show CalendarViewT
 import 'month_view_widget.dart';
 import 'week_view_widget.dart';
 import 'day_view_widget.dart';
+import '../../../constants/app_colors.dart';
 
 class CalendarScheduleScreen extends StatelessWidget {
   const CalendarScheduleScreen({super.key});
@@ -31,7 +32,7 @@ class CalendarScheduleScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Schedule'),
-        backgroundColor: Colors.blue.shade600,
+        backgroundColor: AppColors.infoStrong,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -97,7 +98,7 @@ class CalendarScheduleScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.blue.shade600, Colors.blue.shade50],
+              colors: [AppColors.infoStrong, AppColors.infoBg],
               stops: const [0.0, 0.3],
             ),
           ),
@@ -144,7 +145,7 @@ class CalendarScheduleScreen extends StatelessWidget {
           selectedDayNotifier.value = DateTime.now();
           viewTypeNotifier.value = CalendarViewType.day;
         },
-        backgroundColor: Colors.blue.shade600,
+        backgroundColor: AppColors.infoStrong,
         tooltip: 'Today\'s Schedule',
         child: const Icon(Icons.today, color: Colors.white),
       ),

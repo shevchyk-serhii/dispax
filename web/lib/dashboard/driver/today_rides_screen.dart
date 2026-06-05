@@ -13,6 +13,7 @@ import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/location_service.dart';
 import '../../widgets/common/notification_bell.dart';
 import 'widgets/availability_toggle.dart';
+import '../../constants/app_colors.dart';
 
 class TodayRidesScreen extends StatefulWidget {
   const TodayRidesScreen({super.key});
@@ -174,7 +175,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
             ),
           ],
         ),
-        backgroundColor: Colors.blue.shade600,
+        backgroundColor: AppColors.infoStrong,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -206,7 +207,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.blue.shade600, Theme.of(context).colorScheme.surface],
+              colors: [AppColors.infoStrong, Theme.of(context).colorScheme.surface],
               stops: const [0.0, 0.2],
             ),
           ),
@@ -296,7 +297,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.phone, color: Colors.green),
+              leading: const Icon(Icons.phone, color: AppColors.success),
               title: const Text('Call'),
               subtitle: Text(phone),
               onTap: () {
@@ -305,7 +306,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.message, color: Colors.blue),
+              leading: const Icon(Icons.message, color: AppColors.info),
               title: const Text('SMS'),
               subtitle: Text(phone),
               onTap: () {

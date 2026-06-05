@@ -56,7 +56,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red.shade700,
+                color: AppColors.errorStrong,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               ),
               child: Column(
@@ -144,13 +144,13 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
+                          color: AppColors.warningBg,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange.shade200),
+                          border: Border.all(color: AppColors.warningBorder),
                         ),
                         child: const Text(
                           'No other drivers available for reassignment.',
-                          style: TextStyle(color: Colors.orange, fontSize: 13),
+                          style: TextStyle(color: AppColors.warning, fontSize: 13),
                         ),
                       )
                     else
@@ -163,10 +163,10 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                                 r.status != RideStatus.completed)
                             .length;
                         final loadColor = rideCount == 0
-                            ? Colors.green
+                            ? AppColors.success
                             : rideCount <= 2
-                                ? Colors.orange
-                                : Colors.red;
+                                ? AppColors.warning
+                                : AppColors.error;
                         final label = schedule.notes?.isNotEmpty == true
                             ? schedule.notes!
                             : 'Driver ${schedule.driverId.length > 8 ? schedule.driverId.substring(0, 8) : schedule.driverId}...';
@@ -226,7 +226,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade700,
+                      backgroundColor: AppColors.errorStrong,
                       foregroundColor: Colors.white,
                     ),
                     onPressed: _selectedRideIds.isEmpty || _selectedDriverId == null || _isReassigning
@@ -270,7 +270,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
         content: Text(
           '${_selectedRideIds.length} ride${_selectedRideIds.length == 1 ? '' : 's'} reassigned to $_selectedDriverLabel',
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: AppColors.success,
       ),
     );
   }

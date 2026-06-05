@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/core/models/location.dart';
 import '../models/create_ride_request.dart';
+import '../../../constants/app_colors.dart';
 
 class CreateRideFormHelper {
   // Note: Gates and terminals are kept in UI for future backend support
@@ -60,7 +61,7 @@ class CreateRideFormHelper {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Authentication required'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -70,7 +71,7 @@ class CreateRideFormHelper {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select or create a client'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -80,7 +81,7 @@ class CreateRideFormHelper {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter client name'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;

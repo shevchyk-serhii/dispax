@@ -307,13 +307,13 @@ class _GeofenceScreenState extends State<GeofenceScreen>
   Color _getTypeColor(String type) {
     switch (type) {
       case 'Airport':
-        return Colors.blue;
+        return AppColors.info;
       case 'ServiceArea':
-        return Colors.green;
+        return AppColors.success;
       case 'ClientPickup':
-        return Colors.orange;
+        return AppColors.warning;
       case 'CustomZone':
-        return Colors.purple;
+        return AppColors.primary;
       default:
         return AppColors.textSecondary;
     }
@@ -389,7 +389,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
             Text(_geofenceError!),
             const SizedBox(height: 12),
@@ -567,7 +567,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
             Text(_alertError!),
             const SizedBox(height: 12),

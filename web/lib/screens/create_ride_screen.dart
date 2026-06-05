@@ -64,7 +64,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Ride created successfully!'),
-                  backgroundColor: Colors.green,
+                  backgroundColor: AppColors.success,
                 ),
               );
               if (widget.onCreated != null) {
@@ -76,7 +76,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.errorMessage ?? 'Failed to create ride'),
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppColors.error,
                   duration: const Duration(seconds: 8),
                   action: SnackBarAction(
                     label: 'Retry',

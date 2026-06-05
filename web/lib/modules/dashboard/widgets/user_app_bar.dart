@@ -54,9 +54,9 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
               value: 'logout',
               child: Row(
                 children: [
-                  Icon(Icons.logout, color: Colors.red),
+                  Icon(Icons.logout, color: AppColors.error),
                   SizedBox(width: 8),
-                  Text('Logout', style: TextStyle(color: Colors.red)),
+                  Text('Logout', style: TextStyle(color: AppColors.error)),
                 ],
               ),
             ),

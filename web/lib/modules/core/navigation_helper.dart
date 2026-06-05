@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/app_colors.dart';
 
 class NavigationHelper {
   static void pushReplacement(BuildContext context, Widget destination) {
@@ -33,7 +34,7 @@ class NavigationHelper {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: isError ? Colors.red : null,
+          backgroundColor: isError ? AppColors.error : null,
           duration: duration ?? const Duration(seconds: 3),
         ),
       );

@@ -76,7 +76,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           const SizedBox(height: 12),
@@ -188,10 +188,10 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isTop3 ? Colors.amber.shade50 : colorScheme.surface,
+              color: isTop3 ? AppColors.warningBg : colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isTop3 ? Colors.amber.shade300 : colorScheme.surfaceContainerHighest,
+                color: isTop3 ? AppColors.warning : colorScheme.surfaceContainerHighest,
               ),
             ),
             child: Row(
@@ -201,7 +201,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      color: Colors.amber,
+                      color: AppColors.warning,
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -247,7 +247,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: isTop3 ? Colors.amber.shade800 : AppColors.success,
+                    color: isTop3 ? AppColors.warningStrong : AppColors.success,
                   ),
                 ),
               ],

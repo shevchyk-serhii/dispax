@@ -203,7 +203,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           const SizedBox(height: 12),
@@ -337,7 +337,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
             ),
             const SizedBox(width: 4),
             IconButton(
-              icon: Icon(Icons.delete_outline, size: 20, color: Colors.red.shade300),
+              icon: Icon(Icons.delete_outline, size: 20, color: AppColors.error),
               onPressed: () => _deleteExpense(expense),
             ),
           ],
@@ -366,17 +366,17 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   Color _categoryColor(ExpenseCategory cat) {
     switch (cat) {
       case ExpenseCategory.fuel:
-        return Colors.orange;
+        return AppColors.warning;
       case ExpenseCategory.parking:
-        return Colors.blue;
+        return AppColors.info;
       case ExpenseCategory.tolls:
-        return Colors.purple;
+        return AppColors.primary;
       case ExpenseCategory.cleaning:
-        return Colors.teal;
+        return AppColors.accent;
       case ExpenseCategory.maintenance:
-        return Colors.brown;
+        return AppColors.primary;
       case ExpenseCategory.other:
-        return Colors.grey;
+        return AppColors.textSecondary;
     }
   }
 

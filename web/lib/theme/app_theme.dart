@@ -21,10 +21,10 @@ class AppTheme {
       onPrimary: Colors.white,
       primaryContainer: isDark ? AppColors.brand700 : AppColors.primarySurface,
       onPrimaryContainer: isDark ? AppColors.primaryLight : AppColors.primaryDark,
-      secondary: AppColors.primaryLight,
+      secondary: AppColors.accent,
       onSecondary: Colors.white,
-      secondaryContainer: isDark ? AppColors.brand700 : AppColors.primarySurface,
-      onSecondaryContainer: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+      secondaryContainer: isDark ? AppColors.brand700 : const Color(0xFFE0F2FE),
+      onSecondaryContainer: isDark ? AppColors.accentLight : AppColors.accentDark,
       error: AppColors.error,
       onError: Colors.white,
       errorContainer: isDark ? const Color(0xFF2A0E0E) : const Color(0xFFFEF2F2),
@@ -210,7 +210,7 @@ class AppTheme {
 
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: AppColors.accent,
         unselectedItemColor: isDark ? AppColors.textLightDark : AppColors.textLight,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -220,10 +220,10 @@ class AppTheme {
 
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.15),
+        indicatorColor: AppColors.accent.withValues(alpha: 0.15),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: AppColors.primary);
+            return const IconThemeData(color: AppColors.accent);
           }
           return IconThemeData(
             color: isDark ? AppColors.textLightDark : AppColors.textLight,
@@ -231,7 +231,7 @@ class AppTheme {
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary);
+            return const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.accent);
           }
           return TextStyle(
             fontSize: 10,
@@ -293,7 +293,7 @@ class AppTheme {
         contentTextStyle: AppStyles.bodyMedium.copyWith(
           color: isDark ? AppColors.textPrimaryDark : Colors.white,
         ),
-        actionTextColor: AppColors.primaryLight,
+        actionTextColor: AppColors.accentLight,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
         ),

@@ -530,7 +530,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                       children: [
                         ...List.generate(5, (i) => Icon(
                           i < ride.rating! ? Icons.star : Icons.star_border,
-                          color: Colors.amber,
+                          color: AppColors.warning,
                           size: 16,
                         )),
                         if (ride.ratingComment != null && ride.ratingComment!.isNotEmpty) ...[

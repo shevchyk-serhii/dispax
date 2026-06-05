@@ -88,7 +88,7 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.person, color: Colors.blue[700], size: 24),
+                    Icon(Icons.person, color: AppColors.infoStrong, size: 24),
                     const SizedBox(width: AppDimensions.paddingSmall),
                     const Text(
                       'Driver',
@@ -102,9 +102,9 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                 else if (_errorMessage != null)
                   Row(
                     children: [
-                      Icon(Icons.warning_amber, color: Colors.orange[700], size: 18),
+                      Icon(Icons.warning_amber, color: AppColors.warningStrong, size: 18),
                       const SizedBox(width: 8),
-                      Text(_errorMessage!, style: TextStyle(color: Colors.orange[700])),
+                      Text(_errorMessage!, style: TextStyle(color: AppColors.warningStrong)),
                       const SizedBox(width: 8),
                       TextButton(
                         onPressed: () {
@@ -125,7 +125,7 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                     initialValue: state.selectedDriverId,
                     decoration: InputDecoration(
                       labelText: 'Assigned driver',
-                      prefixIcon: Icon(Icons.drive_eta, color: Colors.blue[700]),
+                      prefixIcon: Icon(Icons.drive_eta, color: AppColors.infoStrong),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                       ),
@@ -142,12 +142,12 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue[100],
+                                  color: AppColors.infoBorder,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   'me',
-                                  style: TextStyle(fontSize: 11, color: Colors.blue[700]),
+                                  style: TextStyle(fontSize: 11, color: AppColors.infoStrong),
                                 ),
                               ),
                             ],

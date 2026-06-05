@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../ride_management/models/ride.dart';
+import '../../../constants/app_colors.dart';
 
 class DeleteConfirmationDialog extends StatelessWidget {
   final Ride ride;
@@ -34,7 +35,7 @@ class DeleteConfirmationDialog extends StatelessWidget {
             Navigator.of(context).pop();
             onConfirm();
           },
-          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          child: const Text('Delete', style: TextStyle(color: AppColors.error)),
         ),
       ],
     );

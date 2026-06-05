@@ -29,10 +29,10 @@ class RidePersonCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: isDriver ? Colors.blue[100] : Colors.green[100],
+                  backgroundColor: isDriver ? AppColors.infoBorder : AppColors.successBorder,
                   child: Icon(
                     isDriver ? Icons.drive_eta : Icons.person,
-                    color: isDriver ? Colors.blue[700] : Colors.green[700],
+                    color: isDriver ? AppColors.infoStrong : AppColors.successStrong,
                     size: 28,
                   ),
                 ),
@@ -85,7 +85,7 @@ class RidePersonCard extends StatelessWidget {
                         icon: const Icon(Icons.phone, size: 18),
                         label: const Text('Call'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppColors.success,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),

@@ -190,7 +190,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
             Text(_error!),
             const SizedBox(height: 12),
@@ -205,7 +205,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle, size: 56, color: Colors.green.shade400),
+            Icon(Icons.check_circle, size: 56, color: AppColors.success),
             const SizedBox(height: 12),
             Text(
               'All rides are paid',
@@ -266,7 +266,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 14, color: Colors.green.shade600),
+                      Icon(Icons.location_on, size: 14, color: AppColors.successStrong),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(

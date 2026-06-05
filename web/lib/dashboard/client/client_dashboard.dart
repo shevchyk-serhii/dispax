@@ -53,7 +53,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Discard'),
           ),
         ],
@@ -71,7 +71,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
       body: _buildCurrentTab(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: AppColors.accent,
         onTap: (index) async {
           if (_selectedIndex == 2 && index != 2) {
             final canLeave = await _confirmLeaveCreateRide(context);

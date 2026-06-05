@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../screens/notifications_screen.dart';
+import '../../constants/app_colors.dart';
 
 class NotificationBell extends StatefulWidget {
   final Color iconColor;
@@ -52,7 +53,7 @@ class _NotificationBellState extends State<NotificationBell> {
               child: Container(
                 padding: const EdgeInsets.all(3),
                 decoration: const BoxDecoration(
-                  color: Colors.red,
+                  color: AppColors.error,
                   shape: BoxShape.circle,
                 ),
                 constraints: const BoxConstraints(minWidth: 16, minHeight: 16),

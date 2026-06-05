@@ -57,7 +57,7 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           const SizedBox(height: 12),
@@ -266,10 +266,10 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
 
   Color _heatmapColor(double intensity, ColorScheme colorScheme) {
     if (intensity <= 0) return colorScheme.surfaceContainerLow;
-    if (intensity < 0.25) return Colors.blue.shade100;
-    if (intensity < 0.5) return Colors.blue.shade300;
-    if (intensity < 0.75) return Colors.blue.shade600;
-    return Colors.red.shade600;
+    if (intensity < 0.25) return AppColors.infoBorder;
+    if (intensity < 0.5) return AppColors.info;
+    if (intensity < 0.75) return AppColors.infoStrong;
+    return AppColors.errorStrong;
   }
 
   Widget _buildSummaryCard(String label, String value, IconData icon, Color color, ColorScheme colorScheme) {

@@ -46,7 +46,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Discard'),
           ),
         ],
@@ -89,7 +89,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.driverColor,
+        selectedItemColor: AppColors.accent,
         onTap: (index) async {
           if (_selectedIndex == 2 && index != 2) {
             final canLeave = await _confirmLeaveCreateRide(context);

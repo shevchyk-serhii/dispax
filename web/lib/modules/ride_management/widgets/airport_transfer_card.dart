@@ -52,7 +52,7 @@ class AirportTransferCard extends StatelessWidget {
                   isAirportTransfer
                     ? (isArrival ? Icons.flight_land : Icons.flight_takeoff)
                     : Icons.flight,
-                  color: Colors.purple[600],
+                  color: AppColors.primary,
                   size: 24
                 ),
                 const SizedBox(width: AppDimensions.paddingSmall),
@@ -85,7 +85,7 @@ class AirportTransferCard extends StatelessWidget {
                         title: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.flight_takeoff, size: 16, color: Colors.blue),
+                            Icon(Icons.flight_takeoff, size: 16, color: AppColors.info),
                             const SizedBox(width: 4),
                             Flexible(child: Text('Departure', overflow: TextOverflow.ellipsis)),
                           ],
@@ -99,7 +99,7 @@ class AirportTransferCard extends StatelessWidget {
                         title: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.flight_land, size: 16, color: Colors.green),
+                            Icon(Icons.flight_land, size: 16, color: AppColors.success),
                             const SizedBox(width: 4),
                             Flexible(child: Text('Arrival', overflow: TextOverflow.ellipsis)),
                           ],

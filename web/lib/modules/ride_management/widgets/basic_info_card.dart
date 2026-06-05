@@ -33,7 +33,7 @@ class BasicInfoCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.person, color: Colors.blue[600], size: 24),
+                Icon(Icons.person, color: AppColors.infoStrong, size: 24),
                 const SizedBox(width: AppDimensions.paddingSmall),
                 const Text(
                   'Client Information',

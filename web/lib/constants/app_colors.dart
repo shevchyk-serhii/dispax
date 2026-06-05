@@ -3,92 +3,93 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ─── Brand / Primary — Violet ───
-  static const Color primary = Color(0xFF7C3AED);       // Violet 600
-  static const Color primaryLight = Color(0xFFA855F7);  // Violet 500
-  static const Color primaryDark = Color(0xFF5B21B6);   // Violet 800
-  static const Color primarySurface = Color(0xFFF5F3FF); // Violet 50 (light bg tint)
+  // ─── Brand / Primary — Graphite ───
+  static const Color primary = Color(0xFF18181B);       // Zinc 900 (graphite)
+  static const Color primaryLight = Color(0xFF3F3F46);  // Zinc 700
+  static const Color primaryDark = Color(0xFF09090B);   // Zinc 950
+  static const Color primarySurface = Color(0xFFF4F4F5); // Zinc 100 (light bg tint)
 
-  // ─── Brand Core (Deep Violet-Black) ───
-  static const Color brand900 = Color(0xFF0F0F13);
-  static const Color brand800 = Color(0xFF1C1C24);
-  static const Color brand700 = Color(0xFF26263A);
-  static const Color brand600 = Color(0xFF3A3A55);
+  // ─── Accent (single corporate accent) ───
+  static const Color accent = Color(0xFF0EA5E9);        // Sky 500 (cyan)
+  static const Color accentLight = Color(0xFF38BDF8);   // Sky 400
+  static const Color accentDark = Color(0xFF0284C7);    // Sky 600
 
-  // ─── Role Accent Colors ───
-  static const Color dispatcherColor = Color(0xFFF59E0B); // Amber
-  static const Color driverColor = Color(0xFF06B6D4);      // Cyan
-  static const Color secretaryColor = Color(0xFF8B5CF6);   // Violet
-  static const Color clientColor = Color(0xFF10B981);      // Emerald
+  // ─── Brand Core (Graphite ramp) ───
+  static const Color brand900 = Color(0xFF09090B);
+  static const Color brand800 = Color(0xFF18181B);
+  static const Color brand700 = Color(0xFF27272A);
+  static const Color brand600 = Color(0xFF3F3F46);
 
-  // Role Light Backgrounds
-  static const Color dispatcherLightBg = Color(0xFFFFFBEB);
-  static const Color driverLightBg = Color(0xFFECFEFF);
-  static const Color secretaryLightBg = Color(0xFFF5F3FF);
-  static const Color clientLightBg = Color(0xFFECFDF5);
+  // ─── Role Accent Colors — unified to corporate graphite ───
+  // Role is conveyed by icon + label, not color.
+  static const Color dispatcherColor = primary;
+  static const Color driverColor = primary;
+  static const Color secretaryColor = primary;
+  static const Color clientColor = primary;
 
-  // ─── Login Gradient ───
+  // Role Light Backgrounds — unified neutral tint
+  static const Color dispatcherLightBg = primarySurface;
+  static const Color driverLightBg = primarySurface;
+  static const Color secretaryLightBg = primarySurface;
+  static const Color clientLightBg = primarySurface;
+
+  // ─── Login / Splash Gradient — subtle graphite ramp ───
   static const List<Color> primaryGradient = [
-    Color(0xFF1C1C24),
-    Color(0xFF0F0F13),
-    Color(0xFF0A0A0F),
+    Color(0xFF27272A),
+    Color(0xFF18181B),
+    Color(0xFF09090B),
   ];
 
-  // ─── Role Header Gradients ───
+  // ─── Role Header Gradients — flat graphite (unified) ───
   static const List<Color> dispatcherGradient = [
-    Color(0xFF1C1C24),
-    Color(0xFF0F0F13),
-    Color(0xFF0A0A0F),
+    Color(0xFF18181B),
+    Color(0xFF18181B),
+    Color(0xFF18181B),
   ];
 
   static const List<Color> driverGradient = [
-    Color(0xFF1C1C24),
-    Color(0xFF0F0F13),
-    Color(0xFF0A0A0F),
+    Color(0xFF18181B),
+    Color(0xFF18181B),
+    Color(0xFF18181B),
   ];
 
   static const List<Color> secretaryGradient = [
-    Color(0xFF1C1C24),
-    Color(0xFF3B0764),
-    Color(0xFF7C3AED),
+    Color(0xFF18181B),
+    Color(0xFF18181B),
+    Color(0xFF18181B),
   ];
 
   static const List<Color> clientGradient = [
-    Color(0xFF1C1C24),
-    Color(0xFF0F0F13),
-    Color(0xFF0A0A0F),
+    Color(0xFF18181B),
+    Color(0xFF18181B),
+    Color(0xFF18181B),
   ];
 
-  // ─── Role Vivid Gradients ───
-  static const List<Color> dispatcherVividGradient = [
-    Color(0xFFFBBF24),
-    Color(0xFFD97706),
-    Color(0xFF92400E),
-  ];
-
-  static const List<Color> driverVividGradient = [
-    Color(0xFF22D3EE),
-    Color(0xFF06B6D4),
-    Color(0xFF155E75),
-  ];
-
-  static const List<Color> secretaryVividGradient = [
-    Color(0xFFA78BFA),
-    Color(0xFF8B5CF6),
-    Color(0xFF5B21B6),
-  ];
-
-  static const List<Color> clientVividGradient = [
-    Color(0xFF34D399),
-    Color(0xFF10B981),
-    Color(0xFF065F46),
-  ];
+  // ─── Role Vivid Gradients — deprecated/unused, unified to graphite ───
+  static const List<Color> dispatcherVividGradient = primaryGradient;
+  static const List<Color> driverVividGradient = primaryGradient;
+  static const List<Color> secretaryVividGradient = primaryGradient;
+  static const List<Color> clientVividGradient = primaryGradient;
 
   // ─── Semantic Colors ───
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
+
+  // Semantic — soft backgrounds / borders / strong text (for info containers)
+  static const Color successBg = Color(0xFFF0FDF4);
+  static const Color successBorder = Color(0xFFBBF7D0);
+  static const Color successStrong = Color(0xFF166534);
+  static const Color warningBg = Color(0xFFFFFBEB);
+  static const Color warningBorder = Color(0xFFFDE68A);
+  static const Color warningStrong = Color(0xFF92400E);
+  static const Color errorBg = Color(0xFFFEF2F2);
+  static const Color errorBorder = Color(0xFFFECACA);
+  static const Color errorStrong = Color(0xFF991B1B);
+  static const Color infoBg = Color(0xFFEFF6FF);
+  static const Color infoBorder = Color(0xFFBFDBFE);
+  static const Color infoStrong = Color(0xFF1E40AF);
 
   // ─── Status Colors ───
   static const Color rideRequested = Color(0xFFF59E0B);
@@ -131,31 +132,31 @@ class AppColors {
   static const Color rideCancelledTextDark = Color(0xFFF87171);
 
   // ─── Text Colors — Light ───
-  static const Color textPrimary = Color(0xFF111111);
-  static const Color textSecondary = Color(0xFF6B7280);
-  static const Color textLight = Color(0xFF9CA3AF);
+  static const Color textPrimary = Color(0xFF18181B);
+  static const Color textSecondary = Color(0xFF71717A);
+  static const Color textLight = Color(0xFFA1A1AA);
   static const Color textOnPrimary = Colors.white;
 
   // ─── Text Colors — Dark ───
   static const Color textPrimaryDark = Color(0xFFF9FAFB);
-  static const Color textSecondaryDark = Color(0xFF9CA3AF);
-  static const Color textLightDark = Color(0xFF6B7280);
+  static const Color textSecondaryDark = Color(0xFFA1A1AA);
+  static const Color textLightDark = Color(0xFF71717A);
 
   // ─── Surface Colors — Light ───
   static const Color background = Color(0xFFFAFAFA);
   static const Color surface = Colors.white;
-  static const Color surfaceVariant = Color(0xFFF4F4F8);
+  static const Color surfaceVariant = Color(0xFFF4F4F5);
 
   // ─── Surface Colors — Dark ───
-  static const Color backgroundDark = Color(0xFF0F0F13);
-  static const Color surfaceDark = Color(0xFF1C1C24);
-  static const Color surfaceVariantDark = Color(0xFF26263A);
+  static const Color backgroundDark = Color(0xFF09090B);
+  static const Color surfaceDark = Color(0xFF18181B);
+  static const Color surfaceVariantDark = Color(0xFF27272A);
 
   // ─── Border Colors ───
-  static const Color borderPrimary = Color(0xFFE5E7EB);
-  static const Color borderSecondary = Color(0xFFD1D5DB);
-  static const Color borderDark = Color(0xFF2E2E42);
-  static const Color borderSecondaryDark = Color(0xFF3A3A55);
+  static const Color borderPrimary = Color(0xFFE4E4E7);
+  static const Color borderSecondary = Color(0xFFD4D4D8);
+  static const Color borderDark = Color(0xFF27272A);
+  static const Color borderSecondaryDark = Color(0xFF3F3F46);
 
   // ─── Glass Effect ───
   static Color glassBackground = Colors.white.withValues(alpha: 0.12);

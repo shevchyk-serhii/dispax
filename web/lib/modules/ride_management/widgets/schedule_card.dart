@@ -33,7 +33,7 @@ class ScheduleCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.schedule, color: Colors.orange[600], size: 24),
+                Icon(Icons.schedule, color: AppColors.warningStrong, size: 24),
                 const SizedBox(width: AppDimensions.paddingSmall),
                 const Text(
                   'Pickup Schedule',

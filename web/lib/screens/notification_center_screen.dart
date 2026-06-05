@@ -371,7 +371,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.error_outline,
-                              size: 48, color: Colors.red.shade300),
+                              size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           ElevatedButton(
@@ -551,15 +551,15 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       case 'ride_status':
         return AppColors.primary;
       case 'chat':
-        return Colors.teal;
+        return AppColors.accent;
       case 'geofence':
-        return Colors.deepOrange;
+        return AppColors.warning;
       case 'driver_approaching':
         return AppColors.warning;
       case 'pool':
-        return Colors.indigo;
+        return AppColors.info;
       default:
-        return Colors.grey;
+        return AppColors.textSecondary;
     }
   }
 

@@ -8,6 +8,7 @@ import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../modules/core/navigation_utils.dart';
 import '../../../modules/core/navigation_helper.dart';
 import '../../../utils/ride_status_styles.dart';
+import '../../../constants/app_colors.dart';
 
 class DayViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -151,13 +152,13 @@ class DayViewWidget extends StatelessWidget {
   Color _scheduleStatusColor(ScheduleDayStatus status) {
     switch (status) {
       case ScheduleDayStatus.scheduled:
-        return Colors.blue;
+        return AppColors.info;
       case ScheduleDayStatus.active:
-        return Colors.green;
+        return AppColors.success;
       case ScheduleDayStatus.completed:
-        return Colors.grey;
+        return AppColors.textSecondary;
       case ScheduleDayStatus.cancelled:
-        return Colors.red;
+        return AppColors.error;
     }
   }
 
@@ -197,7 +198,7 @@ class DayViewWidget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.orange,
+                color: AppColors.warning,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
@@ -375,12 +376,12 @@ class DayViewWidget extends StatelessWidget {
             children: [
               IconButton(
                 onPressed: () => _handleCall(context, ride),
-                icon: const Icon(Icons.phone, color: Colors.green),
+                icon: const Icon(Icons.phone, color: AppColors.success),
                 tooltip: 'Call Client',
               ),
               IconButton(
                 onPressed: () => _handleNavigation(context, ride),
-                icon: const Icon(Icons.navigation, color: Colors.blue),
+                icon: const Icon(Icons.navigation, color: AppColors.info),
                 tooltip: 'Start Navigation',
               ),
             ],
@@ -398,7 +399,7 @@ class DayViewWidget extends StatelessWidget {
               icon: const Icon(Icons.play_arrow, size: 18),
               label: const Text('Start'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: AppColors.success,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -415,7 +416,7 @@ class DayViewWidget extends StatelessWidget {
               icon: const Icon(Icons.check, size: 18),
               label: const Text('Complete'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
+                backgroundColor: AppColors.warning,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -437,7 +438,7 @@ class DayViewWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.phone, color: Colors.green),
+              leading: const Icon(Icons.phone, color: AppColors.success),
               title: const Text('Call'),
               subtitle: Text(phone),
               onTap: () {
@@ -446,7 +447,7 @@ class DayViewWidget extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.message, color: Colors.blue),
+              leading: const Icon(Icons.message, color: AppColors.info),
               title: const Text('SMS'),
               subtitle: Text(phone),
               onTap: () {
@@ -470,7 +471,7 @@ class DayViewWidget extends StatelessWidget {
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, 'pickup'),
               child: ListTile(
-                leading: const Icon(Icons.location_on, color: Colors.green),
+                leading: const Icon(Icons.location_on, color: AppColors.success),
                 title: Text(ride.from.address),
                 subtitle: const Text('Pickup location'),
               ),
@@ -478,7 +479,7 @@ class DayViewWidget extends StatelessWidget {
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, 'dropoff'),
               child: ListTile(
-                leading: const Icon(Icons.flag, color: Colors.red),
+                leading: const Icon(Icons.flag, color: AppColors.error),
                 title: Text(ride.to.address),
                 subtitle: const Text('Drop-off location'),
               ),
@@ -486,7 +487,7 @@ class DayViewWidget extends StatelessWidget {
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, 'waze_pickup'),
               child: const ListTile(
-                leading: Icon(Icons.map, color: Colors.teal),
+                leading: Icon(Icons.map, color: AppColors.accent),
                 title: Text('Open in Waze'),
                 subtitle: Text('Pickup location'),
               ),

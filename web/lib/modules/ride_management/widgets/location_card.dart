@@ -37,7 +37,7 @@ class LocationCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.location_on, color: Colors.green[600], size: 24),
+                Icon(Icons.location_on, color: AppColors.successStrong, size: 24),
                 const SizedBox(width: AppDimensions.paddingSmall),
                 const Text(
                   'Ride Locations',

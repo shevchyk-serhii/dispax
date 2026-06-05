@@ -7,50 +7,62 @@ class AppStyles {
 
   static const TextStyle headlineLarge = TextStyle(
     fontSize: 32,
-    fontWeight: FontWeight.bold,
-    letterSpacing: 1.2,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.5,
+    height: 1.2,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle headlineMedium = TextStyle(
     fontSize: 28,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.3,
+    height: 1.25,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle headlineSmall = TextStyle(
     fontSize: 24,
-    fontWeight: FontWeight.bold,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.3,
+    height: 1.25,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle titleLarge = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w600,
+    letterSpacing: -0.1,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle titleMedium = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w600,
+    letterSpacing: -0.1,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle titleSmall = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w600,
+    letterSpacing: -0.1,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle bodyLarge = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w400,
+    height: 1.5,
+    letterSpacing: 0.1,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle bodyMedium = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w400,
+    height: 1.5,
+    letterSpacing: 0.1,
     color: AppColors.textPrimary,
   );
 
@@ -109,16 +121,16 @@ class AppStyles {
   static ButtonStyle primaryButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: AppColors.primary,
     foregroundColor: AppColors.textOnPrimary,
-    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
     ),
-    elevation: 2,
+    elevation: 1,
   );
 
   static ButtonStyle outlinedButtonStyle = OutlinedButton.styleFrom(
     foregroundColor: AppColors.primary,
-    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
     ),
@@ -127,7 +139,7 @@ class AppStyles {
 
   static ButtonStyle textButtonStyle = TextButton.styleFrom(
     foregroundColor: AppColors.primary,
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
     ),
@@ -138,22 +150,24 @@ class AppStyles {
     borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
     boxShadow: [
       BoxShadow(
-        color: AppColors.shadowMedium,
-        blurRadius: 10,
-        offset: const Offset(0, 5),
+        color: AppColors.shadowSm,
+        blurRadius: 12,
+        offset: const Offset(0, 4),
       ),
     ],
   );
 
+  // Formerly a glass-morphism decoration; now a plain corporate card.
+  // Kept under the same name so all existing call sites stay flat-styled.
   static BoxDecoration glassCardDecoration = BoxDecoration(
-    color: AppColors.glassBackground,
+    color: AppColors.surface,
     borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-    border: Border.all(color: AppColors.glassBorder),
+    border: Border.all(color: AppColors.borderPrimary),
     boxShadow: [
       BoxShadow(
-        color: AppColors.shadowLight,
-        blurRadius: 20,
-        offset: const Offset(0, 10),
+        color: AppColors.shadowSm,
+        blurRadius: 8,
+        offset: const Offset(0, 2),
       ),
     ],
   );
@@ -171,11 +185,11 @@ class AppStyles {
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: const BorderSide(color: AppColors.borderPrimary),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-        borderSide: BorderSide(color: Colors.grey[300]!),
+        borderSide: const BorderSide(color: AppColors.borderPrimary),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),

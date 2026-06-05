@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../utils/ride_status_styles.dart';
+import '../../../constants/app_colors.dart';
 
 class WeekViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -60,7 +61,7 @@ class WeekViewWidget extends StatelessWidget {
     return Container(
       height: 60,
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: AppColors.infoBg,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
@@ -77,7 +78,7 @@ class WeekViewWidget extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSameDay(day, selectedDay)
-                        ? Colors.blue.shade600
+                        ? AppColors.infoStrong
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -91,7 +92,7 @@ class WeekViewWidget extends StatelessWidget {
                           color: isSameDay(day, selectedDay)
                               ? Colors.white
                               : (day.weekday >= 6
-                                    ? Colors.red.shade600
+                                    ? AppColors.errorStrong
                                     : colorScheme.onSurfaceVariant),
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
@@ -103,7 +104,7 @@ class WeekViewWidget extends StatelessWidget {
                           color: isSameDay(day, selectedDay)
                               ? Colors.white
                               : (isSameDay(day, DateTime.now())
-                                    ? Colors.orange
+                                    ? AppColors.warning
                                     : colorScheme.onSurface),
                           fontWeight: FontWeight.bold,
                           fontSize: 16,

@@ -70,7 +70,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                      Icon(Icons.error_outline, size: 48, color: AppColors.error),
                       const SizedBox(height: 12),
                       Text(_error!, style: AppStyles.bodyMedium),
                       const SizedBox(height: 12),
@@ -144,7 +144,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
               _buildMetricRow(
                 'Cancellation Rate',
                 '${cancelRate.toStringAsFixed(1)}%',
-                cancelRate < 10 ? Colors.green : cancelRate < 25 ? Colors.orange : Colors.red,
+                cancelRate < 10 ? AppColors.success : cancelRate < 25 ? AppColors.warning : AppColors.error,
               ),
               _buildMetricRow('Total Clients', clients.toString(), AppColors.clientColor),
             ],

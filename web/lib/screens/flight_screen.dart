@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../modules/flight_management/services/flight_service.dart';
+import '../constants/app_colors.dart';
 
 class FlightScreen extends StatefulWidget {
   const FlightScreen({super.key});
@@ -117,7 +118,7 @@ class _FlightScreenState extends State<FlightScreen>
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: isArrival ? Colors.green : Colors.blue,
+          backgroundColor: isArrival ? AppColors.success : AppColors.info,
           child: Icon(
             isArrival ? Icons.flight_land : Icons.flight_takeoff,
             color: Colors.white,

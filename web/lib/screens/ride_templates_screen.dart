@@ -310,7 +310,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
             Text(_error!, textAlign: TextAlign.center),
             const SizedBox(height: 12),
@@ -403,7 +403,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 14, color: Colors.green.shade600),
+                      Icon(Icons.location_on, size: 14, color: AppColors.successStrong),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(

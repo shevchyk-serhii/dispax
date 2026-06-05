@@ -258,7 +258,7 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           ElevatedButton(onPressed: _loadReassignments, child: const Text('Retry')),
@@ -294,7 +294,7 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [Color(0xFFD32F2F), Color(0xFFE53935)]),
+        gradient: LinearGradient(colors: [AppColors.errorStrong, AppColors.error]),
       ),
       child: SafeArea(
         bottom: false,
@@ -418,8 +418,8 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
     switch (status) {
       case 'PENDING': return AppColors.warning;
       case 'REASSIGNED': return AppColors.success;
-      case 'CANCELLED': return Colors.grey;
-      default: return Colors.grey;
+      case 'CANCELLED': return AppColors.textSecondary;
+      default: return AppColors.textSecondary;
     }
   }
 

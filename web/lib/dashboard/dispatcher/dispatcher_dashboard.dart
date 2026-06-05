@@ -73,7 +73,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Discard'),
           ),
         ],
@@ -181,7 +181,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           setState(() => _mobileTabIndex = index);
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.dispatcherColor,
+        selectedItemColor: AppColors.accent,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -215,29 +215,30 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   Widget _buildMoreScreen() {
     final items = [
-      _MoreMenuItem(Icons.euro, 'Earnings', 5, AppColors.dispatcherColor),
-      _MoreMenuItem(Icons.access_time_filled, 'Peak Hours', 6, AppColors.warning),
-      _MoreMenuItem(Icons.diamond, 'Client Value', 7, AppColors.clientColor),
-      _MoreMenuItem(Icons.leaderboard, 'Drivers', 8, AppColors.driverColor),
-      _MoreMenuItem(Icons.star, 'Ratings', 9, Colors.amber),
-      _MoreMenuItem(Icons.history, 'Audit Log', 10, AppColors.info),
-      _MoreMenuItem(Icons.admin_panel_settings, 'Admin', 11, AppColors.secretaryColor),
-      _MoreMenuItem(Icons.business, 'Company', 12, AppColors.dispatcherColor),
-      _MoreMenuItem(Icons.receipt_long, 'Expenses', 13, Colors.teal),
-      _MoreMenuItem(Icons.download, 'Export', 14, Colors.indigo),
-      _MoreMenuItem(Icons.request_quote, 'Billing', 15, Colors.brown),
-      _MoreMenuItem(Icons.repeat, 'Templates', 16, Colors.deepPurple),
-      _MoreMenuItem(Icons.payment, 'Payments', 17, Colors.cyan),
-      _MoreMenuItem(Icons.account_balance_wallet, 'Payroll', 18, Colors.pink),
-      _MoreMenuItem(Icons.settings, 'Settings', 19, AppColors.textSecondary),
-      _MoreMenuItem(Icons.share_location, 'Geofences', 20, Colors.deepOrange),
-      _MoreMenuItem(Icons.account_balance, 'DATEV', 21, Colors.blueGrey),
-      _MoreMenuItem(Icons.block, 'Blacklist', 22, Colors.red),
-      _MoreMenuItem(Icons.emergency, 'Emergency', 23, const Color(0xFFD32F2F)),
-      _MoreMenuItem(Icons.groups, 'Ride Pools', 24, Colors.indigo),
+      // Unified corporate graphite; only genuinely destructive items stay red.
+      _MoreMenuItem(Icons.euro, 'Earnings', 5, AppColors.primary),
+      _MoreMenuItem(Icons.access_time_filled, 'Peak Hours', 6, AppColors.primary),
+      _MoreMenuItem(Icons.diamond, 'Client Value', 7, AppColors.primary),
+      _MoreMenuItem(Icons.leaderboard, 'Drivers', 8, AppColors.primary),
+      _MoreMenuItem(Icons.star, 'Ratings', 9, AppColors.primary),
+      _MoreMenuItem(Icons.history, 'Audit Log', 10, AppColors.primary),
+      _MoreMenuItem(Icons.admin_panel_settings, 'Admin', 11, AppColors.primary),
+      _MoreMenuItem(Icons.business, 'Company', 12, AppColors.primary),
+      _MoreMenuItem(Icons.receipt_long, 'Expenses', 13, AppColors.primary),
+      _MoreMenuItem(Icons.download, 'Export', 14, AppColors.primary),
+      _MoreMenuItem(Icons.request_quote, 'Billing', 15, AppColors.primary),
+      _MoreMenuItem(Icons.repeat, 'Templates', 16, AppColors.primary),
+      _MoreMenuItem(Icons.payment, 'Payments', 17, AppColors.primary),
+      _MoreMenuItem(Icons.account_balance_wallet, 'Payroll', 18, AppColors.primary),
+      _MoreMenuItem(Icons.settings, 'Settings', 19, AppColors.primary),
+      _MoreMenuItem(Icons.share_location, 'Geofences', 20, AppColors.primary),
+      _MoreMenuItem(Icons.account_balance, 'DATEV', 21, AppColors.primary),
+      _MoreMenuItem(Icons.block, 'Blacklist', 22, AppColors.error),
+      _MoreMenuItem(Icons.emergency, 'Emergency', 23, AppColors.error),
+      _MoreMenuItem(Icons.groups, 'Ride Pools', 24, AppColors.primary),
       _MoreMenuItem(Icons.notifications, 'Notifications', 25, AppColors.primary),
-      _MoreMenuItem(Icons.privacy_tip, 'GDPR', 26, Colors.indigo),
-      _MoreMenuItem(Icons.devices, 'Sessions', 27, Colors.deepPurple),
+      _MoreMenuItem(Icons.privacy_tip, 'GDPR', 26, AppColors.primary),
+      _MoreMenuItem(Icons.devices, 'Sessions', 27, AppColors.primary),
     ];
 
     return Column(

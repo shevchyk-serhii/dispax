@@ -57,7 +57,7 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           const SizedBox(height: 12),
@@ -162,7 +162,7 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 20),
+                        const Icon(Icons.star, color: AppColors.warning, size: 20),
                         const SizedBox(width: 4),
                         Text(
                           avgRating.toStringAsFixed(1),
@@ -177,7 +177,7 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                 Row(
                   children: List.generate(5, (i) => Icon(
                     i < avgRating.round() ? Icons.star : Icons.star_border,
-                    color: Colors.amber,
+                    color: AppColors.warning,
                     size: 16,
                   )),
                 ),
@@ -197,7 +197,7 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                           Row(
                             children: List.generate(5, (i) => Icon(
                               i < rating ? Icons.star : Icons.star_border,
-                              color: Colors.amber,
+                              color: AppColors.warning,
                               size: 12,
                             )),
                           ),

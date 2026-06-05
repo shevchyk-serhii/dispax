@@ -179,11 +179,11 @@ class RideFlightCard extends StatelessWidget {
 
   Color _getFlightStatusColor() {
     final status = ride.flightInfo!.status.toLowerCase();
-    if (status.contains('on time')) return Colors.green;
-    if (status.contains('delayed')) return Colors.orange;
-    if (status.contains('cancelled')) return Colors.red;
-    if (status.contains('boarding')) return Colors.blue;
-    if (status.contains('arrived')) return Colors.green[700]!;
+    if (status.contains('on time')) return AppColors.success;
+    if (status.contains('delayed')) return AppColors.warning;
+    if (status.contains('cancelled')) return AppColors.error;
+    if (status.contains('boarding')) return AppColors.info;
+    if (status.contains('arrived')) return AppColors.successStrong;
     return AppColors.primary;
   }
 }

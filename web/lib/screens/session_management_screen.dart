@@ -155,7 +155,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                      Icon(Icons.error_outline, size: 48, color: AppColors.error),
                       const SizedBox(height: 12),
                       Text(_error!),
                       ElevatedButton(onPressed: _loadSessions, child: const Text('Retry')),

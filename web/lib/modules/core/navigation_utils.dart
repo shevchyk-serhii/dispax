@@ -7,6 +7,7 @@ import 'models/location.dart';
 import 'models/person.dart';
 import '../ride_management/models/ride.dart';
 import '../../blocs/blocs.dart';
+import '../../constants/app_colors.dart';
 
 class NavigationUtils {
   static Future<void> openGoogleMapsNavigation(Location destination) async {
@@ -268,7 +269,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
               ),
               if (_error != null) ...[
                 const SizedBox(height: 8),
-                Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
               ],
             ],
           ),

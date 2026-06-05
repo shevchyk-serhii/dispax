@@ -175,7 +175,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           ElevatedButton(onPressed: _loadEntries, child: const Text('Retry')),
@@ -273,7 +273,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
           ],
         ),
         trailing: IconButton(
-          icon: Icon(Icons.delete_outline, size: 20, color: Colors.red.shade300),
+          icon: Icon(Icons.delete_outline, size: 20, color: AppColors.error),
           onPressed: () => _removeEntry(id.toString()),
         ),
       ),

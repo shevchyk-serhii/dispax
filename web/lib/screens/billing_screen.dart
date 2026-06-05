@@ -297,7 +297,7 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
           },
           itemBuilder: (_) => [
             const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Bearbeiten'))),
-            const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Löschen', style: TextStyle(color: Colors.red)))),
+            const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: AppColors.error), title: Text('Löschen', style: TextStyle(color: AppColors.error)))),
           ],
         ),
       ),
@@ -374,7 +374,7 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
               Navigator.pop(ctx);
               try {
@@ -394,7 +394,7 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
   // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
   Color _statusColor(InvoiceStatus status) => switch (status) {
-        InvoiceStatus.draft => Colors.grey,
+        InvoiceStatus.draft => AppColors.textSecondary,
         InvoiceStatus.sent => AppColors.warning,
         InvoiceStatus.paid => AppColors.success,
         InvoiceStatus.cancelled => AppColors.error,
@@ -424,7 +424,7 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
             Text(msg, textAlign: TextAlign.center),
             ElevatedButton(onPressed: retry, child: const Text('Wiederholen')),
@@ -566,8 +566,8 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                   const SizedBox(height: 8),
                   TextButton.icon(
                     onPressed: () => _action(() => widget.invoiceService.deleteInvoice(inv.id)),
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    label: const Text('Löschen', style: TextStyle(color: Colors.red)),
+                    icon: const Icon(Icons.delete, color: AppColors.error),
+                    label: const Text('Löschen', style: TextStyle(color: AppColors.error)),
                   ),
                 ],
                 if (isSent) ...[
@@ -610,7 +610,7 @@ class _StatusBadge extends StatelessWidget {
   const _StatusBadge(this.status);
 
   Color get _color => switch (status) {
-        InvoiceStatus.draft => Colors.grey,
+        InvoiceStatus.draft => AppColors.textSecondary,
         InvoiceStatus.sent => AppColors.warning,
         InvoiceStatus.paid => AppColors.success,
         InvoiceStatus.cancelled => AppColors.error,

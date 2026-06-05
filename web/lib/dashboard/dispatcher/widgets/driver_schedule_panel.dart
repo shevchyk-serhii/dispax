@@ -109,7 +109,7 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                      Icon(Icons.error_outline, size: 48, color: AppColors.error),
                       const SizedBox(height: 12),
                       Text(scheduleState.errorMessage ?? 'Error loading schedules'),
                       const SizedBox(height: 12),
@@ -186,13 +186,13 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
           const SizedBox(height: 6),
           Row(
             children: [
-              _buildLoadChip('All', _LoadFilter.all, Colors.grey, colorScheme),
+              _buildLoadChip('All', _LoadFilter.all, AppColors.textSecondary, colorScheme),
               const SizedBox(width: 6),
-              _buildLoadChip('Available', _LoadFilter.available, Colors.green, colorScheme),
+              _buildLoadChip('Available', _LoadFilter.available, AppColors.success, colorScheme),
               const SizedBox(width: 6),
-              _buildLoadChip('Moderate', _LoadFilter.moderate, Colors.orange, colorScheme),
+              _buildLoadChip('Moderate', _LoadFilter.moderate, AppColors.warning, colorScheme),
               const SizedBox(width: 6),
-              _buildLoadChip('Busy', _LoadFilter.busy, Colors.red, colorScheme),
+              _buildLoadChip('Busy', _LoadFilter.busy, AppColors.error, colorScheme),
             ],
           ),
         ],
@@ -366,7 +366,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.orange.shade700,
+                color: AppColors.warningStrong,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Column(
@@ -409,10 +409,10 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                   final conflicts = ConflictDetector.findConflicts(ride, driverRides);
                   final rideCount = driverRides.length;
                   final loadColor = rideCount == 0
-                      ? Colors.green
+                      ? AppColors.success
                       : rideCount <= 2
-                          ? Colors.orange
-                          : Colors.red;
+                          ? AppColors.warning
+                          : AppColors.error;
 
                   final driverLabel = schedule.notes?.isNotEmpty == true
                       ? schedule.notes!
@@ -423,7 +423,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(
-                        color: conflicts.isNotEmpty ? Colors.red.withAlpha(100) : Colors.transparent,
+                        color: conflicts.isNotEmpty ? AppColors.error.withAlpha(100) : Colors.transparent,
                       ),
                     ),
                     child: ListTile(
@@ -439,7 +439,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                           if (conflicts.isNotEmpty)
                             Text(
                               '${conflicts.length} time conflict${conflicts.length == 1 ? '' : 's'}',
-                              style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                         ],
                       ),
@@ -457,7 +457,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                 child: const Text('Cancel'),
                               ),
                               ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
                                 onPressed: () {
                                   Navigator.pop(context);
                                   context.read<RideBloc>().add(RideReassignRequested(
@@ -494,10 +494,10 @@ class _DriverScheduleDropTarget extends StatelessWidget {
 
         final rideCount = driverRides.length;
         final loadColor = rideCount == 0
-            ? Colors.green
+            ? AppColors.success
             : rideCount <= 2
-                ? Colors.orange
-                : Colors.red;
+                ? AppColors.warning
+                : AppColors.error;
 
         return DragTarget<Ride>(
           onWillAcceptWithDetails: (details) {
@@ -581,7 +581,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                 },
                                 child: Padding(
                                   padding: const EdgeInsets.only(right: 8),
-                                  child: Icon(Icons.swap_horiz, size: 20, color: Colors.red.shade600),
+                                  child: Icon(Icons.swap_horiz, size: 20, color: AppColors.errorStrong),
                                 ),
                               ),
                             Container(
@@ -632,7 +632,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                 onTap: () => _showReassignSheet(context, ride),
                                 child: Padding(
                                   padding: const EdgeInsets.only(left: 4),
-                                  child: Icon(Icons.swap_horiz, size: 16, color: Colors.orange.shade700),
+                                  child: Icon(Icons.swap_horiz, size: 16, color: AppColors.warningStrong),
                                 ),
                               ),
                           ],

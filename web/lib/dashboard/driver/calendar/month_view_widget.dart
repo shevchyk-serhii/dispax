@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
+import '../../../constants/app_colors.dart';
 
 class MonthViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -60,29 +61,29 @@ class MonthViewWidget extends StatelessWidget {
               ),
               leftChevronIcon: const Icon(
                 Icons.chevron_left,
-                color: Colors.blue,
+                color: AppColors.info,
                 size: 28,
               ),
               rightChevronIcon: const Icon(
                 Icons.chevron_right,
-                color: Colors.blue,
+                color: AppColors.info,
                 size: 28,
               ),
             ),
             calendarStyle: CalendarStyle(
               outsideDaysVisible: false,
-              weekendTextStyle: const TextStyle(color: Colors.red),
-              holidayTextStyle: const TextStyle(color: Colors.red),
+              weekendTextStyle: const TextStyle(color: AppColors.error),
+              holidayTextStyle: const TextStyle(color: AppColors.error),
               selectedDecoration: BoxDecoration(
-                color: Colors.blue.shade600,
+                color: AppColors.infoStrong,
                 shape: BoxShape.circle,
               ),
               todayDecoration: BoxDecoration(
-                color: Colors.orange.shade400,
+                color: AppColors.warning,
                 shape: BoxShape.circle,
               ),
               markerDecoration: const BoxDecoration(
-                color: Colors.blue,
+                color: AppColors.info,
                 shape: BoxShape.circle,
               ),
               markersMaxCount: 1,
@@ -105,7 +106,7 @@ class MonthViewWidget extends StatelessWidget {
                     text,
                     style: TextStyle(
                       color: day.weekday >= 6
-                          ? Colors.red.shade600
+                          ? AppColors.errorStrong
                           : Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
@@ -134,11 +135,11 @@ class MonthViewWidget extends StatelessWidget {
   Widget buildRideCountIndicator(int count) {
     Color color;
     if (count <= 2) {
-      color = Colors.green;
+      color = AppColors.success;
     } else if (count <= 4) {
-      color = Colors.orange;
+      color = AppColors.warning;
     } else {
-      color = Colors.red;
+      color = AppColors.error;
     }
 
     return Container(

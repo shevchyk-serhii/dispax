@@ -77,7 +77,7 @@ class RideActionsCard extends StatelessWidget {
         icon: Icons.share,
         label: 'Share Ride',
         onPressed: onShareRide!,
-        color: Colors.blue,
+        color: AppColors.info,
       ));
     }
 
@@ -88,7 +88,7 @@ class RideActionsCard extends StatelessWidget {
             icon: Icons.person_add,
             label: 'Assign Driver',
             onPressed: onAssignDriver!,
-            color: Colors.green,
+            color: AppColors.success,
           ));
         }
 
@@ -97,7 +97,7 @@ class RideActionsCard extends StatelessWidget {
             icon: Icons.edit,
             label: 'Edit Ride',
             onPressed: onEditRide!,
-            color: Colors.orange,
+            color: AppColors.warning,
           ));
         }
 
@@ -106,7 +106,7 @@ class RideActionsCard extends StatelessWidget {
             icon: Icons.cancel,
             label: 'Cancel',
             onPressed: onCancelRide!,
-            color: Colors.red,
+            color: AppColors.error,
           ));
         }
         break;
@@ -117,7 +117,7 @@ class RideActionsCard extends StatelessWidget {
             icon: Icons.play_arrow,
             label: 'Start Ride',
             onPressed: onStartRide!,
-            color: Colors.green,
+            color: AppColors.success,
             isPrimary: true,
           ));
         }
@@ -127,7 +127,7 @@ class RideActionsCard extends StatelessWidget {
             icon: Icons.edit,
             label: 'Edit Ride',
             onPressed: onEditRide!,
-            color: Colors.orange,
+            color: AppColors.warning,
           ));
         }
 
@@ -136,7 +136,7 @@ class RideActionsCard extends StatelessWidget {
             icon: Icons.cancel,
             label: 'Cancel',
             onPressed: onCancelRide!,
-            color: Colors.red,
+            color: AppColors.error,
           ));
         }
         break;
@@ -147,7 +147,7 @@ class RideActionsCard extends StatelessWidget {
             icon: Icons.check_circle,
             label: 'Complete Ride',
             onPressed: onCompleteRide!,
-            color: Colors.green,
+            color: AppColors.success,
             isPrimary: true,
           ));
         }

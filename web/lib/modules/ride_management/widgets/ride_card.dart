@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../ride_management/models/ride.dart';
 import '../../core/date_utils.dart';
+import '../../../constants/app_colors.dart';
 
 class RideCard extends StatelessWidget {
   final Ride ride;
@@ -60,8 +61,8 @@ class RideCard extends StatelessWidget {
           const PopupMenuItem(
             value: 'delete',
             child: ListTile(
-              leading: Icon(Icons.delete, color: Colors.red),
-              title: Text('Delete', style: TextStyle(color: Colors.red)),
+              leading: Icon(Icons.delete, color: AppColors.error),
+              title: Text('Delete', style: TextStyle(color: AppColors.error)),
               contentPadding: EdgeInsets.zero,
             ),
           ),

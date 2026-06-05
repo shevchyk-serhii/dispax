@@ -64,7 +64,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           const SizedBox(height: 12),
@@ -162,7 +162,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
         _buildMetricRow(
           'Cancellation Rate',
           '${cancelRate.toStringAsFixed(1)}%',
-          cancelRate < 10 ? Colors.green : cancelRate < 25 ? Colors.orange : Colors.red,
+          cancelRate < 10 ? AppColors.success : cancelRate < 25 ? AppColors.warning : AppColors.error,
           colorScheme,
         ),
         _buildMetricRow(

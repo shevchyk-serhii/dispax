@@ -6,6 +6,7 @@ import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../modules/core/navigation_helper.dart';
 import '../../utils/ride_status_styles.dart';
+import '../../constants/app_colors.dart';
 
 class UpcomingRidesScreen extends StatelessWidget {
   const UpcomingRidesScreen({super.key});
@@ -35,7 +36,7 @@ class UpcomingRidesScreen extends StatelessWidget {
             Text('Upcoming Rides'),
           ],
         ),
-        backgroundColor: Colors.blue.shade600,
+        backgroundColor: AppColors.infoStrong,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -61,7 +62,7 @@ class UpcomingRidesScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.blue.shade600, Theme.of(context).colorScheme.surface],
+              colors: [AppColors.infoStrong, Theme.of(context).colorScheme.surface],
               stops: const [0.0, 0.2],
             ),
           ),
@@ -124,20 +125,20 @@ class UpcomingRidesScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.schedule, size: 80, color: Colors.blue.shade300),
+          Icon(Icons.schedule, size: 80, color: AppColors.info),
           const SizedBox(height: 24),
           Text(
             'No upcoming rides',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.blue.shade700,
+              color: AppColors.infoStrong,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             'All caught up for now!',
-            style: TextStyle(fontSize: 16, color: Colors.blue.shade500),
+            style: TextStyle(fontSize: 16, color: AppColors.info),
           ),
         ],
       ),
@@ -200,28 +201,28 @@ class UpcomingRidesScreen extends StatelessWidget {
                 icon: Icons.today,
                 count: next7Days,
                 label: 'Next 7 Days',
-                color: Colors.orange,
+                color: AppColors.warning,
               ),
               buildStatItem(
                 context: context,
                 icon: Icons.view_week,
                 count: thisWeek,
                 label: 'This Week',
-                color: Colors.blue,
+                color: AppColors.info,
               ),
               buildStatItem(
                 context: context,
                 icon: Icons.calendar_month,
                 count: thisMonth,
                 label: 'This Month',
-                color: Colors.green,
+                color: AppColors.success,
               ),
               buildStatItem(
                 context: context,
                 icon: Icons.event,
                 count: upcomingRides.length,
                 label: 'Total',
-                color: Colors.purple,
+                color: AppColors.primary,
               ),
             ],
           ),
@@ -300,7 +301,7 @@ class UpcomingRidesScreen extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isToday || isTomorrow
-                      ? Colors.blue.shade600
+                      ? AppColors.infoStrong
                       : colorScheme.onSurfaceVariant,
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -383,7 +384,7 @@ class UpcomingRidesScreen extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.red,
+                            color: AppColors.error,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Text(

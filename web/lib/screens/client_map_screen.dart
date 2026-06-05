@@ -645,7 +645,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       case RideStatus.inProgress:
         return AppColors.clientColor;
       case RideStatus.completed:
-        return Colors.grey;
+        return AppColors.textSecondary;
       default:
         return AppColors.primary;
     }

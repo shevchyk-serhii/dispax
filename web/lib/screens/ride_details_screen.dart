@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../modules/core/models/person.dart';
 import '../../modules/ride_management/models/ride.dart';
+import '../constants/app_colors.dart';
 import '../modules/ride_management/widgets/widgets.dart';
 import '../modules/core/widgets/widgets.dart';
 import '../modules/ride_management/services/ride_service.dart';
@@ -48,7 +49,6 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     return Scaffold(
       appBar: CustomAppBar(
         title: widget.isClientView ? 'My Ride #${_currentRide.id}' : 'Ride #${_currentRide.id}',
-        backgroundColor: widget.isClientView ? Colors.green[600] : Colors.blue[600],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -70,17 +70,17 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade50,
+                        color: AppColors.successBg,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green.shade200),
+                        border: Border.all(color: AppColors.successBorder),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.check_circle, size: 18, color: Colors.green.shade700),
+                          Icon(Icons.check_circle, size: 18, color: AppColors.successStrong),
                           const SizedBox(width: 8),
                           Text(
                             'Confirmation sent',
-                            style: TextStyle(fontSize: 13, color: Colors.green.shade700, fontWeight: FontWeight.w500),
+                            style: TextStyle(fontSize: 13, color: AppColors.successStrong, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -94,13 +94,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: _currentRide.paymentStatus == 'Paid'
-                            ? Colors.green.shade50
-                            : Colors.orange.shade50,
+                            ? AppColors.successBg
+                            : AppColors.warningBg,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _currentRide.paymentStatus == 'Paid'
-                              ? Colors.green.shade200
-                              : Colors.orange.shade200,
+                              ? AppColors.successBorder
+                              : AppColors.warningBorder,
                         ),
                       ),
                       child: Row(
@@ -109,8 +109,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                             _currentRide.paymentStatus == 'Paid' ? Icons.payment : Icons.pending,
                             size: 18,
                             color: _currentRide.paymentStatus == 'Paid'
-                                ? Colors.green.shade700
-                                : Colors.orange.shade700,
+                                ? AppColors.successStrong
+                                : AppColors.warningStrong,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -119,8 +119,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: _currentRide.paymentStatus == 'Paid'
-                                  ? Colors.green.shade700
-                                  : Colors.orange.shade700,
+                                  ? AppColors.successStrong
+                                  : AppColors.warningStrong,
                             ),
                           ),
                         ],
@@ -136,24 +136,24 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade50,
+                        color: AppColors.errorBg,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
+                        border: Border.all(color: AppColors.errorBorder),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Cancellation Details',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red.shade700)),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.errorStrong)),
                           const SizedBox(height: 4),
                           Text('Reason: ${_currentRide.cancellationReason}',
-                            style: TextStyle(fontSize: 13, color: Colors.red.shade900)),
+                            style: TextStyle(fontSize: 13, color: AppColors.errorStrong)),
                           if (_currentRide.cancelledBy != null)
                             Text('Cancelled by: ${_currentRide.cancelledBy}',
-                              style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
+                              style: TextStyle(fontSize: 12, color: AppColors.errorStrong)),
                           if (_currentRide.cancellationFee != null && _currentRide.cancellationFee! > 0)
                             Text('Fee: \u20AC${_currentRide.cancellationFee!.toStringAsFixed(2)}',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.red.shade900)),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.errorStrong)),
                         ],
                       ),
                     ),
@@ -166,25 +166,25 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
+                        color: AppColors.warningBg,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.amber.shade200),
+                        border: Border.all(color: AppColors.warningBorder),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Rating', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber.shade800)),
+                          Text('Rating', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.warningStrong)),
                           const SizedBox(height: 4),
                           Row(
                             children: List.generate(5, (i) => Icon(
                               i < _currentRide.rating! ? Icons.star : Icons.star_border,
-                              color: Colors.amber,
+                              color: AppColors.warning,
                               size: 20,
                             )),
                           ),
                           if (_currentRide.ratingComment != null && _currentRide.ratingComment!.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            Text(_currentRide.ratingComment!, style: TextStyle(fontSize: 13, color: Colors.amber.shade900)),
+                            Text(_currentRide.ratingComment!, style: TextStyle(fontSize: 13, color: AppColors.warningStrong)),
                           ],
                         ],
                       ),
@@ -203,7 +203,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                         icon: const Icon(Icons.star),
                         label: const Text('Rate This Ride'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber,
+                          backgroundColor: AppColors.warning,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
@@ -218,16 +218,16 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: AppColors.infoBg,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
+                        border: Border.all(color: AppColors.infoBorder),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Notes', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue.shade700)),
+                          Text('Notes', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.infoStrong)),
                           const SizedBox(height: 4),
-                          Text(_currentRide.notes!, style: TextStyle(fontSize: 13, color: Colors.blue.shade900)),
+                          Text(_currentRide.notes!, style: TextStyle(fontSize: 13, color: AppColors.infoStrong)),
                         ],
                       ),
                     ),
@@ -236,8 +236,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                     const SizedBox(height: 8),
                     Chip(
                       label: Text(_currentRide.specialRequirements!, style: const TextStyle(fontSize: 12)),
-                      backgroundColor: Colors.purple.shade50,
-                      side: BorderSide(color: Colors.purple.shade200),
+                      backgroundColor: AppColors.surfaceVariant,
+                      side: const BorderSide(color: AppColors.borderPrimary),
                       visualDensity: VisualDensity.compact,
                     ),
                   ],
@@ -285,7 +285,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                           icon: const Icon(Icons.chat),
                           label: const Text('Open Chat'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal,
+                            backgroundColor: AppColors.accent,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
@@ -532,7 +532,7 @@ Status: ${_currentRide.status.name}
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green,
+        backgroundColor: AppColors.success,
       ),
     );
   }
@@ -541,7 +541,7 @@ Status: ${_currentRide.status.name}
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.error,
       ),
     );
   }

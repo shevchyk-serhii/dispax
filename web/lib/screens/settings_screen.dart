@@ -242,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed to save: $e'), backgroundColor: AppColors.error),
         );
       }
     } finally {

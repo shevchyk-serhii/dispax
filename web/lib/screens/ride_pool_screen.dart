@@ -279,7 +279,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.error_outline,
-                              size: 48, color: Colors.red.shade300),
+                              size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           ElevatedButton(
@@ -485,11 +485,11 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
       case 'InProgress':
         return AppColors.info;
       case 'Completed':
-        return Colors.grey;
+        return AppColors.textSecondary;
       case 'Cancelled':
         return AppColors.error;
       default:
-        return Colors.grey;
+        return AppColors.textSecondary;
     }
   }
 
@@ -500,7 +500,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
       case 'PickedUp':
         return AppColors.info;
       case 'DroppedOff':
-        return Colors.grey;
+        return AppColors.textSecondary;
       case 'Cancelled':
         return AppColors.error;
       default:

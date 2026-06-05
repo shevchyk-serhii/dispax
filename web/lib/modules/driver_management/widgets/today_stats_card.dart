@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../ride_management/models/ride.dart';
+import '../../../constants/app_colors.dart';
 
 class TodayStatsCard extends StatelessWidget {
   final List<Ride> todayRides;
@@ -58,21 +59,21 @@ class TodayStatsCard extends StatelessWidget {
                 icon: Icons.event,
                 count: todayRides.length,
                 label: 'Total',
-                color: Colors.blue,
+                color: AppColors.info,
               ),
               _buildStatItem(
                 context: context,
                 icon: Icons.play_arrow,
                 count: upcomingRides,
                 label: 'Upcoming',
-                color: Colors.orange,
+                color: AppColors.warning,
               ),
               _buildStatItem(
                 context: context,
                 icon: Icons.directions_car,
                 count: inProgressRides,
                 label: 'Active',
-                color: Colors.green,
+                color: AppColors.success,
               ),
               _buildStatItem(
                 context: context,

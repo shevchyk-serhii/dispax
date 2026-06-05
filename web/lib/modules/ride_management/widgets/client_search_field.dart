@@ -81,7 +81,7 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
           children: [
             Row(
               children: [
-                Icon(Icons.person, color: Colors.blue[600], size: 24),
+                Icon(Icons.person, color: AppColors.infoStrong, size: 24),
                 const SizedBox(width: AppDimensions.paddingSmall),
                 const Text(
                   'Client Information',
@@ -101,7 +101,7 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
               ),
             BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
               buildWhen: (prev, curr) =>
@@ -159,7 +159,7 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                               BorderRadius.circular(AppDimensions.radiusSmall),
                         ),
                         suffixIcon: formState.selectedClientId != null
-                            ? const Icon(Icons.check_circle, color: Colors.green)
+                            ? const Icon(Icons.check_circle, color: AppColors.success)
                             : null,
                       ),
                       validator: (_) {

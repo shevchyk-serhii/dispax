@@ -394,7 +394,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.check_circle_outline, size: 56, color: Colors.green.shade300),
+          Icon(Icons.check_circle_outline, size: 56, color: AppColors.success),
           const SizedBox(height: 12),
           Text(
             isPending ? 'No pending rides' : 'No assigned rides',
@@ -515,7 +515,7 @@ class _AssignedRideCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.access_time, size: 16, color: Colors.blue.shade600),
+                    Icon(Icons.access_time, size: 16, color: AppColors.infoStrong),
                     const SizedBox(width: 6),
                     Text(
                       DateFormat('dd.MM HH:mm').format(ride.pickupDateTime),
@@ -526,13 +526,13 @@ class _AssignedRideCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: AppColors.infoBg,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.blue.shade200),
+                    border: Border.all(color: AppColors.infoBorder),
                   ),
                   child: Text(
                     'ASSIGNED',
-                    style: TextStyle(color: Colors.blue.shade700, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: AppColors.infoStrong, fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -555,8 +555,8 @@ class _AssignedRideCard extends StatelessWidget {
                 icon: const Icon(Icons.swap_horiz, size: 16),
                 label: const Text('Reassign'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.orange.shade700,
-                  side: BorderSide(color: Colors.orange.shade400),
+                  foregroundColor: AppColors.warningStrong,
+                  side: BorderSide(color: AppColors.warning),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
@@ -675,7 +675,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
 
   Widget _buildBody(ScrollController scrollController) {
     if (_error != null) {
-      return Center(child: Text('Error: $_error', style: const TextStyle(color: Colors.red)));
+      return Center(child: Text('Error: $_error', style: const TextStyle(color: AppColors.error)));
     }
     if (_drivers == null) {
       return const Center(child: CircularProgressIndicator());
@@ -708,17 +708,17 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
         final conflicts = ConflictDetector.findConflicts(widget.ride, driverRides);
         final rideCount = driverRides.length;
         final loadColor = rideCount == 0
-            ? Colors.green
+            ? AppColors.success
             : rideCount <= 2
-                ? Colors.orange
-                : Colors.red;
+                ? AppColors.warning
+                : AppColors.error;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
             side: BorderSide(
-              color: conflicts.isNotEmpty ? Colors.red.withAlpha(100) : Colors.transparent,
+              color: conflicts.isNotEmpty ? AppColors.error.withAlpha(100) : Colors.transparent,
             ),
           ),
           child: ListTile(
@@ -735,13 +735,13 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.green.withAlpha(30),
+                      color: AppColors.success.withAlpha(30),
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.green.withAlpha(80)),
+                      border: Border.all(color: AppColors.success.withAlpha(80)),
                     ),
                     child: const Text(
                       'Scheduled',
-                      style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.w600),
                     ),
                   ),
               ],
@@ -756,7 +756,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                 if (conflicts.isNotEmpty)
                   Text(
                     '${conflicts.length} time conflict${conflicts.length == 1 ? '' : 's'}',
-                    style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
               ],
             ),

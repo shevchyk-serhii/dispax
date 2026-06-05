@@ -57,7 +57,7 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           currentIndex: _selectedIndex,
-          selectedItemColor: AppColors.secretaryColor,
+          selectedItemColor: AppColors.accent,
           onTap: (index) {
             setState(() {
               _selectedIndex = index;
@@ -200,7 +200,7 @@ class _CreateRidesTab extends StatelessWidget {
                         'Today\'s Rides',
                         '12',
                         Icons.today,
-                        Colors.blue,
+                        AppColors.info,
                       ),
                     ),
                     const SizedBox(width: AppDimensions.paddingMedium),
@@ -210,7 +210,7 @@ class _CreateRidesTab extends StatelessWidget {
                         'This Week',
                         '47',
                         Icons.date_range,
-                        Colors.green,
+                        AppColors.success,
                       ),
                     ),
                   ],

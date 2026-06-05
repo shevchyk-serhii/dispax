@@ -114,13 +114,13 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings saved successfully'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('Settings saved successfully'), backgroundColor: AppColors.success),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed to save: $e'), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -141,7 +141,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
                           const SizedBox(height: 12),
                           Text(_error!),
                           const SizedBox(height: 12),

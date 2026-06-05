@@ -95,7 +95,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                        Icon(Icons.error_outline, size: 48, color: AppColors.error),
                         const SizedBox(height: 12),
                         Text(state.errorMessage ?? 'An error occurred'),
                         const SizedBox(height: 12),
@@ -154,10 +154,10 @@ class _ClientListPanelState extends State<ClientListPanel> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: client.isVip
-              ? Colors.amber.shade100
+              ? AppColors.warningBorder
               : AppColors.secretaryColor.withAlpha(30),
           child: client.isVip
-              ? const Icon(Icons.star, color: Colors.amber, size: 20)
+              ? const Icon(Icons.star, color: AppColors.warning, size: 20)
               : Text(
                   client.name.isNotEmpty ? client.name[0].toUpperCase() : '?',
                   style: TextStyle(
@@ -174,10 +174,10 @@ class _ClientListPanelState extends State<ClientListPanel> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade100,
+                  color: AppColors.warningBorder,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text('VIP', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.amber)),
+                child: const Text('VIP', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.warning)),
               ),
             ],
           ],
