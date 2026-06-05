@@ -14,6 +14,7 @@ class TodayRideCard extends StatelessWidget {
   final VoidCallback? onStartRide;
   final VoidCallback? onCompleteRide;
   final int? approachingDistanceMeters;
+  final int? etaMinutes;
   final VoidCallback? onViewDetails;
 
   const TodayRideCard({
@@ -24,6 +25,7 @@ class TodayRideCard extends StatelessWidget {
     this.onStartRide,
     this.onCompleteRide,
     this.approachingDistanceMeters,
+    this.etaMinutes,
     this.onViewDetails,
   });
 
@@ -135,6 +137,33 @@ class TodayRideCard extends StatelessWidget {
                             : approachingDistanceMeters! < 1000
                                 ? '${approachingDistanceMeters}m'
                                 : '${(approachingDistanceMeters! / 1000).toStringAsFixed(1)}km',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (etaMinutes != null)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.timer_outlined, color: Colors.white, size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        '~${etaMinutes} мин',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,

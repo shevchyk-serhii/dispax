@@ -3,7 +3,7 @@ package com.shevchyk.ride.infrastructure
 import com.shevchyk.core.domain.PersonRole
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData}
+import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData, GeocodingService}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.RideService
@@ -42,6 +42,7 @@ object StatsRoutesSpec extends ZIOSpecDefault {
     noopEmailSms ++
     AuditService.inMemory ++
     BlacklistRepository.inMemory ++
+    GeocodingService.noop ++
     ExpenseRepository.inMemory ++
     RideRatingRepository.inMemory ++
     TestJWT.testJwtService

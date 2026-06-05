@@ -5,7 +5,7 @@ import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.{EventHub, GeofenceService, ActiveRideInfo}
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.driver.application.DriverLocationService
+import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
 import com.shevchyk.driver.infrastructure.http.DriverRoutes
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.application.service.RideService
@@ -98,9 +98,15 @@ object DriverRoutesSpec extends ZIOSpecDefault {
     }
   }
 
-  private val testLayers = driverLocationServiceLayer ++ noopRideServiceLayer ++ testJwtService
+  private val noopHereRoutingService: ZLayer[Any, Nothing, HereRoutingService] = ZLayer.succeed(
+    new HereRoutingService:
+      def getEtaMinutes(originLat: Double, originLng: Double, destLat: Double, destLng: Double): Task[Option[Int]] =
+        ZIO.succeed(None)
+  )
 
-  private def run(req: Request): ZIO[DriverLocationService & RideService & JwtService, Nothing, Response] =
+  private val testLayers = driverLocationServiceLayer ++ noopRideServiceLayer ++ noopHereRoutingService ++ testJwtService
+
+  private def run(req: Request): ZIO[DriverLocationService & RideService & HereRoutingService & JwtService, Nothing, Response] =
     DriverRoutes.authenticatedRoutes.run(req).either.map {
       case Left(r)  => r.merge
       case Right(r) => r

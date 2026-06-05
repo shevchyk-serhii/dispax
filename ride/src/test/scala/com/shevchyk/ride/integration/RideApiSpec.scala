@@ -3,7 +3,7 @@ package com.shevchyk.ride.integration
 import com.shevchyk.core.domain.PersonRole
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{PersonId, RideId}
-import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData}
+import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData, GeocodingService}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.{RideService, ClientAddressService}
@@ -471,6 +471,7 @@ object RideApiSpec extends ZIOSpecDefault {
     noopEmailSms,
     AuditService.inMemory,
     BlacklistRepository.inMemory,
+    GeocodingService.noop,
     RideService.layer,
     TestJWT.testJwtService,
     InMemoryClientAddressRepository.layer >>> ClientAddressService.layer

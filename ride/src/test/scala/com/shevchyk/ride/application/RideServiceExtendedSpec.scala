@@ -1,7 +1,7 @@
 package com.shevchyk.ride.application
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData}
+import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData, GeocodingService}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
@@ -108,7 +108,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       EventHub.layer ++
       noopEmailSms ++
       AuditService.inMemory ++
-      BlacklistRepository.inMemory) >+> RideService.layer
+      BlacklistRepository.inMemory ++
+      GeocodingService.noop) >+> RideService.layer
 
   // ── Helpers ───────────────────────────────────────────────────────────
   private def mkRide(clientId: PersonId = testClientId, companyId: CompanyId = testCompanyId) =
@@ -486,7 +487,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
           EventHub.layer ++
           noopEmailSms ++
           AuditService.inMemory ++
-          BlacklistRepository.inMemory) >+> RideService.layer
+          BlacklistRepository.inMemory ++
+          GeocodingService.noop) >+> RideService.layer
       ),
       test("assignment succeeds when driver is not blacklisted") {
         for {

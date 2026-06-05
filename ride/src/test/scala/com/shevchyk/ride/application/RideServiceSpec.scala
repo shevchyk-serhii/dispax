@@ -1,7 +1,7 @@
 package com.shevchyk.ride.application
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData}
+import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData, GeocodingService}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.{PersonRepository, InMemoryPersonRepository}
 import com.shevchyk.ride.domain.*
@@ -100,7 +100,8 @@ object RideServiceSpec extends ZIOSpecDefault {
     EventHub.layer ++
     noopEmailSms ++
     AuditService.inMemory ++
-    BlacklistRepository.inMemory) >+> RideService.layer
+    BlacklistRepository.inMemory ++
+    GeocodingService.noop) >+> RideService.layer
 
   def spec = suite("RideService")(
     suite("getRideById")(
@@ -116,6 +117,7 @@ object RideServiceSpec extends ZIOSpecDefault {
         noopEmailSms,
         AuditService.inMemory,
         BlacklistRepository.inMemory,
+        GeocodingService.noop,
         RideService.layer
       )
     ),
@@ -147,6 +149,7 @@ object RideServiceSpec extends ZIOSpecDefault {
         noopEmailSms,
         AuditService.inMemory,
         BlacklistRepository.inMemory,
+        GeocodingService.noop,
         RideService.layer
       ),
 
@@ -176,6 +179,7 @@ object RideServiceSpec extends ZIOSpecDefault {
         noopEmailSms,
         AuditService.inMemory,
         BlacklistRepository.inMemory,
+        GeocodingService.noop,
         RideService.layer
       )
     ),

@@ -134,6 +134,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         is_vip_ride, preferred_driver_used,
         special_requirements, pool_id,
         schedule_day_id, invoice_id"""
+  // NOTE: columns are listed explicitly (not SELECT *) to guarantee order matches rideReadBase/rideReadExtra
 
   override def findById(id: RideId): Task[Option[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE id = ${id.value}")

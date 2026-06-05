@@ -48,3 +48,8 @@ object GeocodingService:
   val layer: ZLayer[HereConfig & Client, Nothing, GeocodingService] = ZLayer.fromFunction(
     HereGeocodingServiceImpl.apply
   )
+
+  val noop: ZLayer[Any, Nothing, GeocodingService] = ZLayer.succeed(
+    new GeocodingService:
+      def geocode(address: String): Task[Option[(Double, Double)]] = ZIO.succeed(None)
+  )

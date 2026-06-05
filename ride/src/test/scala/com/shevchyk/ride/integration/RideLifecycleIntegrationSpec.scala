@@ -1,7 +1,7 @@
 package com.shevchyk.ride.integration
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData}
+import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData, GeocodingService}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
@@ -88,7 +88,8 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
     EventHub.layer ++
     noopEmailSms ++
     AuditService.inMemory ++
-    BlacklistRepository.inMemory) >+> RideService.layer
+    BlacklistRepository.inMemory ++
+      GeocodingService.noop) >+> RideService.layer
 
   def createTestRide(service: RideService, clientId: PersonId = testClientId) =
     service.createRide(CreateRideRequest(
