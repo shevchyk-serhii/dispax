@@ -66,24 +66,39 @@ class CreateRideFormHelper {
       return;
     }
 
-    if (formState.selectedClientId == null) {
+    if (!formState.isNewClient && formState.selectedClientId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a client'),
+          content: Text('Please select or create a client'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
+    if (formState.isNewClient && formState.clientName.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter client name'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Для нового клиента используем ID текущего пользователя как placeholder —
+    // бэкенд для роли DRIVER в любом случае может переопределить clientId
+    final clientId = formState.selectedClientId ?? authState.user!.id;
+
     final createRequest = CreateRideRequest(
-      clientId: formState.selectedClientId!,
+      clientId: clientId,
       creatorId: authState.user!.id,
       companyId: authState.user!.companyId ?? '',
       pickupDateTime: formState.pickupDateTime,
       from: Location(address: formState.fromAddress.trim()),
       to: Location(address: formState.toAddress.trim()),
       clientName: formState.clientName.trim(),
+      newClientPhone: formState.isNewClient ? formState.newClientPhone.trim() : null,
       flightNumber: formState.isAirportTransfer && formState.flightNumber.isNotEmpty
           ? formState.flightNumber.trim()
           : null,

@@ -92,6 +92,16 @@ class InMemoryRideRepository extends RideRepository:
         .sortBy(_._1)
     }
 
+  override def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] =
+    rides.get.map(
+      _.values.filter(r =>
+        r.status == RideStatus.Assigned &&
+        r.scheduledTime.exists(t => !t.isBefore(from) && !t.isAfter(to))
+      ).toList
+    )
+
+  override def clearReminders(rideId: RideId): Task[Unit] = ZIO.unit
+
 object InMemoryRideRepository:
   val layer: ZLayer[Any, Nothing, RideRepository] =
     ZLayer.succeed(new InMemoryRideRepository)

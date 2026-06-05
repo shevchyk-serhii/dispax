@@ -236,6 +236,8 @@ object AppRoutesSpec extends ZIOSpecDefault {
       def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double] = ZIO.succeed(0.0)
       def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal] = ZIO.succeed(BigDecimal(0))
       def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal] = ZIO.succeed(BigDecimal(0))
+      def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]] = ZIO.succeed(Nil)
+      def clearReminders(rideId: RideId): Task[Unit] = ZIO.unit
     }
   }
 

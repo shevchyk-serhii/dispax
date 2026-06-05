@@ -20,6 +20,9 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
     on<SpecialRequirementToggled>(_onSpecialRequirementToggled);
     on<FormCleared>(_onFormCleared);
     on<FormSubmitted>(_onFormSubmitted);
+    on<AddressesSwapped>(_onAddressesSwapped);
+    on<NewClientModeToggled>(_onNewClientModeToggled);
+    on<NewClientPhoneChanged>(_onNewClientPhoneChanged);
   }
 
   void _onNotesToggled(NotesToggled event, Emitter<CreateRideFormState> emit) {
@@ -98,6 +101,37 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
 
   void _onFormCleared(FormCleared event, Emitter<CreateRideFormState> emit) {
     emit(CreateRideFormState.initial());
+  }
+
+  void _onAddressesSwapped(AddressesSwapped event, Emitter<CreateRideFormState> emit) {
+    final newState = state.copyWith(
+      fromAddress: state.toAddress,
+      toAddress: state.fromAddress,
+    );
+    emit(_checkAirportTransfer(newState));
+  }
+
+  void _onNewClientModeToggled(NewClientModeToggled event, Emitter<CreateRideFormState> emit) {
+    if (state.isNewClient) {
+      // Возврат к поиску — сбрасываем поля нового клиента
+      emit(state.copyWith(
+        isNewClient: false,
+        newClientPhone: '',
+        clientName: '',
+        clearClientId: true,
+      ));
+    } else {
+      // Переход к созданию нового клиента — сбрасываем выбранного
+      emit(state.copyWith(
+        isNewClient: true,
+        clearClientId: true,
+        clientName: '',
+      ));
+    }
+  }
+
+  void _onNewClientPhoneChanged(NewClientPhoneChanged event, Emitter<CreateRideFormState> emit) {
+    emit(state.copyWith(newClientPhone: event.phone));
   }
 
   void _onFormSubmitted(FormSubmitted event, Emitter<CreateRideFormState> emit) {

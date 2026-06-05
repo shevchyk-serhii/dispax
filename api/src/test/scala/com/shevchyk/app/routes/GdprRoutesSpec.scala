@@ -25,11 +25,13 @@ class StubRideRepository extends RideRepository:
   def findByCompanyId(companyId: CompanyId): Task[List[Ride]]                        = ZIO.succeed(Nil)
   def update(ride: Ride): Task[Ride]                                                 = ZIO.succeed(ride)
   def delete(id: RideId): Task[Unit]                                                 = ZIO.unit
-  def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]    = ZIO.succeed(Map.empty)
-  def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                    = ZIO.succeed(BigDecimal(0))
-  def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]               = ZIO.succeed(BigDecimal(0))
-  def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double]              = ZIO.succeed(0.0)
+  def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]                    = ZIO.succeed(Map.empty)
+  def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                                    = ZIO.succeed(BigDecimal(0))
+  def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                               = ZIO.succeed(BigDecimal(0))
+  def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double]                              = ZIO.succeed(0.0)
   def countDailyStatsByCompany(companyId: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]] = ZIO.succeed(Nil)
+  def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]    = ZIO.succeed(Nil)
+  def clearReminders(rideId: RideId): Task[Unit]                                                     = ZIO.unit
 
 class StubPersonRepository extends PersonRepository:
   private val store = new ConcurrentHashMap[PersonId, Person]()

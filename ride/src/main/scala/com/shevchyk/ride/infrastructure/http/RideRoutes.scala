@@ -103,9 +103,14 @@ object RideRoutes {
           domainRequest <- CreateRideApiRequest
                              .toDomain(validRequest, companyId)
                              .map { req =>
-                               // Clients and drivers always create rides for themselves
-                               // Secretaries, dispatchers and client_secretaries can specify a clientId from the request
-                               if (user.role.toUpperCase == "CLIENT" || user.role.toUpperCase == "DRIVER")
+                               // Clients always create rides for themselves
+                               // Drivers can specify a different clientId (for booking on behalf of a client)
+                               // Secretaries, dispatchers and client_secretaries can always specify clientId
+                               if (user.role.toUpperCase == "CLIENT")
+                                 req.copy(clientId = PersonId(user.userId))
+                               else if (
+                                   user.role.toUpperCase == "DRIVER" && validRequest.clientId == user.userId.toString
+                               )
                                  req.copy(clientId = PersonId(user.userId))
                                else
                                  req

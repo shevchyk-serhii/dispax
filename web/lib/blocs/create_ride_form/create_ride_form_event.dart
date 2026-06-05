@@ -136,3 +136,19 @@ class DriverSelected extends CreateRideFormEvent {
 class FormSubmitted extends CreateRideFormEvent {
   const FormSubmitted();
 }
+
+class AddressesSwapped extends CreateRideFormEvent {
+  const AddressesSwapped();
+}
+
+class NewClientModeToggled extends CreateRideFormEvent {
+  const NewClientModeToggled();
+}
+
+class NewClientPhoneChanged extends CreateRideFormEvent {
+  final String phone;
+  const NewClientPhoneChanged(this.phone);
+
+  @override
+  List<Object?> get props => [phone];
+}

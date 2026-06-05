@@ -19,6 +19,8 @@ class CreateRideFormState extends Equatable {
   final bool showNotes;
   final String notes;
   final List<String> specialRequirements;
+  final bool isNewClient;
+  final String newClientPhone;
 
   const CreateRideFormState({
     required this.clientName,
@@ -37,6 +39,8 @@ class CreateRideFormState extends Equatable {
     this.showNotes = false,
     this.notes = '',
     this.specialRequirements = const [],
+    this.isNewClient = false,
+    this.newClientPhone = '',
   });
 
   factory CreateRideFormState.initial() {
@@ -55,6 +59,8 @@ class CreateRideFormState extends Equatable {
       status: CreateRideFormStatus.initial,
       notes: '',
       specialRequirements: const [],
+      isNewClient: false,
+      newClientPhone: '',
     );
   }
 
@@ -77,6 +83,8 @@ class CreateRideFormState extends Equatable {
     bool? showNotes,
     String? notes,
     List<String>? specialRequirements,
+    bool? isNewClient,
+    String? newClientPhone,
   }) {
     return CreateRideFormState(
       clientName: clientName ?? this.clientName,
@@ -95,11 +103,16 @@ class CreateRideFormState extends Equatable {
       showNotes: showNotes ?? this.showNotes,
       notes: notes ?? this.notes,
       specialRequirements: specialRequirements ?? this.specialRequirements,
+      isNewClient: isNewClient ?? this.isNewClient,
+      newClientPhone: newClientPhone ?? this.newClientPhone,
     );
   }
 
   bool get isValid {
-    return selectedClientId != null &&
+    final clientOk = isNewClient
+        ? clientName.trim().isNotEmpty
+        : selectedClientId != null;
+    return clientOk &&
            fromAddress.trim().isNotEmpty &&
            toAddress.trim().isNotEmpty &&
            (!isAirportTransfer || flightNumber.trim().isNotEmpty);
@@ -133,5 +146,7 @@ class CreateRideFormState extends Equatable {
     showNotes,
     notes,
     specialRequirements,
+    isNewClient,
+    newClientPhone,
   ];
 }

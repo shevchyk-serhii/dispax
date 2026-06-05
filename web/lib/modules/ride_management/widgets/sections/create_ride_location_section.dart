@@ -70,7 +70,8 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
   Widget build(BuildContext context) {
     return BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
       buildWhen: (prev, curr) =>
-          prev.fromAddress != curr.fromAddress || prev.toAddress != curr.toAddress,
+          prev.fromAddress != curr.fromAddress ||
+          prev.toAddress != curr.toAddress,
       builder: (context, state) {
         return Container(
           decoration: BoxDecoration(
@@ -114,7 +115,20 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                     context.read<CreateRideFormBloc>().add(FromAddressChanged(value));
                   },
                 ),
-                const SizedBox(height: AppDimensions.paddingMedium),
+                const SizedBox(height: AppDimensions.paddingSmall),
+                Center(
+                  child: IconButton(
+                    onPressed: () => context
+                        .read<CreateRideFormBloc>()
+                        .add(const AddressesSwapped()),
+                    icon: const Icon(Icons.swap_vert),
+                    tooltip: 'Swap From / To',
+                    style: IconButton.styleFrom(
+                      foregroundColor: AppColors.secretaryColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppDimensions.paddingSmall),
                 AddressAutocompleteField(
                   labelText: 'To',
                   hintText: 'Drop-off location',
