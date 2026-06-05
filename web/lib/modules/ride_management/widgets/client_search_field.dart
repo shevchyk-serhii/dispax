@@ -141,12 +141,14 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                   },
                   fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
                     // Sync controller if form was cleared
-                    if (formState.selectedClientId == null && controller.text.isNotEmpty) {
+                    if (formState.selectedClientId == null && controller.text.isNotEmpty && !focusNode.hasFocus) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         controller.clear();
                       });
                     }
-                    return TextFormField(
+                    return ListenableBuilder(
+                      listenable: controller,
+                      builder: (context, _) => TextFormField(
                       controller: controller,
                       focusNode: focusNode,
                       decoration: InputDecoration(
@@ -160,7 +162,15 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                         ),
                         suffixIcon: formState.selectedClientId != null
                             ? const Icon(Icons.check_circle, color: AppColors.success)
-                            : null,
+                            : (controller.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.close, size: 18),
+                                    color: AppColors.textSecondary,
+                                    tooltip: 'Clear',
+                                    splashRadius: 18,
+                                    onPressed: () => controller.clear(),
+                                  )
+                                : null),
                       ),
                       validator: (_) {
                         if (formState.selectedClientId == null) {
@@ -169,6 +179,7 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                         return null;
                       },
                       onFieldSubmitted: (_) => onSubmitted(),
+                    ),
                     );
                   },
                   optionsViewBuilder: (context, onSelected, options) {

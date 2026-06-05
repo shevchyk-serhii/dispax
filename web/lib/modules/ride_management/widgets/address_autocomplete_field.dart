@@ -72,19 +72,36 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
       displayStringForOption: (addr) => addr.address,
       onSelected: (addr) => widget.onChanged(addr.address),
       fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-        return TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          decoration: InputDecoration(
-            labelText: widget.labelText,
-            hintText: widget.hintText,
-            prefixIcon: Icon(widget.prefixIconData, color: AppColors.secretaryColor),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-            ),
-          ),
-          validator: widget.validator,
-          onChanged: widget.onChanged,
+        return ListenableBuilder(
+          listenable: controller,
+          builder: (context, _) {
+            return TextFormField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                labelText: widget.labelText,
+                hintText: widget.hintText,
+                prefixIcon: Icon(widget.prefixIconData, color: AppColors.secretaryColor),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        color: AppColors.textSecondary,
+                        tooltip: 'Clear',
+                        splashRadius: 18,
+                        onPressed: () {
+                          controller.clear();
+                          widget.onChanged('');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                ),
+              ),
+              validator: widget.validator,
+              onChanged: widget.onChanged,
+            );
+          },
         );
       },
       optionsViewBuilder: (context, onSelected, options) {

@@ -6,6 +6,7 @@ import '../../../../modules/core/services/user_service.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
 import '../client_search_field.dart';
+import '../clearable_text_field.dart';
 
 class CreateRideBasicInfoSection extends StatefulWidget {
   const CreateRideBasicInfoSection({super.key});
@@ -135,31 +136,35 @@ class _DriverClientSection extends StatelessWidget {
 class _NewClientFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TextFormField(
-          decoration: const InputDecoration(
-            labelText: 'Client name *',
-            hintText: 'Full name',
-            prefixIcon: Icon(Icons.person_outline),
-            border: OutlineInputBorder(),
-          ),
-          onChanged: (v) =>
-              context.read<CreateRideFormBloc>().add(ClientNameChanged(v)),
-        ),
-        const SizedBox(height: AppDimensions.paddingMedium),
-        TextFormField(
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            labelText: 'Phone (optional)',
-            hintText: '+49 123 456 7890',
-            prefixIcon: Icon(Icons.phone_outlined),
-            border: OutlineInputBorder(),
-          ),
-          onChanged: (v) =>
-              context.read<CreateRideFormBloc>().add(NewClientPhoneChanged(v)),
-        ),
-      ],
+    return BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
+      buildWhen: (prev, curr) =>
+          prev.clientName != curr.clientName ||
+          prev.newClientPhone != curr.newClientPhone,
+      builder: (context, state) {
+        return Column(
+          children: [
+            ClearableTextField(
+              value: state.clientName,
+              labelText: 'Client name *',
+              hintText: 'Full name',
+              prefixIconData: Icons.person_outline,
+              onChanged: (v) =>
+                  context.read<CreateRideFormBloc>().add(ClientNameChanged(v)),
+            ),
+            const SizedBox(height: AppDimensions.paddingMedium),
+            ClearableTextField(
+              value: state.newClientPhone,
+              keyboardType: TextInputType.phone,
+              labelText: 'Phone (optional)',
+              hintText: '+49 123 456 7890',
+              prefixIconData: Icons.phone_outlined,
+              onChanged: (v) => context
+                  .read<CreateRideFormBloc>()
+                  .add(NewClientPhoneChanged(v)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../blocs/blocs.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
+import '../clearable_text_field.dart';
 
 class CreateRideNotesSection extends StatelessWidget {
   final String notes;
@@ -51,13 +52,12 @@ class CreateRideNotesSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppDimensions.paddingMedium),
-          TextFormField(
-            initialValue: notes,
-            decoration: const InputDecoration(
-              labelText: 'Notes',
-              hintText: 'Any special instructions...',
-            ),
+          ClearableTextField(
+            value: notes,
+            labelText: 'Notes',
+            hintText: 'Any special instructions...',
             maxLines: 3,
+            minLines: 3,
             onChanged: (value) {
               context.read<CreateRideFormBloc>().add(NotesChanged(value));
             },

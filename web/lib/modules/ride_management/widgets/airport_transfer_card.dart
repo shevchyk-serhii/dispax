@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import 'clearable_text_field.dart';
 
 class AirportTransferCard extends StatelessWidget {
   final bool isAirportTransfer;
@@ -112,20 +113,13 @@ class AirportTransferCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppDimensions.paddingMedium),
-              TextFormField(
-                initialValue: flightNumber,
-                decoration: InputDecoration(
-                  labelText: 'Flight Number',
-                  hintText: 'e.g. LH123, BA456',
-                  prefixIcon: Icon(
-                    isArrival ? Icons.flight_land : Icons.flight_takeoff,
-                    color: AppColors.secretaryColor
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                  ),
-                ),
-                onChanged: onFlightNumberChanged,
+              ClearableTextField(
+                value: flightNumber,
+                labelText: 'Flight Number',
+                hintText: 'e.g. LH123, BA456',
+                prefixIconData: isArrival ? Icons.flight_land : Icons.flight_takeoff,
+                prefixIconColor: AppColors.secretaryColor,
+                onChanged: onFlightNumberChanged ?? (_) {},
                 validator: flightNumberValidator ?? (isAirportTransfer ? (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Flight number is required for airport transfers';
