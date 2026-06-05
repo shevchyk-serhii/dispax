@@ -107,23 +107,23 @@ ON CONFLICT (id) DO NOTHING;
 -- Client addresses: BMW AG - Herr Schneider
 INSERT INTO client_addresses (id, client_id, label, address, latitude, longitude, use_count, aliases)
 VALUES
+  (gen_random_uuid(), '66666666-6666-6666-6666-666666666666', 'Zuhause', 'Maximilianstraße 10, 80539 München', 48.1396, 11.5817, 20, '{"Home", "Zuhause"}'),
   (gen_random_uuid(), '66666666-6666-6666-6666-666666666666', 'BMW Werk München', 'Petuelring 130, 80788 München', 48.1770, 11.5565, 5, '{}'),
-  (gen_random_uuid(), '66666666-6666-6666-6666-666666666666', 'Flughafen München', 'Flughafen München Terminal 2, 85356 München', 48.3537, 11.7750, 8, '{"MUC", "Airport"}'),
-  (gen_random_uuid(), '66666666-6666-6666-6666-666666666666', 'Zuhause', 'Maximilianstraße 10, 80539 München', 48.1396, 11.5817, 3, '{}')
+  (gen_random_uuid(), '66666666-6666-6666-6666-666666666666', 'Flughafen München', 'Flughafen München Terminal 2, 85356 München', 48.3537, 11.7750, 8, '{"MUC", "Airport"}')
 ON CONFLICT DO NOTHING;
 
 -- Client addresses: Siemens - Frau Meier
 INSERT INTO client_addresses (id, client_id, label, address, latitude, longitude, use_count, aliases)
 VALUES
+  (gen_random_uuid(), '77777777-7777-7777-7777-777777777777', 'Zuhause', 'Leopoldstraße 42, 80802 München', 48.1573, 11.5828, 20, '{"Home", "Zuhause"}'),
   (gen_random_uuid(), '77777777-7777-7777-7777-777777777777', 'Büro Siemens', 'Werner-von-Siemens-Straße 1, 80333 München', 48.1466, 11.5635, 12, '{"Siemens HQ"}'),
-  (gen_random_uuid(), '77777777-7777-7777-7777-777777777777', 'Zuhause', 'Leopoldstraße 42, 80802 München', 48.1573, 11.5828, 6, '{}'),
   (gen_random_uuid(), '77777777-7777-7777-7777-777777777777', 'Dropoff', 'Flughafen München Terminal 2, 85356 München', 48.3537, 11.7750, 4, '{"MUC"}')
 ON CONFLICT DO NOTHING;
 
 -- Client addresses: Allianz - Herr Klein
 INSERT INTO client_addresses (id, client_id, label, address, latitude, longitude, use_count, aliases)
 VALUES
+  (gen_random_uuid(), '88888888-8888-8888-8888-888888888888', 'Zuhause', 'Hohenzollernstraße 25, 80801 München', 48.1654, 11.5780, 20, '{"Home", "Zuhause"}'),
   (gen_random_uuid(), '88888888-8888-8888-8888-888888888888', 'Allianz Arena', 'Allianz Arena, Werner-Heisenberg-Allee 25, 80939 München', 48.2188, 11.6248, 7, '{"Allianz HQ"}'),
-  (gen_random_uuid(), '88888888-8888-8888-8888-888888888888', 'Zuhause', 'Schwabing, 80797 München', 48.1654, 11.5780, 4, '{}'),
   (gen_random_uuid(), '88888888-8888-8888-8888-888888888888', 'Flughafen München', 'Flughafen München Terminal 1, 85356 München', 48.3537, 11.7750, 9, '{"MUC", "Airport"}')
 ON CONFLICT DO NOTHING;
