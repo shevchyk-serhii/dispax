@@ -50,6 +50,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
       }
     });
     _etaTimer = Timer.periodic(const Duration(seconds: 90), (_) => _refreshEta());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshEta());
   }
 
   Future<void> _refreshEta() async {

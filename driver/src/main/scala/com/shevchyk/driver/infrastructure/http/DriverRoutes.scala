@@ -2,10 +2,11 @@ package com.shevchyk.driver.infrastructure.http
 
 import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.domain.{PersonId, RideId}
+import com.shevchyk.core.domain.{PersonId, PersonRole, RideId}
 import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.ride.application.service.RideService
-import com.shevchyk.ride.infrastructure.http.dto.{RideDto, LocationDto}
+import com.shevchyk.ride.infrastructure.http.dto.{LocationDto, RideDto}
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -35,7 +36,8 @@ case class DriverProximityDto(
 
 object DriverRoutes:
 
-  val authenticatedRoutes: Routes[DriverLocationService & RideService & HereRoutingService & JwtService, Response] =
+  val authenticatedRoutes
+      : Routes[DriverLocationService & RideService & HereRoutingService & GeocodingService & JwtService, Response]     =
     Routes(
       Method.PUT / "api" / "drivers" / string("driverId") / "location"     -> handler {
         (driverId: String, request: Request) =>
@@ -127,15 +129,36 @@ object DriverRoutes:
       Method.GET / "api" / "rides" / string("rideId") / "driver-location"  -> handler {
         (rideId: String, request: Request) =>
           (for {
-            _            <- AuthMiddleware.authenticateRequest(request)
+            user         <- AuthMiddleware.authenticateRequest(request)
             rideService  <- ZIO.service[RideService]
             parsedRideId <- UuidParser.parseRideId(rideId)
             ride         <- rideService.getRideById(parsedRideId)
+            // Lazy geocoding: enrich pickup coords for old rides that have none
+            ride         <-
+              if ride.pickupLocation.latitude.isEmpty then
+                ZIO
+                  .serviceWithZIO[GeocodingService](
+                    _.enrichLocation(ride.pickupLocation)
+                  )
+                  .flatMap { enriched =>
+                    if enriched.latitude.isDefined then
+                      rideService
+                        .updateRideDetails(
+                          parsedRideId,
+                          com.shevchyk.ride.domain.UpdateRideDetailsRequest(pickupLocation = Some(enriched)),
+                          PersonId(user.userId),
+                          PersonRole.valueOf(user.role)
+                        )
+                        .orElse(ZIO.succeed(ride))
+                    else ZIO.succeed(ride)
+                  }
+                  .orElse(ZIO.succeed(ride))
+              else ZIO.succeed(ride)
             locService   <- ZIO.service[DriverLocationService]
             driverLoc    <-
               ride.driverId match {
                 case Some(dId) => locService.getLocation(dId)
-                case None      => ZIO.succeed(None)
+                case None      => ZIO.none
               }
             rideDto       = RideDto.fromDomain(
                               ride,
@@ -153,7 +176,7 @@ object DriverRoutes:
                   ZIO.serviceWithZIO[HereRoutingService](
                     _.getEtaMinutes(dLat, dLng, pickLat, pickLng)
                   )
-                case None                                 => ZIO.succeed(None)
+                case None                                 => ZIO.none
               }
             proximity     = DriverProximityDto(
                               driverLocation = rideDto.driverLocation,
