@@ -25,8 +25,9 @@ class _CreateRideBasicInfoSectionState extends State<CreateRideBasicInfoSection>
 
     final authState = authBloc.state;
     final role = authState.user?.role;
-    // Клиент всегда бронирует на себя — авто-выбор
-    if (authState.status == AuthStatus.authenticated && role == PersonRole.client) {
+    // Клиент и водитель по умолчанию бронируют на себя
+    if (authState.status == AuthStatus.authenticated &&
+        (role == PersonRole.client || role == PersonRole.driver)) {
       final user = authState.user!;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
