@@ -72,13 +72,15 @@ import com.shevchyk.core.repository.{
 }
 import com.shevchyk.app.routes.GeofenceRoutes
 import com.shevchyk.notification.application.{FcmService, PushNotificationListener, LoggingEmailSmsService}
+import com.shevchyk.app.ReminderScheduler
 import com.shevchyk.notification.repository.{
   InMemoryFcmTokenRepository,
   InMemoryNotificationRepository,
   NotificationRepository,
   FcmTokenRepository,
   PostgresFcmTokenRepository,
-  PostgresNotificationRepository
+  PostgresNotificationRepository,
+  SentReminderRepository
 }
 import com.shevchyk.app.routes.NotificationRoutes
 import com.shevchyk.core.application.EmailSmsService
@@ -129,6 +131,7 @@ object Application extends ZIOAppDefault:
   def run: ZIO[Any, Throwable, Nothing] = ZIO
     .serviceWithZIO[ServerConfig] { serverConfig =>
       ZIO.scoped(PushNotificationListener.start).forkDaemon *>
+        ReminderScheduler.start *>
         ZIO.logInfo("🐙 Starting Der Oktopus API Server (PostgreSQL)...") *>
         ZIO.logInfo("📋 Available APIs:") *>
         ZIO.logInfo("  🔍 /health - Health check") *>
@@ -184,6 +187,7 @@ object Application extends ZIOAppDefault:
       GeofenceService.layer,
       FcmTokenRepository.layer,
       FcmService.layer,
+      SentReminderRepository.layer,
       NotificationRepository.layer,
       LoggingEmailSmsService.layer,
       RideTemplateRepository.layer,

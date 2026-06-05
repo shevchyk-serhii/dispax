@@ -12,6 +12,7 @@ class Person {
   final bool isVip;
   final String? preferredDriverId;
   final String status;
+  final int reminderMinutes;
 
   Person({
     required this.id,
@@ -25,6 +26,7 @@ class Person {
     this.isVip = false,
     this.preferredDriverId,
     this.status = 'ACTIVE',
+    this.reminderMinutes = 60,
   });
 
   static String _extractId(dynamic raw) {
@@ -51,6 +53,7 @@ class Person {
       isVip: json['isVip'] ?? false,
       preferredDriverId: json['preferredDriverId']?.toString(),
       status: json['status']?.toString() ?? 'ACTIVE',
+      reminderMinutes: (json['reminderMinutes'] as int?) ?? 60,
     );
   }
 

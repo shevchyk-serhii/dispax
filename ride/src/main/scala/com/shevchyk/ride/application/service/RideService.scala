@@ -375,6 +375,8 @@ class RideServiceImpl(
                       .replace(request.pickupLocation.getOrElse(ride.pickupLocation))
                       .focus(_.dropoffLocation)
                       .replace(request.dropoffLocation.getOrElse(ride.dropoffLocation))
+                      .focus(_.pickupDateTime)
+                      .replace(request.pickupDateTime.getOrElse(ride.pickupDateTime))
                       .focus(_.scheduledTime)
                       .replace(request.scheduledTime.orElse(ride.scheduledTime))
                       .focus(_.notes)
@@ -384,7 +386,9 @@ class RideServiceImpl(
                       .focus(_.specialRequirements)
                       .replace(request.specialRequirements.orElse(ride.specialRequirements))
 
-      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
+      persistedRide    <- rideRepository.update(updatedRide).mapDatabaseError
+      pickupTimeChanged = request.pickupDateTime.exists(_ != ride.pickupDateTime)
+      _                <- ZIO.when(pickupTimeChanged)(rideRepository.clearReminders(rideId).mapDatabaseError)
     } yield persistedRide
 
   def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride] =

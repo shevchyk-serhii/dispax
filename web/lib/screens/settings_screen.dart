@@ -22,6 +22,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _pushEnabled = true;
   bool _rideUpdates = true;
   bool _chatNotifications = true;
+  int _reminderMinutes = 60;
+  bool _savingReminder = false;
 
   @override
   void initState() {
@@ -30,13 +32,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadPreferences() async {
+    final user = context.read<AuthBloc>().state.user;
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       _themeMode = prefs.getString('theme_mode') ?? 'system';
       _language = prefs.getString('language') ?? 'en';
       _pushEnabled = prefs.getBool('push_enabled') ?? true;
       _rideUpdates = prefs.getBool('ride_updates') ?? true;
       _chatNotifications = prefs.getBool('chat_notifications') ?? true;
+      // Берём из профиля пользователя (авторитетный источник), SharedPreferences как fallback
+      _reminderMinutes = user?.reminderMinutes ?? prefs.getInt('reminder_minutes') ?? 60;
     });
   }
 
@@ -65,6 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (user != null) _buildProfileSection(user),
           _buildAccountSection(user),
           _buildNotificationsSection(),
+          if (user?.role == PersonRole.driver) _buildReminderSection(),
           _buildAppearanceSection(),
           _buildLanguageSection(),
           _buildSecuritySection(authState),
@@ -193,6 +200,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildReminderSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Ride Reminder'),
+        ListTile(
+          leading: const Icon(Icons.alarm_outlined),
+          title: const Text('Remind me before ride'),
+          subtitle: const Text('Push notification to leave on time'),
+          trailing: _savingReminder
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : DropdownButton<int>(
+                  value: _reminderMinutes,
+                  underline: const SizedBox(),
+                  items: const [
+                    DropdownMenuItem(value: 15, child: Text('15 min')),
+                    DropdownMenuItem(value: 30, child: Text('30 min')),
+                    DropdownMenuItem(value: 60, child: Text('1 hour')),
+                    DropdownMenuItem(value: 90, child: Text('1.5 hours')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) _saveReminderMinutes(v);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _saveReminderMinutes(int minutes) async {
+    setState(() => _savingReminder = true);
+    try {
+      final apiClient = context.read<AuthBloc>().apiClient;
+      await apiClient.put('/users/reminder-minutes', {'minutes': minutes});
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('reminder_minutes', minutes);
+      if (mounted) setState(() => _reminderMinutes = minutes);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingReminder = false);
+    }
   }
 
   Widget _buildAppearanceSection() {

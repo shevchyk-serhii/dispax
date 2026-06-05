@@ -80,7 +80,8 @@ final case class Person(
     preferredDriverId: Option[PersonId] = None,
     status: UserStatus = UserStatus.ACTIVE,
     lastLoginAt: Option[Instant] = None,
-    clientCompanyId: Option[ClientCompanyId] = None
+    clientCompanyId: Option[ClientCompanyId] = None,
+    reminderMinutes: Int = 60
 )
 
 // DTO for safe serialization — excludes passwordHash
@@ -95,7 +96,8 @@ final case class PersonDto(
     isVip: Boolean = false,
     preferredDriverId: Option[PersonId] = None,
     status: UserStatus = UserStatus.ACTIVE,
-    clientCompanyId: Option[ClientCompanyId] = None
+    clientCompanyId: Option[ClientCompanyId] = None,
+    reminderMinutes: Int = 60
 ) derives JsonCodec
 
 object PersonDto:
@@ -111,7 +113,8 @@ object PersonDto:
     isVip = p.isVip,
     preferredDriverId = p.preferredDriverId,
     status = p.status,
-    clientCompanyId = p.clientCompanyId
+    clientCompanyId = p.clientCompanyId,
+    reminderMinutes = p.reminderMinutes
   )
 
 final case class Company(

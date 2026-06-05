@@ -14,6 +14,7 @@ class PushNotificationService {
   bool _initialized = false;
   bool get isInitialized => _initialized;
   final ApiClient _apiClient = ApiClient();
+  ApiClient? _authApiClient;
   StreamSubscription? _tokenRefreshSubscription;
   String? _currentToken;
 
@@ -49,7 +50,8 @@ class PushNotificationService {
 
         _tokenRefreshSubscription = _messaging.onTokenRefresh.listen((token) {
           _currentToken = token;
-          _registerTokenWithBackend(token);
+          final client = _authApiClient ?? _apiClient;
+          _registerTokenWithClient(token, client);
         });
 
         FirebaseMessaging.onMessage.listen((message) {
@@ -148,15 +150,29 @@ class PushNotificationService {
     }
   }
 
-  Future<void> _registerTokenWithBackend(String token) async {
+  // Вызывать после логина с авторизованным apiClient
+  Future<void> registerTokenWithClient(ApiClient client) async {
+    _authApiClient = client;
+    if (_currentToken != null) {
+      await _registerTokenWithClient(_currentToken!, client);
+    }
+  }
+
+  Future<void> _registerTokenWithClient(String token, ApiClient client) async {
     try {
-      await _apiClient.post('/users/fcm-token', {
+      await client.post('/users/fcm-token', {
         'token': token,
         'platform': defaultTargetPlatform.name,
       });
+      debugPrint('FCM token registered');
     } catch (e) {
       debugPrint('Error registering FCM token: $e');
     }
+  }
+
+  Future<void> _registerTokenWithBackend(String token) async {
+    final client = _authApiClient ?? _apiClient;
+    await _registerTokenWithClient(token, client);
   }
 
   Future<void> unregisterToken() async {

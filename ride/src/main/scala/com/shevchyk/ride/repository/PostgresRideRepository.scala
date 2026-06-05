@@ -184,7 +184,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   }
 
   override def update(ride: Ride): Task[Ride] = {
-    sql"""
+    val updateSql =
+      sql"""
       UPDATE rides SET
         driver_id = ${ride.driverId.map(_.value)},
         status = ${ride.status},
@@ -194,6 +195,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         to_address = ${ride.dropoffLocation.address},
         to_lat = ${ride.dropoffLocation.latitude},
         to_lng = ${ride.dropoffLocation.longitude},
+        pickup_datetime = ${ride.pickupDateTime},
         scheduled_time = ${ride.scheduledTime},
         start_time = ${ride.startTime},
         end_time = ${ride.endTime},
@@ -217,6 +219,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         updated_at = NOW()
       WHERE id = ${ride.id.value}
     """.update.run
+    updateSql
       .transact(xa)
       .as(ride)
       .mapError(ex => RideError.DatabaseError(ex))
@@ -464,6 +467,26 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         scheduleDayId = scheduleDayId,
         invoiceId = invoiceId
       )
+  }
+
+  override def clearReminders(rideId: RideId): Task[Unit] =
+    sql"""DELETE FROM sent_reminders WHERE ride_id = ${rideId.value}""".update.run
+      .transact(xa)
+      .unit
+      .mapError(ex => RideError.DatabaseError(ex))
+
+  override def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++
+      fr"""FROM rides
+           WHERE status = 'Assigned'
+             AND driver_id IS NOT NULL
+             AND pickup_datetime > $from
+             AND pickup_datetime <= $to
+        """)
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
   }
 }
 

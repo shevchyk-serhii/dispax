@@ -138,6 +138,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         /// Configure services with authenticated API client
         AirportTimingService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
+        PushNotificationService.instance.registerTokenWithClient(privateApiClient);
 
         /// Connect WebSocket for real-time updates
         WebSocketService.instance.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
@@ -178,6 +179,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         /// Configure services with authenticated API client
         AirportTimingService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
+        PushNotificationService.instance.registerTokenWithClient(privateApiClient);
 
         /// Connect WebSocket for real-time updates
         WebSocketService.instance.connect(loginResponse['token'], wsBaseUrl: ApiClient.wsBaseUrl);

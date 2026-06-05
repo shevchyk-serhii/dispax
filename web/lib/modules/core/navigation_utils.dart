@@ -197,10 +197,20 @@ class _EditRideDialogState extends State<_EditRideDialog> {
     setState(() { _saving = true; _error = null; });
 
     final apiClient = context.read<AuthBloc>().apiClient;
+    // Парсим локальное время и конвертируем в UTC ISO-8601 для бэкенда
+    DateTime localDt;
+    try {
+      localDt = DateFormat("yyyy-MM-dd'T'HH:mm").parseStrict(_dateCtrl.text.trim());
+    } catch (_) {
+      setState(() { _error = 'Invalid date format. Use: yyyy-MM-ddTHH:mm'; _saving = false; });
+      return;
+    }
+    final utcIso = localDt.toUtc().toIso8601String();
+
     final body = <String, dynamic>{
       'from': {'address': _fromCtrl.text.trim()},
       'to': {'address': _toCtrl.text.trim()},
-      'pickupDateTime': _dateCtrl.text.trim(),
+      'pickupDateTime': utcIso,
       if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
       if (_flightCtrl.text.trim().isNotEmpty) 'flightNumber': _flightCtrl.text.trim(),
     };

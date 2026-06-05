@@ -20,6 +20,10 @@ trait RideRepository {
   def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]
   def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double]
   def countDailyStatsByCompany(companyId: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]]
+  // Поездки со статусом Assigned с pickup между from и to (для планировщика напоминаний)
+  def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]
+  // Сбросить отправленные напоминания для поездки (при изменении pickupDateTime)
+  def clearReminders(rideId: RideId): Task[Unit]
 }
 
 object RideRepository {

@@ -130,6 +130,12 @@ case class UpdateRideDetailsApiRequest(
 
 object UpdateRideDetailsApiRequest:
 
+  private def parseInstant(dt: String): Option[Instant] =
+    scala.util
+      .Try(Instant.parse(dt))
+      .orElse(scala.util.Try(java.time.LocalDateTime.parse(dt).toInstant(java.time.ZoneOffset.UTC)))
+      .toOption
+
   def toDomain(request: UpdateRideDetailsApiRequest): UpdateRideDetailsRequest =
     import com.shevchyk.ride.domain.{UpdateRideDetailsRequest, RideSpecifics}
     val specifics =
@@ -141,7 +147,7 @@ object UpdateRideDetailsApiRequest:
     UpdateRideDetailsRequest(
       pickupLocation = request.from.map(LocationDto.toDomain),
       dropoffLocation = request.to.map(LocationDto.toDomain),
-      scheduledTime = request.pickupDateTime.flatMap(dt => scala.util.Try(Instant.parse(dt)).toOption),
+      pickupDateTime = request.pickupDateTime.flatMap(parseInstant),
       notes = request.notes,
       specifics = specifics,
       specialRequirements = request.specialRequirements

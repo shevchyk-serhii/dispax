@@ -384,6 +384,35 @@ object UserRoutes {
         case response: Response => ZIO.succeed(response)
         case ex: Throwable      => handleAuthError(ex)
       }
+    },
+
+    // PUT /api/users/reminder-minutes — save driver's ride reminder setting
+    Method.PUT / "api" / "users" / "reminder-minutes" -> authenticatedHandler[PersonRepository] { (user, request) =>
+      (for {
+        _          <- AuthMiddleware.checkRole(user, "DRIVER")
+        bodyStr    <- request.body.asString
+        req        <- ZIO
+                        .fromEither(bodyStr.fromJson[ReminderMinutesRequest])
+                        .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+        _          <- ZIO
+                        .fail(
+                          Response(
+                            Status.BadRequest,
+                            body = Body.fromString("""{"error":"minutes must be 15, 30, 60, or 90"}""")
+                          )
+                        )
+                        .unless(Set(15, 30, 60, 90).contains(req.minutes))
+        personRepo <- ZIO.service[PersonRepository]
+        person     <- personRepo
+                        .findById(PersonId(user.userId))
+                        .someOrFail(new RuntimeException("User not found"))
+        _          <- personRepo.update(person.copy(reminderMinutes = req.minutes))
+      } yield Response(Status.NoContent)).catchAll {
+        case response: Response => ZIO.succeed(response)
+        case ex: Throwable      => handleAuthError(ex)
+      }
     }
   )
+
+  private case class ReminderMinutesRequest(minutes: Int) derives zio.json.JsonDecoder
 }

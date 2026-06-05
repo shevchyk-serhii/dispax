@@ -119,6 +119,7 @@ final case class CancelRideRequest(
 final case class UpdateRideDetailsRequest(
     pickupLocation: Option[Location] = None,
     dropoffLocation: Option[Location] = None,
+    pickupDateTime: Option[Instant] = None,
     scheduledTime: Option[Instant] = None,
     notes: Option[String] = None,
     specifics: Option[RideSpecifics] = None,

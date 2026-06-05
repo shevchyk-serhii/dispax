@@ -51,7 +51,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
     )
 
   private val selectColumns =
-    fr"id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, last_login_at, client_company_id"
+    fr"id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, last_login_at, client_company_id, reminder_minutes"
 
   override def create(person: Person): Task[Person] = {
     sql"""
@@ -119,7 +119,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           is_vip = ${person.isVip},
           preferred_driver_id = ${person.preferredDriverId.map(_.value)},
           status = ${person.status},
-          client_company_id = ${person.clientCompanyId.map(_.value)}
+          client_company_id = ${person.clientCompanyId.map(_.value)},
+          reminder_minutes = ${person.reminderMinutes}
       WHERE id = ${person.id.value}
     """.update.run
       .transact(xa)
@@ -179,7 +180,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           Option[UUID],
           UserStatus,
           Option[Instant],
-          Option[UUID]
+          Option[UUID],
+          Int
       )
     ].map {
       case (
@@ -195,7 +197,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
             preferredDriverId,
             status,
             lastLoginAt,
-            clientCompanyId
+            clientCompanyId,
+            reminderMinutes
           ) =>
         Person(
           id = PersonId(id),
@@ -210,7 +213,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           preferredDriverId = preferredDriverId.map(PersonId.apply),
           status = status,
           lastLoginAt = lastLoginAt,
-          clientCompanyId = clientCompanyId.map(ClientCompanyId.apply)
+          clientCompanyId = clientCompanyId.map(ClientCompanyId.apply),
+          reminderMinutes = reminderMinutes
         )
     }
 }
