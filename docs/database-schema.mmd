@@ -1,0 +1,288 @@
+erDiagram
+    %% ===== Ядро / мультитенантность =====
+    companies {
+        UUID id PK
+        VARCHAR name
+        VARCHAR email
+        VARCHAR phone
+        TEXT address
+    }
+    client_companies {
+        UUID id PK
+        VARCHAR name
+        UUID taxi_company_id FK
+    }
+    persons {
+        UUID id PK
+        VARCHAR name
+        VARCHAR email UK
+        enum role
+        UUID company_id FK
+        UUID client_company_id FK
+        VARCHAR password_hash
+        UUID preferred_driver_id FK
+        BOOLEAN is_vip
+        VARCHAR status
+        INT reminder_minutes
+    }
+    drivers {
+        UUID id PK
+        UUID company_id FK
+        enum status
+        DOUBLE current_location_lat
+        DOUBLE current_location_lng
+    }
+
+    %% ===== Auth / сессии =====
+    tokens {
+        VARCHAR token PK
+        UUID user_id FK
+    }
+    sessions {
+        UUID id PK
+        UUID user_id FK
+        TEXT token
+        BOOLEAN is_active
+    }
+    fcm_tokens {
+        UUID person_id FK
+        TEXT token UK
+        VARCHAR platform
+    }
+    gdpr_consents {
+        UUID id PK
+        UUID user_id FK
+        VARCHAR consent_type
+    }
+    gdpr_requests {
+        UUID id PK
+        UUID user_id FK
+        VARCHAR request_type
+        VARCHAR status
+    }
+
+    %% ===== Расписание =====
+    schedule_days {
+        UUID id PK
+        UUID driver_id FK
+        UUID company_id FK
+        DATE date
+        TIME start_time
+        TIME end_time
+        enum status
+    }
+
+    %% ===== Биллинг =====
+    tariffs {
+        UUID company_id PK
+        DECIMAL base_price_amount
+        DECIMAL price_per_km_amount
+    }
+    invoice_sequences {
+        UUID company_id PK
+        INT last_number
+    }
+    invoices {
+        UUID id PK
+        VARCHAR number
+        UUID client_company_id FK
+        UUID taxi_company_id FK
+        VARCHAR status
+        DECIMAL total_amount
+    }
+    invoice_items {
+        UUID id PK
+        UUID invoice_id FK
+        UUID ride_id FK
+        DECIMAL total
+    }
+
+    %% ===== Поездки =====
+    rides {
+        UUID id PK
+        UUID client_id FK
+        UUID creator_id FK
+        UUID driver_id FK
+        UUID company_id FK
+        UUID invoice_id FK
+        UUID tariff_id FK
+        UUID schedule_day_id FK
+        UUID pool_id FK
+        VARCHAR from_address
+        VARCHAR to_address
+        TIMESTAMPTZ pickup_datetime
+        enum status
+        enum payment_status
+        JSONB specifics
+    }
+    ride_templates {
+        UUID id PK
+        UUID company_id FK
+        UUID client_id FK
+        UUID creator_id FK
+        UUID preferred_driver_id FK
+        VARCHAR recurrence_pattern
+    }
+    ride_pools {
+        UUID id PK
+        UUID company_id
+        UUID driver_id
+        VARCHAR status
+        INT max_passengers
+    }
+    ride_pool_members {
+        UUID id PK
+        UUID pool_id FK
+        UUID ride_id
+        UUID client_id
+        INT pickup_order
+    }
+    ride_ratings {
+        UUID id PK
+        UUID ride_id FK
+        UUID client_id FK
+        UUID driver_id FK
+        INT rating
+    }
+    client_locations {
+        UUID ride_id PK
+        UUID client_id FK
+        DOUBLE latitude
+        DOUBLE longitude
+    }
+    chat_messages {
+        UUID id PK
+        UUID ride_id FK
+        UUID sender_id FK
+        TEXT message
+    }
+    expenses {
+        UUID id PK
+        UUID ride_id FK
+        UUID driver_id FK
+        UUID company_id FK
+        DECIMAL amount
+    }
+    emergency_reassignments {
+        UUID id PK
+        UUID ride_id FK
+        UUID original_driver_id FK
+        UUID new_driver_id FK
+        UUID reassigned_by FK
+    }
+    sent_reminders {
+        UUID ride_id PK
+        UUID person_id PK
+        TIMESTAMPTZ sent_at
+    }
+
+    %% ===== Прочее =====
+    company_settings {
+        UUID company_id PK
+        DECIMAL commission_rate
+        BOOLEAN auto_assign_enabled
+    }
+    notifications {
+        UUID id PK
+        UUID person_id FK
+        UUID company_id FK
+        VARCHAR type
+        BOOLEAN is_read
+    }
+    notification_preferences {
+        UUID id PK
+        UUID person_id UK
+        BOOLEAN ride_updates
+        BOOLEAN chat_messages
+    }
+    audit_log {
+        UUID id PK
+        UUID company_id FK
+        UUID actor_id FK
+        VARCHAR action
+        VARCHAR entity_type
+        UUID entity_id
+    }
+    geofences {
+        UUID id PK
+        UUID company_id FK
+        VARCHAR geofence_type
+        INT radius_meters
+    }
+    geofence_alerts {
+        UUID id PK
+        UUID geofence_id FK
+        UUID driver_id FK
+        UUID company_id FK
+        VARCHAR alert_type
+    }
+    blacklist_entries {
+        UUID id PK
+        UUID company_id FK
+        UUID client_id FK
+        UUID driver_id FK
+        UUID created_by FK
+    }
+    client_addresses {
+        UUID id PK
+        UUID client_id FK
+        VARCHAR label
+        TEXT address
+    }
+
+    %% ===== Связи =====
+    companies ||--o{ client_companies : "obsluzhivaet"
+    companies ||--o{ persons : "rabotniki"
+    client_companies ||--o{ persons : "kontakty"
+    persons ||--o| persons : "preferred_driver"
+    persons ||--|| drivers : "profil_voditelya"
+    companies ||--o{ drivers : ""
+
+    persons ||--o{ tokens : ""
+    persons ||--o{ sessions : ""
+    persons ||--o{ fcm_tokens : ""
+    persons ||--o{ gdpr_consents : ""
+    persons ||--o{ gdpr_requests : ""
+
+    persons ||--o{ schedule_days : "voditel"
+    companies ||--o{ schedule_days : ""
+
+    companies ||--|| tariffs : ""
+    companies ||--|| invoice_sequences : ""
+    companies ||--o{ invoices : "taxi_company"
+    client_companies ||--o{ invoices : ""
+    invoices ||--o{ invoice_items : ""
+
+    persons ||--o{ rides : "client"
+    persons ||--o{ rides : "creator"
+    persons ||--o{ rides : "driver"
+    companies ||--o{ rides : ""
+    invoices ||--o{ rides : ""
+    tariffs ||--o{ rides : ""
+    schedule_days ||--o{ rides : ""
+    ride_pools ||--o{ rides : ""
+    rides ||--o{ invoice_items : ""
+
+    companies ||--o{ ride_templates : ""
+    persons ||--o{ ride_templates : "client"
+    ride_pools ||--o{ ride_pool_members : ""
+    rides ||--o| ride_ratings : ""
+    rides ||--|| client_locations : ""
+    rides ||--o{ chat_messages : ""
+    rides ||--o{ expenses : ""
+    rides ||--o{ emergency_reassignments : ""
+    rides ||--o{ sent_reminders : ""
+    persons ||--o{ sent_reminders : ""
+
+    companies ||--|| company_settings : ""
+    persons ||--o{ notifications : ""
+    companies ||--o{ notifications : ""
+    persons ||--o| notification_preferences : ""
+    companies ||--o{ audit_log : ""
+    persons ||--o{ audit_log : "actor"
+    companies ||--o{ geofences : ""
+    geofences ||--o{ geofence_alerts : ""
+    persons ||--o{ geofence_alerts : "driver"
+    companies ||--o{ blacklist_entries : ""
+    persons ||--o{ blacklist_entries : "client"
+    persons ||--o{ client_addresses : ""
