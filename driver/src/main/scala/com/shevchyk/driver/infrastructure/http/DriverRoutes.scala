@@ -6,6 +6,7 @@ import com.shevchyk.core.domain.{PersonId, PersonRole, RideId}
 import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.ride.application.service.RideService
+import com.shevchyk.ride.repository.ClientLocationRepository
 import com.shevchyk.ride.infrastructure.http.dto.{LocationDto, RideDto}
 import zio.*
 import zio.http.*
@@ -50,7 +51,7 @@ object DriverRoutes:
     Some(math.max(1, eta))
 
   val authenticatedRoutes
-      : Routes[DriverLocationService & RideService & HereRoutingService & GeocodingService & JwtService, Response]     =
+      : Routes[DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository & JwtService, Response]     =
     Routes(
       Method.PUT / "api" / "drivers" / string("driverId") / "location"     -> handler {
         (driverId: String, request: Request) =>
@@ -177,17 +178,20 @@ object DriverRoutes:
                               driverLat = driverLoc.map(_.latitude),
                               driverLng = driverLoc.map(_.longitude)
                             )
+            // Use real-time client location if available, fall back to pickup address coords
+            clientLoc    <- ZIO.serviceWithZIO[ClientLocationRepository](_.getLocation(parsedRideId)).orElse(ZIO.none)
             eta          <-
               (for {
-                dLat    <- driverLoc.map(_.latitude)
-                dLng    <- driverLoc.map(_.longitude)
-                pickLat <- ride.pickupLocation.latitude
-                pickLng <- ride.pickupLocation.longitude
-              } yield (dLat, dLng, pickLat, pickLng)) match {
-                case Some((dLat, dLng, pickLat, pickLng)) =>
+                dLat   <- driverLoc.map(_.latitude)
+                dLng   <- driverLoc.map(_.longitude)
+                destLat = clientLoc.map(_.latitude).getOrElse(ride.pickupLocation.latitude.getOrElse(0.0))
+                destLng = clientLoc.map(_.longitude).getOrElse(ride.pickupLocation.longitude.getOrElse(0.0))
+                if destLat != 0.0 || destLng != 0.0
+              } yield (dLat, dLng, destLat, destLng)) match {
+                case Some((dLat, dLng, destLat, destLng)) =>
                   ZIO
-                    .serviceWithZIO[HereRoutingService](_.getEtaMinutes(dLat, dLng, pickLat, pickLng))
-                    .map(_.orElse(estimateEtaMinutes(dLat, dLng, pickLat, pickLng)))
+                    .serviceWithZIO[HereRoutingService](_.getEtaMinutes(dLat, dLng, destLat, destLng))
+                    .map(_.orElse(estimateEtaMinutes(dLat, dLng, destLat, destLng)))
                 case None                                 => ZIO.none
               }
             proximity     = DriverProximityDto(
