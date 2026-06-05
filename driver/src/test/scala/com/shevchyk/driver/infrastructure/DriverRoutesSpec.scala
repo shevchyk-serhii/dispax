@@ -2,7 +2,7 @@ package com.shevchyk.driver.infrastructure
 
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.application.{EventHub, GeofenceService, ActiveRideInfo}
+import com.shevchyk.core.application.{EventHub, GeofenceService, ActiveRideInfo, GeocodingService}
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
@@ -104,9 +104,9 @@ object DriverRoutesSpec extends ZIOSpecDefault {
         ZIO.succeed(None)
   )
 
-  private val testLayers = driverLocationServiceLayer ++ noopRideServiceLayer ++ noopHereRoutingService ++ testJwtService
+  private val testLayers = driverLocationServiceLayer ++ noopRideServiceLayer ++ noopHereRoutingService ++ GeocodingService.noop ++ testJwtService
 
-  private def run(req: Request): ZIO[DriverLocationService & RideService & HereRoutingService & JwtService, Nothing, Response] =
+  private def run(req: Request): ZIO[DriverLocationService & RideService & HereRoutingService & GeocodingService & JwtService, Nothing, Response] =
     DriverRoutes.authenticatedRoutes.run(req).either.map {
       case Left(r)  => r.merge
       case Right(r) => r
