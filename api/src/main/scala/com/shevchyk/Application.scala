@@ -18,8 +18,9 @@ import com.shevchyk.ride.repository.{
   PostgresRideTemplateRepository
 }
 import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
-import com.shevchyk.driver.config.HereConfig
 import com.shevchyk.driver.infrastructure.http.DriverRoutes
+import com.shevchyk.core.config.HereConfig
+import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.schedule.infrastructure.http.ScheduleRoutes
 import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
@@ -208,6 +209,7 @@ object Application extends ZIOAppDefault:
       BillingClientCompanyRepository.layer,
       InvoiceService.layer,
       HereConfig.liveLayer,
+      GeocodingService.layer,
       HereRoutingService.layer,
       Client.default,
       JwtConfig.live,

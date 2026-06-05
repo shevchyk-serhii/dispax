@@ -1,7 +1,7 @@
 package com.shevchyk.ride.application.service
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{EventHub, AuditService}
+import com.shevchyk.core.application.{EventHub, AuditService, GeocodingService}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.domain.RepositoryExtensions.*
@@ -70,7 +70,8 @@ class RideServiceImpl(
     eventHub: EventHub,
     emailSmsService: EmailSmsService,
     auditService: AuditService,
-    blacklistRepository: BlacklistRepository
+    blacklistRepository: BlacklistRepository,
+    geocodingService: GeocodingService
 ) extends RideService:
 
   def getRideById(rideId: RideId): IO[RideError, Ride] = rideRepository
@@ -84,20 +85,27 @@ class RideServiceImpl(
   def createRide(request: CreateRideRequest): IO[RideError, Ride] =
     for {
       // Validate pickup is in the future (allow 5 min tolerance for clock skew)
-      _             <-
+      _               <-
         request.scheduledTime match
           case Some(t) if t.isBefore(Instant.now().minusSeconds(300)) =>
             ZIO.fail(RideError.ValidationError("Pickup time must be in the future"))
           case _                                                      => ZIO.unit
       // Validate addresses differ
-      _             <-
+      _               <-
         ZIO
           .fail(RideError.ValidationError("Pickup and dropoff addresses must be different"))
           .when(request.pickupLocation.address == request.dropoffLocation.address)
           .unit
-      ride          <- ZIO.succeed(RideMapper.fromRequest(request))
-      persistedRide <- rideRepository.create(ride).mapDatabaseError
-      _             <-
+      enrichedPickup  <- geocodingService
+                           .enrichLocation(request.pickupLocation)
+                           .orElse(ZIO.succeed(request.pickupLocation))
+      enrichedDropoff <- geocodingService
+                           .enrichLocation(request.dropoffLocation)
+                           .orElse(ZIO.succeed(request.dropoffLocation))
+      enrichedRequest  = request.copy(pickupLocation = enrichedPickup, dropoffLocation = enrichedDropoff)
+      ride            <- ZIO.succeed(RideMapper.fromRequest(enrichedRequest))
+      persistedRide   <- rideRepository.create(ride).mapDatabaseError
+      _               <-
         eventHub
           .publish(
             WebSocketEvent.RideCreated(
@@ -107,7 +115,7 @@ class RideServiceImpl(
             )
           )
           .ignore
-      _             <-
+      _               <-
         emailSmsService
           .sendRideConfirmation(
             RideConfirmationData(
@@ -121,7 +129,7 @@ class RideServiceImpl(
           )
           .tapError(e => ZIO.logError(s"Failed to send ride confirmation for ride ${persistedRide.id.value}: $e"))
           .ignore
-      _             <-
+      _               <-
         auditService
           .log(
             AuditLogEntry(
@@ -370,11 +378,19 @@ class RideServiceImpl(
           case Some(cid) => ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.companyId != cid).unit
           case None      => ZIO.unit
 
+      newPickup  <-
+        ZIO.foreach(request.pickupLocation)(loc =>
+          geocodingService.enrichLocation(loc).orElse(ZIO.succeed[Location](loc))
+        )
+      newDropoff <-
+        ZIO.foreach(request.dropoffLocation)(loc =>
+          geocodingService.enrichLocation(loc).orElse(ZIO.succeed[Location](loc))
+        )
       updatedRide = ride
                       .focus(_.pickupLocation)
-                      .replace(request.pickupLocation.getOrElse(ride.pickupLocation))
+                      .replace(newPickup.getOrElse(ride.pickupLocation))
                       .focus(_.dropoffLocation)
-                      .replace(request.dropoffLocation.getOrElse(ride.dropoffLocation))
+                      .replace(newDropoff.getOrElse(ride.dropoffLocation))
                       .focus(_.pickupDateTime)
                       .replace(request.pickupDateTime.getOrElse(ride.pickupDateTime))
                       .focus(_.scheduledTime)
@@ -668,7 +684,7 @@ class RideServiceImpl(
 object RideService:
 
   val layer
-      : ZLayer[RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository, Nothing, RideService] =
+      : ZLayer[RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService, Nothing, RideService] =
     ZLayer.fromFunction(
       RideServiceImpl.apply
     )

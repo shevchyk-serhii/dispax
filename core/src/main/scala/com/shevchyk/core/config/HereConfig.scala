@@ -1,4 +1,4 @@
-package com.shevchyk.driver.config
+package com.shevchyk.core.config
 
 import zio.*
 import zio.config.*

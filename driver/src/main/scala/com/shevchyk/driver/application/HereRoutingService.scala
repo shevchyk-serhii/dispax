@@ -1,6 +1,6 @@
 package com.shevchyk.driver.application
 
-import com.shevchyk.driver.config.HereConfig
+import com.shevchyk.core.config.HereConfig
 import zio.*
 import zio.http.*
 import zio.json.*

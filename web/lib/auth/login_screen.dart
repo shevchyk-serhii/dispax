@@ -9,13 +9,36 @@ import '../theme/app_theme.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
-  static final formKey = GlobalKey<FormState>();
-  static final emailController = TextEditingController();
-  static final passwordController = TextEditingController();
-  static final obscurePasswordNotifier = ValueNotifier<bool>(true);
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _obscurePasswordNotifier = ValueNotifier<bool>(true);
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _obscurePasswordNotifier.dispose();
+    super.dispose();
+  }
+
+  void _login() {
+    if (_formKey.currentState!.validate()) {
+      AuthHelper.performLogin(
+        context,
+        _emailController.text,
+        _passwordController.text,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,11 +82,11 @@ class LoginScreen extends StatelessWidget {
                       const SizedBox(height: AppDimensions.paddingXXLarge + AppDimensions.paddingMedium),
 
                       LoginCard(
-                        formKey: formKey,
-                        emailController: emailController,
-                        passwordController: passwordController,
-                        obscurePasswordNotifier: obscurePasswordNotifier,
-                        onSubmit: () => _login(context),
+                        formKey: _formKey,
+                        emailController: _emailController,
+                        passwordController: _passwordController,
+                        obscurePasswordNotifier: _obscurePasswordNotifier,
+                        onSubmit: _login,
                         onErrorDismiss: () => AuthHelper.clearError(context),
                       ),
 
@@ -71,8 +94,8 @@ class LoginScreen extends StatelessWidget {
 
                       TestCredentialsSection(
                         onCredentialTap: (email, password) {
-                          emailController.text = email;
-                          passwordController.text = password;
+                          _emailController.text = email;
+                          _passwordController.text = password;
                         },
                         onQuickLogin: (email) => AuthHelper.quickLogin(context, email),
                       ),
@@ -87,15 +110,5 @@ class LoginScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static void _login(BuildContext context) {
-    if (formKey.currentState!.validate()) {
-      AuthHelper.performLogin(
-        context,
-        emailController.text,
-        passwordController.text,
-      );
-    }
   }
 }
