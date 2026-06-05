@@ -31,6 +31,7 @@ All endpoints return JSON. Authenticated endpoints require `Authorization: Beare
 | PUT | `/api/users/change-password` | Yes | Any | Change own password. Rate limited. |
 | POST | `/api/users/fcm-token` | Yes | Any | Register FCM push notification token |
 | DELETE | `/api/users/fcm-token/{token}` | Yes | Any | Unregister FCM token |
+| PUT | `/api/users/reminder-minutes` | Yes | Any | Save driver's ride reminder lead time (minutes) |
 
 ## Rides
 
@@ -226,6 +227,45 @@ All endpoints return JSON. Authenticated endpoints require `Authorization: Beare
 | DELETE | `/api/geofences/{id}` | Yes | DISPATCHER | Delete geofence |
 | GET | `/api/geofences/alerts` | Yes | DISPATCHER | Recent alerts (query: limit) |
 | GET | `/api/geofences/alerts/driver/{driverId}` | Yes | DISPATCHER | Driver alerts (query: limit) |
+
+## Client Companies
+
+Corporate client accounts that can have multiple individual client members.
+
+| Method | Path | Auth | Roles | Description |
+|--------|------|------|-------|-------------|
+| GET | `/api/client-companies` | Yes | DISPATCHER, SECRETARY, ADMIN | List all client companies |
+| POST | `/api/client-companies` | Yes | DISPATCHER, ADMIN | Create client company |
+| GET | `/api/client-companies/{id}` | Yes | DISPATCHER, SECRETARY, ADMIN | Get company details |
+| PUT | `/api/client-companies/{id}` | Yes | DISPATCHER, ADMIN | Update company details |
+| DELETE | `/api/client-companies/{id}` | Yes | DISPATCHER, ADMIN | Delete company |
+| GET | `/api/client-companies/{id}/members` | Yes | DISPATCHER, SECRETARY, ADMIN | List company members |
+
+## Billing
+
+Invoice management and billing client companies. PDF generation and email delivery included.
+
+### Billing Companies
+
+| Method | Path | Auth | Roles | Description |
+|--------|------|------|-------|-------------|
+| GET | `/api/billing/companies` | Yes | DISPATCHER, SECRETARY, ADMIN | List billing companies |
+| POST | `/api/billing/companies` | Yes | DISPATCHER, ADMIN | Create billing company |
+| PUT | `/api/billing/companies/{id}` | Yes | DISPATCHER, ADMIN | Update billing company |
+| DELETE | `/api/billing/companies/{id}` | Yes | DISPATCHER, ADMIN | Delete billing company |
+
+### Invoices
+
+| Method | Path | Auth | Roles | Description |
+|--------|------|------|-------|-------------|
+| GET | `/api/billing/invoices` | Yes | DISPATCHER, SECRETARY, ADMIN | List invoices (filterable by status/company) |
+| POST | `/api/billing/invoices` | Yes | DISPATCHER, SECRETARY, ADMIN | Create invoice |
+| GET | `/api/billing/invoices/{id}` | Yes | DISPATCHER, SECRETARY, ADMIN | Get invoice details |
+| POST | `/api/billing/invoices/{id}/auto-fill` | Yes | DISPATCHER, SECRETARY, ADMIN | Auto-fill invoice from completed rides |
+| GET | `/api/billing/invoices/{id}/pdf` | Yes | DISPATCHER, SECRETARY, ADMIN | Download invoice as PDF |
+| POST | `/api/billing/invoices/{id}/send` | Yes | DISPATCHER, SECRETARY, ADMIN | Send invoice by email |
+| POST | `/api/billing/invoices/{id}/pay` | Yes | DISPATCHER, SECRETARY, ADMIN | Mark invoice as paid |
+| DELETE | `/api/billing/invoices/{id}` | Yes | DISPATCHER, SECRETARY, ADMIN | Delete invoice |
 
 ## WebSocket
 
