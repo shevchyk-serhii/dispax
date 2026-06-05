@@ -3,7 +3,7 @@
         flutter-test-integration \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
         dev-all stop-dev \
-        deploy logs
+        deploy logs setup-hooks
 
 PROD_URL := https://oktopus-456043977402.europe-west1.run.app
 MAC_IP := $(shell ipconfig getifaddr en0)
@@ -13,6 +13,13 @@ GCP_SERVICE := oktopus
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/oktopus-docker/oktopus-server:latest
 FLUTTER_DIR    := web
 -include .env.dev
+
+# ─── Setup ──────────────────────────────────────────────────────────────────
+
+# Point git at the versioned hooks in .githooks (run once after cloning)
+setup-hooks:
+	git config core.hooksPath .githooks
+	@echo "✅ git hooks configured (.githooks)"
 
 # ─── Backend ────────────────────────────────────────────────────────────────
 

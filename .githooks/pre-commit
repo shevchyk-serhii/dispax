@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "Running formatters before commit..."
+
+# Format Scala code
+sbt fmtAll
+
+# Re-stage ONLY files that were already staged (preserve selective commits).
+# Avoid `git add -A`, which would pull every modified file into the commit.
+git diff --cached --name-only --diff-filter=ACMR -z | while IFS= read -r -d '' f; do
+  [ -e "$f" ] && git add -- "$f"
+done
+
+echo "✅ Code formatted successfully"
