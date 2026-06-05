@@ -5,6 +5,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/services/user_service.dart';
+import '../services/client_address_service.dart';
 
 class ClientSearchField extends StatefulWidget {
   final UserService userService;
@@ -19,11 +20,21 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
   List<Person> _clients = [];
   bool _loading = false;
   String? _error;
+  late final ClientAddressService _addressService;
 
   @override
   void initState() {
     super.initState();
+    _addressService = ClientAddressService(
+      apiClient: context.read<AuthBloc>().apiClient,
+    );
     _loadClients();
+  }
+
+  @override
+  void dispose() {
+    _addressService.dispose();
+    super.dispose();
   }
 
   Future<void> _loadClients() async {
@@ -107,9 +118,25 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                         p.email.toLowerCase().contains(query) ||
                         (p.phone?.toLowerCase().contains(query) ?? false));
                   },
-                  onSelected: (Person client) {
+                  onSelected: (Person client) async {
+                    String? defaultAddress;
+                    try {
+                      final addresses = await _addressService.getAddresses(client.id);
+                      if (addresses.isNotEmpty) {
+                        final home = addresses.firstWhere(
+                          (a) => a.label.toLowerCase().contains('home'),
+                          orElse: () => addresses.first,
+                        );
+                        defaultAddress = home.address;
+                      }
+                    } catch (_) {}
+                    if (!context.mounted) return;
                     context.read<CreateRideFormBloc>().add(
-                          ClientSelected(clientId: client.id, clientName: client.name),
+                          ClientSelected(
+                            clientId: client.id,
+                            clientName: client.name,
+                            defaultAddress: defaultAddress,
+                          ),
                         );
                   },
                   fieldViewBuilder: (context, controller, focusNode, onSubmitted) {

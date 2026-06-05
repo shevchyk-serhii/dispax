@@ -19,11 +19,16 @@ class ClientNameChanged extends CreateRideFormEvent {
 class ClientSelected extends CreateRideFormEvent {
   final String clientId;
   final String clientName;
+  final String? defaultAddress;
 
-  const ClientSelected({required this.clientId, required this.clientName});
+  const ClientSelected({
+    required this.clientId,
+    required this.clientName,
+    this.defaultAddress,
+  });
 
   @override
-  List<Object?> get props => [clientId, clientName];
+  List<Object?> get props => [clientId, clientName, defaultAddress];
 }
 
 class FromAddressChanged extends CreateRideFormEvent {

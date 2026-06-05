@@ -28,7 +28,7 @@ object ClientAddressRoutes:
           pid       <- ZIO
                          .attempt(PersonId(UUID.fromString(clientId)))
                          .mapError(e => new RuntimeException(s"Invalid clientId: $e"))
-          _         <- AuthMiddleware.checkRoleOrOwner(user, pid.value, "DISPATCHER", "SECRETARY")
+          _         <- AuthMiddleware.checkRoleOrOwner(user, pid.value, "DISPATCHER", "SECRETARY", "DRIVER")
           service   <- ZIO.service[ClientAddressService]
           addresses <- service.getAddresses(pid)
         } yield Response(Status.Ok, body = Body.fromString(addresses.toJson))).catchAll {
