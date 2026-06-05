@@ -6,6 +6,7 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
   CreateRideFormBloc() : super(CreateRideFormState.initial()) {
     on<ClientNameChanged>(_onClientNameChanged);
     on<ClientSelected>(_onClientSelected);
+    on<ClientCleared>(_onClientCleared);
     on<DriverSelected>(_onDriverSelected);
     on<FromAddressChanged>(_onFromAddressChanged);
     on<ToAddressChanged>(_onToAddressChanged);
@@ -57,6 +58,14 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
       fromAddress: newFromAddress ?? state.fromAddress,
     );
     emit(_checkAirportTransfer(newState));
+  }
+
+  void _onClientCleared(ClientCleared event, Emitter<CreateRideFormState> emit) {
+    emit(state.copyWith(
+      clearClientId: true,
+      clientName: '',
+      newClientPhone: '',
+    ));
   }
 
   void _onDriverSelected(DriverSelected event, Emitter<CreateRideFormState> emit) {

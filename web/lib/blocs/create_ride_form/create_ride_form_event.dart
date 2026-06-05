@@ -31,6 +31,10 @@ class ClientSelected extends CreateRideFormEvent {
   List<Object?> get props => [clientId, clientName, defaultAddress];
 }
 
+class ClientCleared extends CreateRideFormEvent {
+  const ClientCleared();
+}
+
 class FromAddressChanged extends CreateRideFormEvent {
   final String fromAddress;
 

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../blocs/blocs.dart';
@@ -16,7 +15,6 @@ class CreateRideDriverSection extends StatefulWidget {
 
 class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
   late final UserService _userService;
-  late final StreamSubscription<CreateRideFormState> _subscription;
   List<Person> _drivers = [];
   bool _loading = true;
   String? _errorMessage;
@@ -27,13 +25,9 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
     final authBloc = context.read<AuthBloc>();
     _userService = UserService(apiClient: authBloc.apiClient);
 
+    // Initial preselect of self; the driver can clear it via the × button
+    // and it will not be re-applied automatically.
     _preselectSelf();
-
-    // Re-select self after form clear (selectedDriverId becomes null)
-    _subscription = context.read<CreateRideFormBloc>().stream.listen((state) {
-      if (!mounted) return;
-      if (state.selectedDriverId == null) _preselectSelf();
-    });
 
     _loadDrivers();
   }
@@ -50,7 +44,6 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
 
   @override
   void dispose() {
-    _subscription.cancel();
     _userService.dispose();
     super.dispose();
   }
@@ -126,6 +119,17 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                     decoration: InputDecoration(
                       labelText: 'Assigned driver',
                       prefixIcon: Icon(Icons.drive_eta, color: AppColors.infoStrong),
+                      suffixIcon: state.selectedDriverId != null
+                          ? IconButton(
+                              icon: const Icon(Icons.close, size: 18),
+                              color: AppColors.textSecondary,
+                              tooltip: 'Clear',
+                              splashRadius: 18,
+                              onPressed: () => context
+                                  .read<CreateRideFormBloc>()
+                                  .add(const DriverSelected(null)),
+                            )
+                          : null,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                       ),

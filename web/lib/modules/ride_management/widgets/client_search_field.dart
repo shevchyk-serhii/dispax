@@ -161,14 +161,36 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                               BorderRadius.circular(AppDimensions.radiusSmall),
                         ),
                         suffixIcon: formState.selectedClientId != null
-                            ? const Icon(Icons.check_circle, color: AppColors.success)
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.check_circle, color: AppColors.success),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, size: 18),
+                                    color: AppColors.textSecondary,
+                                    tooltip: 'Clear',
+                                    splashRadius: 18,
+                                    onPressed: () {
+                                      controller.clear();
+                                      context
+                                          .read<CreateRideFormBloc>()
+                                          .add(const ClientCleared());
+                                    },
+                                  ),
+                                ],
+                              )
                             : (controller.text.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.close, size: 18),
                                     color: AppColors.textSecondary,
                                     tooltip: 'Clear',
                                     splashRadius: 18,
-                                    onPressed: () => controller.clear(),
+                                    onPressed: () {
+                                      controller.clear();
+                                      context
+                                          .read<CreateRideFormBloc>()
+                                          .add(const ClientCleared());
+                                    },
                                   )
                                 : null),
                       ),
