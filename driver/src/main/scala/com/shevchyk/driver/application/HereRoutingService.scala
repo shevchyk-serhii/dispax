@@ -29,14 +29,15 @@ object HereRoutingService:
         destLat: Double,
         destLng: Double
     ): Task[Option[Int]] =
-      if config.apiKey.isEmpty then ZIO.succeed(None)
+      if config.apiKey.isEmpty then ZIO.logWarning("HERE routing: apiKey empty").as(None)
       else
-        val url =
+        val departureTime = java.time.Instant.now().toString
+        val url           =
           s"${config.baseUrl}/v8/routes" +
             s"?origin=$originLat,$originLng" +
             s"&destination=$destLat,$destLng" +
             s"&transportMode=car" +
-            s"&departureTime=now" +
+            s"&departureTime=$departureTime" +
             s"&return=summary" +
             s"&apikey=${config.apiKey}"
 

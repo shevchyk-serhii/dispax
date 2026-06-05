@@ -137,11 +137,10 @@ object DriverRoutes:
             ride         <-
               if ride.pickupLocation.latitude.isEmpty then
                 ZIO
-                  .serviceWithZIO[GeocodingService](
-                    _.enrichLocation(ride.pickupLocation)
-                  )
+                  .serviceWithZIO[GeocodingService](_.enrichLocation(ride.pickupLocation))
                   .flatMap { enriched =>
                     if enriched.latitude.isDefined then
+                      // Try to persist coords; on failure (e.g. InProgress ride) still use enriched for ETA
                       rideService
                         .updateRideDetails(
                           parsedRideId,
@@ -149,7 +148,7 @@ object DriverRoutes:
                           PersonId(user.userId),
                           PersonRole.valueOf(user.role)
                         )
-                        .orElse(ZIO.succeed(ride))
+                        .orElse(ZIO.succeed(ride.copy(pickupLocation = enriched)))
                     else ZIO.succeed(ride)
                   }
                   .orElse(ZIO.succeed(ride))
@@ -173,9 +172,7 @@ object DriverRoutes:
                 pickLng <- ride.pickupLocation.longitude
               } yield (dLat, dLng, pickLat, pickLng)) match {
                 case Some((dLat, dLng, pickLat, pickLng)) =>
-                  ZIO.serviceWithZIO[HereRoutingService](
-                    _.getEtaMinutes(dLat, dLng, pickLat, pickLng)
-                  )
+                  ZIO.serviceWithZIO[HereRoutingService](_.getEtaMinutes(dLat, dLng, pickLat, pickLng))
                 case None                                 => ZIO.none
               }
             proximity     = DriverProximityDto(
