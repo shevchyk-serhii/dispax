@@ -59,6 +59,7 @@ class Ride {
   final Location? clientLocation;
   final bool driverApproaching;
   final int? driverDistanceMeters;
+  final int? etaMinutes;
   final double? price;
   final String? notes;
   final String? specialRequirements;
@@ -99,6 +100,7 @@ class Ride {
     this.clientLocation,
     this.driverApproaching = false,
     this.driverDistanceMeters,
+    this.etaMinutes,
     this.price,
     this.notes,
     this.specialRequirements,
@@ -145,6 +147,7 @@ class Ride {
         : null,
       driverApproaching: json['driverApproaching'] ?? false,
       driverDistanceMeters: json['driverDistanceMeters'],
+      etaMinutes: json['etaMinutes'],
       price: json['price']?.toDouble(),
       notes: json['notes'],
       specialRequirements: json['specialRequirements'],
@@ -188,6 +191,7 @@ class Ride {
       'clientLocation': clientLocation?.toJson(),
       'driverApproaching': driverApproaching,
       'driverDistanceMeters': driverDistanceMeters,
+      'etaMinutes': etaMinutes,
       'price': price,
       'notes': notes,
       'specialRequirements': specialRequirements,
@@ -230,6 +234,7 @@ class Ride {
     Location? clientLocation,
     bool? driverApproaching,
     int? driverDistanceMeters,
+    int? etaMinutes,
     double? price,
     String? notes,
     String? specialRequirements,
@@ -270,6 +275,7 @@ class Ride {
       clientLocation: clientLocation ?? this.clientLocation,
       driverApproaching: driverApproaching ?? this.driverApproaching,
       driverDistanceMeters: driverDistanceMeters ?? this.driverDistanceMeters,
+      etaMinutes: etaMinutes ?? this.etaMinutes,
       price: price ?? this.price,
       notes: notes ?? this.notes,
       specialRequirements: specialRequirements ?? this.specialRequirements,
