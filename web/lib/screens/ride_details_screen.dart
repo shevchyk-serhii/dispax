@@ -36,12 +36,25 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   void initState() {
     super.initState();
     _currentRide = widget.ride;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadEta());
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _rideService = RideService(apiClient: context.read<AuthBloc>().apiClient);
+  }
+
+  Future<void> _loadEta() async {
+    if (!mounted || widget.isClientView) return;
+    final data = await _rideService.getDriverProximity(_currentRide.id);
+    if (!mounted) return;
+    final eta = data?['etaMinutes'] as int?;
+    if (eta != null) {
+      setState(() {
+        _currentRide = _currentRide.copyWith(etaMinutes: eta);
+      });
+    }
   }
 
   @override
