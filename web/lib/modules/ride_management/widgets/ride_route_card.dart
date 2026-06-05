@@ -145,14 +145,14 @@ class RideRouteCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'До клиента',
+                        'ETA to client',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       Text(
-                        '~${ride.etaMinutes} мин',
+                        '~${ride.etaMinutes} min',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppColors.accent,

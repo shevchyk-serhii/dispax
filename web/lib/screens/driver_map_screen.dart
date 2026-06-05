@@ -691,7 +691,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                 Icon(Icons.timer_outlined, color: AppColors.accent, size: AppDimensions.iconSmall),
                 const SizedBox(width: AppDimensions.paddingSmall),
                 Text(
-                  'До клиента ~${_currentRide!.etaMinutes} мин',
+                  '~${_currentRide!.etaMinutes} min to client',
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.accent,
                     fontWeight: FontWeight.w600,

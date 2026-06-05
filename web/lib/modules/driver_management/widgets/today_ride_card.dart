@@ -52,7 +52,12 @@ class TodayRideCard extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: statusColor.withAlpha(77), width: 1),
+              border: Border(
+                left: BorderSide(color: statusColor, width: 4),
+                top: BorderSide(color: statusColor.withAlpha(40), width: 1),
+                right: BorderSide(color: statusColor.withAlpha(40), width: 1),
+                bottom: BorderSide(color: statusColor.withAlpha(40), width: 1),
+              ),
             ),
             child: Column(
               children: [
@@ -70,9 +75,9 @@ class TodayRideCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: statusColor.withAlpha(25),
+        color: statusColor.withAlpha(18),
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
+          topLeft: Radius.circular(8),
           topRight: Radius.circular(12),
         ),
       ),
@@ -81,14 +86,14 @@ class TodayRideCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.access_time, color: statusColor, size: 20),
-              const SizedBox(width: 8),
+              Icon(Icons.access_time, color: AppColors.textSecondary, size: 18),
+              const SizedBox(width: 6),
               Text(
                 DateFormat.Hm().format(ride.pickupDateTime),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: statusColor,
+                  color: AppColors.textPrimary,
                 ),
               ),
               if (isUpcoming && timeUntilRide.inHours < 2)
@@ -163,7 +168,7 @@ class TodayRideCard extends StatelessWidget {
                       const Icon(Icons.timer_outlined, color: Colors.white, size: 12),
                       const SizedBox(width: 4),
                       Text(
-                        '~$etaMinutes мин',
+                        '~$etaMinutes min',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -217,32 +222,18 @@ class TodayRideCard extends StatelessWidget {
             RideInfoRow(icon: Icons.flight, text: ride.fullFlightInfo, label: 'Flight'),
           ],
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: RideQuickActions(
-                  ride: ride,
-                  onCallClient: onCallClient,
-                  onStartRide: onStartRide,
-                  onCompleteRide: onCompleteRide,
+          RideQuickActions(
+            ride: ride,
+            onCallClient: onCallClient,
+            onStartRide: onStartRide,
+            onCompleteRide: onCompleteRide,
+            onViewDetails: onViewDetails ?? () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => RideDetailsScreen(ride: ride),
                 ),
-              ),
-              TextButton.icon(
-                onPressed: onViewDetails ?? () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => RideDetailsScreen(ride: ride),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.info_outline, size: 16),
-                label: const Text('Details'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.info,
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ],
       ),

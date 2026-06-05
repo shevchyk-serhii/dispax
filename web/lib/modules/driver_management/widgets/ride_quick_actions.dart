@@ -3,12 +3,15 @@ import '../../ride_management/models/ride.dart';
 import '../../core/navigation_helper.dart';
 import '../../core/navigation_utils.dart';
 import '../../../constants/app_colors.dart';
+import '../../../constants/app_dimensions.dart';
+import '../../../constants/app_styles.dart';
 
 class RideQuickActions extends StatelessWidget {
   final Ride ride;
   final VoidCallback? onCallClient;
   final VoidCallback? onStartRide;
   final VoidCallback? onCompleteRide;
+  final VoidCallback? onViewDetails;
 
   const RideQuickActions({
     super.key,
@@ -16,71 +19,131 @@ class RideQuickActions extends StatelessWidget {
     this.onCallClient,
     this.onStartRide,
     this.onCompleteRide,
+    this.onViewDetails,
   });
 
   @override
   Widget build(BuildContext context) {
+    final statusButton = _buildStatusButton(context);
+
     return Row(
       children: [
-        IconButton(
-          onPressed: onCallClient ?? () {
-
-          },
-          icon: const Icon(Icons.phone, size: 20),
+        // Icon-only utility actions
+        _buildIconAction(
+          icon: Icons.phone_rounded,
           color: AppColors.success,
           tooltip: 'Call Client',
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          onPressed: onCallClient ?? () {},
         ),
-        IconButton(
-          onPressed: () => _handleNavigation(context, ride),
-          icon: const Icon(Icons.navigation, size: 20),
-          color: AppColors.info,
+        const SizedBox(width: 8),
+        _buildIconAction(
+          icon: Icons.navigation_rounded,
+          color: AppColors.accent,
           tooltip: 'Navigate',
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          onPressed: () => _handleNavigation(context, ride),
         ),
-        Expanded(
-          child: Container(
-            alignment: Alignment.centerRight,
-            child: _buildStatusButton(context),
-          ),
+        const SizedBox(width: 8),
+        // Details ghost button
+        _buildGhostButton(
+          icon: Icons.info_outline_rounded,
+          label: 'Details',
+          onPressed: onViewDetails ?? () {},
         ),
+        const Spacer(),
+        // Primary status action
+        if (statusButton != null) statusButton,
       ],
     );
   }
 
-  Widget _buildStatusButton(BuildContext context) {
+  Widget _buildIconAction({
+    required IconData icon,
+    required Color color,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Icon(icon, size: 20, color: color),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGhostButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: AppColors.textSecondary),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AppStyles.labelSmall.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildStatusButton(BuildContext context) {
     if (ride.status == RideStatus.assigned) {
-      return ElevatedButton.icon(
-        onPressed: onStartRide ?? () {
-
-        },
-        icon: const Icon(Icons.play_arrow, size: 14),
-        label: const Text('Start', style: TextStyle(fontSize: 12)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.success,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          minimumSize: const Size(60, 32),
-        ),
-      );
-    } else if (ride.status == RideStatus.inProgress) {
-      return ElevatedButton.icon(
-        onPressed: onCompleteRide ?? () {
-
-        },
-        icon: const Icon(Icons.check, size: 14),
-        label: const Text('Done', style: TextStyle(fontSize: 12)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.warning,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          minimumSize: const Size(60, 32),
-        ),
+      return _buildActionButton(
+        icon: Icons.play_circle_rounded,
+        label: 'Start',
+        color: AppColors.accent,
+        onPressed: onStartRide ?? () {},
       );
     }
-    return const SizedBox.shrink();
+    if (ride.status == RideStatus.inProgress) {
+      return _buildActionButton(
+        icon: Icons.check_circle_rounded,
+        label: 'Complete',
+        color: AppColors.success,
+        onPressed: onCompleteRide ?? () {},
+      );
+    }
+    return null;
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 16),
+      label: Text(label, style: AppStyles.labelMedium),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        ),
+      ),
+    );
   }
 
   static void _handleNavigation(BuildContext context, Ride ride) async {
