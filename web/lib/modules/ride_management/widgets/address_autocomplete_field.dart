@@ -41,9 +41,9 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
   @override
   void didUpdateWidget(AddressAutocompleteField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // When the parent clears the field (initialValue → ''), force a full rebuild
-    // so Autocomplete's internal controller also clears.
-    if (oldWidget.initialValue.isNotEmpty && widget.initialValue.isEmpty) {
+    // Force Autocomplete rebuild whenever initialValue changes externally
+    // (e.g. form clear → '', address swap, template fill).
+    if (oldWidget.initialValue != widget.initialValue) {
       setState(() => _resetKey++);
     }
   }
