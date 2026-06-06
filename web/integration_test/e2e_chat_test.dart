@@ -67,6 +67,7 @@ Future<String> _seedAssignedRide() async {
 
 void main() {
   patrolTest('client sends a chat message on an active ride', ($) async {
+    await resetTestData();
     await _seedAssignedRide();
 
     await bootstrapTestApp();

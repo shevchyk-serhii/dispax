@@ -32,6 +32,7 @@ import com.shevchyk.billing.repository.{InvoiceRepository, ClientCompanyReposito
 import com.shevchyk.app.routes.{
   UserRoutes,
   WebSocketRoutes,
+  DevRoutes,
   AuditRoutes,
   CompanySettingsRoutes,
   GdprRoutes,
@@ -100,6 +101,10 @@ object Application extends ZIOAppDefault:
     Method.GET / "health" -> handler((_: Request) => ZIO.succeed(Response.text("🐙 Der Oktopus Modular API - OK")))
   )
 
+  // Development-only test-support endpoint (POST /api/dev/reset). Guarded by
+  // Environment.isDevelopment inside the handler, so it is inert in production.
+  private val devRoutes = DevRoutes.routes
+
   private val publicRoutes = healthRoutes ++ UserRoutes.routes ++ AuthRoutes.routes
 
   private val rideRoutes            = RideRoutes.authenticatedRoutes
@@ -155,7 +160,7 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + schedule + notification + PostgreSQL repositories") *>
         ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
         Server.serve(
-          (publicRoutes ++ rideRoutes ++ clientLocationRoutes ++ chatRoutes ++ expenseRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ rideTemplateRoutes ++ notificationRoutes ++ statsRoutes ++ exportRoutes ++ ratingRoutes ++ auditRoutes ++ companySettingsRoutes ++ geofenceRoutes ++ gdprRoutes ++ sessionRoutes ++ blacklistRoutes ++ emergencyRoutes ++ ridePoolRoutes ++ notifPrefRoutes ++ clientAddressRoutes ++ clientCompanyRoutes ++ invoiceRoutes ++ billingCompanyRoutes ++ wsRoutes)
+          (publicRoutes ++ devRoutes ++ rideRoutes ++ clientLocationRoutes ++ chatRoutes ++ expenseRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ rideTemplateRoutes ++ notificationRoutes ++ statsRoutes ++ exportRoutes ++ ratingRoutes ++ auditRoutes ++ companySettingsRoutes ++ geofenceRoutes ++ gdprRoutes ++ sessionRoutes ++ blacklistRoutes ++ emergencyRoutes ++ ridePoolRoutes ++ notifPrefRoutes ++ clientAddressRoutes ++ clientCompanyRoutes ++ invoiceRoutes ++ billingCompanyRoutes ++ wsRoutes)
             .handleErrorCauseZIO { cause =>
               ZIO
                 .logErrorCause("Unhandled server error", cause)
@@ -215,5 +220,7 @@ object Application extends ZIOAppDefault:
       JwtConfig.live,
       JwtService.live,
       AuthService.live,
-      RateLimiter.layer
+      RateLimiter.layer,
+      // Transactor for the dev-only /dev/reset endpoint (DevRoutes).
+      DatabaseConfig.liveTransactor
     )

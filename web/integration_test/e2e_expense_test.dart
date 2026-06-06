@@ -8,6 +8,7 @@ import 'patrol_helpers.dart';
 /// (Category dropdown + Amount + Description) → Save. Exercises POST /expenses.
 void main() {
   patrolTest('dispatcher logs an expense', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

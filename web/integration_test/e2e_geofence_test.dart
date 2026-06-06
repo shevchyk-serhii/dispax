@@ -9,6 +9,7 @@ import 'patrol_helpers.dart';
 /// Exercises POST /geofences.
 void main() {
   patrolTest('dispatcher creates a geofence', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

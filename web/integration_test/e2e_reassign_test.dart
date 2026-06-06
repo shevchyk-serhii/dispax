@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
 import 'package:http/http.dart' as http;
@@ -55,6 +54,7 @@ Future<void> _seedRequestedRide() async {
 
 void main() {
   patrolTest('dispatcher assigns then reassigns a ride', ($) async {
+    await resetTestData();
     await _seedRequestedRide();
 
     await bootstrapTestApp();

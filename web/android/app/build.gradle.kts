@@ -34,7 +34,12 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // Patrol native automation
+        // Patrol native automation. The AndroidJUnitRunner orchestrator is
+        // REQUIRED: Patrol runs each Dart test in its own app process, so
+        // without the orchestrator only the first test executes (the app VM
+        // exits after it). clearPackageData keeps tests isolated; on top of
+        // that, each suite calls POST /api/dev/reset (resetTestData) to wipe
+        // backend data so a shared DB stays clean between tests.
         testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }

@@ -10,6 +10,7 @@ import 'patrol_helpers.dart';
 /// e2e_full_flow_test (which seeds a fresh Requested ride first).
 void main() {
   patrolTest('dispatcher navigates the full dashboard', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

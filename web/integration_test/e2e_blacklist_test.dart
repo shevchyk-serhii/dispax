@@ -9,6 +9,7 @@ import 'patrol_helpers.dart';
 /// Uses real dev-data IDs (client BMW = 6666…, driver Hans = 3333…).
 void main() {
   patrolTest('dispatcher adds a blacklist entry', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

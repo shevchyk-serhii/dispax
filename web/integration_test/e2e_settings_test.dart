@@ -8,6 +8,7 @@ import 'patrol_helpers.dart';
 /// verify its fields, then open Active Sessions and Privacy (GDPR) screens.
 void main() {
   patrolTest('client changes theme and opens account screens', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

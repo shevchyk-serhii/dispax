@@ -12,6 +12,7 @@ import 'patrol_helpers.dart';
 /// dispatcher can assign. Driver "Hans Weber" = driver1@oktopus.de.
 void main() {
   patrolTest('full ride lifecycle: client → dispatcher → driver', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

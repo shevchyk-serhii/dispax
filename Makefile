@@ -2,7 +2,7 @@
         flutter-dev flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
-        e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test \
+        e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
         dev-all stop-dev \
         deploy logs setup-hooks
@@ -153,6 +153,25 @@ e2e-ios: e2e-backend-up
 
 # Default E2E target: Android.
 e2e-test: e2e-android
+
+# Fast Android E2E: build ALL Patrol tests into ONE bundle APK and run them in a
+# single instrumentation pass (no test orchestrator → no per-test process
+# restarts). Each suite resets its data via POST /api/dev/reset (resetTestData),
+# so a shared DB stays isolated. Excludes the flutter_test HTTP suites (not
+# Patrol) and the native-permission test (needs a real OS dialog).
+# Roughly 3x faster than e2e-android (one build, no orchestrator overhead).
+PATROL_EXCLUDES := --exclude integration_test/auth_integration_test.dart \
+                   --exclude integration_test/contract_test.dart \
+                   --exclude integration_test/user_integration_test.dart \
+                   --exclude integration_test/ride_integration_test.dart \
+                   --exclude integration_test/permissions_test.dart
+e2e-fast: e2e-backend-up
+	@echo "🧪 Running ALL Patrol E2E in one bundle (Android, no orchestrator)..."
+	@cd $(FLUTTER_DIR) && $(PATROL) test $(PATROL_EXCLUDES) \
+	  --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api ; \
+	  STATUS=$$? ; \
+	  $(MAKE) -C .. e2e-backend-down ; \
+	  exit $$STATUS
 
 # Run all tests: unit + integration + Cucumber BDD
 test-all:

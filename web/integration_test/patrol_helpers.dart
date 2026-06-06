@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:oktopus/auth/login_screen.dart';
 
@@ -12,6 +13,28 @@ export 'test_accounts.dart';
 /// All E2E tests run against the full backend (Flyway dev-data) on TEST_PORT,
 /// reached via `--dart-define=API_BASE_URL=...`. See the Makefile `e2e-*`
 /// targets.
+
+/// Base API URL the tests talk to (host reachable from the device/emulator).
+const String kApiBaseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: 'http://10.0.2.2:8090/api',
+);
+
+/// Resets transactional data via the dev-only `POST /api/dev/reset` endpoint.
+///
+/// Call this at the start of a mutating suite. It is what keeps the fast
+/// single-bundle run (no test orchestrator → DB not wiped between tests)
+/// isolated. No-op-safe: failures are swallowed so a missing endpoint or an
+/// unreachable backend doesn't crash the test before it can skip.
+Future<void> resetTestData() async {
+  try {
+    await http
+        .post(Uri.parse('$kApiBaseUrl/dev/reset'))
+        .timeout(const Duration(seconds: 10));
+  } catch (_) {
+    // Ignore — the test's own skipIfBackendDown handles an unreachable backend.
+  }
+}
 
 /// Logs in through the real login UI: fills email/password and taps "Sign In".
 /// Waits for the login screen to disappear (navigation to a dashboard).

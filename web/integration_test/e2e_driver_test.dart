@@ -9,6 +9,7 @@ import 'patrol_helpers.dart';
 /// e2e_full_flow_test, which sets up an assigned ride first.
 void main() {
   patrolTest('driver navigates dashboard and creates a ride', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

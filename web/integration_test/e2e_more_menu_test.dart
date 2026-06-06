@@ -10,6 +10,7 @@ import 'patrol_helpers.dart';
 /// Geofences) are covered there in depth.
 void main() {
   patrolTest('dispatcher opens every More-menu section', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

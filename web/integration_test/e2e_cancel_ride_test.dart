@@ -9,6 +9,7 @@ import 'patrol_helpers.dart';
 /// "Cancel Ride"). Exercises Requested → Cancelled.
 void main() {
   patrolTest('client creates then cancels a ride', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

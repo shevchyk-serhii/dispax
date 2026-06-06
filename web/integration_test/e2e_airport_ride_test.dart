@@ -9,6 +9,7 @@ import 'patrol_helpers.dart';
 /// Exercises POST /rides with isAirportTransfer=true.
 void main() {
   patrolTest('client creates an airport-transfer ride', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

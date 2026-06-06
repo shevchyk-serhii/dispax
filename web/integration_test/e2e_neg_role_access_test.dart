@@ -8,6 +8,7 @@ import 'patrol_helpers.dart';
 /// Analytics, Pending or Assigned tabs. Confirms role isolation in the UI.
 void main() {
   patrolTest('client cannot see dispatcher or admin navigation', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

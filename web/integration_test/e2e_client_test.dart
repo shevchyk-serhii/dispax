@@ -10,6 +10,7 @@ import 'patrol_helpers.dart';
 /// picker interaction is needed.
 void main() {
   patrolTest('client creates a ride and navigates all tabs', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

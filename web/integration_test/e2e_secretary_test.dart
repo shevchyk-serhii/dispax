@@ -11,6 +11,7 @@ import 'patrol_helpers.dart';
 /// we verify the form opens and the navigation works.
 void main() {
   patrolTest('secretary opens create form and views reports', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

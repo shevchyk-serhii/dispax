@@ -8,6 +8,7 @@ import 'patrol_helpers.dart';
 /// few admin-oriented sections from the More menu.
 void main() {
   patrolTest('admin navigates dashboard and admin sections', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

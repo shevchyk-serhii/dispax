@@ -7,6 +7,7 @@ import 'patrol_helpers.dart';
 /// blocked by field validation — no ride is created and we stay on the form.
 void main() {
   patrolTest('create ride form rejects empty input', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 

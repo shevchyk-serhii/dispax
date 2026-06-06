@@ -8,6 +8,7 @@ import 'patrol_helpers.dart';
 /// Create User form (Name/Email/Password/Role) → Create. Exercises POST /users.
 void main() {
   patrolTest('admin creates a new user', ($) async {
+    await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
 
