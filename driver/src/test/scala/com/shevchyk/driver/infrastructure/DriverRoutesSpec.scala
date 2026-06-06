@@ -10,7 +10,7 @@ import com.shevchyk.driver.infrastructure.http.DriverRoutes
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.repository.InMemoryRideRepository
+import com.shevchyk.ride.repository.{ClientLocationRepository, InMemoryRideRepository}
 import zio.*
 import zio.http.*
 import zio.test.*
@@ -95,8 +95,23 @@ object DriverRoutesSpec extends ZIOSpecDefault {
       def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                                            = ZIO.succeed(BigDecimal(0))
       def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                                        = ZIO.succeed(0.0)
       def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]]                                = ZIO.succeed(Nil)
+      def getDriverEarnings(
+          driverId: PersonId,
+          companyId: CompanyId,
+          period: EarningsPeriod,
+          anchorDate: java.time.LocalDate
+      ): IO[RideError, DriverEarningsReport] =
+        ZIO.succeed(
+          DriverEarningsReport(period, java.time.Instant.EPOCH, java.time.Instant.EPOCH, BigDecimal(0), BigDecimal(0), 0, 0, Nil)
+        )
     }
   }
+
+  private val noopClientLocationRepo: ZLayer[Any, Nothing, ClientLocationRepository] = ZLayer.succeed(
+    new ClientLocationRepository:
+      def updateLocation(rideId: RideId, clientId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO.unit
+      def getLocation(rideId: RideId): Task[Option[com.shevchyk.ride.domain.ClientLocation]]                 = ZIO.succeed(None)
+  )
 
   private val noopHereRoutingService: ZLayer[Any, Nothing, HereRoutingService] = ZLayer.succeed(
     new HereRoutingService:
@@ -104,9 +119,14 @@ object DriverRoutesSpec extends ZIOSpecDefault {
         ZIO.succeed(None)
   )
 
-  private val testLayers = driverLocationServiceLayer ++ noopRideServiceLayer ++ noopHereRoutingService ++ GeocodingService.noop ++ testJwtService
+  private val testLayers =
+    driverLocationServiceLayer ++ noopRideServiceLayer ++ noopHereRoutingService ++ GeocodingService.noop ++ noopClientLocationRepo ++ testJwtService
 
-  private def run(req: Request): ZIO[DriverLocationService & RideService & HereRoutingService & GeocodingService & JwtService, Nothing, Response] =
+  private def run(req: Request): ZIO[
+    DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository & JwtService,
+    Nothing,
+    Response
+  ] =
     DriverRoutes.authenticatedRoutes.run(req).either.map {
       case Left(r)  => r.merge
       case Right(r) => r

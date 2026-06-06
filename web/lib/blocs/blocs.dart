@@ -1,4 +1,3 @@
-
 export 'auth/auth_bloc.dart';
 export 'auth/auth_event.dart';
 export 'auth/auth_state.dart';
@@ -18,3 +17,5 @@ export 'schedule/schedule_state.dart';
 export 'client/client_bloc.dart';
 export 'client/client_event.dart';
 export 'client/client_state.dart';
+
+export 'earnings/earnings_cubit.dart';

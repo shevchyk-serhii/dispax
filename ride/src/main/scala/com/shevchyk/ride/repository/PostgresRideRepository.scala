@@ -1,7 +1,15 @@
 package com.shevchyk.ride.repository
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.ride.domain.{Ride, RideError, RideSpecifics, RideStatus, PaymentStatus, PaymentMethod}
+import com.shevchyk.ride.domain.{
+  DriverEarnings,
+  Ride,
+  RideError,
+  RideSpecifics,
+  RideStatus,
+  PaymentStatus,
+  PaymentMethod
+}
 import cats.syntax.apply.*
 import doobie.*
 import doobie.implicits.*
@@ -294,6 +302,60 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       ORDER BY d DESC
     """
       .query[(String, Int, Int, Int)]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
+  override def earningsByDriver(
+      driverId: PersonId,
+      companyId: CompanyId,
+      from: Instant,
+      to: Instant
+  ): Task[DriverEarnings] = {
+    sql"""
+      SELECT
+        COALESCE(SUM(COALESCE(final_price_amount, estimated_price_amount, 0))
+                 FILTER (WHERE status = 'Completed'), 0),
+        COUNT(*) FILTER (WHERE status = 'Completed')::int,
+        COUNT(*) FILTER (WHERE status = 'Cancelled')::int
+      FROM rides
+      WHERE driver_id = ${driverId.value}
+        AND company_id = ${companyId.value}
+        AND COALESCE(end_time, pickup_datetime) >= $from
+        AND COALESCE(end_time, pickup_datetime) < $to
+    """
+      .query[(BigDecimal, Int, Int)]
+      .unique
+      .map { case (gross, completed, cancelled) => DriverEarnings(gross, completed, cancelled) }
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
+  override def earningsBucketsByDriver(
+      driverId: PersonId,
+      companyId: CompanyId,
+      from: Instant,
+      to: Instant,
+      bucket: TimeBucket
+  ): Task[List[(Instant, BigDecimal)]] = {
+    val truncUnit =
+      bucket match
+        case TimeBucket.Hour => "hour"
+        case TimeBucket.Day  => "day"
+    fr"""
+      SELECT date_trunc($truncUnit, COALESCE(end_time, pickup_datetime)) AS bucket,
+             COALESCE(SUM(COALESCE(final_price_amount, estimated_price_amount, 0)), 0)
+      FROM rides
+      WHERE driver_id = ${driverId.value}
+        AND company_id = ${companyId.value}
+        AND status = 'Completed'
+        AND COALESCE(end_time, pickup_datetime) >= $from
+        AND COALESCE(end_time, pickup_datetime) < $to
+      GROUP BY bucket
+      ORDER BY bucket
+    """
+      .query[(Instant, BigDecimal)]
       .to[List]
       .transact(xa)
       .mapError(ex => RideError.DatabaseError(ex))

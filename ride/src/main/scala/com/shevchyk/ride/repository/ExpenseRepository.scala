@@ -3,6 +3,7 @@ package com.shevchyk.ride.repository
 import com.shevchyk.core.domain.*
 import com.shevchyk.ride.domain.*
 import zio.*
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters.*
 
@@ -13,6 +14,8 @@ trait ExpenseRepository:
   def findByRideId(rideId: RideId): Task[List[Expense]]
   def findByCompanyId(companyId: CompanyId): Task[List[Expense]]
   def delete(id: ExpenseId): Task[Boolean]
+  // Сумма расходов водителя за период [from, to) с изоляцией по компании
+  def sumByDriver(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant): Task[BigDecimal]
 
 class InMemoryExpenseRepository extends ExpenseRepository:
   private val store = new ConcurrentHashMap[ExpenseId, Expense]()
@@ -41,6 +44,21 @@ class InMemoryExpenseRepository extends ExpenseRepository:
   def delete(id: ExpenseId): Task[Boolean] = ZIO.succeed {
     store.remove(id) != null
   }
+
+  def sumByDriver(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant): Task[BigDecimal] = ZIO
+    .succeed {
+      store
+        .values()
+        .asScala
+        .filter(e =>
+          e.driverId == driverId &&
+            e.companyId == companyId &&
+            !e.createdAt.isBefore(from) &&
+            e.createdAt.isBefore(to)
+        )
+        .map(_.amount)
+        .sum
+    }
 
 object ExpenseRepository:
   val inMemory: ZLayer[Any, Nothing, ExpenseRepository] = ZLayer.succeed(new InMemoryExpenseRepository)

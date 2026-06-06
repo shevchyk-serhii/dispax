@@ -1,9 +1,9 @@
 package com.shevchyk.ride.repository
 
 import com.shevchyk.core.domain.{RideId, PersonId, CompanyId}
-import com.shevchyk.ride.domain.{Ride, RideStatus}
+import com.shevchyk.ride.domain.{DriverEarnings, Ride, RideStatus}
 import zio.*
-import java.time.Instant
+import java.time.{Instant, ZoneOffset}
 
 class InMemoryRideRepository extends RideRepository:
   private val rides = Unsafe.unsafe { implicit unsafe =>
@@ -88,6 +88,60 @@ class InMemoryRideRepository extends RideRepository:
           val cancelled = rides.count(_.status == RideStatus.Cancelled)
           (date, total, completed, cancelled)
         }
+        .toList
+        .sortBy(_._1)
+    }
+
+  private def periodTime(r: Ride): Instant = r.endTime.getOrElse(r.pickupDateTime)
+
+  override def earningsByDriver(
+      driverId: PersonId,
+      companyId: CompanyId,
+      from: Instant,
+      to: Instant
+  ): Task[DriverEarnings] =
+    rides.get.map { all =>
+      val inScope = all.values.filter { r =>
+        r.driverId.contains(driverId) &&
+        r.companyId == companyId &&
+        !periodTime(r).isBefore(from) &&
+        periodTime(r).isBefore(to)
+      }
+      val gross = inScope
+        .filter(_.status == RideStatus.Completed)
+        .flatMap(r => r.finalPrice.orElse(r.estimatedPrice))
+        .sum
+      val completed = inScope.count(_.status == RideStatus.Completed)
+      val cancelled = inScope.count(_.status == RideStatus.Cancelled)
+      DriverEarnings(gross, completed, cancelled)
+    }
+
+  override def earningsBucketsByDriver(
+      driverId: PersonId,
+      companyId: CompanyId,
+      from: Instant,
+      to: Instant,
+      bucket: TimeBucket
+  ): Task[List[(Instant, BigDecimal)]] =
+    rides.get.map { all =>
+      def truncate(t: Instant): Instant =
+        val zdt       = t.atZone(ZoneOffset.UTC)
+        val truncated = bucket match
+          case TimeBucket.Hour => zdt.truncatedTo(java.time.temporal.ChronoUnit.HOURS)
+          case TimeBucket.Day  => zdt.toLocalDate.atStartOfDay(ZoneOffset.UTC)
+        truncated.toInstant
+
+      all.values
+        .filter { r =>
+          r.driverId.contains(driverId) &&
+          r.companyId == companyId &&
+          r.status == RideStatus.Completed &&
+          !periodTime(r).isBefore(from) &&
+          periodTime(r).isBefore(to)
+        }
+        .groupBy(r => truncate(periodTime(r)))
+        .view
+        .mapValues(_.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).sum)
         .toList
         .sortBy(_._1)
     }

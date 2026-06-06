@@ -12,7 +12,7 @@ import com.shevchyk.ride.infrastructure.http.dto.{RideDto, given}
 import com.shevchyk.ride.helpers.{TestData, TestJWT}
 import com.shevchyk.ride.infrastructure.http.RideRoutes
 import com.shevchyk.core.repository.InMemoryPersonRepository
-import com.shevchyk.ride.repository.{InMemoryRideRepository, RideRepository}
+import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, RideRepository}
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -472,6 +472,7 @@ object RideApiSpec extends ZIOSpecDefault {
     AuditService.inMemory,
     BlacklistRepository.inMemory,
     GeocodingService.noop,
+    ExpenseRepository.inMemory,
     RideService.layer,
     TestJWT.testJwtService,
     InMemoryClientAddressRepository.layer >>> ClientAddressService.layer

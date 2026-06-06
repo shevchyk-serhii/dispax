@@ -41,6 +41,8 @@ class StubRideService extends RideService:
   def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                                      = ZIO.succeed(BigDecimal(0))
   def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                                  = ZIO.succeed(0.0)
   def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]]                          = ZIO.succeed(Nil)
+  def getDriverEarnings(driverId: PersonId, companyId: CompanyId, period: EarningsPeriod, anchorDate: java.time.LocalDate): IO[RideError, DriverEarningsReport] =
+    ZIO.succeed(DriverEarningsReport(period, Instant.EPOCH, Instant.EPOCH, BigDecimal(0), BigDecimal(0), 0, 0, Nil))
 
 object RidePoolRoutesSpec extends ZIOSpecDefault {
 

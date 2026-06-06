@@ -71,6 +71,19 @@ final class PostgresExpenseRepository(xa: Transactor[Task]) extends ExpenseRepos
     .transact(xa)
     .map(_ > 0)
 
+  override def sumByDriver(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant): Task[BigDecimal] =
+    sql"""
+      SELECT COALESCE(SUM(amount), 0)
+      FROM expenses
+      WHERE driver_id = ${driverId.value}
+        AND company_id = ${companyId.value}
+        AND created_at >= $from
+        AND created_at < $to
+    """
+      .query[BigDecimal]
+      .unique
+      .transact(xa)
+
   implicit val expenseRead: Read[Expense] =
     Read[(UUID, Option[UUID], UUID, UUID, String, BigDecimal, String, Option[String], Option[String], Instant, Instant)]
       .map {

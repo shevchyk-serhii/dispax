@@ -5,11 +5,11 @@ import com.shevchyk.core.application.{EventHub, AuditService, GeocodingService}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.domain.RepositoryExtensions.*
-import com.shevchyk.ride.repository.RideRepository
+import com.shevchyk.ride.repository.{ExpenseRepository, RideRepository, TimeBucket}
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.core.application.{EmailSmsService, RideConfirmationData}
 import zio.*
-import java.time.{Duration, Instant}
+import java.time.{Duration, Instant, LocalDate, ZoneOffset}
 import monocle.syntax.all.*
 
 trait RideService:
@@ -64,6 +64,13 @@ trait RideService:
   def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]
   def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]]
 
+  def getDriverEarnings(
+      driverId: PersonId,
+      companyId: CompanyId,
+      period: EarningsPeriod,
+      anchorDate: java.time.LocalDate
+  ): IO[RideError, DriverEarningsReport]
+
 class RideServiceImpl(
     rideRepository: RideRepository,
     personRepository: PersonRepository,
@@ -71,7 +78,8 @@ class RideServiceImpl(
     emailSmsService: EmailSmsService,
     auditService: AuditService,
     blacklistRepository: BlacklistRepository,
-    geocodingService: GeocodingService
+    geocodingService: GeocodingService,
+    expenseRepository: ExpenseRepository
 ) extends RideService:
 
   def getRideById(rideId: RideId): IO[RideError, Ride] = rideRepository
@@ -622,6 +630,47 @@ class RideServiceImpl(
   def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]] =
     rideRepository.countDailyStatsByCompany(companyId, days).mapDatabaseError
 
+  def getDriverEarnings(
+      driverId: PersonId,
+      companyId: CompanyId,
+      period: EarningsPeriod,
+      anchorDate: LocalDate
+  ): IO[RideError, DriverEarningsReport] =
+    val (from, to, bucket) = earningsWindow(period, anchorDate)
+    for {
+      earnings   <- rideRepository.earningsByDriver(driverId, companyId, from, to).mapDatabaseError
+      rawBuckets <- rideRepository.earningsBucketsByDriver(driverId, companyId, from, to, bucket).mapDatabaseError
+      expenses   <- expenseRepository.sumByDriver(driverId, companyId, from, to).mapDatabaseError
+    } yield DriverEarningsReport(
+      period = period,
+      from = from,
+      to = to,
+      grossRevenue = earnings.grossRevenue,
+      totalExpenses = expenses,
+      completedRides = earnings.completedRides,
+      cancelledRides = earnings.cancelledRides,
+      buckets = rawBuckets.map((start, amount) => EarningsBucket(start, amount))
+    )
+
+  /**
+   * Вычисляет полуоткрытый интервал [from, to) и гранулярность бакетов для периода. Все границы — в UTC, чтобы
+   * совпадать с date_trunc в SQL.
+   */
+  private def earningsWindow(period: EarningsPeriod, anchor: LocalDate): (Instant, Instant, TimeBucket) =
+    period match
+      case EarningsPeriod.Day   =>
+        val from = anchor.atStartOfDay(ZoneOffset.UTC).toInstant
+        (from, from.plus(Duration.ofDays(1)), TimeBucket.Hour)
+      case EarningsPeriod.Week  =>
+        val monday = anchor.minusDays((anchor.getDayOfWeek.getValue - 1).toLong)
+        val from   = monday.atStartOfDay(ZoneOffset.UTC).toInstant
+        (from, from.plus(Duration.ofDays(7)), TimeBucket.Day)
+      case EarningsPeriod.Month =>
+        val first = anchor.withDayOfMonth(1)
+        val from  = first.atStartOfDay(ZoneOffset.UTC).toInstant
+        val to    = first.plusMonths(1).atStartOfDay(ZoneOffset.UTC).toInstant
+        (from, to, TimeBucket.Day)
+
   // -- Cancel permission --------------------------------------------------
 
   private def validateCancelPermission(ride: Ride, userId: PersonId, userRole: PersonRole): IO[RideError, Unit] =
@@ -684,7 +733,7 @@ class RideServiceImpl(
 object RideService:
 
   val layer
-      : ZLayer[RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService, Nothing, RideService] =
+      : ZLayer[RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository, Nothing, RideService] =
     ZLayer.fromFunction(
       RideServiceImpl.apply
     )

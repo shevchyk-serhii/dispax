@@ -8,6 +8,7 @@ import '../modules/core/models/person.dart';
 import '../main.dart' show themeModeNotifier, themeFromString;
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
+import '../dashboard/driver/earnings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -69,6 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         children: [
           if (user != null) _buildProfileSection(user),
+          if (user?.role == PersonRole.driver) _buildEarningsSection(),
           _buildAccountSection(user),
           _buildNotificationsSection(),
           if (user?.role == PersonRole.driver) _buildReminderSection(),
@@ -148,6 +150,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEarningsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Earnings'),
+        ListTile(
+          leading: const Icon(Icons.bar_chart_outlined),
+          title: const Text('My Earnings'),
+          subtitle: const Text('Revenue, expenses and trends'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const EarningsScreen()),
+          ),
+        ),
+      ],
     );
   }
 

@@ -6,7 +6,7 @@ import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.{PersonRepository, InMemoryPersonRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.RideService
-import com.shevchyk.ride.repository.InMemoryRideRepository
+import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
 import zio.test.*
 import zio.*
 import java.time.Instant
@@ -101,7 +101,7 @@ object RideServiceSpec extends ZIOSpecDefault {
     noopEmailSms ++
     AuditService.inMemory ++
     BlacklistRepository.inMemory ++
-    GeocodingService.noop) >+> RideService.layer
+    GeocodingService.noop ++ ExpenseRepository.inMemory) >+> RideService.layer
 
   def spec = suite("RideService")(
     suite("getRideById")(
@@ -118,6 +118,7 @@ object RideServiceSpec extends ZIOSpecDefault {
         AuditService.inMemory,
         BlacklistRepository.inMemory,
         GeocodingService.noop,
+        ExpenseRepository.inMemory,
         RideService.layer
       )
     ),
@@ -150,6 +151,7 @@ object RideServiceSpec extends ZIOSpecDefault {
         AuditService.inMemory,
         BlacklistRepository.inMemory,
         GeocodingService.noop,
+        ExpenseRepository.inMemory,
         RideService.layer
       ),
 
@@ -180,6 +182,7 @@ object RideServiceSpec extends ZIOSpecDefault {
         AuditService.inMemory,
         BlacklistRepository.inMemory,
         GeocodingService.noop,
+        ExpenseRepository.inMemory,
         RideService.layer
       )
     ),

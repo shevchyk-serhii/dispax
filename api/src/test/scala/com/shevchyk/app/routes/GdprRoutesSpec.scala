@@ -30,6 +30,20 @@ class StubRideRepository extends RideRepository:
   def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                               = ZIO.succeed(BigDecimal(0))
   def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double]                              = ZIO.succeed(0.0)
   def countDailyStatsByCompany(companyId: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]] = ZIO.succeed(Nil)
+  def earningsByDriver(
+      driverId: PersonId,
+      companyId: CompanyId,
+      from: java.time.Instant,
+      to: java.time.Instant
+  ): Task[com.shevchyk.ride.domain.DriverEarnings] =
+    ZIO.succeed(com.shevchyk.ride.domain.DriverEarnings(BigDecimal(0), 0, 0))
+  def earningsBucketsByDriver(
+      driverId: PersonId,
+      companyId: CompanyId,
+      from: java.time.Instant,
+      to: java.time.Instant,
+      bucket: com.shevchyk.ride.repository.TimeBucket
+  ): Task[List[(java.time.Instant, BigDecimal)]] = ZIO.succeed(Nil)
   def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]    = ZIO.succeed(Nil)
   def clearReminders(rideId: RideId): Task[Unit]                                                     = ZIO.unit
 

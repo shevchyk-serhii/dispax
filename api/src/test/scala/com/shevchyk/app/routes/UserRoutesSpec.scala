@@ -103,6 +103,24 @@ object UserRoutesSpec extends ZIOSpecDefault {
       def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                                     = ZIO.succeed(BigDecimal(0))
       def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                                 = ZIO.succeed(0.0)
       def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]]                         = ZIO.succeed(Nil)
+      def getDriverEarnings(
+          driverId: PersonId,
+          companyId: CompanyId,
+          period: com.shevchyk.ride.domain.EarningsPeriod,
+          anchorDate: java.time.LocalDate
+      ): IO[RideError, com.shevchyk.ride.domain.DriverEarningsReport] =
+        ZIO.succeed(
+          com.shevchyk.ride.domain.DriverEarningsReport(
+            period,
+            java.time.Instant.EPOCH,
+            java.time.Instant.EPOCH,
+            BigDecimal(0),
+            BigDecimal(0),
+            0,
+            0,
+            Nil
+          )
+        )
     }
   }
 

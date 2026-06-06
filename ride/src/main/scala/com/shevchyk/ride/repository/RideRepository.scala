@@ -1,9 +1,15 @@
 package com.shevchyk.ride.repository
 
-import com.shevchyk.ride.domain.{Ride, RideStatus}
+import com.shevchyk.ride.domain.{DriverEarnings, Ride, RideStatus}
 import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId}
 import zio.*
 import java.time.Instant
+
+/**
+ * Гранулярность бакетов для графика заработка.
+ */
+enum TimeBucket:
+  case Hour, Day
 
 trait RideRepository {
   def create(ride: Ride): Task[Ride]
@@ -20,6 +26,17 @@ trait RideRepository {
   def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]
   def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double]
   def countDailyStatsByCompany(companyId: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]]
+  // Агрегаты заработка водителя за период [from, to) с изоляцией по компании
+  def earningsByDriver(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant): Task[DriverEarnings]
+
+  // Бакеты дохода для графика (по часам или дням) за период [from, to)
+  def earningsBucketsByDriver(
+      driverId: PersonId,
+      companyId: CompanyId,
+      from: Instant,
+      to: Instant,
+      bucket: TimeBucket
+  ): Task[List[(Instant, BigDecimal)]]
   // Поездки со статусом Assigned с pickup между from и to (для планировщика напоминаний)
   def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]
   // Сбросить отправленные напоминания для поездки (при изменении pickupDateTime)

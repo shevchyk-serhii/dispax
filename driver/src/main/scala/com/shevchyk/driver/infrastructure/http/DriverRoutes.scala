@@ -6,6 +6,7 @@ import com.shevchyk.core.domain.{PersonId, PersonRole, RideId}
 import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.ride.application.service.RideService
+import com.shevchyk.ride.domain.{DriverEarningsReport, EarningsPeriod}
 import com.shevchyk.ride.repository.ClientLocationRepository
 import com.shevchyk.ride.infrastructure.http.dto.{LocationDto, RideDto}
 import zio.*
@@ -35,6 +36,23 @@ case class DriverProximityDto(
     etaMinutes: Option[Int] = None
 ) derives JsonCodec
 
+case class EarningsBucketDto(
+    bucketStart: String,
+    amount: Double
+) derives JsonCodec
+
+case class DriverEarningsDto(
+    period: String,
+    grossRevenue: Double,
+    totalExpenses: Double,
+    netRevenue: Double,
+    completedRides: Int,
+    cancelledRides: Int,
+    avgFare: Double,
+    currency: String,
+    buckets: List[EarningsBucketDto]
+) derives JsonCodec
+
 object DriverRoutes:
 
   // Fallback ETA estimate when HERE API key is not configured (~50 km/h urban speed)
@@ -49,6 +67,18 @@ object DriverRoutes:
     val distM = R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     val eta   = math.ceil(distM / (50000.0 / 60.0)).toInt // 50 km/h → minutes
     Some(math.max(1, eta))
+
+  private def toEarningsDto(report: DriverEarningsReport): DriverEarningsDto = DriverEarningsDto(
+    period = report.period.toString.toLowerCase,
+    grossRevenue = report.grossRevenue.toDouble,
+    totalExpenses = report.totalExpenses.toDouble,
+    netRevenue = report.netRevenue.toDouble,
+    completedRides = report.completedRides,
+    cancelledRides = report.cancelledRides,
+    avgFare = report.avgFare.toDouble,
+    currency = "EUR",
+    buckets = report.buckets.map(b => EarningsBucketDto(b.bucketStart.toString, b.amount.toDouble))
+  )
 
   val authenticatedRoutes
       : Routes[DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository & JwtService, Response]     =
@@ -114,6 +144,47 @@ object DriverRoutes:
             status     <- service.getAvailability(PersonId(driverUuid))
             statusStr   = status.getOrElse("Offline")
           } yield Response.json(s"""{"status":"$statusStr"}""")).catchAll {
+            case response: Response => ZIO.succeed(response)
+            case ex: Throwable      =>
+              ZIO
+                .logError(s"Unhandled error: ${Option(ex.getMessage).getOrElse(ex.toString)}")
+                .as(
+                  Response(Status.InternalServerError, body = Body.fromString(s"""{"error":"Internal server error"}"""))
+                )
+          }
+      },
+      Method.GET / "api" / "drivers" / string("driverId") / "earnings"     -> handler {
+        (driverId: String, request: Request) =>
+          (for {
+            user       <- AuthMiddleware.authenticateRequest(request)
+            driverUuid <- UuidParser.parse(driverId)
+            _          <- AuthMiddleware.checkRoleOrOwner(user, driverUuid, "DISPATCHER")
+            companyId  <- UuidParser.requireCompanyId(user.companyId)
+            periodStr   = request.url.queryParams.queryParam("period").getOrElse("week")
+            period     <- ZIO
+                            .fromOption(EarningsPeriod.fromString(periodStr))
+                            .orElseFail(
+                              Response(
+                                Status.BadRequest,
+                                body = Body.fromString("""{"error":"Invalid period. Use 'day', 'week' or 'month'"}""")
+                              )
+                            )
+            anchorDate <- ZIO
+                            .attempt(
+                              request.url.queryParams
+                                .queryParam("date")
+                                .map(java.time.LocalDate.parse)
+                                .getOrElse(java.time.LocalDate.now())
+                            )
+                            .orElseFail(
+                              Response(
+                                Status.BadRequest,
+                                body = Body.fromString("""{"error":"Invalid date. Use ISO format YYYY-MM-DD"}""")
+                              )
+                            )
+            service    <- ZIO.service[RideService]
+            report     <- service.getDriverEarnings(PersonId(driverUuid), companyId, period, anchorDate)
+          } yield Response.json(toEarningsDto(report).toJson)).catchAll {
             case response: Response => ZIO.succeed(response)
             case ex: Throwable      =>
               ZIO

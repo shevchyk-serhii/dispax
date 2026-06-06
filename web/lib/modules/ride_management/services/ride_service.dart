@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/ride.dart';
 import '../models/create_ride_request.dart';
+import '../models/driver_earnings.dart';
 import '../../core/models/person.dart';
 import '../../core/services/api_client.dart';
 
@@ -52,6 +53,34 @@ class RideService {
       }
     } catch (e) {
       throw ApiException('Error fetching user rides: $e');
+    }
+  }
+
+  /// Заработок водителя за период ('day' | 'week' | 'month'), привязанный к [date].
+  Future<DriverEarnings> getDriverEarnings(
+    String driverId,
+    String period,
+    DateTime date,
+  ) async {
+    try {
+      final d =
+          '${date.year.toString().padLeft(4, '0')}-'
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.day.toString().padLeft(2, '0')}';
+      final response = await privateApiClient.get(
+        '/drivers/$driverId/earnings?period=$period&date=$d',
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+        return DriverEarnings.fromJson(json);
+      } else {
+        throw ApiException(
+          'Failed to fetch driver earnings: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw ApiException('Error fetching driver earnings: $e');
     }
   }
 
