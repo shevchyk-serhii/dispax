@@ -127,3 +127,24 @@ VALUES
   (gen_random_uuid(), '88888888-8888-8888-8888-888888888888', 'Allianz Arena', 'Allianz Arena, Werner-Heisenberg-Allee 25, 80939 München', 48.2188, 11.6248, 7, '{"Allianz HQ"}'),
   (gen_random_uuid(), '88888888-8888-8888-8888-888888888888', 'Flughafen München', 'Flughafen München Terminal 1, 85356 München', 48.3537, 11.7750, 9, '{"MUC", "Airport"}')
 ON CONFLICT DO NOTHING;
+
+-- Driver schedules (today + next 2 days) so dispatchers can assign rides.
+-- Round-the-clock 00:00–23:59 window covers any pickup time, regardless of the
+-- hour the E2E tests happen to run (e.g. just after midnight).
+-- Dates are relative (CURRENT_DATE) so the seed never goes stale.
+INSERT INTO schedule_days (id, driver_id, company_id, date, start_time, end_time, status)
+SELECT
+  gen_random_uuid(),
+  d.driver_id,
+  '10101010-1010-1010-1010-101010101010',
+  CURRENT_DATE + offset_days,
+  '00:00'::time,
+  '23:59'::time,
+  'Scheduled'
+FROM (VALUES
+  ('33333333-3333-3333-3333-333333333333'::uuid),
+  ('44444444-4444-4444-4444-444444444444'::uuid),
+  ('55555555-5555-5555-5555-555555555555'::uuid)
+) AS d(driver_id)
+CROSS JOIN (VALUES (0), (1), (2)) AS days(offset_days)
+ON CONFLICT (driver_id, date) DO NOTHING;

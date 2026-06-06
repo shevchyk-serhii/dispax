@@ -39,19 +39,24 @@ class TodayRideCard extends StatelessWidget {
       margin: EdgeInsets.only(bottom: isLast ? 0 : 16),
       child: Card(
         elevation: 2,
+        // clipBehavior rounds the child's corners so the inner Container's
+        // non-uniform Border doesn't need its own borderRadius (which Flutter
+        // forbids on borders with non-uniform side colors).
+        clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: onViewDetails ?? () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => RideDetailsScreen(ride: ride),
-              ),
-            );
-          },
+          onTap:
+              onViewDetails ??
+              () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => RideDetailsScreen(ride: ride),
+                  ),
+                );
+              },
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
               border: Border(
                 left: BorderSide(color: statusColor, width: 4),
                 top: BorderSide(color: statusColor.withAlpha(40), width: 1),
@@ -71,7 +76,11 @@ class TodayRideCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(Color statusColor, bool isUpcoming, Duration timeUntilRide) {
+  Widget _buildHeader(
+    Color statusColor,
+    bool isUpcoming,
+    Duration timeUntilRide,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -127,21 +136,25 @@ class TodayRideCard extends StatelessWidget {
                     color: approachingDistanceMeters! <= 100
                         ? AppColors.success
                         : approachingDistanceMeters! <= 500
-                            ? AppColors.accent
-                            : AppColors.info,
+                        ? AppColors.accent
+                        : AppColors.info,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.directions_car, color: Colors.white, size: 12),
+                      const Icon(
+                        Icons.directions_car,
+                        color: Colors.white,
+                        size: 12,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         approachingDistanceMeters! <= 100
                             ? 'Arrived'
                             : approachingDistanceMeters! < 1000
-                                ? '${approachingDistanceMeters}m'
-                                : '${(approachingDistanceMeters! / 1000).toStringAsFixed(1)}km',
+                            ? '${approachingDistanceMeters}m'
+                            : '${(approachingDistanceMeters! / 1000).toStringAsFixed(1)}km',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -165,7 +178,11 @@ class TodayRideCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.timer_outlined, color: Colors.white, size: 12),
+                      const Icon(
+                        Icons.timer_outlined,
+                        color: Colors.white,
+                        size: 12,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '~$etaMinutes min',
@@ -181,10 +198,7 @@ class TodayRideCard extends StatelessWidget {
             ],
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: statusColor,
               borderRadius: BorderRadius.circular(20),
@@ -208,7 +222,11 @@ class TodayRideCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          RideInfoRow(icon: Icons.person, text: ride.clientName, label: 'Client'),
+          RideInfoRow(
+            icon: Icons.person,
+            text: ride.clientName,
+            label: 'Client',
+          ),
           const SizedBox(height: 12),
           RideInfoRow(
             icon: Icons.location_on,
@@ -216,10 +234,18 @@ class TodayRideCard extends StatelessWidget {
             label: 'Pickup',
           ),
           const SizedBox(height: 12),
-          RideInfoRow(icon: Icons.flag, text: ride.to.address, label: 'Destination'),
+          RideInfoRow(
+            icon: Icons.flag,
+            text: ride.to.address,
+            label: 'Destination',
+          ),
           if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) ...[
             const SizedBox(height: 12),
-            RideInfoRow(icon: Icons.flight, text: ride.fullFlightInfo, label: 'Flight'),
+            RideInfoRow(
+              icon: Icons.flight,
+              text: ride.fullFlightInfo,
+              label: 'Flight',
+            ),
           ],
           const SizedBox(height: 16),
           RideQuickActions(
@@ -227,17 +253,18 @@ class TodayRideCard extends StatelessWidget {
             onCallClient: onCallClient,
             onStartRide: onStartRide,
             onCompleteRide: onCompleteRide,
-            onViewDetails: onViewDetails ?? () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => RideDetailsScreen(ride: ride),
-                ),
-              );
-            },
+            onViewDetails:
+                onViewDetails ??
+                () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => RideDetailsScreen(ride: ride),
+                    ),
+                  );
+                },
           ),
         ],
       ),
     );
   }
-
 }

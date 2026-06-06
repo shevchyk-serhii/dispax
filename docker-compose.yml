@@ -15,5 +15,25 @@ services:
       timeout: 5s
       retries: 5
 
+  # Isolated database for E2E / Patrol tests. Kept separate from the dev DB
+  # (port 5432) so test runs don't pollute development data.
+  # Start only when needed: `docker compose up -d postgres-test`.
+  postgres-test:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: oktopus_test
+      POSTGRES_USER: oktopus
+      POSTGRES_PASSWORD: oktopus
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oktopus -d oktopus_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
+  postgres_test_data:

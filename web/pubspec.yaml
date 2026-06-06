@@ -33,10 +33,21 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
+  patrol: ^4.6.0
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.1
   bloc_test: ^9.1.7
   mocktail: ^1.0.4
+
+patrol:
+  app_name: Oktopus
+  test_directory: integration_test
+  android:
+    package_name: com.shevchyk.web
+  ios:
+    bundle_id: com.shevchyk.web
 flutter:
   generate: true
   uses-material-design: true

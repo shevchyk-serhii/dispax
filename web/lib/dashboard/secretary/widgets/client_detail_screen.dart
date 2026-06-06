@@ -62,7 +62,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_client.name, style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary)),
+        title: Text(
+          _client.name,
+          style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary),
+        ),
         backgroundColor: AppColors.secretaryColor,
         foregroundColor: AppColors.textOnPrimary,
         elevation: AppDimensions.appBarElevation,
@@ -113,7 +116,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             child: _client.isVip
                 ? const Icon(Icons.star, color: AppColors.warning, size: 28)
                 : Text(
-                    _client.name.isNotEmpty ? _client.name[0].toUpperCase() : '?',
+                    _client.name.isNotEmpty
+                        ? _client.name[0].toUpperCase()
+                        : '?',
                     style: TextStyle(
                       color: AppColors.secretaryColor,
                       fontWeight: FontWeight.bold,
@@ -134,7 +139,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     if (_client.isVip) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.warningBorder,
                           borderRadius: BorderRadius.circular(10),
@@ -142,7 +150,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         ),
                         child: const Text(
                           'VIP',
-                          style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: AppColors.warning,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -155,7 +167,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                 if (_client.preferredDriverId != null)
                   Text(
                     'Preferred driver assigned',
-                    style: AppStyles.bodySmall.copyWith(color: AppColors.success),
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.success,
+                    ),
                   ),
               ],
             ),
@@ -165,7 +179,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
               children: [
                 Text(
                   '${_rides!.length}',
-                  style: AppStyles.headlineMedium.copyWith(color: AppColors.secretaryColor),
+                  style: AppStyles.headlineMedium.copyWith(
+                    color: AppColors.secretaryColor,
+                  ),
                 ),
                 Text('rides', style: AppStyles.labelSmall),
               ],
@@ -200,9 +216,18 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.directions_car_outlined, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+            Icon(
+              Icons.directions_car_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 16),
-            Text('No rides yet', style: AppStyles.bodyLarge.copyWith(color: AppColors.textSecondary)),
+            Text(
+              'No rides yet',
+              style: AppStyles.bodyLarge.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
       );
@@ -225,99 +250,130 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-          border: Border(left: BorderSide(color: statusColor, width: 4)),
-        ),
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  DateFormat('dd.MM.yyyy HH:mm').format(ride.pickupDateTime),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: statusColor.withAlpha(20),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: statusColor.withAlpha(100)),
-                  ),
-                  child: Text(
-                    ride.statusDisplayName,
-                    style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.circle, size: 8, color: AppColors.success),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    ride.from.address,
-                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.circle, size: 8, color: AppColors.error),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    ride.to.address,
-                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            if (ride.driverName != null || ride.price != null) ...[
-              const SizedBox(height: 8),
+      // ClipRRect provides the rounded corners; the inner Container keeps the
+      // left accent border. A borderRadius cannot be combined with a Border
+      // that has non-uniform side colors, so we split the two responsibilities.
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(left: BorderSide(color: statusColor, width: 4)),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (ride.driverName != null)
-                    Text(
-                      'Driver: ${ride.driverName}',
-                      style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    ),
-                  if (ride.price != null)
-                    Text(
-                      '\u20AC${ride.price!.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.success),
-                    ),
-                ],
-              ),
-            ],
-            if (ride.isAirportTransfer && ride.flightNumber != null) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(ride.isArrival ? Icons.flight_land : Icons.flight_takeoff,
-                      size: 14, color: AppColors.primary),
-                  const SizedBox(width: 4),
                   Text(
-                    ride.flightNumber!,
-                    style: TextStyle(fontSize: 11, color: AppColors.primary),
+                    DateFormat('dd.MM.yyyy HH:mm').format(ride.pickupDateTime),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withAlpha(20),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: statusColor.withAlpha(100)),
+                    ),
+                    child: Text(
+                      ride.statusDisplayName,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.circle, size: 8, color: AppColors.success),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      ride.from.address,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.circle, size: 8, color: AppColors.error),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      ride.to.address,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              if (ride.driverName != null || ride.price != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (ride.driverName != null)
+                      Text(
+                        'Driver: ${ride.driverName}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    if (ride.price != null)
+                      Text(
+                        '\u20AC${ride.price!.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.success,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+              if (ride.isAirportTransfer && ride.flightNumber != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      ride.isArrival ? Icons.flight_land : Icons.flight_takeoff,
+                      size: 14,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      ride.flightNumber!,
+                      style: TextStyle(fontSize: 11, color: AppColors.primary),
+                    ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -353,7 +409,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                           labelText: 'Name',
                           prefixIcon: Icon(Icons.person),
                         ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Name is required'
+                            : null,
                       ),
                       const SizedBox(height: AppDimensions.paddingMedium),
                       TextFormField(
@@ -364,7 +422,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Email is required';
+                          if (v == null || v.trim().isEmpty)
+                            return 'Email is required';
                           if (!v.contains('@')) return 'Invalid email';
                           return null;
                         },
@@ -381,10 +440,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       const SizedBox(height: AppDimensions.paddingMedium),
                       SwitchListTile(
                         title: const Text('VIP Client'),
-                        subtitle: const Text('Priority service and preferred driver'),
+                        subtitle: const Text(
+                          'Priority service and preferred driver',
+                        ),
                         secondary: Icon(
                           Icons.star,
-                          color: isVip ? AppColors.warning : AppColors.textSecondary,
+                          color: isVip
+                              ? AppColors.warning
+                              : AppColors.textSecondary,
                         ),
                         value: isVip,
                         onChanged: (v) => setDialogState(() => isVip = v),
@@ -400,22 +463,26 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.secretaryColor),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secretaryColor,
+                  ),
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
-                      userService.updateClient(
-                        _client.id,
-                        UpdateUserRequest(
-                          name: nameController.text.trim(),
-                          email: emailController.text.trim(),
-                          phone: phoneController.text.trim().isNotEmpty
-                              ? phoneController.text.trim()
-                              : null,
-                          isVip: isVip,
-                        ),
-                      ).then((updated) {
-                        setState(() => _client = updated);
-                      });
+                      userService
+                          .updateClient(
+                            _client.id,
+                            UpdateUserRequest(
+                              name: nameController.text.trim(),
+                              email: emailController.text.trim(),
+                              phone: phoneController.text.trim().isNotEmpty
+                                  ? phoneController.text.trim()
+                                  : null,
+                              isVip: isVip,
+                            ),
+                          )
+                          .then((updated) {
+                            setState(() => _client = updated);
+                          });
                       Navigator.of(dialogContext).pop();
                     }
                   },

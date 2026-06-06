@@ -2,13 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:oktopus/modules/core/services/api_client.dart';
 
-const String kTestBaseUrl = 'http://localhost:8080/api';
+export 'test_accounts.dart';
+
+/// Port of the local TestApplication. Defaults to 8080; override with
+/// `--dart-define=TEST_SERVER_PORT=8090` to run alongside a dev server.
+const int kTestServerPort = int.fromEnvironment(
+  'TEST_SERVER_PORT',
+  defaultValue: 8080,
+);
+
+const String kTestHost = 'http://localhost:$kTestServerPort';
+const String kTestBaseUrl = '$kTestHost/api';
 
 /// Returns true if backend is reachable (any HTTP response), false on connection error.
 Future<bool> isBackendAvailable() async {
   try {
     await http
-        .get(Uri.parse('http://localhost:8080/'))
+        .get(Uri.parse('$kTestHost/'))
         .timeout(const Duration(seconds: 3));
     return true;
   } catch (_) {
@@ -24,7 +34,9 @@ Future<String> tryLoginAs(String email, String password) async {
   } on ApiException catch (e) {
     final msg = e.message;
     if (msg.contains('429') || msg.contains('503') || msg.contains('connect')) {
-      markTestSkipped('Backend unavailable or rate-limited — skipping integration tests');
+      markTestSkipped(
+        'Backend unavailable or rate-limited — skipping integration tests',
+      );
     }
     rethrow;
   } catch (e) {
@@ -32,12 +44,6 @@ Future<String> tryLoginAs(String email, String password) async {
     rethrow;
   }
 }
-
-const String kClientEmail = 'test@example.com';
-const String kClientPassword = 'Password123';
-const String kDriverEmail = 'driver@example.com';
-const String kAdminEmail = 'admin@example.com';
-const String kPassword = 'Password123';
 
 ApiClient makeClient({String? token}) {
   final client = ApiClient(client: http.Client(), baseUrl: kTestBaseUrl);

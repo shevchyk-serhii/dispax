@@ -37,7 +37,9 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
   }
 
   void _loadSchedule() {
-    context.read<ScheduleBloc>().add(ScheduleLoadForDate(date: widget.selectedDate));
+    context.read<ScheduleBloc>().add(
+      ScheduleLoadForDate(date: widget.selectedDate),
+    );
   }
 
   @override
@@ -52,16 +54,18 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
     widget.onDateChanged(widget.selectedDate.add(Duration(days: days)));
   }
 
-  String _driverLabel(ScheduleDay d) =>
-      d.notes?.isNotEmpty == true
-          ? d.notes!
-          : 'Driver ${d.driverId.length > 8 ? d.driverId.substring(0, 8) : d.driverId}...';
+  String _driverLabel(ScheduleDay d) => d.notes?.isNotEmpty == true
+      ? d.notes!
+      : 'Driver ${d.driverId.length > 8 ? d.driverId.substring(0, 8) : d.driverId}...';
 
-  int _driverRideCount(ScheduleDay d, List<Ride> allRides) =>
-      allRides.where((r) =>
-          r.driverId == d.driverId &&
-          r.status != RideStatus.cancelled &&
-          r.status != RideStatus.completed).length;
+  int _driverRideCount(ScheduleDay d, List<Ride> allRides) => allRides
+      .where(
+        (r) =>
+            r.driverId == d.driverId &&
+            r.status != RideStatus.cancelled &&
+            r.status != RideStatus.completed,
+      )
+      .length;
 
   List<ScheduleDay> _applyFilters(List<ScheduleDay> days, List<Ride> allRides) {
     var filtered = days;
@@ -69,20 +73,26 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
     // Search by driver name
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
-      filtered = filtered.where((d) => _driverLabel(d).toLowerCase().contains(q)).toList();
+      filtered = filtered
+          .where((d) => _driverLabel(d).toLowerCase().contains(q))
+          .toList();
     }
 
     // Filter by load
     switch (_loadFilter) {
       case _LoadFilter.available:
-        filtered = filtered.where((d) => _driverRideCount(d, allRides) == 0).toList();
+        filtered = filtered
+            .where((d) => _driverRideCount(d, allRides) == 0)
+            .toList();
       case _LoadFilter.moderate:
         filtered = filtered.where((d) {
           final c = _driverRideCount(d, allRides);
           return c >= 1 && c <= 2;
         }).toList();
       case _LoadFilter.busy:
-        filtered = filtered.where((d) => _driverRideCount(d, allRides) >= 3).toList();
+        filtered = filtered
+            .where((d) => _driverRideCount(d, allRides) >= 3)
+            .toList();
       case _LoadFilter.all:
         break;
     }
@@ -109,24 +119,36 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
+                      ),
                       const SizedBox(height: 12),
-                      Text(scheduleState.errorMessage ?? 'Error loading schedules'),
+                      Text(
+                        scheduleState.errorMessage ?? 'Error loading schedules',
+                      ),
                       const SizedBox(height: 12),
-                      ElevatedButton(onPressed: _loadSchedule, child: const Text('Retry')),
+                      ElevatedButton(
+                        onPressed: _loadSchedule,
+                        child: const Text('Retry'),
+                      ),
                     ],
                   ),
                 );
               }
 
-              final allDays = scheduleState.scheduleDays
-                  .where((d) =>
-                    d.date.year == widget.selectedDate.year &&
-                    d.date.month == widget.selectedDate.month &&
-                    d.date.day == widget.selectedDate.day &&
-                    d.status != ScheduleDayStatus.cancelled)
-                  .toList()
-                ..sort((a, b) => a.startTime.compareTo(b.startTime));
+              final allDays =
+                  scheduleState.scheduleDays
+                      .where(
+                        (d) =>
+                            d.date.year == widget.selectedDate.year &&
+                            d.date.month == widget.selectedDate.month &&
+                            d.date.day == widget.selectedDate.day &&
+                            d.status != ScheduleDayStatus.cancelled,
+                      )
+                      .toList()
+                    ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
               return BlocBuilder<RideBloc, RideState>(
                 builder: (context, rideState) {
@@ -139,10 +161,14 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                   return RefreshIndicator(
                     onRefresh: () async => _loadSchedule(),
                     child: ListView.builder(
-                      padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                      padding: const EdgeInsets.all(
+                        AppDimensions.paddingMedium,
+                      ),
                       itemCount: days.length,
                       itemBuilder: (context, index) {
-                        return _DriverScheduleDropTarget(scheduleDay: days[index]);
+                        return _DriverScheduleDropTarget(
+                          scheduleDay: days[index],
+                        );
                       },
                     ),
                   );
@@ -167,9 +193,15 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search driver name...',
-                hintStyle: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
+                hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 prefixIcon: const Icon(Icons.search, size: 18),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 12,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: colorScheme.outlineVariant),
@@ -186,13 +218,33 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
           const SizedBox(height: 6),
           Row(
             children: [
-              _buildLoadChip('All', _LoadFilter.all, AppColors.textSecondary, colorScheme),
+              _buildLoadChip(
+                'All',
+                _LoadFilter.all,
+                AppColors.textSecondary,
+                colorScheme,
+              ),
               const SizedBox(width: 6),
-              _buildLoadChip('Available', _LoadFilter.available, AppColors.success, colorScheme),
+              _buildLoadChip(
+                'Available',
+                _LoadFilter.available,
+                AppColors.success,
+                colorScheme,
+              ),
               const SizedBox(width: 6),
-              _buildLoadChip('Moderate', _LoadFilter.moderate, AppColors.warning, colorScheme),
+              _buildLoadChip(
+                'Moderate',
+                _LoadFilter.moderate,
+                AppColors.warning,
+                colorScheme,
+              ),
               const SizedBox(width: 6),
-              _buildLoadChip('Busy', _LoadFilter.busy, AppColors.error, colorScheme),
+              _buildLoadChip(
+                'Busy',
+                _LoadFilter.busy,
+                AppColors.error,
+                colorScheme,
+              ),
             ],
           ),
         ],
@@ -200,7 +252,12 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
     );
   }
 
-  Widget _buildLoadChip(String label, _LoadFilter filter, Color color, ColorScheme colorScheme) {
+  Widget _buildLoadChip(
+    String label,
+    _LoadFilter filter,
+    Color color,
+    ColorScheme colorScheme,
+  ) {
     final selected = _loadFilter == filter;
     return GestureDetector(
       onTap: () => setState(() => _loadFilter = filter),
@@ -238,7 +295,11 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
             const Expanded(
               child: Text(
                 'Driver Schedules',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
@@ -283,12 +344,17 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: isToday ? AppColors.dispatcherColor : AppColors.textPrimary,
+                    color: isToday
+                        ? AppColors.dispatcherColor
+                        : AppColors.textPrimary,
                   ),
                 ),
                 Text(
                   DateFormat.yMMMd().format(widget.selectedDate),
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -312,7 +378,11 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
           const SizedBox(height: 12),
           Text(
             'No drivers scheduled',
-            style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 16,
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -338,14 +408,21 @@ class _DriverScheduleDropTarget extends StatelessWidget {
     final scheduleState = context.read<ScheduleBloc>().state;
     final rideState = context.read<RideBloc>().state;
 
-    final otherDrivers = scheduleState.scheduleDays
-        .where((d) => d.driverId != ride.driverId && d.status != ScheduleDayStatus.cancelled)
-        .toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final otherDrivers =
+        scheduleState.scheduleDays
+            .where(
+              (d) =>
+                  d.driverId != ride.driverId &&
+                  d.status != ScheduleDayStatus.cancelled,
+            )
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     if (otherDrivers.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No other drivers available for reassignment.')),
+        const SnackBar(
+          content: Text('No other drivers available for reassignment.'),
+        ),
       );
       return;
     }
@@ -367,14 +444,17 @@ class _DriverScheduleDropTarget extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.warningStrong,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(
                     child: Container(
-                      width: 40, height: 4,
+                      width: 40,
+                      height: 4,
                       decoration: BoxDecoration(
                         color: Colors.white54,
                         borderRadius: BorderRadius.circular(2),
@@ -384,7 +464,11 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                   const SizedBox(height: 12),
                   const Text(
                     'Reassign Ride',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -402,17 +486,23 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                 itemBuilder: (_, index) {
                   final schedule = otherDrivers[index];
                   final driverRides = rideState.rides
-                      .where((r) => r.driverId == schedule.driverId &&
-                                    r.status != RideStatus.cancelled &&
-                                    r.status != RideStatus.completed)
+                      .where(
+                        (r) =>
+                            r.driverId == schedule.driverId &&
+                            r.status != RideStatus.cancelled &&
+                            r.status != RideStatus.completed,
+                      )
                       .toList();
-                  final conflicts = ConflictDetector.findConflicts(ride, driverRides);
+                  final conflicts = ConflictDetector.findConflicts(
+                    ride,
+                    driverRides,
+                  );
                   final rideCount = driverRides.length;
                   final loadColor = rideCount == 0
                       ? AppColors.success
                       : rideCount <= 2
-                          ? AppColors.warning
-                          : AppColors.error;
+                      ? AppColors.warning
+                      : AppColors.error;
 
                   final driverLabel = schedule.notes?.isNotEmpty == true
                       ? schedule.notes!
@@ -423,7 +513,9 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(
-                        color: conflicts.isNotEmpty ? AppColors.error.withAlpha(100) : Colors.transparent,
+                        color: conflicts.isNotEmpty
+                            ? AppColors.error.withAlpha(100)
+                            : Colors.transparent,
                       ),
                     ),
                     child: ListTile(
@@ -431,15 +523,24 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                         backgroundColor: loadColor.withAlpha(40),
                         child: Icon(Icons.person, color: loadColor),
                       ),
-                      title: Text(driverLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      title: Text(
+                        driverLabel,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('$rideCount ride${rideCount == 1 ? '' : 's'} assigned'),
+                          Text(
+                            '$rideCount ride${rideCount == 1 ? '' : 's'} assigned',
+                          ),
                           if (conflicts.isNotEmpty)
                             Text(
                               '${conflicts.length} time conflict${conflicts.length == 1 ? '' : 's'}',
-                              style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                color: AppColors.error,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                         ],
                       ),
@@ -450,22 +551,31 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                           context: context,
                           builder: (_) => AlertDialog(
                             title: const Text('Confirm Reassignment'),
-                            content: Text('Reassign ${ride.clientName} to $driverLabel?'),
+                            content: Text(
+                              'Reassign ${ride.clientName} to $driverLabel?',
+                            ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
                                 child: const Text('Cancel'),
                               ),
                               ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.warning,
+                                ),
                                 onPressed: () {
                                   Navigator.pop(context);
-                                  context.read<RideBloc>().add(RideReassignRequested(
-                                    rideId: ride.id,
-                                    newDriverId: schedule.driverId,
-                                  ));
+                                  context.read<RideBloc>().add(
+                                    RideReassignRequested(
+                                      rideId: ride.id,
+                                      newDriverId: schedule.driverId,
+                                    ),
+                                  );
                                 },
-                                child: const Text('Reassign', style: TextStyle(color: Colors.white)),
+                                child: const Text(
+                                  'Reassign',
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ),
                             ],
                           ),
@@ -487,17 +597,20 @@ class _DriverScheduleDropTarget extends StatelessWidget {
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) {
         final driverRides = rideState.rides
-            .where((r) => r.driverId == scheduleDay.driverId &&
-                          r.status != RideStatus.cancelled &&
-                          r.status != RideStatus.completed)
+            .where(
+              (r) =>
+                  r.driverId == scheduleDay.driverId &&
+                  r.status != RideStatus.cancelled &&
+                  r.status != RideStatus.completed,
+            )
             .toList();
 
         final rideCount = driverRides.length;
         final loadColor = rideCount == 0
             ? AppColors.success
             : rideCount <= 2
-                ? AppColors.warning
-                : AppColors.error;
+            ? AppColors.warning
+            : AppColors.error;
 
         return DragTarget<Ride>(
           onWillAcceptWithDetails: (details) {
@@ -518,10 +631,12 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                 driverId: scheduleDay.driverId,
                 conflicts: conflicts,
                 onConfirm: () {
-                  context.read<RideBloc>().add(RideAssignRequested(
-                    rideId: ride.id,
-                    driverId: scheduleDay.driverId,
-                  ));
+                  context.read<RideBloc>().add(
+                    RideAssignRequested(
+                      rideId: ride.id,
+                      driverId: scheduleDay.driverId,
+                    ),
+                  );
                 },
               ),
             );
@@ -532,6 +647,10 @@ class _DriverScheduleDropTarget extends StatelessWidget {
 
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
+              // clipBehavior rounds the child so the inner Container's left
+              // accent border (a non-uniform Border) doesn't need its own
+              // borderRadius, which Flutter forbids in that combination.
+              clipBehavior: Clip.antiAlias,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: isHovering
@@ -542,7 +661,6 @@ class _DriverScheduleDropTarget extends StatelessWidget {
               color: isHovering ? AppColors.rideAssignedBg : null,
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
                   border: Border(left: BorderSide(color: loadColor, width: 4)),
                 ),
                 padding: const EdgeInsets.all(14),
@@ -554,11 +672,18 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.person, size: 18, color: colorScheme.onSurfaceVariant),
+                            Icon(
+                              Icons.person,
+                              size: 18,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               'Driver ${scheduleDay.driverId.length > 8 ? scheduleDay.driverId.substring(0, 8) : scheduleDay.driverId}...',
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
@@ -572,7 +697,8 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                     context: context,
                                     builder: (_) => BulkReassignDialog(
                                       fromDriverId: scheduleDay.driverId,
-                                      fromDriverLabel: scheduleDay.notes?.isNotEmpty == true
+                                      fromDriverLabel:
+                                          scheduleDay.notes?.isNotEmpty == true
                                           ? scheduleDay.notes!
                                           : 'Driver ${scheduleDay.driverId.length > 8 ? scheduleDay.driverId.substring(0, 8) : scheduleDay.driverId}...',
                                       rides: driverRides,
@@ -581,19 +707,32 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                 },
                                 child: Padding(
                                   padding: const EdgeInsets.only(right: 8),
-                                  child: Icon(Icons.swap_horiz, size: 20, color: AppColors.errorStrong),
+                                  child: Icon(
+                                    Icons.swap_horiz,
+                                    size: 20,
+                                    color: AppColors.errorStrong,
+                                  ),
                                 ),
                               ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: loadColor.withAlpha(30),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: loadColor.withAlpha(100)),
+                                border: Border.all(
+                                  color: loadColor.withAlpha(100),
+                                ),
                               ),
                               child: Text(
                                 '$rideCount ride${rideCount == 1 ? '' : 's'}',
-                                style: TextStyle(color: loadColor, fontSize: 11, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: loadColor,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -603,45 +742,71 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.schedule, size: 14, color: colorScheme.onSurfaceVariant),
+                        Icon(
+                          Icons.schedule,
+                          size: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           '${scheduleDay.startTime} — ${scheduleDay.endTime}',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
                     if (driverRides.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      ...driverRides.take(3).map((ride) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Icon(Icons.directions_car, size: 12, color: AppColors.rideAssigned),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                '${DateFormat('HH:mm').format(ride.pickupDateTime)} ${ride.from.address}',
-                                style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                      ...driverRides
+                          .take(3)
+                          .map(
+                            (ride) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.directions_car,
+                                    size: 12,
+                                    color: AppColors.rideAssigned,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      '${DateFormat('HH:mm').format(ride.pickupDateTime)} ${ride.from.address}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (ride.status == RideStatus.assigned)
+                                    GestureDetector(
+                                      onTap: () =>
+                                          _showReassignSheet(context, ride),
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 4),
+                                        child: Icon(
+                                          Icons.swap_horiz,
+                                          size: 16,
+                                          color: AppColors.warningStrong,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
-                            if (ride.status == RideStatus.assigned)
-                              GestureDetector(
-                                onTap: () => _showReassignSheet(context, ride),
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 4),
-                                  child: Icon(Icons.swap_horiz, size: 16, color: AppColors.warningStrong),
-                                ),
-                              ),
-                          ],
-                        ),
-                      )),
+                          ),
                       if (driverRides.length > 3)
                         Text(
                           '+${driverRides.length - 3} more',
-                          style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                     ],
                     if (isHovering)
@@ -653,12 +818,18 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppColors.primary.withAlpha(20),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.primary.withAlpha(60)),
+                            border: Border.all(
+                              color: AppColors.primary.withAlpha(60),
+                            ),
                           ),
                           child: const Text(
                             'Drop here to assign',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13),
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),

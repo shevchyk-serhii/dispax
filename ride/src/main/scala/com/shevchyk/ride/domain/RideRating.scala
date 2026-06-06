@@ -23,7 +23,9 @@ final case class RideRating(
 ) derives JsonCodec
 
 final case class CreateRatingRequest(
-    rideId: String,
+    // Optional: the ride id is taken from the URL path, so clients only send
+    // `rating` and `comment`. Keeping it optional avoids a JSON-decode failure.
+    rideId: Option[String] = None,
     rating: Int,
     comment: Option[String] = None
 ) derives JsonCodec

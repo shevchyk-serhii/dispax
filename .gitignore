@@ -43,6 +43,7 @@ build/
 ### Claude ###
 .claude/settings.local.json
 .claude/worktrees/
+.claude/scheduled_tasks.lock
 
 ### Scala ###
 .bsp/
@@ -58,6 +59,9 @@ web/.packages
 web/.pub-cache/
 web/.pub/
 web/pubspec.lock
+
+### Patrol ###
+web/integration_test/test_bundle.dart
 
 ### Flutter iOS ###
 web/ios/Flutter/flutter_export_environment.sh

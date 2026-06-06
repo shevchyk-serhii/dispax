@@ -22,5 +22,16 @@ object ServerConfig {
     ServerConfig()
   )
 
+  /**
+   * Reads the port from the `PORT` env var (falling back to the default), keeping the default host. Used by the test
+   * server so it can bind to a non-default port (e.g. to run alongside a dev server on 8080).
+   */
+  val envPortLayer: ZLayer[Any, Nothing, ServerConfig] = ZLayer.fromZIO(
+    System
+      .env("PORT")
+      .orElseSucceed(None)
+      .map(envPort => ServerConfig(port = envPort.flatMap(_.toIntOption).getOrElse(ServerConfig().port)))
+  )
+
   val liveLayer: ZLayer[Any, Throwable, ServerConfig] = layer.catchAll(_ => defaultLayer)
 }

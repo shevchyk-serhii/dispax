@@ -11,7 +11,8 @@ plugins {
 android {
     namespace = "com.shevchyk.web"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    // Bumped from 27.0.12077973: integration_test (pulled in by Patrol) requires 28.x.
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -32,6 +33,14 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Patrol native automation
+        testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+    }
+
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 
     buildTypes {
@@ -49,4 +58,8 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // Patrol native automation
+    androidTestUtil("androidx.test:orchestrator:1.5.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }
