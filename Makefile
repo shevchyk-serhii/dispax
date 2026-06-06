@@ -2,7 +2,7 @@
         flutter-dev flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
-        e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast \
+        emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
         dev-all stop-dev \
         deploy logs setup-hooks
@@ -15,6 +15,9 @@ GCP_SERVICE := oktopus
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/oktopus-docker/oktopus-server:latest
 FLUTTER_DIR    := web
 PATROL         := $(HOME)/.pub-cache/bin/patrol
+ADB            := $(HOME)/Library/Android/sdk/platform-tools/adb
+# AVD launched by `emulator-up` if no device is connected. Override: ANDROID_AVD=Pixel_7 make e2e-fast
+ANDROID_AVD    ?= Pixel_5
 # Port for the in-memory TestApplication used by integration / Patrol tests.
 # Defaults to 8090 so tests run alongside a dev server on 8080. Override: TEST_PORT=9000 make ...
 TEST_PORT      ?= 8090
@@ -100,6 +103,20 @@ patrol-test-ios:
 # isolated test DB (postgres-test on 5433), with Flyway dev-data + seeded driver
 # schedules. They cover the per-role happy-paths and the full ride lifecycle.
 
+# Ensure an Android emulator is running: reuse a connected device, otherwise
+# boot ANDROID_AVD and wait for it. Lets `make e2e-fast` work from cold.
+emulator-up:
+	@if $(ADB) devices | grep -qw device; then \
+	  echo "📱 Android device already connected"; \
+	else \
+	  echo "📱 Launching emulator $(ANDROID_AVD)..."; \
+	  flutter emulators --launch $(ANDROID_AVD); \
+	  echo "⏳ Waiting for emulator to boot..."; \
+	  $(ADB) wait-for-device; \
+	  until [ "$$($(ADB) shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do sleep 2; done; \
+	  echo "✅ Emulator booted"; \
+	fi
+
 # Ordered list of E2E suites. full_flow runs before the data-mutating feature
 # tests (blacklist/admin) so their writes can't interfere with assignment.
 E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
@@ -130,7 +147,7 @@ e2e-backend-down:
 
 # Run all E2E suites on an Android emulator (host reached via 10.0.2.2).
 # Each suite starts from a clean transactional state for isolation.
-e2e-android: e2e-backend-up
+e2e-android: emulator-up e2e-backend-up
 	@echo "🧪 Running Patrol E2E suites on Android..."
 	@cd $(FLUTTER_DIR) && for t in $(E2E_SUITES); do \
 	  echo "▶ $$t"; \
@@ -165,7 +182,7 @@ PATROL_EXCLUDES := --exclude integration_test/auth_integration_test.dart \
                    --exclude integration_test/user_integration_test.dart \
                    --exclude integration_test/ride_integration_test.dart \
                    --exclude integration_test/permissions_test.dart
-e2e-fast: e2e-backend-up
+e2e-fast: emulator-up e2e-backend-up
 	@echo "🧪 Running ALL Patrol E2E in one bundle (Android, no orchestrator)..."
 	@cd $(FLUTTER_DIR) && $(PATROL) test $(PATROL_EXCLUDES) \
 	  --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api ; \
