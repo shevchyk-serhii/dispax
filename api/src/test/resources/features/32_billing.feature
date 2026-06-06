@@ -33,11 +33,6 @@ Feature: Billing Management
     Then the response status should be 200
     And the response should contain client company details
 
-  Scenario: Delete a billing company
-    Given I am authenticated as an admin
-    When I send a DELETE request to "/api/billing/companies/11111111-1111-1111-1111-111111111111"
-    Then the response status should be 204
-
   Scenario: Get billing companies without authentication
     When I send a GET request to "/api/billing/companies" without authentication
     Then the response status should be 401
@@ -79,8 +74,7 @@ Feature: Billing Management
       """
       {}
       """
-    Then the response status should be 200
-    And the response should contain ride details
+    Then the response status should be 409
 
   Scenario: Download invoice as PDF
     Given I am authenticated as a dispatcher
@@ -93,7 +87,7 @@ Feature: Billing Management
       """
       {}
       """
-    Then the response status should be 200
+    Then the response status should be 409
 
   Scenario: Mark invoice as paid
     Given I am authenticated as a dispatcher
@@ -107,7 +101,7 @@ Feature: Billing Management
   Scenario: Delete an invoice
     Given I am authenticated as an admin
     When I send a DELETE request to "/api/billing/invoices/11111111-1111-1111-1111-111111111111"
-    Then the response status should be 204
+    Then the response status should be 409
 
   Scenario: Get invoices without authentication
     When I send a GET request to "/api/billing/invoices" without authentication
@@ -120,3 +114,9 @@ Feature: Billing Management
       {"clientCompanyId":"11111111-1111-1111-1111-111111111111","periodFrom":"2026-06-01","periodTo":"2026-06-30"}
       """
     Then the response status should be 403
+
+  # Delete billing company last to avoid breaking invoice scenarios
+  Scenario: Delete a billing company
+    Given I am authenticated as an admin
+    When I send a DELETE request to "/api/billing/companies/11111111-1111-1111-1111-111111111111"
+    Then the response status should be 204

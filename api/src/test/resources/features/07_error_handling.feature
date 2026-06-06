@@ -9,7 +9,7 @@ Feature: Error Handling & Validation
 
   Scenario: Handle malformed JSON request
     Given I am authenticated as a client
-    When I send a POST request to "/api/v2/rides" with malformed JSON:
+    When I send a POST request to "/api/rides" with malformed JSON:
       """
       { "clientId": 1, "pickup": "Location" invalid json }
       """
@@ -28,17 +28,20 @@ Feature: Error Handling & Validation
     And the errors should specify invalid "scheduledAt" format
 
   Scenario: Handle invalid email format
+    Given I am authenticated as an admin
     When I create a user with invalid email "not-an-email"
     Then the response status should be 400
     And the response should contain "Invalid email format"
 
   Scenario: Handle invalid phone number format
+    Given I am authenticated as an admin
     When I create a user with invalid phone "123"
     Then the response status should be 400
     And the response should contain "Invalid phone number format"
 
   Scenario: Handle duplicate resource creation
     Given a user exists with email "existing@example.com"
+    Given I am authenticated as an admin
     When I create a new user with email "existing@example.com"
     Then the response status should be 409
     And the response should contain "User already exists"
@@ -52,22 +55,22 @@ Feature: Error Handling & Validation
 
   Scenario: Handle rate limiting
     Given I am authenticated as a user
-    When I send 100 requests per minute to "/api/v2/rides"
+    When I send 100 requests per minute to "/api/rides"
     Then the 101st request should return status 429
     And the response should contain "Rate limit exceeded"
     And the response should include "Retry-After" header
 
   Scenario: Handle database connection failure
     Given the database is temporarily unavailable
-    When I send a GET request to "/api/v2/rides"
+    When I send a GET request to "/api/rides"
     Then the response status should be 503
     And the response should contain "Service temporarily unavailable"
 
   Scenario: Handle invalid route parameters
     Given I am authenticated as a user
-    When I send a GET request to "/api/v2/rides/invalid-id"
+    When I send a GET request to "/api/rides/not-a-uuid"
     Then the response status should be 400
-    And the response should contain "Invalid ride ID format"
+    And the response should contain "Invalid UUID format"
 
   Scenario: Handle unauthorized access to specific resource
     Given I am authenticated as client with ID 50

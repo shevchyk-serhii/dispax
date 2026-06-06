@@ -9,23 +9,23 @@ Feature: Driver Location and Availability
 
   Scenario: Update driver location
     Given I am authenticated as a driver
-    When I send a PUT request to "/api/drivers/22222222-2222-2222-2222-222222222222/location" with body:
+    When I send a PUT request to "/api/drivers/10101010-1010-1010-1010-101010101010/location" with body:
       """
       {"latitude":48.1351,"longitude":11.5820,"heading":90.0}
       """
-    Then the response status should be 200
+    Then the response status should be 204
 
   Scenario: Update driver availability
     Given I am authenticated as a driver
-    When I send a PUT request to "/api/drivers/22222222-2222-2222-2222-222222222222/availability" with body:
+    When I send a PUT request to "/api/drivers/10101010-1010-1010-1010-101010101010/availability" with body:
       """
-      {"available":true}
+      {"status":"Available"}
       """
-    Then the response status should be 200
+    Then the response status should be 204
 
   Scenario: Get driver availability
     Given I am authenticated as a dispatcher
-    When I send a GET request to "/api/drivers/22222222-2222-2222-2222-222222222222/availability"
+    When I send a GET request to "/api/drivers/10101010-1010-1010-1010-101010101010/availability"
     Then the response status should be 200
     And the response should contain driver availability details
 

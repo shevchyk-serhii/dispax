@@ -16,7 +16,7 @@ object AuditRoutes:
     // GET /api/audit?entityType=ride&entityId={id}
     Method.GET / "api" / "audit" -> RouteHelpers.authHandler("Audit") { (user, request) =>
       for {
-        _          <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         entityType <- ZIO
                         .fromOption(request.url.queryParams.queryParam("entityType"))
                         .orElseFail(new RuntimeException("entityType query parameter is required"))
@@ -32,7 +32,7 @@ object AuditRoutes:
     // GET /api/audit/recent?limit=50
     Method.GET / "api" / "audit" / "recent" -> RouteHelpers.authHandler("Audit") { (user, request) =>
       for {
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
         offset     = request.url.queryParams.queryParam("offset").flatMap(_.toIntOption).getOrElse(0).max(0)

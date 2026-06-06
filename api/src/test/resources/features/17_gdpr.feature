@@ -17,7 +17,7 @@ Feature: GDPR Compliance
     Given I am authenticated as a client
     When I send a PUT request to "/api/gdpr/consents" with body:
       """
-      {"marketingConsent":false,"analyticsConsent":true}
+      {"consentType":"Marketing","granted":true,"ipAddress":"127.0.0.1"}
       """
     Then the response status should be 200
     And the response should contain consent details

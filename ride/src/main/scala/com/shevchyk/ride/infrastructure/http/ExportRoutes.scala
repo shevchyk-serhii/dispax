@@ -173,7 +173,7 @@ object ExportRoutes:
     Method.GET / "api" / "export" / "datev" -> handler { (request: Request) =>
       (for
         user      <- AuthMiddleware.authenticateRequest(request)
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         month      = parseMonth(request)
 
@@ -216,7 +216,7 @@ object ExportRoutes:
     Method.GET / "api" / "export" / "datev" / "rides" -> handler { (request: Request) =>
       (for
         user      <- AuthMiddleware.authenticateRequest(request)
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         month      = parseMonth(request)
 
@@ -238,7 +238,7 @@ object ExportRoutes:
     Method.GET / "api" / "export" / "datev" / "expenses" -> handler { (request: Request) =>
       (for
         user      <- AuthMiddleware.authenticateRequest(request)
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         month      = parseMonth(request)
 

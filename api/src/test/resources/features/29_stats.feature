@@ -27,7 +27,7 @@ Feature: Statistics and Reports
 
   Scenario: Get payroll statistics
     Given I am authenticated as an admin
-    When I send a GET request to "/api/stats/payroll"
+    When I send a GET request to "/api/stats/payroll?driverId=10101010-1010-1010-1010-101010101010&from=2026-01-01&to=2026-06-30"
     Then the response status should be 200
     And the response should contain payroll statistics details
 

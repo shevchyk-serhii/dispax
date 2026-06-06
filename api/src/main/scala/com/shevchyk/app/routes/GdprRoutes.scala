@@ -120,11 +120,12 @@ object GdprRoutes:
       } yield Response(Status.Created, body = Body.fromString(created.toJson))
     },
 
-    // GET /api/gdpr/requests — get user's GDPR requests
+    // GET /api/gdpr/requests — get all GDPR deletion requests (admin/dispatcher only)
     Method.GET / "api" / "gdpr" / "requests" -> RouteHelpers.authHandler("GDPR") { (user, _) =>
       for {
+        _        <- AuthMiddleware.checkRole(user, "ADMIN", "DISPATCHER")
         repo     <- ZIO.service[GdprRepository]
-        requests <- repo.findRequestsByUserId(PersonId(user.userId))
+        requests <- repo.findAllRequests()
       } yield Response.json(requests.toJson)
     }
   )

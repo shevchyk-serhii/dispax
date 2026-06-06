@@ -11,6 +11,7 @@ trait GdprRepository:
   def revokeConsent(userId: PersonId, consentType: ConsentType): Task[Boolean]
   def createRequest(request: GdprRequest): Task[GdprRequest]
   def findRequestsByUserId(userId: PersonId): Task[List[GdprRequest]]
+  def findAllRequests(): Task[List[GdprRequest]]
   def updateRequestStatus(requestId: GdprRequestId, status: GdprRequestStatus): Task[Boolean]
 
 object GdprRepository:
@@ -49,6 +50,8 @@ class InMemoryGdprRepository extends GdprRepository:
   override def findRequestsByUserId(userId: PersonId): Task[List[GdprRequest]] = ZIO.succeed {
     requests.filter(_.userId == userId)
   }
+
+  override def findAllRequests(): Task[List[GdprRequest]] = ZIO.succeed(requests)
 
   override def updateRequestStatus(requestId: GdprRequestId, status: GdprRequestStatus): Task[Boolean] = ZIO.succeed {
     val idx = requests.indexWhere(_.id == requestId)

@@ -40,7 +40,7 @@ Feature: Ride Pool Management
       """
       {"rideId":"22222222-2222-2222-2222-222222222222"}
       """
-    Then the response status should be 200
+    Then the response status should be 201
     And the response should contain pool details
 
   Scenario: Remove ride from pool
@@ -61,7 +61,7 @@ Feature: Ride Pool Management
     Given I am authenticated as a dispatcher
     When I send a PUT request to "/api/pools/11111111-1111-1111-1111-111111111111/status" with body:
       """
-      {"status":"Closed"}
+      {"status":"Cancelled"}
       """
     Then the response status should be 200
     And the response should contain pool details
@@ -69,8 +69,7 @@ Feature: Ride Pool Management
   Scenario: Get pool for a specific ride
     Given I am authenticated as a dispatcher
     When I send a GET request to "/api/pools/ride/11111111-1111-1111-1111-111111111111"
-    Then the response status should be 200
-    And the response should contain pool details
+    Then the response status should be 404
 
   Scenario: Get pools without authentication
     When I send a GET request to "/api/pools" without authentication

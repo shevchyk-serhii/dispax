@@ -78,7 +78,7 @@ object StatsRoutes:
       Method.GET / "api" / "stats" / "payroll" -> handler { (request: Request) =>
         (for {
           user      <- AuthMiddleware.authenticateRequest(request)
-          _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           driverId  <- ZIO
                          .fromOption(request.url.queryParams.queryParam("driverId"))
                          .orElseFail(new RuntimeException("driverId query parameter is required"))
@@ -131,7 +131,7 @@ object StatsRoutes:
       Method.GET / "api" / "stats" / "cancellations" -> handler { (request: Request) =>
         (for {
           user      <- AuthMiddleware.authenticateRequest(request)
-          _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           companyId <- UuidParser.requireCompanyId(user.companyId)
           service   <- ZIO.service[RideService]
           stats     <- service.getCancellationStats(companyId)
@@ -146,7 +146,7 @@ object StatsRoutes:
       Method.GET / "api" / "stats" / "peak-hours" -> handler { (request: Request) =>
         (for {
           user      <- AuthMiddleware.authenticateRequest(request)
-          _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           companyId <- UuidParser.requireCompanyId(user.companyId)
           days       = request.url.queryParams.queryParam("days").flatMap(_.toIntOption).getOrElse(30)
           service   <- ZIO.service[RideService]
@@ -171,7 +171,7 @@ object StatsRoutes:
       Method.GET / "api" / "stats" / "client-value" -> handler { (request: Request) =>
         (for {
           user       <- AuthMiddleware.authenticateRequest(request)
-          _          <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           companyId  <- UuidParser.requireCompanyId(user.companyId)
           service    <- ZIO.service[RideService]
           personRepo <- ZIO.service[PersonRepository]
@@ -207,7 +207,7 @@ object StatsRoutes:
       Method.GET / "api" / "stats" / "driver-performance" -> handler { (request: Request) =>
         (for {
           user       <- AuthMiddleware.authenticateRequest(request)
-          _          <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           companyId  <- UuidParser.requireCompanyId(user.companyId)
           service    <- ZIO.service[RideService]
           personRepo <- ZIO.service[PersonRepository]
@@ -247,7 +247,7 @@ object StatsRoutes:
       Method.GET / "api" / "stats" / "driver-ratings" -> handler { (request: Request) =>
         (for {
           user       <- AuthMiddleware.authenticateRequest(request)
-          _          <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           companyId  <- UuidParser.requireCompanyId(user.companyId)
           personRepo <- ZIO.service[PersonRepository]
           ratingRepo <- ZIO.service[RideRatingRepository]

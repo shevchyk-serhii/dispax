@@ -19,7 +19,7 @@ object BlacklistRoutes:
     // GET /api/blacklist — list blacklist entries for company
     Method.GET / "api" / "blacklist" -> RouteHelpers.authHandler("Blacklist") { (user, _) =>
       for {
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         repo      <- ZIO.service[BlacklistRepository]
         companyId <- UuidParser.requireCompanyId(user.companyId)
         entries   <- repo.findByCompanyId(companyId)
@@ -29,7 +29,7 @@ object BlacklistRoutes:
     // POST /api/blacklist — add blacklist entry
     Method.POST / "api" / "blacklist" -> RouteHelpers.authHandler("Blacklist") { (user, request) =>
       for {
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         bodyStr   <- request.body.asString
         req       <- ZIO
                        .fromEither(bodyStr.fromJson[CreateBlacklistRequest])
@@ -86,7 +86,7 @@ object BlacklistRoutes:
     Method.DELETE / "api" / "blacklist" / string("id") -> RouteHelpers.authPathHandler("Blacklist") {
       (user, id: String, _) =>
         for {
-          _       <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _       <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           repo    <- ZIO.service[BlacklistRepository]
           entryId <- UuidParser.parse(id).map(BlacklistEntryId(_))
           deleted <- repo.deactivate(entryId)

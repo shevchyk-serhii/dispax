@@ -357,7 +357,7 @@ object RideRoutes {
       Method.PUT / "api" / "rides" / string("rideId") / "payment"         -> handler { (rideId: String, request: Request) =>
         (for {
           user         <- AuthMiddleware.authenticateRequest(request)
-          _            <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _            <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           bodyStr      <- request.body.asString
           payReq       <- ZIO
                             .fromEither(bodyStr.fromJson[MarkPaymentRequest])
@@ -378,7 +378,7 @@ object RideRoutes {
       Method.GET / "api" / "rides" / "unpaid"                             -> handler { (request: Request) =>
         (for {
           user       <- AuthMiddleware.authenticateRequest(request)
-          _          <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           service    <- ZIO.service[RideService]
           personRepo <- ZIO.service[PersonRepository]
           rides      <- service.getUnpaidCompletedRides

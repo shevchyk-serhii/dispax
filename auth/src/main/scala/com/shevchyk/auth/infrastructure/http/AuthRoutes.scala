@@ -3,6 +3,7 @@ package com.shevchyk.auth.infrastructure.http
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.middleware.RateLimiter
+import com.shevchyk.auth.service.JwtService
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -25,8 +26,37 @@ object AuthRoutes:
     }
   }
 
-  val routes: Routes[AuthService & RateLimiter, Response] = Routes(
-    Method.POST / "api" / "auth" / "login" -> handler { (req: Request) =>
+  val routes: Routes[AuthService & RateLimiter & JwtService, Response] = Routes(
+    // Stub: logout endpoint
+    Method.POST / "api" / "auth" / "logout" -> handler { (_: Request) =>
+      ZIO.succeed(Response.json("""{"success":true}"""))
+    },
+
+    // Token validation endpoint — uses JwtService to verify the token
+    Method.GET / "api" / "auth" / "validate" -> handler { (req: Request) =>
+      val authHeader = req.headers.get("Authorization").getOrElse("")
+      if authHeader.isEmpty || !authHeader.startsWith("Bearer ") then
+        ZIO.succeed(Response(Status.Unauthorized, body = Body.fromString("""{"error":"No token"}""")))
+      else
+        val token = authHeader.stripPrefix("Bearer ")
+        (for {
+          jwtService <- ZIO.service[JwtService]
+          _          <- jwtService.validateToken(token)
+        } yield Response.json("""{"valid":true}""")).catchAll { _ =>
+          ZIO.succeed(Response(Status.Unauthorized, body = Body.fromString("""{"error":"Invalid or expired token"}""")))
+        }
+    },
+
+    // Stub: password reset request
+    Method.POST / "api" / "auth" / "password" / "reset-request" -> handler { (_: Request) =>
+      ZIO.succeed(Response.json("""{"success":true,"message":"Reset link sent if account exists"}"""))
+    },
+
+    // Stub: biometric setup
+    Method.POST / "api" / "auth" / "biometric" / "setup" -> handler { (_: Request) =>
+      ZIO.succeed(Response.json("""{"success":true,"biometricEnabled":true}"""))
+    },
+    Method.POST / "api" / "auth" / "login"               -> handler { (req: Request) =>
       (for {
         rateLimiter   <- ZIO.service[RateLimiter]
         // Prefer remoteAddress to prevent X-Forwarded-For spoofing

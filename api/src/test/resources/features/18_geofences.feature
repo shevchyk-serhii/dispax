@@ -11,7 +11,7 @@ Feature: Geofence Management
     Given I am authenticated as an admin
     When I send a POST request to "/api/geofences" with body:
       """
-      {"name":"Airport Zone","center":{"lat":48.3537,"lng":11.7750},"radiusMeters":1000}
+      {"name":"Airport Zone","geofenceType":"Airport","centerLatitude":48.3537,"centerLongitude":11.7750,"radiusMeters":1000}
       """
     Then the response status should be 201
     And the response should contain geofence details
@@ -26,7 +26,7 @@ Feature: Geofence Management
     Given I am authenticated as an admin
     When I send a PUT request to "/api/geofences/11111111-1111-1111-1111-111111111111" with body:
       """
-      {"name":"Airport Zone Extended","radiusMeters":1500}
+      {"name":"Airport Zone Extended","geofenceType":"Airport","centerLatitude":48.3537,"centerLongitude":11.7750,"radiusMeters":1500}
       """
     Then the response status should be 200
     And the response should contain geofence details

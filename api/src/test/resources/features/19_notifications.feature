@@ -25,7 +25,7 @@ Feature: Notification Management
       """
       {}
       """
-    Then the response status should be 200
+    Then the response status should be 204
 
   Scenario: Mark all notifications as read
     Given I am authenticated as a client
@@ -33,7 +33,7 @@ Feature: Notification Management
       """
       {}
       """
-    Then the response status should be 200
+    Then the response status should be 204
 
   Scenario: Delete a notification
     Given I am authenticated as a client

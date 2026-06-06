@@ -16,7 +16,7 @@ object CompanySettingsRoutes:
     // GET /api/company/settings
     Method.GET / "api" / "company" / "settings" -> RouteHelpers.authHandler("CompanySettings") { (user, _) =>
       for {
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         repo      <- ZIO.service[CompanySettingsRepository]
         settings  <- repo.findByCompanyId(companyId)
@@ -27,7 +27,7 @@ object CompanySettingsRoutes:
     // PUT /api/company/settings
     Method.PUT / "api" / "company" / "settings" -> RouteHelpers.authHandler("CompanySettings") { (user, request) =>
       for {
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         bodyStr   <- request.body.asString
         updateReq <- ZIO
@@ -53,7 +53,7 @@ object CompanySettingsRoutes:
     // GET /api/company/tariff
     Method.GET / "api" / "company" / "tariff" -> RouteHelpers.authHandler("CompanySettings") { (user, _) =>
       for {
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "DRIVER", "CLIENT", "SECRETARY")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN", "DRIVER", "CLIENT", "SECRETARY")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         repo      <- ZIO.service[CompanySettingsRepository]
         settings  <- repo.findByCompanyId(companyId)
@@ -71,7 +71,7 @@ object CompanySettingsRoutes:
     // PUT /api/company/tariff
     Method.PUT / "api" / "company" / "tariff" -> RouteHelpers.authHandler("CompanySettings") { (user, request) =>
       for {
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         bodyStr   <- request.body.asString
         updateReq <- ZIO

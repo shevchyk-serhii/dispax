@@ -16,7 +16,7 @@ object GeofenceRoutes:
     // POST /api/geofences - create geofence
     Method.POST / "api" / "geofences" -> RouteHelpers.authHandler("Geofence") { (user, request) =>
       for {
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         bodyStr   <- request.body.asString
         req       <- ZIO
@@ -48,7 +48,7 @@ object GeofenceRoutes:
     // GET /api/geofences - list geofences for company
     Method.GET / "api" / "geofences" -> RouteHelpers.authHandler("Geofence") { (user, _) =>
       for {
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         repo      <- ZIO.service[GeofenceRepository]
         geofences <- repo.findByCompanyId(companyId)
@@ -59,7 +59,7 @@ object GeofenceRoutes:
     Method.PUT / "api" / "geofences" / string("id") -> RouteHelpers.authPathHandler("Geofence") {
       (user, id: String, request) =>
         for {
-          _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           companyId <- UuidParser.requireCompanyId(user.companyId)
           geoId     <- UuidParser.parse(id).map(GeofenceId(_))
           repo      <- ZIO.service[GeofenceRepository]
@@ -92,7 +92,7 @@ object GeofenceRoutes:
     Method.DELETE / "api" / "geofences" / string("id") -> RouteHelpers.authPathHandler("Geofence") {
       (user, id: String, _) =>
         for {
-          _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           companyId <- UuidParser.requireCompanyId(user.companyId)
           geoId     <- UuidParser.parse(id).map(GeofenceId(_))
           repo      <- ZIO.service[GeofenceRepository]
@@ -108,7 +108,7 @@ object GeofenceRoutes:
     // GET /api/geofences/alerts?limit=50 - recent alerts for company
     Method.GET / "api" / "geofences" / "alerts" -> RouteHelpers.authHandler("Geofence") { (user, request) =>
       for {
-        _         <- AuthMiddleware.checkRole(user, "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- UuidParser.requireCompanyId(user.companyId)
         limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
         repo      <- ZIO.service[GeofenceRepository]
@@ -120,7 +120,7 @@ object GeofenceRoutes:
     Method.GET / "api" / "geofences" / "alerts" / "driver" / string("driverId") ->
       RouteHelpers.authPathHandler("Geofence") { (user, driverId: String, request) =>
         for {
-          _      <- AuthMiddleware.checkRole(user, "DISPATCHER")
+          _      <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
           limit   = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
           repo   <- ZIO.service[GeofenceRepository]
           dPid   <- UuidParser.parsePersonId(driverId)

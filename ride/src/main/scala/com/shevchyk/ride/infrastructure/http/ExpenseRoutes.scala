@@ -23,7 +23,7 @@ object ExpenseRoutes:
     Method.POST / "api" / "expenses"                  -> handler { (request: Request) =>
       (for {
         user      <- AuthMiddleware.authenticateRequest(request)
-        _         <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER")
+        _         <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER", "ADMIN")
         bodyStr   <- request.body.asString
         req       <- ZIO
                        .fromEither(bodyStr.fromJson[CreateExpenseRequest])
@@ -50,7 +50,7 @@ object ExpenseRoutes:
     Method.GET / "api" / "expenses"                   -> handler { (request: Request) =>
       (for {
         user     <- AuthMiddleware.authenticateRequest(request)
-        _        <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER")
+        _        <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER", "ADMIN")
         repo     <- ZIO.service[ExpenseRepository]
         expenses <-
           user.role match {
@@ -66,7 +66,7 @@ object ExpenseRoutes:
     Method.DELETE / "api" / "expenses" / string("id") -> handler { (id: String, request: Request) =>
       (for {
         user       <- AuthMiddleware.authenticateRequest(request)
-        _          <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER")
+        _          <- AuthMiddleware.checkRole(user, "DRIVER", "DISPATCHER", "ADMIN")
         repo       <- ZIO.service[ExpenseRepository]
         expenseId  <- UuidParser.parse(id).map(ExpenseId(_))
         expenseOpt <- repo.findById(expenseId)

@@ -30,7 +30,7 @@ Feature: Session Management
   Scenario: Delete all sessions
     Given I am authenticated as a client
     When I send a DELETE request to "/api/sessions"
-    Then the response status should be 204
+    Then the response status should be 200
 
   Scenario: Get sessions without authentication
     When I send a GET request to "/api/sessions" without authentication

@@ -40,8 +40,11 @@ class AuthServiceImpl(
   private def checkPassword(password: String, hash: String): Boolean = BCrypt.checkpw(password, hash)
 
   private val emailRegex = """^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$""".r
+  // Accepts international phone numbers: optional +, then 6–15 digits (with optional spaces/dashes).
+  private val phoneRegex = """^\+?[0-9][0-9 \-]{4,14}[0-9]$""".r
 
   private def validateEmail(email: String): Boolean = emailRegex.matches(email)
+  private def validatePhone(phone: String): Boolean = phoneRegex.matches(phone.trim)
 
   private def parseRole(s: String): Either[Throwable, PersonRole] =
     val normalized = s.trim.toLowerCase.capitalize
@@ -68,6 +71,10 @@ class AuthServiceImpl(
   override def createUser(request: CreateUserRequest): ZIO[Any, AuthError, UserDto] =
     for
       _        <- ZIO.when(!validateEmail(request.email))(ZIO.fail(ValidationError("email", "Invalid email format")))
+      _        <-
+        ZIO.when(request.phone.exists(p => !validatePhone(p)))(
+          ZIO.fail(ValidationError("phone", "Invalid phone number format"))
+        )
       _        <-
         ZIO.when(!validatePassword(request.password))(
           ZIO.fail(WeakPassword("Password must be at least 8 characters with uppercase, lowercase, and digit"))

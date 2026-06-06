@@ -11,7 +11,7 @@ Feature: Ride Templates
     Given I am authenticated as a dispatcher
     When I send a POST request to "/api/ride-templates" with body:
       """
-      {"name":"Airport Monday Morning","pickupLocation":"Office","dropoffLocation":"MUC Airport","scheduledTime":"07:00"}
+      {"clientId":"11111111-1111-1111-1111-111111111111","name":"Airport Monday Morning","fromAddress":"Office Munich","toAddress":"MUC Airport","pickupTime":"07:00","recurrencePattern":"WEEKDAYS"}
       """
     Then the response status should be 201
     And the response should contain ride template details
@@ -31,7 +31,7 @@ Feature: Ride Templates
     Given I am authenticated as a dispatcher
     When I send a POST request to "/api/ride-templates/11111111-1111-1111-1111-111111111111/generate" with body:
       """
-      {"scheduledDate":"2026-06-02"}
+      {"fromDate":"2026-07-01","toDate":"2026-07-07"}
       """
     Then the response status should be 201
     And the response should contain ride details

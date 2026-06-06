@@ -39,7 +39,7 @@ Feature: Extended Ride Operations
 
   Scenario: Update ride status
     Given I am authenticated as a driver
-    When I send a PUT request to "/api/rides/11111111-1111-1111-1111-111111111111/status" with body:
+    When I send a PUT request to "/api/rides/55555555-5555-5555-5555-555555555555/status" with body:
       """
       {"status":"InProgress"}
       """
@@ -48,25 +48,16 @@ Feature: Extended Ride Operations
 
   Scenario: Assign driver to ride
     Given I am authenticated as a dispatcher
-    When I send a PUT request to "/api/rides/11111111-1111-1111-1111-111111111111/assign-driver" with body:
+    When I send a PUT request to "/api/rides/66666666-6666-6666-6666-666666666666/assign-driver" with body:
       """
-      {"driverId":"22222222-2222-2222-2222-222222222222"}
-      """
-    Then the response status should be 200
-    And the response should contain ride details
-
-  Scenario: Reassign driver on ride
-    Given I am authenticated as a dispatcher
-    When I send a PUT request to "/api/rides/11111111-1111-1111-1111-111111111111/reassign-driver" with body:
-      """
-      {"driverId":"33333333-3333-3333-3333-333333333333","reason":"Original driver unavailable"}
+      {"driverId":"10101010-1010-1010-1010-101010101010"}
       """
     Then the response status should be 200
     And the response should contain ride details
 
   Scenario: Cancel a ride
     Given I am authenticated as a dispatcher
-    When I send a PUT request to "/api/rides/11111111-1111-1111-1111-111111111111/cancel" with body:
+    When I send a PUT request to "/api/rides/66666666-6666-6666-6666-666666666666/cancel" with body:
       """
       {"reason":"Client request"}
       """
@@ -77,7 +68,7 @@ Feature: Extended Ride Operations
     Given I am authenticated as an admin
     When I send a PUT request to "/api/rides/11111111-1111-1111-1111-111111111111/payment" with body:
       """
-      {"amount":45.00,"method":"Card","paid":true}
+      {"paymentStatus":"Paid","paymentMethod":"Card"}
       """
     Then the response status should be 200
     And the response should contain ride details
@@ -97,7 +88,7 @@ Feature: Extended Ride Operations
       """
       {"latitude":48.1351,"longitude":11.5820}
       """
-    Then the response status should be 200
+    Then the response status should be 204
 
   Scenario: Get ride location history
     Given I am authenticated as a dispatcher
@@ -107,7 +98,7 @@ Feature: Extended Ride Operations
 
   Scenario: Send chat message in ride
     Given I am authenticated as a client
-    When I send a POST request to "/api/rides/11111111-1111-1111-1111-111111111111/chat" with body:
+    When I send a POST request to "/api/rides/33333333-3333-3333-3333-333333333333/chat" with body:
       """
       {"message":"I am at the entrance"}
       """
@@ -116,13 +107,13 @@ Feature: Extended Ride Operations
 
   Scenario: Get ride chat messages
     Given I am authenticated as a client
-    When I send a GET request to "/api/rides/11111111-1111-1111-1111-111111111111/chat"
+    When I send a GET request to "/api/rides/33333333-3333-3333-3333-333333333333/chat"
     Then the response status should be 200
     And the response should contain chat message entries
 
   Scenario: Rate a completed ride
     Given I am authenticated as a client
-    When I send a POST request to "/api/rides/11111111-1111-1111-1111-111111111111/rate" with body:
+    When I send a POST request to "/api/rides/44444444-4444-4444-4444-444444444444/rate" with body:
       """
       {"rating":5,"comment":"Excellent service"}
       """

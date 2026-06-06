@@ -10,6 +10,12 @@ import zio.json.*
  * Helper utilities for creating authenticated HTTP handlers. These handlers automatically extract and validate JWT
  * tokens from requests.
  */
+/**
+ * Sentinel exception used to distinguish a malformed request body from an unexpected server-side error, so we can
+ * return 400 instead of 500.
+ */
+final private class InvalidJsonBodyError(msg: String) extends RuntimeException(msg)
+
 object AuthenticatedHandlers {
 
   /**
@@ -79,11 +85,15 @@ object AuthenticatedHandlers {
       bodyStr <- request.body.asString
       parsed  <- ZIO
                    .fromEither(bodyStr.fromJson[T])
-                   .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+                   .mapError(err => InvalidJsonBodyError(s"Invalid JSON format: $err"))
       result  <- f(user, parsed)
     } yield result).catchAll {
-      case response: Response => ZIO.succeed(response) // Auth errors return Response directly
-      case ex: Throwable      =>
+      case response: Response      => ZIO.succeed(response) // Auth errors return Response directly
+      case e: InvalidJsonBodyError =>
+        ZIO
+          .logWarning(s"Invalid JSON body: ${e.getMessage}")
+          .as(Response(Status.BadRequest, body = Body.fromString(s"""{"error":"Invalid JSON format"}""")))
+      case ex: Throwable           =>
         ZIO
           .logError(s"Unhandled error: ${ex.getMessage}")
           .as(

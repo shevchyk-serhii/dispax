@@ -35,9 +35,9 @@ Feature: Extended User Management
     Given I am authenticated as a client
     When I send a PUT request to "/api/users/change-password" with body:
       """
-      {"oldPassword":"currentPass1!","newPassword":"newPass1!"}
+      {"currentPassword":"Password123","newPassword":"NewPass1!"}
       """
-    Then the response status should be 200
+    Then the response status should be 204
 
   Scenario: Register FCM token
     Given I am authenticated as a client
@@ -45,7 +45,7 @@ Feature: Extended User Management
       """
       {"token":"fcm-device-token-abc123","platform":"android"}
       """
-    Then the response status should be 200
+    Then the response status should be 201
 
   Scenario: Delete FCM token
     Given I am authenticated as a client
@@ -58,7 +58,7 @@ Feature: Extended User Management
       """
       {"minutes":30}
       """
-    Then the response status should be 200
+    Then the response status should be 204
 
   Scenario: Get users without authentication
     When I send a GET request to "/api/users" without authentication

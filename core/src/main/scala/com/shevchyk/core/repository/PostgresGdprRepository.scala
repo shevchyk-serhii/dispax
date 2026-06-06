@@ -71,6 +71,16 @@ final class PostgresGdprRepository(xa: Transactor[Task]) extends GdprRepository:
       .to[List]
       .transact(xa)
 
+  override def findAllRequests(): Task[List[GdprRequest]] =
+    sql"""
+      SELECT id, user_id, request_type, status, requested_at, completed_at, notes
+      FROM gdpr_requests
+      ORDER BY requested_at DESC
+    """
+      .query[GdprRequest]
+      .to[List]
+      .transact(xa)
+
   override def updateRequestStatus(requestId: GdprRequestId, status: GdprRequestStatus): Task[Boolean] =
     val completedAt = if status == GdprRequestStatus.COMPLETED then Some(Instant.now()) else None
     sql"""

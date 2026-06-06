@@ -9,7 +9,7 @@ Feature: Audit Log
 
   Scenario: Get audit log as admin
     Given I am authenticated as an admin
-    When I send a GET request to "/api/audit"
+    When I send a GET request to "/api/audit/recent"
     Then the response status should be 200
     And the response should contain audit entries
 
@@ -20,10 +20,10 @@ Feature: Audit Log
     And the response should contain recent audit entries
 
   Scenario: Get audit log without authentication
-    When I send a GET request to "/api/audit" without authentication
+    When I send a GET request to "/api/audit/recent" without authentication
     Then the response status should be 401
 
   Scenario: Get audit log as non-admin client
     Given I am authenticated as a client
-    When I send a GET request to "/api/audit"
+    When I send a GET request to "/api/audit/recent"
     Then the response status should be 403

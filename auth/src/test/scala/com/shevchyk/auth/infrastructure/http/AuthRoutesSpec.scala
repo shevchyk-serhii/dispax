@@ -27,15 +27,17 @@ object AuthRoutesSpec extends ZIOSpecDefault {
     RateLimiter.make(maxRequests = 1000, windowSeconds = 60)
   )
 
+  private val jwtServiceLayer: ZLayer[Any, Nothing, JwtService] = testJwtConfig >>> JwtService.live
+
   private val baseLayers =
     TestLayers.inMemoryPersonRepository ++
     TestLayers.inMemoryTokenRepository ++
-    (testJwtConfig >>> JwtService.live) >>>
+    jwtServiceLayer >>>
     AuthService.live
 
-  private val fullLayers = baseLayers ++ noopRateLimiter
+  private val fullLayers = baseLayers ++ noopRateLimiter ++ jwtServiceLayer
 
-  private def run(request: Request): ZIO[AuthService & RateLimiter, Nothing, Response] =
+  private def run(request: Request): ZIO[AuthService & RateLimiter & JwtService, Nothing, Response] =
     AuthRoutes.routes.run(request).either.map {
       case Left(r)  => r.merge
       case Right(r) => r
@@ -84,8 +86,9 @@ object AuthRoutesSpec extends ZIOSpecDefault {
       }.provide(
         TestLayers.inMemoryPersonRepository ++
         TestLayers.inMemoryTokenRepository ++
-        (testJwtConfig >>> JwtService.live) >>>
+        jwtServiceLayer >>>
         AuthService.live,
+        jwtServiceLayer,
         ZLayer.fromZIO(RateLimiter.make(maxRequests = 0, windowSeconds = 60))
       )
     )

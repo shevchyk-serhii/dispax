@@ -11,9 +11,9 @@ Feature: Emergency Reassignment
     Given I am authenticated as a dispatcher
     When I send a POST request to "/api/emergency/reassign" with body:
       """
-      {"rideId":"11111111-1111-1111-1111-111111111111","reason":"Driver accident"}
+      {"rideId":"33333333-3333-3333-3333-333333333333","reason":"Accident"}
       """
-    Then the response status should be 200
+    Then the response status should be 201
     And the response should contain reassignment details
 
   Scenario: Get emergency reassignments list

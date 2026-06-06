@@ -11,7 +11,7 @@ Feature: Driver Schedule Management
     Given I am authenticated as a dispatcher
     When I send a POST request to "/api/schedules" with body:
       """
-      {"driverId":"22222222-2222-2222-2222-222222222222","date":"2026-06-02","shiftStart":"08:00","shiftEnd":"18:00"}
+      {"driverId":"10101010-1010-1010-1010-101010101010","date":"2026-06-02","startTime":"08:00","endTime":"18:00"}
       """
     Then the response status should be 201
     And the response should contain schedule details
@@ -20,7 +20,7 @@ Feature: Driver Schedule Management
     Given I am authenticated as a dispatcher
     When I send a POST request to "/api/schedules/batch" with body:
       """
-      {"schedules":[{"driverId":"22222222-2222-2222-2222-222222222222","date":"2026-06-02","shiftStart":"08:00","shiftEnd":"18:00"},{"driverId":"33333333-3333-3333-3333-333333333333","date":"2026-06-02","shiftStart":"10:00","shiftEnd":"20:00"}]}
+      {"driverId":"10101010-1010-1010-1010-101010101010","days":[{"date":"2026-07-01","startTime":"08:00","endTime":"18:00"},{"date":"2026-07-02","startTime":"10:00","endTime":"20:00"}]}
       """
     Then the response status should be 201
     And the response should contain schedule entries
@@ -39,7 +39,7 @@ Feature: Driver Schedule Management
 
   Scenario: Get all schedules
     Given I am authenticated as a dispatcher
-    When I send a GET request to "/api/schedules"
+    When I send a GET request to "/api/schedules?from=2026-06-01&to=2026-06-30"
     Then the response status should be 200
     And the response should contain schedule entries
 
