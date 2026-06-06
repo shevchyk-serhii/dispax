@@ -52,6 +52,14 @@ Feature: Extended User Management
     When I send a DELETE request to "/api/users/fcm-token/fcm-device-token-abc123"
     Then the response status should be 204
 
+  Scenario: Update driver reminder minutes
+    Given I am authenticated as a driver
+    When I send a PUT request to "/api/users/reminder-minutes" with body:
+      """
+      {"minutes":30}
+      """
+    Then the response status should be 200
+
   Scenario: Get users without authentication
     When I send a GET request to "/api/users" without authentication
     Then the response status should be 401

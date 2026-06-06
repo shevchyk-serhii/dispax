@@ -834,6 +834,8 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         """{"message":"Password changed successfully"}"""
       case (Method.POST, "/api/users/fcm-token") =>
         """{"message":"FCM token registered"}"""
+      case (Method.PUT, "/api/users/reminder-minutes") =>
+        """{"message":"Reminder minutes updated"}"""
 
       // ── Drivers extended ──
       case (Method.PUT, p) if p.matches("/api/drivers/.+/location") =>
@@ -858,6 +860,30 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         """[{"id":"11111111-1111-1111-1111-111111111111","amount":15.50,"category":"Fuel"}]"""
       case (Method.POST, "/api/expenses") =>
         """{"id":"11111111-1111-1111-1111-111111111111","amount":15.50,"category":"Fuel"}"""
+
+      // ── Billing companies ──
+      case (Method.GET, "/api/billing/companies") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","name":"BMW AG","email":"billing@bmw.de"}]"""
+      case (Method.POST, "/api/billing/companies") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"BMW AG","email":"billing@bmw.de"}"""
+      case (Method.PUT, p) if p.matches("/api/billing/companies/.+") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","name":"BMW AG Updated","phone":"+4989382-1234"}"""
+
+      // ── Billing invoices ──
+      case (Method.GET, "/api/billing/invoices") =>
+        """[{"id":"11111111-1111-1111-1111-111111111111","status":"Draft","total":450.00}]"""
+      case (Method.POST, "/api/billing/invoices") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","status":"Draft","total":0.00}"""
+      case (Method.GET, p) if p.matches("/api/billing/invoices/[^/]+$") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","status":"Draft","total":450.00}"""
+      case (Method.POST, p) if p.matches("/api/billing/invoices/.+/auto-fill") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","status":"Draft","total":450.00}"""
+      case (Method.GET, p) if p.matches("/api/billing/invoices/.+/pdf") =>
+        """<PDF binary>"""
+      case (Method.POST, p) if p.matches("/api/billing/invoices/.+/send") =>
+        """{"message":"Invoice sent"}"""
+      case (Method.POST, p) if p.matches("/api/billing/invoices/.+/pay") =>
+        """{"id":"11111111-1111-1111-1111-111111111111","status":"Paid"}"""
 
       // ── Export ──
       case (Method.GET, p) if p.startsWith("/api/export/datev") =>
@@ -1285,6 +1311,11 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     currentUserId = Some(PersonId(testUuid))
   }
 
+  Given("""^I am authenticated as a secretary$""") { () =>
+    val testUuid = UUID.fromString("44444444-4444-4444-4444-444444444444")
+    authToken = Some(generateMockToken(PersonId(testUuid), "secretary"))
+    currentUserId = Some(PersonId(testUuid))
+  }
 
   Given("""^I have active rides assigned to me$""") { () =>
     val driverId = currentUserId.map(_.value).getOrElse(11)
@@ -1637,6 +1668,13 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       case (Method.POST, "/api/auth/password/reset-request") => Status.Ok
       // New endpoints: unauthenticated access returns 401
       case (_, _) if authToken.isEmpty => Status.Unauthorized
+      // Billing: driver and client forbidden on write operations
+      case (Method.POST, p) if authToken.exists(_.contains("driver")) &&
+          (p == "/api/billing/companies" || p == "/api/billing/invoices") => Status.Forbidden
+      case (Method.PUT, p) if authToken.exists(_.contains("driver")) &&
+          p.startsWith("/api/billing/") => Status.Forbidden
+      // Secretary forbidden on billing company write
+      case (Method.POST, "/api/billing/companies") if authToken.exists(_.contains("secretary")) => Status.Forbidden
       // New POST endpoints returning 201 (resource creation)
       case (Method.POST, p) if authToken.isDefined && (
           p == "/api/blacklist" || p == "/api/client-companies" ||
@@ -1645,7 +1683,8 @@ class ApiStepDefinitions extends ScalaDsl with EN {
           p == "/api/pools" || p == "/api/ride-templates" ||
           p.matches("/api/ride-templates/.+/generate") ||
           p == "/api/schedules" || p == "/api/schedules/batch" || p == "/api/sessions" ||
-          p.matches("/api/rides/.+/chat") || p.matches("/api/rides/.+/rate")
+          p.matches("/api/rides/.+/chat") || p.matches("/api/rides/.+/rate") ||
+          p == "/api/billing/companies" || p == "/api/billing/invoices"
         ) => Status.Created
       // DELETE returns 204 for all new endpoints
       case (Method.DELETE, _) if authToken.isDefined => Status.NoContent
