@@ -176,9 +176,10 @@ class InvoiceServiceImpl(
     } yield ()
 
   private def recalculate(invoice: Invoice): UIO[Invoice] = ZIO.succeed {
-    val subtotal = invoice.items.map(_.total).sum
-    val tax      = subtotal * invoice.taxRate / 100
-    val total    = subtotal + tax
+    // Round monetary values to 2 decimals (HALF_UP) so stored amounts match the PDF/DATEV output.
+    val subtotal = invoice.items.map(_.total).sum.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    val tax      = (subtotal * invoice.taxRate / 100).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    val total    = (subtotal + tax).setScale(2, BigDecimal.RoundingMode.HALF_UP)
     invoice.copy(subtotalAmount = subtotal, taxAmount = tax, totalAmount = total)
   }
 

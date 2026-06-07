@@ -51,27 +51,27 @@
 - ✅ **`originalIat` сохраняется при refresh.** Если бы обновлялся — сессия жила бы вечно
   (security-баг). Тест фиксирует неизменность.
 - ✅ **Refresh истёкшего токена** → ошибка (через внутренний `validateToken`).
-- 🐛 **issuer/audience не валидируются в `validateToken`.** Токен с чужим issuer/audience,
-  но тем же secret, проходит проверку. Тест фиксирует текущее поведение. **Рекомендация:**
-  добавить проверку `claim.issuer == config.issuer` и audience в `validateToken`.
+- ✅ **issuer валидируется в `validateToken`.** Раньше токен с чужим issuer, но тем же secret,
+  проходил проверку. Исправлено: `validateToken` сверяет `claim.issuer` с конфигом и падает
+  `InvalidTokenError` при несовпадении. **Примечание:** audience не enforced — jwt-scala
+  декодирует одиночный `aud` обратно в `None`, поэтому надёжной проверкой является issuer.
 
 ### 3. Billing — `InvoiceServiceImpl.recalculate`
 `billing/src/main/scala/com/shevchyk/billing/application/InvoiceService.scala`
 
-- 🐛 **Tax rounding.** `tax = subtotal * taxRate / 100` без явного округления до 2 знаков.
-  При суммах вроде `33.33 × 19%` хранится «грязная» дробь (`6.3327`), расходящаяся с PDF
-  (формат 2 знака). Тест фиксирует текущее поведение. **Рекомендация:** округлять
-  `taxAmount`/`totalAmount` через `setScale(2, HALF_UP)`.
+- ✅ **Tax rounding.** Раньше `tax = subtotal * taxRate / 100` хранился без округления
+  (`33.33 × 19% = 6.3327`), расходясь с PDF (2 знака). Исправлено: `recalculate` округляет
+  `subtotalAmount`/`taxAmount`/`totalAmount` через `setScale(2, HALF_UP)`.
 - ✅ **`taxRate = 0`** → `taxAmount = 0`, `total = subtotal`.
 - ✅ **`autoFillFromPeriod` на не-Draft** → `NotDraft`.
 
 ### 4. Геолокация / валидация координат
 
-- 🐛 **Нет валидации диапазона lat/lng.** `ClientLocationService.updateClientLocation`,
+- ✅ **Валидация диапазона lat/lng.** Раньше `ClientLocationService.updateClientLocation`,
   `DriverLocationService.updateLocation` и DTO-валидаторы принимали любые координаты
-  (должно быть lat ∈ [−90, 90], lng ∈ [−180, 180]). Мусорные координаты попадали в БД
-  и ломали Haversine/geofence. **Баг-фикс:** добавлен guard в `ClientLocationService`
-  (`RideError.ValidationError`) + тест на отклонение `lat=91`/`lng=181`.
+  (должно быть lat ∈ [−90, 90], lng ∈ [−180, 180]) — мусор попадал в БД и ломал
+  Haversine/geofence. Исправлено: guard в `ClientLocationService` (`RideError.ValidationError`)
+  и в `DriverLocationService` (`IllegalArgumentException`) + тесты на отклонение и границы.
 - ✅ **`GeofenceService`** — geofence с `radiusMeters = 0` (граница окружности; `distance < radius`
   строгое, поэтому даже в центре driver не «внутри»). **Дедупликация уже была покрыта**
   существующими тестами «no duplicate entries on second call» и «no re-trigger for same
@@ -81,20 +81,19 @@
 
 ---
 
-## Оставшиеся кандидаты на баг-фикс (требуют решения)
+## Баг-фиксы (все исправлены)
 
-1. **JWT issuer/audience** — добавить проверку в `validateToken` (тест-«пин» текущего
-   поведения уже стоит; после фикса перевернуть `isSuccess` → `isFailure`).
-2. **Tax rounding в InvoiceService** — округлять `taxAmount`/`totalAmount` до 2 знаков
-   (`setScale(2, HALF_UP)`); тест-«пин» сырого результата уже стоит.
-3. **Валидация координат в `DriverLocationService.updateLocation`** — guard аналогично
-   уже исправленному `ClientLocationService.updateClientLocation`. Текущая сигнатура
-   `Task[Unit]` (не типизированный `RideError`), поэтому требуется отдельное решение:
-   `IllegalArgumentException`-fail либо обрезка диапазона.
-
-**Уже исправлено в рамках аудита:** `ClientLocationService.updateClientLocation` теперь
-отклоняет координаты вне диапазона lat ∈ [−90, 90] / lng ∈ [−180, 180]
-(`RideError.ValidationError`).
+1. ✅ **JWT issuer** — `validateToken` теперь отклоняет токен с чужим issuer, даже при том же
+   secret (`InvalidTokenError`). Audience не enforced из-за ограничения jwt-scala (одиночный
+   `aud` декодируется в `None`). Тесты: отказ по issuer + приёмка валидного токена.
+2. ✅ **Tax rounding в InvoiceService** — `recalculate` округляет `subtotalAmount`/`taxAmount`/
+   `totalAmount` до 2 знаков (`setScale(2, HALF_UP)`). Тест: `33.33 × 19% → tax 6.33, total 39.66`,
+   scale == 2.
+3. ✅ **Валидация координат в `DriverLocationService.updateLocation`** — guard на диапазон
+   lat ∈ [−90, 90] / lng ∈ [−180, 180]; при выходе — `IllegalArgumentException` (сигнатура
+   метода `Task[Unit]`). Тесты на отклонение и на граничные значения.
+4. ✅ **`ClientLocationService.updateClientLocation`** — отклоняет координаты вне диапазона
+   (`RideError.ValidationError`).
 
 Эти пункты затрагивают продакшн-логику и денежные/безопасностные инварианты — вынесены
 отдельно, чтобы решение принималось осознанно, а не «по ходу» правки тестов.

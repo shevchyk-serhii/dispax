@@ -71,6 +71,14 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
 
       claim <- ZIO.fromTry(decoded).mapError(ex => InvalidTokenError(Option(ex.getMessage).getOrElse(ex.toString)))
 
+      // Reject tokens minted for a different issuer even when the secret matches.
+      // Note: jwt-scala decodes a single-valued `aud` claim back to None, so audience cannot be
+      // reliably enforced here; issuer is the dependable cross-mint guard.
+      _ <-
+        ZIO.when(!claim.issuer.contains(config.issuer))(
+          ZIO.fail(InvalidTokenError(s"Invalid token issuer: ${claim.issuer.getOrElse("<none>")}"))
+        )
+
       payload <- ZIO
                    .fromEither(
                      claim.content.fromJson[JwtPayload]

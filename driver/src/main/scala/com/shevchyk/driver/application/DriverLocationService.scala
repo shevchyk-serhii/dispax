@@ -27,6 +27,7 @@ class DriverLocationServiceImpl(
 
   override def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit] =
     for {
+      _           <- validateCoordinates(latitude, longitude)
       _           <- repository.updateLocation(driverId, latitude, longitude)
       personOpt   <- personRepository.findById(driverId)
       companyIdOpt = personOpt.flatMap(_.companyId)
@@ -48,6 +49,16 @@ class DriverLocationServiceImpl(
           case None            => ZIO.unit
       _           <- checkGeofences(driverId, latitude, longitude).forkDaemon
     } yield ()
+
+  /**
+   * Rejects out-of-range coordinates before they reach the DB / Haversine math.
+   */
+  private def validateCoordinates(latitude: Double, longitude: Double): Task[Unit] =
+    if latitude < -90.0 || latitude > 90.0 then
+      ZIO.fail(new IllegalArgumentException(s"Latitude out of range [-90, 90]: $latitude"))
+    else if longitude < -180.0 || longitude > 180.0 then
+      ZIO.fail(new IllegalArgumentException(s"Longitude out of range [-180, 180]: $longitude"))
+    else ZIO.unit
 
   private def checkGeofences(driverId: PersonId, latitude: Double, longitude: Double): UIO[Unit] =
     val effect: Task[Unit] =
