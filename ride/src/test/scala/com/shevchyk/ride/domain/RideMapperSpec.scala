@@ -24,55 +24,50 @@ object RideMapperSpec extends ZIOSpecDefault {
     specialRequirements = Some("Wheelchair")
   )
 
-  def spec = suite("RideMapper")(
-    test("maps clientId as both clientId and creatorId") {
-      val ride = RideMapper.fromRequest(makeRequest())
-      assertTrue(ride.clientId == clientId && ride.creatorId == clientId)
-    },
-
-    test("maps companyId correctly") {
-      val ride = RideMapper.fromRequest(makeRequest())
-      assertTrue(ride.companyId == companyId)
-    },
-
-    test("maps pickup and dropoff locations") {
-      val ride = RideMapper.fromRequest(makeRequest())
-      assertTrue(ride.pickupLocation == pickup && ride.dropoffLocation == dropoff)
-    },
-
-    test("uses scheduledTime as pickupDateTime when provided") {
-      val scheduled = Instant.parse("2026-12-01T10:00:00Z")
-      val ride      = RideMapper.fromRequest(makeRequest(scheduledTime = Some(scheduled)))
-      assertTrue(ride.pickupDateTime == scheduled && ride.scheduledTime.contains(scheduled))
-    },
-
-    test("uses Instant.now() as pickupDateTime when scheduledTime is None") {
-      val before = Instant.now().minusSeconds(1)
-      val ride   = RideMapper.fromRequest(makeRequest(scheduledTime = None))
-      val after  = Instant.now().plusSeconds(1)
-      assertTrue(ride.scheduledTime.isEmpty && !ride.pickupDateTime.isBefore(before) && !ride.pickupDateTime.isAfter(after))
-    },
-
-    test("maps notes and specialRequirements") {
-      val ride = RideMapper.fromRequest(makeRequest())
-      assertTrue(ride.notes.contains("Test note") && ride.specialRequirements.contains("Wheelchair"))
-    },
-
-    test("generates unique id for each call") {
-      val r1 = RideMapper.fromRequest(makeRequest())
-      val r2 = RideMapper.fromRequest(makeRequest())
-      assertTrue(r1.id != r2.id)
-    },
-
-    test("defaults status to Requested") {
-      val ride = RideMapper.fromRequest(makeRequest())
-      assertTrue(ride.status == RideStatus.Requested)
-    },
-
-    test("maps specifics when provided") {
-      val req = makeRequest().copy(specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123")))
-      val ride = RideMapper.fromRequest(req)
-      assertTrue(ride.specifics.contains(RideSpecifics.AirportTransfer("MUC", "LH123")))
-    }
-  )
+  def spec =
+    suite("RideMapper")(
+      test("maps clientId as both clientId and creatorId") {
+        val ride = RideMapper.fromRequest(makeRequest())
+        assertTrue(ride.clientId == clientId && ride.creatorId == clientId)
+      },
+      test("maps companyId correctly") {
+        val ride = RideMapper.fromRequest(makeRequest())
+        assertTrue(ride.companyId == companyId)
+      },
+      test("maps pickup and dropoff locations") {
+        val ride = RideMapper.fromRequest(makeRequest())
+        assertTrue(ride.pickupLocation == pickup && ride.dropoffLocation == dropoff)
+      },
+      test("uses scheduledTime as pickupDateTime when provided") {
+        val scheduled = Instant.parse("2026-12-01T10:00:00Z")
+        val ride      = RideMapper.fromRequest(makeRequest(scheduledTime = Some(scheduled)))
+        assertTrue(ride.pickupDateTime == scheduled && ride.scheduledTime.contains(scheduled))
+      },
+      test("uses Instant.now() as pickupDateTime when scheduledTime is None") {
+        val before = Instant.now().minusSeconds(1)
+        val ride   = RideMapper.fromRequest(makeRequest(scheduledTime = None))
+        val after  = Instant.now().plusSeconds(1)
+        assertTrue(
+          ride.scheduledTime.isEmpty && !ride.pickupDateTime.isBefore(before) && !ride.pickupDateTime.isAfter(after)
+        )
+      },
+      test("maps notes and specialRequirements") {
+        val ride = RideMapper.fromRequest(makeRequest())
+        assertTrue(ride.notes.contains("Test note") && ride.specialRequirements.contains("Wheelchair"))
+      },
+      test("generates unique id for each call") {
+        val r1 = RideMapper.fromRequest(makeRequest())
+        val r2 = RideMapper.fromRequest(makeRequest())
+        assertTrue(r1.id != r2.id)
+      },
+      test("defaults status to Requested") {
+        val ride = RideMapper.fromRequest(makeRequest())
+        assertTrue(ride.status == RideStatus.Requested)
+      },
+      test("maps specifics when provided") {
+        val req  = makeRequest().copy(specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123")))
+        val ride = RideMapper.fromRequest(req)
+        assertTrue(ride.specifics.contains(RideSpecifics.AirportTransfer("MUC", "LH123")))
+      }
+    )
 }

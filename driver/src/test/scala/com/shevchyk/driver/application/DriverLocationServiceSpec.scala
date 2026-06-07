@@ -112,6 +112,31 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
               loc.get.longitude == 11.5820
           )
         }.provide(standardLayers),
+        test("rejects latitude out of range") {
+          for {
+            service <- ZIO.service[DriverLocationService]
+            result  <- service.updateLocation(testDriverId, 91.0, 11.5).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[IllegalArgumentException])
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("rejects longitude out of range") {
+          for {
+            service <- ZIO.service[DriverLocationService]
+            result  <- service.updateLocation(testDriverId, 48.1, 181.0).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[IllegalArgumentException])
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("accepts boundary coordinates (-90/180)") {
+          for {
+            service <- ZIO.service[DriverLocationService]
+            _       <- service.updateLocation(testDriverId, -90.0, 180.0)
+            loc     <- service.getLocation(testDriverId)
+          } yield assertTrue(loc.exists(l => l.latitude == -90.0 && l.longitude == 180.0))
+        }.provide(standardLayers),
         test("updates existing location") {
           for {
             service <- ZIO.service[DriverLocationService]

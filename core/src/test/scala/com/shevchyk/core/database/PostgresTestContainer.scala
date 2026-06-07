@@ -8,14 +8,17 @@ import zio.interop.catz.*
 
 object PostgresTestContainer {
 
-  /** Starts a PostgreSQL container, runs Flyway migrations (production schema only), and provides a Transactor. */
+  /**
+   * Starts a PostgreSQL container, runs Flyway migrations (production schema only), and provides a Transactor.
+   */
   val layer: ZLayer[Any, Throwable, Transactor[Task]] = ZLayer.scoped {
     for {
-      container <- ZIO.acquireRelease(ZIO.attempt {
-                     val c = PostgreSQLContainer(dockerImageNameOverride = DockerImageName.parse("postgres:16-alpine"))
-                     c.start()
-                     c
-                   })(c => ZIO.succeed(c.stop()))
+      container <-
+        ZIO.acquireRelease(ZIO.attempt {
+          val c = PostgreSQLContainer(dockerImageNameOverride = DockerImageName.parse("postgres:16-alpine"))
+          c.start()
+          c
+        })(c => ZIO.succeed(c.stop()))
 
       dbConfig = DatabaseConfig(
                    driver = "org.postgresql.Driver",
@@ -40,7 +43,7 @@ object PostgresTestContainer {
               hc.setMinimumIdle(dbConfig.minIdle)
               new com.zaxxer.hikari.HikariDataSource(hc)
             }
-      xa = Transactor.fromDataSource[Task](ds, ec)
+      xa  = Transactor.fromDataSource[Task](ds, ec)
     } yield xa
   }
 }

@@ -201,21 +201,30 @@ object JwtServiceSpec extends ZIOSpecDefault {
           })
         }.provide(shortLivedJwtLayer) @@ TestAspect.withLiveClock
       ),
-      // -- issuer/audience validation gap (documents current behaviour) --------
-      suite("validateToken issuer/audience")(
-        test("accepts token signed with same secret but different issuer/audience (KNOWN GAP)") {
-          // BUG CANDIDATE: validateToken does not check issuer/audience. A token minted by a
-          // service configured with a different issuer/audience but the SAME secret still
-          // validates. This test pins the current behaviour; tighten validateToken to fail here.
-          val foreignConfig = testConfig.copy(issuer = "evil-issuer", audience = "evil-audience")
+      // -- issuer validation -----------------------------------------------
+      suite("validateToken issuer")(
+        test("rejects token signed with same secret but different issuer") {
+          // A token minted by a service with a different issuer but the SAME secret must
+          // not validate — guards against cross-issuer token reuse.
+          val foreignConfig = testConfig.copy(issuer = "evil-issuer")
           val foreignLayer  = ZLayer.succeed(foreignConfig) >>> JwtService.live
           for {
             foreignSvc <- ZIO.service[JwtService].provide(foreignLayer)
             token      <- foreignSvc.generateToken(testPerson)
             ourSvc     <- ZIO.service[JwtService].provide(jwtLayer)
             result     <- ourSvc.validateToken(token).exit
-          } yield assertTrue(result.isSuccess) // currently passes; flip to isFailure after fix
-        }
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[InvalidTokenError])
+            case _                   => false
+          })
+        },
+        test("accepts token with matching issuer") {
+          for {
+            service <- ZIO.service[JwtService]
+            token   <- service.generateToken(testPerson)
+            result  <- service.validateToken(token).exit
+          } yield assertTrue(result.isSuccess)
+        }.provide(jwtLayer)
       )
     )
 }

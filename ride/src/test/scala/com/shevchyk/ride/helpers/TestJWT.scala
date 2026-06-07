@@ -36,6 +36,5 @@ object TestJWT {
     )
   )
 
-  val testJwtService: ZLayer[Any, Nothing, JwtService] =
-    testConfig >>> JwtService.live
+  val testJwtService: ZLayer[Any, Nothing, JwtService] = testConfig >>> JwtService.live
 }

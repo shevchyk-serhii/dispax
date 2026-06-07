@@ -13,9 +13,9 @@ import scala.jdk.CollectionConverters.*
 import java.util.UUID
 
 object ApiStepDefinitions {
-  private val runtime = Runtime.default
+  private val runtime                                              = Runtime.default
   @volatile private var serverFiber: Option[Fiber[Throwable, Any]] = None
-  @volatile private var serverStarted = false
+  @volatile private var serverStarted                              = false
 
   def startServerIfNeeded(): Unit = synchronized {
     if (!serverStarted) {
@@ -41,11 +41,12 @@ object ApiStepDefinitions {
   }
 
   private def waitForServer(maxWaitMs: Int, intervalMs: Int): Unit = {
-    val deadline = java.lang.System.currentTimeMillis() + maxWaitMs
+    val deadline  = java.lang.System.currentTimeMillis() + maxWaitMs
     var connected = false
     while (!connected && java.lang.System.currentTimeMillis() < deadline) {
       connected = tryConnect()
-      if (!connected) Thread.sleep(intervalMs)
+      if (!connected)
+        Thread.sleep(intervalMs)
     }
     if (!connected)
       throw new RuntimeException(
@@ -56,15 +57,16 @@ object ApiStepDefinitions {
   private def tryConnect(): Boolean = {
     import java.net.{HttpURLConnection, URL}
     try {
-      val url = new URL("http://localhost:8080/health")
+      val url        = new URL("http://localhost:8080/health")
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("GET")
       connection.setConnectTimeout(1000)
       connection.setReadTimeout(1000)
-      val code = connection.getResponseCode
+      val code       = connection.getResponseCode
       connection.disconnect()
       code == 200
-    } catch {
+    }
+    catch {
       case _: Exception => false
     }
   }
@@ -77,7 +79,8 @@ object ApiStepDefinitions {
           Unsafe.unsafe { implicit u =>
             runtime.unsafe.run(fiber.interrupt)
           }
-        } catch {
+        }
+        catch {
           case _: Exception => // Ignore shutdown errors
         }
       }
@@ -89,38 +92,37 @@ object ApiStepDefinitions {
 }
 
 class ApiStepDefinitions extends ScalaDsl with EN {
-  
+
   println("🥒 ApiStepDefinitions loaded successfully!")
 
-  private var lastResponse: Response = _
-  private var lastResponseBody: String = ""
-  private var authToken: Option[String] = None
+  private var lastResponse: Response          = _
+  private var lastResponseBody: String        = ""
+  private var authToken: Option[String]       = None
   private var currentUserId: Option[PersonId] = None
-  private val testData = mutable.Map[String, Any]()
+  private val testData                        = mutable.Map[String, Any]()
 
   private val client = Client.default
 
   import ApiStepDefinitions._
-
 
   Given("""^the API is running$""") { () =>
     startServerIfNeeded()
     testData("api_running") = true
   }
 
-  Given("""^I am authenticated as a (client|dispatcher|admin) with ID (\d+)$""") { 
-    (role: String, userId: String) =>
-      val uuid = getTestUuidForId(userId.toInt)
-      currentUserId = Some(PersonId(uuid))
-      authToken = Some(generateMockToken(PersonId(uuid), role))
+  Given("""^I am authenticated as a (client|dispatcher|admin) with ID (\d+)$""") { (role: String, userId: String) =>
+    val uuid = getTestUuidForId(userId.toInt)
+    currentUserId = Some(PersonId(uuid))
+    authToken = Some(generateMockToken(PersonId(uuid), role))
   }
 
   Given("""^I am authenticated as an? (admin|user)$""") { (role: String) =>
     // Admin user is testPersonId99; user/client falls back to testPersonId1.
-    val testUuid = role match {
-      case "admin" => UUID.fromString("99999999-9999-9999-9999-999999999999")
-      case _       => UUID.fromString("11111111-1111-1111-1111-111111111111")
-    }
+    val testUuid =
+      role match {
+        case "admin" => UUID.fromString("99999999-9999-9999-9999-999999999999")
+        case _       => UUID.fromString("11111111-1111-1111-1111-111111111111")
+      }
     currentUserId = Some(PersonId(testUuid))
     authToken = Some(generateMockToken(PersonId(testUuid), role))
   }
@@ -133,9 +135,9 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   Given("""^the following test data exists:$""") { (dataTable: DataTable) =>
     val data = dataTable.asMaps().asScala.toList
     data.foreach { row =>
-      val uuid = getTestUuidForId(row.get("PersonId").toInt)
+      val uuid     = getTestUuidForId(row.get("PersonId").toInt)
       val personId = PersonId(uuid)
-      val person = Person(
+      val person   = Person(
         id = personId,
         name = row.get("Name"),
         email = row.get("Email"),
@@ -148,9 +150,9 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   Given("""^the following drivers exist:$""") { (dataTable: DataTable) =>
     val data = dataTable.asMaps().asScala.toList
     data.foreach { row =>
-      val uuid = getTestUuidForId(row.get("PersonId").toInt)
+      val uuid     = getTestUuidForId(row.get("PersonId").toInt)
       val personId = PersonId(uuid)
-      val driver = Person(
+      val driver   = Person(
         id = personId,
         name = row.get("Name"),
         email = row.get("Email"),
@@ -165,9 +167,9 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   Given("""^the following companies exist:$""") { (dataTable: DataTable) =>
     val data = dataTable.asMaps().asScala.toList
     data.foreach { row =>
-      val uuid = getTestUuidForId(row.get("CompanyId").toInt)
+      val uuid      = getTestUuidForId(row.get("CompanyId").toInt)
       val companyId = CompanyId(uuid)
-      val company = Company(
+      val company   = Company(
         id = companyId,
         name = row.get("Name"),
         email = row.get("Email"),
@@ -226,39 +228,40 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     testData("target_ride_id") = rideId
   }
 
-  When("""^I send a (GET|POST|PUT|DELETE|PATCH) request to "(.+)"$""") { 
-    (method: String, endpoint: String) =>
-      val request = createRequest(method, endpoint, None)
-      executeRequest(request)
+  When("""^I send a (GET|POST|PUT|DELETE|PATCH) request to "(.+)"$""") { (method: String, endpoint: String) =>
+    val request = createRequest(method, endpoint, None)
+    executeRequest(request)
   }
 
-  When("""^I send a (GET|POST|PUT|DELETE) request to "(.+)" without authentication$""") { 
+  When("""^I send a (GET|POST|PUT|DELETE) request to "(.+)" without authentication$""") {
     (method: String, endpoint: String) =>
-      val httpMethod = method.toUpperCase match {
-        case "GET" => Method.GET
-        case "POST" => Method.POST
-        case "PUT" => Method.PUT
-        case "DELETE" => Method.DELETE
-        case _ => Method.GET
-      }
-      val request = Request(
+      val httpMethod =
+        method.toUpperCase match {
+          case "GET"    => Method.GET
+          case "POST"   => Method.POST
+          case "PUT"    => Method.PUT
+          case "DELETE" => Method.DELETE
+          case _        => Method.GET
+        }
+      val request    = Request(
         method = httpMethod,
         url = URL.decode(s"http://localhost:8080$endpoint").toOption.get
       )
       executeRequest(request)
   }
 
-  When("""^I send a (GET|POST|PUT|DELETE) request to "(.+)" with invalid token$""") { 
+  When("""^I send a (GET|POST|PUT|DELETE) request to "(.+)" with invalid token$""") {
     (method: String, endpoint: String) =>
       authToken = Some("invalid-token")
-      val httpMethod = method.toUpperCase match {
-        case "GET" => Method.GET
-        case "POST" => Method.POST
-        case "PUT" => Method.PUT
-        case "DELETE" => Method.DELETE
-        case _ => Method.GET
-      }
-      val request = Request(
+      val httpMethod =
+        method.toUpperCase match {
+          case "GET"    => Method.GET
+          case "POST"   => Method.POST
+          case "PUT"    => Method.PUT
+          case "DELETE" => Method.DELETE
+          case _        => Method.GET
+        }
+      val request    = Request(
         method = httpMethod,
         url = URL.decode(s"http://localhost:8080$endpoint").toOption.get,
         headers = Headers(Header.Authorization.Bearer("invalid-token"))
@@ -267,83 +270,88 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   When("""^I create a ride request with:$""") { (dataTable: DataTable) =>
-    val data = dataTable.asMap().asScala.toMap
+    val data        = dataTable.asMap().asScala.toMap
     val rideRequest = Map(
-      "clientId" -> data.get("clientId"),
-      "pickup" -> data.get("pickup"),
+      "clientId"    -> data.get("clientId"),
+      "pickup"      -> data.get("pickup"),
       "destination" -> data.get("destination"),
       "scheduledAt" -> data.get("scheduledAt")
     )
-    
+
     val request = createRequest("POST", "/api/v2/rides", Some(rideRequest.toJson))
     executeRequest(request)
   }
 
   When("""^I create an airport transfer ride with:$""") { (dataTable: DataTable) =>
-    val data = dataTable.asMap().asScala.toMap
+    val data        = dataTable.asMap().asScala.toMap
     val rideRequest = Map(
-      "clientId" -> data.get("clientId"),
-      "pickup" -> data.get("pickup"),
-      "destination" -> data.get("destination"),
-      "scheduledAt" -> data.get("scheduledAt"),
-      "flightNumber" -> data.get("flightNumber"),
+      "clientId"        -> data.get("clientId"),
+      "pickup"          -> data.get("pickup"),
+      "destination"     -> data.get("destination"),
+      "scheduledAt"     -> data.get("scheduledAt"),
+      "flightNumber"    -> data.get("flightNumber"),
       "isAirportPickup" -> data.get("isAirportPickup")
     )
-    
+
     val request = createRequest("POST", "/api/v2/rides", Some(rideRequest.toJson))
     executeRequest(request)
   }
 
   When("""^I assign driver (\d+) to ride (\d+)$""") { (driverId: String, rideId: String) =>
     val assignmentData = Map("driverId" -> driverId).toJson
-    val request = createRequest("POST", s"/api/v2/rides/$rideId/assign", Some(assignmentData))
+    val request        = createRequest("POST", s"/api/v2/rides/$rideId/assign", Some(assignmentData))
     executeRequest(request)
   }
 
   When("""^I update the ride status to "(.+)"$""") { (status: String) =>
     val statusUpdate = Map("status" -> status).toJson
-    val rideId = testData.get("current_ride_id").getOrElse("123")
-    val request = createRequest("PUT", s"/api/v2/rides/$rideId/status", Some(statusUpdate))
+    val rideId       = testData.get("current_ride_id").getOrElse("123")
+    val request      = createRequest("PUT", s"/api/v2/rides/$rideId/status", Some(statusUpdate))
     executeRequest(request)
   }
 
   When("""^I create a company with:$""") { (dataTable: DataTable) =>
-    val data = dataTable.asMap().asScala.toMap
+    val data        = dataTable.asMap().asScala.toMap
     val companyData = Map(
-      "name" -> data.get("name"),
-      "email" -> data.get("email"),
-      "phone" -> data.get("phone"),
+      "name"    -> data.get("name"),
+      "email"   -> data.get("email"),
+      "phone"   -> data.get("phone"),
       "address" -> data.get("address")
     )
-    
+
     val request = createRequest("POST", "/api/v2/companies", Some(companyData.toJson))
     executeRequest(request)
   }
 
   Then("""^the response status should be (\d+)$""") { (expectedStatus: Int) =>
     if (lastResponse == null) {
-      val status = expectedStatus match {
-        case 200 => Status.Ok
-        case 201 => Status.Created
-        case 400 => Status.BadRequest
-        case 401 => Status.Unauthorized
-        case 403 => Status.Forbidden
-        case 404 => Status.NotFound
-        case 409 => Status.Conflict
-        case 429 => Status.TooManyRequests
-        case 500 => Status.InternalServerError
-        case 503 => Status.ServiceUnavailable
-        case _ => Status.Ok
-      }
+      val status =
+        expectedStatus match {
+          case 200 => Status.Ok
+          case 201 => Status.Created
+          case 400 => Status.BadRequest
+          case 401 => Status.Unauthorized
+          case 403 => Status.Forbidden
+          case 404 => Status.NotFound
+          case 409 => Status.Conflict
+          case 429 => Status.TooManyRequests
+          case 500 => Status.InternalServerError
+          case 503 => Status.ServiceUnavailable
+          case _   => Status.Ok
+        }
       lastResponse = Response.status(status)
     }
-    assert(lastResponse.status.code == expectedStatus, 
-      s"Expected status $expectedStatus but got ${lastResponse.status.code}")
+    assert(
+      lastResponse.status.code == expectedStatus,
+      s"Expected status $expectedStatus but got ${lastResponse.status.code}"
+    )
   }
 
   Then("""^the response should contain "(.+)"$""") { (expectedContent: String) =>
-    assert(lastResponseBody.contains(expectedContent), 
-      s"Response body '$lastResponseBody' should contain '$expectedContent'")
+    assert(
+      lastResponseBody.contains(expectedContent),
+      s"Response body '$lastResponseBody' should contain '$expectedContent'"
+    )
   }
 
   Then("""^the response should contain (.+) details$""") { (entityType: String) =>
@@ -351,8 +359,10 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^the response should contain a JWT token$""") { () =>
-    assert(lastResponseBody.contains("token") || lastResponseBody.contains("jwt"), 
-      "Response should contain a JWT token")
+    assert(
+      lastResponseBody.contains("token") || lastResponseBody.contains("jwt"),
+      "Response should contain a JWT token"
+    )
   }
 
   Then("""^the (.+) status should be "(.+)"$""") { (entityType: String, expectedStatus: String) =>
@@ -363,7 +373,8 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         lastResponseBody.contains(expectedStatus),
         s"Expected $entityType status '$expectedStatus' in response body, but got: '$lastResponseBody'"
       )
-    } else {
+    }
+    else {
       testData(s"${entityType}_status") = expectedStatus
     }
   }
@@ -377,102 +388,123 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
   Then("""^the response should contain (\d+) (.+)$""") { (count: Int, entityType: String) =>
     if (lastResponseBody.startsWith("[") && lastResponseBody.endsWith("]")) {
-      val actualCount = if (lastResponseBody.trim == "[]") {
-        0
-      } else {
-        val idMatches = "\"id\"\\s*:\\s*\\d+".r.findAllMatchIn(lastResponseBody).size
-        if (idMatches > 0) idMatches
-        else {
-          val separators = lastResponseBody.count(c => c == '}' && lastResponseBody.indexOf(c) < lastResponseBody.lastIndexOf('{'))
-          if (separators > 0) separators + 1 else 1
+      val actualCount =
+        if (lastResponseBody.trim == "[]") {
+          0
         }
-      }
-      assert(actualCount == count, 
-        s"Expected $count $entityType but found $actualCount in JSON array. Response was: '$lastResponseBody'")
-    } else {
-      assert(lastResponseBody.contains(count.toString), 
-        s"Response should contain $count $entityType. Response was: '$lastResponseBody'")
+        else {
+          val idMatches = "\"id\"\\s*:\\s*\\d+".r.findAllMatchIn(lastResponseBody).size
+          if (idMatches > 0)
+            idMatches
+          else {
+            val separators = lastResponseBody.count(c =>
+              c == '}' && lastResponseBody.indexOf(c) < lastResponseBody.lastIndexOf('{')
+            )
+            if (separators > 0)
+              separators + 1
+            else
+              1
+          }
+        }
+      assert(
+        actualCount == count,
+        s"Expected $count $entityType but found $actualCount in JSON array. Response was: '$lastResponseBody'"
+      )
+    }
+    else {
+      assert(
+        lastResponseBody.contains(count.toString),
+        s"Response should contain $count $entityType. Response was: '$lastResponseBody'"
+      )
     }
   }
 
-  private def getTestUuidForId(id: Int): UUID = id match {
-    case 1 => UUID.fromString("11111111-1111-1111-1111-111111111111")
-    case 50 => UUID.fromString("50505050-5050-5050-5050-505050505050")
-    case 10 => UUID.fromString("10101010-1010-1010-1010-101010101010")
-    case 99 => UUID.fromString("99999999-9999-9999-9999-999999999999")
-    case _ => UUID.fromString(s"${id.toString.padTo(8, '0')}-1111-1111-1111-111111111111")
-  }
+  private def getTestUuidForId(id: Int): UUID =
+    id match {
+      case 1  => UUID.fromString("11111111-1111-1111-1111-111111111111")
+      case 50 => UUID.fromString("50505050-5050-5050-5050-505050505050")
+      case 10 => UUID.fromString("10101010-1010-1010-1010-101010101010")
+      case 99 => UUID.fromString("99999999-9999-9999-9999-999999999999")
+      case _  => UUID.fromString(s"${id.toString.padTo(8, '0')}-1111-1111-1111-111111111111")
+    }
 
-  /** Returns a static token that TestApplication's testJwtServiceLayer accepts.
-   *  Picks token by role when UUID doesn't match a known test person.
+  /**
+   * Returns a static token that TestApplication's testJwtServiceLayer accepts. Picks token by role when UUID doesn't
+   * match a known test person.
    */
-  private def generateMockToken(userId: PersonId, role: String): String = userId.value match {
-    case uuid if uuid == UUID.fromString("11111111-1111-1111-1111-111111111111") => "valid-token-1"
-    case uuid if uuid == UUID.fromString("50505050-5050-5050-5050-505050505050") => "valid-token-50"
-    case uuid if uuid == UUID.fromString("10101010-1010-1010-1010-101010101010") => "valid-token-10"
-    case uuid if uuid == UUID.fromString("99999999-9999-9999-9999-999999999999") => "valid-token-99"
-    case uuid if uuid == UUID.fromString("33333333-3333-3333-3333-333333333333") => "valid-token-33"
-    case uuid if uuid == UUID.fromString("44444444-4444-4444-4444-444444444444") => "valid-token-44"
-    case _ => role match {
-      case "dispatcher" => "valid-token-33"
-      case "secretary"  => "valid-token-44"
-      case "driver"     => "valid-token-10"
-      case "admin"      => "valid-token-99"
-      case _            => "valid-token-1"
+  private def generateMockToken(userId: PersonId, role: String): String =
+    userId.value match {
+      case uuid if uuid == UUID.fromString("11111111-1111-1111-1111-111111111111") => "valid-token-1"
+      case uuid if uuid == UUID.fromString("50505050-5050-5050-5050-505050505050") => "valid-token-50"
+      case uuid if uuid == UUID.fromString("10101010-1010-1010-1010-101010101010") => "valid-token-10"
+      case uuid if uuid == UUID.fromString("99999999-9999-9999-9999-999999999999") => "valid-token-99"
+      case uuid if uuid == UUID.fromString("33333333-3333-3333-3333-333333333333") => "valid-token-33"
+      case uuid if uuid == UUID.fromString("44444444-4444-4444-4444-444444444444") => "valid-token-44"
+      case _                                                                       =>
+        role match {
+          case "dispatcher" => "valid-token-33"
+          case "secretary"  => "valid-token-44"
+          case "driver"     => "valid-token-10"
+          case "admin"      => "valid-token-99"
+          case _            => "valid-token-1"
+        }
     }
-  }
 
   private def isValidJson(jsonString: String): Boolean = {
     val trimmed = jsonString.trim
-    if (trimmed.isEmpty) return false
-    
-    val hasBalancedBraces = trimmed.count(_ == '{') == trimmed.count(_ == '}')
+    if (trimmed.isEmpty)
+      return false
+
+    val hasBalancedBraces   = trimmed.count(_ == '{') == trimmed.count(_ == '}')
     val hasBalancedBrackets = trimmed.count(_ == '[') == trimmed.count(_ == ']')
-    val hasBalancedQuotes = trimmed.count(_ == '"') % 2 == 0
-    
-    val startsAndEndsCorrectly = (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-                                (trimmed.startsWith("[") && trimmed.endsWith("]"))
-    
+    val hasBalancedQuotes   = trimmed.count(_ == '"') % 2 == 0
+
+    val startsAndEndsCorrectly =
+      (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+        (trimmed.startsWith("[") && trimmed.endsWith("]"))
+
     hasBalancedBraces && hasBalancedBrackets && hasBalancedQuotes && startsAndEndsCorrectly
   }
 
   private def createMockRide(rideId: RideId): Map[String, Any] = {
     Map(
-      "id" -> rideId.value.toString,
-      "clientId" -> getTestUuidForId(1).toString,
-      "pickup" -> "Test Pickup",
+      "id"          -> rideId.value.toString,
+      "clientId"    -> getTestUuidForId(1).toString,
+      "pickup"      -> "Test Pickup",
       "destination" -> "Test Destination",
-      "status" -> "Pending",
+      "status"      -> "Pending",
       "scheduledAt" -> Instant.now().toString
     )
   }
 
   private def createRequest(method: String, endpoint: String, body: Option[String]): Request = {
-    val httpMethod = method.toUpperCase match {
-      case "GET" => Method.GET
-      case "POST" => Method.POST
-      case "PUT" => Method.PUT
-      case "DELETE" => Method.DELETE
-      case "PATCH" => Method.PATCH
-      case _ => Method.GET
-    }
-    
+    val httpMethod =
+      method.toUpperCase match {
+        case "GET"    => Method.GET
+        case "POST"   => Method.POST
+        case "PUT"    => Method.PUT
+        case "DELETE" => Method.DELETE
+        case "PATCH"  => Method.PATCH
+        case _        => Method.GET
+      }
+
     val baseRequest = Request(
       method = httpMethod,
       url = URL.decode(s"http://localhost:8080$endpoint").toOption.get
     )
 
-    val requestWithAuth = authToken match {
-      case Some(token) => baseRequest.addHeader(Header.Authorization.Bearer(token))
-      case None => baseRequest
-    }
+    val requestWithAuth =
+      authToken match {
+        case Some(token) => baseRequest.addHeader(Header.Authorization.Bearer(token))
+        case None        => baseRequest
+      }
 
     body match {
-      case Some(jsonBody) => 
+      case Some(jsonBody) =>
         requestWithAuth
           .addHeader(Header.ContentType(MediaType.application.json))
           .copy(body = Body.fromString(jsonBody))
-      case None => requestWithAuth
+      case None           => requestWithAuth
     }
   }
 
@@ -488,12 +520,12 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     // Paths prefixed with /api/v2/ are mock-only (no such prefix in the real API).
     val usesMockScenario =
       testData.get("force_server_error").contains(true) ||
-      testData.get("db_unavailable").contains(true) ||
-      testData.get("timeout_exceeded").contains(true) ||
-      testData.get("large_payload").contains(true) ||
-      testData.get("rate_limited").contains(true) ||
-      testData.get("concurrent_conflict").contains(true) ||
-      path.startsWith("/api/v2/")
+        testData.get("db_unavailable").contains(true) ||
+        testData.get("timeout_exceeded").contains(true) ||
+        testData.get("large_payload").contains(true) ||
+        testData.get("rate_limited").contains(true) ||
+        testData.get("concurrent_conflict").contains(true) ||
+        path.startsWith("/api/v2/")
 
     if (usesMockScenario) {
       val mockStatus = determineMockStatusUpdated(request)
@@ -506,15 +538,18 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     // Default path: execute a real HTTP request against the running TestApplication.
     try {
       val response = Unsafe.unsafe { implicit u =>
-        Runtime.default.unsafe.run(
-          Client.request(request).provide(Client.default, zio.Scope.default)
-        ).getOrThrow()
+        Runtime.default.unsafe
+          .run(
+            Client.request(request).provide(Client.default, zio.Scope.default)
+          )
+          .getOrThrow()
       }
       lastResponse = response
       lastResponseBody = Unsafe.unsafe { implicit u =>
         Runtime.default.unsafe.run(response.body.asString).getOrThrow()
       }
-    } catch {
+    }
+    catch {
       case e: Exception =>
         // Server unreachable — fall back to mock so tests at least document intent
         val mockStatus = determineMockStatusUpdated(request)
@@ -524,11 +559,10 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     }
   }
 
-
   private def determineMockBody(request: Request): String = {
-    val path = request.url.path.toString()
+    val path   = request.url.path.toString()
     val method = request.method
-    
+
     if (method == Method.POST) {
       try {
         val bodyText = Unsafe.unsafe { implicit unsafe =>
@@ -538,15 +572,20 @@ class ApiStepDefinitions extends ScalaDsl with EN {
           if (bodyText.contains("invalid json") || (bodyText.contains("{") && !isValidJson(bodyText))) {
             return """{"error":"Invalid JSON format"}"""
           }
-          if (bodyText.contains("\"null\"") || bodyText.contains("invalid-date") || 
-              bodyText.contains("not-an-email") || bodyText.contains("\"123\"")) {
+          if (
+              bodyText.contains("\"null\"") || bodyText.contains("invalid-date") ||
+              bodyText.contains("not-an-email") || bodyText.contains("\"123\"")
+          ) {
             if (bodyText.contains("destination")) {
               return """{"errors":["Missing required field: destination","Invalid date format for scheduledAt"]}"""
-            } else if (bodyText.contains("not-an-email")) {
+            }
+            else if (bodyText.contains("not-an-email")) {
               return """{"error":"Invalid email format"}"""
-            } else if (bodyText.contains("\"123\"")) {
+            }
+            else if (bodyText.contains("\"123\"")) {
               return """{"error":"Invalid phone number format"}"""
-            } else {
+            }
+            else {
               return """{"error":"Validation failed"}"""
             }
           }
@@ -554,253 +593,291 @@ class ApiStepDefinitions extends ScalaDsl with EN {
             return """{"error":"User already exists"}"""
           }
         }
-      } catch {
+      }
+      catch {
         case _: Exception => // If we can't read body, continue with normal processing
       }
     }
-    
-    if (testData.get("force_server_error").contains(true)) return """{"error":"Internal server error"}"""
-    if (testData.get("db_unavailable").contains(true)) return """{"error":"Service temporarily unavailable"}"""
-    if (testData.get("timeout_exceeded").contains(true)) return """{"error":"Request timeout"}"""
-    if (testData.get("large_payload").contains(true)) return """{"error":"Payload too large"}"""
-    
+
+    if (testData.get("force_server_error").contains(true))
+      return """{"error":"Internal server error"}"""
+    if (testData.get("db_unavailable").contains(true))
+      return """{"error":"Service temporarily unavailable"}"""
+    if (testData.get("timeout_exceeded").contains(true))
+      return """{"error":"Request timeout"}"""
+    if (testData.get("large_payload").contains(true))
+      return """{"error":"Payload too large"}"""
+
     (method, path) match {
-      case (Method.GET, "/health") => "🐙 Der Oktopus Modular API - OK"
-      case (Method.GET, "/api/v2/health") => """{"status":"OK","service":"ride"}"""
-      case (Method.POST, "/api/v2/rides") => 
+      case (Method.GET, "/health")                                                                          => "🐙 Der Oktopus Modular API - OK"
+      case (Method.GET, "/api/v2/health")                                                                   => """{"status":"OK","service":"ride"}"""
+      case (Method.POST, "/api/v2/rides")                                                                   =>
         val bodyText = Try(Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }).getOrElse("")
-        
+
         if (bodyText.contains("flightNumber")) {
           """{"id":123,"status":"Pending","flightNumber":"KL1234","isAirportPickup":true,"message":"Airport transfer ride created"}"""
-        } else {
+        }
+        else {
           """{"id":123,"status":"Pending","message":"Ride created successfully"}"""
         }
-      case (Method.GET, p) if p.startsWith("/api/v2/rides/") => 
+      case (Method.GET, p) if p.startsWith("/api/v2/rides/")                                                =>
         val rideId = p.split("/").last
-        if (rideId == "999999") """{"error":"Ride not found"}"""
-        else if (rideId == "invalid-id") """{"error":"Invalid ride ID format"}"""
-        else if (rideId == "888" && currentUserId.exists(_.value == getTestUuidForId(50))) """{"error":"Access denied to this resource"}"""
-        else s"""{"id":$rideId,"clientId":1,"pickup":"Test Pickup","destination":"Test Destination","status":"Pending"}"""
-      case (Method.GET, "/api/v2/drivers/available") => 
-        """[{"id":10,"name":"Mike Driver","status":"Available"}]"""
-      case (Method.GET, p) if p.startsWith("/api/v2/drivers/") && p.endsWith("/profile") =>
+        if (rideId == "999999")
+          """{"error":"Ride not found"}"""
+        else if (rideId == "invalid-id")
+          """{"error":"Invalid ride ID format"}"""
+        else if (rideId == "888" && currentUserId.exists(_.value == getTestUuidForId(50)))
+          """{"error":"Access denied to this resource"}"""
+        else
+          s"""{"id":$rideId,"clientId":1,"pickup":"Test Pickup","destination":"Test Destination","status":"Pending"}"""
+      case (Method.GET, "/api/v2/drivers/available")                                                        => """[{"id":10,"name":"Mike Driver","status":"Available"}]"""
+      case (Method.GET, p) if p.startsWith("/api/v2/drivers/") && p.endsWith("/profile")                    =>
         val driverId = p.split("/")(4) // Extract driver ID from path
         s"""{"id":$driverId,"name":"Test Driver","status":"Available","email":"driver$driverId@example.com"}"""
-      case (Method.GET, "/api/users") =>
-        if (authToken.exists(_.contains("client"))) """{"error":"Insufficient permissions"}"""
+      case (Method.GET, "/api/users")                                                                       =>
+        if (authToken.exists(_.contains("client")))
+          """{"error":"Insufficient permissions"}"""
         else if (authToken.exists(_.contains("admin"))) {
           val fullUrl = request.url.path.toString() + request.url.queryParams.toString()
-          if (fullUrl.contains("search=john") || request.url.path.toString().contains("search=john") || request.url.toString().contains("john")) {
+          if (
+              fullUrl.contains("search=john") || request.url.path.toString().contains("search=john") || request.url
+                .toString()
+                .contains("john")
+          ) {
             """[{"id":1,"name":"John User","email":"john@example.com","role":"CLIENT","status":"ACTIVE"},{"id":2,"name":"Johnny Smith","email":"johnny@example.com","role":"DRIVER","status":"ACTIVE"}]"""
-          } else if (fullUrl.contains("search=jane") || request.url.path.toString().contains("search=jane")) {
+          }
+          else if (fullUrl.contains("search=jane") || request.url.path.toString().contains("search=jane")) {
             """[{"id":3,"name":"Jane Doe","email":"jane@example.com","role":"CLIENT","status":"ACTIVE"}]"""
-          } else if (fullUrl.contains("role=DRIVER")) {
+          }
+          else if (fullUrl.contains("role=DRIVER")) {
             """[{"id":2,"name":"Driver User","email":"driver@example.com","role":"DRIVER","status":"ACTIVE"},{"id":4,"name":"Another Driver","email":"driver2@example.com","role":"DRIVER","status":"ACTIVE"}]"""
-          } else if (fullUrl.contains("status=ACTIVE")) {
+          }
+          else if (fullUrl.contains("status=ACTIVE")) {
             """[{"id":1,"name":"User 1","email":"user1@example.com","role":"CLIENT","status":"ACTIVE"},{"id":2,"name":"User 2","email":"user2@example.com","role":"DRIVER","status":"ACTIVE"}]"""
-          } else {
+          }
+          else {
             """[{"id":1,"name":"User 1","email":"user1@example.com","role":"CLIENT","status":"ACTIVE","createdAt":"2024-01-01T10:00:00Z"},{"id":2,"name":"User 2","email":"user2@example.com","role":"DRIVER","status":"ACTIVE","createdAt":"2024-01-01T10:00:00Z"}]"""
           }
         }
-        else """{"error":"Authentication required"}"""
-      case (Method.GET, p) if p.startsWith("/api/users/") && !p.endsWith("/profile") =>
+        else
+          """{"error":"Authentication required"}"""
+      case (Method.GET, p) if p.startsWith("/api/users/") && !p.endsWith("/profile")                        =>
         val userId = p.split("/").last
         s"""{"id":$userId,"name":"Test User","email":"user$userId@example.com","role":"CLIENT","phone":"+1234567890","status":"ACTIVE","createdAt":"2024-01-01T10:00:00Z"}"""
-      case (Method.GET, "/api/users/profile") =>
+      case (Method.GET, "/api/users/profile")                                                               =>
         val userId = currentUserId.map(_.value).getOrElse(1)
         s"""{"id":$userId,"name":"Current User","email":"current@example.com","role":"CLIENT","phone":"+1234567890","status":"ACTIVE","createdAt":"2024-01-01T10:00:00Z"}"""
-      case (Method.GET, "/api/rides") =>
-        val fullUrl = request.url.toString()
+      case (Method.GET, "/api/rides")                                                                       =>
+        val fullUrl     = request.url.toString()
         val queryParams = request.url.queryParams.toString()
-        val url = request.url.path.toString() + queryParams
+        val url         = request.url.path.toString() + queryParams
         if (url.contains("clientId=1") || fullUrl.contains("clientId=1")) {
           """[{"id":1,"clientId":1,"pickupLocation":"Location A","destination":"Location B","status":"REQUESTED","driverId":null,"pickupTime":"2024-01-01T14:00:00Z"},{"id":2,"clientId":1,"pickupLocation":"Location C","destination":"Location D","status":"ASSIGNED","driverId":10,"pickupTime":"2024-01-01T15:00:00Z"}]"""
-        } else if (url.contains("driverId=10") || fullUrl.contains("driverId=10")) {
+        }
+        else if (url.contains("driverId=10") || fullUrl.contains("driverId=10")) {
           """[{"id":2,"clientId":1,"pickupLocation":"Location C","destination":"Location D","status":"ASSIGNED","driverId":10,"pickupTime":"2024-01-01T15:00:00Z"},{"id":3,"clientId":2,"pickupLocation":"Location E","destination":"Location F","status":"IN_PROGRESS","driverId":10,"pickupTime":"2024-01-01T16:00:00Z"}]"""
-        } else if (url.contains("status=REQUESTED") || fullUrl.contains("status=REQUESTED")) {
+        }
+        else if (url.contains("status=REQUESTED") || fullUrl.contains("status=REQUESTED")) {
           """[{"id":1,"clientId":1,"pickupLocation":"Location A","destination":"Location B","status":"REQUESTED","driverId":null,"pickupTime":"2024-01-01T14:00:00Z"},{"id":4,"clientId":3,"pickupLocation":"Location G","destination":"Location H","status":"REQUESTED","driverId":null,"pickupTime":"2024-01-01T17:00:00Z"}]"""
-        } else {
+        }
+        else {
           """[{"id":1,"clientId":1,"pickupLocation":"Location A","destination":"Location B","status":"REQUESTED","pickupTime":"2024-01-01T14:00:00Z"},{"id":2,"clientId":1,"pickupLocation":"Location C","destination":"Location D","status":"ASSIGNED","pickupTime":"2024-01-01T15:00:00Z"}]"""
         }
       case (Method.GET, p) if p.startsWith("/api/rides/") && !p.contains("assign") && !p.contains("status") =>
         val rideId = p.split("/")(3)
-        if (rideId == "999") """{"error":"Ride not found"}"""
-        else s"""{"id":$rideId,"clientId":1,"pickupLocation":"Location A","destination":"Location B","status":"REQUESTED","driverId":null,"pickupTime":"2024-01-01T14:00:00Z"}"""
-      case (Method.POST, "/api/rides") =>
+        if (rideId == "999")
+          """{"error":"Ride not found"}"""
+        else
+          s"""{"id":$rideId,"clientId":1,"pickupLocation":"Location A","destination":"Location B","status":"REQUESTED","driverId":null,"pickupTime":"2024-01-01T14:00:00Z"}"""
+      case (Method.POST, "/api/rides")                                                                      =>
         """{"id":123,"clientId":1,"pickupLocation":"Airport Terminal 1","destination":"Hotel Paradise","status":"REQUESTED","message":"Ride created successfully"}"""
-      case (Method.PUT, p) if p.startsWith("/api/rides/") && !p.contains("assign") =>
+      case (Method.PUT, p) if p.startsWith("/api/rides/") && !p.contains("assign")                          =>
         val rideId = p.split("/")(3)
         s"""{"id":$rideId,"clientId":1,"pickupLocation":"Updated Location","destination":"Updated Destination","status":"CONFIRMED"}"""
-      case (Method.PUT, p) if p.contains("/assign-driver") =>
+      case (Method.PUT, p) if p.contains("/assign-driver")                                                  =>
         val rideId = p.split("/")(3)
         s"""{"id":$rideId,"clientId":1,"pickup":"Location A","destination":"Location B","status":"ASSIGNED","driverId":10}"""
-      case (Method.PUT, p) if p.contains("/unassign-driver") =>
+      case (Method.PUT, p) if p.contains("/unassign-driver")                                                =>
         val rideId = p.split("/")(3)
         s"""{"id":$rideId,"clientId":1,"pickup":"Location A","destination":"Location B","status":"REQUESTED","driverId":null}"""
-      case (Method.DELETE, p) if p.startsWith("/api/rides/") => ""
-      case (Method.PATCH, p) if p.contains("/rides/") && p.endsWith("/status") =>
+      case (Method.DELETE, p) if p.startsWith("/api/rides/")                                                => ""
+      case (Method.PATCH, p) if p.contains("/rides/") && p.endsWith("/status")                              =>
         val rideId = p.split("/")(3)
         s"""{"id":$rideId,"status":"COMPLETED","message":"Status updated successfully"}"""
-      case (Method.POST, "/api/auth/biometric/setup") =>
+      case (Method.POST, "/api/auth/biometric/setup")                                                       =>
         """{"message":"Biometric authentication setup successful","biometricId":"bio_123456"}"""
-      case (Method.GET, "/api/auth/validate") =>
-        if (authToken.isDefined) """{"valid":true,"userId":1,"expiresIn":3600}"""
-        else """{"valid":false,"error":"Invalid or missing token"}"""
-      case (Method.POST, "/api/auth/logout") =>
-        """{"message":"Successfully logged out"}"""
-      case (Method.POST, "/api/auth/password/reset-request") =>
+      case (Method.GET, "/api/auth/validate")                                                               =>
+        if (authToken.isDefined)
+          """{"valid":true,"userId":1,"expiresIn":3600}"""
+        else
+          """{"valid":false,"error":"Invalid or missing token"}"""
+      case (Method.POST, "/api/auth/logout")                                                                => """{"message":"Successfully logged out"}"""
+      case (Method.POST, "/api/auth/password/reset-request")                                                =>
         """{"message":"Password reset email sent","resetToken":"reset_123456"}"""
-      case (Method.POST, "/api/users/avatar") =>
+      case (Method.POST, "/api/users/avatar")                                                               =>
         """{"message":"Avatar uploaded successfully","url":"/uploads/avatar_123.jpg"}"""
-      case (Method.PUT, p) if p.startsWith("/api/users/") && p.endsWith("/password") =>
+      case (Method.PUT, p) if p.startsWith("/api/users/") && p.endsWith("/password")                        =>
         """{"message":"Password changed successfully"}"""
-      case (Method.PUT, p) if p.startsWith("/api/users/") =>
-        val userId = p.split("/")(3)
+      case (Method.PUT, p) if p.startsWith("/api/users/")                                                   =>
+        val userId   = p.split("/")(3)
         val bodyText = Try(Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }).getOrElse("")
-        
+
         if (bodyText.contains("updated@example.com")) {
           s"""{"id":$userId,"email":"updated@example.com","name":"Updated Name","phone":"+9876543210","status":"ACTIVE"}"""
-        } else if (bodyText.contains("Updated Profile Name")) {
+        }
+        else if (bodyText.contains("Updated Profile Name")) {
           val actualUserId = currentUserId.map(_.value).getOrElse(userId.toLong)
           s"""{"id":$actualUserId,"name":"Updated Profile Name","phone":"+1111111111","status":"ACTIVE"}"""
-        } else {
+        }
+        else {
           s"""{"id":$userId,"name":"Updated User","status":"ACTIVE"}"""
         }
-      case (Method.DELETE, p) if p.startsWith("/api/users/") => ""
-      case (Method.PUT, p) if p.contains("/drivers/") && p.endsWith("/status") =>
+      case (Method.DELETE, p) if p.startsWith("/api/users/")                                                => ""
+      case (Method.PUT, p) if p.contains("/drivers/") && p.endsWith("/status")                              =>
         """{"message":"Status updated successfully"}"""
-      case (Method.GET, p) if p.contains("/drivers/") && p.endsWith("/rides/current") =>
+      case (Method.GET, p) if p.contains("/drivers/") && p.endsWith("/rides/current")                       =>
         """[{"id":101,"status":"InProgress","pickup":"Location A","destination":"Location B"}]"""
-      case (Method.POST, p) if p.contains("/rides/") && p.endsWith("/accept") =>
+      case (Method.POST, p) if p.contains("/rides/") && p.endsWith("/accept")                               =>
         """{"message":"Ride accepted","status":"Accepted"}"""
-      case (Method.POST, p) if p.contains("/rides/") && p.endsWith("/reject") =>
-        """{"message":"Ride rejected"}"""
-      case (Method.POST, p) if p.contains("/drivers/") && p.endsWith("/location") =>
+      case (Method.POST, p) if p.contains("/rides/") && p.endsWith("/reject")                               => """{"message":"Ride rejected"}"""
+      case (Method.POST, p) if p.contains("/drivers/") && p.endsWith("/location")                           =>
         """{"message":"Location updated successfully"}"""
-      case (Method.POST, "/api/v2/auth/login") => 
+      case (Method.POST, "/api/v2/auth/login")                                                              =>
         val bodyText = Try(Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }).getOrElse("")
-        
+
         if (bodyText.contains("invalid@example.com") || bodyText.contains("wrongpassword")) {
           "Invalid credentials"
-        } else if (bodyText.contains("malformed")) {
+        }
+        else if (bodyText.contains("malformed")) {
           "Invalid JSON format"
-        } else {
+        }
+        else {
           """{"token":"mock-jwt-token","expiresIn":86400,"user":{"id":1,"email":"user@example.com"}}"""
         }
-      case (Method.POST, "/api/auth/login") => 
+      case (Method.POST, "/api/auth/login")                                                                 =>
         val bodyText = Try(Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }).getOrElse("")
-        
+
         if (bodyText.contains("invalid@example.com") || bodyText.contains("wrongpassword")) {
           ""
-        } else if (bodyText.contains("malformed")) {
+        }
+        else if (bodyText.contains("malformed")) {
           "Invalid JSON format"
-        } else {
+        }
+        else {
           """{"person":{"id":1,"email":"test@example.com","name":"Test User","role":"CLIENT"},"token":"valid-token-1"}"""
         }
-      case (Method.POST, "/api/v2/users") =>
+      case (Method.POST, "/api/v2/users")                                                                   =>
         val bodyText = Try(Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }).getOrElse("")
-        
+
         if (bodyText.contains("not-an-email") || bodyText.contains("invalid")) {
           """{"errors":[{"field":"email","message":"Invalid email format"}]}"""
-        } else if (bodyText.contains("\"123\"")) {
+        }
+        else if (bodyText.contains("\"123\"")) {
           """{"errors":[{"field":"phone","message":"Invalid phone number format"}]}"""
-        } else if (bodyText.contains("existing@example.com")) {
+        }
+        else if (bodyText.contains("existing@example.com")) {
           """{"error":"User already exists","details":"A user with this email already exists in the system"}"""
-        } else if (bodyText.contains("newuser@example.com")) {
+        }
+        else if (bodyText.contains("newuser@example.com")) {
           """{"id":1,"email":"newuser@example.com","name":"New User","role":"CLIENT","phone":"+1234567890","status":"ACTIVE","message":"User created successfully"}"""
-        } else {
+        }
+        else {
           """{"id":1,"message":"User created successfully"}"""
         }
-      case (Method.POST, "/api/users") =>
+      case (Method.POST, "/api/users")                                                                      =>
         val bodyText = Try(Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }).getOrElse("")
-        
+
         if (bodyText.contains("not-an-email") || bodyText.contains("invalid")) {
           """{"errors":[{"field":"email","message":"Invalid email format"}]}"""
-        } else if (bodyText.contains("\"123\"")) {
+        }
+        else if (bodyText.contains("\"123\"")) {
           """{"errors":[{"field":"phone","message":"Invalid phone number format"}]}"""
-        } else if (bodyText.contains("existing@example.com")) {
+        }
+        else if (bodyText.contains("existing@example.com")) {
           """{"error":"User already exists","details":"A user with this email already exists in the system"}"""
-        } else if (bodyText.contains("newuser@example.com")) {
+        }
+        else if (bodyText.contains("newuser@example.com")) {
           """{"id":1,"email":"newuser@example.com","name":"New User","role":"CLIENT","phone":"+1234567890","status":"ACTIVE","message":"User created successfully"}"""
-        } else {
+        }
+        else {
           """{"id":1,"message":"User created successfully"}"""
         }
-      case (Method.GET, _) if authToken.isEmpty => 
-        """{"error":"Authentication required"}"""
-      case (Method.GET, _) if authToken.contains("invalid-token") =>
-        """{"error":"Invalid token"}"""
-      case (Method.GET, "/api/v2/companies") =>
-        """[{"id":100,"name":"Oktopus Taxi"},{"id":101,"name":"City Cab"}]"""
-      case (Method.GET, p) if p.startsWith("/api/v2/companies/") && !p.contains("/drivers") && !p.contains("/statistics") =>
+      case (Method.GET, _) if authToken.isEmpty                                                             => """{"error":"Authentication required"}"""
+      case (Method.GET, _) if authToken.contains("invalid-token")                                           => """{"error":"Invalid token"}"""
+      case (Method.GET, "/api/v2/companies")                                                                => """[{"id":100,"name":"Oktopus Taxi"},{"id":101,"name":"City Cab"}]"""
+      case (Method.GET, p)
+          if p.startsWith("/api/v2/companies/") && !p.contains("/drivers") && !p.contains("/statistics") =>
         val companyId = p.split("/")(4)
         s"""{"id":$companyId,"name":"Oktopus Taxi","email":"info@oktopus.ua","phone":"+380501234567","address":"Kyiv, Ukraine"}"""
-      case (Method.POST, "/api/v2/companies") =>
+      case (Method.POST, "/api/v2/companies")                                                               =>
         """{"id":102,"name":"Metro Taxi","message":"Company created successfully"}"""
-      case (Method.PUT, p) if p.startsWith("/api/v2/rides/") && !p.endsWith("/status") =>
+      case (Method.PUT, p) if p.startsWith("/api/v2/rides/") && !p.endsWith("/status")                      =>
         if (testData.get("concurrent_conflict").contains(true)) {
           """{"error":"Resource was modified by another user"}"""
-        } else {
+        }
+        else {
           """{"message":"Ride updated successfully"}"""
         }
-      case (Method.PUT, p) if p.startsWith("/api/v2/companies/") =>
+      case (Method.PUT, p) if p.startsWith("/api/v2/companies/")                                            =>
         """{"message":"Company updated successfully","phone":"+380991234567","address":"Kyiv, New Office"}"""
-      case (Method.GET, p) if p.startsWith("/api/v2/companies/") && p.endsWith("/drivers") =>
+      case (Method.GET, p) if p.startsWith("/api/v2/companies/") && p.endsWith("/drivers")                  =>
         """[{"id":1,"name":"Driver 1"},{"id":2,"name":"Driver 2"},{"id":3,"name":"Driver 3"}]"""
-      case (Method.POST, p) if p.contains("/companies/") && p.endsWith("/drivers") =>
+      case (Method.POST, p) if p.contains("/companies/") && p.endsWith("/drivers")                          =>
         """{"message":"Driver assigned to company successfully"}"""
-      case (Method.GET, p) if p.contains("/companies/") && p.endsWith("/statistics") =>
+      case (Method.GET, p) if p.contains("/companies/") && p.endsWith("/statistics")                        =>
         """{"totalDrivers":10,"activeRides":5,"completedRides":100,"revenue":50000}"""
-      case (Method.DELETE, p) if p.startsWith("/api/v2/companies/") =>
+      case (Method.DELETE, p) if p.startsWith("/api/v2/companies/")                                         =>
         val companyId = p.split("/").last
         if (testData.get(s"company_${companyId}_active_rides").contains(5)) {
           """{"error":"Cannot delete company with active rides"}"""
-        } else ""
-      case (Method.POST, "/api/v2/auth/refresh") =>
-        """{"token":"new-jwt-token","expiresIn":86400}"""
-      case (Method.POST, "/api/v2/auth/logout") =>
-        """{"message":"Logged out successfully"}"""
-      case (Method.GET, "/api/v2/admin/users") =>
-        if (authToken.exists(_.contains("driver"))) """{"error":"Insufficient permissions"}"""
-        else if (authToken.exists(_.contains("admin"))) """[{"id":1,"name":"User 1"},{"id":2,"name":"User 2"}]"""
-        else """{"error":"Authentication required"}"""
-      case (Method.GET, p) if p.contains("/api/flights/") =>
-        getMockResponseBody(p, "GET")
-      case (Method.PATCH, "/api/v2/health") => """{"error":"Method not allowed"}"""
+        }
+        else
+          ""
+      case (Method.POST, "/api/v2/auth/refresh")                                                            => """{"token":"new-jwt-token","expiresIn":86400}"""
+      case (Method.POST, "/api/v2/auth/logout")                                                             => """{"message":"Logged out successfully"}"""
+      case (Method.GET, "/api/v2/admin/users")                                                              =>
+        if (authToken.exists(_.contains("driver")))
+          """{"error":"Insufficient permissions"}"""
+        else if (authToken.exists(_.contains("admin")))
+          """[{"id":1,"name":"User 1"},{"id":2,"name":"User 2"}]"""
+        else
+          """{"error":"Authentication required"}"""
+      case (Method.GET, p) if p.contains("/api/flights/")                                                   => getMockResponseBody(p, "GET")
+      case (Method.PATCH, "/api/v2/health")                                                                 => """{"error":"Method not allowed"}"""
 
       // ── Audit ──
       case (Method.GET, p) if p.startsWith("/api/audit") =>
         """[{"id":"11111111-1111-1111-1111-111111111111","action":"LOGIN","userId":"11111111-1111-1111-1111-111111111111","timestamp":"2026-05-18T10:00:00Z"}]"""
 
       // ── Blacklist ──
-      case (Method.GET, "/api/blacklist") =>
+      case (Method.GET, "/api/blacklist")                          =>
         """[{"id":"11111111-1111-1111-1111-111111111111","personId":"11111111-1111-1111-1111-111111111111","reason":"Repeated no-shows"}]"""
-      case (Method.GET, p) if p.startsWith("/api/blacklist/check") =>
-        """{"blacklisted":false}"""
-      case (Method.POST, "/api/blacklist") =>
+      case (Method.GET, p) if p.startsWith("/api/blacklist/check") => """{"blacklisted":false}"""
+      case (Method.POST, "/api/blacklist")                         =>
         """{"id":"11111111-1111-1111-1111-111111111111","personId":"11111111-1111-1111-1111-111111111111"}"""
 
       // ── Client companies ──
-      case (Method.GET, "/api/client-companies") =>
+      case (Method.GET, "/api/client-companies")                                               =>
         """[{"id":"11111111-1111-1111-1111-111111111111","name":"Acme Corp"}]"""
       case (Method.GET, p) if p.startsWith("/api/client-companies/") && p.endsWith("/members") =>
         """[{"id":"11111111-1111-1111-1111-111111111111","name":"John Doe"}]"""
-      case (Method.GET, p) if p.startsWith("/api/client-companies/") =>
+      case (Method.GET, p) if p.startsWith("/api/client-companies/")                           =>
         """{"id":"11111111-1111-1111-1111-111111111111","name":"Acme Corp","email":"billing@acme.com"}"""
-      case (Method.POST, "/api/client-companies") =>
+      case (Method.POST, "/api/client-companies")                                              =>
         """{"id":"11111111-1111-1111-1111-111111111111","name":"Acme Corp"}"""
-      case (Method.PUT, p) if p.startsWith("/api/client-companies/") =>
+      case (Method.PUT, p) if p.startsWith("/api/client-companies/")                           =>
         """{"id":"11111111-1111-1111-1111-111111111111","name":"Acme Corp Updated"}"""
 
       // ── Company settings ──
@@ -808,67 +885,58 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         """{"companyName":"Oktopus GmbH","timezone":"Europe/Berlin","currency":"EUR"}"""
       case (Method.PUT, "/api/company/settings") =>
         """{"companyName":"Oktopus GmbH","timezone":"Europe/Berlin","currency":"EUR"}"""
-      case (Method.GET, "/api/company/tariff") =>
-        """{"baseRate":2.50,"perKmRate":1.20,"minimumFare":5.00}"""
-      case (Method.PUT, "/api/company/tariff") =>
-        """{"baseRate":2.50,"perKmRate":1.20,"minimumFare":5.00}"""
+      case (Method.GET, "/api/company/tariff")   => """{"baseRate":2.50,"perKmRate":1.20,"minimumFare":5.00}"""
+      case (Method.PUT, "/api/company/tariff")   => """{"baseRate":2.50,"perKmRate":1.20,"minimumFare":5.00}"""
 
       // ── Emergency ──
-      case (Method.POST, "/api/emergency/reassign") =>
+      case (Method.POST, "/api/emergency/reassign")                           =>
         """{"rideId":"11111111-1111-1111-1111-111111111111","status":"Reassigned"}"""
-      case (Method.GET, "/api/emergency/reassignments") =>
+      case (Method.GET, "/api/emergency/reassignments")                       =>
         """[{"id":"11111111-1111-1111-1111-111111111111","reason":"Driver accident"}]"""
       case (Method.GET, p) if p.startsWith("/api/emergency/suggest-drivers/") =>
         """[{"id":"33333333-3333-3333-3333-333333333333","name":"Alex Driver"}]"""
 
       // ── GDPR ──
-      case (Method.GET, "/api/gdpr/consents") =>
-        """{"marketingConsent":false,"analyticsConsent":true}"""
-      case (Method.PUT, "/api/gdpr/consents") =>
-        """{"marketingConsent":false,"analyticsConsent":true}"""
-      case (Method.GET, "/api/gdpr/export") =>
+      case (Method.GET, "/api/gdpr/consents")          => """{"marketingConsent":false,"analyticsConsent":true}"""
+      case (Method.PUT, "/api/gdpr/consents")          => """{"marketingConsent":false,"analyticsConsent":true}"""
+      case (Method.GET, "/api/gdpr/export")            =>
         """{"userId":"11111111-1111-1111-1111-111111111111","rides":[],"profile":{}}"""
       case (Method.POST, "/api/gdpr/deletion-request") =>
         """{"id":"11111111-1111-1111-1111-111111111111","status":"Pending"}"""
-      case (Method.GET, "/api/gdpr/requests") =>
+      case (Method.GET, "/api/gdpr/requests")          =>
         """[{"id":"11111111-1111-1111-1111-111111111111","status":"Pending"}]"""
 
       // ── Geofences ──
-      case (Method.GET, "/api/geofences") =>
-        """[{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Zone"}]"""
-      case (Method.POST, "/api/geofences") =>
-        """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Zone"}"""
-      case (Method.PUT, p) if p.startsWith("/api/geofences/") =>
+      case (Method.GET, "/api/geofences")                                   => """[{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Zone"}]"""
+      case (Method.POST, "/api/geofences")                                  => """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Zone"}"""
+      case (Method.PUT, p) if p.startsWith("/api/geofences/")               =>
         """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Zone Extended"}"""
-      case (Method.GET, "/api/geofences/alerts") =>
-        """[{"id":"11111111-1111-1111-1111-111111111111","type":"Enter"}]"""
+      case (Method.GET, "/api/geofences/alerts")                            => """[{"id":"11111111-1111-1111-1111-111111111111","type":"Enter"}]"""
       case (Method.GET, p) if p.startsWith("/api/geofences/alerts/driver/") =>
         """[{"id":"11111111-1111-1111-1111-111111111111","type":"Enter"}]"""
 
       // ── Notifications ──
-      case (Method.GET, "/api/notifications") =>
+      case (Method.GET, "/api/notifications")                                            =>
         """[{"id":"11111111-1111-1111-1111-111111111111","type":"RideAssignment","read":false}]"""
-      case (Method.GET, "/api/notifications/unread-count") =>
-        """{"count":3}"""
+      case (Method.GET, "/api/notifications/unread-count")                               => """{"count":3}"""
       case (Method.PUT, p) if p.startsWith("/api/notifications/") && p.endsWith("/read") =>
         """{"message":"Notification marked as read"}"""
-      case (Method.PUT, "/api/notifications/read-all") =>
-        """{"message":"All notifications marked as read"}"""
-      case (Method.GET, "/api/notification-preferences") =>
+      case (Method.PUT, "/api/notifications/read-all")                                   => """{"message":"All notifications marked as read"}"""
+      case (Method.GET, "/api/notification-preferences")                                 =>
         """{"emailEnabled":true,"smsEnabled":false,"pushEnabled":true}"""
-      case (Method.PUT, "/api/notification-preferences") =>
+      case (Method.PUT, "/api/notification-preferences")                                 =>
         """{"emailEnabled":true,"smsEnabled":false,"pushEnabled":true}"""
 
       // ── Ride pools ──
-      case (Method.GET, "/api/pools") =>
+      case (Method.GET, "/api/pools")                           =>
         """[{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Morning Pool","status":"Open"}]"""
-      case (Method.GET, "/api/pools/open") =>
+      case (Method.GET, "/api/pools/open")                      =>
         """[{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Morning Pool","status":"Open"}]"""
-      case (Method.GET, p) if p.startsWith("/api/pools/ride/") =>
+      case (Method.GET, p) if p.startsWith("/api/pools/ride/")  =>
         """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Morning Pool","status":"Open"}"""
-      case (Method.GET, p) if p.startsWith("/api/pools/") =>
+      case (Method.GET, p) if p.startsWith("/api/pools/")       =>
         """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Morning Pool","rides":[]}"""
-      case (Method.POST, "/api/pools") =>
+      case (Method.POST, "/api/pools")                          =>
         """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Morning Pool","status":"Open"}"""
       case (Method.POST, p) if p.matches("/api/pools/.+/rides") =>
         """{"id":"11111111-1111-1111-1111-111111111111","rides":["22222222-2222-2222-2222-222222222222"]}"""
@@ -878,71 +946,64 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         """{"id":"11111111-1111-1111-1111-111111111111","status":"Closed"}"""
 
       // ── Sessions ──
-      case (Method.GET, "/api/sessions") =>
+      case (Method.GET, "/api/sessions")  =>
         """[{"id":"11111111-1111-1111-1111-111111111111","deviceInfo":"iPhone 15"}]"""
       case (Method.POST, "/api/sessions") =>
         """{"id":"11111111-1111-1111-1111-111111111111","deviceInfo":"iPhone 15","token":"session-token"}"""
 
       // ── Users extended ──
-      case (Method.GET, "/api/users/drivers") =>
+      case (Method.GET, "/api/users/drivers")          =>
         """[{"id":"22222222-2222-2222-2222-222222222222","name":"Jane Driver","role":"DRIVER","status":"ACTIVE"}]"""
-      case (Method.GET, "/api/users/clients") =>
+      case (Method.GET, "/api/users/clients")          =>
         """[{"id":"11111111-1111-1111-1111-111111111111","name":"John Client","role":"CLIENT","status":"ACTIVE"}]"""
-      case (Method.GET, "/api/users/stats") =>
+      case (Method.GET, "/api/users/stats")            =>
         """{"totalUsers":100,"activeDrivers":20,"activeClients":75,"totalRides":500}"""
-      case (Method.PUT, "/api/users/change-password") =>
-        """{"message":"Password changed successfully"}"""
-      case (Method.POST, "/api/users/fcm-token") =>
-        """{"message":"FCM token registered"}"""
-      case (Method.PUT, "/api/users/reminder-minutes") =>
-        """{"message":"Reminder minutes updated"}"""
+      case (Method.PUT, "/api/users/change-password")  => """{"message":"Password changed successfully"}"""
+      case (Method.POST, "/api/users/fcm-token")       => """{"message":"FCM token registered"}"""
+      case (Method.PUT, "/api/users/reminder-minutes") => """{"message":"Reminder minutes updated"}"""
 
       // ── Drivers extended ──
-      case (Method.PUT, p) if p.matches("/api/drivers/.+/location") =>
-        """{"message":"Location updated"}"""
-      case (Method.PUT, p) if p.matches("/api/drivers/.+/availability") =>
-        """{"message":"Availability updated"}"""
-      case (Method.GET, p) if p.matches("/api/drivers/.+/availability") =>
+      case (Method.PUT, p) if p.matches("/api/drivers/.+/location")      => """{"message":"Location updated"}"""
+      case (Method.PUT, p) if p.matches("/api/drivers/.+/availability")  => """{"message":"Availability updated"}"""
+      case (Method.GET, p) if p.matches("/api/drivers/.+/availability")  =>
         """{"available":true,"driverId":"22222222-2222-2222-2222-222222222222"}"""
-      case (Method.GET, "/api/drivers/available") =>
+      case (Method.GET, "/api/drivers/available")                        =>
         """[{"id":"22222222-2222-2222-2222-222222222222","name":"Jane Driver","status":"Available"}]"""
       case (Method.GET, p) if p.matches("/api/rides/.+/driver-location") =>
         """{"latitude":48.1351,"longitude":11.5820,"heading":90.0}"""
 
       // ── Client addresses ──
-      case (Method.GET, p) if p.matches("/api/clients/.+/addresses") =>
+      case (Method.GET, p) if p.matches("/api/clients/.+/addresses")  =>
         """[{"id":"22222222-2222-2222-2222-222222222222","label":"Home","address":"Leopoldstraße 1, Munich"}]"""
       case (Method.POST, p) if p.matches("/api/clients/.+/addresses") =>
         """{"id":"22222222-2222-2222-2222-222222222222","label":"Home","address":"Leopoldstraße 1, Munich"}"""
 
       // ── Expenses ──
-      case (Method.GET, "/api/expenses") =>
+      case (Method.GET, "/api/expenses")  =>
         """[{"id":"11111111-1111-1111-1111-111111111111","amount":15.50,"category":"Fuel"}]"""
       case (Method.POST, "/api/expenses") =>
         """{"id":"11111111-1111-1111-1111-111111111111","amount":15.50,"category":"Fuel"}"""
 
       // ── Billing companies ──
-      case (Method.GET, "/api/billing/companies") =>
+      case (Method.GET, "/api/billing/companies")                    =>
         """[{"id":"11111111-1111-1111-1111-111111111111","name":"BMW AG","email":"billing@bmw.de"}]"""
-      case (Method.POST, "/api/billing/companies") =>
+      case (Method.POST, "/api/billing/companies")                   =>
         """{"id":"11111111-1111-1111-1111-111111111111","name":"BMW AG","email":"billing@bmw.de"}"""
       case (Method.PUT, p) if p.matches("/api/billing/companies/.+") =>
         """{"id":"11111111-1111-1111-1111-111111111111","name":"BMW AG Updated","phone":"+4989382-1234"}"""
 
       // ── Billing invoices ──
-      case (Method.GET, "/api/billing/invoices") =>
+      case (Method.GET, "/api/billing/invoices")                               =>
         """[{"id":"11111111-1111-1111-1111-111111111111","status":"Draft","total":450.00}]"""
-      case (Method.POST, "/api/billing/invoices") =>
+      case (Method.POST, "/api/billing/invoices")                              =>
         """{"id":"11111111-1111-1111-1111-111111111111","status":"Draft","total":0.00}"""
-      case (Method.GET, p) if p.matches("/api/billing/invoices/[^/]+$") =>
+      case (Method.GET, p) if p.matches("/api/billing/invoices/[^/]+$")        =>
         """{"id":"11111111-1111-1111-1111-111111111111","status":"Draft","total":450.00}"""
       case (Method.POST, p) if p.matches("/api/billing/invoices/.+/auto-fill") =>
         """{"id":"11111111-1111-1111-1111-111111111111","status":"Draft","total":450.00}"""
-      case (Method.GET, p) if p.matches("/api/billing/invoices/.+/pdf") =>
-        """<PDF binary>"""
-      case (Method.POST, p) if p.matches("/api/billing/invoices/.+/send") =>
-        """{"message":"Invoice sent"}"""
-      case (Method.POST, p) if p.matches("/api/billing/invoices/.+/pay") =>
+      case (Method.GET, p) if p.matches("/api/billing/invoices/.+/pdf")        => """<PDF binary>"""
+      case (Method.POST, p) if p.matches("/api/billing/invoices/.+/send")      => """{"message":"Invoice sent"}"""
+      case (Method.POST, p) if p.matches("/api/billing/invoices/.+/pay")       =>
         """{"id":"11111111-1111-1111-1111-111111111111","status":"Paid"}"""
 
       // ── Export ──
@@ -950,89 +1011,82 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         """{"format":"DATEV","generatedAt":"2026-05-18T10:00:00Z","records":[]}"""
 
       // ── Rides extended ──
-      case (Method.GET, "/api/rides/pending") =>
+      case (Method.GET, "/api/rides/pending")                             =>
         """[{"id":"11111111-1111-1111-1111-111111111111","status":"Pending"}]"""
-      case (Method.GET, "/api/rides/unpaid") =>
+      case (Method.GET, "/api/rides/unpaid")                              =>
         """[{"id":"11111111-1111-1111-1111-111111111111","status":"Completed","paid":false}]"""
-      case (Method.GET, p) if p.startsWith("/api/rides/driver/") =>
+      case (Method.GET, p) if p.startsWith("/api/rides/driver/")          =>
         """[{"id":"11111111-1111-1111-1111-111111111111","status":"InProgress"}]"""
-      case (Method.GET, p) if p.startsWith("/api/rides/client/") =>
+      case (Method.GET, p) if p.startsWith("/api/rides/client/")          =>
         """[{"id":"11111111-1111-1111-1111-111111111111","status":"Completed"}]"""
-      case (Method.PUT, p) if p.matches("/api/rides/.+/status") =>
+      case (Method.PUT, p) if p.matches("/api/rides/.+/status")           =>
         """{"id":"11111111-1111-1111-1111-111111111111","status":"InProgress"}"""
-      case (Method.PUT, p) if p.matches("/api/rides/.+/assign-driver") =>
+      case (Method.PUT, p) if p.matches("/api/rides/.+/assign-driver")    =>
         """{"id":"11111111-1111-1111-1111-111111111111","status":"Assigned"}"""
-      case (Method.PUT, p) if p.matches("/api/rides/.+/reassign-driver") =>
+      case (Method.PUT, p) if p.matches("/api/rides/.+/reassign-driver")  =>
         """{"id":"11111111-1111-1111-1111-111111111111","status":"Assigned"}"""
-      case (Method.PUT, p) if p.matches("/api/rides/.+/cancel") =>
+      case (Method.PUT, p) if p.matches("/api/rides/.+/cancel")           =>
         """{"id":"11111111-1111-1111-1111-111111111111","status":"Cancelled"}"""
-      case (Method.PUT, p) if p.matches("/api/rides/.+/payment") =>
+      case (Method.PUT, p) if p.matches("/api/rides/.+/payment")          =>
         """{"id":"11111111-1111-1111-1111-111111111111","paid":true,"amount":45.00}"""
-      case (Method.POST, p) if p.matches("/api/rides/.+/airport-timing") =>
+      case (Method.POST, p) if p.matches("/api/rides/.+/airport-timing")  =>
         """{"id":"11111111-1111-1111-1111-111111111111","flightNumber":"LH1234"}"""
-      case (Method.POST, p) if p.matches("/api/rides/.+/client-location") =>
-        """{"message":"Location recorded"}"""
-      case (Method.GET, p) if p.matches("/api/rides/.+/locations") =>
+      case (Method.POST, p) if p.matches("/api/rides/.+/client-location") => """{"message":"Location recorded"}"""
+      case (Method.GET, p) if p.matches("/api/rides/.+/locations")        =>
         """[{"latitude":48.1351,"longitude":11.5820,"timestamp":"2026-05-18T10:00:00Z"}]"""
-      case (Method.POST, p) if p.matches("/api/rides/.+/chat") =>
+      case (Method.POST, p) if p.matches("/api/rides/.+/chat")            =>
         """{"id":"11111111-1111-1111-1111-111111111111","message":"I am at the entrance"}"""
-      case (Method.GET, p) if p.matches("/api/rides/.+/chat") =>
+      case (Method.GET, p) if p.matches("/api/rides/.+/chat")             =>
         """[{"id":"11111111-1111-1111-1111-111111111111","message":"I am at the entrance"}]"""
-      case (Method.POST, p) if p.matches("/api/rides/.+/rate") =>
+      case (Method.POST, p) if p.matches("/api/rides/.+/rate")            =>
         """{"id":"11111111-1111-1111-1111-111111111111","rating":5}"""
-      case (Method.GET, p) if p.matches("/api/rides/.+/rating") =>
-        """{"rating":5,"comment":"Excellent service"}"""
+      case (Method.GET, p) if p.matches("/api/rides/.+/rating")           => """{"rating":5,"comment":"Excellent service"}"""
 
       // ── Ride templates ──
-      case (Method.GET, "/api/ride-templates") =>
+      case (Method.GET, "/api/ride-templates")                              =>
         """[{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Monday Morning"}]"""
-      case (Method.POST, "/api/ride-templates") =>
+      case (Method.POST, "/api/ride-templates")                             =>
         """{"id":"11111111-1111-1111-1111-111111111111","name":"Airport Monday Morning"}"""
       case (Method.POST, p) if p.matches("/api/ride-templates/.+/generate") =>
         """{"id":"22222222-2222-2222-2222-222222222222","status":"Pending"}"""
 
       // ── Stats ──
-      case (Method.GET, "/api/stats/rides") =>
-        """{"totalRides":500,"completedRides":450,"cancelledRides":50}"""
-      case (Method.GET, "/api/stats/rides/daily") =>
-        """[{"date":"2026-05-18","rides":12}]"""
-      case (Method.GET, "/api/stats/drivers") =>
-        """{"totalDrivers":20,"activeDrivers":15,"averageRating":4.7}"""
-      case (Method.GET, "/api/stats/payroll") =>
+      case (Method.GET, "/api/stats/rides")              => """{"totalRides":500,"completedRides":450,"cancelledRides":50}"""
+      case (Method.GET, "/api/stats/rides/daily")        => """[{"date":"2026-05-18","rides":12}]"""
+      case (Method.GET, "/api/stats/drivers")            => """{"totalDrivers":20,"activeDrivers":15,"averageRating":4.7}"""
+      case (Method.GET, "/api/stats/payroll")            =>
         """[{"driverId":"22222222-2222-2222-2222-222222222222","earnings":2500.00}]"""
-      case (Method.GET, "/api/stats/cancellations") =>
-        """{"cancellationRate":0.10,"topReasons":["Client no-show"]}"""
-      case (Method.GET, "/api/stats/peak-hours") =>
-        """[{"hour":8,"rideCount":45},{"hour":17,"rideCount":60}]"""
-      case (Method.GET, "/api/stats/client-value") =>
+      case (Method.GET, "/api/stats/cancellations")      => """{"cancellationRate":0.10,"topReasons":["Client no-show"]}"""
+      case (Method.GET, "/api/stats/peak-hours")         => """[{"hour":8,"rideCount":45},{"hour":17,"rideCount":60}]"""
+      case (Method.GET, "/api/stats/client-value")       =>
         """[{"clientId":"11111111-1111-1111-1111-111111111111","totalSpent":1200.00}]"""
       case (Method.GET, "/api/stats/driver-performance") =>
         """[{"driverId":"22222222-2222-2222-2222-222222222222","completedRides":80,"rating":4.8}]"""
 
       // ── Schedules ──
-      case (Method.GET, "/api/schedules") =>
+      case (Method.GET, "/api/schedules")                            =>
         """[{"id":"11111111-1111-1111-1111-111111111111","driverId":"22222222-2222-2222-2222-222222222222","date":"2026-06-02"}]"""
-      case (Method.POST, "/api/schedules") =>
+      case (Method.POST, "/api/schedules")                           =>
         """{"id":"11111111-1111-1111-1111-111111111111","driverId":"22222222-2222-2222-2222-222222222222"}"""
-      case (Method.POST, "/api/schedules/batch") =>
+      case (Method.POST, "/api/schedules/batch")                     =>
         """[{"id":"11111111-1111-1111-1111-111111111111"},{"id":"22222222-2222-2222-2222-222222222222"}]"""
       case (Method.GET, p) if p.startsWith("/api/schedules/driver/") =>
         """[{"id":"11111111-1111-1111-1111-111111111111","date":"2026-06-02"}]"""
-      case (Method.GET, p) if p.startsWith("/api/schedules/day/") =>
+      case (Method.GET, p) if p.startsWith("/api/schedules/day/")    =>
         """[{"id":"11111111-1111-1111-1111-111111111111","shiftStart":"08:00"}]"""
 
       // ── WebSocket ──
-      case (Method.POST, "/api/ws/ticket") =>
-        """{"ticket":"ws-ticket-abc123","expiresIn":60}"""
+      case (Method.POST, "/api/ws/ticket") => """{"ticket":"ws-ticket-abc123","expiresIn":60}"""
 
       case _ => """{"message":"Success"}"""
     }
   }
 
-
   Then("""^the response should contain service status information$""") { () =>
-    assert(lastResponseBody.contains("status") || lastResponseBody.contains("OK"), 
-      "Response should contain service status information")
+    assert(
+      lastResponseBody.contains("status") || lastResponseBody.contains("OK"),
+      "Response should contain service status information"
+    )
   }
 
   Then("""^the response should include allowed methods$""") { () =>
@@ -1042,7 +1096,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   Given("""^a user exists with email "(.+)" and password "(.+)"$""") { (email: String, password: String) =>
     testData(s"user_${email}_with_password") = Map("email" -> email, "password" -> password)
   }
-
 
   Given("""^I am assigned to ride with ID (\d+)$""") { (rideId: String) =>
     testData("current_ride_id") = rideId
@@ -1058,17 +1111,16 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     testData(s"company_$companyId") = Map("id" -> companyId, "name" -> "Test Company")
   }
 
-
   Given("""^company (\d+) has assigned drivers$""") { (companyId: String) =>
     testData(s"company_${companyId}_drivers") = List("1", "2", "3")
   }
 
   Given("""^company (\d+) has operational data$""") { (companyId: String) =>
     testData(s"company_${companyId}_stats") = Map(
-      "totalDrivers" -> 10,
-      "activeRides" -> 5,
+      "totalDrivers"   -> 10,
+      "activeRides"    -> 5,
       "completedRides" -> 100,
-      "revenue" -> 50000
+      "revenue"        -> 50000
     )
   }
 
@@ -1085,54 +1137,56 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   When("""^I update company (\d+) with:$""") { (companyId: String, dataTable: DataTable) =>
-    val data = dataTable.asMap().asScala.toMap
+    val data       = dataTable.asMap().asScala.toMap
     val updateData = Map("companyId" -> companyId) ++ data
-    val request = createRequest("PUT", s"/api/v2/companies/$companyId", Some(updateData.toJson))
+    val request    = createRequest("PUT", s"/api/v2/companies/$companyId", Some(updateData.toJson))
     executeRequest(request)
   }
 
   When("""^I assign driver (\d+) to company (\d+)$""") { (driverId: String, companyId: String) =>
     val assignmentData = Map("driverId" -> driverId, "companyId" -> companyId).toJson
-    val request = createRequest("POST", s"/api/v2/companies/$companyId/drivers", Some(assignmentData))
+    val request        = createRequest("POST", s"/api/v2/companies/$companyId/drivers", Some(assignmentData))
     executeRequest(request)
   }
 
   When("""^I update my status to "(.+)"$""") { (status: String) =>
     val statusUpdate = Map("status" -> status).toJson
-    val driverId = currentUserId.map(_.value).getOrElse(1)
-    val request = createRequest("PUT", s"/api/v2/drivers/$driverId/status", Some(statusUpdate))
+    val driverId     = currentUserId.map(_.value).getOrElse(1)
+    val request      = createRequest("PUT", s"/api/v2/drivers/$driverId/status", Some(statusUpdate))
     executeRequest(request)
   }
 
   When("""^I accept the ride assignment$""") { () =>
     val acceptData = Map("action" -> "accept").toJson
-    val rideId = testData.get("current_ride_id").getOrElse("123")
-    val request = createRequest("POST", s"/api/v2/rides/$rideId/accept", Some(acceptData))
+    val rideId     = testData.get("current_ride_id").getOrElse("123")
+    val request    = createRequest("POST", s"/api/v2/rides/$rideId/accept", Some(acceptData))
     executeRequest(request)
   }
 
   When("""^I reject the ride assignment with reason "(.+)"$""") { (reason: String) =>
     val rejectData = Map("action" -> "reject", "reason" -> reason).toJson
-    val rideId = testData.get("current_ride_id").getOrElse("123")
-    val request = createRequest("POST", s"/api/v2/rides/$rideId/reject", Some(rejectData))
+    val rideId     = testData.get("current_ride_id").getOrElse("123")
+    val request    = createRequest("POST", s"/api/v2/rides/$rideId/reject", Some(rejectData))
     executeRequest(request)
   }
 
   When("""^I send location update with:$""") { (dataTable: DataTable) =>
-    val data = dataTable.asMap().asScala.toMap
+    val data           = dataTable.asMap().asScala.toMap
     val locationUpdate = Map(
-      "latitude" -> data.get("latitude"),
+      "latitude"  -> data.get("latitude"),
       "longitude" -> data.get("longitude"),
-      "heading" -> data.get("heading")
+      "heading"   -> data.get("heading")
     )
-    val driverId = currentUserId.map(_.value).getOrElse(1)
-    val request = createRequest("POST", s"/api/v2/drivers/$driverId/location", Some(locationUpdate.toJson))
+    val driverId       = currentUserId.map(_.value).getOrElse(1)
+    val request        = createRequest("POST", s"/api/v2/drivers/$driverId/location", Some(locationUpdate.toJson))
     executeRequest(request)
   }
 
   Then("""^the ride should have flight information$""") { () =>
-    assert(lastResponseBody.contains("flightNumber") || lastResponseBody.contains("airport"), 
-      "Response should contain flight information")
+    assert(
+      lastResponseBody.contains("flightNumber") || lastResponseBody.contains("airport"),
+      "Response should contain flight information"
+    )
   }
 
   Then("""^the company phone should be "(.+)"$""") { (phone: String) =>
@@ -1195,23 +1249,33 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^the response should contain a new JWT token$""") { () =>
-    assert(lastResponseBody.contains("token") || lastResponseBody.contains("jwt"), 
-      "Response should contain a new JWT token")
+    assert(
+      lastResponseBody.contains("token") || lastResponseBody.contains("jwt"),
+      "Response should contain a new JWT token"
+    )
   }
 
   Then("""^the errors should specify missing "(.+)"$""") { (field: String) =>
-    assert(lastResponseBody.contains(field) && (lastResponseBody.contains("missing") || lastResponseBody.contains("Missing")), 
-      s"Response should specify missing field: $field. Response was: '$lastResponseBody'")
+    assert(
+      lastResponseBody
+        .contains(field) && (lastResponseBody.contains("missing") || lastResponseBody.contains("Missing")),
+      s"Response should specify missing field: $field. Response was: '$lastResponseBody'"
+    )
   }
 
   Then("""^the errors should specify invalid "(.+)" format$""") { (field: String) =>
-    assert(lastResponseBody.contains(field) && (lastResponseBody.contains("invalid") || lastResponseBody.contains("Invalid")), 
-      s"Response should specify invalid format for field: $field. Response was: '$lastResponseBody'")
+    assert(
+      lastResponseBody
+        .contains(field) && (lastResponseBody.contains("invalid") || lastResponseBody.contains("Invalid")),
+      s"Response should specify invalid format for field: $field. Response was: '$lastResponseBody'"
+    )
   }
 
   Then("""^the response should contain validation errors$""") { () =>
-    assert(lastResponseBody.contains("error") || lastResponseBody.contains("validation"), 
-      "Response should contain validation errors")
+    assert(
+      lastResponseBody.contains("error") || lastResponseBody.contains("validation"),
+      "Response should contain validation errors"
+    )
   }
 
   Then("""^the response should include "(.+)" header$""") { (headerName: String) =>
@@ -1250,7 +1314,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     testData("delivery_tracking_enabled") = true
   }
 
-
   Given("""^I am authenticated as a dispatcher$""") { () =>
     val testUuid = UUID.fromString("33333333-3333-3333-3333-333333333333")
     currentUserId = Some(PersonId(testUuid))
@@ -1276,29 +1339,27 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^the response should contain ride details with ID (\d+)$""") { (rideId: String) =>
-    assert(lastResponseBody.contains(rideId) && lastResponseBody.contains("id"), 
-      s"Response should contain ride details with ID $rideId")
+    assert(
+      lastResponseBody.contains(rideId) && lastResponseBody.contains("id"),
+      s"Response should contain ride details with ID $rideId"
+    )
   }
 
-
   Then("""^driver "(.+)" should be in the list$""") { (driverName: String) =>
-    assert(lastResponseBody.contains(driverName), 
-      s"Response should contain driver $driverName")
+    assert(lastResponseBody.contains(driverName), s"Response should contain driver $driverName")
   }
 
   Then("""^the status should be "(.+)"$""") { (expectedStatus: String) =>
-    assert(lastResponseBody.contains(expectedStatus), 
-      s"Response should contain status $expectedStatus")
+    assert(lastResponseBody.contains(expectedStatus), s"Response should contain status $expectedStatus")
   }
 
   Then("""^the client should receive completion notification$""") { () =>
     testData("completion_notification_sent") = true
   }
 
-
   When("""^I send a POST request to "(.+)" with:$""") { (endpoint: String, dataTable: DataTable) =>
-    val raw  = dataTable.asMap().asScala.toMap
-    val data = raw.view.mapValues(v => if v == null then "" else v).toMap
+    val raw     = dataTable.asMap().asScala.toMap
+    val data    = raw.view.mapValues(v => if v == null then "" else v).toMap
     val request = createRequest("POST", endpoint, Some(data.toJson))
     executeRequest(request)
   }
@@ -1309,18 +1370,22 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   When("""^I create a ride request with missing required fields:$""") { (dataTable: DataTable) =>
-    val data = dataTable.asMap().asScala.toMap
-    val cleanData = data.view.mapValues { value =>
-      if (value == null || value.isEmpty) "null" else value
-    }.toMap
-    val request = createRequest("POST", "/api/v2/rides", Some(cleanData.toJson))
+    val data      = dataTable.asMap().asScala.toMap
+    val cleanData =
+      data.view.mapValues { value =>
+        if (value == null || value.isEmpty)
+          "null"
+        else
+          value
+      }.toMap
+    val request   = createRequest("POST", "/api/v2/rides", Some(cleanData.toJson))
     executeRequest(request)
   }
 
   When("""^I create a user with invalid email "(.+)"$""") { (email: String) =>
     // Send a complete but invalid-email CreateUserRequest to the real user endpoint.
     val userData = s"""{"email":"$email","password":"Password123","name":"Test User","role":"Client"}"""
-    val request = createRequest("POST", "/api/users", Some(userData))
+    val request  = createRequest("POST", "/api/users", Some(userData))
     executeRequest(request)
   }
 
@@ -1328,7 +1393,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     // Phone validation is documented via the mock layer; the real server validates phone
     // only when a full valid CreateUserRequest is submitted. This scenario uses the mock.
     val userData = Map("phone" -> phone, "name" -> "Test User").toJson
-    val request = createRequest("POST", "/api/v2/users", Some(userData))
+    val request  = createRequest("POST", "/api/v2/users", Some(userData))
     executeRequest(request)
   }
 
@@ -1336,7 +1401,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     // This step is used in duplicate-detection scenarios that rely on pre-populated test data
     // (not the real in-memory repository which doesn't persist across steps). Route via mock.
     val userData = s"""{"email":"$email","password":"Password123","name":"New User","role":"Client"}"""
-    val request = createRequest("POST", "/api/v2/users", Some(userData))
+    val request  = createRequest("POST", "/api/v2/users", Some(userData))
     executeRequest(request)
   }
 
@@ -1347,32 +1412,34 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     }
   }
 
-  Then("""^the (\d+)(?:st|nd|rd|th) request should return status (\d+)$""") { (requestNum: String, expectedStatus: String) =>
-    if (testData.get("rate_limited").contains(true) && expectedStatus == "429") {
-      lastResponse = Response.status(Status.TooManyRequests)
-      lastResponseBody = """{"error":"Rate limit exceeded"}"""
-    } else {
-      val status = expectedStatus.toInt match {
-        case 429 => Status.TooManyRequests
-        case 408 => Status.RequestTimeout
-        case 413 => Status.RequestEntityTooLarge
-        case 500 => Status.InternalServerError
-        case _ => Status.Ok
+  Then("""^the (\d+)(?:st|nd|rd|th) request should return status (\d+)$""") {
+    (requestNum: String, expectedStatus: String) =>
+      if (testData.get("rate_limited").contains(true) && expectedStatus == "429") {
+        lastResponse = Response.status(Status.TooManyRequests)
+        lastResponseBody = """{"error":"Rate limit exceeded"}"""
       }
-      lastResponse = Response.status(status)
-    }
+      else {
+        val status =
+          expectedStatus.toInt match {
+            case 429 => Status.TooManyRequests
+            case 408 => Status.RequestTimeout
+            case 413 => Status.RequestEntityTooLarge
+            case 500 => Status.InternalServerError
+            case _   => Status.Ok
+          }
+        lastResponse = Response.status(status)
+      }
   }
-
 
   When("""^I send a request to "/api/v2/auth/refresh" with the refresh token$""") { () =>
     val refreshData = Map("refreshToken" -> "mock-refresh-token").toJson
-    val request = createRequest("POST", "/api/v2/auth/refresh", Some(refreshData))
+    val request     = createRequest("POST", "/api/v2/auth/refresh", Some(refreshData))
     executeRequest(request)
   }
 
   When("""^I send a POST request to "(.+)" with the refresh token$""") { (endpoint: String) =>
     val refreshData = Map("refreshToken" -> "mock-refresh-token").toJson
-    val request = createRequest("POST", endpoint, Some(refreshData))
+    val request     = createRequest("POST", endpoint, Some(refreshData))
     executeRequest(request)
   }
 
@@ -1509,12 +1576,11 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   When("""^the second modification is submitted$""") { () =>
-    val rideId = testData.get("target_ride_id").getOrElse("777")
+    val rideId       = testData.get("target_ride_id").getOrElse("777")
     val statusUpdate = Map("status" -> "Modified").toJson
-    val request = createRequest("PUT", s"/api/v2/rides/$rideId", Some(statusUpdate))
+    val request      = createRequest("PUT", s"/api/v2/rides/$rideId", Some(statusUpdate))
     executeRequest(request)
   }
-
 
   When("""^I send a request with payload exceeding size limit$""") { () =>
     testData("large_payload") = true
@@ -1529,9 +1595,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   Then("""^the notification should contain:$""") { (dataTable: DataTable) =>
     val data = dataTable.asMaps().asScala.toList
     data.foreach { row =>
-      row.asScala.foreach { case (key, value) =>
-        testData(s"notification_contains_${key}") = value
-      }
+      row.asScala.foreach { case (key, value) => testData(s"notification_contains_${key}") = value }
     }
   }
 
@@ -1617,29 +1681,38 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^the response should contain my active rides$""") { () =>
-    assert(lastResponseBody.contains("id") && (lastResponseBody.contains("101") || lastResponseBody.contains("InProgress")), 
-      "Response should contain active rides")
+    assert(
+      lastResponseBody.contains("id") && (lastResponseBody.contains("101") || lastResponseBody.contains("InProgress")),
+      "Response should contain active rides"
+    )
   }
 
   Then("""^the company should have a unique ID$""") { () =>
-    assert(lastResponseBody.contains("id") && (lastResponseBody.contains("102") || lastResponseBody.contains("id")), 
-      "Response should contain unique company ID")
+    assert(
+      lastResponseBody.contains("id") && (lastResponseBody.contains("102") || lastResponseBody.contains("id")),
+      "Response should contain unique company ID"
+    )
   }
 
-
   Then("""^the response should contain company details for "(.+)"$""") { (companyName: String) =>
-    assert(lastResponseBody.contains(companyName) && lastResponseBody.contains("email"), 
-      s"Response should contain company details for $companyName")
+    assert(
+      lastResponseBody.contains(companyName) && lastResponseBody.contains("email"),
+      s"Response should contain company details for $companyName"
+    )
   }
 
   Then("""^the companies should include "(.+)" and "(.+)"$""") { (company1: String, company2: String) =>
-    assert(lastResponseBody.contains(company1) && lastResponseBody.contains(company2), 
-      s"Response should include both $company1 and $company2")
+    assert(
+      lastResponseBody.contains(company1) && lastResponseBody.contains(company2),
+      s"Response should include both $company1 and $company2"
+    )
   }
 
   Then("""^the response should contain the list of company drivers$""") { () =>
-    assert(lastResponseBody.contains("Driver") || lastResponseBody.contains("id"), 
-      "Response should contain list of company drivers")
+    assert(
+      lastResponseBody.contains("Driver") || lastResponseBody.contains("id"),
+      "Response should contain list of company drivers"
+    )
   }
 
   Given("""^a ride assignment is created for driver (\d+)$""") { (driverId: String) =>
@@ -1651,9 +1724,9 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   private def determineMockStatusUpdated(request: Request): Status = {
-    val path = request.url.path.toString()
+    val path   = request.url.path.toString()
     val method = request.method
-    
+
     if (method == Method.POST) {
       try {
         val bodyText = Unsafe.unsafe { implicit unsafe =>
@@ -1663,118 +1736,166 @@ class ApiStepDefinitions extends ScalaDsl with EN {
           if (bodyText.contains("invalid json") || (bodyText.contains("{") && !isValidJson(bodyText))) {
             return Status.BadRequest
           }
-          if (bodyText.contains("\"null\"") || bodyText.contains("invalid-date") || 
-              bodyText.contains("not-an-email") || bodyText.contains("\"123\"")) {
+          if (
+              bodyText.contains("\"null\"") || bodyText.contains("invalid-date") ||
+              bodyText.contains("not-an-email") || bodyText.contains("\"123\"")
+          ) {
             return Status.BadRequest
           }
           if (path == "/api/v2/users" && bodyText.contains("existing@example.com")) {
             return Status.Conflict
           }
         }
-      } catch {
+      }
+      catch {
         case _: Exception => // If we can't read body, continue with normal processing
       }
     }
-    
-    if (testData.get("force_server_error").contains(true)) return Status.InternalServerError
-    if (testData.get("db_unavailable").contains(true)) return Status.ServiceUnavailable
-    if (testData.get("timeout_exceeded").contains(true)) return Status.RequestTimeout
-    if (testData.get("large_payload").contains(true)) return Status.RequestEntityTooLarge
-    
-    if (method == Method.PATCH && path == "/api/v2/health") return Status.MethodNotAllowed
-    
-    if (testData.get("rate_limited").contains(true)) return Status.TooManyRequests
-    if (testData.get("concurrent_conflict").contains(true)) return Status.Conflict
-    
+
+    if (testData.get("force_server_error").contains(true))
+      return Status.InternalServerError
+    if (testData.get("db_unavailable").contains(true))
+      return Status.ServiceUnavailable
+    if (testData.get("timeout_exceeded").contains(true))
+      return Status.RequestTimeout
+    if (testData.get("large_payload").contains(true))
+      return Status.RequestEntityTooLarge
+
+    if (method == Method.PATCH && path == "/api/v2/health")
+      return Status.MethodNotAllowed
+
+    if (testData.get("rate_limited").contains(true))
+      return Status.TooManyRequests
+    if (testData.get("concurrent_conflict").contains(true))
+      return Status.Conflict
+
     (method, path) match {
-      case (Method.GET, "/health") => Status.Ok
-      case (Method.GET, "/api/v2/health") => Status.Ok
-      case (Method.POST, "/api/v2/rides") => 
-        if (authToken.isDefined) Status.Created else Status.Unauthorized
-      case (Method.GET, p) if p.startsWith("/api/v2/rides/") => 
-        if (p.contains("999999")) Status.NotFound
-        else if (p.contains("invalid-id")) Status.BadRequest
+      case (Method.GET, "/health")                                                              => Status.Ok
+      case (Method.GET, "/api/v2/health")                                                       => Status.Ok
+      case (Method.POST, "/api/v2/rides")                                                       =>
+        if (authToken.isDefined)
+          Status.Created
+        else
+          Status.Unauthorized
+      case (Method.GET, p) if p.startsWith("/api/v2/rides/")                                    =>
+        if (p.contains("999999"))
+          Status.NotFound
+        else if (p.contains("invalid-id"))
+          Status.BadRequest
         else if (authToken.isDefined) {
-          if (p.contains("888") && currentUserId.exists(_.value == getTestUuidForId(50))) Status.Forbidden
-          else Status.Ok
-        } else Status.Unauthorized
-      case (Method.POST, "/api/v2/auth/login") => 
+          if (p.contains("888") && currentUserId.exists(_.value == getTestUuidForId(50)))
+            Status.Forbidden
+          else
+            Status.Ok
+        }
+        else
+          Status.Unauthorized
+      case (Method.POST, "/api/v2/auth/login")                                                  =>
         val bodyText = Try(Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }).getOrElse("")
-        if (bodyText.contains("invalid@example.com") || bodyText.contains("wrongpassword")) Status.Unauthorized
-        else Status.Ok
-      case (Method.POST, "/api/v2/users") =>
-        if (lastResponseBody.contains("not-an-email") || lastResponseBody.contains("123")) Status.BadRequest
-        else Status.Created
-      case (Method.POST, "/api/users") =>
+        if (bodyText.contains("invalid@example.com") || bodyText.contains("wrongpassword"))
+          Status.Unauthorized
+        else
+          Status.Ok
+      case (Method.POST, "/api/v2/users")                                                       =>
+        if (lastResponseBody.contains("not-an-email") || lastResponseBody.contains("123"))
+          Status.BadRequest
+        else
+          Status.Created
+      case (Method.POST, "/api/users")                                                          =>
         val bodyText = Try(Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }).getOrElse("")
-        if (bodyText.contains("existing@example.com")) Status.Conflict
-        else Status.Created
-      case (Method.POST, "/api/rides") => Status.Created
-      case (Method.PUT, p) if p.startsWith("/api/rides/") => Status.Ok
-      case (Method.DELETE, p) if p.startsWith("/api/rides/") => Status.NoContent
-      case (Method.DELETE, p) if p.startsWith("/api/users/") => Status.NoContent
-      case (Method.PATCH, p) if p.contains("/rides/") => Status.Ok
-      case (Method.GET, p) if p.startsWith("/api/rides/") =>
-        if (p.contains("999")) Status.NotFound else Status.Ok
-      case (Method.POST, "/api/auth/login") =>
+        if (bodyText.contains("existing@example.com"))
+          Status.Conflict
+        else
+          Status.Created
+      case (Method.POST, "/api/rides")                                                          => Status.Created
+      case (Method.PUT, p) if p.startsWith("/api/rides/")                                       => Status.Ok
+      case (Method.DELETE, p) if p.startsWith("/api/rides/")                                    => Status.NoContent
+      case (Method.DELETE, p) if p.startsWith("/api/users/")                                    => Status.NoContent
+      case (Method.PATCH, p) if p.contains("/rides/")                                           => Status.Ok
+      case (Method.GET, p) if p.startsWith("/api/rides/")                                       =>
+        if (p.contains("999"))
+          Status.NotFound
+        else
+          Status.Ok
+      case (Method.POST, "/api/auth/login")                                                     =>
         val bodyText = Try(Unsafe.unsafe { implicit unsafe =>
           Runtime.default.unsafe.run(request.body.asString).getOrThrow()
         }).getOrElse("")
-        if (bodyText.contains("invalid@example.com") || bodyText.contains("wrongpassword") || bodyText.contains("malformed")) Status.Unauthorized
-        else Status.Ok
-      case (Method.POST, "/api/v2/companies") => Status.Created
-      case (Method.DELETE, p) if p.startsWith("/api/v2/companies/") =>
+        if (
+            bodyText.contains("invalid@example.com") || bodyText
+              .contains("wrongpassword") || bodyText.contains("malformed")
+        )
+          Status.Unauthorized
+        else
+          Status.Ok
+      case (Method.POST, "/api/v2/companies")                                                   => Status.Created
+      case (Method.DELETE, p) if p.startsWith("/api/v2/companies/")                             =>
         val companyId = p.split("/").last
-        if (testData.get(s"company_${companyId}_active_rides").contains(0)) Status.NoContent
-        else Status.BadRequest
-      case (Method.GET, "/api/v2/admin/users") =>
-        if (authToken.exists(_.contains("driver"))) Status.Forbidden  
-        else if (authToken.exists(_.contains("admin"))) Status.Ok
-        else Status.Unauthorized
-      case (Method.GET, "/api/users") =>
-        if (authToken.exists(_.contains("client"))) Status.Forbidden
-        else if (authToken.exists(_.contains("admin"))) Status.Ok
-        else Status.Unauthorized
-      case (Method.POST, "/api/users/avatar") => Status.Ok
-      case (Method.GET, _) if authToken.isEmpty => Status.Unauthorized
-      case (Method.GET, _) if authToken.contains("invalid-token") => Status.Unauthorized
+        if (testData.get(s"company_${companyId}_active_rides").contains(0))
+          Status.NoContent
+        else
+          Status.BadRequest
+      case (Method.GET, "/api/v2/admin/users")                                                  =>
+        if (authToken.exists(_.contains("driver")))
+          Status.Forbidden
+        else if (authToken.exists(_.contains("admin")))
+          Status.Ok
+        else
+          Status.Unauthorized
+      case (Method.GET, "/api/users")                                                           =>
+        if (authToken.exists(_.contains("client")))
+          Status.Forbidden
+        else if (authToken.exists(_.contains("admin")))
+          Status.Ok
+        else
+          Status.Unauthorized
+      case (Method.POST, "/api/users/avatar")                                                   => Status.Ok
+      case (Method.GET, _) if authToken.isEmpty                                                 => Status.Unauthorized
+      case (Method.GET, _) if authToken.contains("invalid-token")                               => Status.Unauthorized
       // Admin-only GET endpoints
-      case (Method.GET, p) if authToken.isDefined && authToken.exists(_.contains("client")) &&
-          (p.startsWith("/api/audit") || p.startsWith("/api/gdpr/requests") ||
-           p.startsWith("/api/export") || p.startsWith("/api/geofences/alerts") ||
-           p.startsWith("/api/emergency")) => Status.Forbidden
+      case (Method.GET, p)
+          if authToken.isDefined && authToken.exists(_.contains("client")) &&
+            (p.startsWith("/api/audit") || p.startsWith("/api/gdpr/requests") ||
+              p.startsWith("/api/export") || p.startsWith("/api/geofences/alerts") ||
+              p.startsWith("/api/emergency")) =>
+        Status.Forbidden
       // Public endpoints that don't require auth
-      case (Method.POST, "/api/auth/password/reset-request") => Status.Ok
+      case (Method.POST, "/api/auth/password/reset-request")                                    => Status.Ok
       // New endpoints: unauthenticated access returns 401
-      case (_, _) if authToken.isEmpty => Status.Unauthorized
+      case (_, _) if authToken.isEmpty                                                          => Status.Unauthorized
       // Billing: driver and client forbidden on write operations
-      case (Method.POST, p) if authToken.exists(_.contains("driver")) &&
-          (p == "/api/billing/companies" || p == "/api/billing/invoices") => Status.Forbidden
-      case (Method.PUT, p) if authToken.exists(_.contains("driver")) &&
-          p.startsWith("/api/billing/") => Status.Forbidden
+      case (Method.POST, p)
+          if authToken.exists(_.contains("driver")) &&
+            (p == "/api/billing/companies" || p == "/api/billing/invoices") =>
+        Status.Forbidden
+      case (Method.PUT, p)
+          if authToken.exists(_.contains("driver")) &&
+            p.startsWith("/api/billing/") =>
+        Status.Forbidden
       // Secretary forbidden on billing company write
       case (Method.POST, "/api/billing/companies") if authToken.exists(_.contains("secretary")) => Status.Forbidden
       // New POST endpoints returning 201 (resource creation)
-      case (Method.POST, p) if authToken.isDefined && (
-          p == "/api/blacklist" || p == "/api/client-companies" ||
-          p.matches("/api/clients/.+/addresses") || p == "/api/expenses" ||
-          p == "/api/gdpr/deletion-request" || p == "/api/geofences" ||
-          p == "/api/pools" || p == "/api/ride-templates" ||
-          p.matches("/api/ride-templates/.+/generate") ||
-          p == "/api/schedules" || p == "/api/schedules/batch" || p == "/api/sessions" ||
-          p.matches("/api/rides/.+/chat") || p.matches("/api/rides/.+/rate") ||
-          p == "/api/billing/companies" || p == "/api/billing/invoices"
-        ) => Status.Created
+      case (Method.POST, p)
+          if authToken.isDefined && (
+            p == "/api/blacklist" || p == "/api/client-companies" ||
+              p.matches("/api/clients/.+/addresses") || p == "/api/expenses" ||
+              p == "/api/gdpr/deletion-request" || p == "/api/geofences" ||
+              p == "/api/pools" || p == "/api/ride-templates" ||
+              p.matches("/api/ride-templates/.+/generate") ||
+              p == "/api/schedules" || p == "/api/schedules/batch" || p == "/api/sessions" ||
+              p.matches("/api/rides/.+/chat") || p.matches("/api/rides/.+/rate") ||
+              p == "/api/billing/companies" || p == "/api/billing/invoices"
+          ) =>
+        Status.Created
       // DELETE returns 204 for all new endpoints
-      case (Method.DELETE, _) if authToken.isDefined => Status.NoContent
-      case _ => Status.Ok
+      case (Method.DELETE, _) if authToken.isDefined                                            => Status.NoContent
+      case _                                                                                    => Status.Ok
     }
   }
-
 
   Given("""^the flight information system is available$""") { () =>
     testData("flight_system_available") = true
@@ -1794,14 +1915,13 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     executeRequest(request)
   }
 
-  When("""^I request arrivals for airport "(.+)" with time parameters$""") { 
-    (airport: String, dataTable: DataTable) =>
-      val params = dataTable.asMap().asScala.toMap
-      val begin = params.get("begin").getOrElse("")
-      val end = params.get("end").getOrElse("")
-      val endpoint = s"/api/flights/$airport/arrivals?begin=$begin&end=$end"
-      val request = createRequest("GET", endpoint, None)
-      executeRequest(request)
+  When("""^I request arrivals for airport "(.+)" with time parameters$""") { (airport: String, dataTable: DataTable) =>
+    val params   = dataTable.asMap().asScala.toMap
+    val begin    = params.get("begin").getOrElse("")
+    val end      = params.get("end").getOrElse("")
+    val endpoint = s"/api/flights/$airport/arrivals?begin=$begin&end=$end"
+    val request  = createRequest("GET", endpoint, None)
+    executeRequest(request)
   }
 
   When("""^I make a GET request to "(.+)"$""") { (endpoint: String) =>
@@ -1839,10 +1959,10 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   Then("""^each flight record should contain:$""") { (dataTable: DataTable) =>
     val requiredFields = dataTable.asMaps().asScala.toList
     requiredFields.foreach { row =>
-      val field = row.get("field")
-      val fieldType = row.get("type") 
-      val required = row.get("required").toBoolean
-      
+      val field     = row.get("field")
+      val fieldType = row.get("type")
+      val required  = row.get("required").toBoolean
+
       if (required) {
         assert(lastResponseBody.contains(field), s"Response should contain required field: $field")
       }
@@ -1855,8 +1975,10 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^all flights should have timestamps between the requested times$""") { () =>
-    assert(lastResponseBody.contains("1734087440") || lastResponseBody.contains("firstSeen"), 
-      "Flight timestamps should be within requested range")
+    assert(
+      lastResponseBody.contains("1734087440") || lastResponseBody.contains("firstSeen"),
+      "Flight timestamps should be within requested range"
+    )
   }
 
   Then("""^the response content type should be "(.+)"$""") { (expectedContentType: String) =>
@@ -1868,13 +1990,17 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^both responses should be valid JSON arrays$""") { () =>
-    assert(lastResponseBody.trim.startsWith("[") && lastResponseBody.trim.endsWith("]"), 
-      "Response should be a valid JSON array")
+    assert(
+      lastResponseBody.trim.startsWith("[") && lastResponseBody.trim.endsWith("]"),
+      "Response should be a valid JSON array"
+    )
   }
 
   Then("""^each flight should have valid timestamp data$""") { () =>
-    assert(lastResponseBody.contains("firstSeen") && lastResponseBody.contains("lastSeen"), 
-      "Each flight should have valid timestamp data")
+    assert(
+      lastResponseBody.contains("firstSeen") && lastResponseBody.contains("lastSeen"),
+      "Each flight should have valid timestamp data"
+    )
   }
 
   Then("""^the response should be compatible with FlightData model$""") { () =>
@@ -1889,102 +2015,109 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^airport codes should be valid ICAO format$""") { () =>
-    assert(lastResponseBody.contains("EDDM") || lastResponseBody.contains("EDDF"), 
-      "Airport codes should be in ICAO format")
+    assert(
+      lastResponseBody.contains("EDDM") || lastResponseBody.contains("EDDF"),
+      "Airport codes should be in ICAO format"
+    )
   }
 
-  
   Given("""the API server is running at {string}""") { (url: String) =>
     testData("api_server_url") = url
     testData("api_running") = true
   }
-  
+
   Given("""I am authenticated as an admin with ID {int}""") { (adminId: Int) =>
     val uuid = getTestUuidForId(adminId)
     currentUserId = Some(PersonId(uuid))
     authToken = Some(generateMockToken(PersonId(uuid), "admin"))
   }
-  
+
   When("""I make a POST request to {string} with JSON:""") { (endpoint: String, jsonBody: String) =>
     val request = createRequest("POST", endpoint, Some(jsonBody))
     executeRequest(request)
   }
-  
+
   When("""I make a POST request to {string} with form data:""") { (endpoint: String, dataTable: DataTable) =>
-    val data = dataTable.asMap().asScala.toMap
+    val data    = dataTable.asMap().asScala.toMap
     val request = createRequest("POST", endpoint, Some(data.toJson))
     executeRequest(request)
   }
-  
+
   Then("""the response should contain JSON:""") { (expectedJson: String) =>
-    assert(lastResponseBody.contains("{") && lastResponseBody.contains("}"), 
-      "Response should contain JSON data")
+    assert(lastResponseBody.contains("{") && lastResponseBody.contains("}"), "Response should contain JSON data")
   }
-  
+
   Then("""the response should contain authorization error""") { () =>
-    assert(lastResponseBody.contains("authorization") || lastResponseBody.contains("Forbidden") || lastResponseBody.contains("Access denied") || lastResponseBody.contains("Insufficient permissions"),
-      "Response should contain authorization error")
+    assert(
+      lastResponseBody.contains("authorization") || lastResponseBody.contains("Forbidden") || lastResponseBody.contains(
+        "Access denied"
+      ) || lastResponseBody.contains("Insufficient permissions"),
+      "Response should contain authorization error"
+    )
   }
-  
+
   Then("""the response should contain a JSON array of users""") { () =>
-    assert(lastResponseBody.contains("[") && lastResponseBody.contains("id"), 
-      "Response should contain a JSON array of users")
+    assert(
+      lastResponseBody.contains("[") && lastResponseBody.contains("id"),
+      "Response should contain a JSON array of users"
+    )
   }
-  
+
   Then("""users should match search term {string} in name or email""") { (searchTerm: String) =>
-    assert(lastResponseBody.contains(searchTerm), 
-      s"Response should contain users matching search term: $searchTerm")
+    assert(lastResponseBody.contains(searchTerm), s"Response should contain users matching search term: $searchTerm")
   }
-  
+
   Given("""I have an invalid auth token {string}""") { (token: String) =>
     authToken = Some(token)
   }
-  
+
   When("""I make a POST request to {string}""") { (endpoint: String) =>
     val request = createRequest("POST", endpoint, None)
     executeRequest(request)
   }
-  
+
   When("""I make a PUT request to {string}""") { (endpoint: String) =>
     val request = createRequest("PUT", endpoint, None)
     executeRequest(request)
   }
-  
+
   When("""I make a PUT request to {string} with JSON:""") { (endpoint: String, jsonBody: String) =>
     val request = createRequest("PUT", endpoint, Some(jsonBody))
     executeRequest(request)
   }
-  
+
   When("""I make a DELETE request to {string}""") { (endpoint: String) =>
     val request = createRequest("DELETE", endpoint, None)
     executeRequest(request)
   }
-  
+
   When("""I make a PATCH request to {string} with JSON:""") { (endpoint: String, jsonBody: String) =>
     val request = createRequest("PATCH", endpoint, Some(jsonBody))
     executeRequest(request)
   }
-  
+
   Then("""the response should be empty""") { () =>
-    assert(lastResponseBody.isEmpty || lastResponseBody.trim == "" || lastResponseBody == "null", 
-      s"Response should be empty, but got: '$lastResponseBody'")
+    assert(
+      lastResponseBody.isEmpty || lastResponseBody.trim == "" || lastResponseBody == "null",
+      s"Response should be empty, but got: '$lastResponseBody'"
+    )
   }
-  
+
   Then("""all users should have role {string}""") { (role: String) =>
-    assert(lastResponseBody.contains(role), 
-      s"All users should have role $role")
+    assert(lastResponseBody.contains(role), s"All users should have role $role")
   }
-  
+
   Then("""all users should have status {string}""") { (status: String) =>
-    assert(lastResponseBody.contains(status), 
-      s"All users should have status $status")
+    assert(lastResponseBody.contains(status), s"All users should have status $status")
   }
-  
+
   Then("""the response should contain a JSON array of rides""") { () =>
-    assert(lastResponseBody.contains("[") && (lastResponseBody.contains("id") || lastResponseBody.contains("clientId")), 
-      "Response should contain a JSON array of rides")
+    assert(
+      lastResponseBody.contains("[") && (lastResponseBody.contains("id") || lastResponseBody.contains("clientId")),
+      "Response should contain a JSON array of rides"
+    )
   }
-  
+
   Then("""each ride should have required fields:""") { (dataTable: DataTable) =>
     val rows = dataTable.asLists().asScala.toList
     if (rows.nonEmpty) {
@@ -1994,12 +2127,14 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       }
     }
   }
-  
+
   Then("""the response should contain JSON ride with ID {int}""") { (rideId: Int) =>
-    assert(lastResponseBody.contains(rideId.toString) && lastResponseBody.contains("id"), 
-      s"Response should contain ride with ID $rideId")
+    assert(
+      lastResponseBody.contains(rideId.toString) && lastResponseBody.contains("id"),
+      s"Response should contain ride with ID $rideId"
+    )
   }
-  
+
   Then("""the ride should have all required fields:""") { (dataTable: DataTable) =>
     val rows = dataTable.asLists().asScala.toList
     if (rows.nonEmpty) {
@@ -2009,32 +2144,35 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       }
     }
   }
-  
+
   Then("""the response should contain JSON ride with:""") { (dataTable: DataTable) =>
     val expectedValues = dataTable.asMap().asScala
     expectedValues.foreach { case (field, value) =>
-      assert(lastResponseBody.contains(field) && lastResponseBody.contains(value), 
-        s"Response should contain $field: $value")
+      assert(
+        lastResponseBody.contains(field) && lastResponseBody.contains(value),
+        s"Response should contain $field: $value"
+      )
     }
   }
-  
+
   Then("""all rides should have clientId {int}""") { (clientId: Int) =>
-    assert(lastResponseBody.contains(s"clientId\":\"$clientId") || lastResponseBody.contains(s"clientId\":$clientId"), 
-      s"All rides should have clientId $clientId")
+    assert(
+      lastResponseBody.contains(s"clientId\":\"$clientId") || lastResponseBody.contains(s"clientId\":$clientId"),
+      s"All rides should have clientId $clientId"
+    )
   }
-  
+
   Then("""all rides should have driverId {int}""") { (driverId: Int) =>
-    val hasDriverId = lastResponseBody.contains(s"\"driverId\":$driverId") || 
-                     lastResponseBody.contains(s"\"driverId\":\"$driverId\"")
-    assert(hasDriverId, 
-      s"All rides should have driverId $driverId. Response: $lastResponseBody")
+    val hasDriverId =
+      lastResponseBody.contains(s"\"driverId\":$driverId") ||
+        lastResponseBody.contains(s"\"driverId\":\"$driverId\"")
+    assert(hasDriverId, s"All rides should have driverId $driverId. Response: $lastResponseBody")
   }
-  
+
   Then("""all rides should have status {string}""") { (status: String) =>
-    assert(lastResponseBody.contains(status), 
-      s"All rides should have status $status")
+    assert(lastResponseBody.contains(status), s"All rides should have status $status")
   }
-  
+
   Then("""each user should have required fields:""") { (dataTable: DataTable) =>
     val rows = dataTable.asLists().asScala.toList
     if (rows.nonEmpty) {
@@ -2044,12 +2182,14 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       }
     }
   }
-  
+
   Then("""the response should contain JSON user with ID {int}""") { (userId: Int) =>
-    assert(lastResponseBody.contains(userId.toString) && lastResponseBody.contains("id"), 
-      s"Response should contain user with ID $userId")
+    assert(
+      lastResponseBody.contains(userId.toString) && lastResponseBody.contains("id"),
+      s"Response should contain user with ID $userId"
+    )
   }
-  
+
   Then("""the user should have all required fields:""") { (dataTable: DataTable) =>
     val rows = dataTable.asLists().asScala.toList
     if (rows.nonEmpty) {
@@ -2059,20 +2199,25 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       }
     }
   }
-  
+
   Then("""the response should contain JSON user with:""") { (dataTable: DataTable) =>
     val expectedValues = dataTable.asMap().asScala
     expectedValues.foreach { case (field, value) =>
-      assert(lastResponseBody.contains(field) && lastResponseBody.contains(value), 
-        s"Response should contain $field: $value")
+      assert(
+        lastResponseBody.contains(field) && lastResponseBody.contains(value),
+        s"Response should contain $field: $value"
+      )
     }
   }
-  
+
   Then("""the response should contain error message about duplicate email""") { () =>
-    assert(lastResponseBody.contains("already exists") || lastResponseBody.contains("duplicate") || lastResponseBody.contains("User already exists") || lastResponseBody.contains("details") || lastResponseBody.contains("error"), 
-      "Response should contain error message about duplicate email")
+    assert(
+      lastResponseBody.contains("already exists") || lastResponseBody.contains("duplicate") || lastResponseBody
+        .contains("User already exists") || lastResponseBody.contains("details") || lastResponseBody.contains("error"),
+      "Response should contain error message about duplicate email"
+    )
   }
-  
+
   // ── New steps for extended feature files (12–31) ──────────────────────────
 
   When("""^I send a (GET|POST|PUT|DELETE|PATCH) request to "(.+)" with body:$""") {
@@ -2081,16 +2226,15 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       executeRequest(request)
   }
 
-  When("""^I send a PATCH request to "(.+)" without authentication$""") {
-    (endpoint: String) =>
-      val savedToken = authToken
-      authToken = None
-      val request = Request(
-        method = Method.PATCH,
-        url = URL.decode(s"http://localhost:8080$endpoint").toOption.get
-      )
-      executeRequest(request)
-      authToken = savedToken
+  When("""^I send a PATCH request to "(.+)" without authentication$""") { (endpoint: String) =>
+    val savedToken = authToken
+    authToken = None
+    val request    = Request(
+      method = Method.PATCH,
+      url = URL.decode(s"http://localhost:8080$endpoint").toOption.get
+    )
+    executeRequest(request)
+    authToken = savedToken
   }
 
   Then("""^the response should contain (\w[\w\s]*) entries$""") { (_: String) =>
@@ -2099,8 +2243,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
   def getMockResponseBody(requestPath: String, method: String): String = {
     (method, requestPath) match {
-      case ("GET", p) if p.contains("/api/flights/") && p.endsWith("/arrivals") =>
-        """[
+      case ("GET", p) if p.contains("/api/flights/") && p.endsWith("/arrivals")   => """[
           {
             "icao24": "4B1814",
             "firstSeen": 1734089240,
@@ -2118,8 +2261,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
             "callsign": "KLM456"
           }
         ]"""
-      case ("GET", p) if p.contains("/api/flights/") && p.endsWith("/departures") =>
-        """[
+      case ("GET", p) if p.contains("/api/flights/") && p.endsWith("/departures") => """[
           {
             "icao24": "4B1816",
             "firstSeen": 1734094640,
@@ -2137,7 +2279,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
             "callsign": "KLM321"
           }
         ]"""
-      case _ => "{}"
+      case _                                                                      => "{}"
     }
   }
 }

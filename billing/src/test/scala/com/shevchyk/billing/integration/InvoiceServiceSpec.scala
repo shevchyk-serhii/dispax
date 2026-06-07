@@ -292,10 +292,8 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           filled.totalAmount == filled.subtotalAmount
         )
       },
-      test("autoFillFromPeriod tax with fractional result (documents non-rounded behaviour)") {
-        // BUG CANDIDATE: recalculate does not round taxAmount/totalAmount to 2 decimals.
-        // 33.33 * 19% = 6.3327 → stored as-is, diverging from the 2-decimal PDF format.
-        // This test pins current behaviour; tighten recalculate (setScale(2, HALF_UP)) to fix.
+      test("autoFillFromPeriod rounds fractional tax to 2 decimals (HALF_UP)") {
+        // 33.33 * 19% = 6.3327 → rounded to 6.33; total 33.33 + 6.33 = 39.66.
         for {
           xa     <- ZIO.service[Transactor[Task]]
           _      <- seedTestData(xa)
@@ -307,9 +305,11 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           filled <- svc.autoFillFromPeriod(inv.id, testCompanyId)
         } yield assertTrue(
           filled.subtotalAmount == BigDecimal("33.33"),
-          // Raw multiplication: 33.33 * 19 / 100 = 6.3327 (more than 2 decimals)
-          filled.taxAmount == BigDecimal("33.33") * BigDecimal("19") / BigDecimal("100"),
-          filled.totalAmount == filled.subtotalAmount + filled.taxAmount
+          filled.taxAmount == BigDecimal("6.33"),
+          filled.totalAmount == BigDecimal("39.66"),
+          // Rounded values must carry exactly 2 decimal places.
+          filled.taxAmount.scale == 2,
+          filled.totalAmount.scale == 2
         )
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock

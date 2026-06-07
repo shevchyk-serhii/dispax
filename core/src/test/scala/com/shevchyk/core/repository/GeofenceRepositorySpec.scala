@@ -42,130 +42,131 @@ object GeofenceRepositorySpec extends ZIOSpecDefault {
 
   val layers = GeofenceRepository.inMemory
 
-  def spec = suite("GeofenceRepository")(
-    suite("create and findById")(
-      test("creates and finds by id") {
-        val g = makeGeofence()
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          _     <- repo.create(g)
-          found <- repo.findById(g.id)
-        } yield assertTrue(found.contains(g))
-      }.provide(layers),
-      test("returns None for unknown id") {
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          found <- repo.findById(GeofenceId.generate())
-        } yield assertTrue(found.isEmpty)
-      }.provide(layers)
-    ),
-    suite("findByCompanyId")(
-      test("returns all geofences for company including inactive") {
-        val active   = makeGeofence(isActive = true)
-        val inactive = makeGeofence(isActive = false, name = "Inactive Zone")
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          _     <- repo.create(active)
-          _     <- repo.create(inactive)
-          found <- repo.findByCompanyId(companyId)
-        } yield assertTrue(found.size == 2)
-      }.provide(layers),
-      test("returns empty for unknown company") {
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          _     <- repo.create(makeGeofence(companyId = companyId))
-          found <- repo.findByCompanyId(otherCompanyId)
-        } yield assertTrue(found.isEmpty)
-      }.provide(layers)
-    ),
-    suite("findActiveByCompanyId")(
-      test("returns only active geofences") {
-        val active   = makeGeofence(isActive = true, name = "Active Zone")
-        val inactive = makeGeofence(isActive = false, name = "Inactive Zone")
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          _     <- repo.create(active)
-          _     <- repo.create(inactive)
-          found <- repo.findActiveByCompanyId(companyId)
-        } yield assertTrue(found.size == 1 && found.head.name == "Active Zone")
-      }.provide(layers),
-      test("returns empty when all geofences are inactive") {
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          _     <- repo.create(makeGeofence(isActive = false))
-          found <- repo.findActiveByCompanyId(companyId)
-        } yield assertTrue(found.isEmpty)
-      }.provide(layers),
-      test("does not mix companies") {
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          _     <- repo.create(makeGeofence(companyId = companyId, isActive = true))
-          found <- repo.findActiveByCompanyId(otherCompanyId)
-        } yield assertTrue(found.isEmpty)
-      }.provide(layers)
-    ),
-    suite("update")(
-      test("updates geofence fields") {
-        val g       = makeGeofence(isActive = true)
-        val updated = g.copy(isActive = false, name = "Updated Name")
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          _     <- repo.create(g)
-          _     <- repo.update(updated)
-          found <- repo.findById(g.id)
-        } yield assertTrue(
-          found.map(_.isActive).contains(false) &&
-          found.map(_.name).contains("Updated Name")
-        )
-      }.provide(layers)
-    ),
-    suite("delete")(
-      test("deletes existing geofence") {
-        val g = makeGeofence()
-        for {
-          repo    <- ZIO.service[GeofenceRepository]
-          _       <- repo.create(g)
-          deleted <- repo.delete(g.id)
-          found   <- repo.findById(g.id)
-        } yield assertTrue(deleted && found.isEmpty)
-      }.provide(layers),
-      test("returns false for unknown id") {
-        for {
-          repo    <- ZIO.service[GeofenceRepository]
-          deleted <- repo.delete(GeofenceId.generate())
-        } yield assertTrue(!deleted)
-      }.provide(layers)
-    ),
-    suite("saveAlert and findAlerts")(
-      test("saves alert and finds by company") {
-        val g     = makeGeofence()
-        val alert = makeAlert(g, "entry")
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          _     <- repo.create(g)
-          _     <- repo.saveAlert(alert)
-          found <- repo.findAlertsByCompany(companyId, limit = 10)
-        } yield assertTrue(found.size == 1 && found.head.alertType == "entry")
-      }.provide(layers),
-      test("finds alerts by driver") {
-        val g     = makeGeofence()
-        val alert = makeAlert(g, "exit")
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          _     <- repo.create(g)
-          _     <- repo.saveAlert(alert)
-          found <- repo.findAlertsByDriver(driverId, limit = 10)
-        } yield assertTrue(found.size == 1 && found.head.alertType == "exit")
-      }.provide(layers),
-      test("respects limit parameter") {
-        val g = makeGeofence()
-        for {
-          repo  <- ZIO.service[GeofenceRepository]
-          _     <- repo.create(g)
-          _     <- ZIO.foreach(1 to 5)(_ => repo.saveAlert(makeAlert(g)))
-          found <- repo.findAlertsByCompany(companyId, limit = 3)
-        } yield assertTrue(found.size == 3)
-      }.provide(layers)
+  def spec =
+    suite("GeofenceRepository")(
+      suite("create and findById")(
+        test("creates and finds by id") {
+          val g = makeGeofence()
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            _     <- repo.create(g)
+            found <- repo.findById(g.id)
+          } yield assertTrue(found.contains(g))
+        }.provide(layers),
+        test("returns None for unknown id") {
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            found <- repo.findById(GeofenceId.generate())
+          } yield assertTrue(found.isEmpty)
+        }.provide(layers)
+      ),
+      suite("findByCompanyId")(
+        test("returns all geofences for company including inactive") {
+          val active   = makeGeofence(isActive = true)
+          val inactive = makeGeofence(isActive = false, name = "Inactive Zone")
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            _     <- repo.create(active)
+            _     <- repo.create(inactive)
+            found <- repo.findByCompanyId(companyId)
+          } yield assertTrue(found.size == 2)
+        }.provide(layers),
+        test("returns empty for unknown company") {
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            _     <- repo.create(makeGeofence(companyId = companyId))
+            found <- repo.findByCompanyId(otherCompanyId)
+          } yield assertTrue(found.isEmpty)
+        }.provide(layers)
+      ),
+      suite("findActiveByCompanyId")(
+        test("returns only active geofences") {
+          val active   = makeGeofence(isActive = true, name = "Active Zone")
+          val inactive = makeGeofence(isActive = false, name = "Inactive Zone")
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            _     <- repo.create(active)
+            _     <- repo.create(inactive)
+            found <- repo.findActiveByCompanyId(companyId)
+          } yield assertTrue(found.size == 1 && found.head.name == "Active Zone")
+        }.provide(layers),
+        test("returns empty when all geofences are inactive") {
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            _     <- repo.create(makeGeofence(isActive = false))
+            found <- repo.findActiveByCompanyId(companyId)
+          } yield assertTrue(found.isEmpty)
+        }.provide(layers),
+        test("does not mix companies") {
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            _     <- repo.create(makeGeofence(companyId = companyId, isActive = true))
+            found <- repo.findActiveByCompanyId(otherCompanyId)
+          } yield assertTrue(found.isEmpty)
+        }.provide(layers)
+      ),
+      suite("update")(
+        test("updates geofence fields") {
+          val g       = makeGeofence(isActive = true)
+          val updated = g.copy(isActive = false, name = "Updated Name")
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            _     <- repo.create(g)
+            _     <- repo.update(updated)
+            found <- repo.findById(g.id)
+          } yield assertTrue(
+            found.map(_.isActive).contains(false) &&
+              found.map(_.name).contains("Updated Name")
+          )
+        }.provide(layers)
+      ),
+      suite("delete")(
+        test("deletes existing geofence") {
+          val g = makeGeofence()
+          for {
+            repo    <- ZIO.service[GeofenceRepository]
+            _       <- repo.create(g)
+            deleted <- repo.delete(g.id)
+            found   <- repo.findById(g.id)
+          } yield assertTrue(deleted && found.isEmpty)
+        }.provide(layers),
+        test("returns false for unknown id") {
+          for {
+            repo    <- ZIO.service[GeofenceRepository]
+            deleted <- repo.delete(GeofenceId.generate())
+          } yield assertTrue(!deleted)
+        }.provide(layers)
+      ),
+      suite("saveAlert and findAlerts")(
+        test("saves alert and finds by company") {
+          val g     = makeGeofence()
+          val alert = makeAlert(g, "entry")
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            _     <- repo.create(g)
+            _     <- repo.saveAlert(alert)
+            found <- repo.findAlertsByCompany(companyId, limit = 10)
+          } yield assertTrue(found.size == 1 && found.head.alertType == "entry")
+        }.provide(layers),
+        test("finds alerts by driver") {
+          val g     = makeGeofence()
+          val alert = makeAlert(g, "exit")
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            _     <- repo.create(g)
+            _     <- repo.saveAlert(alert)
+            found <- repo.findAlertsByDriver(driverId, limit = 10)
+          } yield assertTrue(found.size == 1 && found.head.alertType == "exit")
+        }.provide(layers),
+        test("respects limit parameter") {
+          val g = makeGeofence()
+          for {
+            repo  <- ZIO.service[GeofenceRepository]
+            _     <- repo.create(g)
+            _     <- ZIO.foreach(1 to 5)(_ => repo.saveAlert(makeAlert(g)))
+            found <- repo.findAlertsByCompany(companyId, limit = 3)
+          } yield assertTrue(found.size == 3)
+        }.provide(layers)
+      )
     )
-  )
 }

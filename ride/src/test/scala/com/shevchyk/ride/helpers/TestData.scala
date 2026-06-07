@@ -7,9 +7,9 @@ import java.util.UUID
 
 object TestData {
 
-  def testUserId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
+  def testUserId: UUID    = UUID.fromString("00000000-0000-0000-0000-000000000001")
   def testCompanyId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000010")
-  def testDriverId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000002")
+  def testDriverId: UUID  = UUID.fromString("00000000-0000-0000-0000-000000000002")
 
   def createTestClient(
       id: PersonId = PersonId(testUserId),
@@ -90,8 +90,7 @@ object TestData {
     }"""
   }
 
-  val invalidCreateRideJson: String =
-    """{
+  val invalidCreateRideJson: String = """{
       "pickupLocation": {"address": ""},
       "dropoffLocation": {"address": ""}
     }"""

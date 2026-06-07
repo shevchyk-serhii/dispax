@@ -7,11 +7,11 @@ import com.shevchyk.core.repository.PersonRepository
 import zio.*
 
 object TestLayers {
-  val inMemoryTokenRepository: ZLayer[Any, Nothing, TokenRepository] =
-    ZLayer.succeed(InMemoryTokenRepository())
+  val inMemoryTokenRepository: ZLayer[Any, Nothing, TokenRepository] = ZLayer.succeed(InMemoryTokenRepository())
 
-  val inMemoryPersonRepository: ZLayer[Any, Nothing, PersonRepository] =
-    ZLayer.succeed(InMemoryPersonRepositoryWithUsers())
+  val inMemoryPersonRepository: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
+    InMemoryPersonRepositoryWithUsers()
+  )
 
   val authServiceWithInMemory: ZLayer[Any, Nothing, AuthService] =
     (inMemoryPersonRepository ++ inMemoryTokenRepository ++ (JwtConfig.live >>> JwtService.live)) >>> AuthService.live

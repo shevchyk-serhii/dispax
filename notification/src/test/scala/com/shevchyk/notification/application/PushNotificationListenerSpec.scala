@@ -2,7 +2,11 @@ package com.shevchyk.notification.application
 
 import com.shevchyk.core.application.EventHub
 import com.shevchyk.core.domain.*
-import com.shevchyk.notification.repository.{InMemoryFcmTokenRepository, InMemoryNotificationRepository, NotificationRepository}
+import com.shevchyk.notification.repository.{
+  InMemoryFcmTokenRepository,
+  InMemoryNotificationRepository,
+  NotificationRepository
+}
 import zio.*
 import zio.test.*
 import zio.test.TestClock
@@ -20,8 +24,8 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
 
   private val baseLayers =
     EventHub.layer ++
-    InMemoryNotificationRepository.layer ++
-    testFcmLayer
+      InMemoryNotificationRepository.layer ++
+      testFcmLayer
 
   // Publish event, advance clock by 200ms, read notifications
   private def publishAndCollect(
@@ -37,117 +41,108 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       notifs    <- notifRepo.findByPersonId(forPerson, limit = 10, offset = 0)
     } yield notifs
 
-  def spec = suite("PushNotificationListener")(
-
-    test("RideAssigned saves notification for driver") {
-      ZIO.scoped {
-        publishAndCollect(
-          WebSocketEvent.RideAssigned(rideId, driverId, companyId),
-          PersonId(driverId)
-        ).map { notifs =>
-          assertTrue(
-            notifs.nonEmpty &&
-            notifs.exists(_.notificationType == "ride_assigned") &&
-            notifs.exists(_.title == "New Ride Assigned")
-          )
+  def spec =
+    suite("PushNotificationListener")(
+      test("RideAssigned saves notification for driver") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideAssigned(rideId, driverId, companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.nonEmpty &&
+                notifs.exists(_.notificationType == "ride_assigned") &&
+                notifs.exists(_.title == "New Ride Assigned")
+            )
+          }
         }
-      }
-    }.provide(baseLayers),
-
-    test("RideStatusChanged InProgress saves Ride Started notification") {
-      ZIO.scoped {
-        publishAndCollect(
-          WebSocketEvent.RideStatusChanged(rideId, "InProgress", Some(driverId), companyId),
-          PersonId(driverId)
-        ).map { notifs =>
-          assertTrue(
-            notifs.exists(_.notificationType == "ride_status_changed") &&
-            notifs.exists(_.title == "Ride Started")
-          )
+      }.provide(baseLayers),
+      test("RideStatusChanged InProgress saves Ride Started notification") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideStatusChanged(rideId, "InProgress", Some(driverId), companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.notificationType == "ride_status_changed") &&
+                notifs.exists(_.title == "Ride Started")
+            )
+          }
         }
-      }
-    }.provide(baseLayers),
-
-    test("RideStatusChanged Completed saves Ride Completed notification") {
-      ZIO.scoped {
-        publishAndCollect(
-          WebSocketEvent.RideStatusChanged(rideId, "Completed", Some(driverId), companyId),
-          PersonId(driverId)
-        ).map { notifs =>
-          assertTrue(notifs.exists(_.title == "Ride Completed"))
+      }.provide(baseLayers),
+      test("RideStatusChanged Completed saves Ride Completed notification") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideStatusChanged(rideId, "Completed", Some(driverId), companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(notifs.exists(_.title == "Ride Completed"))
+          }
         }
-      }
-    }.provide(baseLayers),
-
-    test("RideStatusChanged with unknown status saves no notification") {
-      ZIO.scoped {
-        publishAndCollect(
-          WebSocketEvent.RideStatusChanged(rideId, "Assigned", Some(driverId), companyId),
-          PersonId(driverId)
-        ).map { notifs =>
-          assertTrue(notifs.isEmpty)
+      }.provide(baseLayers),
+      test("RideStatusChanged with unknown status saves no notification") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideStatusChanged(rideId, "Assigned", Some(driverId), companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(notifs.isEmpty)
+          }
         }
-      }
-    }.provide(baseLayers),
-
-    test("RideStatusChanged with no driverId saves no notification") {
-      ZIO.scoped {
-        publishAndCollect(
-          WebSocketEvent.RideStatusChanged(rideId, "InProgress", None, companyId),
-          PersonId(driverId)
-        ).map { notifs =>
-          assertTrue(notifs.isEmpty)
+      }.provide(baseLayers),
+      test("RideStatusChanged with no driverId saves no notification") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideStatusChanged(rideId, "InProgress", None, companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(notifs.isEmpty)
+          }
         }
-      }
-    }.provide(baseLayers),
-
-    test("RideCreated event produces no notification") {
-      ZIO.scoped {
-        val clientId = UUID.randomUUID()
-        publishAndCollect(
-          WebSocketEvent.RideCreated(rideId, clientId, companyId),
-          PersonId(clientId)
-        ).map(notifs => assertTrue(notifs.isEmpty))
-      }
-    }.provide(baseLayers),
-
-    test("LocationUpdated event produces no notification") {
-      ZIO.scoped {
-        val userId = UUID.randomUUID()
-        publishAndCollect(
-          WebSocketEvent.LocationUpdated(Some(rideId), userId, 48.1, 11.5, "driver", companyId),
-          PersonId(userId)
-        ).map(notifs => assertTrue(notifs.isEmpty))
-      }
-    }.provide(baseLayers),
-
-    test("ChatMessageSent event produces no notification") {
-      ZIO.scoped {
-        val senderId = UUID.randomUUID()
-        publishAndCollect(
-          WebSocketEvent.ChatMessageSent(rideId, senderId, "Hello!", companyId),
-          PersonId(senderId)
-        ).map(notifs => assertTrue(notifs.isEmpty))
-      }
-    }.provide(baseLayers),
-
-    test("GeofenceTriggered event produces no notification") {
-      ZIO.scoped {
-        val geofenceId = UUID.randomUUID()
-        publishAndCollect(
-          WebSocketEvent.GeofenceTriggered(geofenceId, "Zone A", driverId, "entry", 48.1, 11.5, companyId),
-          PersonId(driverId)
-        ).map(notifs => assertTrue(notifs.isEmpty))
-      }
-    }.provide(baseLayers),
-
-    test("DriverApproaching event produces no notification") {
-      ZIO.scoped {
-        publishAndCollect(
-          WebSocketEvent.DriverApproaching(rideId, driverId, 450, "500m", companyId),
-          PersonId(driverId)
-        ).map(notifs => assertTrue(notifs.isEmpty))
-      }
-    }.provide(baseLayers)
-  )
+      }.provide(baseLayers),
+      test("RideCreated event produces no notification") {
+        ZIO.scoped {
+          val clientId = UUID.randomUUID()
+          publishAndCollect(
+            WebSocketEvent.RideCreated(rideId, clientId, companyId),
+            PersonId(clientId)
+          ).map(notifs => assertTrue(notifs.isEmpty))
+        }
+      }.provide(baseLayers),
+      test("LocationUpdated event produces no notification") {
+        ZIO.scoped {
+          val userId = UUID.randomUUID()
+          publishAndCollect(
+            WebSocketEvent.LocationUpdated(Some(rideId), userId, 48.1, 11.5, "driver", companyId),
+            PersonId(userId)
+          ).map(notifs => assertTrue(notifs.isEmpty))
+        }
+      }.provide(baseLayers),
+      test("ChatMessageSent event produces no notification") {
+        ZIO.scoped {
+          val senderId = UUID.randomUUID()
+          publishAndCollect(
+            WebSocketEvent.ChatMessageSent(rideId, senderId, "Hello!", companyId),
+            PersonId(senderId)
+          ).map(notifs => assertTrue(notifs.isEmpty))
+        }
+      }.provide(baseLayers),
+      test("GeofenceTriggered event produces no notification") {
+        ZIO.scoped {
+          val geofenceId = UUID.randomUUID()
+          publishAndCollect(
+            WebSocketEvent.GeofenceTriggered(geofenceId, "Zone A", driverId, "entry", 48.1, 11.5, companyId),
+            PersonId(driverId)
+          ).map(notifs => assertTrue(notifs.isEmpty))
+        }
+      }.provide(baseLayers),
+      test("DriverApproaching event produces no notification") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.DriverApproaching(rideId, driverId, 450, "500m", companyId),
+            PersonId(driverId)
+          ).map(notifs => assertTrue(notifs.isEmpty))
+        }
+      }.provide(baseLayers)
+    )
 }
