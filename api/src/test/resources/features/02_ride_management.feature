@@ -35,6 +35,14 @@ Feature: Ride Management
       """
     Then the response status should be 200
 
+  Scenario: Create a ride with an unknown driver returns a typed error, not 500
+    Given I am authenticated as a dispatcher
+    When I send a POST request to "/api/rides" with body:
+      """
+      {"clientId":"11111111-1111-1111-1111-111111111111","creatorId":"33333333-3333-3333-3333-333333333333","clientName":"Test User","from":{"address":"Hauptbahnhof München"},"to":{"address":"Flughafen München"},"pickupDateTime":"2026-12-10T15:30:00Z","driverId":"00000000-0000-0000-0000-0000000000aa"}
+      """
+    Then the response status should be 404
+
   Scenario: Update ride status to in progress
     Given I am authenticated as a driver
     When I send a PUT request to "/api/rides/11111111-1111-1111-1111-111111111111/status" with body:

@@ -121,7 +121,10 @@ object RideRoutes {
             validRequest.driverId match
               case Some(driverIdStr) =>
                 UuidParser.parsePersonId(driverIdStr).flatMap { driverPid =>
-                  service.assignDriver(ride.id, driverPid).mapError(e => new RuntimeException(e.toString))
+                  // RideError extends Throwable — pass it through unwrapped so handleRideError can
+                  // map RideAlreadyAssigned → 409, company-isolation violations → 400, etc.
+                  // Wrapping in RuntimeException would erase the type and fall through to a 500.
+                  service.assignDriver(ride.id, driverPid)
                 }
               case None              => ZIO.succeed(ride)
           // Record from/to addresses for the client after successful ride creation
