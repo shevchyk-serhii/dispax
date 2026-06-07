@@ -35,12 +35,7 @@ Managed by Flyway in `api/src/main/resources/db/migration/`:
 
 | Migration | Description |
 |-----------|-------------|
-| V1__Create_schema.sql | Initial schema: persons, companies, rides, drivers, tariffs, schedules, notifications, chat, ratings, expenses, geofences, blacklist, GDPR, audit, sessions, pools |
-| V2__Add_admin_to_person_role.sql | Add `admin` to person_role enum |
-| V3__Placeholder.sql | Placeholder |
-| V4__Fix_paid_at_column_type.sql | Fix timestamp column type |
-| V5__Add_payment_enums.sql | Add payment_status and payment_method enums |
-| V6__Merge_users_into_persons.sql | Consolidate users table into persons |
+| V1__Create_schema.sql | Full consolidated schema: persons (incl. `reminder_minutes`), companies, rides, `sent_reminders`, drivers, tariffs, schedules, notifications, chat, ratings, expenses, geofences, blacklist, GDPR, audit, sessions, pools, invoices |
 
 Development data: `api/src/main/resources/db/migration-dev/V1001__Insert_dev_data.sql` (loaded only in development profile).
 
