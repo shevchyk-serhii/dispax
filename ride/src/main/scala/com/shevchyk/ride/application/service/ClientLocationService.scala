@@ -38,6 +38,7 @@ class ClientLocationServiceImpl(
       longitude: Double
   ): IO[RideError, Unit] =
     for {
+      _    <- validateCoordinates(latitude, longitude)
       ride <- rideRepository.findById(rideId).mapDatabaseError.flatMap {
                 case Some(r) => ZIO.succeed(r)
                 case None    => ZIO.fail(RideError.RideNotFound(rideId))
@@ -62,6 +63,16 @@ class ClientLocationServiceImpl(
           )
           .ignore
     } yield ()
+
+  /**
+   * Rejects out-of-range coordinates before they reach the DB / Haversine math.
+   */
+  private def validateCoordinates(latitude: Double, longitude: Double): IO[RideError, Unit] =
+    if latitude < -90.0 || latitude > 90.0 then
+      ZIO.fail(RideError.ValidationError(s"Latitude out of range [-90, 90]: $latitude"))
+    else if longitude < -180.0 || longitude > 180.0 then
+      ZIO.fail(RideError.ValidationError(s"Longitude out of range [-180, 180]: $longitude"))
+    else ZIO.unit
 
   override def getRideLocations(rideId: RideId): IO[RideError, RideLocationsResponse] =
     for {
