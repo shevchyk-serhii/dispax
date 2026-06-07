@@ -146,7 +146,7 @@ object RideApiSpec extends ZIOSpecDefault {
           bodyStr  <- response.body.asString.orDie
 
         } yield assertTrue(
-          response.status == Status.InternalServerError,
+          response.status == Status.BadRequest,
           bodyStr.contains("Invalid JSON") || bodyStr.contains("error")
         )
       },

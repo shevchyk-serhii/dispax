@@ -98,7 +98,7 @@ object AuthenticatedHandlersSpec extends ZIOSpecDefault {
         } yield assertTrue(response.status == Status.Ok && body == "Alice")
       }.provide(jwtLayer),
 
-      test("returns 500 for invalid JSON body") {
+      test("returns 400 for invalid JSON body") {
         val h: Handler[JwtService, Response, Request, Response] =
           AuthenticatedHandlers.authenticatedJsonHandler[Any, TestBody] { (_, body) =>
             ZIO.succeed(Response.text(body.name))
@@ -109,7 +109,7 @@ object AuthenticatedHandlersSpec extends ZIOSpecDefault {
                       body = Body.fromString("not-json")
                     )
           response <- h.runZIO(request)
-        } yield assertTrue(response.status == Status.InternalServerError)
+        } yield assertTrue(response.status == Status.BadRequest)
       }.provide(jwtLayer),
 
       test("returns 401 when token is missing") {
