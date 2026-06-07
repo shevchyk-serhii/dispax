@@ -640,7 +640,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           assigned  <- service.assignDriver(ride.id, testDriverId)
           started   <- service.startRide(assigned.id, testDriverId)
           completed <- service.completeRide(started.id)
-          unpaid    <- service.getUnpaidCompletedRides
+          unpaid    <- service.getUnpaidCompletedRides(testCompanyId)
         } yield assertTrue(unpaid.exists(_.id == completed.id))
       }.provide(standardLayers),
 
@@ -652,7 +652,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           started   <- service.startRide(assigned.id, testDriverId)
           completed <- service.completeRide(started.id)
           _         <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
-          unpaid    <- service.getUnpaidCompletedRides
+          unpaid    <- service.getUnpaidCompletedRides(testCompanyId)
         } yield assertTrue(!unpaid.exists(_.id == completed.id))
       }.provide(standardLayers)
     ),

@@ -215,9 +215,14 @@ object DriverRoutes:
         (rideId: String, request: Request) =>
           (for {
             user         <- AuthMiddleware.authenticateRequest(request)
+            companyId    <- UuidParser.requireCompanyId(user.companyId)
             rideService  <- ZIO.service[RideService]
             parsedRideId <- UuidParser.parseRideId(rideId)
             ride         <- rideService.getRideById(parsedRideId)
+            // Company isolation: hide cross-tenant rides as not found.
+            _            <- ZIO
+                              .fail(com.shevchyk.ride.domain.RideError.RideNotFound(parsedRideId))
+                              .when(ride.companyId != companyId)
             // Lazy geocoding: enrich pickup coords for old rides that have none
             ride         <-
               if ride.pickupLocation.latitude.isEmpty then

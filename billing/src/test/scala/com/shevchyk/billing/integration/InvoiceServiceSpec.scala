@@ -95,7 +95,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
         xa  <- ZIO.service[Transactor[Task]]
         svc  = makeService(xa)
         id   = InvoiceId(UUID.randomUUID())
-        res <- svc.getInvoice(id).either
+        res <- svc.getInvoice(id, testCompanyId).either
       } yield assertTrue(res match
         case Left(InvoiceError.NotFound(`id`)) => true
         case _ => false
@@ -132,7 +132,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
         repo  = PostgresInvoiceRepository(xa)
         inv  <- svc.createInvoice(testCompanyId, makeRequest())
         _    <- repo.update(inv.copy(status = InvoiceStatus.Sent))
-        paid <- svc.markPaid(inv.id, None)
+        paid <- svc.markPaid(inv.id, testCompanyId, None)
       } yield assertTrue(
         paid.status == InvoiceStatus.Paid,
         paid.paidAt.isDefined
@@ -149,7 +149,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
         repo  = PostgresInvoiceRepository(xa)
         inv  <- svc.createInvoice(testCompanyId, makeRequest())
         _    <- repo.update(inv.copy(status = InvoiceStatus.Sent))
-        paid <- svc.markPaid(inv.id, Some(fixedTime))
+        paid <- svc.markPaid(inv.id, testCompanyId, Some(fixedTime))
       } yield assertTrue(
         paid.paidAt.exists(t => math.abs(t.toEpochMilli - fixedTime.toEpochMilli) < 1000)
       )
@@ -162,7 +162,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
         _   <- cleanData(xa)
         svc  = makeService(xa)
         inv <- svc.createInvoice(testCompanyId, makeRequest())
-        res <- svc.markPaid(inv.id, None).either
+        res <- svc.markPaid(inv.id, testCompanyId, None).either
       } yield assertTrue(res match
         case Left(InvoiceError.InvalidStatus(InvoiceStatus.Draft, _)) => true
         case _ => false
@@ -178,7 +178,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
         repo  = PostgresInvoiceRepository(xa)
         inv  <- svc.createInvoice(testCompanyId, makeRequest())
         _    <- repo.update(inv.copy(status = InvoiceStatus.Cancelled))
-        res  <- svc.markPaid(inv.id, None).either
+        res  <- svc.markPaid(inv.id, testCompanyId, None).either
       } yield assertTrue(res match
         case Left(InvoiceError.InvalidStatus(InvoiceStatus.Cancelled, _)) => true
         case _ => false
@@ -192,8 +192,8 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
         _   <- cleanData(xa)
         svc  = makeService(xa)
         inv <- svc.createInvoice(testCompanyId, makeRequest())
-        _   <- svc.deleteInvoice(inv.id)
-        res <- svc.getInvoice(inv.id).either
+        _   <- svc.deleteInvoice(inv.id, testCompanyId)
+        res <- svc.getInvoice(inv.id, testCompanyId).either
       } yield assertTrue(res.isLeft)
     },
 
@@ -206,10 +206,28 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
         repo  = PostgresInvoiceRepository(xa)
         inv  <- svc.createInvoice(testCompanyId, makeRequest())
         _    <- repo.update(inv.copy(status = InvoiceStatus.Sent))
-        res  <- svc.deleteInvoice(inv.id).either
+        res  <- svc.deleteInvoice(inv.id, testCompanyId).either
       } yield assertTrue(res match
         case Left(InvoiceError.NotDraft(_)) => true
         case _ => false
+      )
+    },
+
+    test("getInvoice enforces company isolation (cross-tenant → NotFound)") {
+      val otherCompanyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-0000000000ff"))
+      for {
+        xa  <- ZIO.service[Transactor[Task]]
+        _   <- seedTestData(xa)
+        _   <- cleanData(xa)
+        svc  = makeService(xa)
+        inv <- svc.createInvoice(testCompanyId, makeRequest())
+        own <- svc.getInvoice(inv.id, testCompanyId).either
+        cross <- svc.getInvoice(inv.id, otherCompanyId).either
+      } yield assertTrue(
+        own.isRight,
+        cross match
+          case Left(InvoiceError.NotFound(_)) => true
+          case _                              => false
       )
     },
 

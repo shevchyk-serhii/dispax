@@ -35,7 +35,7 @@ class StubRideService extends RideService:
   def updateRideDetails(rideId: RideId, request: UpdateRideDetailsRequest, userId: PersonId, userRole: PersonRole, companyId: Option[CompanyId]): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
   def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride]                                            = ZIO.fail(RideError.RideNotFound(rideId))
   def markPayment(rideId: RideId, paymentStatus: PaymentStatus, paymentMethod: Option[PaymentMethod]): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
-  def getUnpaidCompletedRides: IO[RideError, List[Ride]]                                                                    = ZIO.succeed(Nil)
+  def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                                              = ZIO.succeed(Nil)
   def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                                          = ZIO.succeed(Map.empty)
   def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                                      = ZIO.succeed(BigDecimal(0))
   def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                                      = ZIO.succeed(BigDecimal(0))

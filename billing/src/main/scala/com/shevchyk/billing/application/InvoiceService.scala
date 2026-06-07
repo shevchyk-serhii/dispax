@@ -10,7 +10,7 @@ import java.util.UUID
 
 trait InvoiceService:
   def createInvoice(taxiCompanyId: CompanyId, req: CreateInvoiceRequest): IO[InvoiceError, Invoice]
-  def getInvoice(id: InvoiceId): IO[InvoiceError, Invoice]
+  def getInvoice(id: InvoiceId, taxiCompanyId: CompanyId): IO[InvoiceError, Invoice]
 
   def listInvoices(
       taxiCompanyId: CompanyId,
@@ -18,11 +18,23 @@ trait InvoiceService:
       limit: Int,
       offset: Int
   ): Task[List[Invoice]]
-  def autoFillFromPeriod(id: InvoiceId): IO[InvoiceError, Invoice]
-  def generatePdf(id: InvoiceId, companyName: String, storageDir: String): IO[InvoiceError, Array[Byte]]
-  def sendInvoice(id: InvoiceId, companyName: String, storageDir: String): IO[InvoiceError, Invoice]
-  def markPaid(id: InvoiceId, paidAt: Option[Instant]): IO[InvoiceError, Invoice]
-  def deleteInvoice(id: InvoiceId): IO[InvoiceError, Unit]
+  def autoFillFromPeriod(id: InvoiceId, taxiCompanyId: CompanyId): IO[InvoiceError, Invoice]
+
+  def generatePdf(
+      id: InvoiceId,
+      taxiCompanyId: CompanyId,
+      companyName: String,
+      storageDir: String
+  ): IO[InvoiceError, Array[Byte]]
+
+  def sendInvoice(
+      id: InvoiceId,
+      taxiCompanyId: CompanyId,
+      companyName: String,
+      storageDir: String
+  ): IO[InvoiceError, Invoice]
+  def markPaid(id: InvoiceId, taxiCompanyId: CompanyId, paidAt: Option[Instant]): IO[InvoiceError, Invoice]
+  def deleteInvoice(id: InvoiceId, taxiCompanyId: CompanyId): IO[InvoiceError, Unit]
 
 class InvoiceServiceImpl(
     invoiceRepo: InvoiceRepository,
@@ -56,10 +68,13 @@ class InvoiceServiceImpl(
       saved  <- invoiceRepo.create(invoice).mapError(InvoiceError.DatabaseError(_))
     } yield saved
 
-  override def getInvoice(id: InvoiceId): IO[InvoiceError, Invoice] = invoiceRepo
-    .findById(id)
-    .mapError(InvoiceError.DatabaseError(_))
-    .flatMap(ZIO.fromOption(_).mapError(_ => InvoiceError.NotFound(id)))
+  override def getInvoice(id: InvoiceId, taxiCompanyId: CompanyId): IO[InvoiceError, Invoice] =
+    invoiceRepo
+      .findById(id)
+      .mapError(InvoiceError.DatabaseError(_))
+      .flatMap(ZIO.fromOption(_).mapError(_ => InvoiceError.NotFound(id)))
+      // Company isolation: treat cross-tenant access as not found to avoid leaking existence.
+      .filterOrFail(_.taxiCompanyId == taxiCompanyId)(InvoiceError.NotFound(id))
 
   override def listInvoices(
       taxiCompanyId: CompanyId,
@@ -68,9 +83,9 @@ class InvoiceServiceImpl(
       offset: Int
   ): Task[List[Invoice]] = invoiceRepo.findByCompany(taxiCompanyId, status, limit, offset)
 
-  override def autoFillFromPeriod(id: InvoiceId): IO[InvoiceError, Invoice] =
+  override def autoFillFromPeriod(id: InvoiceId, taxiCompanyId: CompanyId): IO[InvoiceError, Invoice] =
     for {
-      invoice <- getInvoice(id)
+      invoice <- getInvoice(id, taxiCompanyId)
       _       <-
         ZIO.when(invoice.status != InvoiceStatus.Draft)(
           ZIO.fail(InvoiceError.NotDraft(id))
@@ -96,9 +111,14 @@ class InvoiceServiceImpl(
       saved   <- invoiceRepo.update(updated).mapError(InvoiceError.DatabaseError(_))
     } yield saved.copy(items = items)
 
-  override def generatePdf(id: InvoiceId, companyName: String, storageDir: String): IO[InvoiceError, Array[Byte]] =
+  override def generatePdf(
+      id: InvoiceId,
+      taxiCompanyId: CompanyId,
+      companyName: String,
+      storageDir: String
+  ): IO[InvoiceError, Array[Byte]] =
     for {
-      invoice <- getInvoice(id)
+      invoice <- getInvoice(id, taxiCompanyId)
       cc      <- clientCompanyRepo
                    .findById(invoice.clientCompanyId)
                    .mapError(InvoiceError.DatabaseError(_))
@@ -117,21 +137,26 @@ class InvoiceServiceImpl(
                    .mapError(InvoiceError.DatabaseError(_))
     } yield bytes
 
-  override def sendInvoice(id: InvoiceId, companyName: String, storageDir: String): IO[InvoiceError, Invoice] =
+  override def sendInvoice(
+      id: InvoiceId,
+      taxiCompanyId: CompanyId,
+      companyName: String,
+      storageDir: String
+  ): IO[InvoiceError, Invoice] =
     for {
-      invoice <- getInvoice(id)
+      invoice <- getInvoice(id, taxiCompanyId)
       _       <-
         ZIO.when(invoice.status != InvoiceStatus.Draft)(
           ZIO.fail(InvoiceError.NotDraft(id))
         )
-      _       <- generatePdf(id, companyName, storageDir)
+      _       <- generatePdf(id, taxiCompanyId, companyName, storageDir)
       updated  = invoice.copy(status = InvoiceStatus.Sent, sentAt = Some(Instant.now()))
       saved   <- invoiceRepo.update(updated).mapError(InvoiceError.DatabaseError(_))
     } yield saved
 
-  override def markPaid(id: InvoiceId, paidAt: Option[Instant]): IO[InvoiceError, Invoice] =
+  override def markPaid(id: InvoiceId, taxiCompanyId: CompanyId, paidAt: Option[Instant]): IO[InvoiceError, Invoice] =
     for {
-      invoice <- getInvoice(id)
+      invoice <- getInvoice(id, taxiCompanyId)
       _       <-
         ZIO.when(invoice.status == InvoiceStatus.Draft || invoice.status == InvoiceStatus.Cancelled)(
           ZIO.fail(InvoiceError.InvalidStatus(invoice.status, "sent"))
@@ -140,9 +165,9 @@ class InvoiceServiceImpl(
       saved   <- invoiceRepo.update(updated).mapError(InvoiceError.DatabaseError(_))
     } yield saved
 
-  override def deleteInvoice(id: InvoiceId): IO[InvoiceError, Unit] =
+  override def deleteInvoice(id: InvoiceId, taxiCompanyId: CompanyId): IO[InvoiceError, Unit] =
     for {
-      invoice <- getInvoice(id)
+      invoice <- getInvoice(id, taxiCompanyId)
       _       <-
         ZIO.when(invoice.status != InvoiceStatus.Draft)(
           ZIO.fail(InvoiceError.NotDraft(id))

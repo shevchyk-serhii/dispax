@@ -71,11 +71,13 @@ final class PostgresGdprRepository(xa: Transactor[Task]) extends GdprRepository:
       .to[List]
       .transact(xa)
 
-  override def findAllRequests(): Task[List[GdprRequest]] =
+  override def findAllRequests(companyId: CompanyId): Task[List[GdprRequest]] =
     sql"""
-      SELECT id, user_id, request_type, status, requested_at, completed_at, notes
-      FROM gdpr_requests
-      ORDER BY requested_at DESC
+      SELECT r.id, r.user_id, r.request_type, r.status, r.requested_at, r.completed_at, r.notes
+      FROM gdpr_requests r
+      JOIN persons p ON p.id = r.user_id
+      WHERE p.company_id = ${companyId.value}
+      ORDER BY r.requested_at DESC
     """
       .query[GdprRequest]
       .to[List]

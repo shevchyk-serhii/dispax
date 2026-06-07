@@ -57,7 +57,7 @@ trait RideService:
       paymentStatus: PaymentStatus,
       paymentMethod: Option[PaymentMethod]
   ): IO[RideError, Ride]
-  def getUnpaidCompletedRides: IO[RideError, List[Ride]]
+  def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]
   def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]
   def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]
   def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]
@@ -610,10 +610,10 @@ class RideServiceImpl(
       persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
     } yield persistedRide
 
-  def getUnpaidCompletedRides: IO[RideError, List[Ride]] = rideRepository
-    .findByStatus(RideStatus.Completed)
+  def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]] = rideRepository
+    .findByCompanyId(companyId)
     .mapDatabaseError
-    .map(_.filter(r => r.paymentStatus == PaymentStatus.Unpaid))
+    .map(_.filter(r => r.status == RideStatus.Completed && r.paymentStatus == PaymentStatus.Unpaid))
 
   def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]] =
     rideRepository.countByCompanyGroupedByStatus(companyId).mapDatabaseError

@@ -55,10 +55,12 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
 
   override def create(person: Person): Task[Person] = {
     sql"""
-      INSERT INTO persons (id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, client_company_id)
+      INSERT INTO persons (id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, client_company_id, reminder_minutes)
       VALUES (${person.id.value}, ${person.name}, ${person.email}, ${person.role}, ${person.companyId},
               ${person.passwordHash}, ${person.licenseNumber}, ${person.phone}, ${person.isVip},
-              ${person.preferredDriverId.map(_.value)}, ${person.status}, ${person.clientCompanyId.map(_.value)})
+              ${person.preferredDriverId.map(_.value)}, ${person.status}, ${person.clientCompanyId.map(
+        _.value
+      )}, ${person.reminderMinutes})
     """.update.run
       .transact(xa)
       .as(person)

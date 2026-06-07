@@ -75,9 +75,10 @@ object InvoiceRoutes:
       (for {
         user      <- AuthMiddleware.authenticateRequest(request)
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
+        companyId <- UuidParser.requireCompanyId(user.companyId)
         invoiceId <- ZIO.attempt(InvoiceId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
         service   <- ZIO.service[InvoiceService]
-        invoice   <- service.getInvoice(invoiceId).mapError(e => e: Throwable)
+        invoice   <- service.getInvoice(invoiceId, companyId).mapError(e => e: Throwable)
       } yield Response.json(invoice.toJson)).catchAll {
         case r: Response     => ZIO.succeed(r)
         case e: InvoiceError => handleError(e)
@@ -91,9 +92,10 @@ object InvoiceRoutes:
         (for {
           user      <- AuthMiddleware.authenticateRequest(request)
           _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
+          companyId <- UuidParser.requireCompanyId(user.companyId)
           invoiceId <- ZIO.attempt(InvoiceId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
           service   <- ZIO.service[InvoiceService]
-          invoice   <- service.autoFillFromPeriod(invoiceId).mapError(e => e: Throwable)
+          invoice   <- service.autoFillFromPeriod(invoiceId, companyId).mapError(e => e: Throwable)
         } yield Response.json(invoice.toJson)).catchAll {
           case r: Response     => ZIO.succeed(r)
           case e: InvoiceError => handleError(e)
@@ -106,9 +108,10 @@ object InvoiceRoutes:
       (for {
         user      <- AuthMiddleware.authenticateRequest(request)
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
+        companyId <- UuidParser.requireCompanyId(user.companyId)
         invoiceId <- ZIO.attempt(InvoiceId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
         service   <- ZIO.service[InvoiceService]
-        bytes     <- service.generatePdf(invoiceId, companyName, storageDir).mapError(e => e: Throwable)
+        bytes     <- service.generatePdf(invoiceId, companyId, companyName, storageDir).mapError(e => e: Throwable)
       } yield Response(
         Status.Ok,
         headers = Headers(
@@ -128,9 +131,10 @@ object InvoiceRoutes:
       (for {
         user      <- AuthMiddleware.authenticateRequest(request)
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
+        companyId <- UuidParser.requireCompanyId(user.companyId)
         invoiceId <- ZIO.attempt(InvoiceId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
         service   <- ZIO.service[InvoiceService]
-        invoice   <- service.sendInvoice(invoiceId, companyName, storageDir).mapError(e => e: Throwable)
+        invoice   <- service.sendInvoice(invoiceId, companyId, companyName, storageDir).mapError(e => e: Throwable)
       } yield Response.json(invoice.toJson)).catchAll {
         case r: Response     => ZIO.succeed(r)
         case e: InvoiceError => handleError(e)
@@ -143,13 +147,14 @@ object InvoiceRoutes:
       (for {
         user      <- AuthMiddleware.authenticateRequest(request)
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
+        companyId <- UuidParser.requireCompanyId(user.companyId)
         invoiceId <- ZIO.attempt(InvoiceId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
         bodyStr   <- request.body.asString
         req       <- ZIO
                        .fromEither(bodyStr.fromJson[MarkPaidRequest].left.map(_ => MarkPaidRequest()))
                        .orElse(ZIO.succeed(MarkPaidRequest()))
         service   <- ZIO.service[InvoiceService]
-        invoice   <- service.markPaid(invoiceId, req.paidAt).mapError(e => e: Throwable)
+        invoice   <- service.markPaid(invoiceId, companyId, req.paidAt).mapError(e => e: Throwable)
       } yield Response.json(invoice.toJson)).catchAll {
         case r: Response     => ZIO.succeed(r)
         case e: InvoiceError => handleError(e)
@@ -162,9 +167,10 @@ object InvoiceRoutes:
       (for {
         user      <- AuthMiddleware.authenticateRequest(request)
         _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
+        companyId <- UuidParser.requireCompanyId(user.companyId)
         invoiceId <- ZIO.attempt(InvoiceId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
         service   <- ZIO.service[InvoiceService]
-        _         <- service.deleteInvoice(invoiceId).mapError(e => e: Throwable)
+        _         <- service.deleteInvoice(invoiceId, companyId).mapError(e => e: Throwable)
       } yield Response.status(Status.NoContent)).catchAll {
         case r: Response     => ZIO.succeed(r)
         case e: InvoiceError => handleError(e)

@@ -238,7 +238,8 @@ object GdprRoutesSpec extends ZIOSpecDefault {
                         requestType = GdprRequestType.EXPORT,
                         requestedAt = Instant.now()
                       ))
-          token    <- generateToken()
+          // Endpoint requires ADMIN/DISPATCHER role.
+          token    <- generateToken(role = PersonRole.Dispatcher)
           resp     <- runRequest(
                         Request.get(URL.decode("/api/gdpr/requests").toOption.get)
                           .addHeader(Header.Authorization.Bearer(token))

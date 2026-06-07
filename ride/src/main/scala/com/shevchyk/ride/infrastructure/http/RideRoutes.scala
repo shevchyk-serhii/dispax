@@ -364,6 +364,12 @@ object RideRoutes {
                             .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
           parsedRideId <- UuidParser.parseRideId(rideId)
           service      <- ZIO.service[RideService]
+          existing     <- service.getRideById(parsedRideId)
+          companyId    <- UuidParser.requireCompanyId(user.companyId)
+          _            <-
+            ZIO.when(existing.companyId != companyId)(
+              ZIO.fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
+            )
           ride         <- service.markPayment(
                             parsedRideId,
                             payReq.paymentStatus,
@@ -379,9 +385,10 @@ object RideRoutes {
         (for {
           user       <- AuthMiddleware.authenticateRequest(request)
           _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
+          companyId  <- UuidParser.requireCompanyId(user.companyId)
           service    <- ZIO.service[RideService]
           personRepo <- ZIO.service[PersonRepository]
-          rides      <- service.getUnpaidCompletedRides
+          rides      <- service.getUnpaidCompletedRides(companyId)
           clientIds   = rides.map(_.clientId).distinct
           persons    <- ZIO.foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
           clientMap   = persons.collect { case (id, Some(p)) => id -> p.name }.toMap

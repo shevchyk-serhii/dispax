@@ -1,6 +1,6 @@
 package com.shevchyk.app.routes
 
-import com.shevchyk.auth.middleware.AuthMiddleware
+import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.GdprRepository
@@ -123,9 +123,10 @@ object GdprRoutes:
     // GET /api/gdpr/requests — get all GDPR deletion requests (admin/dispatcher only)
     Method.GET / "api" / "gdpr" / "requests" -> RouteHelpers.authHandler("GDPR") { (user, _) =>
       for {
-        _        <- AuthMiddleware.checkRole(user, "ADMIN", "DISPATCHER")
-        repo     <- ZIO.service[GdprRepository]
-        requests <- repo.findAllRequests()
+        _         <- AuthMiddleware.checkRole(user, "ADMIN", "DISPATCHER")
+        companyId <- UuidParser.requireCompanyId(user.companyId)
+        repo      <- ZIO.service[GdprRepository]
+        requests  <- repo.findAllRequests(companyId)
       } yield Response.json(requests.toJson)
     }
   )
