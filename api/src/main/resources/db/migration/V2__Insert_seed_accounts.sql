@@ -1,4 +1,6 @@
--- Development seed data: test company, users, and drivers
+-- Seed accounts available in ALL environments (including production).
+-- These are the demo/test accounts used by the app's quick-login buttons.
+-- Idempotent: fixed UUIDs + ON CONFLICT DO NOTHING make re-runs safe.
 -- Password for all accounts: password123
 -- BCrypt hash: $2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S
 
@@ -129,8 +131,7 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- Driver schedules (today + next 2 days) so dispatchers can assign rides.
--- Round-the-clock 00:00–23:59 window covers any pickup time, regardless of the
--- hour the E2E tests happen to run (e.g. just after midnight).
+-- Round-the-clock 00:00–23:59 window covers any pickup time.
 -- Dates are relative (CURRENT_DATE) so the seed never goes stale.
 INSERT INTO schedule_days (id, driver_id, company_id, date, start_time, end_time, status)
 SELECT
