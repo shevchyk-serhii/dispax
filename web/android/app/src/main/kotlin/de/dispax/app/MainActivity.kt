@@ -1,4 +1,4 @@
-package com.shevchyk.dispax
+package de.dispax.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -41,7 +41,7 @@ end
 
 # Build settings: bundle id, Info.plist, deployment target, test host.
 ui_test_target.build_configurations.each do |config|
-  config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = "com.shevchyk.web.#{target_name}"
+  config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = "de.dispax.app.#{target_name}"
   config.build_settings['INFOPLIST_FILE'] = "#{target_name}/Info.plist"
   config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
   config.build_settings['TEST_TARGET_NAME'] = 'Runner'

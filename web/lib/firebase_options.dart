@@ -55,7 +55,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCpauRfucTLdqEy4MkI5VC99_iGEFkN-2g',
-    appId: '1:119193059016:android:1cdc869f7cb330ba62effd',
+    appId: '1:119193059016:android:edb09b6891067ef862effd',
     messagingSenderId: '119193059016',
     projectId: 'taxi-app-98671',
     storageBucket: 'taxi-app-98671.firebasestorage.app',
@@ -63,19 +63,19 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA2sxJEUWYcKc-ZWCUQi3dpC_z0JQ22Uhc',
-    appId: '1:119193059016:ios:072714d24c5f464362effd',
+    appId: '1:119193059016:ios:63a92a7b5e5be1dd62effd',
     messagingSenderId: '119193059016',
     projectId: 'taxi-app-98671',
     storageBucket: 'taxi-app-98671.firebasestorage.app',
-    iosBundleId: 'com.shevchyk.dispax',
+    iosBundleId: 'de.dispax.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyA2sxJEUWYcKc-ZWCUQi3dpC_z0JQ22Uhc',
-    appId: '1:119193059016:ios:24d89ffff8146c5662effd',
+    appId: '1:119193059016:ios:63a92a7b5e5be1dd62effd',
     messagingSenderId: '119193059016',
     projectId: 'taxi-app-98671',
     storageBucket: 'taxi-app-98671.firebasestorage.app',
-    iosBundleId: 'com.shevchyk.dispax',
+    iosBundleId: 'de.dispax.app',
   );
 }

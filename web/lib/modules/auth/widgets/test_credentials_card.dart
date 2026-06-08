@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class TestCredentialsCard extends StatelessWidget {
@@ -8,8 +7,6 @@ class TestCredentialsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!kDebugMode) return const SizedBox.shrink();
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.1),
