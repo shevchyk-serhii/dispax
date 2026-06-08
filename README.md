@@ -7,6 +7,7 @@
 ![Flutter](https://img.shields.io/badge/Flutter-3.8+-02569B?logo=flutter&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Tests](https://img.shields.io/badge/tests-790%20backend%20%2B%20246%20BDD-success)
 
 Dispax dispatches rides for time-critical transport operators where punctuality beats driver
 utilization — the client does not wait. Every piece of data is isolated per tenant (`CompanyId`),
@@ -34,7 +35,7 @@ Flutter cross-platform frontend.
 
 **Frontend**
 - Flutter 3.8+ · flutter_bloc (BLoC state management)
-- Google Maps · Mapbox (geocoding) · Firebase Cloud Messaging (push)
+- Google Maps / Mapbox (map rendering & geocoding) · Firebase Cloud Messaging (push)
 - Localization: DE / EN / UK (`web/lib/l10n/`)
 
 **Data & Infrastructure**
@@ -69,7 +70,8 @@ infrastructure/
 ```
 
 Dependency injection is wired entirely through `ZLayer`, with the assembly point in
-`api/src/main/scala/com/shevchyk/Application.scala`. The HTTP surface aggregates 14 route files.
+`api/src/main/scala/com/shevchyk/Application.scala`. The HTTP surface aggregates route modules
+across all domains (rides, drivers, schedules, billing, notifications, and more).
 
 Further reading: [`docs/architecture.md`](docs/architecture.md) ·
 [`docs/domain.md`](docs/domain.md) · [`docs/database-schema.svg`](docs/database-schema.svg) ·
@@ -91,10 +93,11 @@ Further reading: [`docs/architecture.md`](docs/architecture.md) ·
 - **Pure functional core** — ZIO effects throughout; opaque types for IDs; time-ordered UUID v7.
 - **Repository pattern** — a trait per module with a PostgreSQL implementation in
   `infrastructure/repository/` and in-memory implementations for unit tests.
-- **Layered testing strategy:**
+- **Extensive test coverage** — ~790 backend tests and 246 BDD scenarios, all green, across a
+  layered strategy:
   - **Unit** — in-memory repositories (e.g. `InMemoryRideRepository`).
   - **Integration** — Testcontainers against a real PostgreSQL (the DB is never mocked).
-  - **BDD** — Cucumber scenarios.
+  - **BDD** — 246 Cucumber scenarios covering business rules end-to-end.
   - **Flutter** — `bloc_test` + `mocktail`.
 
 ---
