@@ -1016,7 +1016,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val allRoutes =
     Routes(
-      Method.GET / "health" -> handler(Response.text("Der Oktopus Modular API - OK"))
+      Method.GET / "health" -> handler(Response.text("Dispax Modular API - OK"))
     ) ++
       AuthRoutes.routes ++
       UserRoutes.routes ++
@@ -1049,7 +1049,7 @@ object TestApplication extends ZIOAppDefault:
 
   def run: ZIO[ZIOAppArgs, Any, Any] = ZIO
     .serviceWithZIO[ServerConfig] { _ =>
-      ZIO.logInfo("Starting Der Oktopus API Server (Test - In-Memory)...") *>
+      ZIO.logInfo("Starting Dispax API Server (Test - In-Memory)...") *>
         Server.serve(
           allRoutes.handleError(err => Response(Status.InternalServerError, body = Body.fromString(err.toString)))
         )

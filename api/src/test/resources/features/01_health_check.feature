@@ -8,7 +8,7 @@ Feature: Health Check API
     Given the API is running
     When I send a GET request to "/health"
     Then the response status should be 200
-    And the response should contain "Der Oktopus Modular API - OK"
+    And the response should contain "Dispax Modular API - OK"
 
   Scenario: Health check endpoint returns expected service info
     Given the API is running

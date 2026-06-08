@@ -21,15 +21,15 @@ object JwtServiceSpec extends ZIOSpecDefault {
 
   val testConfig = JwtConfig(
     secret = "test-secret-key-that-is-long-enough-for-hmac256",
-    issuer = "oktopus-test",
-    audience = "oktopus-api",
+    issuer = "dispax-test",
+    audience = "dispax-api",
     expirationTime = ScalaDuration.fromNanos(24 * 60 * 60 * 1_000_000_000L)
   )
 
   val shortLivedConfig = JwtConfig(
     secret = "test-secret-key-that-is-long-enough-for-hmac256",
-    issuer = "oktopus-test",
-    audience = "oktopus-api",
+    issuer = "dispax-test",
+    audience = "dispax-api",
     expirationTime = ScalaDuration.fromNanos(2 * 1_000_000_000L) // 2 seconds
   )
 
@@ -37,8 +37,8 @@ object JwtServiceSpec extends ZIOSpecDefault {
   // session cap is 1s → refresh must be rejected once session age (whole seconds) exceeds it.
   val shortSessionConfig = JwtConfig(
     secret = "test-secret-key-that-is-long-enough-for-hmac256",
-    issuer = "oktopus-test",
-    audience = "oktopus-api",
+    issuer = "dispax-test",
+    audience = "dispax-api",
     expirationTime = ScalaDuration.fromNanos(10 * 1_000_000_000L),   // 10 seconds
     maxSessionDuration = ScalaDuration.fromNanos(1 * 1_000_000_000L) // 1 second
   )

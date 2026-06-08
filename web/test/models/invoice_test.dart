@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/modules/billing/models/invoice.dart';
+import 'package:dispax/modules/billing/models/invoice.dart';
 
 void main() {
   // ─── InvoiceStatus ────────────────────────────────────────────────────────

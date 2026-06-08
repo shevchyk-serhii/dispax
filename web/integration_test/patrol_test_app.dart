@@ -3,9 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:oktopus/main.dart'
+import 'package:dispax/main.dart'
     show MyApp, themeModeNotifier, themeFromString;
-import 'package:oktopus/firebase_options.dart';
+import 'package:dispax/firebase_options.dart';
 
 /// Minimal bootstrap for Patrol E2E tests.
 ///

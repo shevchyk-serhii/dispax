@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/blocs/client/client_state.dart';
+import 'package:dispax/blocs/client/client_state.dart';
 import '../helpers/test_fixtures.dart';
 
 void main() {

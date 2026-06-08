@@ -98,7 +98,7 @@ object Application extends ZIOAppDefault:
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
   private val healthRoutes = Routes(
-    Method.GET / "health" -> handler((_: Request) => ZIO.succeed(Response.text("🐙 Der Oktopus Modular API - OK")))
+    Method.GET / "health" -> handler((_: Request) => ZIO.succeed(Response.text("Dispax Modular API - OK")))
   )
 
   // Development-only test-support endpoint (POST /api/dev/reset). Guarded by
@@ -139,7 +139,7 @@ object Application extends ZIOAppDefault:
     .serviceWithZIO[ServerConfig] { serverConfig =>
       ZIO.scoped(PushNotificationListener.start).forkDaemon *>
         ReminderScheduler.start *>
-        ZIO.logInfo("🐙 Starting Der Oktopus API Server (PostgreSQL)...") *>
+        ZIO.logInfo("Starting Dispax API Server (PostgreSQL)...") *>
         ZIO.logInfo("📋 Available APIs:") *>
         ZIO.logInfo("  🔍 /health - Health check") *>
         ZIO.logInfo("  🔐 /api/auth/login - Simple login endpoint") *>

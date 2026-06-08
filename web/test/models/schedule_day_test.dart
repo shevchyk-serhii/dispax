@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/modules/schedule_management/models/schedule_day.dart';
+import 'package:dispax/modules/schedule_management/models/schedule_day.dart';
 import '../helpers/test_fixtures.dart';
 
 void main() {

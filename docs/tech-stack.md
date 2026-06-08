@@ -82,4 +82,4 @@ root (api)
 | `sbt runProd`      | Run with production config           |
 | `sbt cucumber`     | Run Cucumber BDD tests               |
 | `sbt fmt`          | Format Scala code                    |
-| `sbt assembly`     | Build fat JAR (`oktopus-server.jar`) |
+| `sbt assembly`     | Build fat JAR (`dispax-server.jar`) |

@@ -1,6 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/blocs/blocs.dart';
+import 'package:dispax/blocs/blocs.dart';
 
 // Tests for task #9 (close confirmation) and task #10 (retry on error).
 //

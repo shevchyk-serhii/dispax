@@ -17,9 +17,9 @@ const String kClientPassword = 'Password123';
 // Match api/src/main/resources/db/migration-dev/V1001__Insert_dev_data.sql.
 // Used by the e2e_*_test.dart suites running against the full Application.
 const String kDevPassword = 'password123';
-const String kDevDispatcher = 'dispatcher@oktopus.de';
-const String kDevSecretary = 'secretary@oktopus.de';
-const String kDevDriver1 = 'driver1@oktopus.de';
-const String kDevDriver2 = 'driver2@oktopus.de';
+const String kDevDispatcher = 'dispatcher@dispax.de';
+const String kDevSecretary = 'secretary@dispax.de';
+const String kDevDriver1 = 'driver1@dispax.de';
+const String kDevDriver2 = 'driver2@dispax.de';
 const String kDevClient1 = 'client1@bmw.de';
-const String kDevAdmin = 'admin@oktopus.de';
+const String kDevAdmin = 'admin@dispax.de';

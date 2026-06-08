@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/modules/billing/models/client_company.dart';
+import 'package:dispax/modules/billing/models/client_company.dart';
 
 void main() {
   group('ClientCompany.fromJson', () {

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
 
-import 'package:oktopus/dashboard/dashboard_screen.dart';
+import 'package:dispax/dashboard/dashboard_screen.dart';
 
 import 'patrol_helpers.dart';
 

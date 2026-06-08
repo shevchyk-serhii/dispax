@@ -1,8 +1,8 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/blocs/create_ride_form/create_ride_form_bloc.dart';
-import 'package:oktopus/blocs/create_ride_form/create_ride_form_event.dart';
-import 'package:oktopus/blocs/create_ride_form/create_ride_form_state.dart';
+import 'package:dispax/blocs/create_ride_form/create_ride_form_bloc.dart';
+import 'package:dispax/blocs/create_ride_form/create_ride_form_event.dart';
+import 'package:dispax/blocs/create_ride_form/create_ride_form_state.dart';
 
 void main() {
   group('CreateRideFormBloc — secretary client selection', () {

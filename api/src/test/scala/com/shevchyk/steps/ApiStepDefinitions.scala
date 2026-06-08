@@ -609,7 +609,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       return """{"error":"Payload too large"}"""
 
     (method, path) match {
-      case (Method.GET, "/health")                                                                          => "🐙 Der Oktopus Modular API - OK"
+      case (Method.GET, "/health")                                                                          => "Dispax Modular API - OK"
       case (Method.GET, "/api/v2/health")                                                                   => """{"status":"OK","service":"ride"}"""
       case (Method.POST, "/api/v2/rides")                                                                   =>
         val bodyText = Try(Unsafe.unsafe { implicit unsafe =>
@@ -816,11 +816,11 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         }
       case (Method.GET, _) if authToken.isEmpty                                                             => """{"error":"Authentication required"}"""
       case (Method.GET, _) if authToken.contains("invalid-token")                                           => """{"error":"Invalid token"}"""
-      case (Method.GET, "/api/v2/companies")                                                                => """[{"id":100,"name":"Oktopus Taxi"},{"id":101,"name":"City Cab"}]"""
+      case (Method.GET, "/api/v2/companies")                                                                => """[{"id":100,"name":"Dispax Taxi"},{"id":101,"name":"City Cab"}]"""
       case (Method.GET, p)
           if p.startsWith("/api/v2/companies/") && !p.contains("/drivers") && !p.contains("/statistics") =>
         val companyId = p.split("/")(4)
-        s"""{"id":$companyId,"name":"Oktopus Taxi","email":"info@oktopus.ua","phone":"+380501234567","address":"Kyiv, Ukraine"}"""
+        s"""{"id":$companyId,"name":"Dispax Taxi","email":"info@dispax.ua","phone":"+380501234567","address":"Kyiv, Ukraine"}"""
       case (Method.POST, "/api/v2/companies")                                                               =>
         """{"id":102,"name":"Metro Taxi","message":"Company created successfully"}"""
       case (Method.PUT, p) if p.startsWith("/api/v2/rides/") && !p.endsWith("/status")                      =>
@@ -882,9 +882,9 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
       // ── Company settings ──
       case (Method.GET, "/api/company/settings") =>
-        """{"companyName":"Oktopus GmbH","timezone":"Europe/Berlin","currency":"EUR"}"""
+        """{"companyName":"Dispax GmbH","timezone":"Europe/Berlin","currency":"EUR"}"""
       case (Method.PUT, "/api/company/settings") =>
-        """{"companyName":"Oktopus GmbH","timezone":"Europe/Berlin","currency":"EUR"}"""
+        """{"companyName":"Dispax GmbH","timezone":"Europe/Berlin","currency":"EUR"}"""
       case (Method.GET, "/api/company/tariff")   => """{"baseRate":2.50,"perKmRate":1.20,"minimumFare":5.00}"""
       case (Method.PUT, "/api/company/tariff")   => """{"baseRate":2.50,"perKmRate":1.20,"minimumFare":5.00}"""
 

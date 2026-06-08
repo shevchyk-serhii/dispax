@@ -12,7 +12,7 @@ ThisBuild / assembly / assemblyMergeStrategy := {
 }
 
 addCommandAlias("fmt", "; scalafmt ; scalafmtSbt")
-addCommandAlias("fmtDart", "! dart format /Users/shevchyk/projects/private/oktopus/app/lib/ --set-exit-if-changed")
+addCommandAlias("fmtDart", "! dart format /Users/shevchyk/projects/private/dispax/app/lib/ --set-exit-if-changed")
 addCommandAlias("fmtAll", "; fmt ; fmtDart")
 addCommandAlias("fmtWatch", "~fmtAll")
 addCommandAlias("cucumber", "testOnly *CucumberRunner")
@@ -100,7 +100,7 @@ lazy val testDependencies = Seq(
 
 lazy val core = (project in file("core"))
   .settings(
-    name := "oktopus-core",
+    name := "dispax-core",
     libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ httpDependencies ++ dbDependencies ++ uuidDependencies ++ testcontainersDependencies,
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
@@ -108,7 +108,7 @@ lazy val core = (project in file("core"))
 lazy val auth = (project in file("auth"))
   .dependsOn(core % "compile->compile;test->test")
   .settings(
-    name := "oktopus-auth",
+    name := "dispax-auth",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jwtDependencies ++ bcryptDependencies
   )
 
@@ -118,7 +118,7 @@ lazy val ride = (project in file("ride"))
     auth % "compile->compile;test->test"
   )
   .settings(
-    name := "oktopus-ride",
+    name := "dispax-ride",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies ++ testcontainersDependencies,
     scalacOptions += "-Xmax-inlines:64",
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
@@ -131,7 +131,7 @@ lazy val driver = (project in file("driver"))
     ride % "compile->compile;test->test"
   )
   .settings(
-    name := "oktopus-driver",
+    name := "dispax-driver",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
   )
 
@@ -141,7 +141,7 @@ lazy val schedule = (project in file("schedule"))
     auth % "compile->compile;test->test"
   )
   .settings(
-    name := "oktopus-schedule",
+    name := "dispax-schedule",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
   )
 
@@ -152,7 +152,7 @@ lazy val firebaseDependencies = Seq(
 lazy val notification = (project in file("notification"))
   .dependsOn(core)
   .settings(
-    name := "oktopus-notification",
+    name := "dispax-notification",
     libraryDependencies ++= commonDependencies ++ jsonDependencies ++ firebaseDependencies
   )
 
@@ -167,7 +167,7 @@ lazy val billing = (project in file("billing"))
     ride % "compile->compile;test->test"
   )
   .settings(
-    name := "oktopus-billing",
+    name := "dispax-billing",
     libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ pdfDependencies ++ testcontainersDependencies,
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
@@ -176,7 +176,7 @@ lazy val root = (project in file("."))
   .aggregate(core, auth, ride, driver, notification, schedule, billing)
   .dependsOn(core, auth, ride, driver, notification, schedule, billing)
   .settings(
-    name                        := "oktopus",
+    name                        := "dispax",
     Compile / scalaSource       := baseDirectory.value / "api" / "src" / "main" / "scala",
     Compile / resourceDirectory := baseDirectory.value / "api" / "src" / "main" / "resources",
     Test / scalaSource          := baseDirectory.value / "api" / "src" / "test" / "scala",
@@ -188,7 +188,7 @@ lazy val root = (project in file("."))
     ),
     Compile / mainClass         := Some("com.shevchyk.Application"),
     assembly / mainClass        := Some("com.shevchyk.Application"),
-    assembly / assemblyJarName  := "oktopus-server.jar",
+    assembly / assemblyJarName  := "dispax-server.jar",
     fork                        := true,
     Compile / run / javaOptions ++= Seq(
       "-Djava.util.logging.config.file=logging.properties",

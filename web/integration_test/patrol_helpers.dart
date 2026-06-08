@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:oktopus/auth/login_screen.dart';
+import 'package:dispax/auth/login_screen.dart';
 
 export 'patrol_test_app.dart';
 export 'test_accounts.dart';

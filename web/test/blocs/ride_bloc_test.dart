@@ -1,12 +1,12 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:oktopus/blocs/ride/ride_bloc.dart';
-import 'package:oktopus/blocs/ride/ride_event.dart';
-import 'package:oktopus/blocs/ride/ride_state.dart';
-import 'package:oktopus/modules/core/models/person.dart';
-import 'package:oktopus/modules/core/services/api_client.dart';
-import 'package:oktopus/modules/ride_management/models/ride.dart';
+import 'package:dispax/blocs/ride/ride_bloc.dart';
+import 'package:dispax/blocs/ride/ride_event.dart';
+import 'package:dispax/blocs/ride/ride_state.dart';
+import 'package:dispax/modules/core/models/person.dart';
+import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/modules/ride_management/models/ride.dart';
 import '../helpers/mocks.dart';
 import '../helpers/test_fixtures.dart';
 

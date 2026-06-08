@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/modules/core/models/location.dart';
+import 'package:dispax/modules/core/models/location.dart';
 
 void main() {
   group('Location', () {

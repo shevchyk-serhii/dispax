@@ -1,4 +1,4 @@
-name: oktopus
+name: dispax
 description: "Dispax - Ride dispatch platform"
 publish_to: 'none'
 
@@ -42,7 +42,7 @@ dev_dependencies:
   mocktail: ^1.0.4
 
 patrol:
-  app_name: Oktopus
+  app_name: Dispax
   test_directory: integration_test
   android:
     package_name: com.shevchyk.web

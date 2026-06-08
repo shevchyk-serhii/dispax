@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
 
-import 'package:oktopus/auth/login_screen.dart';
+import 'package:dispax/auth/login_screen.dart';
 
 import 'patrol_helpers.dart';
 

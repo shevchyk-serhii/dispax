@@ -4,11 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:oktopus/blocs/auth/auth_bloc.dart';
-import 'package:oktopus/blocs/auth/auth_event.dart';
-import 'package:oktopus/blocs/auth/auth_state.dart';
-import 'package:oktopus/modules/auth/services/biometric_service.dart';
-import 'package:oktopus/modules/core/services/api_client.dart';
+import 'package:dispax/blocs/auth/auth_bloc.dart';
+import 'package:dispax/blocs/auth/auth_event.dart';
+import 'package:dispax/blocs/auth/auth_state.dart';
+import 'package:dispax/modules/auth/services/biometric_service.dart';
+import 'package:dispax/modules/core/services/api_client.dart';
 import '../helpers/mocks.dart';
 import '../helpers/test_fixtures.dart';
 

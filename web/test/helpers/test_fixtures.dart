@@ -1,8 +1,8 @@
-import 'package:oktopus/modules/core/models/location.dart';
-import 'package:oktopus/modules/core/models/person.dart';
-import 'package:oktopus/modules/ride_management/models/ride.dart';
-import 'package:oktopus/modules/schedule_management/models/schedule_day.dart';
-import 'package:oktopus/modules/ride_management/models/create_ride_request.dart';
+import 'package:dispax/modules/core/models/location.dart';
+import 'package:dispax/modules/core/models/person.dart';
+import 'package:dispax/modules/ride_management/models/ride.dart';
+import 'package:dispax/modules/schedule_management/models/schedule_day.dart';
+import 'package:dispax/modules/ride_management/models/create_ride_request.dart';
 
 class TestFixtures {
   static Location location({

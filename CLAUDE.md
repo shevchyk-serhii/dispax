@@ -1,8 +1,8 @@
-# Oktopus — Claude Code Instructions
+# Dispax — Claude Code Instructions
 
 ## Project Overview
 
-Oktopus — платформа диспетчеризации поездок для малого и среднего транспортного бизнеса (такси, корпоративные трансферы). MVP нацелен на Мюнхен и пригороды (до 100 км). Бизнес-клиенты: время критично, клиент не ждёт.
+Dispax — платформа диспетчеризации поездок для малого и среднего транспортного бизнеса (такси, корпоративные трансферы). MVP нацелен на Мюнхен и пригороды (до 100 км). Бизнес-клиенты: время критично, клиент не ждёт.
 
 **Роли:** Driver, Client, Secretary, Dispatcher, Admin  
 **Мультитенантность:** все данные изолированы по `CompanyId`  
@@ -99,7 +99,7 @@ make flutter-dev-ios          # iOS simulator
 make dev-all                  # Backend + Flutter на обоих устройствах
 
 # Сборка
-sbt assembly                  # Fat JAR → oktopus-server.jar
+sbt assembly                  # Fat JAR → dispax-server.jar
 make deploy                   # Build JAR → Docker push → Cloud Run deploy
 
 # Форматирование

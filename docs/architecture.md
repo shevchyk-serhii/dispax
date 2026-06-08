@@ -63,7 +63,7 @@ infrastructure/   HTTP routes, DB repositories, external integrations
 ## Directory Structure
 
 ```
-oktopus/
+dispax/
 ├── api/src/main/scala/com/shevchyk/    # Root module (entry point)
 │   ├── Application.scala               # Main, route aggregation, DI wiring
 │   ├── app/routes/UserRoutes.scala

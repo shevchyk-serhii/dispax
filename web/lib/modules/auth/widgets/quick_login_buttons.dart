@@ -17,9 +17,9 @@ class QuickLoginButtons extends StatelessWidget {
       childAspectRatio: 2.2,
       children: [
         _buildButton('Client',     'client1@bmw.de',          Icons.person,           AppColors.clientColor),
-        _buildButton('Driver',     'driver1@oktopus.de',      Icons.drive_eta,        AppColors.driverColor),
-        _buildButton('Secretary',  'secretary@oktopus.de',    Icons.business_center,  AppColors.secretaryColor),
-        _buildButton('Dispatcher', 'dispatcher@oktopus.de',   Icons.dashboard,        AppColors.dispatcherColor),
+        _buildButton('Driver',     'driver1@dispax.de',      Icons.drive_eta,        AppColors.driverColor),
+        _buildButton('Secretary',  'secretary@dispax.de',    Icons.business_center,  AppColors.secretaryColor),
+        _buildButton('Dispatcher', 'dispatcher@dispax.de',   Icons.dashboard,        AppColors.dispatcherColor),
       ],
     );
   }

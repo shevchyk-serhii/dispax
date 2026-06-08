@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/blocs/ride/ride_state.dart';
+import 'package:dispax/blocs/ride/ride_state.dart';
 import '../helpers/test_fixtures.dart';
 
 void main() {

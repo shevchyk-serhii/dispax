@@ -1,11 +1,11 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:oktopus/blocs/schedule/schedule_bloc.dart';
-import 'package:oktopus/blocs/schedule/schedule_event.dart';
-import 'package:oktopus/blocs/schedule/schedule_state.dart';
-import 'package:oktopus/modules/core/services/api_client.dart';
-import 'package:oktopus/modules/schedule_management/models/schedule_day.dart';
+import 'package:dispax/blocs/schedule/schedule_bloc.dart';
+import 'package:dispax/blocs/schedule/schedule_event.dart';
+import 'package:dispax/blocs/schedule/schedule_state.dart';
+import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/modules/schedule_management/models/schedule_day.dart';
 import '../helpers/mocks.dart';
 import '../helpers/test_fixtures.dart';
 

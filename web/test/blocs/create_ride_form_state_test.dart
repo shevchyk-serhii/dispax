@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/blocs/create_ride_form/create_ride_form_state.dart';
+import 'package:dispax/blocs/create_ride_form/create_ride_form_state.dart';
 
 void main() {
   group('CreateRideFormState.isModified', () {

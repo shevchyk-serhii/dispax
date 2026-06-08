@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/main.dart';
+import 'package:dispax/main.dart';
 
 void main() {
   // MyApp requires Firebase initialization which is not available in unit tests.

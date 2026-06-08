@@ -26,8 +26,8 @@ object JwtConfig:
           "dev-jwt-secret-change-in-production-must-be-at-least-256-bits"
     JwtConfig(
       secret = secret,
-      issuer = if Environment.isProduction then "oktopus" else "oktopus-dev",
-      audience = "oktopus-api",
+      issuer = if Environment.isProduction then "dispax" else "dispax-dev",
+      audience = "dispax-api",
       expirationTime = Duration.fromNanos(24 * 60 * 60 * 1_000_000_000L) // 24 hours
     )
   }

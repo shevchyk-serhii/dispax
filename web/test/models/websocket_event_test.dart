@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/modules/core/models/websocket_event.dart';
+import 'package:dispax/modules/core/models/websocket_event.dart';
 
 void main() {
   group('WebSocketEvent', () {

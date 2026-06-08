@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oktopus/modules/core/models/person.dart';
-import 'package:oktopus/modules/ride_management/models/ride.dart';
+import 'package:dispax/modules/core/models/person.dart';
+import 'package:dispax/modules/ride_management/models/ride.dart';
 import '../helpers/test_fixtures.dart';
 
 void main() {

@@ -81,14 +81,14 @@ object CoreDomainSpec extends ZIOSpecDefault {
           val testCompanyUuid = UUID.fromString("10101010-1010-1010-1010-101010101010")
           val company         = Company(
             id = CompanyId(testCompanyUuid),
-            name = "Oktopus Taxi",
-            email = "info@oktopus.taxi",
+            name = "Dispax Taxi",
+            email = "info@dispax.taxi",
             phone = "+380501234567",
             address = "Kyiv, Ukraine"
           )
           assertTrue(
-            company.name == "Oktopus Taxi" &&
-              company.email == "info@oktopus.taxi"
+            company.name == "Dispax Taxi" &&
+              company.email == "info@dispax.taxi"
           )
         }
       )

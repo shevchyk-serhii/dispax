@@ -9,7 +9,7 @@ import 'patrol_helpers.dart';
 /// Exercises the full status machine Requested → Assigned → InProgress → Completed.
 ///
 /// Relies on seeded driver schedules (schedule_days for today) so the
-/// dispatcher can assign. Driver "Hans Weber" = driver1@oktopus.de.
+/// dispatcher can assign. Driver "Hans Weber" = driver1@dispax.de.
 void main() {
   patrolTest('full ride lifecycle: client → dispatcher → driver', ($) async {
     await resetTestData();

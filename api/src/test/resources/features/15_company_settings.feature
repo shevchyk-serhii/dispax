@@ -17,7 +17,7 @@ Feature: Company Settings
     Given I am authenticated as an admin
     When I send a PUT request to "/api/company/settings" with body:
       """
-      {"companyName":"Oktopus GmbH","timezone":"Europe/Berlin","currency":"EUR"}
+      {"companyName":"Dispax GmbH","timezone":"Europe/Berlin","currency":"EUR"}
       """
     Then the response status should be 200
     And the response should contain company settings details

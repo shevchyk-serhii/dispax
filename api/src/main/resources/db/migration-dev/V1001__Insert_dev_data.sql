@@ -4,7 +4,7 @@
 
 -- Test company
 INSERT INTO companies (id, name, email, phone, address)
-VALUES ('10101010-1010-1010-1010-101010101010', 'Oktopus München', 'info@oktopus-muenchen.de', '+49 89 12345678', 'Leopoldstraße 1, 80802 München')
+VALUES ('10101010-1010-1010-1010-101010101010', 'Dispax München', 'info@dispax-muenchen.de', '+49 89 12345678', 'Leopoldstraße 1, 80802 München')
 ON CONFLICT (id) DO NOTHING;
 
 -- Tariff for test company
@@ -19,7 +19,7 @@ ON CONFLICT (company_id) DO NOTHING;
 
 -- Dispatcher (owner)
 INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
-VALUES ('11111111-1111-1111-1111-111111111111', 'Max Müller', 'dispatcher@oktopus.de', 'dispatcher',
+VALUES ('11111111-1111-1111-1111-111111111111', 'Max Müller', 'dispatcher@dispax.de', 'dispatcher',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
         '+49 170 1111111', 'ACTIVE')
@@ -27,7 +27,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Secretary
 INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
-VALUES ('22222222-2222-2222-2222-222222222222', 'Anna Schmidt', 'secretary@oktopus.de', 'secretary',
+VALUES ('22222222-2222-2222-2222-222222222222', 'Anna Schmidt', 'secretary@dispax.de', 'secretary',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
         '+49 170 2222222', 'ACTIVE')
@@ -35,7 +35,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Driver 1
 INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status)
-VALUES ('33333333-3333-3333-3333-333333333333', 'Hans Weber', 'driver1@oktopus.de', 'driver',
+VALUES ('33333333-3333-3333-3333-333333333333', 'Hans Weber', 'driver1@dispax.de', 'driver',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
         '+49 170 3333333', 'MÜN-HW-001', 'ACTIVE')
@@ -48,7 +48,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Driver 2
 INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status)
-VALUES ('44444444-4444-4444-4444-444444444444', 'Klaus Fischer', 'driver2@oktopus.de', 'driver',
+VALUES ('44444444-4444-4444-4444-444444444444', 'Klaus Fischer', 'driver2@dispax.de', 'driver',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
         '+49 170 4444444', 'MÜN-KF-002', 'ACTIVE')
@@ -61,7 +61,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Driver 3
 INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status)
-VALUES ('55555555-5555-5555-5555-555555555555', 'Peter Braun', 'driver3@oktopus.de', 'driver',
+VALUES ('55555555-5555-5555-5555-555555555555', 'Peter Braun', 'driver3@dispax.de', 'driver',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
         '+49 170 5555555', 'MÜN-PB-003', 'ACTIVE')
@@ -98,7 +98,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Admin
 INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
-VALUES ('99999999-9999-9999-9999-999999999999', 'Admin', 'admin@oktopus.de', 'admin',
+VALUES ('99999999-9999-9999-9999-999999999999', 'Admin', 'admin@dispax.de', 'admin',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
         '+49 170 9999999', 'ACTIVE')

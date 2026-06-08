@@ -1,4 +1,4 @@
-# Map Implementation in Oktopus Taxi Application
+# Map Implementation in Dispax Taxi Application
 
 ## Overview
 Added Mapbox integration for map display and real-time location tracking for drivers and clients.

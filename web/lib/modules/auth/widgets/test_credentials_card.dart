@@ -31,9 +31,9 @@ class TestCredentialsCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             buildCredentialRow('👤 Client', 'client1@bmw.de', Icons.person),
-            buildCredentialRow('🚗 Driver', 'driver1@oktopus.de', Icons.drive_eta),
-            buildCredentialRow('📝 Secretary', 'secretary@oktopus.de', Icons.business_center),
-            buildCredentialRow('📊 Dispatcher', 'dispatcher@oktopus.de', Icons.dashboard),
+            buildCredentialRow('🚗 Driver', 'driver1@dispax.de', Icons.drive_eta),
+            buildCredentialRow('📝 Secretary', 'secretary@dispax.de', Icons.business_center),
+            buildCredentialRow('📊 Dispatcher', 'dispatcher@dispax.de', Icons.dashboard),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),

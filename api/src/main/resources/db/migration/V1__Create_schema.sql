@@ -1,4 +1,4 @@
--- Oktopus Taxi Database Schema (consolidated from V1-V10)
+-- Dispax Taxi Database Schema (consolidated from V1-V10)
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 

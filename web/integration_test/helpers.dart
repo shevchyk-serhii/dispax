@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:oktopus/modules/core/services/api_client.dart';
+import 'package:dispax/modules/core/services/api_client.dart';
 
 export 'test_accounts.dart';
 

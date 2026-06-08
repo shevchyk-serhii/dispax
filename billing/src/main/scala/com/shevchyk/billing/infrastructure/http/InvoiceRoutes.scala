@@ -15,7 +15,7 @@ import java.util.UUID
 object InvoiceRoutes:
 
   private val storageDir  = sys.env.getOrElse("PDF_STORAGE_DIR", "/tmp/invoices")
-  private val companyName = sys.env.getOrElse("COMPANY_NAME", "Oktopus GmbH")
+  private val companyName = sys.env.getOrElse("COMPANY_NAME", "Dispax GmbH")
 
   private def handleError(ex: InvoiceError): UIO[Response] =
     val (status, msg) =

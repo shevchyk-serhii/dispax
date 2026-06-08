@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
-import 'package:oktopus/modules/core/services/api_client.dart';
-import 'package:oktopus/modules/ride_management/models/ride.dart';
-import 'package:oktopus/modules/ride_management/services/ride_service.dart';
+import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/modules/ride_management/models/ride.dart';
+import 'package:dispax/modules/ride_management/services/ride_service.dart';
 import '../helpers/mocks.dart';
 import '../helpers/test_fixtures.dart';
 

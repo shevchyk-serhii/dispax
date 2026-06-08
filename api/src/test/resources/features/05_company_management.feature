@@ -8,7 +8,7 @@ Feature: Company Management
     Given the API is running
     And the following companies exist:
       | CompanyId | Name           | Email               | Phone        | Address        |
-      | 100       | Oktopus Taxi   | info@oktopus.ua     | +380501234567| Kyiv, Ukraine  |
+      | 100       | Dispax Taxi   | info@dispax.ua     | +380501234567| Kyiv, Ukraine  |
       | 101       | City Cab       | admin@citycab.com   | +380671234567| Lviv, Ukraine  |
 
   Scenario: Create a new company
@@ -26,14 +26,14 @@ Feature: Company Management
     Given I am authenticated as an admin
     When I send a GET request to "/api/v2/companies/100"
     Then the response status should be 200
-    And the response should contain company details for "Oktopus Taxi"
+    And the response should contain company details for "Dispax Taxi"
 
   Scenario: Get all companies
     Given I am authenticated as an admin
     When I send a GET request to "/api/v2/companies"
     Then the response status should be 200
     And the response should contain 2 companies
-    And the companies should include "Oktopus Taxi" and "City Cab"
+    And the companies should include "Dispax Taxi" and "City Cab"
 
   Scenario: Update company information
     Given I am authenticated as an admin
