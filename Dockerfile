@@ -1,6 +1,6 @@
-# Простий однокроковий образ — JAR збирається локально через `sbt assembly`,
-# Docker тільки пакує готовий JAR у мінімальний JRE образ.
-# Для CI/CD: спочатку запустити `sbt assembly`, потім `docker build`.
+# Simple single-stage image — the JAR is built locally via `sbt assembly`,
+# Docker only packages the ready JAR into a minimal JRE image.
+# For CI/CD: first run `sbt assembly`, then `docker build`.
 FROM eclipse-temurin:21-jre-jammy
 
 RUN adduser --system --group dispax

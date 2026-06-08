@@ -87,8 +87,8 @@ class CreateRideFormHelper {
       return;
     }
 
-    // Для нового клиента используем ID текущего пользователя как placeholder —
-    // бэкенд для роли DRIVER в любом случае может переопределить clientId
+    // For a new client we use the current user's ID as a placeholder —
+    // for the DRIVER role the backend can override clientId anyway
     final clientId = formState.selectedClientId ?? authState.user!.id;
 
     final createRequest = CreateRideRequest(

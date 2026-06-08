@@ -14,7 +14,7 @@ trait ExpenseRepository:
   def findByRideId(rideId: RideId): Task[List[Expense]]
   def findByCompanyId(companyId: CompanyId): Task[List[Expense]]
   def delete(id: ExpenseId): Task[Boolean]
-  // Сумма расходов водителя за период [from, to) с изоляцией по компании
+  // Sum of driver expenses for the period [from, to) with company isolation
   def sumByDriver(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant): Task[BigDecimal]
 
 class InMemoryExpenseRepository extends ExpenseRepository:

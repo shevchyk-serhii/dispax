@@ -26,7 +26,7 @@ class _CreateRideBasicInfoSectionState extends State<CreateRideBasicInfoSection>
 
     final authState = authBloc.state;
     final role = authState.user?.role;
-    // Клиент и водитель по умолчанию бронируют на себя
+    // Client and driver book for themselves by default
     if (authState.status == AuthStatus.authenticated &&
         (role == PersonRole.client || role == PersonRole.driver)) {
       final user = authState.user!;
@@ -50,15 +50,15 @@ class _CreateRideBasicInfoSectionState extends State<CreateRideBasicInfoSection>
     final authState = context.read<AuthBloc>().state;
     final role = authState.user?.role;
 
-    // Клиент — скрываем, он всегда себя выбирает
+    // Client — hidden, they always select themselves
     if (role == PersonRole.client) return const SizedBox.shrink();
 
-    // Водитель — показываем секцию выбора/создания клиента
+    // Driver — show the client select/create section
     if (role == PersonRole.driver) {
       return _DriverClientSection(userService: _userService);
     }
 
-    // Диспетчер/секретарь — стандартный поиск
+    // Dispatcher/secretary — standard search
     return ClientSearchField(userService: _userService);
   }
 }

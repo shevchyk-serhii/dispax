@@ -92,7 +92,7 @@ class PushNotificationService {
     );
     await _localNotifications.initialize(initSettings);
 
-    // Создать канал уведомлений Android для FCM
+    // Create the Android notification channel for FCM
     if (!kIsWeb && Platform.isAndroid) {
       const channel = AndroidNotificationChannel(
         'ride_notifications',
@@ -150,7 +150,7 @@ class PushNotificationService {
     }
   }
 
-  // Вызывать после логина с авторизованным apiClient
+  // Call after login with an authenticated apiClient
   Future<void> registerTokenWithClient(ApiClient client) async {
     _authApiClient = client;
     if (_currentToken != null) {

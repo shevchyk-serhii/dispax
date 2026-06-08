@@ -130,7 +130,7 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
 
   void _onNewClientModeToggled(NewClientModeToggled event, Emitter<CreateRideFormState> emit) {
     if (state.isNewClient) {
-      // Возврат к поиску — сбрасываем поля нового клиента
+      // Back to search — reset the new-client fields
       emit(state.copyWith(
         isNewClient: false,
         newClientPhone: '',
@@ -138,7 +138,7 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
         clearClientId: true,
       ));
     } else {
-      // Переход к созданию нового клиента — сбрасываем выбранного
+      // Switching to creating a new client — reset the selected one
       emit(state.copyWith(
         isNewClient: true,
         clearClientId: true,

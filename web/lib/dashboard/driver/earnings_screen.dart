@@ -8,7 +8,7 @@ import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
 import '../../widgets/widgets.dart';
 
-/// Экран заработка водителя: переключатель периода, метрики и график дохода.
+/// Driver earnings screen: period switcher, metrics, and revenue chart.
 class EarningsScreen extends StatelessWidget {
   const EarningsScreen({super.key});
 

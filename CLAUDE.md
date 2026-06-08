@@ -2,11 +2,11 @@
 
 ## Project Overview
 
-Dispax — платформа диспетчеризации поездок для малого и среднего транспортного бизнеса (такси, корпоративные трансферы). MVP нацелен на Мюнхен и пригороды (до 100 км). Бизнес-клиенты: время критично, клиент не ждёт.
+Dispax is a ride dispatching platform for small and medium-sized transport businesses (taxis, corporate transfers). The MVP targets Munich and its suburbs (up to 100 km). Business clients: time is critical, the client does not wait.
 
-**Роли:** Driver, Client, Secretary, Dispatcher, Admin  
-**Мультитенантность:** все данные изолированы по `CompanyId`  
-**Требования к продукту:** `docs/requirements.md`
+**Roles:** Driver, Client, Secretary, Dispatcher, Admin  
+**Multitenancy:** all data is isolated by `CompanyId`  
+**Product requirements:** `docs/requirements.md`
 
 ---
 
@@ -35,26 +35,26 @@ core  auth  ride  driver  schedule  notification  billing
 
 ## Module Map
 
-| Module | Назначение |
+| Module | Purpose |
 |--------|-----------|
-| `core` | Shared domain: IDs (UUID v7), Location, Person, Company, сессии, DB utils, конфиг |
-| `auth` | JWT-аутентификация, управление пользователями, rate limiting |
-| `ride` | Lifecycle поездок: CRUD, назначение водителей, статусная машина, рейтинги, расходы |
-| `driver` | Отслеживание локации водителей, расчёт близости |
-| `schedule` | Расписание водителей (дни, смены, доступность) |
-| `notification` | Firebase Cloud Messaging, оркестрация уведомлений |
-| `billing` | Счета, клиентские компании, DATEV-экспорт |
-| `api` | HTTP entry point: агрегация маршрутов (14 route-файлов), DI wiring в `Application.scala` |
-| `web` | Flutter app: BLoC, экраны, сервисы, тема, локализация (DE/EN/UK) |
+| `core` | Shared domain: IDs (UUID v7), Location, Person, Company, sessions, DB utils, config |
+| `auth` | JWT authentication, user management, rate limiting |
+| `ride` | Ride lifecycle: CRUD, driver assignment, status machine, ratings, expenses |
+| `driver` | Driver location tracking, proximity calculation |
+| `schedule` | Driver schedules (days, shifts, availability) |
+| `notification` | Firebase Cloud Messaging, notification orchestration |
+| `billing` | Invoices, client companies, DATEV export |
+| `api` | HTTP entry point: route aggregation (14 route files), DI wiring in `Application.scala` |
+| `web` | Flutter app: BLoC, screens, services, theme, localization (DE/EN/UK) |
 
 ---
 
 ## Key Patterns
 
-### Layered Architecture (каждый модуль)
+### Layered Architecture (per module)
 ```
-domain/          — чистые case class, enum, value object (без зависимостей)
-application/     — сервисы, бизнес-логика, валидаторы (ZIO layers)
+domain/          — pure case classes, enums, value objects (no dependencies)
+application/     — services, business logic, validators (ZIO layers)
 infrastructure/
   http/          — route handlers + DTO
     dto/         — Request/Response DTO
@@ -62,47 +62,47 @@ infrastructure/
 ```
 
 ### ZIO Layers (DI)
-Все сервисы и репозитории предоставляются через `ZLayer`. Точка сборки — `api/src/main/scala/com/shevchyk/Application.scala`.
+All services and repositories are provided via `ZLayer`. The assembly point is `api/src/main/scala/com/shevchyk/Application.scala`.
 
 ### Authenticated Routes
-Используй `authenticatedHandler` / `authenticatedJsonHandler` из core middleware. Хелперы извлекают JWT-claims и `CompanyId` автоматически.
+Use `authenticatedHandler` / `authenticatedJsonHandler` from the core middleware. The helpers extract JWT claims and `CompanyId` automatically.
 
 ### Company Isolation
-**Обязательно** для каждого запроса: фильтруй данные по `CompanyId` из JWT-claims. Нарушение изоляции — критическая ошибка безопасности.
+**Mandatory** for every request: filter data by `CompanyId` from the JWT claims. Breaking isolation is a critical security error.
 
 ### Repository Pattern
-Trait в корне модуля → PostgreSQL-реализация в `infrastructure/repository/`. Для тестов — in-memory реализация в `src/test/`.
+Trait at the module root → PostgreSQL implementation in `infrastructure/repository/`. For tests, an in-memory implementation lives in `src/test/`.
 
 ### Ride Status Machine
 ```
 Requested → Assigned → InProgress → Completed
                      ↘ Cancelled
 ```
-Только поездки со статусом `Requested` можно назначать водителю.
+Only rides with the `Requested` status can be assigned to a driver.
 
 ### Validation
-Typeclass `Validator` с `given`-инстансами для каждого request DTO. Валидация — в `application/validation/`.
+A `Validator` typeclass with `given` instances for each request DTO. Validation lives in `application/validation/`.
 
 ---
 
 ## Build & Run
 
 ```bash
-# Локальная разработка
-docker-compose up -d          # PostgreSQL на порту 5432
-make dev                      # Запуск сервера с .env.dev (порт 8080)
+# Local development
+docker-compose up -d          # PostgreSQL on port 5432
+make dev                      # Run the server with .env.dev (port 8080)
 
 # Flutter
-make flutter-dev              # Запуск на подключённом устройстве (→ local backend)
+make flutter-dev              # Run on the connected device (→ local backend)
 make flutter-dev-android      # Android emulator
 make flutter-dev-ios          # iOS simulator
-make dev-all                  # Backend + Flutter на обоих устройствах
+make dev-all                  # Backend + Flutter on both devices
 
-# Сборка
+# Build
 sbt assembly                  # Fat JAR → dispax-server.jar
 make deploy                   # Build JAR → Docker push → Cloud Run deploy
 
-# Форматирование
+# Formatting
 make fmt                      # Scalafmt
 make fmtAll                   # Scala + Dart
 ```
@@ -112,53 +112,53 @@ make fmtAll                   # Scala + Dart
 ## Testing
 
 ```bash
-make test                     # Unit + integration (без Cucumber)
-make test-bdd                 # Cucumber BDD сценарии
-make test-all                 # Все тесты
+make test                     # Unit + integration (without Cucumber)
+make test-bdd                 # Cucumber BDD scenarios
+make test-all                 # All tests
 make flutter-test-integration # Flutter integration tests → local TestApplication
 ```
 
-**Стратегия:**
-- **Unit**: in-memory реализации репозиториев (например, `InMemoryRideRepository`, `MockPersonRepository`)
-- **Integration**: Testcontainers + реальный PostgreSQL — **не мокать БД в интеграционных тестах**
-- **BDD**: Cucumber сценарии в `api/src/test/scala/com/shevchyk/app/`
+**Strategy:**
+- **Unit**: in-memory repository implementations (e.g. `InMemoryRideRepository`, `MockPersonRepository`)
+- **Integration**: Testcontainers + a real PostgreSQL — **do not mock the DB in integration tests**
+- **BDD**: Cucumber scenarios in `api/src/test/scala/com/shevchyk/app/`
 - **Flutter**: `bloc_test` + `mocktail`
 
-**Тестовые данные:** Flyway-миграция `V1001__Insert_dev_data.sql` (только dev-окружение)
+**Test data:** the Flyway migration `V1001__Insert_dev_data.sql` (dev environment only)
 
 ---
 
 ## Business Rules & Constraints
 
-Полные требования: `docs/requirements.md`
+Full requirements: `docs/requirements.md`
 
-**Ключевые ограничения:**
-1. Компании изолированы — водители назначаются только на поездки своей компании
-2. Назначить можно только поездку со статусом `Requested`
-3. Назначение должно ссылаться на валидный `ScheduleDay`
-4. Расчёт времени в пути через Google API для валидации расписания
-5. Клиент не ждёт — приоритет пунктуальности над утилизацией водителей
-6. Поездки создаёт: секретарь, диспетчер, водитель или клиент
+**Key constraints:**
+1. Companies are isolated — drivers are assigned only to rides of their own company
+2. Only a ride with the `Requested` status can be assigned
+3. An assignment must reference a valid `ScheduleDay`
+4. Travel time is computed via the Google API to validate the schedule
+5. The client does not wait — punctuality takes priority over driver utilization
+6. Rides are created by: secretary, dispatcher, driver, or client
 
 ---
 
 ## Coding Conventions
 
-- Scala 3: prefer `given`/`using`, opaque types для ID, extension methods
-- ZIO effect system везде — никаких Future, никаких `throw`
-- DTO отделены от доменных объектов; маппинг в route-handler или application layer
-- JSON: ZIO-JSON (`@jsonField`, `JsonDecoder`/`JsonEncoder`) — основной; Circe только где уже используется
-- IDs: UUID v7 (time-ordered) через UUID Creator
-- Логирование: ZIO Logging (`ZIO.logInfo`, `ZIO.logError`)
-- Для маршрутов: группируй public и authenticated эндпоинты в отдельные методы внутри одного route-класса
-- Flutter: BLoC pattern для всего состояния, `Repository` абстракция для API-вызовов
+- Scala 3: prefer `given`/`using`, opaque types for IDs, extension methods
+- ZIO effect system everywhere — no Future, no `throw`
+- DTOs are separated from domain objects; mapping happens in the route handler or application layer
+- JSON: ZIO-JSON (`@jsonField`, `JsonDecoder`/`JsonEncoder`) is primary; Circe only where already used
+- IDs: UUID v7 (time-ordered) via UUID Creator
+- Logging: ZIO Logging (`ZIO.logInfo`, `ZIO.logError`)
+- For routes: group public and authenticated endpoints into separate methods within a single route class
+- Flutter: BLoC pattern for all state, a `Repository` abstraction for API calls
 
 ---
 
 ## Environment & Config
 
 ```bash
-# .env.dev (dev) / env vars в Cloud Run (prod)
+# .env.dev (dev) / env vars in Cloud Run (prod)
 DATABASE_URL=jdbc:postgresql://localhost:5432/dispax
 DATABASE_USER=dispax
 DATABASE_PASSWORD=dispax
@@ -167,16 +167,16 @@ APP_ENV=development
 PORT=8080
 ```
 
-**docker-compose.yml** поднимает PostgreSQL 16 (порт 5432, БД: `dispax`)  
-**Production URL:** `<обновить после пересоздания Cloud Run-сервиса dispax>`  
+**docker-compose.yml** brings up PostgreSQL 16 (port 5432, DB: `dispax`)  
+**Production URL:** `https://dispax-o2trzxjbva-ew.a.run.app`  
 **CI/CD:** GitHub Actions → push to `main` → sbt assembly → Docker → Cloud Run
 
 ---
 
 ## What NOT to Do
 
-- Не мокать БД в интеграционных тестах — используй Testcontainers
-- Не нарушать изоляцию компаний (`CompanyId`) ни в одном запросе
-- Не использовать `Future` или `throw` — только ZIO effects
-- Не добавлять бизнес-логику в route handlers — только в application layer
-- Не хардкодить секреты — только через env vars
+- Do not mock the DB in integration tests — use Testcontainers
+- Do not break company isolation (`CompanyId`) in any request
+- Do not use `Future` or `throw` — only ZIO effects
+- Do not put business logic in route handlers — only in the application layer
+- Do not hardcode secrets — only via env vars

@@ -56,7 +56,7 @@ CREATE TABLE persons (
     preferred_driver_id UUID REFERENCES persons(id),
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'SUSPENDED')),
     last_login_at TIMESTAMP WITH TIME ZONE,
-    -- За сколько минут до поездки отправлять push-напоминание водителю
+    -- How many minutes before the ride to send the driver a push reminder
     reminder_minutes INTEGER NOT NULL DEFAULT 60,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -316,7 +316,7 @@ CREATE INDEX idx_rides_schedule_day_id ON rides(schedule_day_id);
 CREATE INDEX idx_rides_invoice_id ON rides(invoice_id);
 
 -- ============================================================
--- Sent reminders (дедупликация push-напоминаний о поездке)
+-- Sent reminders (deduplication of ride push reminders)
 -- ============================================================
 CREATE TABLE sent_reminders (
     ride_id   UUID        NOT NULL REFERENCES rides(id) ON DELETE CASCADE,

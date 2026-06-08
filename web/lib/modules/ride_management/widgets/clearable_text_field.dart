@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 
-/// Текстовое поле формы с маленькой кнопкой быстрой очистки (×) в суффиксе.
+/// Form text field with a small quick-clear button (×) in the suffix.
 ///
-/// Value-based: синхронизирует внутренний контроллер с внешним [value]
-/// (например, при очистке формы, swap адресов, заполнении из шаблона),
-/// поэтому подходит для полей, управляемых BLoC через initialValue.
+/// Value-based: syncs the internal controller with the external [value]
+/// (e.g. on form reset, address swap, or filling from a template),
+/// so it suits fields driven by a BLoC via initialValue.
 class ClearableTextField extends StatefulWidget {
   final String value;
   final ValueChanged<String> onChanged;
@@ -50,8 +50,8 @@ class _ClearableTextFieldState extends State<ClearableTextField> {
   @override
   void didUpdateWidget(ClearableTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Синхронизация при внешнем изменении value (очистка формы, swap, шаблон),
-    // без сброса позиции курсора при обычном вводе.
+    // Sync on external value change (form reset, swap, template),
+    // without resetting the cursor position during normal typing.
     if (widget.value != _controller.text) {
       _controller.value = TextEditingValue(
         text: widget.value,
@@ -61,7 +61,7 @@ class _ClearableTextFieldState extends State<ClearableTextField> {
   }
 
   void _onTextChanged() {
-    // Перерисовать, чтобы показать/скрыть кнопку очистки.
+    // Repaint to show/hide the clear button.
     setState(() {});
   }
 

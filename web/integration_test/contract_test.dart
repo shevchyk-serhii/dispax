@@ -32,11 +32,11 @@ void main() {
       }
     });
 
-    test('бекенд возвращает непустой список поездок', () {
+    test('backend returns a non-empty list of rides', () {
       expect(parsedRides, isNotEmpty);
     });
 
-    test('все обязательные поля присутствуют в каждой поездке', () {
+    test('all required fields are present in every ride', () {
       for (final raw in rawRides) {
         final ride = raw as Map<String, dynamic>;
         expect(ride.containsKey('id'), isTrue, reason: 'missing id');
@@ -52,7 +52,7 @@ void main() {
       }
     });
 
-    test('pickupDateTime парсится как UTC (isUtc == true)', () {
+    test('pickupDateTime parses as UTC (isUtc == true)', () {
       for (final ride in parsedRides) {
         expect(ride.pickupDateTime.isUtc, isTrue,
             reason:
@@ -60,7 +60,7 @@ void main() {
       }
     });
 
-    test('pickupDateTime в JSON заканчивается на Z (UTC формат)', () {
+    test('pickupDateTime in JSON ends with Z (UTC format)', () {
       for (final raw in rawRides) {
         final ride = raw as Map<String, dynamic>;
         final dt = ride['pickupDateTime'] as String;
@@ -70,7 +70,7 @@ void main() {
       }
     });
 
-    test('status парсится в известный RideStatus (не fallback)', () {
+    test('status parses into a known RideStatus (not a fallback)', () {
       final knownStatuses = {
         'requested',
         'assigned',
@@ -87,7 +87,7 @@ void main() {
       }
     });
 
-    test('Ride.fromJson не бросает исключений ни для одной поездки', () {
+    test('Ride.fromJson does not throw for any ride', () {
       expect(
         () => rawRides
             .map((r) => Ride.fromJson(r as Map<String, dynamic>))
@@ -96,7 +96,7 @@ void main() {
       );
     });
 
-    test('from и to содержат address, latitude, longitude', () {
+    test('from and to contain address, latitude, longitude', () {
       for (final raw in rawRides) {
         final ride = raw as Map<String, dynamic>;
         for (final key in ['from', 'to']) {
@@ -111,11 +111,11 @@ void main() {
       }
     });
 
-    test('airport transfer поездки содержат flight поля', () {
+    test('airport transfer rides contain flight fields', () {
       final airportRides =
           rawRides.where((r) => r['isAirportTransfer'] == true).toList();
 
-      if (airportRides.isEmpty) return; // mock может не содержать airport rides
+      if (airportRides.isEmpty) return; // mock may contain no airport rides
 
       for (final raw in airportRides) {
         final ride = raw as Map<String, dynamic>;
@@ -126,7 +126,7 @@ void main() {
       }
     });
 
-    test('Flutter Ride объекты равны при повторном парсинге (fromJson стабилен)',
+    test('Flutter Ride objects are equal on re-parse (fromJson is stable)',
         () {
       final first = rawRides
           .map((r) => Ride.fromJson(r as Map<String, dynamic>))

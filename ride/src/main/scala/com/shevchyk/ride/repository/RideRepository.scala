@@ -6,7 +6,7 @@ import zio.*
 import java.time.Instant
 
 /**
- * Гранулярность бакетов для графика заработка.
+ * Bucket granularity for the earnings chart.
  */
 enum TimeBucket:
   case Hour, Day
@@ -26,10 +26,10 @@ trait RideRepository {
   def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]
   def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double]
   def countDailyStatsByCompany(companyId: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]]
-  // Агрегаты заработка водителя за период [from, to) с изоляцией по компании
+  // Driver earnings aggregates for the period [from, to) with company isolation
   def earningsByDriver(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant): Task[DriverEarnings]
 
-  // Бакеты дохода для графика (по часам или дням) за период [from, to)
+  // Revenue buckets for the chart (hourly or daily) for the period [from, to)
   def earningsBucketsByDriver(
       driverId: PersonId,
       companyId: CompanyId,
@@ -37,9 +37,9 @@ trait RideRepository {
       to: Instant,
       bucket: TimeBucket
   ): Task[List[(Instant, BigDecimal)]]
-  // Поездки со статусом Assigned с pickup между from и to (для планировщика напоминаний)
+  // Rides in Assigned status with pickup between from and to (for the reminder scheduler)
   def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]
-  // Сбросить отправленные напоминания для поездки (при изменении pickupDateTime)
+  // Reset sent reminders for a ride (when pickupDateTime changes)
   def clearReminders(rideId: RideId): Task[Unit]
 }
 

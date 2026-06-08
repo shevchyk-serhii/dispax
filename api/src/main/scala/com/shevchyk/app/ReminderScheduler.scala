@@ -47,8 +47,8 @@ object ReminderScheduler:
                       case false =>
                         val timeStr      = formatTime(ride.pickupDateTime)
                         val notification = PushNotification(
-                          title = s"Поездка через $minutes мин",
-                          body = s"В $timeStr (UTC): ${ride.pickupLocation.address} → ${ride.dropoffLocation.address}",
+                          title = s"Ride in $minutes min",
+                          body = s"At $timeStr (UTC): ${ride.pickupLocation.address} → ${ride.dropoffLocation.address}",
                           data = Map("rideId" -> ride.id.value.toString, "type" -> "ride_reminder")
                         )
                         fcm.sendToUser(driverId, notification) *>

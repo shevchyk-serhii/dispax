@@ -1,6 +1,6 @@
 class AppConstants {
 
-  static const String baseUrl = 'https://oktopus-456043977402.europe-west1.run.app';
+  static const String baseUrl = 'https://dispax-o2trzxjbva-ew.a.run.app';
 
   static const double defaultPadding = 16.0;
   static const double largePadding = 24.0;

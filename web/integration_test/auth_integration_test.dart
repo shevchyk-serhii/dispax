@@ -29,34 +29,34 @@ void main() {
   });
 
   group('Auth integration', () {
-    test('login с валидными данными возвращает токен', () {
+    test('login with valid credentials returns a token', () {
       expect(loginResponse, isNotNull);
       expect(loginResponse!['token'], isA<String>());
       expect((loginResponse!['token'] as String).isNotEmpty, isTrue);
     });
 
-    test('login с неверным паролем возвращает null', () async {
+    test('login with a wrong password returns null', () async {
       final client = makeClient();
       addTearDown(client.dispose);
       final data = await client.login(kClientEmail, 'wrongpassword');
       expect(data, isNull);
     });
 
-    test('login с несуществующим email возвращает null', () async {
+    test('login with a non-existent email returns null', () async {
       final client = makeClient();
       addTearDown(client.dispose);
       final data = await client.login('nobody@example.com', kPassword);
       expect(data, isNull);
     });
 
-    test('ответ содержит person.email и person.role', () {
+    test('response contains person.email and person.role', () {
       expect(loginResponse, isNotNull);
       final person = loginResponse!['person'] as Map<String, dynamic>;
       expect(person['email'], kClientEmail);
       expect(person['role'], isA<String>());
     });
 
-    test('driver може залогиниться', () {
+    test('driver can log in', () {
       expect(driverLoginResponse, isNotNull);
       expect(driverLoginResponse!['token'], isA<String>());
     });

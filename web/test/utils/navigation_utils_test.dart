@@ -49,7 +49,7 @@ void main() {
   });
 
   group('NavigationUtils.openGoogleMapsRoute', () {
-    test('использует координаты когда они есть', () async {
+    test('uses coordinates when they are present', () async {
       final origin = TestFixtures.location(
         address: 'Marienplatz, München',
         latitude: 48.1374,
@@ -68,7 +68,7 @@ void main() {
       expect(mockLauncher.lastLaunchedUrl, isNot(contains('M%C3%BCnchen')));
     });
 
-    test('использует адрес когда координат нет', () async {
+    test('uses the address when coordinates are absent', () async {
       final origin = TestFixtures.location(
         address: 'Marienplatz, München',
         latitude: null,
@@ -86,7 +86,7 @@ void main() {
       expect(mockLauncher.lastLaunchedUrl, contains('Flughafen'));
     });
 
-    test('формирует корректный Google Maps URL с параметрами', () async {
+    test('builds a valid Google Maps URL with parameters', () async {
       final origin = TestFixtures.location(latitude: 48.1, longitude: 11.5);
       final destination = TestFixtures.location(latitude: 48.2, longitude: 11.6);
 
@@ -100,7 +100,7 @@ void main() {
       expect(url, contains('destination='));
     });
 
-    test('использует координаты только у origin когда у destination их нет', () async {
+    test('uses coordinates only for origin when destination has none', () async {
       final origin = TestFixtures.location(
         address: 'Start',
         latitude: 48.1,
@@ -121,7 +121,7 @@ void main() {
   });
 
   group('NavigationUtils.navigateToMap', () {
-    testWidgets('открывает Google Maps маршрут для поездки с координатами',
+    testWidgets('opens a Google Maps route for a ride with coordinates',
         (tester) async {
       final ride = TestFixtures.ride(
         from: TestFixtures.location(
@@ -145,7 +145,7 @@ void main() {
       expect(mockLauncher.lastLaunchedUrl, contains('48.3537,11.775'));
     });
 
-    testWidgets('открывает Google Maps по адресу когда координат нет',
+    testWidgets('opens Google Maps by address when coordinates are absent',
         (tester) async {
       final ride = TestFixtures.ride(
         from: TestFixtures.location(
@@ -172,7 +172,7 @@ void main() {
   });
 
   group('NavigationUtils.openGoogleMapsRoute — URL encoding', () {
-    test('адрес с пробелами корректно энкодится', () async {
+    test('an address with spaces is encoded correctly', () async {
       final origin = TestFixtures.location(
         address: 'Leopoldstraße 1 München',
         latitude: null,
@@ -190,7 +190,7 @@ void main() {
       expect(url, isNot(contains(' ')));
     });
 
-    test('координаты не энкодятся лишний раз', () async {
+    test('coordinates are not double-encoded', () async {
       final origin = TestFixtures.location(latitude: 48.1374, longitude: 11.5755);
       final destination = TestFixtures.location(latitude: 48.3537, longitude: 11.775);
 

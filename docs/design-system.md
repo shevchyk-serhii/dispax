@@ -2,14 +2,14 @@
 
 ## Brand Identity
 
-**Dispax** — интеллектуальная платформа управления транспортом. Визуальный стиль: **tech-premium** — чистый, точный, уверенный. Не "корпоративный синий", не "весёлые разноцветные карточки". Это инструмент для бизнеса, который выглядит как продукт уровня Linear, Vercel, Stripe.
+**Dispax** is an intelligent transport management platform. Visual style: **tech-premium** — clean, precise, confident. Not "corporate blue", not "cheerful multicolored cards". It is a business tool that looks like a Linear / Vercel / Stripe-grade product.
 
-### Принципы дизайна
+### Design principles
 
-1. **Clarity over decoration** — информация на первом месте, декор минимальный
-2. **Consistent depth** — единая система теней и elevation создаёт чистую иерархию
-3. **Controlled color** — цвет используется осознанно: для навигации, статусов и акцентов — не для "красоты"
-4. **Dark anchors, light canvas** — тёмные gradient headers как якоря, светлый контент как рабочее пространство
+1. **Clarity over decoration** — information first, decoration minimal
+2. **Consistent depth** — a unified shadow and elevation system creates a clean hierarchy
+3. **Controlled color** — color is used deliberately: for navigation, statuses and accents — not for "looks"
+4. **Dark anchors, light canvas** — dark gradient headers as anchors, light content as the workspace
 
 ---
 
@@ -17,9 +17,9 @@
 
 ### Brand Core
 
-Единая brand palette построена вокруг **deep navy** как base и **electric accents** для ролей.
+A single brand palette is built around **deep navy** as the base and **electric accents** for roles.
 
-| Token | Hex | Использование |
+| Token | Hex | Usage |
 |-------|-----|---------------|
 | `brand-900` | `#0A0E1A` | Darkest backgrounds, overlays |
 | `brand-800` | `#111827` | Dark headers base |
@@ -31,24 +31,24 @@
 
 ### Role Accent Colors
 
-Каждая роль имеет один **accent color** из единой хроматической системы. Все акценты яркие, насыщенные, high-tech.
+Each role has one **accent color** from a single chromatic system. All accents are bright, saturated, high-tech.
 
-| Role | Accent | Hex | Light BG | Gradient (от → до) |
+| Role | Accent | Hex | Light BG | Gradient (from → to) |
 |------|--------|-----|----------|---------------------|
 | **Dispatcher** | Amber | `#F59E0B` | `#FFFBEB` | `#FBBF24` → `#D97706` |
 | **Driver** | Cyan | `#06B6D4` | `#ECFEFF` | `#22D3EE` → `#0891B2` |
 | **Secretary** | Violet | `#8B5CF6` | `#F5F3FF` | `#A78BFA` → `#7C3AED` |
 | **Client** | Emerald | `#10B981` | `#ECFDF5` | `#34D399` → `#059669` |
 
-**Почему эти цвета:**
-- Они яркие и различимые между собой (hue distance > 60°)
-- Все из одной "энергетической полосы" — medium-high saturation, medium-high lightness
-- Хорошо работают и на тёмном (gradient headers), и на светлом (badges, accents)
-- Не ассоциируются с "дешёвым" Material default (не `Colors.blue`, не `Colors.orange`)
+**Why these colors:**
+- They are bright and distinguishable from one another (hue distance > 60°)
+- All from the same "energy band" — medium-high saturation, medium-high lightness
+- Work well on both dark (gradient headers) and light (badges, accents)
+- Do not evoke the "cheap" Material default (not `Colors.blue`, not `Colors.orange`)
 
 ### Status Colors
 
-Статусы поездок — функциональные, не brand. Они не меняются между ролями.
+Ride statuses are functional, not brand. They do not change between roles.
 
 | Status | Color | Hex | Background | Border | Text |
 |--------|-------|-----|------------|--------|------|
@@ -60,7 +60,7 @@
 
 ### Semantic Colors
 
-| Token | Hex | Использование |
+| Token | Hex | Usage |
 |-------|-----|---------------|
 | `success` | `#22C55E` | Positive actions, confirmations |
 | `warning` | `#F59E0B` | Warnings, attention needed |
@@ -69,7 +69,7 @@
 
 ### Text Colors
 
-| Token | Hex | Использование |
+| Token | Hex | Usage |
 |-------|-----|---------------|
 | `text-primary` | `#0F172A` | Headlines, primary content |
 | `text-secondary` | `#64748B` | Descriptions, labels |
@@ -79,7 +79,7 @@
 
 ### Surface & Border Colors
 
-| Token | Hex | Использование |
+| Token | Hex | Usage |
 |-------|-----|---------------|
 | `surface-primary` | `#FFFFFF` | Cards, modals |
 | `surface-secondary` | `#F8FAFC` | Page background |
@@ -94,10 +94,10 @@
 
 ### Header Gradients (Role-specific)
 
-Каждый header использует gradient построенный по единой формуле: **dark navy base + role accent glow**.
+Each header uses a gradient built from a single formula: **dark navy base + role accent glow**.
 
 ```
-Формула: brand-800 (base) → brand-700 (mid) с role accent overlay на 15-20% opacity
+Formula: brand-800 (base) → brand-700 (mid) with a role accent overlay at 15-20% opacity
 ```
 
 | Role | Gradient Definition | Angle |
@@ -107,9 +107,9 @@
 | Secretary | `#1E293B` → `#7C3AED` (via `#3B0764`) | 135° |
 | Client | `#1E293B` → `#059669` (via `#064E3B`) | 135° |
 
-**Альтернативный подход (vivid gradients):**
+**Alternative approach (vivid gradients):**
 
-Для более яркого, tech-forward вида — gradient целиком из accent color range:
+For a brighter, tech-forward look — a gradient entirely from the accent color range:
 
 | Role | Vivid Gradient | Usage |
 |------|---------------|-------|
@@ -118,7 +118,7 @@
 | Secretary | `#A78BFA` → `#8B5CF6` → `#5B21B6` | Mobile headers |
 | Client | `#34D399` → `#10B981` → `#065F46` | Mobile headers |
 
-### Glass Effect (для overlay карточек на gradient headers)
+### Glass Effect (for overlay cards on gradient headers)
 
 ```
 background: rgba(255, 255, 255, 0.12)
@@ -297,7 +297,7 @@ border-radius: 12px
 
 ## Mapping: Old → New Colors
 
-Для миграции текущего кода:
+For migrating the current code:
 
 | Old (app_colors.dart) | New Token | New Hex |
 |----------------------|-----------|---------|
@@ -317,9 +317,9 @@ border-radius: 12px
 
 ## Design Principles Summary
 
-1. **Единая тёмная база** — все gradient headers построены от `brand-800` (#1E293B), что создаёт cohesive look
-2. **Accent = роль** — один яркий цвет на роль, используется точечно (header glow, active nav, badges)
-3. **Нейтральный контент** — карточки белые, фон slate, текст slate — нет цветового шума
-4. **Функциональный цвет** — status colors отделены от role colors, они semantic и не меняются
-5. **Глубина через тени** — не borders, а shadows создают иерархию (shadow-xs → shadow-xl)
+1. **A single dark base** — all gradient headers are built from `brand-800` (#1E293B), creating a cohesive look
+2. **Accent = role** — one bright color per role, used sparingly (header glow, active nav, badges)
+3. **Neutral content** — white cards, slate background, slate text — no color noise
+4. **Functional color** — status colors are separated from role colors; they are semantic and do not change
+5. **Depth through shadows** — shadows, not borders, create the hierarchy (shadow-xs → shadow-xl)
 6. **Modern, not playful** — Inter font, tight spacing, subtle animations, no rounded-everything

@@ -7,7 +7,7 @@
         dev-all stop-dev \
         deploy logs setup-hooks
 
-PROD_URL := https://oktopus-456043977402.europe-west1.run.app
+PROD_URL := https://dispax-o2trzxjbva-ew.a.run.app
 MAC_IP := $(shell ipconfig getifaddr en0)
 GCP_PROJECT := project-6efcac64-991b-49f4-946
 GCP_REGION := europe-west1

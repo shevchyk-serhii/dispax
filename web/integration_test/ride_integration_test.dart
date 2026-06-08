@@ -14,7 +14,7 @@ void main() {
   });
 
   group('Ride endpoints integration', () {
-    test('GET /rides/mock с токеном возвращает список поездок', () async {
+    test('GET /rides/mock with a token returns a list of rides', () async {
       final client = makeClient(token: clientToken);
       addTearDown(client.dispose);
 
@@ -25,7 +25,7 @@ void main() {
       expect(body, isA<List>());
     });
 
-    test('GET /rides/mock без токена возвращает ошибку', () async {
+    test('GET /rides/mock without a token returns an error', () async {
       final client = makeClient();
       addTearDown(client.dispose);
 
@@ -34,7 +34,7 @@ void main() {
       expect(response.statusCode, isNot(200));
     });
 
-    test('GET /v2/health возвращает статус OK', () async {
+    test('GET /v2/health returns status OK', () async {
       final client = makeClient();
       addTearDown(client.dispose);
 
@@ -43,7 +43,7 @@ void main() {
       expect(response.statusCode, 200);
     });
 
-    test('поездки содержат обязательные поля', () async {
+    test('rides contain the required fields', () async {
       final client = makeClient(token: clientToken);
       addTearDown(client.dispose);
 

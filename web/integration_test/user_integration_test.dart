@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'helpers.dart';
 
 void main() {
-  // Все три логина выполняются один раз в setUpAll,
-  // чтобы не триггерить rate limiter на /auth/login.
+  // All three logins run once in setUpAll
+  // to avoid triggering the rate limiter on /auth/login.
   late String clientToken;
   late String driverToken;
   late String adminToken;
@@ -20,7 +20,7 @@ void main() {
   });
 
   group('Auth token integration', () {
-    test('client токен даёт доступ к /rides/mock', () async {
+    test('client token grants access to /rides/mock', () async {
       final client = makeClient(token: clientToken);
       addTearDown(client.dispose);
 
@@ -28,7 +28,7 @@ void main() {
       expect(response.statusCode, 200);
     });
 
-    test('driver токен даёт доступ к /rides/mock', () async {
+    test('driver token grants access to /rides/mock', () async {
       final client = makeClient(token: driverToken);
       addTearDown(client.dispose);
 
@@ -36,7 +36,7 @@ void main() {
       expect(response.statusCode, 200);
     });
 
-    test('admin токен даёт доступ к /rides/mock', () async {
+    test('admin token grants access to /rides/mock', () async {
       final client = makeClient(token: adminToken);
       addTearDown(client.dispose);
 
@@ -44,18 +44,18 @@ void main() {
       expect(response.statusCode, 200);
     });
 
-    test('client токен содержит роль CLIENT', () async {
-      // Роль уже закодирована в JWT — проверяем через логин (уже сделан в setUpAll)
+    test('client token carries the CLIENT role', () async {
+      // The role is already encoded in the JWT — verified via login (done in setUpAll)
       final client = makeClient();
       addTearDown(client.dispose);
 
-      // Используем уже известный токен, проверяем что он работает
+      // Use the already known token and verify it works
       final authClient = makeClient(token: clientToken);
       final response = await authClient.get('/rides/mock');
       expect(response.statusCode, 200);
     });
 
-    test('невалидный токен не даёт доступа', () async {
+    test('an invalid token grants no access', () async {
       final client = makeClient(token: 'invalid.jwt.token');
       addTearDown(client.dispose);
 
@@ -63,7 +63,7 @@ void main() {
       expect(response.statusCode, isNot(200));
     });
 
-    test('GET /v2/health доступен без токена', () async {
+    test('GET /v2/health is accessible without a token', () async {
       final client = makeClient();
       addTearDown(client.dispose);
 

@@ -653,8 +653,8 @@ class RideServiceImpl(
     )
 
   /**
-   * Вычисляет полуоткрытый интервал [from, to) и гранулярность бакетов для периода. Все границы — в UTC, чтобы
-   * совпадать с date_trunc в SQL.
+   * Computes the half-open interval [from, to) and the bucket granularity for the period. All boundaries are in UTC to
+   * match date_trunc in SQL.
    */
   private def earningsWindow(period: EarningsPeriod, anchor: LocalDate): (Instant, Instant, TimeBucket) =
     period match

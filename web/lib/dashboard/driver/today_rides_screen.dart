@@ -217,7 +217,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
               isError: true,
             );
           }
-          // Восстановить трекинг если поездка уже в пути (после перезагрузки экрана)
+          // Restore tracking if the ride is already in progress (after screen reload)
           if (state.status == RideStateStatus.loaded && !_trackingStarted) {
             final hasActiveRide = state.rides.any((r) => r.status == RideStatus.inProgress);
             if (hasActiveRide) _startLocationTracking();

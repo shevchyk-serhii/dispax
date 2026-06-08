@@ -61,7 +61,7 @@ class EarningsCubit extends Cubit<EarningsState> {
     : privateRideService = rideService ?? RideService(),
       super(EarningsState.initial());
 
-  /// Загружает заработок для водителя и текущих period/anchorDate.
+  /// Loads earnings for the driver and the current period/anchorDate.
   Future<void> load(String driverId) async {
     _driverId = driverId;
     emit(state.copyWith(status: EarningsStatus.loading, clearError: true));

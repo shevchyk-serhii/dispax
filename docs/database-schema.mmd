@@ -1,5 +1,5 @@
 erDiagram
-    %% ===== Ядро / мультитенантность =====
+    %% ===== Core / multitenancy =====
     companies {
         UUID id PK
         VARCHAR name
@@ -33,7 +33,7 @@ erDiagram
         DOUBLE current_location_lng
     }
 
-    %% ===== Auth / сессии =====
+    %% ===== Auth / sessions =====
     tokens {
         VARCHAR token PK
         UUID user_id FK
@@ -61,7 +61,7 @@ erDiagram
         VARCHAR status
     }
 
-    %% ===== Расписание =====
+    %% ===== Schedule =====
     schedule_days {
         UUID id PK
         UUID driver_id FK
@@ -72,7 +72,7 @@ erDiagram
         enum status
     }
 
-    %% ===== Биллинг =====
+    %% ===== Billing =====
     tariffs {
         UUID company_id PK
         DECIMAL base_price_amount
@@ -97,7 +97,7 @@ erDiagram
         DECIMAL total
     }
 
-    %% ===== Поездки =====
+    %% ===== Rides =====
     rides {
         UUID id PK
         UUID client_id FK
@@ -176,7 +176,7 @@ erDiagram
         TIMESTAMPTZ sent_at
     }
 
-    %% ===== Прочее =====
+    %% ===== Misc =====
     company_settings {
         UUID company_id PK
         DECIMAL commission_rate
@@ -230,7 +230,7 @@ erDiagram
         TEXT address
     }
 
-    %% ===== Связи =====
+    %% ===== Relations =====
     companies ||--o{ client_companies : "obsluzhivaet"
     companies ||--o{ persons : "rabotniki"
     client_companies ||--o{ persons : "kontakty"

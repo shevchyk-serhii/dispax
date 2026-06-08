@@ -56,7 +56,7 @@ class RideService {
     }
   }
 
-  /// Заработок водителя за период ('day' | 'week' | 'month'), привязанный к [date].
+  /// Driver earnings for a period ('day' | 'week' | 'month'), anchored to [date].
   Future<DriverEarnings> getDriverEarnings(
     String driverId,
     String period,

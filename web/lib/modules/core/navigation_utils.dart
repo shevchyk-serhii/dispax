@@ -198,7 +198,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
     setState(() { _saving = true; _error = null; });
 
     final apiClient = context.read<AuthBloc>().apiClient;
-    // Парсим локальное время и конвертируем в UTC ISO-8601 для бэкенда
+    // Parse local time and convert to UTC ISO-8601 for the backend
     DateTime localDt;
     try {
       localDt = DateFormat("yyyy-MM-dd'T'HH:mm").parseStrict(_dateCtrl.text.trim());

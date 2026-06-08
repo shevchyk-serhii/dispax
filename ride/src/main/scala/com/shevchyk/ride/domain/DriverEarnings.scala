@@ -3,7 +3,7 @@ package com.shevchyk.ride.domain
 import java.time.Instant
 
 /**
- * Период агрегации заработка водителя.
+ * Aggregation period for driver earnings.
  */
 enum EarningsPeriod:
   case Day, Week, Month
@@ -18,7 +18,7 @@ object EarningsPeriod:
       case _       => None
 
 /**
- * Сырые агрегаты поездок водителя за период (без расходов).
+ * Raw driver ride aggregates for a period (excluding expenses).
  */
 final case class DriverEarnings(
     grossRevenue: BigDecimal,
@@ -27,7 +27,7 @@ final case class DriverEarnings(
 )
 
 /**
- * Точка графика: начало бакета (час/день) и сумма дохода в нём.
+ * Chart point: bucket start (hour/day) and the revenue accumulated in it.
  */
 final case class EarningsBucket(
     bucketStart: Instant,
@@ -35,7 +35,7 @@ final case class EarningsBucket(
 )
 
 /**
- * Полный отчёт о заработке водителя за период, готовый к отдаче в DTO.
+ * Full driver earnings report for a period, ready to be mapped into a DTO.
  */
 final case class DriverEarningsReport(
     period: EarningsPeriod,

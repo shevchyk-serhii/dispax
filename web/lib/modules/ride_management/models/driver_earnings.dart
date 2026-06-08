@@ -1,4 +1,4 @@
-/// Один столбец графика заработка: начало бакета (час/день) и сумма дохода.
+/// A single earnings chart bar: bucket start (hour/day) and revenue amount.
 class EarningsBucket {
   final DateTime bucketStart;
   final double amount;
@@ -13,7 +13,7 @@ class EarningsBucket {
   }
 }
 
-/// Отчёт о заработке водителя за период. Зеркалит backend DriverEarningsDto.
+/// Driver earnings report for a period. Mirrors the backend DriverEarningsDto.
 class DriverEarnings {
   final String period; // 'day' | 'week' | 'month'
   final double grossRevenue;

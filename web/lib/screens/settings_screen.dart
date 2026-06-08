@@ -42,7 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _pushEnabled = prefs.getBool('push_enabled') ?? true;
       _rideUpdates = prefs.getBool('ride_updates') ?? true;
       _chatNotifications = prefs.getBool('chat_notifications') ?? true;
-      // Берём из профиля пользователя (авторитетный источник), SharedPreferences как fallback
+      // Take from the user profile (authoritative source), SharedPreferences as fallback
       _reminderMinutes = user?.reminderMinutes ?? prefs.getInt('reminder_minutes') ?? 60;
     });
   }
