@@ -97,6 +97,24 @@ object Application extends ZIOAppDefault:
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
+  // Ensure every response declares UTF-8 in its Content-Type. Without an explicit
+  // charset, HTTP clients (e.g. Dart's `http` package via `response.body`) decode
+  // application/json as ISO-8859-1, turning "München" into "MÃ¼nchen". We attach
+  // charset=utf-8 to JSON and text responses that don't already specify one.
+  private val ensureUtf8Charset: Middleware[Any] = Middleware.updateResponse { response =>
+    response.header(Header.ContentType) match
+      case Some(ct)
+          if ct.charset.isEmpty &&
+            (ct.mediaType.mainType == "application" && ct.mediaType.subType == "json" ||
+              ct.mediaType.mainType == "text") =>
+        // removeHeader first: addHeader alone would append a second Content-Type,
+        // and clients read the first (still charset-less) one.
+        response
+          .removeHeader(Header.ContentType)
+          .addHeader(Header.ContentType(ct.mediaType, charset = Some(java.nio.charset.StandardCharsets.UTF_8)))
+      case _ => response
+  }
+
   private val healthRoutes = Routes(
     Method.GET / "health" -> handler((_: Request) => ZIO.succeed(Response.text("Dispax Modular API - OK")))
   )
@@ -167,7 +185,7 @@ object Application extends ZIOAppDefault:
                 .as(
                   Response(Status.InternalServerError, body = Body.fromString("Internal server error"))
                 )
-            }
+            } @@ ensureUtf8Charset
         )
     }
     .provide(
