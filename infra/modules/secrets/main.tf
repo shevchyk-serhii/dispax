@@ -24,9 +24,9 @@ variable "mapbox_token" {
 # Зводимо всі секрети в одну map для зручного циклічного створення
 locals {
   secrets = {
-    "oktopus-db-password"  = var.db_password  # Пароль PostgreSQL юзера
-    "oktopus-jwt-secret"   = var.jwt_secret   # Секрет для підпису JWT токенів
-    "oktopus-mapbox-token" = var.mapbox_token # Токен Mapbox для геокодингу
+    "dispax-db-password"  = var.db_password  # Пароль PostgreSQL юзера
+    "dispax-jwt-secret"   = var.jwt_secret   # Секрет для підпису JWT токенів
+    "dispax-mapbox-token" = var.mapbox_token # Токен Mapbox для геокодингу
   }
 }
 
@@ -36,7 +36,7 @@ locals {
 resource "google_secret_manager_secret" "secrets" {
   for_each  = local.secrets
   project   = var.project_id
-  secret_id = each.key # Наприклад: "oktopus-db-password"
+  secret_id = each.key # Наприклад: "dispax-db-password"
 
   replication {
     auto {} # GCP сам обирає регіони для реплікації (найпростіший варіант)
@@ -55,13 +55,13 @@ resource "google_secret_manager_secret_version" "versions" {
 # Передаємо ID секретів в модуль cloud_run для монтування як env змінних
 
 output "db_password_secret_id" {
-  value = google_secret_manager_secret.secrets["oktopus-db-password"].id
+  value = google_secret_manager_secret.secrets["dispax-db-password"].id
 }
 
 output "jwt_secret_secret_id" {
-  value = google_secret_manager_secret.secrets["oktopus-jwt-secret"].id
+  value = google_secret_manager_secret.secrets["dispax-jwt-secret"].id
 }
 
 output "mapbox_token_secret_id" {
-  value = google_secret_manager_secret.secrets["oktopus-mapbox-token"].id
+  value = google_secret_manager_secret.secrets["dispax-mapbox-token"].id
 }

@@ -32,9 +32,9 @@ object DatabaseConfig {
   val defaultLayer: ZLayer[Any, Nothing, DatabaseConfig] = ZLayer.succeed(
     DatabaseConfig(
       driver = "org.postgresql.Driver",
-      url = sys.env.getOrElse("DB_URL", "jdbc:postgresql://localhost:5432/oktopus"),
-      user = sys.env.getOrElse("DB_USER", "oktopus"),
-      password = sys.env.getOrElse("DB_PASSWORD", "oktopus")
+      url = sys.env.getOrElse("DB_URL", "jdbc:postgresql://localhost:5432/dispax"),
+      user = sys.env.getOrElse("DB_USER", "dispax"),
+      password = sys.env.getOrElse("DB_PASSWORD", "dispax")
     )
   )
 

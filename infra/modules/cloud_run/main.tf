@@ -22,12 +22,12 @@ variable "db_private_ip" {
 
 variable "db_name" {
   type    = string
-  default = "oktopus" # Назва бази даних
+  default = "dispax" # Назва бази даних
 }
 
 variable "db_user" {
   type    = string
-  default = "oktopus" # Юзер PostgreSQL
+  default = "dispax" # Юзер PostgreSQL
 }
 
 variable "cloudrun_sa_email" {
@@ -51,7 +51,7 @@ variable "mapbox_token_secret_id" {
 # Cloud Run автоматично: SSL, домен, балансування, автоскейлінг.
 resource "google_cloud_run_v2_service" "app" {
   project  = var.project_id
-  name     = "oktopus"
+  name     = "dispax"
   location = var.region
 
   template {
@@ -85,13 +85,13 @@ resource "google_cloud_run_v2_service" "app" {
 
       env {
         name  = "DATABASE_URL"
-        # jdbc:postgresql://10.x.x.x:5432/oktopus — підключення до Cloud SQL по приватному IP
+        # jdbc:postgresql://10.x.x.x:5432/dispax — підключення до Cloud SQL по приватному IP
         value = "jdbc:postgresql://${var.db_private_ip}:5432/${var.db_name}"
       }
 
       env {
         name  = "DATABASE_USER"
-        value = var.db_user # "oktopus"
+        value = var.db_user # "dispax"
       }
 
       # PORT не передаємо — Cloud Run v2 виставляє його автоматично (зарезервована змінна)
@@ -178,5 +178,5 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
 # ── ВИХОДИ ────────────────────────────────────────────────────────────────────
 
 output "service_url" {
-  value = google_cloud_run_v2_service.app.uri # HTTPS URL сервісу (наприклад: https://oktopus-xxx-ew.a.run.app)
+  value = google_cloud_run_v2_service.app.uri # HTTPS URL сервісу (наприклад: https://dispax-xxx-ew.a.run.app)
 }

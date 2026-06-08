@@ -10,11 +10,11 @@ Database configuration has been extracted from code into a configuration file an
 ```hocon
 database {
   driver = "org.postgresql.Driver"
-  url = "jdbc:postgresql://localhost:5432/oktopus"
+  url = "jdbc:postgresql://localhost:5432/dispax"
   url = ${?DATABASE_URL}
-  user = "oktopus"
+  user = "dispax"
   user = ${?DATABASE_USER}
-  password = "oktopus"
+  password = "dispax"
   password = ${?DATABASE_PASSWORD}
   maxPoolSize = 10
   maxPoolSize = ${?DATABASE_MAX_POOL_SIZE}
@@ -28,8 +28,8 @@ database {
 Database settings can be overridden via environment variables:
 
 ```bash
-export DATABASE_URL="jdbc:postgresql://prod-host:5432/oktopus_prod"
-export DATABASE_USER="oktopus_prod"
+export DATABASE_URL="jdbc:postgresql://prod-host:5432/dispax_prod"
+export DATABASE_USER="dispax_prod"
 export DATABASE_PASSWORD="secure_password"
 export DATABASE_MAX_POOL_SIZE="20"
 export DATABASE_MIN_IDLE="5"

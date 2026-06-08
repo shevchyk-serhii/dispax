@@ -32,6 +32,6 @@ variable "mapbox_token" {
 
 variable "app_image" {
   type        = string
-  description = "Full image URL for the initial deploy, e.g. europe-west1-docker.pkg.dev/project-6efcac64-991b-49f4-946/oktopus-docker/oktopus-server:latest"
+  description = "Full image URL for the initial deploy, e.g. europe-west1-docker.pkg.dev/project-6efcac64-991b-49f4-946/dispax-docker/dispax-server:latest"
   default     = "us-docker.pkg.dev/cloudrun-samples/containers/hello:latest"
 }

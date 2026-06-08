@@ -1,4 +1,4 @@
-package com.shevchyk.web;
+package com.shevchyk.dispax;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;

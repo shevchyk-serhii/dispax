@@ -67,7 +67,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '119193059016',
     projectId: 'taxi-app-98671',
     storageBucket: 'taxi-app-98671.firebasestorage.app',
-    iosBundleId: 'com.shevchyk.web',
+    iosBundleId: 'com.shevchyk.dispax',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -76,6 +76,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '119193059016',
     projectId: 'taxi-app-98671',
     storageBucket: 'taxi-app-98671.firebasestorage.app',
-    iosBundleId: 'com.example.oktopus',
+    iosBundleId: 'com.shevchyk.dispax',
   );
 }

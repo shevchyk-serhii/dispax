@@ -45,9 +45,9 @@ patrol:
   app_name: Dispax
   test_directory: integration_test
   android:
-    package_name: com.shevchyk.web
+    package_name: com.shevchyk.dispax
   ios:
-    bundle_id: com.shevchyk.web
+    bundle_id: com.shevchyk.dispax
 flutter:
   generate: true
   uses-material-design: true

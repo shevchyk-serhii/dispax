@@ -25,7 +25,7 @@ module "apis" {
 
 # ── МОДУЛЬ: IAM ───────────────────────────────────────────────────────────────
 # Створює сервісні акаунти і права доступу:
-#   - oktopus-server-sa: від імені якого працює Cloud Run (читає секрети, пише логи)
+#   - dispax-server-sa: від імені якого працює Cloud Run (читає секрети, пише логи)
 #   - github-actions-sa: від імені якого GitHub Actions пушить образи і деплоїть
 #   - Workload Identity Federation: GitHub Actions авторизується без JSON-ключів
 module "iam" {

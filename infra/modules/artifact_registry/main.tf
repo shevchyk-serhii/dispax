@@ -8,7 +8,7 @@ variable "region" {
 
 variable "repository_id" {
   type    = string
-  default = "oktopus-docker"
+  default = "dispax-docker"
 }
 
 resource "google_artifact_registry_repository" "docker" {

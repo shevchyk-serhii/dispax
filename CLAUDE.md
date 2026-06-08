@@ -159,16 +159,16 @@ make flutter-test-integration # Flutter integration tests → local TestApplicat
 
 ```bash
 # .env.dev (dev) / env vars в Cloud Run (prod)
-DATABASE_URL=jdbc:postgresql://localhost:5432/oktopus
-DATABASE_USER=oktopus
-DATABASE_PASSWORD=oktopus
+DATABASE_URL=jdbc:postgresql://localhost:5432/dispax
+DATABASE_USER=dispax
+DATABASE_PASSWORD=dispax
 JWT_SECRET=dev-secret-change-in-production
 APP_ENV=development
 PORT=8080
 ```
 
-**docker-compose.yml** поднимает PostgreSQL 16 (порт 5432, БД: `oktopus`)  
-**Production URL:** `https://oktopus-456043977402.europe-west1.run.app`  
+**docker-compose.yml** поднимает PostgreSQL 16 (порт 5432, БД: `dispax`)  
+**Production URL:** `<обновить после пересоздания Cloud Run-сервиса dispax>`  
 **CI/CD:** GitHub Actions → push to `main` → sbt assembly → Docker → Cloud Run
 
 ---

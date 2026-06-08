@@ -1,6 +1,6 @@
 # Ігноруємо все з target/ окрім готового JAR
 target/**
-!target/scala-3.3.7/oktopus-server.jar
+!target/scala-3.3.7/dispax-server.jar
 web/
 .git/
 .env

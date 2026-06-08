@@ -46,9 +46,9 @@ Base config in `api/src/main/resources/application.conf`:
 ```hocon
 database {
   driver = "org.postgresql.Driver"
-  url = "jdbc:postgresql://localhost:5432/oktopus"
-  user = "oktopus"
-  password = "oktopus"
+  url = "jdbc:postgresql://localhost:5432/dispax"
+  user = "dispax"
+  password = "dispax"
   maxPoolSize = 10
   minIdle = 2
 }

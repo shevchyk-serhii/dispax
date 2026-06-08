@@ -14,12 +14,12 @@ variable "vpc_id" {
 
 variable "db_name" {
   type    = string
-  default = "oktopus" # Назва бази даних всередині PostgreSQL
+  default = "dispax" # Назва бази даних всередині PostgreSQL
 }
 
 variable "db_user" {
   type    = string
-  default = "oktopus" # Імʼя юзера PostgreSQL
+  default = "dispax" # Імʼя юзера PostgreSQL
 }
 
 variable "db_password" {
@@ -33,7 +33,7 @@ variable "db_password" {
 # GCP сам керує: ОС, патчі безпеки, бекапи, failover.
 resource "google_sql_database_instance" "postgres" {
   project          = var.project_id
-  name             = "oktopus-postgres"
+  name             = "dispax-postgres"
   region           = var.region
   database_version = "POSTGRES_16" # PostgreSQL версія 16 (відповідає docker-compose.yml)
 
@@ -67,14 +67,14 @@ resource "google_sql_database_instance" "postgres" {
 # База даних всередині PostgreSQL екземпляра
 resource "google_sql_database" "db" {
   project  = var.project_id
-  name     = var.db_name   # "oktopus"
+  name     = var.db_name   # "dispax"
   instance = google_sql_database_instance.postgres.name
 }
 
 # Юзер PostgreSQL з яким підключається бекенд
 resource "google_sql_user" "user" {
   project  = var.project_id
-  name     = var.db_user     # "oktopus"
+  name     = var.db_user     # "dispax"
   instance = google_sql_database_instance.postgres.name
   password = var.db_password # Пароль з Secret Manager / tfvars
 }

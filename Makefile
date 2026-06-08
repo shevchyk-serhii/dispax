@@ -11,8 +11,8 @@ PROD_URL := https://oktopus-456043977402.europe-west1.run.app
 MAC_IP := $(shell ipconfig getifaddr en0)
 GCP_PROJECT := project-6efcac64-991b-49f4-946
 GCP_REGION := europe-west1
-GCP_SERVICE := oktopus
-GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/oktopus-docker/oktopus-server:latest
+GCP_SERVICE := dispax
+GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/dispax-docker/dispax-server:latest
 FLUTTER_DIR    := web
 PATROL         := $(HOME)/.pub-cache/bin/patrol
 ADB            := $(HOME)/Library/Android/sdk/platform-tools/adb
@@ -22,8 +22,8 @@ ANDROID_AVD    ?= Pixel_5
 # Defaults to 8090 so tests run alongside a dev server on 8080. Override: TEST_PORT=9000 make ...
 TEST_PORT      ?= 8090
 # Full-backend E2E tests use an isolated Postgres (docker-compose `postgres-test`,
-# 5433/oktopus_test) so they never touch the dev DB on 5432.
-TEST_DB_URL    := jdbc:postgresql://localhost:5433/oktopus_test
+# 5433/dispax_test) so they never touch the dev DB on 5432.
+TEST_DB_URL    := jdbc:postgresql://localhost:5433/dispax_test
 -include .env.dev
 
 # ─── Setup ──────────────────────────────────────────────────────────────────
@@ -52,14 +52,14 @@ test:
 # server on 8080. The test PID is tracked so only this server is stopped.
 flutter-test-integration:
 	@echo "🚀 Starting test backend on port $(TEST_PORT)..."
-	@PORT=$(TEST_PORT) sbt testServer & echo $$! > /tmp/oktopus-testserver.pid
+	@PORT=$(TEST_PORT) sbt testServer & echo $$! > /tmp/dispax-testserver.pid
 	@echo "⏳ Waiting for backend to be ready..."
 	@until curl -sf http://localhost:$(TEST_PORT)/health > /dev/null; do sleep 1; done
 	@echo "✅ Backend ready, running Flutter integration tests..."
 	@cd $(FLUTTER_DIR) && flutter test test/integration/ \
 	  --dart-define=TEST_SERVER_PORT=$(TEST_PORT) ; \
 	  STATUS=$$? ; \
-	  kill $$(cat /tmp/oktopus-testserver.pid) 2>/dev/null || true ; \
+	  kill $$(cat /tmp/dispax-testserver.pid) 2>/dev/null || true ; \
 	  pkill -f "PORT=$(TEST_PORT).*testServer" 2>/dev/null || true ; \
 	  exit $$STATUS
 
@@ -68,7 +68,7 @@ flutter-test-integration:
 # 10.0.2.2. Requires a running emulator and patrol_cli.
 patrol-test-android:
 	@echo "🚀 Starting test backend on port $(TEST_PORT)..."
-	@PORT=$(TEST_PORT) sbt testServer & echo $$! > /tmp/oktopus-testserver.pid
+	@PORT=$(TEST_PORT) sbt testServer & echo $$! > /tmp/dispax-testserver.pid
 	@echo "⏳ Waiting for backend to be ready..."
 	@until curl -sf http://localhost:$(TEST_PORT)/health > /dev/null; do sleep 1; done
 	@echo "✅ Backend ready, running Patrol Android E2E tests..."
@@ -76,7 +76,7 @@ patrol-test-android:
 	  --target integration_test/login_smoke_test.dart \
 	  --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api ; \
 	  STATUS=$$? ; \
-	  kill $$(cat /tmp/oktopus-testserver.pid) 2>/dev/null || true ; \
+	  kill $$(cat /tmp/dispax-testserver.pid) 2>/dev/null || true ; \
 	  pkill -f "PORT=$(TEST_PORT).*testServer" 2>/dev/null || true ; \
 	  exit $$STATUS
 
@@ -86,7 +86,7 @@ patrol-test-android:
 # target (see web/ios/add_patrol_uitests_target.rb).
 patrol-test-ios:
 	@echo "🚀 Starting test backend on port $(TEST_PORT)..."
-	@PORT=$(TEST_PORT) sbt testServer & echo $$! > /tmp/oktopus-testserver.pid
+	@PORT=$(TEST_PORT) sbt testServer & echo $$! > /tmp/dispax-testserver.pid
 	@echo "⏳ Waiting for backend to be ready..."
 	@until curl -sf http://localhost:$(TEST_PORT)/health > /dev/null; do sleep 1; done
 	@echo "✅ Backend ready, running Patrol iOS E2E tests..."
@@ -94,7 +94,7 @@ patrol-test-ios:
 	  --target integration_test/login_smoke_test.dart \
 	  --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api ; \
 	  STATUS=$$? ; \
-	  kill $$(cat /tmp/oktopus-testserver.pid) 2>/dev/null || true ; \
+	  kill $$(cat /tmp/dispax-testserver.pid) 2>/dev/null || true ; \
 	  pkill -f "PORT=$(TEST_PORT).*testServer" 2>/dev/null || true ; \
 	  exit $$STATUS
 
@@ -131,11 +131,11 @@ E2E_CLEAN_SQL := TRUNCATE rides, ride_ratings, blacklist_entries, expenses, geof
 e2e-backend-up:
 	@echo "🐘 Starting isolated test DB (postgres-test :5433)..."
 	@docker compose up -d postgres-test
-	@until docker exec oktopus-postgres-test-1 pg_isready -U oktopus -d oktopus_test >/dev/null 2>&1; do sleep 1; done
+	@until docker exec dispax-postgres-test-1 pg_isready -U dispax -d dispax_test >/dev/null 2>&1; do sleep 1; done
 	@echo "🚀 Starting full backend on port $(TEST_PORT) (test DB)..."
 	@export $$(grep -v '^#' .env.dev | grep -vE '^(PORT|DATABASE_URL)=' | xargs) && \
 	  DATABASE_URL=$(TEST_DB_URL) PORT=$(TEST_PORT) APP_ENV=development sbt run & \
-	  echo $$! > /tmp/oktopus-e2e-backend.pid
+	  echo $$! > /tmp/dispax-e2e-backend.pid
 	@echo "⏳ Waiting for backend to be ready..."
 	@until curl -sf http://localhost:$(TEST_PORT)/health > /dev/null; do sleep 1; done
 	@echo "✅ Backend ready on :$(TEST_PORT)"
@@ -151,7 +151,7 @@ e2e-android: emulator-up e2e-backend-up
 	@echo "🧪 Running Patrol E2E suites on Android..."
 	@cd $(FLUTTER_DIR) && for t in $(E2E_SUITES); do \
 	  echo "▶ $$t"; \
-	  PGPASSWORD=oktopus psql -h localhost -p 5433 -U oktopus -d oktopus_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
+	  PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
 	  $(PATROL) test --target integration_test/$$t\_test.dart \
 	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || true ; \
 	done ; \
@@ -162,7 +162,7 @@ e2e-ios: e2e-backend-up
 	@echo "🧪 Running Patrol E2E suites on iOS..."
 	@cd $(FLUTTER_DIR) && for t in $(E2E_SUITES); do \
 	  echo "▶ $$t"; \
-	  PGPASSWORD=oktopus psql -h localhost -p 5433 -U oktopus -d oktopus_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
+	  PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
 	  $(PATROL) test --target integration_test/$$t\_test.dart \
 	    --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api || true ; \
 	done ; \

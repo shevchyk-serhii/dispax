@@ -10,7 +10,7 @@ variable "region" {
 
 variable "vpc_name" {
   type    = string
-  default = "oktopus-vpc" # Назва приватної мережі
+  default = "dispax-vpc" # Назва приватної мережі
 }
 
 variable "subnet_cidr" {
@@ -75,7 +75,7 @@ resource "google_service_networking_connection" "psa" {
 # min/max_instances: кількість нод конектора (2-3 для MVP)
 resource "google_vpc_access_connector" "connector" {
   project       = var.project_id
-  name          = "oktopus-connector"
+  name          = "dispax-connector"
   region        = var.region
   network       = google_compute_network.vpc.name
   ip_cidr_range = var.connector_cidr # 10.8.0.0/28 — окремий діапазон для конектора

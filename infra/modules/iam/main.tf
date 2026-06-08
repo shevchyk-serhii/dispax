@@ -9,7 +9,7 @@ variable "github_org" {
 }
 
 variable "github_repo" {
-  type = string # Назва репозиторію, наприклад "oktopus"
+  type = string # Назва репозиторію, наприклад "dispax"
 }
 
 # ── СЕРВІСНІ АКАУНТИ ──────────────────────────────────────────────────────────
@@ -20,8 +20,8 @@ variable "github_repo" {
 # Отримує доступ до секретів, може писати логи і метрики.
 resource "google_service_account" "cloudrun_sa" {
   project      = var.project_id
-  account_id   = "oktopus-server-sa"
-  display_name = "Oktopus Cloud Run Service Account"
+  account_id   = "dispax-server-sa"
+  display_name = "Dispax Cloud Run Service Account"
 }
 
 # Сервісний акаунт для GitHub Actions (від його імені деплоїться CI/CD).
@@ -93,7 +93,7 @@ resource "google_iam_workload_identity_pool" "github_pool" {
 
 # Провайдер всередині пулу — конфігурує довіру до GitHub OIDC токенів.
 # attribute_mapping: як поля з GitHub токену відображаються на GCP атрибути.
-# attribute_condition: лише токени з нашого репозиторію (shevchyk/oktopus) приймаються.
+# attribute_condition: лише токени з нашого репозиторію (shevchyk/dispax) приймаються.
 resource "google_iam_workload_identity_pool_provider" "github_provider" {
   project                            = var.project_id
   workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
