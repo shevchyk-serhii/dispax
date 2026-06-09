@@ -12,10 +12,12 @@ class CreateRideBasicInfoSection extends StatefulWidget {
   const CreateRideBasicInfoSection({super.key});
 
   @override
-  State<CreateRideBasicInfoSection> createState() => _CreateRideBasicInfoSectionState();
+  State<CreateRideBasicInfoSection> createState() =>
+      _CreateRideBasicInfoSectionState();
 }
 
-class _CreateRideBasicInfoSectionState extends State<CreateRideBasicInfoSection> {
+class _CreateRideBasicInfoSectionState
+    extends State<CreateRideBasicInfoSection> {
   late final UserService _userService;
 
   @override
@@ -33,7 +35,7 @@ class _CreateRideBasicInfoSectionState extends State<CreateRideBasicInfoSection>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         context.read<CreateRideFormBloc>().add(
-          ClientSelected(clientId: user.id, clientName: user.name),
+          ClientPreselected(clientId: user.id, clientName: user.name),
         );
       });
     }
@@ -97,23 +99,34 @@ class _DriverClientSection extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.person, color: AppColors.driverColor, size: 22),
+                      Icon(
+                        Icons.person,
+                        color: AppColors.driverColor,
+                        size: 22,
+                      ),
                       const SizedBox(width: AppDimensions.paddingSmall),
                       const Text(
                         'Client',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
                   TextButton.icon(
-                    onPressed: () => context
-                        .read<CreateRideFormBloc>()
-                        .add(const NewClientModeToggled()),
+                    onPressed: () => context.read<CreateRideFormBloc>().add(
+                      const NewClientModeToggled(),
+                    ),
                     icon: Icon(
-                      state.isNewClient ? Icons.search : Icons.person_add_outlined,
+                      state.isNewClient
+                          ? Icons.search
+                          : Icons.person_add_outlined,
                       size: 16,
                     ),
-                    label: Text(state.isNewClient ? 'Find existing' : 'New client'),
+                    label: Text(
+                      state.isNewClient ? 'Find existing' : 'New client',
+                    ),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.driverColor,
                     ),
@@ -158,9 +171,9 @@ class _NewClientFields extends StatelessWidget {
               labelText: 'Phone (optional)',
               hintText: '+49 123 456 7890',
               prefixIconData: Icons.phone_outlined,
-              onChanged: (v) => context
-                  .read<CreateRideFormBloc>()
-                  .add(NewClientPhoneChanged(v)),
+              onChanged: (v) => context.read<CreateRideFormBloc>().add(
+                NewClientPhoneChanged(v),
+              ),
             ),
           ],
         );

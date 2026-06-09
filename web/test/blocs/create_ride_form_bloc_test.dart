@@ -25,8 +25,11 @@ void main() {
       build: CreateRideFormBloc.new,
       act: (bloc) => bloc.add(const ClientNameChanged('Test Client')),
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.clientName, 'clientName', 'Test Client'),
+        isA<CreateRideFormState>().having(
+          (s) => s.clientName,
+          'clientName',
+          'Test Client',
+        ),
       ],
     );
 
@@ -35,8 +38,11 @@ void main() {
       build: CreateRideFormBloc.new,
       act: (bloc) => bloc.add(const FromAddressChanged('Main St 1')),
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.fromAddress, 'fromAddress', 'Main St 1'),
+        isA<CreateRideFormState>().having(
+          (s) => s.fromAddress,
+          'fromAddress',
+          'Main St 1',
+        ),
       ],
     );
 
@@ -45,8 +51,11 @@ void main() {
       build: CreateRideFormBloc.new,
       act: (bloc) => bloc.add(const ToAddressChanged('Oak Ave 2')),
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.toAddress, 'toAddress', 'Oak Ave 2'),
+        isA<CreateRideFormState>().having(
+          (s) => s.toAddress,
+          'toAddress',
+          'Oak Ave 2',
+        ),
       ],
     );
 
@@ -111,8 +120,11 @@ void main() {
       build: CreateRideFormBloc.new,
       act: (bloc) => bloc.add(const AirportTransferToggled(true)),
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.isAirportTransfer, 'isAirportTransfer', true),
+        isA<CreateRideFormState>().having(
+          (s) => s.isAirportTransfer,
+          'isAirportTransfer',
+          true,
+        ),
       ],
     );
 
@@ -121,8 +133,11 @@ void main() {
       build: CreateRideFormBloc.new,
       act: (bloc) => bloc.add(const FlightNumberChanged('LH456')),
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.flightNumber, 'flightNumber', 'LH456'),
+        isA<CreateRideFormState>().having(
+          (s) => s.flightNumber,
+          'flightNumber',
+          'LH456',
+        ),
       ],
     );
 
@@ -132,9 +147,11 @@ void main() {
       act: (bloc) =>
           bloc.add(PickupDateTimeChanged(DateTime(2026, 6, 1, 14, 0))),
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.pickupDateTime, 'pickupDateTime',
-                DateTime(2026, 6, 1, 14, 0)),
+        isA<CreateRideFormState>().having(
+          (s) => s.pickupDateTime,
+          'pickupDateTime',
+          DateTime(2026, 6, 1, 14, 0),
+        ),
       ],
     );
 
@@ -143,8 +160,11 @@ void main() {
       build: CreateRideFormBloc.new,
       act: (bloc) => bloc.add(const GateSelected('G5')),
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.selectedGate, 'selectedGate', 'G5'),
+        isA<CreateRideFormState>().having(
+          (s) => s.selectedGate,
+          'selectedGate',
+          'G5',
+        ),
       ],
     );
 
@@ -153,8 +173,11 @@ void main() {
       build: CreateRideFormBloc.new,
       act: (bloc) => bloc.add(const TerminalSelected('T2')),
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.selectedTerminal, 'selectedTerminal', 'T2'),
+        isA<CreateRideFormState>().having(
+          (s) => s.selectedTerminal,
+          'selectedTerminal',
+          'T2',
+        ),
       ],
     );
 
@@ -195,8 +218,11 @@ void main() {
       ),
       act: (bloc) => bloc.add(const FormSubmitted()),
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.status, 'status', CreateRideFormStatus.submitting),
+        isA<CreateRideFormState>().having(
+          (s) => s.status,
+          'status',
+          CreateRideFormStatus.submitting,
+        ),
       ],
     );
 
@@ -205,6 +231,68 @@ void main() {
       build: CreateRideFormBloc.new,
       act: (bloc) => bloc.add(const FormSubmitted()),
       expect: () => [],
+    );
+
+    blocTest<CreateRideFormBloc, CreateRideFormState>(
+      'DriverPreselected sets driver and baseline; not modified',
+      build: CreateRideFormBloc.new,
+      act: (bloc) => bloc.add(const DriverPreselected('self-1')),
+      expect: () => [
+        isA<CreateRideFormState>()
+            .having((s) => s.selectedDriverId, 'selectedDriverId', 'self-1')
+            .having((s) => s.baselineDriverId, 'baselineDriverId', 'self-1')
+            .having((s) => s.isModified, 'isModified', false),
+      ],
+    );
+
+    blocTest<CreateRideFormBloc, CreateRideFormState>(
+      'ClientPreselected sets client and baseline; not modified',
+      build: CreateRideFormBloc.new,
+      act: (bloc) => bloc.add(
+        const ClientPreselected(clientId: 'self-1', clientName: 'Self'),
+      ),
+      expect: () => [
+        isA<CreateRideFormState>()
+            .having((s) => s.selectedClientId, 'selectedClientId', 'self-1')
+            .having((s) => s.clientName, 'clientName', 'Self')
+            .having((s) => s.isModified, 'isModified', false),
+      ],
+    );
+
+    blocTest<CreateRideFormBloc, CreateRideFormState>(
+      'user input after preselect marks modified',
+      build: CreateRideFormBloc.new,
+      act: (bloc) => bloc
+        ..add(const DriverPreselected('self-1'))
+        ..add(const FromAddressChanged('Main St 1')),
+      expect: () => [
+        isA<CreateRideFormState>().having(
+          (s) => s.isModified,
+          'isModified',
+          false,
+        ),
+        isA<CreateRideFormState>()
+            .having((s) => s.fromAddress, 'fromAddress', 'Main St 1')
+            .having((s) => s.isModified, 'isModified', true),
+      ],
+    );
+
+    blocTest<CreateRideFormBloc, CreateRideFormState>(
+      'selecting a different driver after preselect marks modified',
+      build: CreateRideFormBloc.new,
+      act: (bloc) => bloc
+        ..add(const DriverPreselected('self-1'))
+        ..add(const DriverSelected('other-2')),
+      expect: () => [
+        isA<CreateRideFormState>().having(
+          (s) => s.isModified,
+          'isModified',
+          false,
+        ),
+        isA<CreateRideFormState>()
+            .having((s) => s.selectedDriverId, 'selectedDriverId', 'other-2')
+            .having((s) => s.isModified, 'isModified', true),
+      ],
     );
   });
 }

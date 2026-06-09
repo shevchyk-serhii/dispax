@@ -123,7 +123,8 @@ E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
               e2e_settings e2e_cancel_ride e2e_more_menu e2e_airport_ride \
               e2e_chat e2e_reassign e2e_full_flow \
               e2e_admin_users e2e_expense e2e_blacklist e2e_geofence \
-              e2e_neg_login e2e_neg_create_ride e2e_neg_role_access
+              e2e_neg_login e2e_neg_create_ride e2e_neg_role_access \
+              e2e_book_discard_guard
 # Transactional tables wiped before each suite to keep runs isolated/repeatable.
 E2E_CLEAN_SQL := TRUNCATE rides, ride_ratings, blacklist_entries, expenses, geofences, chat_messages CASCADE;
 

@@ -2,12 +2,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'create_ride_form_event.dart';
 import 'create_ride_form_state.dart';
 
-class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> {
+class CreateRideFormBloc
+    extends Bloc<CreateRideFormEvent, CreateRideFormState> {
   CreateRideFormBloc() : super(CreateRideFormState.initial()) {
     on<ClientNameChanged>(_onClientNameChanged);
     on<ClientSelected>(_onClientSelected);
+    on<ClientPreselected>(_onClientPreselected);
     on<ClientCleared>(_onClientCleared);
     on<DriverSelected>(_onDriverSelected);
+    on<DriverPreselected>(_onDriverPreselected);
     on<FromAddressChanged>(_onFromAddressChanged);
     on<ToAddressChanged>(_onToAddressChanged);
     on<FlightNumberChanged>(_onFlightNumberChanged);
@@ -34,7 +37,10 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
     emit(state.copyWith(notes: event.notes));
   }
 
-  void _onSpecialRequirementToggled(SpecialRequirementToggled event, Emitter<CreateRideFormState> emit) {
+  void _onSpecialRequirementToggled(
+    SpecialRequirementToggled event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     final current = List<String>.from(state.specialRequirements);
     if (current.contains(event.requirement)) {
       current.remove(event.requirement);
@@ -44,12 +50,19 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
     emit(state.copyWith(specialRequirements: current));
   }
 
-  void _onClientNameChanged(ClientNameChanged event, Emitter<CreateRideFormState> emit) {
+  void _onClientNameChanged(
+    ClientNameChanged event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     emit(state.copyWith(clientName: event.clientName));
   }
 
-  void _onClientSelected(ClientSelected event, Emitter<CreateRideFormState> emit) {
-    final newFromAddress = event.defaultAddress != null && state.fromAddress.isEmpty
+  void _onClientSelected(
+    ClientSelected event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    final newFromAddress =
+        event.defaultAddress != null && state.fromAddress.isEmpty
         ? event.defaultAddress!
         : null;
     final newState = state.copyWith(
@@ -60,51 +73,110 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
     emit(_checkAirportTransfer(newState));
   }
 
-  void _onClientCleared(ClientCleared event, Emitter<CreateRideFormState> emit) {
-    emit(state.copyWith(
-      clearClientId: true,
-      clientName: '',
-      newClientPhone: '',
-    ));
+  void _onClientPreselected(
+    ClientPreselected event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    // Sets the client AND the baseline so that booking for oneself is not
+    // treated as a user modification.
+    emit(
+      state.copyWith(
+        selectedClientId: event.clientId,
+        clientName: event.clientName,
+        baselineClientId: event.clientId,
+        baselineClientName: event.clientName,
+      ),
+    );
   }
 
-  void _onDriverSelected(DriverSelected event, Emitter<CreateRideFormState> emit) {
-    emit(state.copyWith(selectedDriverId: event.driverId, clearDriverId: event.driverId == null));
+  void _onClientCleared(
+    ClientCleared event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    emit(
+      state.copyWith(clearClientId: true, clientName: '', newClientPhone: ''),
+    );
   }
 
-  void _onFromAddressChanged(FromAddressChanged event, Emitter<CreateRideFormState> emit) {
+  void _onDriverSelected(
+    DriverSelected event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        selectedDriverId: event.driverId,
+        clearDriverId: event.driverId == null,
+      ),
+    );
+  }
+
+  void _onDriverPreselected(
+    DriverPreselected event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    // Sets the driver AND the baseline so that preselecting self is not treated
+    // as a user modification.
+    emit(
+      state.copyWith(
+        selectedDriverId: event.driverId,
+        baselineDriverId: event.driverId,
+      ),
+    );
+  }
+
+  void _onFromAddressChanged(
+    FromAddressChanged event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     final newState = state.copyWith(fromAddress: event.fromAddress);
     emit(_checkAirportTransfer(newState));
   }
 
-  void _onToAddressChanged(ToAddressChanged event, Emitter<CreateRideFormState> emit) {
+  void _onToAddressChanged(
+    ToAddressChanged event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     final newState = state.copyWith(toAddress: event.toAddress);
     emit(_checkAirportTransfer(newState));
   }
 
-  void _onFlightNumberChanged(FlightNumberChanged event, Emitter<CreateRideFormState> emit) {
+  void _onFlightNumberChanged(
+    FlightNumberChanged event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     emit(state.copyWith(flightNumber: event.flightNumber));
   }
 
-  void _onPickupDateTimeChanged(PickupDateTimeChanged event, Emitter<CreateRideFormState> emit) {
+  void _onPickupDateTimeChanged(
+    PickupDateTimeChanged event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     emit(state.copyWith(pickupDateTime: event.pickupDateTime));
   }
 
-  void _onAirportTransferToggled(AirportTransferToggled event, Emitter<CreateRideFormState> emit) {
+  void _onAirportTransferToggled(
+    AirportTransferToggled event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     if (!event.isAirportTransfer) {
-      emit(state.copyWith(
-        isAirportTransfer: false,
-        flightNumber: '',
-        selectedGate: null,
-        selectedTerminal: null,
-        isArrival: false,
-      ));
+      emit(
+        state.copyWith(
+          isAirportTransfer: false,
+          flightNumber: '',
+          selectedGate: null,
+          selectedTerminal: null,
+          isArrival: false,
+        ),
+      );
     } else {
       emit(state.copyWith(isAirportTransfer: true));
     }
   }
 
-  void _onArrivalToggled(ArrivalToggled event, Emitter<CreateRideFormState> emit) {
+  void _onArrivalToggled(
+    ArrivalToggled event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     emit(state.copyWith(isArrival: event.isArrival));
   }
 
@@ -112,7 +184,10 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
     emit(state.copyWith(selectedGate: event.gate));
   }
 
-  void _onTerminalSelected(TerminalSelected event, Emitter<CreateRideFormState> emit) {
+  void _onTerminalSelected(
+    TerminalSelected event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     emit(state.copyWith(selectedTerminal: event.terminal));
   }
 
@@ -120,7 +195,10 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
     emit(CreateRideFormState.initial());
   }
 
-  void _onAddressesSwapped(AddressesSwapped event, Emitter<CreateRideFormState> emit) {
+  void _onAddressesSwapped(
+    AddressesSwapped event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     final newState = state.copyWith(
       fromAddress: state.toAddress,
       toAddress: state.fromAddress,
@@ -128,30 +206,39 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
     emit(_checkAirportTransfer(newState));
   }
 
-  void _onNewClientModeToggled(NewClientModeToggled event, Emitter<CreateRideFormState> emit) {
+  void _onNewClientModeToggled(
+    NewClientModeToggled event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     if (state.isNewClient) {
       // Back to search — reset the new-client fields
-      emit(state.copyWith(
-        isNewClient: false,
-        newClientPhone: '',
-        clientName: '',
-        clearClientId: true,
-      ));
+      emit(
+        state.copyWith(
+          isNewClient: false,
+          newClientPhone: '',
+          clientName: '',
+          clearClientId: true,
+        ),
+      );
     } else {
       // Switching to creating a new client — reset the selected one
-      emit(state.copyWith(
-        isNewClient: true,
-        clearClientId: true,
-        clientName: '',
-      ));
+      emit(
+        state.copyWith(isNewClient: true, clearClientId: true, clientName: ''),
+      );
     }
   }
 
-  void _onNewClientPhoneChanged(NewClientPhoneChanged event, Emitter<CreateRideFormState> emit) {
+  void _onNewClientPhoneChanged(
+    NewClientPhoneChanged event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     emit(state.copyWith(newClientPhone: event.phone));
   }
 
-  void _onFormSubmitted(FormSubmitted event, Emitter<CreateRideFormState> emit) {
+  void _onFormSubmitted(
+    FormSubmitted event,
+    Emitter<CreateRideFormState> emit,
+  ) {
     if (state.isValid) {
       emit(state.copyWith(status: CreateRideFormStatus.submitting));
     }
@@ -161,10 +248,11 @@ class CreateRideFormBloc extends Bloc<CreateRideFormEvent, CreateRideFormState> 
     final from = currentState.fromAddress.toLowerCase();
     final to = currentState.toAddress.toLowerCase();
 
-    final hasAirport = from.contains('airport') ||
-                      from.contains('muc') ||
-                      to.contains('airport') ||
-                      to.contains('muc');
+    final hasAirport =
+        from.contains('airport') ||
+        from.contains('muc') ||
+        to.contains('airport') ||
+        to.contains('muc');
 
     if (hasAirport && !currentState.isAirportTransfer) {
       return currentState.copyWith(

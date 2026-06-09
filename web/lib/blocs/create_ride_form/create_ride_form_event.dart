@@ -31,6 +31,19 @@ class ClientSelected extends CreateRideFormEvent {
   List<Object?> get props => [clientId, clientName, defaultAddress];
 }
 
+/// Automatic preselect of the current user as the client (driver/client roles
+/// book for themselves by default). Updates the baseline so it does NOT count as
+/// a user modification.
+class ClientPreselected extends CreateRideFormEvent {
+  final String clientId;
+  final String clientName;
+
+  const ClientPreselected({required this.clientId, required this.clientName});
+
+  @override
+  List<Object?> get props => [clientId, clientName];
+}
+
 class ClientCleared extends CreateRideFormEvent {
   const ClientCleared();
 }
@@ -137,6 +150,17 @@ class DriverSelected extends CreateRideFormEvent {
   final String? driverId;
 
   const DriverSelected(this.driverId);
+
+  @override
+  List<Object?> get props => [driverId];
+}
+
+/// Automatic preselect of the current user as the driver. Updates the baseline
+/// so it does NOT count as a user modification.
+class DriverPreselected extends CreateRideFormEvent {
+  final String driverId;
+
+  const DriverPreselected(this.driverId);
 
   @override
   List<Object?> get props => [driverId];

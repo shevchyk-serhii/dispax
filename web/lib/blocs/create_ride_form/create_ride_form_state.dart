@@ -22,6 +22,12 @@ class CreateRideFormState extends Equatable {
   final bool isNewClient;
   final String newClientPhone;
 
+  // Baseline values for fields that are auto-preselected (driver/client = self).
+  // These are NOT counted as user modifications by [isModified].
+  final String? baselineClientId;
+  final String baselineClientName;
+  final String? baselineDriverId;
+
   const CreateRideFormState({
     required this.clientName,
     this.selectedClientId,
@@ -41,6 +47,9 @@ class CreateRideFormState extends Equatable {
     this.specialRequirements = const [],
     this.isNewClient = false,
     this.newClientPhone = '',
+    this.baselineClientId,
+    this.baselineClientName = '',
+    this.baselineDriverId,
   });
 
   factory CreateRideFormState.initial() {
@@ -85,11 +94,20 @@ class CreateRideFormState extends Equatable {
     List<String>? specialRequirements,
     bool? isNewClient,
     String? newClientPhone,
+    String? baselineClientId,
+    bool clearBaselineClientId = false,
+    String? baselineClientName,
+    String? baselineDriverId,
+    bool clearBaselineDriverId = false,
   }) {
     return CreateRideFormState(
       clientName: clientName ?? this.clientName,
-      selectedClientId: clearClientId ? null : (selectedClientId ?? this.selectedClientId),
-      selectedDriverId: clearDriverId ? null : (selectedDriverId ?? this.selectedDriverId),
+      selectedClientId: clearClientId
+          ? null
+          : (selectedClientId ?? this.selectedClientId),
+      selectedDriverId: clearDriverId
+          ? null
+          : (selectedDriverId ?? this.selectedDriverId),
       fromAddress: fromAddress ?? this.fromAddress,
       toAddress: toAddress ?? this.toAddress,
       flightNumber: flightNumber ?? this.flightNumber,
@@ -105,6 +123,13 @@ class CreateRideFormState extends Equatable {
       specialRequirements: specialRequirements ?? this.specialRequirements,
       isNewClient: isNewClient ?? this.isNewClient,
       newClientPhone: newClientPhone ?? this.newClientPhone,
+      baselineClientId: clearBaselineClientId
+          ? null
+          : (baselineClientId ?? this.baselineClientId),
+      baselineClientName: baselineClientName ?? this.baselineClientName,
+      baselineDriverId: clearBaselineDriverId
+          ? null
+          : (baselineDriverId ?? this.baselineDriverId),
     );
   }
 
@@ -113,15 +138,18 @@ class CreateRideFormState extends Equatable {
         ? clientName.trim().isNotEmpty
         : selectedClientId != null;
     return clientOk &&
-           fromAddress.trim().isNotEmpty &&
-           toAddress.trim().isNotEmpty &&
-           (!isAirportTransfer || flightNumber.trim().isNotEmpty);
+        fromAddress.trim().isNotEmpty &&
+        toAddress.trim().isNotEmpty &&
+        (!isAirportTransfer || flightNumber.trim().isNotEmpty);
   }
 
+  /// The form is "modified" only when it differs from the baseline snapshot.
+  /// Auto-preselected values (driver/client = the current user) are part of the
+  /// baseline and therefore do NOT trigger the unsaved-changes guard.
   bool get isModified =>
-      clientName.trim().isNotEmpty ||
-      selectedClientId != null ||
-      selectedDriverId != null ||
+      clientName.trim() != baselineClientName.trim() ||
+      selectedClientId != baselineClientId ||
+      selectedDriverId != baselineDriverId ||
       fromAddress.trim().isNotEmpty ||
       toAddress.trim().isNotEmpty ||
       flightNumber.trim().isNotEmpty ||
@@ -148,5 +176,8 @@ class CreateRideFormState extends Equatable {
     specialRequirements,
     isNewClient,
     newClientPhone,
+    baselineClientId,
+    baselineClientName,
+    baselineDriverId,
   ];
 }
