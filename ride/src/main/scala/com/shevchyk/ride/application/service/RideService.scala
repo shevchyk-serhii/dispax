@@ -92,12 +92,12 @@ class RideServiceImpl(
 
   def createRide(request: CreateRideRequest): IO[RideError, Ride] =
     for {
-      // Validate pickup is in the future (allow 5 min tolerance for clock skew)
+      // Validate pickup is in the future (allow clock-skew tolerance, RidePolicy)
       _               <-
         request.scheduledTime match
-          case Some(t) if t.isBefore(Instant.now().minusSeconds(300)) =>
+          case Some(t) if RidePolicy.isInThePast(t) =>
             ZIO.fail(RideError.ValidationError("Pickup time must be in the future"))
-          case _                                                      => ZIO.unit
+          case _                                    => ZIO.unit
       // Validate addresses differ
       _               <-
         ZIO

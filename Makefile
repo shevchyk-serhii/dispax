@@ -2,7 +2,7 @@
         flutter-dev flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
-        emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http \
+        emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
         dev-all stop-dev \
         deploy logs setup-hooks
@@ -133,7 +133,7 @@ E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
               e2e_chat e2e_reassign e2e_full_flow \
               e2e_admin_users e2e_expense e2e_blacklist e2e_geofence \
               e2e_neg_login e2e_neg_create_ride e2e_neg_role_access \
-              e2e_book_discard_guard \
+              e2e_book_discard_guard e2e_address_focus \
               e2e_notif_driver_assigned e2e_notif_status_updates e2e_notif_mark_read
 
 # Notification HTTP checks (flutter_test, no Patrol/UI) — assert the in-app inbox
@@ -143,6 +143,15 @@ E2E_NOTIF_HTTP_TESTS := integration_test/e2e_notif_isolation_test.dart \
                         integration_test/e2e_notif_client_on_status_test.dart \
                         integration_test/e2e_notif_cancel_test.dart \
                         integration_test/e2e_notif_driver_approaching_test.dart
+
+# Ride-rule HTTP checks (flutter_test, no Patrol/UI): negative / edge-case ride
+# flows that assert the backend REJECTS bad operations AND leaves the ride's
+# state unchanged (the class of bug happy-path tests miss). Green. Run via
+# `make e2e-ride-rules`.
+E2E_RIDE_RULES_HTTP_TESTS := integration_test/e2e_ride_validation_test.dart \
+                             integration_test/e2e_ride_illegal_transitions_test.dart \
+                             integration_test/e2e_ride_authorization_test.dart \
+                             integration_test/e2e_ride_assign_rules_test.dart
 
 # "Red" suites assert DESIRED behaviour the backend does not implement yet. They
 # are EXPECTED TO FAIL and serve as an executable backlog, kept out of the green
@@ -237,10 +246,24 @@ e2e-notif-http: emulator-up e2e-backend-up
 	$(MAKE) e2e-backend-down ; \
 	exit $$STATUS
 
+# Negative / edge-case ride-rule HTTP checks. Green: each asserts the backend
+# rejects a bad operation AND leaves the ride state unchanged. Runs on the macOS
+# host's emulator (10.0.2.2), per-file (batching times out on isolate load).
+e2e-ride-rules: emulator-up e2e-backend-up
+	@echo "🚦 Running ride-rule HTTP checks (flutter test)..."
+	@cd $(FLUTTER_DIR) && STATUS=0 ; \
+	  for t in $(E2E_RIDE_RULES_HTTP_TESTS); do \
+	    echo "▶ $$t"; \
+	    curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
+	    flutter test $$t --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || STATUS=1 ; \
+	  done ; \
+	  $(MAKE) e2e-backend-down ; \
+	  exit $$STATUS
+
 # Run the "red" suites that document expected backend gaps. These are EXPECTED
-# TO FAIL — a failure here is the confirmed backlog. Currently: the dispatcher
-# Pending list has no live WebSocket updates (loads via REST), so a ride created
-# mid-session does not appear without a manual refresh. Does not gate CI.
+# TO FAIL — a failure here is the confirmed backlog. Currently: dispatcher
+# Pending list has no live WebSocket updates (Patrol); and the 5-min clock-skew
+# tolerance on pickup time is unreachable (HTTP). Does not gate CI.
 e2e-red: emulator-up e2e-backend-up
 	@echo "🟥 Running RED suites (expected failures = backlog)..."
 	@cd $(FLUTTER_DIR) && for t in $(E2E_RED_PATROL_SUITES); do \

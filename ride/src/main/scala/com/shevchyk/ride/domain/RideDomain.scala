@@ -3,6 +3,23 @@ package com.shevchyk.ride.domain
 import com.shevchyk.core.domain.*
 import java.time.Instant
 
+/**
+ * Shared ride scheduling policy, so the DTO validators and RideService agree.
+ */
+object RidePolicy:
+  /**
+   * Clock-skew tolerance for pickup/scheduled times: a time up to this many seconds in the past is still accepted
+   * (clients' clocks may run fast).
+   */
+  val ClockSkewToleranceSeconds: Long = 300L
+
+  /**
+   * True if `time` is before now minus the clock-skew tolerance.
+   */
+  def isInThePast(time: Instant, now: Instant = Instant.now()): Boolean = time.isBefore(
+    now.minusSeconds(ClockSkewToleranceSeconds)
+  )
+
 enum RideStatus:
   case Requested, Assigned, InProgress, Completed, Cancelled
 

@@ -32,8 +32,10 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
     .attempt(Instant.parse(dateTime))
     .orElseFail(RideError.ValidationError(s"Invalid datetime format: $dateTime. Expected ISO-8601 format"))
     .flatMap { instant =>
+      // Allow a small clock-skew tolerance (RidePolicy) so a client whose clock
+      // runs a few minutes fast isn't rejected. Must match RideService.
       ZIO
-        .when(instant.isBefore(Instant.now()))(
+        .when(RidePolicy.isInThePast(instant))(
           ZIO.fail(RideError.ValidationError("Pickup time cannot be in the past"))
         )
         .unit
@@ -79,7 +81,7 @@ given createRideRequestValidator: Validator[CreateRideRequest] with
 
   private def validateScheduledTime(time: Option[Instant]): IO[RideError, Unit] =
     ZIO
-      .when(time.exists(_.isBefore(Instant.now())))(
+      .when(time.exists(RidePolicy.isInThePast(_)))(
         ZIO.fail(RideError.ValidationError("Scheduled time cannot be in the past"))
       )
       .unit
