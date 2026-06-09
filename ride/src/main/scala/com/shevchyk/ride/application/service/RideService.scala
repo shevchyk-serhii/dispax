@@ -604,13 +604,25 @@ class RideServiceImpl(
   ): IO[RideError, Ride] =
     for {
       ride          <- getRideById(rideId)
+      // A ride can only be paid for once it has actually been delivered.
+      _             <-
+        ZIO
+          .fail(RideError.BusinessRuleViolation("payment_status", "Only a completed ride can be marked paid"))
+          .when(paymentStatus == PaymentStatus.Paid && ride.status != RideStatus.Completed)
+          .unit
+      // Idempotent: paying an already-paid ride must not overwrite paidAt.
+      alreadyPaid    = ride.paymentStatus == PaymentStatus.Paid && paymentStatus == PaymentStatus.Paid
       updatedRide    = ride
                          .focus(_.paymentStatus)
                          .replace(paymentStatus)
                          .focus(_.paymentMethod)
                          .replace(paymentMethod.orElse(ride.paymentMethod))
                          .focus(_.paidAt)
-                         .replace(if paymentStatus == PaymentStatus.Paid then Some(Instant.now()) else ride.paidAt)
+                         .replace(
+                           if paymentStatus == PaymentStatus.Paid then
+                             if alreadyPaid then ride.paidAt else Some(Instant.now())
+                           else ride.paidAt
+                         )
       persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
     } yield persistedRide
 

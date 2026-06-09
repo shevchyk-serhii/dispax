@@ -131,3 +131,29 @@ Future<String> rideStatus(String rideId, String token) async {
   final res = await apiGet('/rides/$rideId', token);
   return (res.body as Map<String, dynamic>)['status'] as String;
 }
+
+/// Reads a single ride's payment fields via GET /rides/{id}.
+Future<Map<String, dynamic>> rideJson(String rideId, String token) async {
+  final res = await apiGet('/rides/$rideId', token);
+  return res.body as Map<String, dynamic>;
+}
+
+Future<ApiResult> markPaid(String rideId, String dispatcherToken) =>
+    apiPut('/rides/$rideId/payment', dispatcherToken, {'paymentStatus': 'Paid'});
+
+Future<ApiResult> createExpense(String driverToken,
+        {required double amount, String category = 'Fuel'}) =>
+    apiPost('/expenses', driverToken, {'category': category, 'amount': amount});
+
+Future<ApiResult> rateRide(String rideId, String clientToken, int rating) =>
+    apiPost('/rides/$rideId/rate', clientToken, {'rating': rating});
+
+/// Drives a ride from Requested through to Completed (client books, dispatcher
+/// assigns + starts + completes). Returns the ride id.
+Future<String> completeRide(String clientToken, String dispatcherToken) async {
+  final rideId = await createRideId(clientToken);
+  await assignDriver(rideId, dispatcherToken, driverId: hansDriverId);
+  await setStatus(rideId, dispatcherToken, 'InProgress');
+  await setStatus(rideId, dispatcherToken, 'Completed');
+  return rideId;
+}

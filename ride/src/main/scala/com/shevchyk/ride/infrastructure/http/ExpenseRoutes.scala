@@ -28,6 +28,14 @@ object ExpenseRoutes:
         req       <- ZIO
                        .fromEither(bodyStr.fromJson[CreateExpenseRequest])
                        .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+        _         <- ZIO
+                       .fail(
+                         Response(
+                           Status.BadRequest,
+                           body = Body.fromString("""{"error":"Expense amount must be greater than zero"}""")
+                         )
+                       )
+                       .when(req.amount <= 0)
         repo      <- ZIO.service[ExpenseRepository]
         rideIdOpt <- ZIO.foreach(req.rideId)(UuidParser.parseRideId)
         companyId <- UuidParser.requireCompanyId(user.companyId)
