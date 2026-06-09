@@ -65,8 +65,9 @@ Feature: Extended Ride Operations
     And the response should contain ride details
 
   Scenario: Update ride payment
+    # Only a completed ride can be marked paid; 4444... is the seeded Completed ride.
     Given I am authenticated as an admin
-    When I send a PUT request to "/api/rides/11111111-1111-1111-1111-111111111111/payment" with body:
+    When I send a PUT request to "/api/rides/44444444-4444-4444-4444-444444444444/payment" with body:
       """
       {"paymentStatus":"Paid","paymentMethod":"Card"}
       """
