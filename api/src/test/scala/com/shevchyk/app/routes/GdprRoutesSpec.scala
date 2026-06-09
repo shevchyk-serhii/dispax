@@ -260,6 +260,19 @@ object GdprRoutesSpec extends ZIOSpecDefault {
             bodyStr  <- resp.body.asString.orDie
             requests <- ZIO.fromEither(bodyStr.fromJson[List[GdprRequest]]).mapError(new RuntimeException(_)).orDie
           } yield assertTrue(resp.status == Status.Ok, requests.length == 1)
+        },
+        test("forbids non-admin/dispatcher roles (Flutter relies on this 403)") {
+          for {
+            // A regular client must NOT see the company-wide deletion-requests
+            // list — the GDPR screen skips this call for them precisely because
+            // it is forbidden.
+            token <- generateToken(role = PersonRole.Client)
+            resp  <- runRequest(
+                       Request
+                         .get(URL.decode("/api/gdpr/requests").toOption.get)
+                         .addHeader(Header.Authorization.Bearer(token))
+                     )
+          } yield assertTrue(resp.status == Status.Forbidden)
         }
       )
     ).provide(layers) @@ TestAspect.sequential
