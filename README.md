@@ -7,12 +7,41 @@
 ![Flutter](https://img.shields.io/badge/Flutter-3.8+-02569B?logo=flutter&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
-![Tests](https://img.shields.io/badge/tests-790%20backend%20%2B%20246%20BDD-success)
+![Tests](https://img.shields.io/badge/tests-passing-success)
 
 Dispax dispatches rides for time-critical transport operators where punctuality beats driver
 utilization — the client does not wait. Every piece of data is isolated per tenant (`CompanyId`),
 and the system is built end-to-end on a pure functional, effect-based Scala backend with a
 Flutter cross-platform frontend.
+
+---
+
+## The Problem
+
+Small transport operators serving business and airport clients lose time and money on the
+last-mile coordination that mainstream ride apps ignore:
+
+- **No live ETA to the client.** Drivers can't easily tell passengers when they'll arrive, so
+  clients wait blind and trust erodes.
+- **Airport pickups are painful.** Name boards, phone tag, and circling the terminal waste time
+  and rack up parking fees while the driver hunts for the passenger.
+- **Trip and passenger info is scattered.** Flight details and passenger preferences live in
+  chats, emails, and someone's memory — not in one place.
+- **No reminders.** Drivers and clients miss or scramble for upcoming rides.
+
+## Who It's For
+
+Small and medium transport businesses (taxis, corporate transfers, airport shuttles) — typically
+owner-operated fleets of a few to a few dozen drivers serving time-critical business clients.
+
+## What the Business Gets
+
+- **Lower airport parking costs** — geofence- and location-based coordination lets the driver
+  enter the terminal at the right moment instead of waiting and paying.
+- **Faster, smoother meetups** — real-time location sharing replaces name boards and phone calls.
+- **More loyal clients** — passengers see driver and trip details plus a live ETA, building trust.
+- **Visibility into operations** — built-in reporting and analytics (rides, earnings, distance
+  driven) and automated trip reminders for both drivers and clients.
 
 ---
 
@@ -158,4 +187,4 @@ make fmtAll    # Scala + Dart
 
 ## License
 
-[MIT](LICENSE) © 2025 Serhii Shevchyk
+[MIT](LICENSE) © 2026 Serhii Shevchyk
