@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'helpers.dart';
 
 void main() {
@@ -20,27 +21,27 @@ void main() {
   });
 
   group('Auth token integration', () {
-    test('client token grants access to /rides/mock', () async {
+    test('client token grants access to /rides', () async {
       final client = makeClient(token: clientToken);
       addTearDown(client.dispose);
 
-      final response = await client.get('/rides/mock');
+      final response = await client.get('/rides');
       expect(response.statusCode, 200);
     });
 
-    test('driver token grants access to /rides/mock', () async {
+    test('driver token grants access to /rides', () async {
       final client = makeClient(token: driverToken);
       addTearDown(client.dispose);
 
-      final response = await client.get('/rides/mock');
+      final response = await client.get('/rides');
       expect(response.statusCode, 200);
     });
 
-    test('admin token grants access to /rides/mock', () async {
+    test('admin token grants access to /rides', () async {
       final client = makeClient(token: adminToken);
       addTearDown(client.dispose);
 
-      final response = await client.get('/rides/mock');
+      final response = await client.get('/rides');
       expect(response.statusCode, 200);
     });
 
@@ -51,7 +52,7 @@ void main() {
 
       // Use the already known token and verify it works
       final authClient = makeClient(token: clientToken);
-      final response = await authClient.get('/rides/mock');
+      final response = await authClient.get('/rides');
       expect(response.statusCode, 200);
     });
 
@@ -59,15 +60,14 @@ void main() {
       final client = makeClient(token: 'invalid.jwt.token');
       addTearDown(client.dispose);
 
-      final response = await client.get('/rides/mock');
-      expect(response.statusCode, isNot(200));
+      // ApiClient surfaces a 401 as a thrown ApiException rather than a
+      // response, so assert it throws instead of inspecting the status code.
+      await expectLater(client.get('/rides'), throwsA(isA<Exception>()));
     });
 
-    test('GET /v2/health is accessible without a token', () async {
-      final client = makeClient();
-      addTearDown(client.dispose);
-
-      final response = await client.get('/v2/health');
+    test('GET /health is accessible without a token', () async {
+      // /health lives outside the /api prefix, so call the host directly.
+      final response = await http.get(Uri.parse('$kTestHost/health'));
       expect(response.statusCode, 200);
     });
   });

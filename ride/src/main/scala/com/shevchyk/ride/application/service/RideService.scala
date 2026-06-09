@@ -256,6 +256,7 @@ class RideServiceImpl(
               rideId = persistedRide.id.value,
               newStatus = "Cancelled",
               driverId = persistedRide.driverId.map(_.value),
+              clientId = persistedRide.clientId.value,
               companyId = persistedRide.companyId.value
             )
           )
@@ -343,6 +344,7 @@ class RideServiceImpl(
               rideId = persistedRide.id.value,
               newStatus = persistedRide.status.toString,
               driverId = persistedRide.driverId.map(_.value),
+              clientId = persistedRide.clientId.value,
               companyId = persistedRide.companyId.value
             )
           )
@@ -467,6 +469,7 @@ class RideServiceImpl(
             WebSocketEvent.RideAssigned(
               rideId = persistedRide.id.value,
               driverId = driverId.value,
+              clientId = persistedRide.clientId.value,
               companyId = persistedRide.companyId.value
             )
           )
@@ -546,6 +549,7 @@ class RideServiceImpl(
             WebSocketEvent.RideAssigned(
               rideId = persistedRide.id.value,
               driverId = newDriverId.value,
+              clientId = persistedRide.clientId.value,
               companyId = persistedRide.companyId.value
             )
           )
@@ -675,10 +679,10 @@ class RideServiceImpl(
 
   private def validateCancelPermission(ride: Ride, userId: PersonId, userRole: PersonRole): IO[RideError, Unit] =
     userRole match
-      case PersonRole.Dispatcher | PersonRole.Secretary | PersonRole.Admin => ZIO.unit
-      case PersonRole.Client                                               =>
+      case PersonRole.Dispatcher | PersonRole.Secretary | PersonRole.Admin | PersonRole.ClientSecretary => ZIO.unit
+      case PersonRole.Client                                                                            =>
         ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(ride.clientId != userId).unit
-      case PersonRole.Driver                                               =>
+      case PersonRole.Driver                                                                            =>
         ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(!ride.driverId.contains(userId)).unit
 
   // -- Schedule conflict detection ----------------------------------------

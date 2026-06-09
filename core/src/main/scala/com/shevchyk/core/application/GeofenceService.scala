@@ -168,6 +168,7 @@ class GeofenceServiceImpl(
                           WebSocketEvent.DriverApproaching(
                             rideId = ride.rideId,
                             driverId = driverId.value,
+                            clientId = ride.clientId,
                             distanceMeters = distance,
                             threshold = label,
                             companyId = ride.companyId

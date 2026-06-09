@@ -148,6 +148,7 @@ object RidePoolRoutes:
                     rideId = ride.id.value,
                     newStatus = "PooledRide",
                     driverId = pool.driverId.map(_.value),
+                    clientId = ride.clientId.value,
                     companyId = pool.companyId.value
                   )
                 )

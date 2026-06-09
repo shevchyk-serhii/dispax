@@ -12,12 +12,14 @@ object WebSocketEvent:
       rideId: UUID,
       newStatus: String,
       driverId: Option[UUID],
+      clientId: UUID,
       companyId: UUID
   ) extends WebSocketEvent
 
   final case class RideAssigned(
       rideId: UUID,
       driverId: UUID,
+      clientId: UUID,
       companyId: UUID
   ) extends WebSocketEvent
 
@@ -56,6 +58,7 @@ object WebSocketEvent:
   final case class DriverApproaching(
       rideId: UUID,
       driverId: UUID,
+      clientId: UUID,
       distanceMeters: Int,
       threshold: String, // "2km", "500m", "100m"
       companyId: UUID

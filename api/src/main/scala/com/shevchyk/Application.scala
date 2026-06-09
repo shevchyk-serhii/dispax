@@ -155,7 +155,7 @@ object Application extends ZIOAppDefault:
 
   def run: ZIO[Any, Throwable, Nothing] = ZIO
     .serviceWithZIO[ServerConfig] { serverConfig =>
-      ZIO.scoped(PushNotificationListener.start).forkDaemon *>
+      PushNotificationListener.start *>
         ReminderScheduler.start *>
         ZIO.logInfo("Starting Dispax API Server (PostgreSQL)...") *>
         ZIO.logInfo("📋 Available APIs:") *>

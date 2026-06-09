@@ -102,6 +102,7 @@ object EmergencyRoutes:
                   rideId = ride.id.value,
                   newStatus = "EmergencyReassignment",
                   driverId = Some(originalDriverId.value),
+                  clientId = ride.clientId.value,
                   companyId = ride.companyId.value
                 )
               )
