@@ -525,21 +525,21 @@ object RideRoutes {
                           .fromEither(bodyStr.fromJson[CreateRatingRequest])
                           .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
         _            <- ZIO
-                          .fail(new RuntimeException("Rating must be between 1 and 5"))
+                          .fail(RideError.ValidationError("Rating must be between 1 and 5"))
                           .when(ratingReq.rating < 1 || ratingReq.rating > 5)
         parsedRideId <- UuidParser.parseRideId(rideId)
         service      <- ZIO.service[RideService]
         ride         <- service.getRideById(parsedRideId)
         _            <- ZIO
-                          .fail(new RuntimeException("Can only rate completed rides"))
+                          .fail(RideError.BusinessRuleViolation("ride_status", "Can only rate completed rides"))
                           .when(ride.status != RideStatus.Completed)
         _            <- ZIO
-                          .fail(new RuntimeException("Only the ride client can rate"))
+                          .fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
                           .when(ride.clientId.value != user.userId)
         repo         <- ZIO.service[RideRatingRepository]
         existing     <- repo.findByRideId(parsedRideId)
         _            <- ZIO
-                          .fail(new RuntimeException("Ride already rated"))
+                          .fail(RideError.BusinessRuleViolation("already_rated", "Ride already rated"))
                           .when(existing.isDefined)
         driverPid    <- ZIO
                           .fromOption(ride.driverId)

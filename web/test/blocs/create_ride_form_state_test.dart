@@ -38,15 +38,56 @@ void main() {
     });
 
     test('specialRequirements non-empty marks modified', () {
-      final s = CreateRideFormState.initial()
-          .copyWith(specialRequirements: ['wheelchair']);
+      final s = CreateRideFormState.initial().copyWith(
+        specialRequirements: ['wheelchair'],
+      );
       expect(s.isModified, isTrue);
     });
 
     test('whitespace-only fields are not modified', () {
-      final s = CreateRideFormState.initial()
-          .copyWith(clientName: '  ', fromAddress: ' ', notes: '\t');
+      final s = CreateRideFormState.initial().copyWith(
+        clientName: '  ',
+        fromAddress: ' ',
+        notes: '\t',
+      );
       expect(s.isModified, isFalse);
+    });
+
+    test('client matching baseline is not modified', () {
+      final s = CreateRideFormState.initial().copyWith(
+        selectedClientId: 'self-1',
+        clientName: 'Self',
+        baselineClientId: 'self-1',
+        baselineClientName: 'Self',
+      );
+      expect(s.isModified, isFalse);
+    });
+
+    test('driver matching baseline is not modified', () {
+      final s = CreateRideFormState.initial().copyWith(
+        selectedDriverId: 'self-1',
+        baselineDriverId: 'self-1',
+      );
+      expect(s.isModified, isFalse);
+    });
+
+    test('client differing from baseline marks modified', () {
+      final s = CreateRideFormState.initial()
+          .copyWith(
+            selectedClientId: 'self-1',
+            clientName: 'Self',
+            baselineClientId: 'self-1',
+            baselineClientName: 'Self',
+          )
+          .copyWith(selectedClientId: 'other-2', clientName: 'Other');
+      expect(s.isModified, isTrue);
+    });
+
+    test('driver differing from baseline marks modified', () {
+      final s = CreateRideFormState.initial()
+          .copyWith(selectedDriverId: 'self-1', baselineDriverId: 'self-1')
+          .copyWith(selectedDriverId: 'other-2');
+      expect(s.isModified, isTrue);
     });
   });
 

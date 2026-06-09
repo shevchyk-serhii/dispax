@@ -92,12 +92,12 @@ class RideServiceImpl(
 
   def createRide(request: CreateRideRequest): IO[RideError, Ride] =
     for {
-      // Validate pickup is in the future (allow 5 min tolerance for clock skew)
+      // Validate pickup is in the future (allow clock-skew tolerance, RidePolicy)
       _               <-
         request.scheduledTime match
-          case Some(t) if t.isBefore(Instant.now().minusSeconds(300)) =>
+          case Some(t) if RidePolicy.isInThePast(t) =>
             ZIO.fail(RideError.ValidationError("Pickup time must be in the future"))
-          case _                                                      => ZIO.unit
+          case _                                    => ZIO.unit
       // Validate addresses differ
       _               <-
         ZIO
@@ -256,6 +256,7 @@ class RideServiceImpl(
               rideId = persistedRide.id.value,
               newStatus = "Cancelled",
               driverId = persistedRide.driverId.map(_.value),
+              clientId = persistedRide.clientId.value,
               companyId = persistedRide.companyId.value
             )
           )
@@ -343,6 +344,7 @@ class RideServiceImpl(
               rideId = persistedRide.id.value,
               newStatus = persistedRide.status.toString,
               driverId = persistedRide.driverId.map(_.value),
+              clientId = persistedRide.clientId.value,
               companyId = persistedRide.companyId.value
             )
           )
@@ -467,6 +469,7 @@ class RideServiceImpl(
             WebSocketEvent.RideAssigned(
               rideId = persistedRide.id.value,
               driverId = driverId.value,
+              clientId = persistedRide.clientId.value,
               companyId = persistedRide.companyId.value
             )
           )
@@ -546,6 +549,7 @@ class RideServiceImpl(
             WebSocketEvent.RideAssigned(
               rideId = persistedRide.id.value,
               driverId = newDriverId.value,
+              clientId = persistedRide.clientId.value,
               companyId = persistedRide.companyId.value
             )
           )
@@ -600,13 +604,25 @@ class RideServiceImpl(
   ): IO[RideError, Ride] =
     for {
       ride          <- getRideById(rideId)
+      // A ride can only be paid for once it has actually been delivered.
+      _             <-
+        ZIO
+          .fail(RideError.BusinessRuleViolation("payment_status", "Only a completed ride can be marked paid"))
+          .when(paymentStatus == PaymentStatus.Paid && ride.status != RideStatus.Completed)
+          .unit
+      // Idempotent: paying an already-paid ride must not overwrite paidAt.
+      alreadyPaid    = ride.paymentStatus == PaymentStatus.Paid && paymentStatus == PaymentStatus.Paid
       updatedRide    = ride
                          .focus(_.paymentStatus)
                          .replace(paymentStatus)
                          .focus(_.paymentMethod)
                          .replace(paymentMethod.orElse(ride.paymentMethod))
                          .focus(_.paidAt)
-                         .replace(if paymentStatus == PaymentStatus.Paid then Some(Instant.now()) else ride.paidAt)
+                         .replace(
+                           if paymentStatus == PaymentStatus.Paid then
+                             if alreadyPaid then ride.paidAt else Some(Instant.now())
+                           else ride.paidAt
+                         )
       persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
     } yield persistedRide
 
@@ -675,10 +691,10 @@ class RideServiceImpl(
 
   private def validateCancelPermission(ride: Ride, userId: PersonId, userRole: PersonRole): IO[RideError, Unit] =
     userRole match
-      case PersonRole.Dispatcher | PersonRole.Secretary | PersonRole.Admin => ZIO.unit
-      case PersonRole.Client                                               =>
+      case PersonRole.Dispatcher | PersonRole.Secretary | PersonRole.Admin | PersonRole.ClientSecretary => ZIO.unit
+      case PersonRole.Client                                                                            =>
         ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(ride.clientId != userId).unit
-      case PersonRole.Driver                                               =>
+      case PersonRole.Driver                                                                            =>
         ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(!ride.driverId.contains(userId)).unit
 
   // -- Schedule conflict detection ----------------------------------------

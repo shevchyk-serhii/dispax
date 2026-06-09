@@ -22,7 +22,10 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
     sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'test@example.com')
           ON CONFLICT DO NOTHING""".update.run.transact(xa).unit
 
-  private def cleanPersons(xa: Transactor[Task]): Task[Unit] = sql"DELETE FROM persons".update.run.transact(xa).unit
+  // TRUNCATE ... CASCADE clears persons together with rows that FK-reference it
+  // (drivers, rides, etc.); a bare DELETE FROM persons fails on drivers_id_fkey.
+  private def cleanPersons(xa: Transactor[Task]): Task[Unit] =
+    sql"TRUNCATE persons RESTART IDENTITY CASCADE".update.run.transact(xa).unit
 
   private def makePerson(
       role: PersonRole = PersonRole.Client,

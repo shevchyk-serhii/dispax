@@ -80,6 +80,7 @@ object EventHubSpec extends ZIOSpecDefault {
         test("RideAssigned event preserves all fields") {
           val rideId   = UUID.randomUUID()
           val driverId = UUID.randomUUID()
+          val clientId = UUID.randomUUID()
           ZIO.scoped {
             for {
               hub      <- ZIO.service[EventHub]
@@ -87,6 +88,7 @@ object EventHubSpec extends ZIOSpecDefault {
               event     = WebSocketEvent.RideAssigned(
                             rideId = rideId,
                             driverId = driverId,
+                            clientId = clientId,
                             companyId = testCompanyId
                           )
               _        <- hub.publish(event)
@@ -95,6 +97,7 @@ object EventHubSpec extends ZIOSpecDefault {
             } yield assertTrue(
               ra.rideId == rideId &&
                 ra.driverId == driverId &&
+                ra.clientId == clientId &&
                 ra.companyId == testCompanyId
             )
           }

@@ -10,7 +10,8 @@ class CreateRideDriverSection extends StatefulWidget {
   const CreateRideDriverSection({super.key});
 
   @override
-  State<CreateRideDriverSection> createState() => _CreateRideDriverSectionState();
+  State<CreateRideDriverSection> createState() =>
+      _CreateRideDriverSectionState();
 }
 
 class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
@@ -37,7 +38,7 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
     if (user != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        context.read<CreateRideFormBloc>().add(DriverSelected(user.id));
+        context.read<CreateRideFormBloc>().add(DriverPreselected(user.id));
       });
     }
   }
@@ -51,9 +52,18 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
   Future<void> _loadDrivers() async {
     try {
       final drivers = await _userService.getDrivers();
-      if (mounted) setState(() { _drivers = drivers; _loading = false; _errorMessage = null; });
+      if (mounted)
+        setState(() {
+          _drivers = drivers;
+          _loading = false;
+          _errorMessage = null;
+        });
     } catch (e) {
-      if (mounted) setState(() { _loading = false; _errorMessage = 'Could not load drivers'; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+          _errorMessage = 'Could not load drivers';
+        });
     }
   }
 
@@ -85,7 +95,10 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                     const SizedBox(width: AppDimensions.paddingSmall),
                     const Text(
                       'Driver',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -95,13 +108,23 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                 else if (_errorMessage != null)
                   Row(
                     children: [
-                      Icon(Icons.warning_amber, color: AppColors.warningStrong, size: 18),
+                      Icon(
+                        Icons.warning_amber,
+                        color: AppColors.warningStrong,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
-                      Text(_errorMessage!, style: TextStyle(color: AppColors.warningStrong)),
+                      Text(
+                        _errorMessage!,
+                        style: TextStyle(color: AppColors.warningStrong),
+                      ),
                       const SizedBox(width: 8),
                       TextButton(
                         onPressed: () {
-                          setState(() { _loading = true; _errorMessage = null; });
+                          setState(() {
+                            _loading = true;
+                            _errorMessage = null;
+                          });
                           _loadDrivers();
                         },
                         child: const Text('Retry'),
@@ -111,14 +134,19 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                 else if (_drivers.isEmpty)
                   Text(
                     'No drivers found in your company',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   )
                 else
                   DropdownButtonFormField<String>(
                     initialValue: state.selectedDriverId,
                     decoration: InputDecoration(
                       labelText: 'Assigned driver',
-                      prefixIcon: Icon(Icons.drive_eta, color: AppColors.infoStrong),
+                      prefixIcon: Icon(
+                        Icons.drive_eta,
+                        color: AppColors.infoStrong,
+                      ),
                       suffixIcon: state.selectedDriverId != null
                           ? IconButton(
                               icon: const Icon(Icons.close, size: 18),
@@ -131,11 +159,14 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                             )
                           : null,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusSmall,
+                        ),
                       ),
                     ),
                     items: _drivers.map((driver) {
-                      final isSelf = driver.id == context.read<AuthBloc>().state.user?.id;
+                      final isSelf =
+                          driver.id == context.read<AuthBloc>().state.user?.id;
                       return DropdownMenuItem(
                         value: driver.id,
                         child: Row(
@@ -144,14 +175,20 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                             if (isSelf) ...[
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.infoBorder,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   'me',
-                                  style: TextStyle(fontSize: 11, color: AppColors.infoStrong),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.infoStrong,
+                                  ),
                                 ),
                               ),
                             ],
@@ -160,7 +197,9 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                       );
                     }).toList(),
                     onChanged: (value) {
-                      context.read<CreateRideFormBloc>().add(DriverSelected(value));
+                      context.read<CreateRideFormBloc>().add(
+                        DriverSelected(value),
+                      );
                     },
                   ),
               ],

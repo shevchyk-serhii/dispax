@@ -453,6 +453,21 @@ object RideServiceSpec extends ZIOSpecDefault {
             completed <- service.completeRide(started.id)
             result    <- service.cancelRide(completed.id, testClientId, PersonRole.Client).exit
           } yield assertTrue(result.isFailure)
+        }.provide(standardLayers),
+        test("ClientSecretary can cancel a ride (no MatchError)") {
+          val clientSecretaryId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000200"))
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            cancelled <- service.cancelRide(ride.id, clientSecretaryId, PersonRole.ClientSecretary)
+          } yield assertTrue(cancelled.status == RideStatus.Cancelled)
         }.provide(standardLayers)
       ),
       suite("cancelRideWithReason")(

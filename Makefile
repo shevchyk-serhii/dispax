@@ -2,7 +2,7 @@
         flutter-dev flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
-        emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast \
+        emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
         dev-all stop-dev \
         deploy logs setup-hooks
@@ -50,15 +50,24 @@ test:
 # Run Flutter integration tests against local TestApplication.
 # Backend runs on TEST_PORT (default 8090) so it doesn't collide with a dev
 # server on 8080. The test PID is tracked so only this server is stopped.
+# HTTP contract/integration tests (flutter_test) against the in-memory
+# TestApplication. They talk to localhost:$(TEST_PORT), so they run on the macOS
+# host (`-d macos`), not on a device/emulator where localhost is the guest.
+INTEGRATION_HTTP_TESTS := integration_test/auth_integration_test.dart \
+                          integration_test/contract_test.dart \
+                          integration_test/ride_integration_test.dart \
+                          integration_test/user_integration_test.dart
 flutter-test-integration:
 	@echo "🚀 Starting test backend on port $(TEST_PORT)..."
 	@PORT=$(TEST_PORT) sbt testServer & echo $$! > /tmp/dispax-testserver.pid
 	@echo "⏳ Waiting for backend to be ready..."
 	@until curl -sf http://localhost:$(TEST_PORT)/health > /dev/null; do sleep 1; done
 	@echo "✅ Backend ready, running Flutter integration tests..."
-	@cd $(FLUTTER_DIR) && flutter test test/integration/ \
-	  --dart-define=TEST_SERVER_PORT=$(TEST_PORT) ; \
-	  STATUS=$$? ; \
+	@cd $(FLUTTER_DIR) && STATUS=0 ; \
+	  for t in $(INTEGRATION_HTTP_TESTS); do \
+	    echo "▶ $$t"; \
+	    flutter test -d macos $$t --dart-define=TEST_SERVER_PORT=$(TEST_PORT) || STATUS=1 ; \
+	  done ; \
 	  kill $$(cat /tmp/dispax-testserver.pid) 2>/dev/null || true ; \
 	  pkill -f "PORT=$(TEST_PORT).*testServer" 2>/dev/null || true ; \
 	  exit $$STATUS
@@ -123,7 +132,33 @@ E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
               e2e_settings e2e_cancel_ride e2e_more_menu e2e_airport_ride \
               e2e_chat e2e_reassign e2e_full_flow \
               e2e_admin_users e2e_expense e2e_blacklist e2e_geofence \
-              e2e_neg_login e2e_neg_create_ride e2e_neg_role_access
+              e2e_neg_login e2e_neg_create_ride e2e_neg_role_access \
+              e2e_book_discard_guard e2e_address_focus \
+              e2e_notif_driver_assigned e2e_notif_status_updates e2e_notif_mark_read
+
+# Notification HTTP checks (flutter_test, no Patrol/UI) — assert the in-app inbox
+# over REST. Run with `flutter test` via `make e2e-notif-http`. These are green.
+E2E_NOTIF_HTTP_TESTS := integration_test/e2e_notif_isolation_test.dart \
+                        integration_test/e2e_notif_client_on_create_test.dart \
+                        integration_test/e2e_notif_client_on_status_test.dart \
+                        integration_test/e2e_notif_cancel_test.dart \
+                        integration_test/e2e_notif_driver_approaching_test.dart
+
+# Ride-rule HTTP checks (flutter_test, no Patrol/UI): negative / edge-case ride
+# flows that assert the backend REJECTS bad operations AND leaves the ride's
+# state unchanged (the class of bug happy-path tests miss). Green. Run via
+# `make e2e-ride-rules`.
+E2E_RIDE_RULES_HTTP_TESTS := integration_test/e2e_ride_validation_test.dart \
+                             integration_test/e2e_ride_illegal_transitions_test.dart \
+                             integration_test/e2e_ride_authorization_test.dart \
+                             integration_test/e2e_ride_assign_rules_test.dart
+
+# "Red" suites assert DESIRED behaviour the backend does not implement yet. They
+# are EXPECTED TO FAIL and serve as an executable backlog, kept out of the green
+# bundle and run via `make e2e-red`. Currently: the dispatcher Pending list has
+# no live WebSocket updates (loads via REST), so a ride created mid-session does
+# not appear without a manual refresh.
+E2E_RED_PATROL_SUITES := e2e_ws_dispatcher_live_red
 # Transactional tables wiped before each suite to keep runs isolated/repeatable.
 E2E_CLEAN_SQL := TRUNCATE rides, ride_ratings, blacklist_entries, expenses, geofences, chat_messages CASCADE;
 
@@ -181,7 +216,13 @@ PATROL_EXCLUDES := --exclude integration_test/auth_integration_test.dart \
                    --exclude integration_test/contract_test.dart \
                    --exclude integration_test/user_integration_test.dart \
                    --exclude integration_test/ride_integration_test.dart \
-                   --exclude integration_test/permissions_test.dart
+                   --exclude integration_test/permissions_test.dart \
+                   --exclude integration_test/e2e_notif_isolation_test.dart \
+                   --exclude integration_test/e2e_notif_client_on_create_test.dart \
+                   --exclude integration_test/e2e_notif_client_on_status_test.dart \
+                   --exclude integration_test/e2e_notif_cancel_test.dart \
+                   --exclude integration_test/e2e_notif_driver_approaching_test.dart \
+                   --exclude integration_test/e2e_ws_dispatcher_live_red_test.dart
 e2e-fast: emulator-up e2e-backend-up
 	@echo "🧪 Running ALL Patrol E2E in one bundle (Android, no orchestrator)..."
 	@cd $(FLUTTER_DIR) && $(PATROL) test $(PATROL_EXCLUDES) \
@@ -189,6 +230,49 @@ e2e-fast: emulator-up e2e-backend-up
 	  STATUS=$$? ; \
 	  $(MAKE) -C .. e2e-backend-down ; \
 	  exit $$STATUS
+
+# Run the notification HTTP checks (flutter test, no emulator UI). Green: they
+# assert the in-app inbox over REST. Note flutter_test still builds an APK and
+# runs on a device, so an emulator must be booted (host reached via 10.0.2.2).
+e2e-notif-http: emulator-up e2e-backend-up
+	@echo "🔔 Running notification HTTP checks (flutter test)..."
+	@cd $(FLUTTER_DIR) && for t in $(E2E_NOTIF_HTTP_TESTS); do \
+	  echo "▶ $$t"; \
+	  curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
+	  flutter test $$t \
+	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api ; \
+	done ; \
+	STATUS=$$? ; \
+	$(MAKE) e2e-backend-down ; \
+	exit $$STATUS
+
+# Negative / edge-case ride-rule HTTP checks. Green: each asserts the backend
+# rejects a bad operation AND leaves the ride state unchanged. Runs on the macOS
+# host's emulator (10.0.2.2), per-file (batching times out on isolate load).
+e2e-ride-rules: emulator-up e2e-backend-up
+	@echo "🚦 Running ride-rule HTTP checks (flutter test)..."
+	@cd $(FLUTTER_DIR) && STATUS=0 ; \
+	  for t in $(E2E_RIDE_RULES_HTTP_TESTS); do \
+	    echo "▶ $$t"; \
+	    curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
+	    flutter test $$t --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || STATUS=1 ; \
+	  done ; \
+	  $(MAKE) e2e-backend-down ; \
+	  exit $$STATUS
+
+# Run the "red" suites that document expected backend gaps. These are EXPECTED
+# TO FAIL — a failure here is the confirmed backlog. Currently: dispatcher
+# Pending list has no live WebSocket updates (Patrol); and the 5-min clock-skew
+# tolerance on pickup time is unreachable (HTTP). Does not gate CI.
+e2e-red: emulator-up e2e-backend-up
+	@echo "🟥 Running RED suites (expected failures = backlog)..."
+	@cd $(FLUTTER_DIR) && for t in $(E2E_RED_PATROL_SUITES); do \
+	  echo "▶ $$t"; \
+	  PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
+	  $(PATROL) test --target integration_test/$$t\_test.dart \
+	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || true ; \
+	done ; \
+	$(MAKE) e2e-backend-down
 
 # Run all tests: unit + integration + Cucumber BDD
 test-all:

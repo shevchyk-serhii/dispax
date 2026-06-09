@@ -31,21 +31,38 @@ class _GdprScreenState extends State<GdprScreen> {
     });
 
     try {
-      final apiClient = context.read<AuthBloc>().apiClient;
+      final authBloc = context.read<AuthBloc>();
+      final apiClient = authBloc.apiClient;
+      final user = authBloc.state.user;
+      // The deletion-requests list is an admin/dispatcher-only view (the backend
+      // returns 403 otherwise). Regular users only manage their own consents, so
+      // we skip that call for them instead of treating its 403 as an error.
+      final canViewRequests =
+          user?.isAdmin == true || user?.isDispatcher == true;
+
       final consentsResp = await apiClient.get('/gdpr/consents');
-      final requestsResp = await apiClient.get('/gdpr/requests');
+      final requestsResp = canViewRequests
+          ? await apiClient.get('/gdpr/requests')
+          : null;
       if (!mounted) return;
 
-      if (consentsResp.statusCode == 200 && requestsResp.statusCode == 200) {
+      final requestsOk = requestsResp == null || requestsResp.statusCode == 200;
+      if (consentsResp.statusCode == 200 && requestsOk) {
         setState(() {
-          _consents = (jsonDecode(consentsResp.body) as List).cast<Map<String, dynamic>>();
-          _requests = (jsonDecode(requestsResp.body) as List).cast<Map<String, dynamic>>();
+          _consents = (jsonDecode(consentsResp.body) as List)
+              .cast<Map<String, dynamic>>();
+          _requests = requestsResp == null
+              ? []
+              : (jsonDecode(requestsResp.body) as List)
+                    .cast<Map<String, dynamic>>();
           _isLoading = false;
         });
       } else {
+        final requestsStatus = requestsResp?.statusCode ?? '-';
         setState(() {
           _isLoading = false;
-          _error = 'Failed to load GDPR data (${consentsResp.statusCode}/${requestsResp.statusCode})';
+          _error =
+              'Failed to load GDPR data (${consentsResp.statusCode}/$requestsStatus)';
         });
       }
     } catch (e) {
@@ -58,8 +75,9 @@ class _GdprScreenState extends State<GdprScreen> {
   }
 
   bool _isConsentGranted(String consentType) {
-    return _consents.any((c) =>
-        c['consentType'] == consentType && c['revokedAt'] == null);
+    return _consents.any(
+      (c) => c['consentType'] == consentType && c['revokedAt'] == null,
+    );
   }
 
   Future<void> _toggleConsent(String consentType, bool granted) async {
@@ -72,9 +90,9 @@ class _GdprScreenState extends State<GdprScreen> {
       _loadData();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -92,9 +110,9 @@ class _GdprScreenState extends State<GdprScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
     }
   }
 
@@ -138,9 +156,9 @@ class _GdprScreenState extends State<GdprScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -155,26 +173,29 @@ class _GdprScreenState extends State<GdprScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                      const SizedBox(height: 12),
-                      Text(_error!),
-                      ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                  const SizedBox(height: 12),
+                  Text(_error!),
+                  ElevatedButton(
+                    onPressed: _loadData,
+                    child: const Text('Retry'),
                   ),
-                )
-              : ListView(
-                  children: [
-                    _buildConsentSection(),
-                    _buildDataExportSection(),
-                    _buildDeletionSection(),
-                    if (_requests.isNotEmpty) _buildRequestsSection(),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+                ],
+              ),
+            )
+          : ListView(
+              children: [
+                _buildConsentSection(),
+                _buildDataExportSection(),
+                _buildDeletionSection(),
+                if (_requests.isNotEmpty) _buildRequestsSection(),
+                const SizedBox(height: 24),
+              ],
+            ),
     );
   }
 
@@ -195,10 +216,30 @@ class _GdprScreenState extends State<GdprScreen> {
 
   Widget _buildConsentSection() {
     final consentTypes = [
-      ('DataProcessing', 'Data Processing', 'Allow processing of ride and account data', Icons.storage),
-      ('Marketing', 'Marketing', 'Receive promotional emails and offers', Icons.mail_outline),
-      ('Analytics', 'Analytics', 'Help improve the app with usage analytics', Icons.analytics),
-      ('ThirdPartySharing', 'Third-Party Sharing', 'Share data with partner services', Icons.share),
+      (
+        'DataProcessing',
+        'Data Processing',
+        'Allow processing of ride and account data',
+        Icons.storage,
+      ),
+      (
+        'Marketing',
+        'Marketing',
+        'Receive promotional emails and offers',
+        Icons.mail_outline,
+      ),
+      (
+        'Analytics',
+        'Analytics',
+        'Help improve the app with usage analytics',
+        Icons.analytics,
+      ),
+      (
+        'ThirdPartySharing',
+        'Third-Party Sharing',
+        'Share data with partner services',
+        Icons.share,
+      ),
     ];
 
     return Column(
@@ -208,7 +249,12 @@ class _GdprScreenState extends State<GdprScreen> {
         ...consentTypes.map((ct) {
           final granted = _isConsentGranted(ct.$1);
           return SwitchListTile(
-            secondary: Icon(ct.$4, color: granted ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant),
+            secondary: Icon(
+              ct.$4,
+              color: granted
+                  ? AppColors.success
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             title: Text(ct.$2),
             subtitle: Text(ct.$3, style: const TextStyle(fontSize: 12)),
             value: granted,
@@ -248,8 +294,12 @@ class _GdprScreenState extends State<GdprScreen> {
       children: [
         _buildSectionHeader('Data Deletion'),
         ListTile(
-          leading: Icon(Icons.delete_forever,
-              color: hasPendingDeletion ? Theme.of(context).colorScheme.onSurfaceVariant : AppColors.error),
+          leading: Icon(
+            Icons.delete_forever,
+            color: hasPendingDeletion
+                ? Theme.of(context).colorScheme.onSurfaceVariant
+                : AppColors.error,
+          ),
           title: const Text('Request Data Deletion'),
           subtitle: Text(
             hasPendingDeletion
