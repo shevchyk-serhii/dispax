@@ -291,11 +291,14 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       // 3. markPayment
       // ────────────────────────────────────────────────────────────────────
       suite("markPayment")(
-        test("happy path: mark ride as Paid with Cash method") {
+        test("happy path: mark a completed ride as Paid with Cash method") {
           for {
-            service <- ZIO.service[RideService]
-            ride    <- service.createRide(mkRide())
-            paid    <- service.markPayment(ride.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(mkRide())
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            started   <- service.startRide(assigned.id, testDriverId)
+            completed <- service.completeRide(started.id)
+            paid      <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
           } yield assertTrue(
             paid.paymentStatus == PaymentStatus.Paid &&
               paid.paymentMethod.contains(PaymentMethod.Cash) &&
@@ -313,12 +316,33 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
               pending.paidAt.isEmpty
           )
         }.provide(standardLayers),
+        test("cannot mark a non-completed ride as Paid") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            result  <- service.markPayment(ride.id, PaymentStatus.Paid, Some(PaymentMethod.Cash)).exit
+          } yield assertTrue(result.isFailure)
+        }.provide(standardLayers),
+        test("re-paying a paid ride is idempotent (paidAt unchanged)") {
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(mkRide())
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            started   <- service.startRide(assigned.id, testDriverId)
+            completed <- service.completeRide(started.id)
+            paid1     <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
+            paid2     <- service.markPayment(paid1.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
+          } yield assertTrue(paid2.paidAt == paid1.paidAt)
+        }.provide(standardLayers),
         test("payment updates are persisted") {
           for {
             service   <- ZIO.service[RideService]
             ride      <- service.createRide(mkRide())
-            _         <- service.markPayment(ride.id, PaymentStatus.Paid, Some(PaymentMethod.Card))
-            retrieved <- service.getRideById(ride.id)
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            started   <- service.startRide(assigned.id, testDriverId)
+            completed <- service.completeRide(started.id)
+            _         <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Card))
+            retrieved <- service.getRideById(completed.id)
           } yield assertTrue(
             retrieved.paymentStatus == PaymentStatus.Paid &&
               retrieved.paymentMethod.contains(PaymentMethod.Card)
