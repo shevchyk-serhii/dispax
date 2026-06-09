@@ -28,24 +28,40 @@ class AddressAutocompleteField extends StatefulWidget {
 }
 
 class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
-  // Bump this key when initialValue is reset to '' to force Autocomplete to
-  // rebuild and clear its internal controller (e.g. after form clear).
-  late int _resetKey;
+  // We own the controller and focus node so we can sync the displayed text on
+  // external changes (form clear, address swap, template fill) WITHOUT
+  // rebuilding Autocomplete. Rebuilding (the old _resetKey/ValueKey trick)
+  // dropped focus, which bounced it back to the first form field (the client
+  // search) every time the user picked an address.
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
-    _resetKey = 0;
+    _controller = TextEditingController(text: widget.initialValue);
+    _focusNode = FocusNode();
   }
 
   @override
   void didUpdateWidget(AddressAutocompleteField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Force Autocomplete rebuild whenever initialValue changes externally
-    // (e.g. form clear → '', address swap, template fill).
-    if (oldWidget.initialValue != widget.initialValue) {
-      setState(() => _resetKey++);
+    // Sync the field text only on EXTERNAL changes — i.e. when this field is not
+    // focused. While the user is typing/selecting in this very field it holds
+    // focus, and its own onChanged already drives the value, so we must not
+    // touch the controller (doing so would move the caret / steal focus).
+    if (oldWidget.initialValue != widget.initialValue &&
+        widget.initialValue != _controller.text &&
+        !_focusNode.hasFocus) {
+      _controller.text = widget.initialValue;
     }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
   }
 
   List<ClientAddress> _getFiltered(String query) {
@@ -63,8 +79,8 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
   @override
   Widget build(BuildContext context) {
     return Autocomplete<ClientAddress>(
-      key: ValueKey(_resetKey),
-      initialValue: TextEditingValue(text: widget.initialValue),
+      textEditingController: _controller,
+      focusNode: _focusNode,
       optionsBuilder: (textEditingValue) {
         if (widget.suggestions.isEmpty) return const Iterable.empty();
         return _getFiltered(textEditingValue.text);
