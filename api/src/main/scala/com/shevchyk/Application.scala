@@ -26,9 +26,17 @@ import com.shevchyk.schedule.infrastructure.http.ScheduleRoutes
 import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
 import com.shevchyk.schedule.repository.ScheduleDayRepository
 import com.shevchyk.ride.infrastructure.http.ClientAddressRoutes
-import com.shevchyk.billing.infrastructure.http.{InvoiceRoutes, ClientCompanyRoutes => BillingCompanyRoutes}
+import com.shevchyk.billing.infrastructure.http.{
+  InvoiceRoutes,
+  ClientCompanyRoutes => BillingCompanyRoutes,
+  BillingProfileRoutes
+}
 import com.shevchyk.billing.application.InvoiceService
-import com.shevchyk.billing.repository.{InvoiceRepository, ClientCompanyRepository => BillingClientCompanyRepository}
+import com.shevchyk.billing.repository.{
+  InvoiceRepository,
+  ClientCompanyRepository => BillingClientCompanyRepository,
+  CompanyBillingProfileRepository
+}
 import com.shevchyk.app.routes.{
   UserRoutes,
   WebSocketRoutes,
@@ -150,6 +158,7 @@ object Application extends ZIOAppDefault:
   private val clientCompanyRoutes   = ClientCompanyRoutes.authenticatedRoutes
   private val invoiceRoutes         = InvoiceRoutes.authenticatedRoutes
   private val billingCompanyRoutes  = BillingCompanyRoutes.authenticatedRoutes
+  private val billingProfileRoutes  = BillingProfileRoutes.authenticatedRoutes
 
   private val wsRoutes = WebSocketRoutes.wsRoutes
 
@@ -178,7 +187,7 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + schedule + notification + PostgreSQL repositories") *>
         ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
         Server.serve(
-          (publicRoutes ++ devRoutes ++ rideRoutes ++ clientLocationRoutes ++ chatRoutes ++ expenseRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ rideTemplateRoutes ++ notificationRoutes ++ statsRoutes ++ exportRoutes ++ ratingRoutes ++ auditRoutes ++ companySettingsRoutes ++ geofenceRoutes ++ gdprRoutes ++ sessionRoutes ++ blacklistRoutes ++ emergencyRoutes ++ ridePoolRoutes ++ notifPrefRoutes ++ clientAddressRoutes ++ clientCompanyRoutes ++ invoiceRoutes ++ billingCompanyRoutes ++ wsRoutes)
+          (publicRoutes ++ devRoutes ++ rideRoutes ++ clientLocationRoutes ++ chatRoutes ++ expenseRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ rideTemplateRoutes ++ notificationRoutes ++ statsRoutes ++ exportRoutes ++ ratingRoutes ++ auditRoutes ++ companySettingsRoutes ++ geofenceRoutes ++ gdprRoutes ++ sessionRoutes ++ blacklistRoutes ++ emergencyRoutes ++ ridePoolRoutes ++ notifPrefRoutes ++ clientAddressRoutes ++ clientCompanyRoutes ++ invoiceRoutes ++ billingCompanyRoutes ++ billingProfileRoutes ++ wsRoutes)
             .handleErrorCauseZIO { cause =>
               ZIO
                 .logErrorCause("Unhandled server error", cause)
@@ -230,6 +239,7 @@ object Application extends ZIOAppDefault:
       ClientCompanyRepository.layer,
       InvoiceRepository.layer,
       BillingClientCompanyRepository.layer,
+      CompanyBillingProfileRepository.layer,
       InvoiceService.layer,
       HereConfig.liveLayer,
       GeocodingService.layer,

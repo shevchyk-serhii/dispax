@@ -24,10 +24,24 @@ import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.auth.domain.JwtError
 import com.shevchyk.auth.service.{JwtPayload, JwtService, JwtServiceImpl}
 import com.shevchyk.billing.application.InvoiceService
-import com.shevchyk.billing.domain.{Invoice, InvoiceId, InvoiceItem}
+import com.shevchyk.billing.domain.{
+  CompanyBillingProfile,
+  Invoice,
+  InvoiceId,
+  InvoiceItem,
+  UpdateCompanyBillingProfileRequest
+}
 import com.shevchyk.billing.repository.UnbilledRide
-import com.shevchyk.billing.infrastructure.http.{ClientCompanyRoutes => BillingCompanyRoutes, InvoiceRoutes}
-import com.shevchyk.billing.repository.{ClientCompanyRepository => BillingClientCompanyRepository, InvoiceRepository}
+import com.shevchyk.billing.infrastructure.http.{
+  BillingProfileRoutes,
+  ClientCompanyRoutes => BillingCompanyRoutes,
+  InvoiceRoutes
+}
+import com.shevchyk.billing.repository.{
+  ClientCompanyRepository => BillingClientCompanyRepository,
+  CompanyBillingProfileRepository,
+  InvoiceRepository
+}
 import com.shevchyk.core.application.{AuditService, EventHub, GeocodingService, GeofenceService}
 import com.shevchyk.core.config.ServerConfig
 import com.shevchyk.core.domain.*
@@ -539,7 +553,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val testClientAddressId = ClientAddressId(UUID.fromString("22222222-2222-2222-2222-222222222222"))
 
-  private val testClientAddress   = ClientAddress(
+  private val testClientAddress = ClientAddress(
     id = testClientAddressId,
     clientId = testPersonId1,
     label = "Home",
@@ -604,7 +618,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val testBillingClientCompanyId = ClientCompanyId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
 
-  private val testBillingClientCompany   = ClientCompany(
+  private val testBillingClientCompany = ClientCompany(
     id = testBillingClientCompanyId,
     name = "Test BMW AG",
     taxiCompanyId = testCompanyId1,
@@ -647,7 +661,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val testInvoiceId = InvoiceId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
 
-  private val testInvoice   = Invoice(
+  private val testInvoice = Invoice(
     id = testInvoiceId,
     number = "INV-2026-001",
     clientCompanyId = testBillingClientCompanyId,
@@ -663,13 +677,13 @@ object TestApplication extends ZIOAppDefault:
 
   private val inMemoryInvoiceRepositoryLayer: ZLayer[Any, Nothing, InvoiceRepository] = ZLayer.succeed {
     new InvoiceRepository:
-      private val store                                                        = new ConcurrentHashMap[InvoiceId, Invoice](Map(testInvoiceId -> testInvoice).asJava)
-      private val itemsStore                                                   = new ConcurrentHashMap[InvoiceId, List[InvoiceItem]]()
-      def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String] = ZIO.succeed(
+      private val store                                                            = new ConcurrentHashMap[InvoiceId, Invoice](Map(testInvoiceId -> testInvoice).asJava)
+      private val itemsStore                                                       = new ConcurrentHashMap[InvoiceId, List[InvoiceItem]]()
+      def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String]     = ZIO.succeed(
         s"INV-$year-${UUID.randomUUID().toString.take(8)}"
       )
-      def create(invoice: Invoice): Task[Invoice]                              = ZIO.succeed { store.put(invoice.id, invoice); invoice }
-      def findById(id: InvoiceId): Task[Option[Invoice]]                       = ZIO.succeed(Option(store.get(id)))
+      def create(invoice: Invoice): Task[Invoice]                                  = ZIO.succeed { store.put(invoice.id, invoice); invoice }
+      def findById(id: InvoiceId): Task[Option[Invoice]]                           = ZIO.succeed(Option(store.get(id)))
       def findByCompany(
           taxiCompanyId: CompanyId,
           status: Option[com.shevchyk.billing.domain.InvoiceStatus],
@@ -678,20 +692,57 @@ object TestApplication extends ZIOAppDefault:
       ): Task[List[Invoice]] = ZIO.succeed(
         store.values.asScala.filter(_.taxiCompanyId == taxiCompanyId).drop(offset).take(limit).toList
       )
-      def update(invoice: Invoice): Task[Invoice]                              = ZIO.succeed { store.put(invoice.id, invoice); invoice }
-      def delete(id: InvoiceId): Task[Boolean]                                 = ZIO.succeed(Option(store.get(id)).isDefined && {
+      def update(invoice: Invoice): Task[Invoice]                                  = ZIO.succeed { store.put(invoice.id, invoice); invoice }
+      def delete(id: InvoiceId): Task[Boolean]                                     = ZIO.succeed(Option(store.get(id)).isDefined && {
         store.remove(id); true
       })
-      def addItems(items: List[InvoiceItem]): Task[Unit]                       = ZIO.succeed(
+      def addItems(items: List[InvoiceItem]): Task[Unit]                           = ZIO.succeed(
         items.groupBy(_.invoiceId).foreach((k, v) => itemsStore.put(k, v))
       )
-      def deleteItems(invoiceId: InvoiceId): Task[Unit]                        = ZIO.succeed(itemsStore.remove(invoiceId))
+      def deleteItems(invoiceId: InvoiceId): Task[Unit]                            = ZIO.succeed(itemsStore.remove(invoiceId))
+      def replaceItems(invoiceId: InvoiceId, items: List[InvoiceItem]): Task[Unit] = ZIO.succeed {
+        if items.isEmpty then itemsStore.remove(invoiceId) else itemsStore.put(invoiceId, items)
+        ()
+      }
+      def unlinkRides(invoiceId: InvoiceId): Task[Unit]                            = ZIO.unit
       def findUnbilledRides(
           clientCompanyId: ClientCompanyId,
           from: java.time.LocalDate,
           to: java.time.LocalDate
       ): Task[List[UnbilledRide]] = ZIO.succeed(Nil)
   }
+
+  private val inMemoryCompanyBillingProfileRepositoryLayer: ZLayer[Any, Nothing, CompanyBillingProfileRepository] =
+    ZLayer.succeed {
+      new CompanyBillingProfileRepository:
+        private val store                                                                                      = new ConcurrentHashMap[CompanyId, CompanyBillingProfile]()
+        def findByCompany(companyId: CompanyId): Task[Option[CompanyBillingProfile]]                           = ZIO.succeed(
+          Option(store.get(companyId))
+        )
+        def upsert(companyId: CompanyId, req: UpdateCompanyBillingProfileRequest): Task[CompanyBillingProfile] = ZIO
+          .succeed {
+            val p = CompanyBillingProfile(
+              companyId = companyId,
+              businessType = req.businessType,
+              legalName = req.legalName,
+              addressLine1 = req.addressLine1,
+              addressLine2 = req.addressLine2,
+              phone = req.phone,
+              email = req.email,
+              taxNumber = req.taxNumber,
+              vatId = req.vatId,
+              bankName = req.bankName,
+              bankAccountNo = req.bankAccountNo,
+              bankCode = req.bankCode,
+              iban = req.iban,
+              bic = req.bic,
+              paymentTermsDays = req.paymentTermsDays.getOrElse(7),
+              invoiceIntro = req.invoiceIntro
+            )
+            store.put(companyId, p)
+            p
+          }
+    }
 
   private val inMemoryDriverLocationRepositoryLayer: ZLayer[Any, Nothing, DriverLocationRepository] = ZLayer.succeed {
     new DriverLocationRepository:
@@ -730,7 +781,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val testPoolId = RidePoolId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
 
-  private val testPool   = RidePool(
+  private val testPool = RidePool(
     id = testPoolId,
     companyId = testCompanyId1,
     name = Some("Test Pool"),
@@ -777,7 +828,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val testSessionId = SessionId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
 
-  private val testSession   = Session(
+  private val testSession = Session(
     id = testSessionId,
     userId = testPersonId1,
     token = "valid-token-1",
@@ -817,7 +868,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val testExpenseId = ExpenseId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
 
-  private val testExpense   = Expense(
+  private val testExpense = Expense(
     id = testExpenseId,
     rideId = Some(testRideId),
     driverId = testPersonId10,
@@ -859,7 +910,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val testRideTemplateId = RideTemplateId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
 
-  private val testRideTemplate   = RideTemplate(
+  private val testRideTemplate = RideTemplate(
     id = testRideTemplateId,
     companyId = testCompanyId1,
     clientId = testPersonId1,
@@ -894,7 +945,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val testGeofenceId = GeofenceId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
 
-  private val testGeofence   = Geofence(
+  private val testGeofence = Geofence(
     id = testGeofenceId,
     companyId = testCompanyId1,
     name = "Airport Zone",
@@ -935,7 +986,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val testBlacklistEntryId = BlacklistEntryId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
 
-  private val testBlacklistEntry   = BlacklistEntry(
+  private val testBlacklistEntry = BlacklistEntry(
     id = testBlacklistEntryId,
     companyId = testCompanyId1,
     clientId = testPersonId50, // Client2 — not used in ride assign tests
@@ -972,7 +1023,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val testNotificationId = AppNotificationId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
 
-  private val testNotification   = AppNotification(
+  private val testNotification = AppNotification(
     id = testNotificationId,
     personId = testPersonId1,
     companyId = testCompanyId1,
@@ -1038,6 +1089,7 @@ object TestApplication extends ZIOAppDefault:
       EmergencyRoutes.authenticatedRoutes ++
       BillingCompanyRoutes.authenticatedRoutes ++
       InvoiceRoutes.authenticatedRoutes ++
+      BillingProfileRoutes.authenticatedRoutes ++
       StatsRoutes.authenticatedRoutes ++
       ExportRoutes.authenticatedRoutes ++
       RideTemplateRoutes.authenticatedRoutes ++
@@ -1143,6 +1195,7 @@ object TestApplication extends ZIOAppDefault:
       // Billing
       inMemoryBillingClientCompanyRepositoryLayer,
       inMemoryInvoiceRepositoryLayer,
+      inMemoryCompanyBillingProfileRepositoryLayer,
       InvoiceService.layer,
       // Driver + location
       inMemoryDriverLocationRepositoryLayer,

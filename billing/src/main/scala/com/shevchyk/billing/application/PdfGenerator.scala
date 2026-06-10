@@ -3,17 +3,19 @@ package com.shevchyk.billing.application
 import com.lowagie.text.{List => _, Chunk => PdfChunk, *}
 import com.lowagie.text.pdf.*
 import com.lowagie.text.pdf.draw.LineSeparator
-import com.shevchyk.billing.domain.{Invoice, InvoiceItem}
+import com.shevchyk.billing.domain.{CompanyBillingProfile, Invoice, InvoiceItem}
 import com.shevchyk.core.domain.ClientCompany
 import zio.*
 
 import java.awt.Color
 import java.io.{ByteArrayOutputStream, File, FileOutputStream}
 import java.time.format.DateTimeFormatter
+import java.time.{ZoneOffset, format => _}
 
 object PdfGenerator:
 
-  private val dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+  private val dateFormatter  = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+  private val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.GERMAN)
 
   private val colorPrimary = new Color(41, 98, 255)
   private val colorLight   = new Color(240, 245, 255)
@@ -22,116 +24,170 @@ object PdfGenerator:
 
   private val fontTitle     = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20f, colorPrimary)
   private val fontHeading   = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11f, Color.BLACK)
+  private val fontSubHead   = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12f, Color.BLACK)
   private val fontNormal    = FontFactory.getFont(FontFactory.HELVETICA, 10f, Color.BLACK)
   private val fontSmall     = FontFactory.getFont(FontFactory.HELVETICA, 8f, colorGrey)
+  private val fontFooter    = FontFactory.getFont(FontFactory.HELVETICA, 8f, Color.BLACK)
+  private val fontFooterB   = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8f, Color.BLACK)
   private val fontTableHead = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9f, Color.WHITE)
   private val fontTableCell = FontFactory.getFont(FontFactory.HELVETICA, 9f, Color.BLACK)
   private val fontTotal     = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11f, colorPrimary)
 
-  def generateBytes(invoice: Invoice, clientCompany: ClientCompany, companyName: String): Task[Array[Byte]] = ZIO
-    .attempt {
-      val out    = new ByteArrayOutputStream()
-      val doc    = new Document(PageSize.A4, 50, 50, 60, 50)
-      val writer = PdfWriter.getInstance(doc, out)
+  // Backward-compatible entry point: build a minimal profile from a plain company name.
+  def generateBytes(invoice: Invoice, clientCompany: ClientCompany, companyName: String): Task[Array[Byte]] =
+    generateBytes(invoice, clientCompany, profileFromName(invoice, companyName))
+
+  def generateToFile(invoice: Invoice, clientCompany: ClientCompany, companyName: String, path: String): Task[String] =
+    generateToFile(invoice, clientCompany, profileFromName(invoice, companyName), path)
+
+  private def profileFromName(invoice: Invoice, companyName: String): CompanyBillingProfile = CompanyBillingProfile(
+    companyId = invoice.taxiCompanyId,
+    legalName = Some(companyName)
+  )
+
+  def generateBytes(invoice: Invoice, clientCompany: ClientCompany, profile: CompanyBillingProfile): Task[Array[Byte]] =
+    ZIO.attempt {
+      val out = new ByteArrayOutputStream()
+      val doc = new Document(PageSize.A4, 50, 50, 60, 50)
+      PdfWriter.getInstance(doc, out)
       doc.open()
 
-      addHeader(doc, invoice, companyName)
+      addIssuerHeader(doc, invoice, profile)
       doc.add(PdfChunk.NEWLINE)
-      addAddresses(doc, invoice, clientCompany, companyName)
+      addTitle(doc)
+      addRecipient(doc, invoice, clientCompany)
       doc.add(PdfChunk.NEWLINE)
-      addPeriodInfo(doc, invoice)
-      doc.add(PdfChunk.NEWLINE)
-      addItemsTable(doc, invoice.items)
+      addCostHeading(doc, invoice, profile)
       doc.add(PdfChunk.NEWLINE)
       addTotals(doc, invoice)
+      doc.add(PdfChunk.NEWLINE)
+      addPaymentTerms(doc, profile)
+      addSignature(doc, profile)
       invoice.notes.foreach { n =>
         doc.add(PdfChunk.NEWLINE)
         addNotes(doc, n)
       }
-      addFooter(doc, invoice)
+      if invoice.items.nonEmpty then
+        doc.add(PdfChunk.NEWLINE)
+        addItemsTable(doc, invoice.items)
+      addFooter(doc, profile)
 
       doc.close()
       out.toByteArray
     }
 
-  def generateToFile(invoice: Invoice, clientCompany: ClientCompany, companyName: String, path: String): Task[String] =
-    generateBytes(invoice, clientCompany, companyName).flatMap { bytes =>
-      ZIO.attempt {
-        val file = new File(path)
-        file.getParentFile.mkdirs()
-        val fos  = new FileOutputStream(file)
-        fos.write(bytes)
-        fos.close()
-        path
-      }
+  def generateToFile(
+      invoice: Invoice,
+      clientCompany: ClientCompany,
+      profile: CompanyBillingProfile,
+      path: String
+  ): Task[String] = generateBytes(invoice, clientCompany, profile).flatMap { bytes =>
+    ZIO.attempt {
+      val file = new File(path)
+      file.getParentFile.mkdirs()
+      val fos  = new FileOutputStream(file)
+      fos.write(bytes)
+      fos.close()
+      path
     }
+  }
 
-  private def addHeader(doc: Document, invoice: Invoice, companyName: String): Unit =
+  // Issuer block (top-left) + invoice date (top-right), mirroring the sample Rechnung.
+  private def addIssuerHeader(doc: Document, invoice: Invoice, profile: CompanyBillingProfile): Unit =
     val table = new PdfPTable(2)
     table.setWidthPercentage(100)
     table.setWidths(Array(3f, 2f))
 
-    val titleCell = new PdfPCell(new Phrase(companyName, fontTitle))
-    titleCell.setBorder(Rectangle.NO_BORDER)
-    titleCell.setPaddingBottom(4)
-    table.addCell(titleCell)
+    val issuer = new PdfPCell()
+    issuer.setBorder(Rectangle.NO_BORDER)
+    profile.businessType.foreach(bt => issuer.addElement(new Phrase(bt, fontNormal)))
+    profile.legalName.foreach(ln => issuer.addElement(new Phrase(ln, fontHeading)))
+    profile.addressLine1.foreach(a => issuer.addElement(new Phrase(a, fontNormal)))
+    profile.addressLine2.foreach(a => issuer.addElement(new Phrase(a, fontNormal)))
+    table.addCell(issuer)
 
-    val invCell = new PdfPCell()
-    invCell.setBorder(Rectangle.NO_BORDER)
-    invCell.setHorizontalAlignment(Element.ALIGN_RIGHT)
-    invCell.addElement(new Phrase("RECHNUNG", fontHeading))
-    invCell.addElement(new Phrase(invoice.number, fontTitle))
-    table.addCell(invCell)
+    val invoiceDate = invoice.sentAt.getOrElse(invoice.createdAt).atOffset(ZoneOffset.UTC).toLocalDate
+    val dateCell    = new PdfPCell(new Phrase(invoiceDate.format(dateFormatter), fontNormal))
+    dateCell.setBorder(Rectangle.NO_BORDER)
+    dateCell.setHorizontalAlignment(Element.ALIGN_RIGHT)
+    table.addCell(dateCell)
 
     doc.add(table)
 
-    // separator line
-    val line = new LineSeparator(1f, 100f, colorPrimary, Element.ALIGN_CENTER, 0f)
-    doc.add(line)
+  private def addTitle(doc: Document): Unit =
+    val title = new Paragraph("Rechnung", fontTitle)
+    title.setAlignment(Element.ALIGN_RIGHT)
+    doc.add(title)
+    doc.add(new LineSeparator(1f, 100f, colorPrimary, Element.ALIGN_CENTER, 0f))
 
-  private def addAddresses(doc: Document, invoice: Invoice, clientCompany: ClientCompany, companyName: String): Unit =
+  // Recipient (client company) on the left, invoice number on the right.
+  private def addRecipient(doc: Document, invoice: Invoice, clientCompany: ClientCompany): Unit =
     val table = new PdfPTable(2)
     table.setWidthPercentage(100)
-    table.setWidths(Array(1f, 1f))
-
-    val fromCell = new PdfPCell()
-    fromCell.setBorder(Rectangle.NO_BORDER)
-    fromCell.addElement(new Phrase("VON", fontSmall))
-    fromCell.addElement(new Phrase(companyName, fontHeading))
-    table.addCell(fromCell)
+    table.setWidths(Array(3f, 2f))
 
     val toCell = new PdfPCell()
     toCell.setBorder(Rectangle.NO_BORDER)
-    toCell.addElement(new Phrase("AN", fontSmall))
     toCell.addElement(new Phrase(clientCompany.name, fontHeading))
     clientCompany.address.foreach(a => toCell.addElement(new Phrase(a, fontNormal)))
-    clientCompany.email.foreach(e => toCell.addElement(new Phrase(e, fontNormal)))
     table.addCell(toCell)
 
+    val nrCell = new PdfPCell()
+    nrCell.setBorder(Rectangle.NO_BORDER)
+    nrCell.setHorizontalAlignment(Element.ALIGN_RIGHT)
+    nrCell.addElement(new Phrase("Rechnungs- Nr.:", fontSmall))
+    nrCell.addElement(new Phrase(invoice.number, fontHeading))
+    table.addCell(nrCell)
+
     doc.add(table)
 
-  private def addPeriodInfo(doc: Document, invoice: Invoice): Unit =
-    val table = new PdfPTable(3)
-    table.setWidthPercentage(60)
-    table.setHorizontalAlignment(Element.ALIGN_LEFT)
+  private def addCostHeading(doc: Document, invoice: Invoice, profile: CompanyBillingProfile): Unit =
+    val heading = new Paragraph("Kostenrechnung", fontSubHead)
+    heading.setAlignment(Element.ALIGN_CENTER)
+    doc.add(heading)
+    doc.add(PdfChunk.NEWLINE)
+    profile.invoiceIntro.foreach(intro => doc.add(new Phrase(intro, fontNormal)))
+    doc.add(PdfChunk.NEWLINE)
+    val period  = invoice.periodFrom.format(monthFormatter)
+    doc.add(new Phrase(s"Auftragsfahrten v. $period", fontNormal))
 
-    def infoCell(label: String, value: String): Unit =
-      val lc = new PdfPCell(new Phrase(label, fontSmall))
-      lc.setBackgroundColor(colorLight)
-      lc.setBorderColor(colorBorder)
-      lc.setPadding(6)
+  private def addTotals(doc: Document, invoice: Invoice): Unit =
+    val table = new PdfPTable(2)
+    table.setWidthPercentage(100)
+
+    def totalRow(label: String, value: String, bold: Boolean = false): Unit =
+      val f  = if bold then fontTotal else fontNormal
+      val lc = new PdfPCell(new Phrase(label, f))
+      lc.setBorder(Rectangle.NO_BORDER)
+      lc.setPaddingTop(6)
       table.addCell(lc)
-      val vc = new PdfPCell(new Phrase(value, fontNormal))
-      vc.setBorderColor(colorBorder)
-      vc.setPadding(6)
-      vc.setColspan(2)
+      val vc = new PdfPCell(new Phrase(value, f))
+      vc.setBorder(Rectangle.NO_BORDER)
+      vc.setPaddingTop(6)
+      vc.setHorizontalAlignment(Element.ALIGN_RIGHT)
       table.addCell(vc)
 
-    infoCell("Rechnungsnr.", invoice.number)
-    infoCell("Zeitraum", s"${invoice.periodFrom.format(dateFormatter)} – ${invoice.periodTo.format(dateFormatter)}")
-    invoice.dueDate.foreach(d => infoCell("Fällig am", d.format(dateFormatter)))
+    totalRow("Nettozwischensumme", formatMoney(invoice.subtotalAmount))
+    if invoice.taxRate > 0 then totalRow(s"MwSt. ${invoice.taxRate}%", formatMoney(invoice.taxAmount))
+    totalRow(s"= Rechnungsbetrag (${invoice.currency})", formatMoney(invoice.totalAmount), bold = true)
 
     doc.add(table)
+
+  private def addPaymentTerms(doc: Document, profile: CompanyBillingProfile): Unit =
+    val p1 = new Paragraph("Bitte überweisen Sie den ausgewiesenen Betrag.", fontNormal)
+    p1.setSpacingBefore(16f)
+    doc.add(p1)
+    doc.add(new Paragraph(s"Zahlbar innerhalb von ${profile.paymentTermsDays} Tagen.", fontSmall))
+
+  private def addSignature(doc: Document, profile: CompanyBillingProfile): Unit =
+    val greet = new Paragraph("Mit freundlichen Grüßen", fontNormal)
+    greet.setSpacingBefore(16f)
+    doc.add(greet)
+    profile.legalName.foreach { ln =>
+      val sig = new Paragraph(ln, fontNormal)
+      sig.setSpacingBefore(8f)
+      doc.add(sig)
+    }
 
   private def addItemsTable(doc: Document, items: scala.collection.immutable.List[InvoiceItem]): Unit =
     val table = new PdfPTable(5)
@@ -164,7 +220,7 @@ object PdfGenerator:
         c.setHorizontalAlignment(align)
         c
 
-      val date = item.createdAt.atOffset(java.time.ZoneOffset.UTC).toLocalDate.format(dateFormatter)
+      val date = item.createdAt.atOffset(ZoneOffset.UTC).toLocalDate.format(dateFormatter)
       table.addCell(dataCell(date))
       table.addCell(dataCell(item.description))
       table.addCell(dataCell(item.quantity.setScale(0, BigDecimal.RoundingMode.HALF_UP).toString, Element.ALIGN_CENTER))
@@ -174,39 +230,51 @@ object PdfGenerator:
 
     doc.add(table)
 
-  private def addTotals(doc: Document, invoice: Invoice): Unit =
+  private def addNotes(doc: Document, notes: String): Unit =
+    val head = new Paragraph("Anmerkungen", fontHeading)
+    head.setSpacingBefore(16f)
+    doc.add(head)
+    doc.add(new Paragraph(notes, fontNormal))
+
+  // Footer: contact + tax IDs (left column) and bank details (right column), as in the sample.
+  private def addFooter(doc: Document, profile: CompanyBillingProfile): Unit =
+    doc.add(PdfChunk.NEWLINE)
+    doc.add(new LineSeparator(0.5f, 100f, colorBorder, Element.ALIGN_CENTER, 0f))
+
     val table = new PdfPTable(2)
-    table.setWidthPercentage(40)
-    table.setHorizontalAlignment(Element.ALIGN_RIGHT)
+    table.setWidthPercentage(100)
+    table.setWidths(Array(1f, 1f))
 
-    def totalRow(label: String, value: String, bold: Boolean = false): Unit =
-      val f  = if bold then fontTotal else fontNormal
-      val lc = new PdfPCell(new Phrase(label, f))
-      lc.setBorderColor(colorBorder)
-      lc.setPadding(6)
-      if bold then lc.setBackgroundColor(colorLight)
-      table.addCell(lc)
-      val vc = new PdfPCell(new Phrase(value, f))
-      vc.setBorderColor(colorBorder)
-      vc.setPadding(6)
-      vc.setHorizontalAlignment(Element.ALIGN_RIGHT)
-      if bold then vc.setBackgroundColor(colorLight)
-      table.addCell(vc)
+    def kv(cell: PdfPCell, label: String, value: Option[String]): Unit = value.foreach { v =>
+      val p = new Paragraph()
+      p.add(new PdfChunk(s"$label: ", fontFooter))
+      p.add(new PdfChunk(v, fontFooterB))
+      cell.addElement(p)
+    }
 
-    totalRow("Zwischensumme", formatMoney(invoice.subtotalAmount))
-    if invoice.taxRate > 0 then totalRow(s"MwSt. ${invoice.taxRate}%", formatMoney(invoice.taxAmount))
-    totalRow(s"GESAMTBETRAG (${invoice.currency})", formatMoney(invoice.totalAmount), bold = true)
+    val left = new PdfPCell()
+    left.setBorder(Rectangle.NO_BORDER)
+    kv(left, "Telefon", profile.phone)
+    kv(left, "E-Mail", profile.email)
+    kv(left, "St-Nr.", profile.taxNumber)
+    kv(left, "IdNr.", profile.vatId)
+    table.addCell(left)
+
+    val right = new PdfPCell()
+    right.setBorder(Rectangle.NO_BORDER)
+    profile.legalName.foreach(ln => right.addElement(new Phrase(ln, fontFooterB)))
+    kv(right, "Bank", profile.bankName)
+    kv(right, "Konto-Nr.", profile.bankAccountNo)
+    kv(right, "BLZ", profile.bankCode)
+    kv(right, "IBAN", profile.iban)
+    kv(right, "BIC", profile.bic)
+    table.addCell(right)
 
     doc.add(table)
 
-  private def addNotes(doc: Document, notes: String): Unit =
-    doc.add(new Phrase("Anmerkungen", fontHeading))
-    doc.add(PdfChunk.NEWLINE)
-    doc.add(new Phrase(notes, fontNormal))
-
-  private def addFooter(doc: Document, invoice: Invoice): Unit =
-    doc.add(PdfChunk.NEWLINE)
-    doc.add(new LineSeparator(0.5f, 100f, colorBorder, Element.ALIGN_CENTER, 0f))
-    doc.add(new Phrase(s"Generiert am ${java.time.LocalDate.now().format(dateFormatter)}", fontSmall))
-
-  private def formatMoney(amount: BigDecimal): String = f"${amount.setScale(2, BigDecimal.RoundingMode.HALF_UP)}%.2f €"
+  // German number format: comma decimal separator, e.g. "171,50 €".
+  private def formatMoney(amount: BigDecimal): String =
+    val nf = java.text.NumberFormat.getNumberInstance(java.util.Locale.GERMAN)
+    nf.setMinimumFractionDigits(2)
+    nf.setMaximumFractionDigits(2)
+    s"${nf.format(amount.setScale(2, BigDecimal.RoundingMode.HALF_UP))} €"

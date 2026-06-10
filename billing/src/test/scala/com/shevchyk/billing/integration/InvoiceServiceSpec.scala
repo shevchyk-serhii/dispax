@@ -2,7 +2,11 @@ package com.shevchyk.billing.integration
 
 import com.shevchyk.billing.application.{InvoiceService, InvoiceServiceImpl}
 import com.shevchyk.billing.domain.*
-import com.shevchyk.billing.repository.{PostgresClientCompanyRepository, PostgresInvoiceRepository}
+import com.shevchyk.billing.repository.{
+  PostgresClientCompanyRepository,
+  PostgresCompanyBillingProfileRepository,
+  PostgresInvoiceRepository
+}
 import com.shevchyk.core.database.PostgresTestContainer
 import com.shevchyk.core.domain.*
 import doobie.*
@@ -58,7 +62,8 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
 
   private def makeService(xa: Transactor[Task]): InvoiceService = InvoiceServiceImpl(
     PostgresInvoiceRepository(xa),
-    PostgresClientCompanyRepository(xa)
+    PostgresClientCompanyRepository(xa),
+    PostgresCompanyBillingProfileRepository(xa)
   )
 
   def spec =
@@ -278,14 +283,14 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
       },
       test("autoFillFromPeriod with taxRate=0 yields zero tax and total == subtotal") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanData(xa)
-          _       <- linkClientToCompany(xa)
-          _       <- insertCompletedRide(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
-          svc      = makeService(xa)
-          inv     <- svc.createInvoice(testCompanyId, makeRequest(taxRate = BigDecimal("0")))
-          filled  <- svc.autoFillFromPeriod(inv.id, testCompanyId)
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          _      <- insertCompletedRide(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc     = makeService(xa)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest(taxRate = BigDecimal("0")))
+          filled <- svc.autoFillFromPeriod(inv.id, testCompanyId)
         } yield assertTrue(
           filled.subtotalAmount == BigDecimal("40.00"),
           filled.taxAmount == BigDecimal(0),
@@ -314,15 +319,15 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
       },
       test("autoFillFromPeriod links billed rides to the invoice") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanData(xa)
-          _       <- linkClientToCompany(xa)
-          rideId  <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
-          svc      = makeService(xa)
-          inv     <- svc.createInvoice(testCompanyId, makeRequest())
-          filled  <- svc.autoFillFromPeriod(inv.id, testCompanyId)
-          linked  <- rideInvoiceId(xa, rideId)
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc     = makeService(xa)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          filled <- svc.autoFillFromPeriod(inv.id, testCompanyId)
+          linked <- rideInvoiceId(xa, rideId)
         } yield assertTrue(
           filled.items.length == 1,
           linked.contains(inv.id.value)
@@ -330,15 +335,15 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
       },
       test("autoFillFromPeriod is idempotent: a second run does not duplicate items") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanData(xa)
-          _       <- linkClientToCompany(xa)
-          _       <- insertCompletedRide(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
-          svc      = makeService(xa)
-          inv     <- svc.createInvoice(testCompanyId, makeRequest())
-          first   <- svc.autoFillFromPeriod(inv.id, testCompanyId)
-          second  <- svc.autoFillFromPeriod(inv.id, testCompanyId)
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          _      <- insertCompletedRide(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc     = makeService(xa)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          first  <- svc.autoFillFromPeriod(inv.id, testCompanyId)
+          second <- svc.autoFillFromPeriod(inv.id, testCompanyId)
         } yield assertTrue(
           first.items.length == 1,
           // Re-running must not pick the ride up twice nor accumulate items.
@@ -348,16 +353,16 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
       },
       test("deleteInvoice unlinks its rides (FK ON DELETE SET NULL)") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanData(xa)
-          _       <- linkClientToCompany(xa)
-          rideId  <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
-          svc      = makeService(xa)
-          inv     <- svc.createInvoice(testCompanyId, makeRequest())
-          _       <- svc.autoFillFromPeriod(inv.id, testCompanyId)
-          _       <- svc.deleteInvoice(inv.id, testCompanyId)
-          linked  <- rideInvoiceId(xa, rideId)
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc     = makeService(xa)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          _      <- svc.autoFillFromPeriod(inv.id, testCompanyId)
+          _      <- svc.deleteInvoice(inv.id, testCompanyId)
+          linked <- rideInvoiceId(xa, rideId)
         } yield assertTrue(linked.isEmpty)
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock

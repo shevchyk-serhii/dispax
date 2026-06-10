@@ -5,7 +5,12 @@ import com.shevchyk.auth.service.JwtService
 import com.shevchyk.billing.application.InvoiceService
 import com.shevchyk.billing.domain.*
 import com.shevchyk.billing.infrastructure.http.InvoiceRoutes
-import com.shevchyk.billing.repository.{ClientCompanyRepository, InvoiceRepository, UnbilledRide}
+import com.shevchyk.billing.repository.{
+  ClientCompanyRepository,
+  CompanyBillingProfileRepository,
+  InvoiceRepository,
+  UnbilledRide
+}
 import com.shevchyk.core.domain.*
 import zio.*
 import zio.http.*
@@ -48,13 +53,13 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
       private val itemsStore = new ConcurrentHashMap[InvoiceId, List[InvoiceItem]]()
       private val counters   = new ConcurrentHashMap[String, Int]()
 
-      def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String] = ZIO.succeed {
+      def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String]     = ZIO.succeed {
         val key = s"${taxiCompanyId.value}-$year"
         val n   = counters.merge(key, 1, _ + _)
         f"INV-$year-$n%04d"
       }
-      def create(invoice: Invoice): Task[Invoice]                              = ZIO.succeed { store.put(invoice.id, invoice); invoice }
-      def findById(id: InvoiceId): Task[Option[Invoice]]                       = ZIO.succeed(Option(store.get(id)))
+      def create(invoice: Invoice): Task[Invoice]                                  = ZIO.succeed { store.put(invoice.id, invoice); invoice }
+      def findById(id: InvoiceId): Task[Option[Invoice]]                           = ZIO.succeed(Option(store.get(id)))
       def findByCompany(
           taxiCompanyId: CompanyId,
           status: Option[InvoiceStatus],
@@ -63,17 +68,17 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
       ): Task[List[Invoice]] = ZIO.succeed(
         store.values().asScala.filter(_.taxiCompanyId == taxiCompanyId).toList.drop(offset).take(limit)
       )
-      def update(invoice: Invoice): Task[Invoice]                              = ZIO.succeed { store.put(invoice.id, invoice); invoice }
-      def delete(id: InvoiceId): Task[Boolean]                                 = ZIO.succeed(Option(store.remove(id)).isDefined)
-      def addItems(items: List[InvoiceItem]): Task[Unit]                       = ZIO.succeed {
+      def update(invoice: Invoice): Task[Invoice]                                  = ZIO.succeed { store.put(invoice.id, invoice); invoice }
+      def delete(id: InvoiceId): Task[Boolean]                                     = ZIO.succeed(Option(store.remove(id)).isDefined)
+      def addItems(items: List[InvoiceItem]): Task[Unit]                           = ZIO.succeed {
         items.groupBy(_.invoiceId).foreach { case (iid, is) => itemsStore.merge(iid, is, _ ++ _) }
       }
-      def deleteItems(invoiceId: InvoiceId): Task[Unit]                        = ZIO.succeed { itemsStore.remove(invoiceId); () }
+      def deleteItems(invoiceId: InvoiceId): Task[Unit]                            = ZIO.succeed { itemsStore.remove(invoiceId); () }
       def replaceItems(invoiceId: InvoiceId, items: List[InvoiceItem]): Task[Unit] = ZIO.succeed {
         if items.isEmpty then itemsStore.remove(invoiceId) else itemsStore.put(invoiceId, items)
         ()
       }
-      def unlinkRides(invoiceId: InvoiceId): Task[Unit] = ZIO.unit
+      def unlinkRides(invoiceId: InvoiceId): Task[Unit]                            = ZIO.unit
       def findUnbilledRides(
           clientCompanyId: ClientCompanyId,
           from: LocalDate,
@@ -105,7 +110,40 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
     }
   }
 
-  private val testLayers = (inMemoryInvoiceRepo ++ inMemoryClientCompanyRepo >>> InvoiceService.layer) ++ testJwtService
+  private val inMemoryBillingProfileRepo: ZLayer[Any, Nothing, CompanyBillingProfileRepository] = ZLayer.succeed {
+    new CompanyBillingProfileRepository {
+      private val store                                                                                      = new ConcurrentHashMap[CompanyId, CompanyBillingProfile]()
+      def findByCompany(companyId: CompanyId): Task[Option[CompanyBillingProfile]]                           = ZIO.succeed(
+        Option(store.get(companyId))
+      )
+      def upsert(companyId: CompanyId, req: UpdateCompanyBillingProfileRequest): Task[CompanyBillingProfile] = ZIO
+        .succeed {
+          val p = CompanyBillingProfile(
+            companyId = companyId,
+            businessType = req.businessType,
+            legalName = req.legalName,
+            addressLine1 = req.addressLine1,
+            addressLine2 = req.addressLine2,
+            phone = req.phone,
+            email = req.email,
+            taxNumber = req.taxNumber,
+            vatId = req.vatId,
+            bankName = req.bankName,
+            bankAccountNo = req.bankAccountNo,
+            bankCode = req.bankCode,
+            iban = req.iban,
+            bic = req.bic,
+            paymentTermsDays = req.paymentTermsDays.getOrElse(7),
+            invoiceIntro = req.invoiceIntro
+          )
+          store.put(companyId, p)
+          p
+        }
+    }
+  }
+
+  private val testLayers =
+    (inMemoryInvoiceRepo ++ inMemoryClientCompanyRepo ++ inMemoryBillingProfileRepo >>> InvoiceService.layer) ++ testJwtService
 
   private def run(req: Request): ZIO[InvoiceService & JwtService, Nothing, Response] = InvoiceRoutes.authenticatedRoutes
     .run(req)

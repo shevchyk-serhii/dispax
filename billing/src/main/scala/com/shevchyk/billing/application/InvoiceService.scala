@@ -1,7 +1,7 @@
 package com.shevchyk.billing.application
 
 import com.shevchyk.billing.domain.*
-import com.shevchyk.billing.repository.{ClientCompanyRepository, InvoiceRepository}
+import com.shevchyk.billing.repository.{ClientCompanyRepository, CompanyBillingProfileRepository, InvoiceRepository}
 import com.shevchyk.core.domain.CompanyId
 import zio.*
 
@@ -38,7 +38,8 @@ trait InvoiceService:
 
 class InvoiceServiceImpl(
     invoiceRepo: InvoiceRepository,
-    clientCompanyRepo: ClientCompanyRepository
+    clientCompanyRepo: ClientCompanyRepository,
+    billingProfileRepo: CompanyBillingProfileRepository
 ) extends InvoiceService:
 
   override def createInvoice(taxiCompanyId: CompanyId, req: CreateInvoiceRequest): IO[InvoiceError, Invoice] =
@@ -101,7 +102,7 @@ class InvoiceServiceImpl(
                      id = InvoiceItemId.generate(),
                      invoiceId = id,
                      rideId = Some(ride.rideId),
-                     description = s"${ride.pickupAddress} → ${ride.dropoffAddress}",
+                     description = s"${ride.pickupAddress} - ${ride.dropoffAddress}",
                      quantity = BigDecimal(1),
                      unitPrice = ride.price,
                      total = ride.price,
@@ -127,12 +128,17 @@ class InvoiceServiceImpl(
                    .flatMap(
                      ZIO.fromOption(_).mapError(_ => InvoiceError.ClientCompanyNotFound(invoice.clientCompanyId.value))
                    )
+      // Issuer details come from the company's billing profile; fall back to the plain name.
+      profile <- billingProfileRepo
+                   .findByCompany(taxiCompanyId)
+                   .mapError(InvoiceError.DatabaseError(_))
+                   .map(_.getOrElse(CompanyBillingProfile(taxiCompanyId, legalName = Some(companyName))))
       bytes   <- PdfGenerator
-                   .generateBytes(invoice, cc, companyName)
+                   .generateBytes(invoice, cc, profile)
                    .mapError(InvoiceError.PdfGenerationError(_))
       path     = s"$storageDir/${invoice.number.replace('/', '-')}.pdf"
       _       <- PdfGenerator
-                   .generateToFile(invoice, cc, companyName, path)
+                   .generateToFile(invoice, cc, profile, path)
                    .mapError(InvoiceError.PdfGenerationError(_))
       _       <- invoiceRepo
                    .update(invoice.copy(pdfPath = Some(path)))
@@ -187,6 +193,8 @@ class InvoiceServiceImpl(
 
 object InvoiceService:
 
-  val layer: ZLayer[InvoiceRepository & ClientCompanyRepository, Nothing, InvoiceService] = ZLayer.fromFunction(
-    InvoiceServiceImpl(_, _)
-  )
+  val layer: ZLayer[
+    InvoiceRepository & ClientCompanyRepository & CompanyBillingProfileRepository,
+    Nothing,
+    InvoiceService
+  ] = ZLayer.fromFunction(InvoiceServiceImpl(_, _, _))

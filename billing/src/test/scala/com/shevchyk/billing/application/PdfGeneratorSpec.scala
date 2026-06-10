@@ -136,6 +136,40 @@ object PdfGeneratorSpec extends ZIOSpecDefault {
           } yield assertTrue(fullBytes.length > emptyBytes.length)
         }
       ),
+      suite("issuer profile")(
+        test("renders issuer bank details and tax IDs into the PDF text") {
+          val profile = CompanyBillingProfile(
+            companyId = companyId,
+            businessType = Some("Mietwagenunternehmen"),
+            legalName = Some("Dispax München"),
+            addressLine1 = Some("Leopoldstraße 1"),
+            addressLine2 = Some("80802 München"),
+            phone = Some("+49 89 12345678"),
+            email = Some("info@dispax.de"),
+            taxNumber = Some("146/116/61550"),
+            vatId = Some("DE123456789"),
+            bankName = Some("Deutsche Bank"),
+            iban = Some("DE24 7007 0024 0393 9543 00"),
+            paymentTermsDays = 7,
+            invoiceIntro = Some("Ich gestatte mir, ...")
+          )
+          val invoice = makeInvoice(items = List(makeItem("Ride A", BigDecimal(1), BigDecimal(50.00))))
+          PdfGenerator.generateBytes(invoice, testClientCompany, profile).map { bytes =>
+            val reader    = new com.lowagie.text.pdf.PdfReader(bytes)
+            val extractor = new com.lowagie.text.pdf.parser.PdfTextExtractor(reader)
+            val text      = extractor.getTextFromPage(1)
+            reader.close()
+            assertTrue(
+              text.contains("Rechnung"),
+              text.contains("Dispax München"),
+              text.contains("DE123456789"),
+              text.contains("146/116/61550"),
+              text.contains("DE24 7007 0024 0393 9543 00"),
+              text.contains("Zahlbar innerhalb von 7 Tagen")
+            )
+          }
+        }
+      ),
       suite("generateToFile")(
         test("writes PDF to temp file and returns path") {
           val invoice = makeInvoice(items = List(makeItem("Test Ride", BigDecimal(1), BigDecimal(99.00))))
