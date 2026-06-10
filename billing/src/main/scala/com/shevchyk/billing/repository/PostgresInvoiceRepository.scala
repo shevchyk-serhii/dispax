@@ -247,8 +247,9 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
   override def deleteItems(invoiceId: InvoiceId): Task[Unit] =
     sql"DELETE FROM invoice_items WHERE invoice_id = ${invoiceId.value}".update.run.transact(xa).unit
 
-  override def replaceItems(invoiceId: InvoiceId, items: List[InvoiceItem]): Task[Unit] =
-    val unlinkOld = sql"UPDATE rides SET invoice_id = NULL WHERE invoice_id = ${invoiceId.value}".update.run
+  override def replaceItems(invoiceId: InvoiceId, taxiCompanyId: CompanyId, items: List[InvoiceItem]): Task[Unit] =
+    // Callers detach this invoice's rides via unlinkRides before computing `items`, so we only
+    // swap the line items and (re)link the referenced rides here.
     val deleteOld = sql"DELETE FROM invoice_items WHERE invoice_id = ${invoiceId.value}".update.run
     val insertNew = items.map { item =>
       sql"""
@@ -262,19 +263,23 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
     val linkNew   =
       if rideIds.isEmpty then doobie.free.connection.pure(0)
       else
-        sql"UPDATE rides SET invoice_id = ${invoiceId.value} WHERE id = ANY($rideIds) AND invoice_id IS NULL".update.run
+        // Company-scoped: never link a ride that belongs to another company.
+        sql"""UPDATE rides SET invoice_id = ${invoiceId.value}
+              WHERE id = ANY($rideIds) AND company_id = ${taxiCompanyId.value} AND invoice_id IS NULL""".update.run
 
     val program =
       for {
-        _ <- unlinkOld
         _ <- deleteOld
         _ <- insertNew.foldLeft(doobie.free.connection.pure(0))((acc, ins) => acc.flatMap(_ => ins))
         _ <- linkNew
       } yield ()
     program.transact(xa).unit
 
-  override def unlinkRides(invoiceId: InvoiceId): Task[Unit] =
-    sql"UPDATE rides SET invoice_id = NULL WHERE invoice_id = ${invoiceId.value}".update.run.transact(xa).unit
+  override def unlinkRides(invoiceId: InvoiceId, taxiCompanyId: CompanyId): Task[Unit] =
+    sql"""UPDATE rides SET invoice_id = NULL
+          WHERE invoice_id = ${invoiceId.value} AND company_id = ${taxiCompanyId.value}""".update.run
+      .transact(xa)
+      .unit
 
   override def findUnbilledRides(
       clientCompanyId: ClientCompanyId,

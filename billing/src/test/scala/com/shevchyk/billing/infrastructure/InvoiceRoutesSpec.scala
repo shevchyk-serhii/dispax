@@ -53,13 +53,13 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
       private val itemsStore = new ConcurrentHashMap[InvoiceId, List[InvoiceItem]]()
       private val counters   = new ConcurrentHashMap[String, Int]()
 
-      def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String]     = ZIO.succeed {
+      def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String]                               = ZIO.succeed {
         val key = s"${taxiCompanyId.value}-$year"
         val n   = counters.merge(key, 1, _ + _)
         f"INV-$year-$n%04d"
       }
-      def create(invoice: Invoice): Task[Invoice]                                  = ZIO.succeed { store.put(invoice.id, invoice); invoice }
-      def findById(id: InvoiceId): Task[Option[Invoice]]                           = ZIO.succeed(Option(store.get(id)))
+      def create(invoice: Invoice): Task[Invoice]                                                            = ZIO.succeed { store.put(invoice.id, invoice); invoice }
+      def findById(id: InvoiceId): Task[Option[Invoice]]                                                     = ZIO.succeed(Option(store.get(id)))
       def findByCompany(
           taxiCompanyId: CompanyId,
           status: Option[InvoiceStatus],
@@ -68,17 +68,18 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
       ): Task[List[Invoice]] = ZIO.succeed(
         store.values().asScala.filter(_.taxiCompanyId == taxiCompanyId).toList.drop(offset).take(limit)
       )
-      def update(invoice: Invoice): Task[Invoice]                                  = ZIO.succeed { store.put(invoice.id, invoice); invoice }
-      def delete(id: InvoiceId): Task[Boolean]                                     = ZIO.succeed(Option(store.remove(id)).isDefined)
-      def addItems(items: List[InvoiceItem]): Task[Unit]                           = ZIO.succeed {
+      def update(invoice: Invoice): Task[Invoice]                                                            = ZIO.succeed { store.put(invoice.id, invoice); invoice }
+      def delete(id: InvoiceId): Task[Boolean]                                                               = ZIO.succeed(Option(store.remove(id)).isDefined)
+      def addItems(items: List[InvoiceItem]): Task[Unit]                                                     = ZIO.succeed {
         items.groupBy(_.invoiceId).foreach { case (iid, is) => itemsStore.merge(iid, is, _ ++ _) }
       }
-      def deleteItems(invoiceId: InvoiceId): Task[Unit]                            = ZIO.succeed { itemsStore.remove(invoiceId); () }
-      def replaceItems(invoiceId: InvoiceId, items: List[InvoiceItem]): Task[Unit] = ZIO.succeed {
-        if items.isEmpty then itemsStore.remove(invoiceId) else itemsStore.put(invoiceId, items)
-        ()
-      }
-      def unlinkRides(invoiceId: InvoiceId): Task[Unit]                            = ZIO.unit
+      def deleteItems(invoiceId: InvoiceId): Task[Unit]                                                      = ZIO.succeed { itemsStore.remove(invoiceId); () }
+      def replaceItems(invoiceId: InvoiceId, taxiCompanyId: CompanyId, items: List[InvoiceItem]): Task[Unit] = ZIO
+        .succeed {
+          if items.isEmpty then itemsStore.remove(invoiceId) else itemsStore.put(invoiceId, items)
+          ()
+        }
+      def unlinkRides(invoiceId: InvoiceId, taxiCompanyId: CompanyId): Task[Unit]                            = ZIO.unit
       def findUnbilledRides(
           clientCompanyId: ClientCompanyId,
           from: LocalDate,

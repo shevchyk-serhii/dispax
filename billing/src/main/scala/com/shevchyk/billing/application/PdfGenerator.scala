@@ -17,10 +17,12 @@ object PdfGenerator:
   private val dateFormatter  = DateTimeFormatter.ofPattern("dd.MM.yyyy")
   private val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.GERMAN)
 
-  private val colorPrimary = new Color(41, 98, 255)
-  private val colorLight   = new Color(240, 245, 255)
+  // Monochrome (black & white) palette, matching the plain reference Rechnung.
+  private val colorPrimary = Color.BLACK
+  private val colorLight   = new Color(245, 245, 245)
   private val colorGrey    = new Color(100, 100, 100)
-  private val colorBorder  = new Color(220, 220, 220)
+  private val colorBorder  = new Color(200, 200, 200)
+  private val colorTableHd = new Color(60, 60, 60)
 
   private val fontTitle     = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20f, colorPrimary)
   private val fontHeading   = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11f, Color.BLACK)
@@ -196,7 +198,7 @@ object PdfGenerator:
 
     def headerCell(text: String, align: Int = Element.ALIGN_LEFT): PdfPCell =
       val c = new PdfPCell(new Phrase(text, fontTableHead))
-      c.setBackgroundColor(colorPrimary)
+      c.setBackgroundColor(colorTableHd)
       c.setBorder(Rectangle.NO_BORDER)
       c.setPadding(8)
       c.setHorizontalAlignment(align)
@@ -209,7 +211,7 @@ object PdfGenerator:
     table.addCell(headerCell("Gesamt", Element.ALIGN_RIGHT))
 
     items.zipWithIndex.foreach { case (item, i) =>
-      val bg = if i % 2 == 0 then Color.WHITE else new Color(248, 248, 252)
+      val bg = if i % 2 == 0 then Color.WHITE else colorLight
 
       def dataCell(text: String, align: Int = Element.ALIGN_LEFT): PdfPCell =
         val c = new PdfPCell(new Phrase(text, fontTableCell))

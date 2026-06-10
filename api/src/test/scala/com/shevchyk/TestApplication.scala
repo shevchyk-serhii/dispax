@@ -677,13 +677,13 @@ object TestApplication extends ZIOAppDefault:
 
   private val inMemoryInvoiceRepositoryLayer: ZLayer[Any, Nothing, InvoiceRepository] = ZLayer.succeed {
     new InvoiceRepository:
-      private val store                                                            = new ConcurrentHashMap[InvoiceId, Invoice](Map(testInvoiceId -> testInvoice).asJava)
-      private val itemsStore                                                       = new ConcurrentHashMap[InvoiceId, List[InvoiceItem]]()
-      def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String]     = ZIO.succeed(
+      private val store                                                                                      = new ConcurrentHashMap[InvoiceId, Invoice](Map(testInvoiceId -> testInvoice).asJava)
+      private val itemsStore                                                                                 = new ConcurrentHashMap[InvoiceId, List[InvoiceItem]]()
+      def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String]                               = ZIO.succeed(
         s"INV-$year-${UUID.randomUUID().toString.take(8)}"
       )
-      def create(invoice: Invoice): Task[Invoice]                                  = ZIO.succeed { store.put(invoice.id, invoice); invoice }
-      def findById(id: InvoiceId): Task[Option[Invoice]]                           = ZIO.succeed(Option(store.get(id)))
+      def create(invoice: Invoice): Task[Invoice]                                                            = ZIO.succeed { store.put(invoice.id, invoice); invoice }
+      def findById(id: InvoiceId): Task[Option[Invoice]]                                                     = ZIO.succeed(Option(store.get(id)))
       def findByCompany(
           taxiCompanyId: CompanyId,
           status: Option[com.shevchyk.billing.domain.InvoiceStatus],
@@ -692,19 +692,20 @@ object TestApplication extends ZIOAppDefault:
       ): Task[List[Invoice]] = ZIO.succeed(
         store.values.asScala.filter(_.taxiCompanyId == taxiCompanyId).drop(offset).take(limit).toList
       )
-      def update(invoice: Invoice): Task[Invoice]                                  = ZIO.succeed { store.put(invoice.id, invoice); invoice }
-      def delete(id: InvoiceId): Task[Boolean]                                     = ZIO.succeed(Option(store.get(id)).isDefined && {
+      def update(invoice: Invoice): Task[Invoice]                                                            = ZIO.succeed { store.put(invoice.id, invoice); invoice }
+      def delete(id: InvoiceId): Task[Boolean]                                                               = ZIO.succeed(Option(store.get(id)).isDefined && {
         store.remove(id); true
       })
-      def addItems(items: List[InvoiceItem]): Task[Unit]                           = ZIO.succeed(
+      def addItems(items: List[InvoiceItem]): Task[Unit]                                                     = ZIO.succeed(
         items.groupBy(_.invoiceId).foreach((k, v) => itemsStore.put(k, v))
       )
-      def deleteItems(invoiceId: InvoiceId): Task[Unit]                            = ZIO.succeed(itemsStore.remove(invoiceId))
-      def replaceItems(invoiceId: InvoiceId, items: List[InvoiceItem]): Task[Unit] = ZIO.succeed {
-        if items.isEmpty then itemsStore.remove(invoiceId) else itemsStore.put(invoiceId, items)
-        ()
-      }
-      def unlinkRides(invoiceId: InvoiceId): Task[Unit]                            = ZIO.unit
+      def deleteItems(invoiceId: InvoiceId): Task[Unit]                                                      = ZIO.succeed(itemsStore.remove(invoiceId))
+      def replaceItems(invoiceId: InvoiceId, taxiCompanyId: CompanyId, items: List[InvoiceItem]): Task[Unit] = ZIO
+        .succeed {
+          if items.isEmpty then itemsStore.remove(invoiceId) else itemsStore.put(invoiceId, items)
+          ()
+        }
+      def unlinkRides(invoiceId: InvoiceId, taxiCompanyId: CompanyId): Task[Unit]                            = ZIO.unit
       def findUnbilledRides(
           clientCompanyId: ClientCompanyId,
           from: java.time.LocalDate,

@@ -93,7 +93,7 @@ class InvoiceServiceImpl(
         )
       // Detach this invoice's own rides first, so re-running auto-fill rebuilds from the same set
       // instead of emptying the invoice (its rides would otherwise no longer count as unbilled).
-      _       <- invoiceRepo.unlinkRides(id).mapError(InvoiceError.DatabaseError(_))
+      _       <- invoiceRepo.unlinkRides(id, taxiCompanyId).mapError(InvoiceError.DatabaseError(_))
       rides   <- invoiceRepo
                    .findUnbilledRides(invoice.clientCompanyId, invoice.periodFrom, invoice.periodTo)
                    .mapError(InvoiceError.DatabaseError(_))
@@ -109,7 +109,7 @@ class InvoiceServiceImpl(
                      createdAt = ride.pickupDatetime
                    )
                  }
-      _       <- invoiceRepo.replaceItems(id, items).mapError(InvoiceError.DatabaseError(_))
+      _       <- invoiceRepo.replaceItems(id, taxiCompanyId, items).mapError(InvoiceError.DatabaseError(_))
       updated <- recalculate(invoice.copy(items = items))
       saved   <- invoiceRepo.update(updated).mapError(InvoiceError.DatabaseError(_))
     } yield saved.copy(items = items)

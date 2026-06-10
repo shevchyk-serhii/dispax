@@ -364,6 +364,23 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           _      <- svc.deleteInvoice(inv.id, testCompanyId)
           linked <- rideInvoiceId(xa, rideId)
         } yield assertTrue(linked.isEmpty)
+      },
+      test("autoFillFromPeriod never links a ride owned by another company") {
+        for {
+          xa          <- ZIO.service[Transactor[Task]]
+          _           <- seedTestData(xa)
+          _           <- cleanData(xa)
+          _           <- linkClientToCompany(xa)
+          foreignRide <- insertForeignCompanyRide(xa, BigDecimal("99.00"), LocalDate.of(2026, 1, 15))
+          svc          = makeService(xa)
+          inv         <- svc.createInvoice(testCompanyId, makeRequest())
+          _           <- svc.autoFillFromPeriod(inv.id, testCompanyId)
+          foreignLink <- rideInvoiceId(xa, foreignRide)
+        } yield assertTrue(
+          // The ride matches the client company, but belongs to a different taxi company,
+          // so the company-scoped UPDATE must leave it untouched.
+          foreignLink.isEmpty
+        )
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
 
@@ -384,6 +401,27 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           VALUES ($rideId, ${clientPersonId.value}, ${clientPersonId.value},
                   ${testCompanyId.value}, 'Pickup', 'Dropoff',
                   $pickup, 'Completed'::ride_status, $price)""".update.run.transact(xa).as(rideId)
+
+  // A completed ride owned by a *different* company, but whose client belongs to our client company.
+  private def insertForeignCompanyRide(xa: Transactor[Task], price: BigDecimal, day: LocalDate): Task[UUID] =
+    val otherCompanyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-0000000000aa"))
+    val rideId         = UUID.randomUUID()
+    val pickup         = day.atTime(10, 0).atZone(java.time.ZoneOffset.UTC).toInstant
+    val program        =
+      for {
+        _ <-
+          sql"""INSERT INTO companies (id, name, email)
+                   VALUES (${otherCompanyId.value}, 'Other Taxi GmbH', 'other@test.com')
+                   ON CONFLICT DO NOTHING""".update.run
+        _ <-
+          sql"""INSERT INTO rides
+                     (id, client_id, creator_id, company_id, from_address, to_address,
+                      pickup_datetime, status, final_price_amount)
+                   VALUES ($rideId, ${clientPersonId.value}, ${clientPersonId.value},
+                           ${otherCompanyId.value}, 'Pickup', 'Dropoff',
+                           $pickup, 'Completed'::ride_status, $price)""".update.run
+      } yield ()
+    program.transact(xa).as(rideId)
 
   private def rideInvoiceId(xa: Transactor[Task], rideId: UUID): Task[Option[UUID]] =
     sql"SELECT invoice_id FROM rides WHERE id = $rideId".query[Option[UUID]].unique.transact(xa)
