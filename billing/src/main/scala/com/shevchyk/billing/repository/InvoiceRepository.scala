@@ -23,6 +23,11 @@ trait InvoiceRepository:
   def delete(id: InvoiceId): Task[Boolean]
   def addItems(items: List[InvoiceItem]): Task[Unit]
   def deleteItems(invoiceId: InvoiceId): Task[Unit]
+  // Atomically replace all items of an invoice: unlink previously billed rides,
+  // delete old items, insert new ones, and link the referenced rides to this invoice.
+  def replaceItems(invoiceId: InvoiceId, items: List[InvoiceItem]): Task[Unit]
+  // Detach all rides currently billed to this invoice (so a re-run of auto-fill sees them again).
+  def unlinkRides(invoiceId: InvoiceId): Task[Unit]
   // Returns unbilled completed rides for a client company in a period
   def findUnbilledRides(clientCompanyId: ClientCompanyId, from: LocalDate, to: LocalDate): Task[List[UnbilledRide]]
 

@@ -69,6 +69,11 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
         items.groupBy(_.invoiceId).foreach { case (iid, is) => itemsStore.merge(iid, is, _ ++ _) }
       }
       def deleteItems(invoiceId: InvoiceId): Task[Unit]                        = ZIO.succeed { itemsStore.remove(invoiceId); () }
+      def replaceItems(invoiceId: InvoiceId, items: List[InvoiceItem]): Task[Unit] = ZIO.succeed {
+        if items.isEmpty then itemsStore.remove(invoiceId) else itemsStore.put(invoiceId, items)
+        ()
+      }
+      def unlinkRides(invoiceId: InvoiceId): Task[Unit] = ZIO.unit
       def findUnbilledRides(
           clientCompanyId: ClientCompanyId,
           from: LocalDate,

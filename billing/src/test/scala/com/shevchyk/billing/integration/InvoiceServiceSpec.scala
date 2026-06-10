@@ -311,6 +311,54 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           filled.taxAmount.scale == 2,
           filled.totalAmount.scale == 2
         )
+      },
+      test("autoFillFromPeriod links billed rides to the invoice") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanData(xa)
+          _       <- linkClientToCompany(xa)
+          rideId  <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc      = makeService(xa)
+          inv     <- svc.createInvoice(testCompanyId, makeRequest())
+          filled  <- svc.autoFillFromPeriod(inv.id, testCompanyId)
+          linked  <- rideInvoiceId(xa, rideId)
+        } yield assertTrue(
+          filled.items.length == 1,
+          linked.contains(inv.id.value)
+        )
+      },
+      test("autoFillFromPeriod is idempotent: a second run does not duplicate items") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanData(xa)
+          _       <- linkClientToCompany(xa)
+          _       <- insertCompletedRide(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc      = makeService(xa)
+          inv     <- svc.createInvoice(testCompanyId, makeRequest())
+          first   <- svc.autoFillFromPeriod(inv.id, testCompanyId)
+          second  <- svc.autoFillFromPeriod(inv.id, testCompanyId)
+        } yield assertTrue(
+          first.items.length == 1,
+          // Re-running must not pick the ride up twice nor accumulate items.
+          second.items.length == 1,
+          second.subtotalAmount == first.subtotalAmount
+        )
+      },
+      test("deleteInvoice unlinks its rides (FK ON DELETE SET NULL)") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanData(xa)
+          _       <- linkClientToCompany(xa)
+          rideId  <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc      = makeService(xa)
+          inv     <- svc.createInvoice(testCompanyId, makeRequest())
+          _       <- svc.autoFillFromPeriod(inv.id, testCompanyId)
+          _       <- svc.deleteInvoice(inv.id, testCompanyId)
+          linked  <- rideInvoiceId(xa, rideId)
+        } yield assertTrue(linked.isEmpty)
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
 
@@ -320,11 +368,18 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           WHERE id = ${clientPersonId.value}""".update.run.transact(xa).unit
 
   private def insertCompletedRide(xa: Transactor[Task], price: BigDecimal, day: LocalDate): Task[Unit] =
+    insertCompletedRideReturningId(xa, price, day).unit
+
+  private def insertCompletedRideReturningId(xa: Transactor[Task], price: BigDecimal, day: LocalDate): Task[UUID] =
+    val rideId = UUID.randomUUID()
     val pickup = day.atTime(10, 0).atZone(java.time.ZoneOffset.UTC).toInstant
     sql"""INSERT INTO rides
             (id, client_id, creator_id, company_id, from_address, to_address,
              pickup_datetime, status, final_price_amount)
-          VALUES (${UUID.randomUUID()}, ${clientPersonId.value}, ${clientPersonId.value},
+          VALUES ($rideId, ${clientPersonId.value}, ${clientPersonId.value},
                   ${testCompanyId.value}, 'Pickup', 'Dropoff',
-                  $pickup, 'Completed'::ride_status, $price)""".update.run.transact(xa).unit
+                  $pickup, 'Completed'::ride_status, $price)""".update.run.transact(xa).as(rideId)
+
+  private def rideInvoiceId(xa: Transactor[Task], rideId: UUID): Task[Option[UUID]] =
+    sql"SELECT invoice_id FROM rides WHERE id = $rideId".query[Option[UUID]].unique.transact(xa)
 }
