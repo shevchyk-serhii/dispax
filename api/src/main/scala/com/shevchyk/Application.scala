@@ -123,6 +123,15 @@ object Application extends ZIOAppDefault:
       case _ => response
   }
 
+  // Allow the Flutter web client (a browser, unlike the mobile apps) to call the
+  // API across origins. Without this, the browser blocks every request after a
+  // failed CORS preflight ("Failed to fetch"). The default config reflects the
+  // request's Origin back in Access-Control-Allow-Origin, allows all methods and
+  // headers (the client sends Content-Type and Authorization), and answers
+  // OPTIONS preflights. Auth is via Bearer token in a header (not cookies), so
+  // origin-reflection is safe here.
+  private val corsMiddleware: Middleware[Any] = Middleware.cors
+
   private val healthRoutes = Routes(
     Method.GET / "health" -> handler((_: Request) => ZIO.succeed(Response.text("Dispax Modular API - OK")))
   )
@@ -194,7 +203,7 @@ object Application extends ZIOAppDefault:
                 .as(
                   Response(Status.InternalServerError, body = Body.fromString("Internal server error"))
                 )
-            } @@ ensureUtf8Charset
+            } @@ ensureUtf8Charset @@ corsMiddleware
         )
     }
     .provide(

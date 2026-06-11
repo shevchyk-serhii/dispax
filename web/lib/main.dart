@@ -75,9 +75,14 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   themeModeNotifier.value = themeFromString(prefs.getString('theme_mode'));
 
-  MapboxOptions.setAccessToken(
-    'MAPBOX_PUBLIC_TOKEN_REMOVED',
-  );
+  // Mapbox Maps is not supported on web; its initializer calls
+  // bool.fromEnvironment non-const, which throws on the DDC/web compiler
+  // and crashes main() before runApp (white screen). Skip it on web.
+  if (!kIsWeb) {
+    MapboxOptions.setAccessToken(
+      'MAPBOX_PUBLIC_TOKEN_REMOVED',
+    );
+  }
 
   try {
     await Firebase.initializeApp(

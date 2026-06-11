@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/status.dart' as ws_status;
 import '../models/websocket_event.dart';
 
 class WebSocketService {
@@ -10,7 +11,7 @@ class WebSocketService {
 
   WebSocketService._();
 
-  WebSocket? _socket;
+  WebSocketChannel? _channel;
   final _eventController = StreamController<WebSocketEvent>.broadcast();
   Timer? _reconnectTimer;
   String? _token;
@@ -37,16 +38,17 @@ class WebSocketService {
     if (_token == null || !_shouldReconnect) return;
 
     try {
-      _socket?.close();
-      _socket = await WebSocket.connect(
-        _wsUrl,
-        headers: {'Authorization': 'Bearer $_token'},
-      );
-      _reconnectAttempt = 0;
+      _channel?.sink.close(ws_status.goingAway);
+      // Browser WebSocket can't send custom headers; the token is carried in
+      // the query string (`?token=...`, see `_wsUrl`), which the server accepts.
+      _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
       debugPrint('WebSocket connected');
 
-      _socket!.listen(
+      _channel!.stream.listen(
         (data) {
+          // Receiving any frame confirms a live connection — reset the backoff
+          // here rather than on connect, so a flapping socket keeps backing off.
+          _reconnectAttempt = 0;
           try {
             final json = jsonDecode(data as String);
             final event = WebSocketEvent.fromJson(json);
@@ -60,9 +62,10 @@ class WebSocketService {
           _scheduleReconnect();
         },
         onError: (error) {
-          debugPrint('WebSocket error: $error');
+          debugPrint('WebSocket connect error: $error');
           _scheduleReconnect();
         },
+        cancelOnError: true,
       );
     } catch (e) {
       debugPrint('WebSocket connect error: $e');
@@ -74,7 +77,7 @@ class WebSocketService {
     if (!_shouldReconnect) return;
 
     _reconnectTimer?.cancel();
-    final delay = min(30, pow(2, _reconnectAttempt).toInt());
+    final delay = max(1, min(30, pow(2, _reconnectAttempt).toInt()));
     _reconnectAttempt++;
 
     debugPrint('WebSocket reconnecting in ${delay}s (attempt $_reconnectAttempt)');
@@ -84,8 +87,8 @@ class WebSocketService {
   void disconnect() {
     _shouldReconnect = false;
     _reconnectTimer?.cancel();
-    _socket?.close();
-    _socket = null;
+    _channel?.sink.close(ws_status.goingAway);
+    _channel = null;
     _token = null;
     _reconnectAttempt = 0;
   }
