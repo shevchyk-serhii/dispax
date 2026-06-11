@@ -46,6 +46,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   // Primary tabs (shown in bottom nav)
   static const int _primaryTabCount = 5;
   static const int _createRideTabIndex = 3;
+  // Billing lives in the extended screen list (index 15) but also gets a
+  // dedicated bottom-nav tab so dispatchers can reach invoicing in one tap.
+  static const int _billingTabIndex = 15;
+  // Bottom-nav slots after the 5 primary tabs: Billing, then the More menu.
+  static const int _billingNavIndex = 5;
+  static const int _moreNavIndex = 6;
 
   @override
   void didChangeDependencies() {
@@ -144,26 +150,63 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   }
 
   Widget _buildSplitView(BuildContext context) {
+    // This view is nested inside DashboardScreen's Scaffold (which owns the
+    // UserAppBar), so it must not add its own AppBar. The wide layout has no
+    // bottom nav, so surface a Billing entry point as a toolbar row on top.
     return Container(
       color: Theme.of(context).colorScheme.surface,
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            flex: 2,
-            child: const PendingRidesPanel(),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              // Filled accent button: AppColors.primary is near-black graphite
+              // and was invisible on the dark dashboard background.
+              child: FilledButton.icon(
+                onPressed: () => _openBilling(context),
+                icon: const Icon(Icons.request_quote, size: 20),
+                label: const Text('Billing'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
           ),
-          Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
           Expanded(
-            flex: 3,
-            child: DriverSchedulePanel(
-              selectedDate: _selectedDate,
-              onDateChanged: (date) => setState(() => _selectedDate = date),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: const PendingRidesPanel(),
+                ),
+                Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+                Expanded(
+                  flex: 3,
+                  child: DriverSchedulePanel(
+                    selectedDate: _selectedDate,
+                    onDateChanged: (date) => setState(() => _selectedDate = date),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+
+  void _openBilling(BuildContext context) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      // BillingScreen.build returns a bare Column (it's normally an IndexedStack
+      // child), so wrap it in a Scaffold to get an app bar and a back button.
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const Text('Billing')),
+        body: const BillingScreen(),
+      ),
+    ),
+  );
 
   Widget _buildMobileView() {
     return Scaffold(
@@ -172,13 +215,21 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         children: _allScreens,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _mobileTabIndex < _primaryTabCount ? _mobileTabIndex : 4,
-        onTap: (index) async {
-          if (_mobileTabIndex == _createRideTabIndex && index != _createRideTabIndex) {
+        currentIndex: _navIndexForScreen(_mobileTabIndex),
+        onTap: (navIndex) async {
+          // Map the tapped nav item back to a screen index: the first 5 are
+          // primary tabs (1:1), Billing jumps to its extended-screen index, and
+          // More opens the menu grid (screen index 4).
+          final screenIndex = switch (navIndex) {
+            _billingNavIndex => _billingTabIndex,
+            _moreNavIndex => 4,
+            _ => navIndex,
+          };
+          if (_mobileTabIndex == _createRideTabIndex && screenIndex != _createRideTabIndex) {
             final canLeave = await _confirmLeaveCreateRide(context);
             if (!canLeave) return;
           }
-          setState(() => _mobileTabIndex = index);
+          setState(() => _mobileTabIndex = screenIndex);
         },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.accent,
@@ -204,6 +255,11 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
             label: 'New Ride',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.request_quote_outlined),
+            activeIcon: Icon(Icons.request_quote),
+            label: 'Billing',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.grid_view_outlined),
             activeIcon: Icon(Icons.grid_view),
             label: 'More',
@@ -211,6 +267,15 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         ],
       ),
     );
+  }
+
+  // Map the active screen index to the highlighted bottom-nav item: primary
+  // tabs map 1:1, Billing has its own item, and any other extended screen
+  // falls back to the More tab.
+  int _navIndexForScreen(int screenIndex) {
+    if (screenIndex < _primaryTabCount) return screenIndex;
+    if (screenIndex == _billingTabIndex) return _billingNavIndex;
+    return _moreNavIndex;
   }
 
   Widget _buildMoreScreen() {
@@ -226,7 +291,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       _MoreMenuItem(Icons.business, 'Company', 12, AppColors.primary),
       _MoreMenuItem(Icons.receipt_long, 'Expenses', 13, AppColors.primary),
       _MoreMenuItem(Icons.download, 'Export', 14, AppColors.primary),
-      _MoreMenuItem(Icons.request_quote, 'Billing', 15, AppColors.primary),
+      // Billing (screen 15) now has a dedicated bottom-nav tab, so it's omitted here.
       _MoreMenuItem(Icons.repeat, 'Templates', 16, AppColors.primary),
       _MoreMenuItem(Icons.payment, 'Payments', 17, AppColors.primary),
       _MoreMenuItem(Icons.account_balance_wallet, 'Payroll', 18, AppColors.primary),

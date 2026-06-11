@@ -174,7 +174,9 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: selected ? AppColors.primary : Colors.transparent,
+              // AppColors.primary is near-black graphite and disappears on the
+              // dark theme; use the accent so the selected tab stays visible.
+              color: selected ? AppColors.accent : Colors.transparent,
               width: 2,
             ),
           ),
@@ -187,14 +189,14 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: selected ? AppColors.primary : colorScheme.onSurfaceVariant,
+                color: selected ? AppColors.accent : colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: selected ? AppColors.primary : colorScheme.outlineVariant,
+                color: selected ? AppColors.accent : colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
