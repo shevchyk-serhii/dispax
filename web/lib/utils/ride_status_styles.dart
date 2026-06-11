@@ -22,24 +22,41 @@ class RideStatusStyles {
     }
   }
 
-  /// Gets the background color for the given ride status
-  static Color getStatusBackgroundColor(RideStatus status) {
+  /// Gets the background color for the given ride status.
+  ///
+  /// Pass [brightness] (typically `Theme.of(context).brightness`) so the badge
+  /// fill follows the active theme; the soft light tints become deep tinted
+  /// surfaces in dark mode.
+  static Color getStatusBackgroundColor(
+    RideStatus status, {
+    Brightness brightness = Brightness.light,
+  }) {
+    final isDark = brightness == Brightness.dark;
     switch (status) {
       case RideStatus.requested:
-        return AppColors.rideRequestedBg;
+        return isDark ? AppColors.rideRequestedBgDark : AppColors.rideRequestedBg;
       case RideStatus.assigned:
-        return AppColors.rideAssignedBg;
+        return isDark ? AppColors.rideAssignedBgDark : AppColors.rideAssignedBg;
       case RideStatus.inProgress:
-        return AppColors.rideInProgressBg;
+        return isDark ? AppColors.rideInProgressBgDark : AppColors.rideInProgressBg;
       case RideStatus.completed:
-        return AppColors.rideCompletedBg;
+        return isDark ? AppColors.rideCompletedBgDark : AppColors.rideCompletedBg;
       case RideStatus.cancelled:
-        return AppColors.rideCancelledBg;
+        return isDark ? AppColors.rideCancelledBgDark : AppColors.rideCancelledBg;
     }
   }
 
-  /// Gets the border color for the given ride status
-  static Color getStatusBorderColor(RideStatus status) {
+  /// Gets the border color for the given ride status.
+  ///
+  /// In dark mode the saturated status color (used for icon/text) doubles as a
+  /// subtle outline, so the badge edge stays legible against the dark fill.
+  static Color getStatusBorderColor(
+    RideStatus status, {
+    Brightness brightness = Brightness.light,
+  }) {
+    if (brightness == Brightness.dark) {
+      return getStatusTextColor(status, brightness: brightness).withValues(alpha: 0.4);
+    }
     switch (status) {
       case RideStatus.requested:
         return AppColors.rideRequestedBorder;
@@ -54,19 +71,26 @@ class RideStatusStyles {
     }
   }
 
-  /// Gets the text color for the given ride status
-  static Color getStatusTextColor(RideStatus status) {
+  /// Gets the text color for the given ride status.
+  ///
+  /// Pass [brightness] so the label/icon use the lighter dark-mode variants,
+  /// which keep contrast against the deep tinted background.
+  static Color getStatusTextColor(
+    RideStatus status, {
+    Brightness brightness = Brightness.light,
+  }) {
+    final isDark = brightness == Brightness.dark;
     switch (status) {
       case RideStatus.requested:
-        return AppColors.rideRequestedText;
+        return isDark ? AppColors.rideRequestedTextDark : AppColors.rideRequestedText;
       case RideStatus.assigned:
-        return AppColors.rideAssignedText;
+        return isDark ? AppColors.rideAssignedTextDark : AppColors.rideAssignedText;
       case RideStatus.inProgress:
-        return AppColors.rideInProgressText;
+        return isDark ? AppColors.rideInProgressTextDark : AppColors.rideInProgressText;
       case RideStatus.completed:
-        return AppColors.rideCompletedText;
+        return isDark ? AppColors.rideCompletedTextDark : AppColors.rideCompletedText;
       case RideStatus.cancelled:
-        return AppColors.rideCancelledText;
+        return isDark ? AppColors.rideCancelledTextDark : AppColors.rideCancelledText;
     }
   }
 
@@ -106,19 +130,28 @@ class RideStatusStyles {
   static String getStatusLabel(RideStatus status) =>
       getStatusDisplayName(status).toUpperCase();
 
-  /// Creates a status badge widget for the given ride status
+  /// Creates a status badge widget for the given ride status.
+  ///
+  /// Pass [context] so the badge picks up the active theme brightness and
+  /// renders correctly in dark mode; without it the badge falls back to the
+  /// light palette.
   static Widget createStatusBadge(RideStatus status, {
+    BuildContext? context,
     double? fontSize,
     double? iconSize,
     EdgeInsets? padding,
   }) {
+    final brightness = context != null
+        ? Theme.of(context).brightness
+        : Brightness.light;
+    final textColor = getStatusTextColor(status, brightness: brightness);
     return Container(
       padding: padding ?? const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: getStatusBackgroundColor(status),
+        color: getStatusBackgroundColor(status, brightness: brightness),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: getStatusBorderColor(status),
+          color: getStatusBorderColor(status, brightness: brightness),
           width: 1,
         ),
       ),
@@ -128,13 +161,13 @@ class RideStatusStyles {
           Icon(
             getStatusIcon(status),
             size: iconSize ?? 16,
-            color: getStatusTextColor(status),
+            color: textColor,
           ),
           const SizedBox(width: 4),
           Text(
             getStatusDisplayName(status),
             style: TextStyle(
-              color: getStatusTextColor(status),
+              color: textColor,
               fontWeight: FontWeight.w600,
               fontSize: fontSize ?? 12,
             ),

@@ -406,6 +406,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                   children: [
                     RideStatusStyles.createStatusBadge(
                       ride.status,
+                      context: context,
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppDimensions.paddingSmall,
                         vertical: AppDimensions.paddingXSmall,

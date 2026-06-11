@@ -401,37 +401,14 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
+                    RideStatusStyles.createStatusBadge(
+                      ride.status,
+                      context: context,
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppDimensions.paddingSmall,
                         vertical: AppDimensions.paddingXSmall,
                       ),
-                      decoration: BoxDecoration(
-                        color: RideStatusStyles.getStatusBackgroundColor(ride.status),
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                        border: Border.all(
-                          color: RideStatusStyles.getStatusBorderColor(ride.status),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            RideStatusStyles.getStatusIcon(ride.status),
-                            size: AppDimensions.iconSmall,
-                            color: RideStatusStyles.getStatusTextColor(ride.status),
-                          ),
-                          const SizedBox(width: AppDimensions.paddingXSmall),
-                          Text(
-                            RideStatusStyles.getStatusDisplayName(ride.status),
-                            style: AppStyles.labelSmall.copyWith(
-                              color: RideStatusStyles.getStatusTextColor(ride.status),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+                      iconSize: AppDimensions.iconSmall,
                     ),
                     Text(
                       AppDateUtils.formatTime(ride.pickupDateTime),
