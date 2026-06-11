@@ -300,7 +300,7 @@ rebuild: clean
 # Build and push Docker image, then deploy to Cloud Run
 deploy:
 	sbt assembly
-	docker buildx build --platform linux/amd64 -t $(GCP_IMAGE) --push .
+	docker buildx build --platform linux/amd64 --provenance=false --sbom=false -t $(GCP_IMAGE) --push .
 	gcloud run services update $(GCP_SERVICE) \
 		--project $(GCP_PROJECT) \
 		--region $(GCP_REGION) \
