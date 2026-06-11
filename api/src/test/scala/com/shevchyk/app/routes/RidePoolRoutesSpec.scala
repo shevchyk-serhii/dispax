@@ -281,6 +281,64 @@ object RidePoolRoutesSpec extends ZIOSpecDefault {
                          .addHeader(Header.Authorization.Bearer(token))
                      )
           } yield assertTrue(resp.status == Status.Forbidden)
+        },
+        test("returns 404 when pool belongs to another company (tenant isolation)") {
+          for {
+            repo  <- ZIO.service[RidePoolRepository]
+            pool  <- repo.create(makePool(companyId = otherCompanyId))
+            token <- generateToken(dispatcherId, companyId = Some(taxiCompanyId))
+            resp  <- runRequest(
+                       Request
+                         .get(URL.decode(s"/api/pools/${pool.id.value}").toOption.get)
+                         .addHeader(Header.Authorization.Bearer(token))
+                     )
+          } yield assertTrue(resp.status == Status.NotFound)
+        }
+      ),
+      suite("POST /api/pools/:id/rides")(
+        test("returns 404 when pool belongs to another company (tenant isolation)") {
+          for {
+            repo  <- ZIO.service[RidePoolRepository]
+            pool  <- repo.create(makePool(companyId = otherCompanyId))
+            token <- generateToken(dispatcherId, companyId = Some(taxiCompanyId))
+            body   = s"""{"rideId":"${UUID.randomUUID()}"}"""
+            resp  <- runRequest(
+                       Request
+                         .post(
+                           URL.decode(s"/api/pools/${pool.id.value}/rides").toOption.get,
+                           Body.fromString(body)
+                         )
+                         .addHeader(Header.Authorization.Bearer(token))
+                     )
+            // Pool must be untouched by the cross-tenant caller.
+            after <- repo.findById(pool.id)
+          } yield assertTrue(
+            resp.status == Status.NotFound,
+            after.exists(_.currentPassengers == 0)
+          )
+        }
+      ),
+      suite("PUT /api/pools/:id/assign")(
+        test("returns 404 when pool belongs to another company (tenant isolation)") {
+          for {
+            repo  <- ZIO.service[RidePoolRepository]
+            pool  <- repo.create(makePool(companyId = otherCompanyId))
+            token <- generateToken(dispatcherId, companyId = Some(taxiCompanyId))
+            body   = s"""{"driverId":"$driverUserId"}"""
+            resp  <- runRequest(
+                       Request
+                         .put(
+                           URL.decode(s"/api/pools/${pool.id.value}/assign").toOption.get,
+                           Body.fromString(body)
+                         )
+                         .addHeader(Header.Authorization.Bearer(token))
+                     )
+            // Pool must not get a driver assigned by the cross-tenant caller.
+            after <- repo.findById(pool.id)
+          } yield assertTrue(
+            resp.status == Status.NotFound,
+            after.exists(_.driverId.isEmpty)
+          )
         }
       ),
       suite("PUT /api/pools/:id/status")(
@@ -333,6 +391,23 @@ object RidePoolRoutesSpec extends ZIOSpecDefault {
                         .addHeader(Header.Authorization.Bearer(token))
             resp   <- runRequest(request)
           } yield assertTrue(resp.status == Status.InternalServerError)
+        },
+        test("returns 404 when pool belongs to another company (tenant isolation)") {
+          for {
+            repo   <- ZIO.service[RidePoolRepository]
+            pool   <- repo.create(makePool(companyId = otherCompanyId, status = PoolStatus.Open))
+            token  <- generateToken(dispatcherId, companyId = Some(taxiCompanyId))
+            body    = """{"status":"InProgress"}"""
+            request = Request
+                        .put(URL.decode(s"/api/pools/${pool.id.value}/status").toOption.get, Body.fromString(body))
+                        .addHeader(Header.Authorization.Bearer(token))
+            resp   <- runRequest(request)
+            // Pool status must be untouched by the cross-tenant caller.
+            after  <- repo.findById(pool.id)
+          } yield assertTrue(
+            resp.status == Status.NotFound,
+            after.exists(_.status == PoolStatus.Open)
+          )
         }
       ),
       suite("GET /api/pools/ride/:rideId")(
@@ -433,6 +508,32 @@ object RidePoolRoutesSpec extends ZIOSpecDefault {
                       )
                     )
           } yield assertTrue(resp.status == Status.Unauthorized)
+        },
+        test("returns 404 when pool belongs to another company (tenant isolation)") {
+          for {
+            repo  <- ZIO.service[RidePoolRepository]
+            pool  <- repo.create(makePool(companyId = otherCompanyId, status = PoolStatus.Open))
+            rideId = RideId(UUID.randomUUID())
+            member = RidePoolMember(
+                       id = RidePoolMemberId.generate(),
+                       poolId = pool.id,
+                       rideId = rideId,
+                       clientId = PersonId(clientUserId),
+                       pickupOrder = 0
+                     )
+            _     <- repo.addMember(member)
+            token <- generateToken(dispatcherId, companyId = Some(taxiCompanyId))
+            resp  <- runRequest(
+                       Request
+                         .delete(URL.decode(s"/api/pools/${pool.id.value}/rides/${rideId.value}").toOption.get)
+                         .addHeader(Header.Authorization.Bearer(token))
+                     )
+            // Member must still be present: cross-tenant caller cannot remove it.
+            members <- repo.findMembersByPoolId(pool.id)
+          } yield assertTrue(
+            resp.status == Status.NotFound,
+            members.exists(_.rideId == rideId)
+          )
         }
       )
     ).provide(layers) @@ TestAspect.sequential

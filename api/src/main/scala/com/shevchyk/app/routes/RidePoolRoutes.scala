@@ -97,12 +97,17 @@ object RidePoolRoutes:
       // GET /api/pools/{id} — get pool details with members
       Method.GET / "api" / "pools" / string("id") -> RouteHelpers.authPathHandler("RidePool") { (user, id: String, _) =>
         for {
-          _       <- AuthMiddleware.checkRole(user, "DISPATCHER", "DRIVER")
-          repo    <- ZIO.service[RidePoolRepository]
-          poolId  <- UuidParser.parse(id).map(RidePoolId(_))
-          poolOpt <- repo.findById(poolId)
-          pool    <- ZIO.fromOption(poolOpt).orElseFail(new RuntimeException("Pool not found"))
-          members <- repo.findMembersByPoolId(pool.id)
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "DRIVER")
+          companyId <- UuidParser.requireCompanyId(user.companyId)
+          repo      <- ZIO.service[RidePoolRepository]
+          poolId    <- UuidParser.parse(id).map(RidePoolId(_))
+          poolOpt   <- repo.findById(poolId)
+          // Enforce tenant isolation: only the caller's company may read a pool.
+          // Otherwise respond NotFound to avoid leaking cross-tenant existence.
+          pool      <- ZIO
+                         .fromOption(poolOpt.filter(_.companyId == companyId))
+                         .orElseFail(Response.status(Status.NotFound))
+          members   <- repo.findMembersByPoolId(pool.id)
           response =
             s"""{
             "pool": ${pool.toJson},
@@ -116,6 +121,7 @@ object RidePoolRoutes:
         (user, id: String, request) =>
           for {
             _            <- AuthMiddleware.checkRole(user, "DISPATCHER")
+            companyId    <- UuidParser.requireCompanyId(user.companyId)
             bodyStr      <- request.body.asString
             req          <- ZIO
                               .fromEither(bodyStr.fromJson[AddToPoolRequest])
@@ -123,7 +129,11 @@ object RidePoolRoutes:
             repo         <- ZIO.service[RidePoolRepository]
             poolId       <- UuidParser.parse(id).map(RidePoolId(_))
             poolOpt      <- repo.findById(poolId)
-            pool         <- ZIO.fromOption(poolOpt).orElseFail(new RuntimeException("Pool not found"))
+            // Enforce tenant isolation: only the caller's company may mutate a pool.
+            // Otherwise respond NotFound to avoid leaking cross-tenant existence.
+            pool         <- ZIO
+                              .fromOption(poolOpt.filter(_.companyId == companyId))
+                              .orElseFail(Response.status(Status.NotFound))
             _            <- ZIO.fail(new RuntimeException("Pool is full or not open")).when(!pool.canAddPassenger)
             service      <- ZIO.service[RideService]
             parsedRideId <- UuidParser.parseRideId(req.rideId)
@@ -163,10 +173,15 @@ object RidePoolRoutes:
             .authHandler("RidePool") { (user, _) =>
               for {
                 _            <- AuthMiddleware.checkRole(user, "DISPATCHER")
+                companyId    <- UuidParser.requireCompanyId(user.companyId)
                 repo         <- ZIO.service[RidePoolRepository]
                 poolId       <- UuidParser.parse(id).map(RidePoolId(_))
                 poolOpt      <- repo.findById(poolId)
-                pool         <- ZIO.fromOption(poolOpt).orElseFail(new RuntimeException("Pool not found"))
+                // Enforce tenant isolation: only the caller's company may mutate a pool.
+                // Otherwise respond NotFound to avoid leaking cross-tenant existence.
+                pool         <- ZIO
+                                  .fromOption(poolOpt.filter(_.companyId == companyId))
+                                  .orElseFail(Response.status(Status.NotFound))
                 parsedRideId <- UuidParser.parseRideId(rideId)
                 removed      <- repo.removeMember(pool.id, parsedRideId)
                 _            <- ZIO.fail(new RuntimeException("Ride not in pool")).when(!removed)
@@ -186,6 +201,7 @@ object RidePoolRoutes:
         (user, id: String, request) =>
           for {
             _           <- AuthMiddleware.checkRole(user, "DISPATCHER")
+            companyId   <- UuidParser.requireCompanyId(user.companyId)
             bodyStr     <- request.body.asString
             driverReq   <- ZIO
                              .fromEither(bodyStr.fromJson[Map[String, String]])
@@ -199,7 +215,11 @@ object RidePoolRoutes:
             repo        <- ZIO.service[RidePoolRepository]
             poolId      <- UuidParser.parse(id).map(RidePoolId(_))
             poolOpt     <- repo.findById(poolId)
-            pool        <- ZIO.fromOption(poolOpt).orElseFail(new RuntimeException("Pool not found"))
+            // Enforce tenant isolation: only the caller's company may mutate a pool.
+            // Otherwise respond NotFound to avoid leaking cross-tenant existence.
+            pool        <- ZIO
+                             .fromOption(poolOpt.filter(_.companyId == companyId))
+                             .orElseFail(Response.status(Status.NotFound))
             members     <- repo.findMembersByPoolId(pool.id)
             service     <- ZIO.service[RideService]
             _           <-
@@ -215,6 +235,7 @@ object RidePoolRoutes:
         (user, id: String, request) =>
           for {
             _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "DRIVER")
+            companyId  <- UuidParser.requireCompanyId(user.companyId)
             bodyStr    <- request.body.asString
             statusReq  <- ZIO
                             .fromEither(bodyStr.fromJson[Map[String, String]])
@@ -227,7 +248,11 @@ object RidePoolRoutes:
             repo       <- ZIO.service[RidePoolRepository]
             poolId     <- UuidParser.parse(id).map(RidePoolId(_))
             poolOpt    <- repo.findById(poolId)
-            pool       <- ZIO.fromOption(poolOpt).orElseFail(new RuntimeException("Pool not found"))
+            // Enforce tenant isolation: only the caller's company may mutate a pool.
+            // Otherwise respond NotFound to avoid leaking cross-tenant existence.
+            pool       <- ZIO
+                            .fromOption(poolOpt.filter(_.companyId == companyId))
+                            .orElseFail(Response.status(Status.NotFound))
             poolStatus <- ZIO
                             .attempt(PoolStatus.valueOf(newStatus))
                             .mapError(_ =>
