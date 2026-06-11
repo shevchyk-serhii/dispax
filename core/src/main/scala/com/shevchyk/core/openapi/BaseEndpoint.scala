@@ -1,0 +1,21 @@
+package com.shevchyk.core.openapi
+
+import sttp.tapir.*
+import sttp.tapir.json.zio.*
+
+/**
+ * Building blocks shared by every documented endpoint.
+ *
+ * The handlers in this codebase already encode their own success/error responses as raw bodies, so for documentation we
+ * describe the *outer shape* (paths, query params, security, error body) with Tapir and let a thin adapter forward the
+ * actual request to the existing zio-http handler. See `com.shevchyk.auth.openapi.SecureEndpoint` for the authenticated
+ * variant and the adapter.
+ */
+object BaseEndpoint:
+
+  /**
+   * Base for public (unauthenticated) endpoints. Declares the common `application/json` error body so failures are
+   * documented uniformly as `{ "error": "..." }`.
+   */
+  val publicEndpoint: PublicEndpoint[Unit, ApiError, Unit, Any] =
+    endpoint.errorOut(jsonBody[ApiError])

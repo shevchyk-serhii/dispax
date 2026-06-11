@@ -10,6 +10,7 @@ import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.{DriverEarningsReport, EarningsPeriod}
 import com.shevchyk.ride.repository.ClientLocationRepository
 import com.shevchyk.ride.infrastructure.http.dto.{LocationDto, RideDto}
+import sttp.tapir.Schema
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -19,9 +20,15 @@ case class UpdateLocationRequest(
     longitude: Double
 ) derives JsonCodec
 
+object UpdateLocationRequest:
+  given Schema[UpdateLocationRequest] = Schema.derived[UpdateLocationRequest]
+
 case class UpdateAvailabilityRequest(
     status: String
 ) derives JsonCodec
+
+object UpdateAvailabilityRequest:
+  given Schema[UpdateAvailabilityRequest] = Schema.derived[UpdateAvailabilityRequest]
 
 case class AvailableDriverDto(
     id: String,
@@ -30,6 +37,9 @@ case class AvailableDriverDto(
     longitude: Option[Double] = None
 ) derives JsonCodec
 
+object AvailableDriverDto:
+  given Schema[AvailableDriverDto] = Schema.derived[AvailableDriverDto]
+
 case class DriverProximityDto(
     driverLocation: Option[LocationDto] = None,
     driverApproaching: Boolean = false,
@@ -37,10 +47,16 @@ case class DriverProximityDto(
     etaMinutes: Option[Int] = None
 ) derives JsonCodec
 
+object DriverProximityDto:
+  given Schema[DriverProximityDto] = Schema.derived[DriverProximityDto]
+
 case class EarningsBucketDto(
     bucketStart: String,
     amount: Double
 ) derives JsonCodec
+
+object EarningsBucketDto:
+  given Schema[EarningsBucketDto] = Schema.derived[EarningsBucketDto]
 
 case class DriverEarningsDto(
     period: String,
@@ -53,6 +69,9 @@ case class DriverEarningsDto(
     currency: String,
     buckets: List[EarningsBucketDto]
 ) derives JsonCodec
+
+object DriverEarningsDto:
+  given Schema[DriverEarningsDto] = Schema.derived[DriverEarningsDto]
 
 object DriverRoutes:
 

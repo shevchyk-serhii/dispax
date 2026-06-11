@@ -44,6 +44,22 @@ lazy val jsonDependencies = Seq(
   "dev.zio" %% "zio-json" % "0.7.3"
 )
 
+// Tapir: declarative endpoint descriptions used to generate OpenAPI + Swagger UI
+// and to interpret the same endpoints on the zio-http server. Version 1.11.x is
+// compatible with Scala 3.3.x, ZIO 2.1.x and zio-http 3.0.x.
+lazy val tapirVersion = "1.11.10"
+lazy val tapirDependencies = Seq(
+  "com.softwaremill.sttp.tapir" %% "tapir-core"            % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-zio"             % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-json-zio"        % tapirVersion
+)
+// Server interpreter + bundled Swagger UI. Only the api (root) module that mounts
+// the HTTP server needs these.
+lazy val tapirServerDependencies = Seq(
+  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"    % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle"  % tapirVersion
+)
+
 lazy val circeDependencies = Seq(
   "io.circe" %% "circe-core"    % "0.14.10",
   "io.circe" %% "circe-generic" % "0.14.10",
@@ -101,7 +117,7 @@ lazy val testDependencies = Seq(
 lazy val core = (project in file("core"))
   .settings(
     name := "dispax-core",
-    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ httpDependencies ++ dbDependencies ++ uuidDependencies ++ testcontainersDependencies,
+    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ httpDependencies ++ dbDependencies ++ uuidDependencies ++ tapirDependencies ++ testcontainersDependencies,
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
 
@@ -109,7 +125,7 @@ lazy val auth = (project in file("auth"))
   .dependsOn(core % "compile->compile;test->test")
   .settings(
     name := "dispax-auth",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jwtDependencies ++ bcryptDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jwtDependencies ++ bcryptDependencies ++ tapirDependencies
   )
 
 lazy val ride = (project in file("ride"))
@@ -119,7 +135,7 @@ lazy val ride = (project in file("ride"))
   )
   .settings(
     name := "dispax-ride",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies ++ testcontainersDependencies,
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies ++ tapirDependencies ++ testcontainersDependencies,
     scalacOptions += "-Xmax-inlines:64",
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
@@ -132,7 +148,7 @@ lazy val driver = (project in file("driver"))
   )
   .settings(
     name := "dispax-driver",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ tapirDependencies
   )
 
 lazy val schedule = (project in file("schedule"))
@@ -142,7 +158,7 @@ lazy val schedule = (project in file("schedule"))
   )
   .settings(
     name := "dispax-schedule",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ tapirDependencies
   )
 
 lazy val firebaseDependencies = Seq(
@@ -168,7 +184,7 @@ lazy val billing = (project in file("billing"))
   )
   .settings(
     name := "dispax-billing",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ pdfDependencies ++ testcontainersDependencies,
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ pdfDependencies ++ tapirDependencies ++ testcontainersDependencies,
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
 
@@ -181,7 +197,7 @@ lazy val root = (project in file("."))
     Compile / resourceDirectory := baseDirectory.value / "api" / "src" / "main" / "resources",
     Test / scalaSource          := baseDirectory.value / "api" / "src" / "test" / "scala",
     Test / resourceDirectory    := baseDirectory.value / "api" / "src" / "test" / "resources",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies ++ bcryptDependencies ++ testDependencies,
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies ++ bcryptDependencies ++ tapirDependencies ++ tapirServerDependencies ++ testDependencies,
     testFrameworks ++= Seq(
       new TestFramework("zio.test.sbt.ZTestFramework"),
       new TestFramework("com.novocode.junit.JUnitFramework")

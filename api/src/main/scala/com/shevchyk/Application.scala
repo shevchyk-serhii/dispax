@@ -59,7 +59,6 @@ import com.shevchyk.core.repository.{
   PostgresClientCompanyRepository
 }
 import com.shevchyk.auth.application.AuthService
-import com.shevchyk.auth.infrastructure.http.AuthRoutes
 import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.middleware.RateLimiter
@@ -140,34 +139,15 @@ object Application extends ZIOAppDefault:
   // Environment.isDevelopment inside the handler, so it is inert in production.
   private val devRoutes = DevRoutes.routes
 
-  private val publicRoutes = healthRoutes ++ UserRoutes.routes ++ AuthRoutes.routes
+  // All public and authenticated REST endpoints (auth, users, rides, drivers,
+  // schedules, billing, audit, gdpr, sessions, blacklist, emergency, pools,
+  // geofences, notifications, client-companies, …) are now described and served
+  // by Tapir via OpenApiServer, which also exposes Swagger UI at /docs. Only the
+  // health check, the dev-only reset endpoint and the WebSocket upgrade remain as
+  // hand-written zio-http routes (WebSocket is not expressible in OpenAPI).
+  private val publicRoutes = healthRoutes
 
-  private val rideRoutes            = RideRoutes.authenticatedRoutes
-  private val clientLocationRoutes  = RideRoutes.clientLocationRoutes
-  private val driverRoutes          = DriverRoutes.authenticatedRoutes
-  private val scheduleRoutes        = ScheduleRoutes.authenticatedRoutes
-  private val userRoutes            = UserRoutes.authenticatedRoutes
-  private val chatRoutes            = RideRoutes.chatRoutes
-  private val expenseRoutes         = ExpenseRoutes.authenticatedRoutes
-  private val rideTemplateRoutes    = RideTemplateRoutes.authenticatedRoutes
-  private val notificationRoutes    = NotificationRoutes.authenticatedRoutes
-  private val statsRoutes           = StatsRoutes.authenticatedRoutes
-  private val exportRoutes          = ExportRoutes.authenticatedRoutes
-  private val ratingRoutes          = RideRoutes.ratingRoutes
-  private val auditRoutes           = AuditRoutes.authenticatedRoutes
-  private val companySettingsRoutes = CompanySettingsRoutes.authenticatedRoutes
-  private val geofenceRoutes        = GeofenceRoutes.authenticatedRoutes
-  private val gdprRoutes            = GdprRoutes.authenticatedRoutes
-  private val sessionRoutes         = SessionRoutes.authenticatedRoutes
-  private val blacklistRoutes       = BlacklistRoutes.authenticatedRoutes
-  private val emergencyRoutes       = EmergencyRoutes.authenticatedRoutes
-  private val ridePoolRoutes        = RidePoolRoutes.authenticatedRoutes
-  private val notifPrefRoutes       = NotificationPreferenceRoutes.authenticatedRoutes
-  private val clientAddressRoutes   = ClientAddressRoutes.authenticatedRoutes
-  private val clientCompanyRoutes   = ClientCompanyRoutes.authenticatedRoutes
-  private val invoiceRoutes         = InvoiceRoutes.authenticatedRoutes
-  private val billingCompanyRoutes  = BillingCompanyRoutes.authenticatedRoutes
-  private val billingProfileRoutes  = BillingProfileRoutes.authenticatedRoutes
+  private val openApiRoutes = com.shevchyk.app.openapi.OpenApiServer.routes
 
   private val wsRoutes = WebSocketRoutes.wsRoutes
 
@@ -197,7 +177,7 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + schedule + notification + PostgreSQL repositories") *>
         ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
         Server.serve(
-          (publicRoutes ++ devRoutes ++ rideRoutes ++ clientLocationRoutes ++ chatRoutes ++ expenseRoutes ++ driverRoutes ++ scheduleRoutes ++ userRoutes ++ rideTemplateRoutes ++ notificationRoutes ++ statsRoutes ++ exportRoutes ++ ratingRoutes ++ auditRoutes ++ companySettingsRoutes ++ geofenceRoutes ++ gdprRoutes ++ sessionRoutes ++ blacklistRoutes ++ emergencyRoutes ++ ridePoolRoutes ++ notifPrefRoutes ++ clientAddressRoutes ++ clientCompanyRoutes ++ invoiceRoutes ++ billingCompanyRoutes ++ billingProfileRoutes ++ wsRoutes)
+          (publicRoutes ++ openApiRoutes ++ devRoutes ++ wsRoutes)
             .handleErrorCauseZIO { cause =>
               ZIO
                 .logErrorCause("Unhandled server error", cause)

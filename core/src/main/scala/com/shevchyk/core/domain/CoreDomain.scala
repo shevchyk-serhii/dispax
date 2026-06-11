@@ -1,5 +1,6 @@
 package com.shevchyk.core.domain
 
+import sttp.tapir.Schema
 import zio.json.*
 import java.time.Instant
 import java.util.UUID
@@ -30,16 +31,19 @@ object PersonId:
   def generate(): PersonId    = PersonId(UuidCreator.getTimeOrderedEpoch())
   given JsonEncoder[PersonId] = idEncoder(_.value)
   given JsonDecoder[PersonId] = idDecoder(PersonId.apply)
+  given Schema[PersonId]      = Schema.derived
 
 object CompanyId:
   def generate(): CompanyId    = CompanyId(UuidCreator.getTimeOrderedEpoch())
   given JsonEncoder[CompanyId] = idEncoder(_.value)
   given JsonDecoder[CompanyId] = idDecoder(CompanyId.apply)
+  given Schema[CompanyId]      = Schema.derived
 
 object ClientCompanyId:
   def generate(): ClientCompanyId    = ClientCompanyId(UuidCreator.getTimeOrderedEpoch())
   given JsonEncoder[ClientCompanyId] = idEncoder(_.value)
   given JsonDecoder[ClientCompanyId] = idDecoder(ClientCompanyId.apply)
+  given Schema[ClientCompanyId]      = Schema.derived
 
 object RideId:
   def generate(): RideId    = RideId(UuidCreator.getTimeOrderedEpoch())
@@ -71,6 +75,8 @@ enum PersonRole:
 
 object PersonRole:
 
+  given Schema[PersonRole] = Schema.derivedEnumeration[PersonRole].defaultStringBased
+
   given JsonEncoder[PersonRole] = JsonEncoder[String].contramap {
     case PersonRole.ClientSecretary => "CLIENT_SECRETARY"
     case other                      => other.toString
@@ -92,6 +98,9 @@ object PersonRole:
 
 enum UserStatus derives JsonCodec:
   case ACTIVE, INACTIVE, SUSPENDED
+
+object UserStatus:
+  given Schema[UserStatus] = Schema.derivedEnumeration[UserStatus].defaultStringBased
 
 final case class Person(
     id: PersonId,
@@ -127,6 +136,8 @@ final case class PersonDto(
 ) derives JsonCodec
 
 object PersonDto:
+
+  given Schema[PersonDto] = Schema.derived
 
   def fromPerson(p: Person): PersonDto = PersonDto(
     id = p.id,

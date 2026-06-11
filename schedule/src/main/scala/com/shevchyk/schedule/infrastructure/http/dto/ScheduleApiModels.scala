@@ -9,6 +9,7 @@ import com.shevchyk.schedule.domain.{
   ScheduleDayStatus,
   ScheduleError
 }
+import sttp.tapir.Schema
 import zio.*
 import zio.json.*
 import java.time.{LocalDate, LocalTime}
@@ -54,7 +55,12 @@ case class UpdateScheduleDayApiRequest(
     notes: Option[String] = None
 ) derives JsonCodec
 
+object ScheduleBatchDayApiRequest:
+  given Schema[ScheduleBatchDayApiRequest] = Schema.derived[ScheduleBatchDayApiRequest]
+
 object ScheduleDayDto:
+
+  given Schema[ScheduleDayDto] = Schema.derived[ScheduleDayDto]
 
   def fromDomain(day: ScheduleDay): ScheduleDayDto = ScheduleDayDto(
     id = day.id.value.toString,
@@ -70,6 +76,8 @@ object ScheduleDayDto:
   )
 
 object CreateScheduleDayApiRequest:
+
+  given Schema[CreateScheduleDayApiRequest] = Schema.derived[CreateScheduleDayApiRequest]
 
   def toDomain(
       request: CreateScheduleDayApiRequest,
@@ -89,6 +97,8 @@ object CreateScheduleDayApiRequest:
     }
 
 object CreateScheduleBatchApiRequest:
+
+  given Schema[CreateScheduleBatchApiRequest] = Schema.derived[CreateScheduleBatchApiRequest]
 
   def toDomain(
       request: CreateScheduleBatchApiRequest,
@@ -112,6 +122,8 @@ object CreateScheduleBatchApiRequest:
     }
 
 object UpdateScheduleDayApiRequest:
+
+  given Schema[UpdateScheduleDayApiRequest] = Schema.derived[UpdateScheduleDayApiRequest]
 
   def toDomain(request: UpdateScheduleDayApiRequest): com.shevchyk.schedule.domain.UpdateScheduleDayRequest =
     com.shevchyk.schedule.domain.UpdateScheduleDayRequest(

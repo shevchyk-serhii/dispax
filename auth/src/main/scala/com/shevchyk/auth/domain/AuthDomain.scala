@@ -1,6 +1,7 @@
 package com.shevchyk.auth.domain
 
 import com.shevchyk.core.domain.{Person, PersonRole}
+import sttp.tapir.Schema
 import zio.json.*
 import java.util.UUID
 
@@ -9,10 +10,16 @@ case class LoginRequest(
     password: String
 ) derives JsonCodec
 
+object LoginRequest:
+  given Schema[LoginRequest] = Schema.derived
+
 case class LoginResponse(
     person: UserDto,
     token: String
 ) derives JsonCodec
+
+object LoginResponse:
+  given Schema[LoginResponse] = Schema.derived
 
 case class UserDto(
     id: UUID,
@@ -33,6 +40,9 @@ case class CreateUserRequest(
     phone: Option[String] = None
 ) derives JsonCodec
 
+object CreateUserRequest:
+  given Schema[CreateUserRequest] = Schema.derived
+
 case class UpdateUserRequest(
     email: Option[String] = None,
     name: Option[String] = None,
@@ -41,34 +51,55 @@ case class UpdateUserRequest(
     status: Option[String] = None
 ) derives JsonCodec
 
+object UpdateUserRequest:
+  given Schema[UpdateUserRequest] = Schema.derived
+
 case class ChangePasswordRequest(
     currentPassword: String,
     newPassword: String
 ) derives JsonCodec
+
+object ChangePasswordRequest:
+  given Schema[ChangePasswordRequest] = Schema.derived
 
 case class BiometricSetupRequest(
     enabled: Boolean,
     deviceId: String
 ) derives JsonCodec
 
+object BiometricSetupRequest:
+  given Schema[BiometricSetupRequest] = Schema.derived
+
 case class BiometricSetupResponse(
     success: Boolean,
     biometricEnabled: Boolean
 ) derives JsonCodec
+
+object BiometricSetupResponse:
+  given Schema[BiometricSetupResponse] = Schema.derived
 
 case class TokenValidationResponse(
     valid: Boolean,
     person: Option[UserDto] = None
 ) derives JsonCodec
 
+object TokenValidationResponse:
+  given Schema[TokenValidationResponse] = Schema.derived
+
 case class AuthSuccessResponse(
     success: Boolean,
     message: Option[String] = None
 ) derives JsonCodec
 
+object AuthSuccessResponse:
+  given Schema[AuthSuccessResponse] = Schema.derived
+
 case class PasswordResetRequest(
     email: String
 ) derives JsonCodec
+
+object PasswordResetRequest:
+  given Schema[PasswordResetRequest] = Schema.derived
 
 sealed trait AuthError                                     extends Throwable
 case class UserNotFound(email: String)                     extends AuthError
@@ -86,6 +117,8 @@ case class InvalidPayloadError(message: String)        extends JwtError
 case class TokenNotEligibleForRefresh(message: String) extends JwtError
 
 object UserDto:
+
+  given Schema[UserDto] = Schema.derived
 
   def fromPerson(person: Person): UserDto = UserDto(
     id = person.id.value,
