@@ -119,7 +119,7 @@ class DayViewWidget extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: _scheduleStatusColor(s.status).withAlpha(30),
+                    color: _scheduleStatusColor(colorScheme, s.status).withAlpha(30),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -127,7 +127,7 @@ class DayViewWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: _scheduleStatusColor(s.status),
+                      color: _scheduleStatusColor(colorScheme, s.status),
                     ),
                   ),
                 ),
@@ -149,14 +149,14 @@ class DayViewWidget extends StatelessWidget {
     );
   }
 
-  Color _scheduleStatusColor(ScheduleDayStatus status) {
+  Color _scheduleStatusColor(ColorScheme colorScheme, ScheduleDayStatus status) {
     switch (status) {
       case ScheduleDayStatus.scheduled:
         return AppColors.info;
       case ScheduleDayStatus.active:
         return AppColors.success;
       case ScheduleDayStatus.completed:
-        return AppColors.textSecondary;
+        return colorScheme.onSurfaceVariant;
       case ScheduleDayStatus.cancelled:
         return AppColors.error;
     }

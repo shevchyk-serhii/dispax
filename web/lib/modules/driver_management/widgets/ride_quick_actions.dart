@@ -45,6 +45,7 @@ class RideQuickActions extends StatelessWidget {
         const SizedBox(width: 8),
         // Details ghost button
         _buildGhostButton(
+          context,
           icon: Icons.info_outline_rounded,
           label: 'Details',
           onPressed: onViewDetails ?? () {},
@@ -79,22 +80,24 @@ class RideQuickActions extends StatelessWidget {
     );
   }
 
-  Widget _buildGhostButton({
+  Widget _buildGhostButton(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
   }) {
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
     return GestureDetector(
       onTap: onPressed,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: AppColors.textSecondary),
+          Icon(icon, size: 15, color: onSurfaceVariant),
           const SizedBox(width: 4),
           Text(
             label,
             style: AppStyles.labelSmall.copyWith(
-              color: AppColors.textSecondary,
+              color: onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),

@@ -66,7 +66,7 @@ class TodayRideCard extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _buildHeader(statusColor, isUpcoming, timeUntilRide),
+                _buildHeader(context, statusColor, isUpcoming, timeUntilRide),
                 _buildContent(context),
               ],
             ),
@@ -77,10 +77,12 @@ class TodayRideCard extends StatelessWidget {
   }
 
   Widget _buildHeader(
+    BuildContext context,
     Color statusColor,
     bool isUpcoming,
     Duration timeUntilRide,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -95,14 +97,14 @@ class TodayRideCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.access_time, color: AppColors.textSecondary, size: 18),
+              Icon(Icons.access_time, color: colorScheme.onSurfaceVariant, size: 18),
               const SizedBox(width: 6),
               Text(
                 DateFormat.Hm().format(ride.pickupDateTime),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: colorScheme.onSurface,
                 ),
               ),
               if (isUpcoming && timeUntilRide.inHours < 2)

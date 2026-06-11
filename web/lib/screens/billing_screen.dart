@@ -609,23 +609,26 @@ class _StatusBadge extends StatelessWidget {
   final InvoiceStatus status;
   const _StatusBadge(this.status);
 
-  Color get _color => switch (status) {
-        InvoiceStatus.draft => AppColors.textSecondary,
+  Color _color(BuildContext context) => switch (status) {
+        InvoiceStatus.draft => Theme.of(context).colorScheme.onSurfaceVariant,
         InvoiceStatus.sent => AppColors.warning,
         InvoiceStatus.paid => AppColors.success,
         InvoiceStatus.cancelled => AppColors.error,
       };
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: _color.withAlpha(25),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _color.withAlpha(80)),
-        ),
-        child: Text(status.displayName, style: TextStyle(color: _color, fontWeight: FontWeight.bold, fontSize: 12)),
-      );
+  Widget build(BuildContext context) {
+    final color = _color(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(25),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withAlpha(80)),
+      ),
+      child: Text(status.displayName, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+    );
+  }
 }
 
 class _TotalRow extends StatelessWidget {

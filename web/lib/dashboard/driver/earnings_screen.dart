@@ -82,17 +82,18 @@ class _EarningsBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
       children: [
-        _buildHeadline(data),
+        _buildHeadline(context, data),
         const SizedBox(height: AppDimensions.paddingLarge),
-        _buildMetricsGrid(data),
+        _buildMetricsGrid(context, data),
         const SizedBox(height: AppDimensions.paddingLarge),
-        _buildChart(data),
+        _buildChart(context, data),
         const SizedBox(height: AppDimensions.paddingXLarge),
       ],
     );
   }
 
-  Widget _buildHeadline(DriverEarnings data) {
+  Widget _buildHeadline(BuildContext context, DriverEarnings data) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
       decoration: AppTheme.glassDecoration,
@@ -102,7 +103,7 @@ class _EarningsBody extends StatelessWidget {
           Text(
             'Gross revenue',
             style: AppStyles.labelMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppDimensions.paddingSmall),
@@ -118,7 +119,7 @@ class _EarningsBody extends StatelessWidget {
             'Net €${data.netRevenue.toStringAsFixed(2)} '
             '· after €${data.totalExpenses.toStringAsFixed(2)} expenses',
             style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -126,10 +127,11 @@ class _EarningsBody extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricsGrid(DriverEarnings data) {
+  Widget _buildMetricsGrid(BuildContext context, DriverEarnings data) {
     return Row(
       children: [
         _metricCard(
+          context,
           icon: Icons.check_circle,
           value: data.completedRides.toString(),
           label: 'Completed',
@@ -137,6 +139,7 @@ class _EarningsBody extends StatelessWidget {
         ),
         const SizedBox(width: AppDimensions.paddingMedium),
         _metricCard(
+          context,
           icon: Icons.euro,
           value: '€${data.avgFare.toStringAsFixed(0)}',
           label: 'Avg fare',
@@ -144,6 +147,7 @@ class _EarningsBody extends StatelessWidget {
         ),
         const SizedBox(width: AppDimensions.paddingMedium),
         _metricCard(
+          context,
           icon: Icons.cancel,
           value: data.cancelledRides.toString(),
           label: 'Cancelled',
@@ -153,12 +157,14 @@ class _EarningsBody extends StatelessWidget {
     );
   }
 
-  Widget _metricCard({
+  Widget _metricCard(
+    BuildContext context, {
     required IconData icon,
     required String value,
     required String label,
     required Color color,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(AppDimensions.paddingMedium),
@@ -170,14 +176,14 @@ class _EarningsBody extends StatelessWidget {
             Text(
               value,
               style: AppStyles.titleMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               label,
               style: AppStyles.labelSmall.copyWith(
-                color: AppColors.textSecondary,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -186,7 +192,8 @@ class _EarningsBody extends StatelessWidget {
     );
   }
 
-  Widget _buildChart(DriverEarnings data) {
+  Widget _buildChart(BuildContext context, DriverEarnings data) {
+    final colorScheme = Theme.of(context).colorScheme;
     final buckets = data.buckets;
     final maxAmount = buckets.fold<double>(
       0,
@@ -201,7 +208,7 @@ class _EarningsBody extends StatelessWidget {
         children: [
           Text(
             'Revenue by ${data.period == 'day' ? 'hour' : 'day'}',
-            style: AppStyles.titleMedium.copyWith(color: AppColors.textPrimary),
+            style: AppStyles.titleMedium.copyWith(color: colorScheme.onSurface),
           ),
           const SizedBox(height: AppDimensions.paddingLarge),
           if (buckets.isEmpty || maxAmount == 0)
@@ -211,7 +218,7 @@ class _EarningsBody extends StatelessWidget {
                 child: Text(
                   'No revenue in this period',
                   style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -222,7 +229,7 @@ class _EarningsBody extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: buckets
-                    .map((b) => _bar(b, maxAmount, data.period))
+                    .map((b) => _bar(colorScheme, b, maxAmount, data.period))
                     .toList(),
               ),
             ),
@@ -231,7 +238,7 @@ class _EarningsBody extends StatelessWidget {
     );
   }
 
-  Widget _bar(EarningsBucket bucket, double maxAmount, String period) {
+  Widget _bar(ColorScheme colorScheme, EarningsBucket bucket, double maxAmount, String period) {
     final fraction = maxAmount == 0 ? 0.0 : bucket.amount / maxAmount;
     final label = period == 'day'
         ? '${bucket.bucketStart.hour}'
@@ -247,7 +254,7 @@ class _EarningsBody extends StatelessWidget {
               Text(
                 bucket.amount.toStringAsFixed(0),
                 style: AppStyles.labelSmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 9,
                 ),
               ),
@@ -263,7 +270,7 @@ class _EarningsBody extends StatelessWidget {
             Text(
               label,
               style: AppStyles.labelSmall.copyWith(
-                color: AppColors.textSecondary,
+                color: colorScheme.onSurfaceVariant,
                 fontSize: 9,
               ),
             ),
