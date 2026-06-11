@@ -17,8 +17,13 @@ class AppTheme {
 
     final colorScheme = ColorScheme(
       brightness: brightness,
-      primary: AppColors.primary,
-      onPrimary: Colors.white,
+      // Material 3 inverts primary by brightness: dark themes need a *light*
+      // primary so accents stay legible. The light theme keeps the graphite
+      // brand color (so light is unchanged), while dark uses a near-white
+      // graphite with a dark onPrimary. This is the single source of truth —
+      // widgets must read colorScheme.primary, not AppColors.primary.
+      primary: isDark ? AppColors.textPrimaryDark : AppColors.primary,
+      onPrimary: isDark ? AppColors.primary : Colors.white,
       primaryContainer: isDark ? AppColors.brand700 : AppColors.primarySurface,
       onPrimaryContainer: isDark ? AppColors.primaryLight : AppColors.primaryDark,
       secondary: AppColors.accent,
@@ -102,8 +107,8 @@ class AppTheme {
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
           disabledBackgroundColor: isDark
               ? AppColors.brand700
               : AppColors.primarySurface,
@@ -118,19 +123,19 @@ class AppTheme {
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: colorScheme.primary,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           minimumSize: const Size(0, AppDimensions.buttonHeightLarge),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
           ),
-          side: const BorderSide(color: AppColors.primary),
+          side: BorderSide(color: colorScheme.primary),
         ),
       ),
 
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: colorScheme.primary,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
@@ -170,8 +175,8 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-          borderSide: const BorderSide(
-            color: AppColors.primary,
+          borderSide: BorderSide(
+            color: colorScheme.primary,
             width: AppDimensions.inputFocusedBorderWidth,
           ),
         ),
@@ -241,27 +246,27 @@ class AppTheme {
         }),
       ),
 
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         elevation: AppDimensions.cardElevationHigh,
-        shape: CircleBorder(),
+        shape: const CircleBorder(),
       ),
 
       progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: AppColors.primary,
+        color: colorScheme.primary,
         linearTrackColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
         circularTrackColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
       ),
 
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          if (states.contains(WidgetState.selected)) return colorScheme.primary;
           return isDark ? AppColors.textLightDark : AppColors.textLight;
         }),
         trackColor: WidgetStateProperty.resolveWith<Color>((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primary.withValues(alpha: 0.4);
+            return colorScheme.primary.withValues(alpha: 0.4);
           }
           return isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant;
         }),
@@ -269,10 +274,10 @@ class AppTheme {
 
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith<Color>((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          if (states.contains(WidgetState.selected)) return colorScheme.primary;
           return isDark ? AppColors.surfaceVariantDark : AppColors.surface;
         }),
-        checkColor: WidgetStateProperty.all(Colors.white),
+        checkColor: WidgetStateProperty.all(colorScheme.onPrimary),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusSmall / 2),
         ),
@@ -283,7 +288,7 @@ class AppTheme {
 
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith<Color>((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          if (states.contains(WidgetState.selected)) return colorScheme.primary;
           return isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
         }),
       ),
@@ -323,7 +328,7 @@ class AppTheme {
 
       chipTheme: ChipThemeData(
         backgroundColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
-        selectedColor: AppColors.primary.withValues(alpha: 0.15),
+        selectedColor: colorScheme.primary.withValues(alpha: 0.15),
         labelStyle: AppStyles.labelMedium.copyWith(
           color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
         ),
