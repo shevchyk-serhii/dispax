@@ -454,6 +454,10 @@ object RideRoutes {
                             .fromEither(bodyStr.fromJson[UpdateClientLocationRequest])
                             .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
           parsedRideId <- UuidParser.parseRideId(rideId)
+          companyId    <- UuidParser.requireCompanyId(user.companyId)
+          ride         <- ZIO.serviceWithZIO[RideService](_.getRideById(parsedRideId))
+          // Company isolation: hide cross-tenant rides as not found.
+          _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId)
           service      <- ZIO.service[ClientLocationService]
           _            <- service.updateClientLocation(
                             parsedRideId,
