@@ -443,7 +443,7 @@ object RideRoutes {
       }
     )
 
-  val clientLocationRoutes: Routes[ClientLocationService & JwtService, Response] = Routes(
+  val clientLocationRoutes: Routes[ClientLocationService & RideService & JwtService, Response] = Routes(
     Method.POST / "api" / "rides" / string("rideId") / "client-location" -> handler {
       (rideId: String, request: Request) =>
         (for {
@@ -471,6 +471,10 @@ object RideRoutes {
         user         <- AuthMiddleware.authenticateRequest(request)
         _            <- AuthMiddleware.checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
         parsedRideId <- UuidParser.parseRideId(rideId)
+        companyId    <- UuidParser.requireCompanyId(user.companyId)
+        ride         <- ZIO.serviceWithZIO[RideService](_.getRideById(parsedRideId))
+        // Company isolation: hide cross-tenant rides as not found.
+        _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId)
         service      <- ZIO.service[ClientLocationService]
         locations    <- service.getRideLocations(parsedRideId)
       } yield Response.json(locations.toJson)).catchAll {
@@ -480,7 +484,7 @@ object RideRoutes {
     }
   )
 
-  val chatRoutes: Routes[ChatService & JwtService, Response] = Routes(
+  val chatRoutes: Routes[ChatService & RideService & JwtService, Response] = Routes(
     Method.POST / "api" / "rides" / string("rideId") / "chat" -> handler { (rideId: String, request: Request) =>
       (for {
         user         <- AuthMiddleware.authenticateRequest(request)
@@ -490,6 +494,10 @@ object RideRoutes {
                           .fromEither(bodyStr.fromJson[SendChatMessageRequest])
                           .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
         parsedRideId <- UuidParser.parseRideId(rideId)
+        companyId    <- UuidParser.requireCompanyId(user.companyId)
+        ride         <- ZIO.serviceWithZIO[RideService](_.getRideById(parsedRideId))
+        // Company isolation: hide cross-tenant rides as not found.
+        _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId)
         service      <- ZIO.service[ChatService]
         msg          <- service.sendMessage(
                           parsedRideId,
@@ -506,6 +514,10 @@ object RideRoutes {
         user         <- AuthMiddleware.authenticateRequest(request)
         _            <- AuthMiddleware.checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
         parsedRideId <- UuidParser.parseRideId(rideId)
+        companyId    <- UuidParser.requireCompanyId(user.companyId)
+        ride         <- ZIO.serviceWithZIO[RideService](_.getRideById(parsedRideId))
+        // Company isolation: hide cross-tenant rides as not found.
+        _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId)
         service      <- ZIO.service[ChatService]
         messages     <- service.getMessages(parsedRideId)
       } yield Response.json(messages.toJson)).catchAll {
@@ -528,8 +540,11 @@ object RideRoutes {
                           .fail(RideError.ValidationError("Rating must be between 1 and 5"))
                           .when(ratingReq.rating < 1 || ratingReq.rating > 5)
         parsedRideId <- UuidParser.parseRideId(rideId)
+        companyId    <- UuidParser.requireCompanyId(user.companyId)
         service      <- ZIO.service[RideService]
         ride         <- service.getRideById(parsedRideId)
+        // Company isolation: hide cross-tenant rides as not found.
+        _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId)
         _            <- ZIO
                           .fail(RideError.BusinessRuleViolation("ride_status", "Can only rate completed rides"))
                           .when(ride.status != RideStatus.Completed)
@@ -564,6 +579,10 @@ object RideRoutes {
         user         <- AuthMiddleware.authenticateRequest(request)
         _            <- AuthMiddleware.checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
         parsedRideId <- UuidParser.parseRideId(rideId)
+        companyId    <- UuidParser.requireCompanyId(user.companyId)
+        ride         <- ZIO.serviceWithZIO[RideService](_.getRideById(parsedRideId))
+        // Company isolation: hide cross-tenant rides as not found.
+        _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId)
         repo         <- ZIO.service[RideRatingRepository]
         rating       <- repo.findByRideId(parsedRideId)
       } yield rating match {

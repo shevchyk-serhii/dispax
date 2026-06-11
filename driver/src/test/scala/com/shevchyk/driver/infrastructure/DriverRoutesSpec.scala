@@ -29,9 +29,12 @@ object DriverRoutesSpec extends ZIOSpecDefault {
   )
   private val testJwtService: ZLayer[Any, Nothing, JwtService] = testJwtConfig >>> JwtService.live
 
-  private val driverId     = UUID.fromString("00000001-0000-0000-0000-000000000001")
-  private val dispatcherId = UUID.fromString("00000002-0000-0000-0000-000000000002")
-  private val companyId    = UUID.fromString("00000003-0000-0000-0000-000000000003")
+  private val driverId        = UUID.fromString("00000001-0000-0000-0000-000000000001")
+  private val dispatcherId    = UUID.fromString("00000002-0000-0000-0000-000000000002")
+  private val companyId       = UUID.fromString("00000003-0000-0000-0000-000000000003")
+  // A driver registered under a different tenant — used to assert cross-tenant isolation.
+  private val foreignDriverId = UUID.fromString("00000004-0000-0000-0000-000000000004")
+  private val otherCompanyId  = UUID.fromString("00000005-0000-0000-0000-000000000005")
 
   private def token(
       role: PersonRole,
@@ -52,7 +55,25 @@ object DriverRoutesSpec extends ZIOSpecDefault {
 
   private val noopPersonRepo: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(new PersonRepository {
     def create(p: Person): Task[Person]                                            = ZIO.succeed(p)
-    def findById(id: PersonId): Task[Option[Person]]                               = ZIO.succeed(None)
+    def findById(id: PersonId): Task[Option[Person]]                               = ZIO.succeed(
+      id.value match {
+        case `driverId`        =>
+          Some(
+            Person(PersonId(driverId), "Driver", "driver@example.com", PersonRole.Driver, Some(CompanyId(companyId)))
+          )
+        case `foreignDriverId` =>
+          Some(
+            Person(
+              PersonId(foreignDriverId),
+              "Foreign",
+              "foreign@example.com",
+              PersonRole.Driver,
+              Some(CompanyId(otherCompanyId))
+            )
+          )
+        case _                 => None
+      }
+    )
     def findByEmail(email: String): Task[Option[Person]]                           = ZIO.succeed(None)
     def findByRole(role: PersonRole): Task[List[Person]]                           = ZIO.succeed(Nil)
     def findByRoleAndCompany(role: PersonRole, cid: CompanyId): Task[List[Person]] = ZIO.succeed(Nil)
@@ -166,10 +187,10 @@ object DriverRoutesSpec extends ZIOSpecDefault {
   )
 
   private val testLayers =
-    driverLocationServiceLayer ++ noopRideServiceLayer ++ noopHereRoutingService ++ GeocodingService.noop ++ noopClientLocationRepo ++ testJwtService
+    driverLocationServiceLayer ++ noopRideServiceLayer ++ noopHereRoutingService ++ GeocodingService.noop ++ noopClientLocationRepo ++ noopPersonRepo ++ testJwtService
 
   private def run(req: Request): ZIO[
-    DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository & JwtService,
+    DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository & PersonRepository & JwtService,
     Nothing,
     Response
   ] = DriverRoutes.authenticatedRoutes.run(req).either.map {
@@ -212,6 +233,20 @@ object DriverRoutesSpec extends ZIOSpecDefault {
                             .addHeader(Header.Authorization.Bearer(tok))
                         )
           } yield assertTrue(response.status == Status.BadRequest)
+        }.provide(testLayers),
+        test("dispatcher cannot update a driver from another company (404)") {
+          val body = """{"latitude":48.1351,"longitude":11.5820}"""
+          for {
+            tok      <- token(PersonRole.Dispatcher, dispatcherId)
+            response <- run(
+                          Request
+                            .put(
+                              URL.decode(s"/api/drivers/$foreignDriverId/location").toOption.get,
+                              Body.fromString(body)
+                            )
+                            .addHeader(Header.Authorization.Bearer(tok))
+                        )
+          } yield assertTrue(response.status == Status.NotFound)
         }.provide(testLayers)
       ),
       suite("PUT /api/drivers/:id/availability")(
@@ -287,6 +322,16 @@ object DriverRoutesSpec extends ZIOSpecDefault {
         test("returns 401 without token") {
           run(Request.get(URL.decode(s"/api/drivers/$driverId/availability").toOption.get))
             .map(r => assertTrue(r.status == Status.Unauthorized))
+        }.provide(testLayers),
+        test("secretary cannot read availability of a driver from another company (404)") {
+          for {
+            tok      <- token(PersonRole.Secretary, dispatcherId)
+            response <- run(
+                          Request
+                            .get(URL.decode(s"/api/drivers/$foreignDriverId/availability").toOption.get)
+                            .addHeader(Header.Authorization.Bearer(tok))
+                        )
+          } yield assertTrue(response.status == Status.NotFound)
         }.provide(testLayers)
       ),
       suite("GET /api/drivers/available")(

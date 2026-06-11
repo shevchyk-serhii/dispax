@@ -3,6 +3,7 @@ package com.shevchyk.driver.infrastructure.http
 import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{PersonId, PersonRole, RideId}
+import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.ride.application.service.RideService
@@ -68,6 +69,22 @@ object DriverRoutes:
     val eta   = math.ceil(distM / (50000.0 / 60.0)).toInt // 50 km/h → minutes
     Some(math.max(1, eta))
 
+  // Company isolation: ensure the target driver belongs to the caller's company.
+  // Hide cross-tenant (or unknown) drivers as NotFound so existence is not revealed.
+  private def assertDriverInCompany(
+      driverUuid: java.util.UUID,
+      companyId: com.shevchyk.core.domain.CompanyId
+  ): ZIO[PersonRepository, Response, Unit] =
+    for {
+      personRepo <- ZIO.service[PersonRepository]
+      driver     <- personRepo
+                      .findById(PersonId(driverUuid))
+                      .mapError(_ => Response.status(Status.InternalServerError))
+      _          <- ZIO
+                      .fail(Response.status(Status.NotFound))
+                      .when(!driver.exists(_.companyId.contains(companyId)))
+    } yield ()
+
   private def toEarningsDto(report: DriverEarningsReport): DriverEarningsDto = DriverEarningsDto(
     period = report.period.toString.toLowerCase,
     grossRevenue = report.grossRevenue.toDouble,
@@ -81,7 +98,7 @@ object DriverRoutes:
   )
 
   val authenticatedRoutes
-      : Routes[DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository & JwtService, Response]     =
+      : Routes[DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository & PersonRepository & JwtService, Response]     =
     Routes(
       Method.PUT / "api" / "drivers" / string("driverId") / "location"     -> handler {
         (driverId: String, request: Request) =>
@@ -89,6 +106,8 @@ object DriverRoutes:
             user       <- AuthMiddleware.authenticateRequest(request)
             driverUuid <- UuidParser.parse(driverId)
             _          <- AuthMiddleware.checkRoleOrOwner(user, driverUuid, "DISPATCHER")
+            companyId  <- UuidParser.requireCompanyId(user.companyId)
+            _          <- assertDriverInCompany(driverUuid, companyId)
             bodyStr    <- request.body.asString
             locReq     <- ZIO
                             .fromEither(bodyStr.fromJson[UpdateLocationRequest])
@@ -115,6 +134,8 @@ object DriverRoutes:
             user       <- AuthMiddleware.authenticateRequest(request)
             driverUuid <- UuidParser.parse(driverId)
             _          <- AuthMiddleware.checkRoleOrOwner(user, driverUuid, "DISPATCHER")
+            companyId  <- UuidParser.requireCompanyId(user.companyId)
+            _          <- assertDriverInCompany(driverUuid, companyId)
             bodyStr    <- request.body.asString
             req        <- ZIO
                             .fromEither(bodyStr.fromJson[UpdateAvailabilityRequest])
@@ -140,6 +161,8 @@ object DriverRoutes:
             user       <- AuthMiddleware.authenticateRequest(request)
             driverUuid <- UuidParser.parse(driverId)
             _          <- AuthMiddleware.checkRoleOrOwner(user, driverUuid, "DISPATCHER", "SECRETARY")
+            companyId  <- UuidParser.requireCompanyId(user.companyId)
+            _          <- assertDriverInCompany(driverUuid, companyId)
             service    <- ZIO.service[DriverLocationService]
             status     <- service.getAvailability(PersonId(driverUuid))
             statusStr   = status.getOrElse("Offline")
