@@ -41,7 +41,10 @@ class QuickLoginButtons extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: color, size: 22),
+                // The login screen sits on a fixed dark gradient (the label is
+                // hardcoded white), and the role colors are graphite — drawing
+                // the icon in `color` made it invisible. Match the label.
+                Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 22),
                 const SizedBox(height: 4),
                 Text(
                   role,
