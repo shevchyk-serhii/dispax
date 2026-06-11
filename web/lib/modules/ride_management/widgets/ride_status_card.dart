@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../ride_management/models/ride.dart';
-import '../../../constants/app_colors.dart';
 import '../../../utils/ride_status_styles.dart';
 
 class RideStatusCard extends StatelessWidget {
@@ -51,13 +50,13 @@ class RideStatusCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   'Price: ${ride.estimatedPrice!.toStringAsFixed(0)} UAH',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

@@ -104,7 +104,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
         // Overview cards
         Row(
           children: [
-            _buildStatCard('Total Rides', total.toString(), Icons.directions_car, AppColors.primary),
+            _buildStatCard('Total Rides', total.toString(), Icons.directions_car, Theme.of(context).colorScheme.primary),
             const SizedBox(width: 12),
             _buildStatCard('Completed', completed.toString(), Icons.check_circle, AppColors.success),
           ],

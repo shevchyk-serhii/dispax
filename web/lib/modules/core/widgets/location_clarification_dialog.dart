@@ -97,7 +97,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
         children: [
           Icon(
             Icons.my_location,
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.primary,
             size: AppDimensions.iconMedium,
           ),
           const SizedBox(width: AppDimensions.paddingSmall),
@@ -233,8 +233,8 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
         ElevatedButton(
           onPressed: _isLoading ? null : _updateLocation,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.textOnPrimary,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
           ),
           child: _isLoading
               ? SizedBox(
@@ -258,7 +258,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
       label: Text(
         location,
         style: AppStyles.labelSmall.copyWith(
-          color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+          color: isSelected ? Theme.of(context).colorScheme.onPrimary : AppColors.textPrimary,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
@@ -275,12 +275,12 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
           }
         });
       },
-      selectedColor: AppColors.primary,
-      checkmarkColor: AppColors.textOnPrimary,
+      selectedColor: Theme.of(context).colorScheme.primary,
+      checkmarkColor: Theme.of(context).colorScheme.onPrimary,
       backgroundColor: Theme.of(context).colorScheme.surface,
       side: BorderSide(
         color: isSelected
-            ? AppColors.primary
+            ? Theme.of(context).colorScheme.primary
             : AppColors.textSecondary.withAlpha(100),
       ),
     );

@@ -170,7 +170,7 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                           });
                         },
                         selected: newDriverIdCtrl.text == d['id'],
-                        selectedTileColor: AppColors.primary.withAlpha(15),
+                        selectedTileColor: Theme.of(context).colorScheme.primary.withAlpha(15),
                       );
                     }),
                     const SizedBox(height: 12),

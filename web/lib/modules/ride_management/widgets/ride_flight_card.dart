@@ -30,7 +30,7 @@ class RideFlightCard extends StatelessWidget {
               children: [
                 Icon(
                   Icons.flight,
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   size: 24,
                 ),
                 const SizedBox(width: 8),
@@ -84,7 +84,7 @@ class RideFlightCard extends StatelessWidget {
 
             Row(
               children: [
-                Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+                Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary, size: 20),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,16 +99,16 @@ class RideFlightCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _getFlightStatusColor().withValues(alpha: 0.1),
+                        color: _getFlightStatusColor(context).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: _getFlightStatusColor().withValues(alpha: 0.3),
+                          color: _getFlightStatusColor(context).withValues(alpha: 0.3),
                         ),
                       ),
                       child: Text(
                         flight.status,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: _getFlightStatusColor(),
+                          color: _getFlightStatusColor(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -153,7 +153,7 @@ class RideFlightCard extends StatelessWidget {
   }) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primary, size: 20),
+        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
         const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,13 +177,13 @@ class RideFlightCard extends StatelessWidget {
     );
   }
 
-  Color _getFlightStatusColor() {
+  Color _getFlightStatusColor(BuildContext context) {
     final status = ride.flightInfo!.status.toLowerCase();
     if (status.contains('on time')) return AppColors.success;
     if (status.contains('delayed')) return AppColors.warning;
     if (status.contains('cancelled')) return AppColors.error;
     if (status.contains('boarding')) return AppColors.info;
     if (status.contains('arrived')) return AppColors.successStrong;
-    return AppColors.primary;
+    return Theme.of(context).colorScheme.primary;
   }
 }

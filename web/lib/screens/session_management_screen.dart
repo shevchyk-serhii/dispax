@@ -138,13 +138,11 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Active Sessions'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
         actions: [
           if (otherSessions.isNotEmpty)
             TextButton(
               onPressed: _revokeAllOtherSessions,
-              child: const Text('Revoke All', style: TextStyle(color: Colors.white)),
+              child: const Text('Revoke All'),
             ),
         ],
       ),

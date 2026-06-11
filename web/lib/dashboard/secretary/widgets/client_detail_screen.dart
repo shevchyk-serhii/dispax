@@ -362,12 +362,12 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     Icon(
                       ride.isArrival ? Icons.flight_land : Icons.flight_takeoff,
                       size: 14,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       ride.flightNumber!,
-                      style: TextStyle(fontSize: 11, color: AppColors.primary),
+                      style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary),
                     ),
                   ],
                 ),

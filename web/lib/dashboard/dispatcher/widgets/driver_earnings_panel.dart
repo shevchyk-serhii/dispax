@@ -211,15 +211,15 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha(15),
+                  color: colorScheme.primary.withAlpha(15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withAlpha(60)),
+                  border: Border.all(color: colorScheme.primary.withAlpha(60)),
                 ),
                 child: Column(
                   children: [
                     Text(
                       '$totalRides',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: colorScheme.primary),
                     ),
                     const SizedBox(height: 4),
                     Text('Total Rides', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
@@ -302,7 +302,7 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildMiniStat('Total', total.toString(), AppColors.primary, colorScheme),
+                    _buildMiniStat('Total', total.toString(), colorScheme.primary, colorScheme),
                     const SizedBox(width: 16),
                     _buildMiniStat('Done', completed.toString(), AppColors.success, colorScheme),
                     const SizedBox(width: 16),

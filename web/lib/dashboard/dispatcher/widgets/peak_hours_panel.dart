@@ -169,7 +169,7 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
         // Summary
         Row(
           children: [
-            _buildSummaryCard('Total Rides', totalRides.toString(), Icons.directions_car, AppColors.primary, colorScheme),
+            _buildSummaryCard('Total Rides', totalRides.toString(), Icons.directions_car, colorScheme.primary, colorScheme),
             const SizedBox(width: 12),
             _buildSummaryCard('Busiest Day', dayLabels[busiestDay], Icons.calendar_today, AppColors.warning, colorScheme),
             const SizedBox(width: 12),

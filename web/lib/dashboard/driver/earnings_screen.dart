@@ -25,8 +25,6 @@ class EarningsScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('My Earnings'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
         ),
         body: AppTheme.buildGradientContainer(
           colors: AppColors.driverGradient,

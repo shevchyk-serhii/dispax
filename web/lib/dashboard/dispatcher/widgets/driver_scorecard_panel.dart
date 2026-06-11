@@ -171,7 +171,7 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
           children: [
             _buildSummaryCard('Drivers', totalDrivers.toString(), AppColors.driverColor, colorScheme),
             const SizedBox(width: 12),
-            _buildSummaryCard('Rides', totalRides.toString(), AppColors.primary, colorScheme),
+            _buildSummaryCard('Rides', totalRides.toString(), colorScheme.primary, colorScheme),
             const SizedBox(width: 12),
             _buildSummaryCard('Earnings', '\u20AC${totalEarnings.toStringAsFixed(0)}', AppColors.success, colorScheme),
           ],
@@ -244,7 +244,7 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildMiniStat('Rides', rides.toString(), AppColors.primary, colorScheme),
+                    _buildMiniStat('Rides', rides.toString(), colorScheme.primary, colorScheme),
                     const SizedBox(width: 16),
                     _buildMiniStat('Avg/ride', '\u20AC${avgEarnings.toStringAsFixed(0)}', AppColors.success, colorScheme),
                     const SizedBox(width: 16),

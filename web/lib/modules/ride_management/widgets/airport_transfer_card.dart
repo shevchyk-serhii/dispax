@@ -53,7 +53,7 @@ class AirportTransferCard extends StatelessWidget {
                   isAirportTransfer
                     ? (isArrival ? Icons.flight_land : Icons.flight_takeoff)
                     : Icons.flight,
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   size: 24
                 ),
                 const SizedBox(width: AppDimensions.paddingSmall),

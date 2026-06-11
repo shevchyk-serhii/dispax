@@ -192,7 +192,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(15),
+              color: Theme.of(context).colorScheme.primary.withAlpha(15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(

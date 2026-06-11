@@ -756,8 +756,8 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
           FloatingActionButton(
             heroTag: 'show_all_rides',
             onPressed: _showAllRides,
-            backgroundColor: AppColors.primary,
-            child: const Icon(Icons.list, color: AppColors.textOnPrimary),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            child: Icon(Icons.list, color: Theme.of(context).colorScheme.onPrimary),
           ),
         ],
       ],
@@ -821,13 +821,13 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   Color _getRideStatusColor(RideStatus status) {
     switch (status) {
       case RideStatus.assigned:
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case RideStatus.inProgress:
         return AppColors.driverColor;
       case RideStatus.completed:
         return AppColors.clientColor;
       default:
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
     }
   }
 }

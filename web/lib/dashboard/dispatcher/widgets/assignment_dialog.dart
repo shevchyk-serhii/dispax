@@ -91,7 +91,7 @@ class AssignmentDialog extends StatelessWidget {
             onConfirm();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: conflicts.isNotEmpty ? AppColors.warning : AppColors.primary,
+            backgroundColor: conflicts.isNotEmpty ? AppColors.warning : Theme.of(context).colorScheme.primary,
           ),
           child: Text(
             conflicts.isNotEmpty ? 'Assign Anyway' : 'Assign',

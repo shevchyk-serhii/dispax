@@ -222,7 +222,7 @@ class UpcomingRidesScreen extends StatelessWidget {
                 icon: Icons.event,
                 count: upcomingRides.length,
                 label: 'Total',
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ],
           ),

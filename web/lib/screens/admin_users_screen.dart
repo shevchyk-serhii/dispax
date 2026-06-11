@@ -280,7 +280,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatChip('Total', _users.length.toString(), AppColors.primary),
+          _buildStatChip('Total', _users.length.toString(), Theme.of(context).colorScheme.primary),
           _buildStatChip('Drivers', (counts['driver'] ?? 0).toString(), AppColors.driverColor),
           _buildStatChip('Clients', (counts['client'] ?? 0).toString(), AppColors.clientColor),
           _buildStatChip('Staff', ((counts['secretary'] ?? 0) + (counts['dispatcher'] ?? 0)).toString(), AppColors.secretaryColor),

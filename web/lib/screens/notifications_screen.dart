@@ -115,8 +115,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
         actions: [
           TextButton(
             onPressed: _markAllAsRead,
@@ -178,7 +176,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: ListTile(
               leading: Icon(
                 n.isRead ? Icons.notifications_none : Icons.notifications_active,
-                color: n.isRead ? Theme.of(context).colorScheme.onSurfaceVariant : AppColors.primary,
+                color: n.isRead ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.primary,
               ),
               title: Text(
                 n.title,

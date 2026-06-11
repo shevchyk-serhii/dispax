@@ -26,7 +26,7 @@ class FlightInfoCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.flight_land,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
                 size: AppDimensions.iconLarge,
               ),
               const SizedBox(width: AppDimensions.paddingMedium),
@@ -60,7 +60,7 @@ class FlightInfoCard extends StatelessWidget {
               color: Theme.of(context).colorScheme.surface.withAlpha(150),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
               border: Border.all(
-                color: AppColors.primary.withAlpha(100),
+                color: Theme.of(context).colorScheme.primary.withAlpha(100),
                 width: 1,
               ),
             ),

@@ -291,7 +291,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
       children: [
         const Text('Payroll Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        _buildStatRow('Total Rides', '$totalRides', Icons.directions_car, AppColors.primary),
+        _buildStatRow('Total Rides', '$totalRides', Icons.directions_car, Theme.of(context).colorScheme.primary),
         _buildStatRow('Total Earnings', '${totalEarnings.toStringAsFixed(2)} EUR', Icons.trending_up, AppColors.success),
         _buildStatRow('Total Expenses', '${totalExpenses.toStringAsFixed(2)} EUR', Icons.trending_down, AppColors.error),
         _buildStatRow('Commission (${_commissionPercent.toStringAsFixed(0)}%)', '${commission.toStringAsFixed(2)} EUR', Icons.percent, AppColors.warning),

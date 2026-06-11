@@ -161,10 +161,10 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white.withAlpha(40),
+          color: selected ? Theme.of(context).colorScheme.primary : Colors.white.withAlpha(40),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? AppColors.primary : Colors.white.withAlpha(80),
+            color: selected ? Theme.of(context).colorScheme.primary : Colors.white.withAlpha(80),
           ),
         ),
         child: Text(
@@ -172,7 +172,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : Colors.white.withAlpha(200),
+            color: selected ? Theme.of(context).colorScheme.onPrimary : Colors.white.withAlpha(200),
           ),
         ),
       ),
@@ -493,10 +493,10 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                   Container(
                     padding: const EdgeInsets.all(AppDimensions.paddingSmall),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(30),
+                      color: Theme.of(context).colorScheme.primary.withAlpha(30),
                       borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                       border: Border.all(
-                        color: AppColors.primary.withAlpha(100),
+                        color: Theme.of(context).colorScheme.primary.withAlpha(100),
                         width: 1,
                       ),
                     ),
@@ -504,7 +504,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                       children: [
                         Icon(
                           Icons.flight,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           size: AppDimensions.iconSmall,
                         ),
                         const SizedBox(width: AppDimensions.paddingSmall),
@@ -512,7 +512,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                           child: Text(
                             ride.fullFlightInfo,
                             style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -554,8 +554,8 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                         icon: const Icon(Icons.star, size: 16),
                         label: const Text('Rate this ride'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.primary),
+                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          side: BorderSide(color: Theme.of(context).colorScheme.primary),
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           visualDensity: VisualDensity.compact,
                         ),

@@ -282,7 +282,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '${ride.price!.toStringAsFixed(2)} EUR',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                     ),
                   ],
                   const SizedBox(height: 10),

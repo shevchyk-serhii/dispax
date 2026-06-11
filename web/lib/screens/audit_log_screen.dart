@@ -94,7 +94,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     if (lower.contains('create')) return AppColors.success;
     if (lower.contains('delete') || lower.contains('cancel')) return AppColors.error;
     if (lower.contains('update') || lower.contains('edit')) return AppColors.info;
-    if (lower.contains('assign')) return AppColors.primary;
+    if (lower.contains('assign')) return Theme.of(context).colorScheme.primary;
     if (lower.contains('complete')) return AppColors.success;
     return AppColors.textSecondary;
   }

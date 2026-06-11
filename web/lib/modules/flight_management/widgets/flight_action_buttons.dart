@@ -23,8 +23,8 @@ class FlightActionButtons extends StatelessWidget {
         ElevatedButton(
           onPressed: isLoading ? null : onConfirmArrival,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.textOnPrimary,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingLarge),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),

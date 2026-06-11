@@ -11,8 +11,6 @@ class SimpleMapScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Map View'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textOnPrimary,
       ),
       body: Center(
         child: Container(
@@ -35,7 +33,7 @@ class SimpleMapScreen extends StatelessWidget {
               Icon(
                 Icons.map,
                 size: 64,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: AppDimensions.paddingMedium),
               Text(

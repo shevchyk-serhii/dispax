@@ -100,8 +100,8 @@ class RidePersonCard extends StatelessWidget {
                         icon: const Icon(Icons.message, size: 18),
                         label: const Text('Message'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
@@ -125,7 +125,7 @@ class RidePersonCard extends StatelessWidget {
           'Vehicle Information',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
         const SizedBox(height: 8),

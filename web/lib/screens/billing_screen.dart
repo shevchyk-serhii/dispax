@@ -78,9 +78,9 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
         _buildHeader(),
         TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
+          labelColor: Theme.of(context).colorScheme.primary,
           unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-          indicatorColor: AppColors.primary,
+          indicatorColor: Theme.of(context).colorScheme.primary,
           tabs: const [
             Tab(icon: Icon(Icons.receipt_long, size: 18), text: 'Rechnungen'),
             Tab(icon: Icon(Icons.business, size: 18), text: 'Unternehmen'),
@@ -169,8 +169,8 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
               label: Text(labels[i]),
               selected: selected,
               onSelected: (_) => _setFilter(filters[i]),
-              selectedColor: AppColors.primary.withAlpha(30),
-              checkmarkColor: AppColors.primary,
+              selectedColor: Theme.of(context).colorScheme.primary.withAlpha(30),
+              checkmarkColor: Theme.of(context).colorScheme.primary,
             ),
           );
         }),
@@ -269,8 +269,8 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
           right: 16,
           child: FloatingActionButton(
             onPressed: _showAddCompanyDialog,
-            backgroundColor: AppColors.primary,
-            child: const Icon(Icons.add, color: Colors.white),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
           ),
         ),
       ],
@@ -282,10 +282,10 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withAlpha(30),
+          backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(30),
           child: Text(
             company.name.isNotEmpty ? company.name[0].toUpperCase() : '?',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+            style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
           ),
         ),
         title: Text(company.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -561,7 +561,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                     onPressed: () => _action(() => widget.invoiceService.sendInvoice(inv.id)),
                     icon: const Icon(Icons.send),
                     label: const Text('Rechnung senden'),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                    style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
                   ),
                   const SizedBox(height: 8),
                   TextButton.icon(
@@ -643,7 +643,7 @@ class _TotalRow extends StatelessWidget {
             Text(label, style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null),
             Text('€${amount.toStringAsFixed(2)}',
                 style: bold
-                    ? const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 16)
+                    ? TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 16)
                     : null),
           ],
         ),

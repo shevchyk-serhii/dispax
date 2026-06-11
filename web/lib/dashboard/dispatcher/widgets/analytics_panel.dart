@@ -134,7 +134,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
         // KPI cards - row 1
         Row(
           children: [
-            _buildKpiCard('Total Rides', total.toString(), Icons.directions_car, AppColors.primary, colorScheme),
+            _buildKpiCard('Total Rides', total.toString(), Icons.directions_car, colorScheme.primary, colorScheme),
             const SizedBox(width: 12),
             _buildKpiCard('Completed', completed.toString(), Icons.check_circle, AppColors.success, colorScheme),
           ],
@@ -168,7 +168,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
         _buildMetricRow(
           'Avg. Assignment Time',
           avgAssign > 0 ? '${avgAssign.toStringAsFixed(0)} min' : 'N/A',
-          AppColors.primary,
+          colorScheme.primary,
           colorScheme,
         ),
         _buildMetricRow('Active Drivers', drivers.toString(), AppColors.driverColor, colorScheme),
@@ -326,7 +326,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
                           height: 20,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [AppColors.primary, AppColors.primaryLight],
+                              colors: [colorScheme.primary, AppColors.primaryLight],
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),

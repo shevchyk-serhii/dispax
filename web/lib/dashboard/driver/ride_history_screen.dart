@@ -513,10 +513,10 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                   Container(
                     padding: const EdgeInsets.all(AppDimensions.paddingSmall),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(30),
+                      color: Theme.of(context).colorScheme.primary.withAlpha(30),
                       borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
                       border: Border.all(
-                        color: AppColors.primary.withAlpha(100),
+                        color: Theme.of(context).colorScheme.primary.withAlpha(100),
                         width: 1,
                       ),
                     ),
@@ -524,7 +524,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                       children: [
                         Icon(
                           Icons.flight,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           size: AppDimensions.iconSmall,
                         ),
                         const SizedBox(width: AppDimensions.paddingSmall),
@@ -532,7 +532,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                           child: Text(
                             ride.fullFlightInfo,
                             style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),

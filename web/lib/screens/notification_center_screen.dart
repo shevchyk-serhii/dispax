@@ -237,7 +237,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
         _buildHeader(),
         TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
+          labelColor: Theme.of(context).colorScheme.primary,
           unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           tabs: [
             Tab(
@@ -355,8 +355,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                     setState(() => _selectedFilter = entry.key);
                     _loadNotifications();
                   },
-                  selectedColor: AppColors.primary.withAlpha(30),
-                  checkmarkColor: AppColors.primary,
+                  selectedColor: Theme.of(context).colorScheme.primary.withAlpha(30),
+                  checkmarkColor: Theme.of(context).colorScheme.primary,
                 ),
               );
             }).toList(),
@@ -470,7 +470,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
           borderRadius: BorderRadius.circular(10),
           side: n.isRead
               ? BorderSide.none
-              : BorderSide(color: AppColors.primary.withAlpha(30)),
+              : BorderSide(color: Theme.of(context).colorScheme.primary.withAlpha(30)),
         ),
         child: ListTile(
           leading: CircleAvatar(
@@ -549,7 +549,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       case 'ride':
       case 'ride_assigned':
       case 'ride_status':
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case 'chat':
         return AppColors.accent;
       case 'geofence':
@@ -684,11 +684,11 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('Push Notifications',
+        Text('Push Notifications',
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primary)),
+                color: Theme.of(context).colorScheme.primary)),
         const SizedBox(height: 8),
         _buildSwitch('Ride Updates', 'Status changes, assignments',
             prefs.rideUpdates, (v) => setState(() => prefs.rideUpdates = v)),
@@ -713,11 +713,11 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
             prefs.poolUpdates,
             (v) => setState(() => prefs.poolUpdates = v)),
         const Divider(height: 32),
-        const Text('Additional Channels',
+        Text('Additional Channels',
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primary)),
+                color: Theme.of(context).colorScheme.primary)),
         const SizedBox(height: 8),
         _buildSwitch(
             'Email Notifications',
@@ -730,11 +730,11 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
             prefs.smsNotifications,
             (v) => setState(() => prefs.smsNotifications = v)),
         const Divider(height: 32),
-        const Text('Quiet Hours',
+        Text('Quiet Hours',
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primary)),
+                color: Theme.of(context).colorScheme.primary)),
         const SizedBox(height: 8),
         Row(
           children: [

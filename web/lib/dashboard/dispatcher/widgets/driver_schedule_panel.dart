@@ -654,7 +654,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: isHovering
-                    ? BorderSide(color: AppColors.primary, width: 2)
+                    ? BorderSide(color: colorScheme.primary, width: 2)
                     : BorderSide.none,
               ),
               elevation: isHovering ? 4 : 2,
@@ -816,17 +816,17 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                           width: double.infinity,
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withAlpha(20),
+                            color: colorScheme.primary.withAlpha(20),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: AppColors.primary.withAlpha(60),
+                              color: colorScheme.primary.withAlpha(60),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Drop here to assign',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: AppColors.primary,
+                              color: colorScheme.primary,
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),

@@ -313,7 +313,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       case 'ClientPickup':
         return AppColors.warning;
       case 'CustomZone':
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       default:
         return AppColors.textSecondary;
     }

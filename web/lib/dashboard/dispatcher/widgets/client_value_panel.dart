@@ -153,7 +153,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
             const SizedBox(width: 12),
             _buildSummaryCard('Total Rev.', '\u20AC${totalRevenue.toStringAsFixed(0)}', AppColors.success, colorScheme),
             const SizedBox(width: 12),
-            _buildSummaryCard('Avg Value', '\u20AC${avgValue.toStringAsFixed(0)}', AppColors.primary, colorScheme),
+            _buildSummaryCard('Avg Value', '\u20AC${avgValue.toStringAsFixed(0)}', colorScheme.primary, colorScheme),
           ],
         ),
         const SizedBox(height: 16),

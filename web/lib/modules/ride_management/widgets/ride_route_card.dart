@@ -53,7 +53,7 @@ class RideRouteCard extends StatelessWidget {
 
             Row(
               children: [
-                Icon(Icons.schedule, color: AppColors.primary, size: 20),
+                Icon(Icons.schedule, color: Theme.of(context).colorScheme.primary, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -83,7 +83,7 @@ class RideRouteCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.straighten, color: AppColors.primary, size: 20),
+                  Icon(Icons.straighten, color: Theme.of(context).colorScheme.primary, size: 20),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +111,7 @@ class RideRouteCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.timer, color: AppColors.primary, size: 20),
+                  Icon(Icons.timer, color: Theme.of(context).colorScheme.primary, size: 20),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,8 +175,8 @@ class RideRouteCard extends StatelessWidget {
                 icon: const Icon(Icons.map_outlined, size: 18),
                 label: const Text('Open in Google Maps'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: BorderSide(color: AppColors.primary),
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  side: BorderSide(color: Theme.of(context).colorScheme.primary),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),

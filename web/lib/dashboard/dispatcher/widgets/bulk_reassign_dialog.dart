@@ -177,7 +177,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                             side: isSelected
-                                ? BorderSide(color: AppColors.primary, width: 2)
+                                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
                                 : BorderSide.none,
                           ),
                           color: isSelected ? AppColors.rideAssignedBg : null,
@@ -194,7 +194,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                               style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                             trailing: isSelected
-                                ? const Icon(Icons.check_circle, color: AppColors.primary)
+                                ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
                                 : null,
                             onTap: () {
                               setState(() {

@@ -48,8 +48,8 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(_selectedDelay),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.textOnPrimary,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
           ),
           child: const Text('Confirm'),
         ),

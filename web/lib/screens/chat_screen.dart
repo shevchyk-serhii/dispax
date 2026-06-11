@@ -107,8 +107,6 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Chat - ${widget.ride.clientName}'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [
@@ -195,9 +193,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     const SizedBox(width: 8),
                     CircleAvatar(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       child: IconButton(
-                        icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                        icon: Icon(Icons.send, color: Theme.of(context).colorScheme.onPrimary, size: 20),
                         onPressed: _sendMessage,
                       ),
                     ),
@@ -228,7 +226,7 @@ class _ChatScreenState extends State<ChatScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: isMe ? AppColors.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: isMe ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -242,7 +240,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               msg.message,
               style: TextStyle(
-                color: isMe ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                color: isMe ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
               ),
             ),
@@ -250,7 +248,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               _formatTime(msg.sentAt),
               style: TextStyle(
-                color: isMe ? Colors.white.withAlpha(180) : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: isMe ? Theme.of(context).colorScheme.onPrimary.withAlpha(180) : Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 10,
               ),
             ),

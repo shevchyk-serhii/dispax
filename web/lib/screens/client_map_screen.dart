@@ -611,8 +611,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           FloatingActionButton(
             heroTag: 'center_route',
             onPressed: _centerOnRoute,
-            backgroundColor: AppColors.primary,
-            child: const Icon(Icons.route, color: AppColors.textOnPrimary),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            child: Icon(Icons.route, color: Theme.of(context).colorScheme.onPrimary),
           ),
         ],
       ],
@@ -644,13 +644,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   Color _getRideStatusColor(RideStatus status) {
     switch (status) {
       case RideStatus.assigned:
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case RideStatus.inProgress:
         return AppColors.clientColor;
       case RideStatus.completed:
         return AppColors.textSecondary;
       default:
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
     }
   }
 }

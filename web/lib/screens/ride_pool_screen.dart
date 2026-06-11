@@ -52,11 +52,11 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.group_add, color: AppColors.primary),
-              SizedBox(width: 8),
-              Text('Create Ride Pool'),
+              Icon(Icons.group_add, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              const Text('Create Ride Pool'),
             ],
           ),
           content: SingleChildScrollView(

@@ -278,7 +278,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : colorScheme.surfaceContainerLow,
+          color: selected ? colorScheme.primary : colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Text(
@@ -286,7 +286,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : colorScheme.onSurfaceVariant,
+            color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -640,7 +640,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Column(
@@ -651,7 +651,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white54,
+                      color: Theme.of(context).colorScheme.onPrimary.withAlpha(140),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -659,12 +659,12 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                 const SizedBox(height: 12),
                 Text(
                   widget.isReassign ? 'Reassign Driver' : 'Select Driver',
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${widget.ride.clientName} — ${DateFormat('dd.MM HH:mm').format(widget.ride.pickupDateTime)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withAlpha(180), fontSize: 13),
                 ),
               ],
             ),

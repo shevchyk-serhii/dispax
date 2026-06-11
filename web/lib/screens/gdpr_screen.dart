@@ -167,8 +167,6 @@ class _GdprScreenState extends State<GdprScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Privacy & Data (GDPR)'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

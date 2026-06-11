@@ -273,9 +273,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.primary.withAlpha(15),
+        color: Theme.of(context).colorScheme.primary.withAlpha(15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withAlpha(60)),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withAlpha(60)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,7 +286,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               const Text('Total Expenses', style: TextStyle(fontWeight: FontWeight.bold)),
               Text(
                 '\u20AC${total.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
               ),
             ],
           ),
@@ -370,11 +370,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       case ExpenseCategory.parking:
         return AppColors.info;
       case ExpenseCategory.tolls:
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case ExpenseCategory.cleaning:
         return AppColors.accent;
       case ExpenseCategory.maintenance:
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case ExpenseCategory.other:
         return AppColors.textSecondary;
     }
