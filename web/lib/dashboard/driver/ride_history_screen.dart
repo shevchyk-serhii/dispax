@@ -408,6 +408,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                         horizontal: AppDimensions.paddingSmall,
                         vertical: AppDimensions.paddingXSmall,
                       ),
+                      fontSize: 10,
                       iconSize: AppDimensions.iconSmall,
                     ),
                     Text(
