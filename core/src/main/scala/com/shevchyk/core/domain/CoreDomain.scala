@@ -5,30 +5,55 @@ import java.time.Instant
 import java.util.UUID
 import com.github.f4b6a3.uuid.UuidCreator
 
-case class PersonId(value: UUID) derives JsonCodec
-case class CompanyId(value: UUID) derives JsonCodec
-case class ClientCompanyId(value: UUID) derives JsonCodec
-case class RideId(value: UUID) derives JsonCodec
-case class TariffId(value: UUID) derives JsonCodec
-case class ScheduleDayId(value: UUID) derives JsonCodec
+// ID wrappers serialize as a *flat* JSON string (e.g. "uuid"), not as an
+// object {"value":"uuid"}. The default `derives JsonCodec` on a single-field
+// case class would emit the object form, which the clients don't expect (they
+// read ids as plain strings). Provide explicit String<->UUID encoder/decoder
+// pairs (separate givens so they resolve when other case classes derive their
+// own codecs from these fields).
+private def idEncoder[A](unwrap: A => UUID): JsonEncoder[A] =
+  JsonEncoder[String].contramap(a => unwrap(a).toString)
+private def idDecoder[A](wrap: UUID => A): JsonDecoder[A] =
+  JsonDecoder[String].mapOrFail(s => scala.util.Try(UUID.fromString(s)).toEither.left.map(_ => s"Invalid UUID: $s").map(wrap))
 
+case class PersonId(value: UUID)
+case class CompanyId(value: UUID)
+case class ClientCompanyId(value: UUID)
+case class RideId(value: UUID)
+case class TariffId(value: UUID)
+case class ScheduleDayId(value: UUID)
+
+// Codecs live in each companion so they're found via the type's implicit scope
+// (no import needed) when other case classes derive their JSON codecs.
 object PersonId:
   def generate(): PersonId = PersonId(UuidCreator.getTimeOrderedEpoch())
+  given JsonEncoder[PersonId] = idEncoder(_.value)
+  given JsonDecoder[PersonId] = idDecoder(PersonId.apply)
 
 object CompanyId:
   def generate(): CompanyId = CompanyId(UuidCreator.getTimeOrderedEpoch())
+  given JsonEncoder[CompanyId] = idEncoder(_.value)
+  given JsonDecoder[CompanyId] = idDecoder(CompanyId.apply)
 
 object ClientCompanyId:
   def generate(): ClientCompanyId = ClientCompanyId(UuidCreator.getTimeOrderedEpoch())
+  given JsonEncoder[ClientCompanyId] = idEncoder(_.value)
+  given JsonDecoder[ClientCompanyId] = idDecoder(ClientCompanyId.apply)
 
 object RideId:
   def generate(): RideId = RideId(UuidCreator.getTimeOrderedEpoch())
+  given JsonEncoder[RideId] = idEncoder(_.value)
+  given JsonDecoder[RideId] = idDecoder(RideId.apply)
 
 object TariffId:
   def generate(): TariffId = TariffId(UuidCreator.getTimeOrderedEpoch())
+  given JsonEncoder[TariffId] = idEncoder(_.value)
+  given JsonDecoder[TariffId] = idDecoder(TariffId.apply)
 
 object ScheduleDayId:
   def generate(): ScheduleDayId = ScheduleDayId(UuidCreator.getTimeOrderedEpoch())
+  given JsonEncoder[ScheduleDayId] = idEncoder(_.value)
+  given JsonDecoder[ScheduleDayId] = idDecoder(ScheduleDayId.apply)
 
 final case class Location(
     address: String,

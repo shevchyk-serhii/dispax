@@ -7,15 +7,25 @@ import com.github.f4b6a3.uuid.UuidCreator
 import java.time.{Instant, LocalDate}
 import java.util.UUID
 
-case class InvoiceId(value: UUID) derives JsonCodec
+// Like the core ID types, serialize as a flat JSON string, not {"value":...}.
+private def idEncoder[A](unwrap: A => UUID): JsonEncoder[A] =
+  JsonEncoder[String].contramap(a => unwrap(a).toString)
+private def idDecoder[A](wrap: UUID => A): JsonDecoder[A] =
+  JsonDecoder[String].mapOrFail(s => scala.util.Try(UUID.fromString(s)).toEither.left.map(_ => s"Invalid UUID: $s").map(wrap))
+
+case class InvoiceId(value: UUID)
 
 object InvoiceId:
   def generate(): InvoiceId = InvoiceId(UuidCreator.getTimeOrderedEpoch())
+  given JsonEncoder[InvoiceId] = idEncoder(_.value)
+  given JsonDecoder[InvoiceId] = idDecoder(InvoiceId.apply)
 
-case class InvoiceItemId(value: UUID) derives JsonCodec
+case class InvoiceItemId(value: UUID)
 
 object InvoiceItemId:
   def generate(): InvoiceItemId = InvoiceItemId(UuidCreator.getTimeOrderedEpoch())
+  given JsonEncoder[InvoiceItemId] = idEncoder(_.value)
+  given JsonDecoder[InvoiceItemId] = idDecoder(InvoiceItemId.apply)
 
 enum InvoiceStatus derives JsonCodec:
   case Draft, Sent, Paid, Cancelled
