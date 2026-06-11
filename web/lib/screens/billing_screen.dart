@@ -1,6 +1,9 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../modules/billing/pdf_download_stub.dart'
     if (dart.library.html) '../modules/billing/pdf_download_web.dart';
+import '../modules/billing/pdf_preview_stub.dart'
+    if (dart.library.html) '../modules/billing/pdf_preview_web.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
@@ -498,6 +501,48 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
 
   String _fmtDate(DateTime d) => '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
 
+  Future<void> _previewPdf(Invoice inv) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _loading = true);
+    Uint8List bytes;
+    try {
+      bytes = await widget.invoiceService.downloadPdf(inv.id);
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      return;
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            AppBar(
+              automaticallyImplyLeading: false,
+              title: Text('Vorschau · ${inv.number}'),
+              actions: [
+                IconButton(
+                  tooltip: 'Herunterladen',
+                  icon: const Icon(Icons.download),
+                  onPressed: () => triggerPdfDownload(bytes, 'invoice-${inv.number}.pdf'),
+                ),
+                IconButton(
+                  tooltip: 'Schließen',
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ],
+            ),
+            Expanded(child: buildPdfPreview(bytes)),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final inv = _invoice;
@@ -599,6 +644,12 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                   },
                   icon: const Icon(Icons.picture_as_pdf),
                   label: const Text('PDF herunterladen'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _previewPdf(inv),
+                  icon: const Icon(Icons.visibility),
+                  label: const Text('Vorschau'),
                 ),
               ],
             ),

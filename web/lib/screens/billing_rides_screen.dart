@@ -1,7 +1,10 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../modules/billing/pdf_download_stub.dart'
     if (dart.library.html) '../modules/billing/pdf_download_web.dart';
+import '../modules/billing/pdf_preview_stub.dart'
+    if (dart.library.html) '../modules/billing/pdf_preview_web.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../modules/billing/models/billable_ride.dart';
@@ -124,6 +127,14 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('Schließen'),
           ),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _previewPdf(invoice);
+            },
+            icon: const Icon(Icons.visibility),
+            label: const Text('Vorschau'),
+          ),
           FilledButton.icon(
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
@@ -140,6 +151,45 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
             label: const Text('PDF herunterladen'),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _previewPdf(Invoice invoice) async {
+    final messenger = ScaffoldMessenger.of(context);
+    Uint8List bytes;
+    try {
+      bytes = await _invoiceService.downloadPdf(invoice.id);
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('PDF-Fehler: $e')));
+      return;
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            AppBar(
+              automaticallyImplyLeading: false,
+              title: Text('Vorschau · ${invoice.number}'),
+              actions: [
+                IconButton(
+                  tooltip: 'Herunterladen',
+                  icon: const Icon(Icons.download),
+                  onPressed: () => triggerPdfDownload(bytes, 'invoice-${invoice.number}.pdf'),
+                ),
+                IconButton(
+                  tooltip: 'Schließen',
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ],
+            ),
+            Expanded(child: buildPdfPreview(bytes)),
+          ],
+        ),
       ),
     );
   }
