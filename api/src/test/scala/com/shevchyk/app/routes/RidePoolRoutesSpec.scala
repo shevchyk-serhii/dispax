@@ -366,6 +366,27 @@ object RidePoolRoutesSpec extends ZIOSpecDefault {
                          .addHeader(Header.Authorization.Bearer(token))
                      )
           } yield assertTrue(resp.status == Status.NotFound)
+        },
+        test("returns 404 when pool belongs to another company (tenant isolation)") {
+          for {
+            repo  <- ZIO.service[RidePoolRepository]
+            pool  <- repo.create(makePool(companyId = otherCompanyId))
+            rideId = RideId(UUID.randomUUID())
+            member = RidePoolMember(
+                       id = RidePoolMemberId.generate(),
+                       poolId = pool.id,
+                       rideId = rideId,
+                       clientId = PersonId(clientUserId),
+                       pickupOrder = 0
+                     )
+            _     <- repo.addMember(member)
+            token <- generateToken(dispatcherId, companyId = Some(taxiCompanyId))
+            resp  <- runRequest(
+                       Request
+                         .get(URL.decode(s"/api/pools/ride/${rideId.value}").toOption.get)
+                         .addHeader(Header.Authorization.Bearer(token))
+                     )
+          } yield assertTrue(resp.status == Status.NotFound)
         }
       ),
       suite("DELETE /api/pools/:id/rides/:rideId")(

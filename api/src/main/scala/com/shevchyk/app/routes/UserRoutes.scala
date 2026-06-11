@@ -263,10 +263,14 @@ object UserRoutes {
         user       <- AuthMiddleware.authenticateRequest(request)
         uid        <- UuidParser.parse(userId)
         _          <- AuthMiddleware.checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+        companyId  <- UuidParser.requireCompanyId(user.companyId)
         personRepo <- ZIO.service[PersonRepository]
         userOpt    <- personRepo.findById(PersonId(uid))
         response   <-
-          userOpt match {
+          // Enforce tenant isolation: a user from another company must not be
+          // readable even by a dispatcher/admin. Return NotFound (not Forbidden)
+          // to avoid leaking the existence of cross-tenant resources.
+          userOpt.filter(_.companyId.contains(companyId)) match {
             case Some(u) => ZIO.succeed(Response.json(PersonDto.fromPerson(u).toJson))
             case None    => ZIO.succeed(Response.status(Status.NotFound))
           }

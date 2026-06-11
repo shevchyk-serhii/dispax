@@ -307,6 +307,28 @@ object UserRoutesSpec extends ZIOSpecDefault {
                             .addHeader(Header.Authorization.Bearer(tok))
                         )
           } yield assertTrue(response.status == Status.Forbidden)
+        }.provide(fullLayers),
+        test("dispatcher cannot read a user from another company (404, tenant isolation)") {
+          val otherCompanyId = UUID.fromString("00000099-0000-0000-0000-000000000099")
+          val foreignUserId  = UUID.fromString("00000098-0000-0000-0000-000000000098")
+          for {
+            repo     <- ZIO.service[PersonRepository]
+            _        <- repo.create(
+                          Person(
+                            PersonId(foreignUserId),
+                            "Foreign",
+                            "foreign@example.com",
+                            PersonRole.Client,
+                            Some(CompanyId(otherCompanyId))
+                          )
+                        )
+            tok      <- token(PersonRole.Dispatcher)
+            response <- run(
+                          Request
+                            .get(URL.decode(s"/api/users/$foreignUserId").toOption.get)
+                            .addHeader(Header.Authorization.Bearer(tok))
+                        )
+          } yield assertTrue(response.status == Status.NotFound)
         }.provide(fullLayers)
       ),
       suite("GET /api/users/stats")(

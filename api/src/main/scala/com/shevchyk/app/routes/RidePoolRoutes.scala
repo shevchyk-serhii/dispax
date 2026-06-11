@@ -241,12 +241,16 @@ object RidePoolRoutes:
 
       // GET /api/pools/ride/{rideId} — find pool for a ride
       Method.GET / "api" / "pools" / "ride" / string("rideId") -> RouteHelpers.authPathHandler("RidePool") {
-        (_, rideId: String, _) =>
+        (user, rideId: String, _) =>
           for {
+            companyId    <- UuidParser.requireCompanyId(user.companyId)
             repo         <- ZIO.service[RidePoolRepository]
             parsedRideId <- UuidParser.parseRideId(rideId)
             poolOpt      <- repo.findPoolByRideId(parsedRideId)
-          } yield poolOpt match {
+            // Enforce tenant isolation: only return the pool if it belongs to the
+            // caller's company. Otherwise respond NotFound to avoid leaking
+            // cross-tenant existence.
+          } yield poolOpt.filter(_.companyId == companyId) match {
             case Some(pool) => Response.json(pool.toJson)
             case None       => Response.status(Status.NotFound)
           }

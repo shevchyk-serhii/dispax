@@ -123,7 +123,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           status = ${person.status},
           client_company_id = ${person.clientCompanyId.map(_.value)},
           reminder_minutes = ${person.reminderMinutes}
-      WHERE id = ${person.id.value}
+      WHERE id = ${person.id.value} AND company_id = ${person.companyId}
     """.update.run
       .transact(xa)
       .as(person)
