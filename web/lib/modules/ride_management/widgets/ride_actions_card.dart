@@ -31,7 +31,7 @@ class RideActionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryAction = _getPrimaryAction();
-    final secondaryActions = _getSecondaryActions();
+    final secondaryActions = _getSecondaryActions(context);
     final dangerAction = _getDangerAction();
 
     if (primaryAction == null && secondaryActions.isEmpty && dangerAction == null) {
@@ -118,11 +118,12 @@ class RideActionsCard extends StatelessWidget {
     return null;
   }
 
-  List<Widget> _getSecondaryActions() {
+  List<Widget> _getSecondaryActions(BuildContext context) {
     final List<Widget> actions = [];
 
     if (onViewOnMap != null) {
       actions.add(_buildSecondaryButton(
+        context,
         icon: Icons.map_outlined,
         label: 'View on Map',
         onPressed: onViewOnMap!,
@@ -131,6 +132,7 @@ class RideActionsCard extends StatelessWidget {
 
     if (onShareRide != null) {
       actions.add(_buildSecondaryButton(
+        context,
         icon: Icons.ios_share_rounded,
         label: 'Share',
         onPressed: onShareRide!,
@@ -140,6 +142,7 @@ class RideActionsCard extends StatelessWidget {
     if (onEditRide != null &&
         (ride.status == RideStatus.requested || ride.status == RideStatus.assigned)) {
       actions.add(_buildSecondaryButton(
+        context,
         icon: Icons.edit_outlined,
         label: 'Edit',
         onPressed: onEditRide!,
@@ -186,15 +189,17 @@ class RideActionsCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSecondaryButton({
+  Widget _buildSecondaryButton(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       height: 48,
       child: Material(
-        color: AppColors.surfaceVariant,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
         child: InkWell(
           onTap: onPressed,
@@ -202,12 +207,12 @@ class RideActionsCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: AppColors.textSecondary),
+              Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
               const SizedBox(height: 2),
               Text(
                 label,
                 style: AppStyles.labelSmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),

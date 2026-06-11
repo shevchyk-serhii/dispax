@@ -31,12 +31,12 @@ class FlightActionButtons extends StatelessWidget {
             ),
           ),
           child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.textOnPrimary),
+                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                   ),
                 )
               : Row(
@@ -47,7 +47,7 @@ class FlightActionButtons extends StatelessWidget {
                     Text(
                       'Confirm Arrival',
                       style: AppStyles.labelLarge.copyWith(
-                        color: AppColors.textOnPrimary,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
                   ],

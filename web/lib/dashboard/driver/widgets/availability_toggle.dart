@@ -84,7 +84,7 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
               height: 12,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _isAvailable ? AppColors.success : AppColors.textSecondary,
+                color: _isAvailable ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 12),

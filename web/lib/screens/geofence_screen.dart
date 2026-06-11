@@ -315,7 +315,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       case 'CustomZone':
         return Theme.of(context).colorScheme.primary;
       default:
-        return AppColors.textSecondary;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 
@@ -327,7 +327,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         TabBar(
           controller: _tabController,
           labelColor: AppColors.dispatcherColor,
-          unselectedLabelColor: AppColors.textSecondary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           indicatorColor: AppColors.dispatcherColor,
           tabs: const [
             Tab(text: 'Geofences'),
@@ -531,7 +531,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
-                                color: geofence.isActive ? AppColors.success : AppColors.textSecondary,
+                                color: geofence.isActive ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -585,7 +585,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          color: AppColors.surfaceVariant,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: Row(
             children: [
               const Text('Filter:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),

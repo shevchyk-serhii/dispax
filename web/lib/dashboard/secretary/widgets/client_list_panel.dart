@@ -121,7 +121,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
                         const SizedBox(height: 16),
                         Text(
                           state.searchQuery.isNotEmpty ? 'No clients match your search' : 'No clients yet',
-                          style: AppStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
+                          style: AppStyles.bodyLarge.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),

@@ -376,7 +376,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       case ExpenseCategory.maintenance:
         return Theme.of(context).colorScheme.primary;
       case ExpenseCategory.other:
-        return AppColors.textSecondary;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 

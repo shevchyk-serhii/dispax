@@ -432,7 +432,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 'Your Location',
-                style: AppStyles.titleMedium.copyWith(color: AppColors.textPrimary),
+                style: AppStyles.titleMedium.copyWith(color: Theme.of(context).colorScheme.onSurface),
               ),
             ],
           ),
@@ -446,7 +446,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             const SizedBox(height: AppDimensions.paddingSmall),
             Text(
               'No active ride',
-              style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              style: AppStyles.bodyMedium.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ],
@@ -459,14 +459,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       children: [
         Icon(
           _sharingLocation ? Icons.location_on : Icons.location_off,
-          color: _sharingLocation ? AppColors.success : AppColors.textSecondary,
+          color: _sharingLocation ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant,
           size: AppDimensions.iconSmall,
         ),
         const SizedBox(width: AppDimensions.paddingSmall),
         Expanded(
           child: Text(
             'Share my location',
-            style: AppStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+            style: AppStyles.bodySmall.copyWith(color: Theme.of(context).colorScheme.onSurface),
           ),
         ),
         Switch(
@@ -484,7 +484,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           activeThumbColor: Colors.white,
           activeTrackColor: AppColors.success,
           inactiveThumbColor: Colors.white,
-          inactiveTrackColor: AppColors.textSecondary,
+          inactiveTrackColor: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ],
     );
@@ -515,11 +515,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
         Row(
           children: [
-            Icon(Icons.schedule, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
+            Icon(Icons.schedule, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
             const SizedBox(width: AppDimensions.paddingSmall),
             Text(
               'Pickup: ${AppDateUtils.formatDateTime(_activeRide!.pickupDateTime)}',
-              style: AppStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+              style: AppStyles.bodySmall.copyWith(color: Theme.of(context).colorScheme.onSurface),
             ),
           ],
         ),
@@ -528,12 +528,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
         Row(
           children: [
-            Icon(Icons.route, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
+            Icon(Icons.route, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
             const SizedBox(width: AppDimensions.paddingSmall),
             Expanded(
               child: Text(
                 '${_activeRide!.from.address} -> ${_activeRide!.to.address}',
-                style: AppStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+                style: AppStyles.bodySmall.copyWith(color: Theme.of(context).colorScheme.onSurface),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -545,11 +545,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           const SizedBox(height: AppDimensions.paddingSmall),
           Row(
             children: [
-              Icon(Icons.person, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
+              Icon(Icons.person, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 'Driver: ${_activeRide!.driverName}',
-                style: AppStyles.bodySmall.copyWith(color: AppColors.textPrimary),
+                style: AppStyles.bodySmall.copyWith(color: Theme.of(context).colorScheme.onSurface),
               ),
             ],
           ),
@@ -648,7 +648,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       case RideStatus.inProgress:
         return AppColors.clientColor;
       case RideStatus.completed:
-        return AppColors.textSecondary;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
       default:
         return Theme.of(context).colorScheme.primary;
     }

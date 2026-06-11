@@ -167,7 +167,7 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                                   const Icon(Icons.check_circle, color: AppColors.success),
                                   IconButton(
                                     icon: const Icon(Icons.close, size: 18),
-                                    color: AppColors.textSecondary,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     tooltip: 'Clear',
                                     splashRadius: 18,
                                     onPressed: () {
@@ -182,7 +182,7 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                             : (controller.text.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.close, size: 18),
-                                    color: AppColors.textSecondary,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     tooltip: 'Clear',
                                     splashRadius: 18,
                                     onPressed: () {

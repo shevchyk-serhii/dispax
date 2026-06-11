@@ -221,7 +221,7 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
               _buildLoadChip(
                 'All',
                 _LoadFilter.all,
-                AppColors.textSecondary,
+                Theme.of(context).colorScheme.onSurfaceVariant,
                 colorScheme,
               ),
               const SizedBox(width: 6),
@@ -346,14 +346,14 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                     fontWeight: FontWeight.bold,
                     color: isToday
                         ? AppColors.dispatcherColor
-                        : AppColors.textPrimary,
+                        : Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 Text(
                   DateFormat.yMMMd().format(widget.selectedDate),
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

@@ -101,7 +101,7 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
                 suffixIcon: controller.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close, size: 18),
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         tooltip: 'Clear',
                         splashRadius: 18,
                         onPressed: () {

@@ -249,8 +249,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                     const SizedBox(height: 8),
                     Chip(
                       label: Text(_currentRide.specialRequirements!, style: const TextStyle(fontSize: 12)),
-                      backgroundColor: AppColors.surfaceVariant,
-                      side: const BorderSide(color: AppColors.borderPrimary),
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      side: BorderSide(color: Theme.of(context).colorScheme.outline),
                       visualDensity: VisualDensity.compact,
                     ),
                   ],

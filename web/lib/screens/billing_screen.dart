@@ -394,7 +394,7 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
   // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
   Color _statusColor(InvoiceStatus status) => switch (status) {
-        InvoiceStatus.draft => AppColors.textSecondary,
+        InvoiceStatus.draft => Theme.of(context).colorScheme.onSurfaceVariant,
         InvoiceStatus.sent => AppColors.warning,
         InvoiceStatus.paid => AppColors.success,
         InvoiceStatus.cancelled => AppColors.error,

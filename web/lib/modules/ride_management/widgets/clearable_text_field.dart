@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 
 /// Form text field with a small quick-clear button (×) in the suffix.
@@ -94,7 +93,7 @@ class _ClearableTextFieldState extends State<ClearableTextField> {
         suffixIcon: hasText
             ? IconButton(
                 icon: const Icon(Icons.close, size: 18),
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 tooltip: 'Clear',
                 splashRadius: 18,
                 onPressed: _clear,

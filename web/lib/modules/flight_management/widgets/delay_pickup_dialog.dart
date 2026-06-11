@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 
 class DelayPickupDialog extends StatefulWidget {
@@ -19,7 +18,7 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       title: Text(
         'Delay by how long?',
-        style: AppStyles.titleMedium.copyWith(color: AppColors.textPrimary),
+        style: AppStyles.titleMedium.copyWith(color: Theme.of(context).colorScheme.onSurface),
       ),
       content: RadioGroup<int>(
         groupValue: _selectedDelay,
@@ -31,7 +30,7 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
           children: _delayOptions.map((delay) => RadioListTile<int>(
             title: Text(
               '$delay minutes',
-              style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+              style: AppStyles.bodyMedium.copyWith(color: Theme.of(context).colorScheme.onSurface),
             ),
             value: delay,
           )).toList(),
@@ -42,7 +41,7 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             'Cancel',
-            style: AppStyles.labelMedium.copyWith(color: AppColors.textSecondary),
+            style: AppStyles.labelMedium.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
         ElevatedButton(

@@ -485,11 +485,11 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
       case 'InProgress':
         return AppColors.info;
       case 'Completed':
-        return AppColors.textSecondary;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
       case 'Cancelled':
         return AppColors.error;
       default:
-        return AppColors.textSecondary;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 
@@ -500,7 +500,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
       case 'PickedUp':
         return AppColors.info;
       case 'DroppedOff':
-        return AppColors.textSecondary;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
       case 'Cancelled':
         return AppColors.error;
       default:

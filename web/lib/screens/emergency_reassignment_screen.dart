@@ -418,8 +418,8 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
     switch (status) {
       case 'PENDING': return AppColors.warning;
       case 'REASSIGNED': return AppColors.success;
-      case 'CANCELLED': return AppColors.textSecondary;
-      default: return AppColors.textSecondary;
+      case 'CANCELLED': return Theme.of(context).colorScheme.onSurfaceVariant;
+      default: return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 

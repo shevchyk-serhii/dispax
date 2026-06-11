@@ -559,7 +559,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       case 'pool':
         return AppColors.info;
       default:
-        return AppColors.textSecondary;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 

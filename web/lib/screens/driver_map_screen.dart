@@ -569,7 +569,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 'Driver Dashboard',
-                style: AppStyles.titleMedium.copyWith(color: AppColors.textPrimary),
+                style: AppStyles.titleMedium.copyWith(color: Theme.of(context).colorScheme.onSurface),
               ),
             ],
           ),
@@ -581,7 +581,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             children: [
               Text(
                 'Assigned Rides: ${_assignedRides.length}',
-                style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                style: AppStyles.bodyMedium.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               if (_currentRide != null)
                 Container(
@@ -658,7 +658,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
           Row(
             children: [
-              Icon(Icons.schedule, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
+              Icon(Icons.schedule, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 AppDateUtils.formatDateTime(_currentRide!.pickupDateTime),
@@ -671,7 +671,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
           Row(
             children: [
-              Icon(Icons.route, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
+              Icon(Icons.route, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
               const SizedBox(width: AppDimensions.paddingSmall),
               Expanded(
                 child: Text(
@@ -705,7 +705,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             const SizedBox(height: AppDimensions.paddingSmall),
             Row(
               children: [
-                Icon(Icons.flight, color: AppColors.textSecondary, size: AppDimensions.iconSmall),
+                Icon(Icons.flight, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
                 const SizedBox(width: AppDimensions.paddingSmall),
                 Text(
                   _currentRide!.fullFlightInfo,

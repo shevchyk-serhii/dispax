@@ -178,7 +178,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
                 _buildStatusBar('Cancelled', cancelled, total, AppColors.error),
               ] else
                 Center(
-                  child: Text('No ride data yet', style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                  child: Text('No ride data yet', style: AppStyles.bodyMedium.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
             ],
           ),

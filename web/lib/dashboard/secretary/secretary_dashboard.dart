@@ -159,7 +159,7 @@ class _CreateRidesTab extends StatelessWidget {
                       Text(
                         'Book rides for your clients with flight information and airport transfer details',
                         textAlign: TextAlign.center,
-                        style: AppStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
+                        style: AppStyles.bodyLarge.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       const SizedBox(height: AppDimensions.paddingXLarge),
                       SizedBox(
@@ -250,7 +250,7 @@ class _CreateRidesTab extends StatelessWidget {
           const SizedBox(height: AppDimensions.paddingXSmall),
           Text(
             title,
-            style: AppStyles.labelSmall.copyWith(color: AppColors.textSecondary),
+            style: AppStyles.labelSmall.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),

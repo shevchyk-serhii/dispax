@@ -105,7 +105,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
             child: Text(
               'Update Location',
               style: AppStyles.titleMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -119,7 +119,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
             Text(
               'Tell the driver where you are now:',
               style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
 
@@ -128,7 +128,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
             Text(
               'Quick select:',
               style: AppStyles.labelMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -146,7 +146,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
             Text(
               'Or specify exactly:',
               style: AppStyles.labelMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -170,7 +170,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
             Text(
               'Additional instructions (optional):',
               style: AppStyles.labelMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -226,7 +226,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
           child: Text(
             'Cancel',
             style: AppStyles.labelMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -242,7 +242,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.textOnPrimary),
+                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                   ),
                 )
               : const Text('Send'),
@@ -258,7 +258,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
       label: Text(
         location,
         style: AppStyles.labelSmall.copyWith(
-          color: isSelected ? Theme.of(context).colorScheme.onPrimary : AppColors.textPrimary,
+          color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
@@ -281,7 +281,7 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
       side: BorderSide(
         color: isSelected
             ? Theme.of(context).colorScheme.primary
-            : AppColors.textSecondary.withAlpha(100),
+            : Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(100),
       ),
     );
   }

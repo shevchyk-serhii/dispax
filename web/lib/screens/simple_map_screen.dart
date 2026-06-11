@@ -45,7 +45,7 @@ class SimpleMapScreen extends StatelessWidget {
               Text(
                 'Mapbox maps are configured and ready.\nUpgrade Flutter to 3.33+ for full functionality on Android.',
                 style: AppStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),

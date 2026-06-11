@@ -374,7 +374,7 @@ class _GdprScreenState extends State<GdprScreen> {
       case 'REJECTED':
         return AppColors.error;
       default:
-        return AppColors.textSecondary;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 

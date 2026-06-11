@@ -225,7 +225,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             Text(
               'No rides yet',
               style: AppStyles.bodyLarge.copyWith(
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -447,7 +447,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                           Icons.star,
                           color: isVip
                               ? AppColors.warning
-                              : AppColors.textSecondary,
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         value: isVip,
                         onChanged: (v) => setDialogState(() => isVip = v),

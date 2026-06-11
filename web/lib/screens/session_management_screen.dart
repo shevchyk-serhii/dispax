@@ -197,7 +197,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
               children: [
                 Icon(
                   _deviceIcon(deviceInfo),
-                  color: isCurrent ? AppColors.success : AppColors.textSecondary,
+                  color: isCurrent ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant,
                   size: 28,
                 ),
                 const SizedBox(width: 12),

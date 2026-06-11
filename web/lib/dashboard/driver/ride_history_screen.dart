@@ -117,7 +117,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
             Text(
               'No Ride History',
               style: AppStyles.headlineMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: AppDimensions.paddingSmall),
@@ -125,7 +125,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
               'Your completed rides will appear here',
               textAlign: TextAlign.center,
               style: AppStyles.bodyLarge.copyWith(
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -211,7 +211,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                         child: Text(
                           '${_periodLabel()} History',
                           style: AppStyles.titleLarge.copyWith(
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -320,14 +320,14 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
         Text(
           value,
           style: AppStyles.titleMedium.copyWith(
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
         Text(
           label,
           style: AppStyles.labelSmall.copyWith(
-            color: AppColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -436,7 +436,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                     Text(
                       AppDateUtils.formatTime(ride.pickupDateTime),
                       style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -449,7 +449,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                   children: [
                     Icon(
                       Icons.route,
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       size: AppDimensions.iconSmall,
                     ),
                     const SizedBox(width: AppDimensions.paddingSmall),
@@ -475,14 +475,14 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                       children: [
                         Icon(
                           Icons.person,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           size: AppDimensions.iconSmall,
                         ),
                         const SizedBox(width: AppDimensions.paddingSmall),
                         Text(
                           ride.clientName,
                           style: AppStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],

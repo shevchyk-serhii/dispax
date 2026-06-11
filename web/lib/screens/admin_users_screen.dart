@@ -84,7 +84,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       case 'client': return AppColors.clientColor;
       case 'secretary': return AppColors.secretaryColor;
       case 'dispatcher': return AppColors.dispatcherColor;
-      default: return AppColors.textSecondary;
+      default: return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 
@@ -92,7 +92,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     switch (status?.toLowerCase()) {
       case 'active': return AppColors.success;
       case 'suspended': return AppColors.warning;
-      case 'inactive': return AppColors.textSecondary;
+      case 'inactive': return Theme.of(context).colorScheme.onSurfaceVariant;
       default: return AppColors.success;
     }
   }
@@ -276,7 +276,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final counts = _roleCounts;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: AppColors.surfaceVariant,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [

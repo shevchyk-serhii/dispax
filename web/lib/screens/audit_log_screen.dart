@@ -96,7 +96,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     if (lower.contains('update') || lower.contains('edit')) return AppColors.info;
     if (lower.contains('assign')) return Theme.of(context).colorScheme.primary;
     if (lower.contains('complete')) return AppColors.success;
-    return AppColors.textSecondary;
+    return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
   @override
@@ -162,7 +162,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   Widget _buildFilters() {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: AppColors.surfaceVariant,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Column(
         children: [
           Row(
