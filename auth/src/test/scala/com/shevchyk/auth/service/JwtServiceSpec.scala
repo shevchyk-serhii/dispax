@@ -43,8 +43,8 @@ object JwtServiceSpec extends ZIOSpecDefault {
     maxSessionDuration = ScalaDuration.fromNanos(1 * 1_000_000_000L) // 1 second
   )
 
-  val jwtLayer            = ZLayer.succeed(testConfig) >>> JwtService.live
-  val shortLivedJwtLayer  = ZLayer.succeed(shortLivedConfig) >>> JwtService.live
+  val jwtLayer             = ZLayer.succeed(testConfig) >>> JwtService.live
+  val shortLivedJwtLayer   = ZLayer.succeed(shortLivedConfig) >>> JwtService.live
   val shortSessionJwtLayer = ZLayer.succeed(shortSessionConfig) >>> JwtService.live
 
   def spec =
@@ -194,9 +194,7 @@ object JwtServiceSpec extends ZIOSpecDefault {
             result  <- service.refreshToken(token).exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
-              cause.failureOption.exists(e =>
-                e.isInstanceOf[ExpiredTokenError] || e.isInstanceOf[InvalidTokenError]
-              )
+              cause.failureOption.exists(e => e.isInstanceOf[ExpiredTokenError] || e.isInstanceOf[InvalidTokenError])
             case _                   => false
           })
         }.provide(shortLivedJwtLayer) @@ TestAspect.withLiveClock

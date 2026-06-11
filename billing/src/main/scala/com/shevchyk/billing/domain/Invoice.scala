@@ -8,22 +8,23 @@ import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 // Like the core ID types, serialize as a flat JSON string, not {"value":...}.
-private def idEncoder[A](unwrap: A => UUID): JsonEncoder[A] =
-  JsonEncoder[String].contramap(a => unwrap(a).toString)
-private def idDecoder[A](wrap: UUID => A): JsonDecoder[A] =
-  JsonDecoder[String].mapOrFail(s => scala.util.Try(UUID.fromString(s)).toEither.left.map(_ => s"Invalid UUID: $s").map(wrap))
+private def idEncoder[A](unwrap: A => UUID): JsonEncoder[A] = JsonEncoder[String].contramap(a => unwrap(a).toString)
+
+private def idDecoder[A](wrap: UUID => A): JsonDecoder[A] = JsonDecoder[String].mapOrFail(s =>
+  scala.util.Try(UUID.fromString(s)).toEither.left.map(_ => s"Invalid UUID: $s").map(wrap)
+)
 
 case class InvoiceId(value: UUID)
 
 object InvoiceId:
-  def generate(): InvoiceId = InvoiceId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): InvoiceId    = InvoiceId(UuidCreator.getTimeOrderedEpoch())
   given JsonEncoder[InvoiceId] = idEncoder(_.value)
   given JsonDecoder[InvoiceId] = idDecoder(InvoiceId.apply)
 
 case class InvoiceItemId(value: UUID)
 
 object InvoiceItemId:
-  def generate(): InvoiceItemId = InvoiceItemId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): InvoiceItemId    = InvoiceItemId(UuidCreator.getTimeOrderedEpoch())
   given JsonEncoder[InvoiceItemId] = idEncoder(_.value)
   given JsonDecoder[InvoiceItemId] = idDecoder(InvoiceItemId.apply)
 
@@ -70,6 +71,8 @@ final case class Invoice(
     dueDate: Option[LocalDate] = None,
     sentAt: Option[Instant] = None,
     paidAt: Option[Instant] = None,
+    // When an overdue-payment reminder was last sent; set once so a reminder is sent at most once.
+    reminderSentAt: Option[Instant] = None,
     pdfPath: Option[String] = None,
     items: List[InvoiceItem] = Nil,
     createdAt: Instant = Instant.now(),
@@ -115,5 +118,7 @@ enum InvoiceError extends Throwable:
   // A selected ride can't be billed on this invoice: it belongs to another
   // client company, another taxi company, isn't completed, or is already billed.
   case RideNotBillable(rideId: UUID)
+  // The invoice's client company has no email address to send to.
+  case NoRecipientEmail(id: InvoiceId)
   case DatabaseError(cause: Throwable)
   case PdfGenerationError(cause: Throwable)

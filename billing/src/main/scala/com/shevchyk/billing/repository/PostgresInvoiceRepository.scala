@@ -22,6 +22,37 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
 
   implicit val bigDecimalMeta: Meta[BigDecimal] = Meta[java.math.BigDecimal].imap(BigDecimal(_))(_.bigDecimal)
 
+  // Shared SELECT column list and matching tuple type for invoice rows; the order
+  // here must stay aligned with `toInvoice`'s parameters.
+  private val invoiceColumns: Fragment =
+    fr"""id, number, client_company_id, taxi_company_id, status,
+         period_from, period_to, subtotal_amount, tax_rate, tax_amount, total_amount,
+         currency, notes, due_date, sent_at, paid_at, reminder_sent_at, pdf_path, created_at, updated_at"""
+
+  private type InvoiceRow =
+    (
+        UUID,
+        String,
+        UUID,
+        UUID,
+        String,
+        LocalDate,
+        LocalDate,
+        BigDecimal,
+        BigDecimal,
+        BigDecimal,
+        BigDecimal,
+        String,
+        Option[String],
+        Option[LocalDate],
+        Option[Instant],
+        Option[Instant],
+        Option[Instant],
+        Option[String],
+        Instant,
+        Instant
+    )
+
   private def toInvoice(
       id: UUID,
       number: String,
@@ -39,6 +70,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
       dueDate: Option[LocalDate],
       sentAt: Option[Instant],
       paidAt: Option[Instant],
+      reminderSentAt: Option[Instant],
       pdfPath: Option[String],
       createdAt: Instant,
       updatedAt: Instant
@@ -59,6 +91,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
     dueDate = dueDate,
     sentAt = sentAt,
     paidAt = paidAt,
+    reminderSentAt = reminderSentAt,
     pdfPath = pdfPath,
     createdAt = createdAt,
     updatedAt = updatedAt
@@ -120,37 +153,11 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
 
   override def findById(id: InvoiceId): Task[Option[Invoice]] =
     for {
-      invoiceOpt <-
-        sql"""
-        SELECT id, number, client_company_id, taxi_company_id, status,
-               period_from, period_to, subtotal_amount, tax_rate, tax_amount, total_amount,
-               currency, notes, due_date, sent_at, paid_at, pdf_path, created_at, updated_at
-        FROM invoices WHERE id = ${id.value}
-      """.query[
-          (
-              UUID,
-              String,
-              UUID,
-              UUID,
-              String,
-              LocalDate,
-              LocalDate,
-              BigDecimal,
-              BigDecimal,
-              BigDecimal,
-              BigDecimal,
-              String,
-              Option[String],
-              Option[LocalDate],
-              Option[Instant],
-              Option[Instant],
-              Option[String],
-              Instant,
-              Instant
-          )
-        ].option
-          .transact(xa)
-          .map(_.map(toInvoice.tupled))
+      invoiceOpt <- (fr"SELECT" ++ invoiceColumns ++ fr"FROM invoices WHERE id = ${id.value}")
+                      .query[InvoiceRow]
+                      .option
+                      .transact(xa)
+                      .map(_.map(toInvoice.tupled))
       items      <-
         invoiceOpt match
           case None    => ZIO.succeed(Nil)
@@ -176,36 +183,10 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
   ): Task[List[Invoice]] =
     val statusFilter = status.map(s => fr"AND status = ${InvoiceStatus.asString(s)}").getOrElse(fr"")
     val q            =
-      fr"""
-      SELECT id, number, client_company_id, taxi_company_id, status,
-             period_from, period_to, subtotal_amount, tax_rate, tax_amount, total_amount,
-             currency, notes, due_date, sent_at, paid_at, pdf_path, created_at, updated_at
-      FROM invoices
-      WHERE taxi_company_id = ${taxiCompanyId.value}
-    """ ++ statusFilter ++ fr"ORDER BY created_at DESC LIMIT $limit OFFSET $offset"
-    q.query[
-      (
-          UUID,
-          String,
-          UUID,
-          UUID,
-          String,
-          LocalDate,
-          LocalDate,
-          BigDecimal,
-          BigDecimal,
-          BigDecimal,
-          BigDecimal,
-          String,
-          Option[String],
-          Option[LocalDate],
-          Option[Instant],
-          Option[Instant],
-          Option[String],
-          Instant,
-          Instant
-      )
-    ].to[List]
+      (fr"SELECT" ++ invoiceColumns ++ fr"FROM invoices WHERE taxi_company_id = ${taxiCompanyId.value}") ++
+        statusFilter ++ fr"ORDER BY created_at DESC LIMIT $limit OFFSET $offset"
+    q.query[InvoiceRow]
+      .to[List]
       .transact(xa)
       .map(_.map(toInvoice.tupled))
 
@@ -220,10 +201,28 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
         due_date = ${invoice.dueDate},
         sent_at = ${invoice.sentAt},
         paid_at = ${invoice.paidAt},
+        reminder_sent_at = ${invoice.reminderSentAt},
         pdf_path = ${invoice.pdfPath},
         updated_at = NOW()
       WHERE id = ${invoice.id.value}
     """.update.run.transact(xa).as(invoice)
+
+  override def findOverdueUnpaid(now: Instant): Task[List[Invoice]] =
+    // Cross-tenant by design (runs outside HTTP/JWT). Items aren't loaded; the
+    // reminder only needs header fields, and the PDF is regenerated from a full
+    // findById in the scheduler.
+    (fr"SELECT" ++ invoiceColumns ++ fr"""
+      FROM invoices
+      WHERE status = 'sent'
+        AND paid_at IS NULL
+        AND reminder_sent_at IS NULL
+        AND due_date IS NOT NULL
+        AND due_date < ${now.atOffset(ZoneOffset.UTC).toLocalDate}
+      ORDER BY due_date""")
+      .query[InvoiceRow]
+      .to[List]
+      .transact(xa)
+      .map(_.map(toInvoice.tupled))
 
   override def delete(id: InvoiceId): Task[Boolean] =
     sql"DELETE FROM invoices WHERE id = ${id.value} AND status = 'draft'".update.run.transact(xa).map(_ > 0)
@@ -318,7 +317,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
       from: Option[LocalDate],
       to: Option[LocalDate]
   ): Task[List[UnbilledRide]] =
-    val base =
+    val base       =
       fr"""
         SELECT r.id, r.client_id, p.client_company_id, r.from_address, r.to_address,
                r.pickup_datetime,
@@ -360,6 +359,25 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
         .to[List]
         .transact(xa)
         .map(_.map(toUnbilledRide))
+
+  override def findRideForReceipt(
+      taxiCompanyId: CompanyId,
+      rideId: UUID
+  ): Task[Option[UnbilledRide]] =
+    sql"""
+      SELECT r.id, r.client_id, p.client_company_id, r.from_address, r.to_address,
+             r.pickup_datetime,
+             COALESCE(r.final_price_amount, r.estimated_price_amount, 0)
+      FROM rides r
+      JOIN persons p ON r.client_id = p.id
+      WHERE r.id = $rideId
+        AND r.company_id = ${taxiCompanyId.value}
+        AND r.status = 'Completed'
+    """
+      .query[(UUID, UUID, UUID, String, String, Instant, BigDecimal)]
+      .option
+      .transact(xa)
+      .map(_.map(toUnbilledRide))
 
 object PostgresInvoiceRepository:
   val layer: ZLayer[Transactor[Task], Nothing, InvoiceRepository] = ZLayer.fromFunction(PostgresInvoiceRepository(_))

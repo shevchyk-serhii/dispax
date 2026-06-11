@@ -2,6 +2,7 @@ package com.shevchyk.billing.application
 
 import com.shevchyk.billing.domain.*
 import com.shevchyk.billing.repository.{ClientCompanyRepository, CompanyBillingProfileRepository, InvoiceRepository}
+import com.shevchyk.core.application.{EmailSmsService, InvoiceEmailData}
 import com.shevchyk.core.domain.CompanyId
 import zio.*
 
@@ -23,6 +24,7 @@ trait InvoiceService:
   // rideIds must be completed/unbilled rides of this taxi company AND belong to
   // the invoice's client company, otherwise fails with RideNotBillable.
   def fillFromRides(id: InvoiceId, taxiCompanyId: CompanyId, rideIds: List[UUID]): IO[InvoiceError, Invoice]
+
   // Lists completed, unbilled rides of a client company (taxi-company scoped),
   // optionally bounded by a pickup-date range — the selection table source.
   def listBillableRides(
@@ -39,7 +41,26 @@ trait InvoiceService:
       storageDir: String
   ): IO[InvoiceError, Array[Byte]]
 
+  // Generates a single-ride German taxi receipt ("Quittung") PDF, independent of
+  // any invoice. The ride's price is treated as gross (Brutto); recipient is the
+  // ride's client company; issuer is the company's billing profile.
+  def generateRideReceipt(
+      rideId: UUID,
+      taxiCompanyId: CompanyId,
+      taxRate: BigDecimal,
+      companyName: String
+  ): IO[InvoiceError, Array[Byte]]
+
   def sendInvoice(
+      id: InvoiceId,
+      taxiCompanyId: CompanyId,
+      companyName: String,
+      storageDir: String
+  ): IO[InvoiceError, Invoice]
+
+  // Re-sends a sent-but-overdue invoice as a payment reminder (PDF attached) and
+  // stamps reminderSentAt so it's sent at most once. Used by the background scheduler.
+  def sendReminder(
       id: InvoiceId,
       taxiCompanyId: CompanyId,
       companyName: String,
@@ -51,7 +72,8 @@ trait InvoiceService:
 class InvoiceServiceImpl(
     invoiceRepo: InvoiceRepository,
     clientCompanyRepo: ClientCompanyRepository,
-    billingProfileRepo: CompanyBillingProfileRepository
+    billingProfileRepo: CompanyBillingProfileRepository,
+    emailService: EmailSmsService
 ) extends InvoiceService:
 
   override def createInvoice(taxiCompanyId: CompanyId, req: CreateInvoiceRequest): IO[InvoiceError, Invoice] =
@@ -158,8 +180,12 @@ class InvoiceServiceImpl(
       clientCompanyId: com.shevchyk.core.domain.ClientCompanyId,
       from: Option[LocalDate],
       to: Option[LocalDate]
-  ): Task[List[com.shevchyk.billing.repository.UnbilledRide]] =
-    invoiceRepo.findBillableRides(taxiCompanyId, clientCompanyId, from, to)
+  ): Task[List[com.shevchyk.billing.repository.UnbilledRide]] = invoiceRepo.findBillableRides(
+    taxiCompanyId,
+    clientCompanyId,
+    from,
+    to
+  )
 
   override def generatePdf(
       id: InvoiceId,
@@ -192,6 +218,79 @@ class InvoiceServiceImpl(
                    .mapError(InvoiceError.DatabaseError(_))
     } yield bytes
 
+  override def generateRideReceipt(
+      rideId: UUID,
+      taxiCompanyId: CompanyId,
+      taxRate: BigDecimal,
+      companyName: String
+  ): IO[InvoiceError, Array[Byte]] =
+    for {
+      // Company isolation: a ride of another tenant returns empty → RideNotBillable,
+      // never leaking that the ride exists.
+      ride         <- invoiceRepo
+                        .findRideForReceipt(taxiCompanyId, rideId)
+                        .mapError(InvoiceError.DatabaseError(_))
+                        .flatMap(ZIO.fromOption(_).mapError(_ => InvoiceError.RideNotBillable(rideId)))
+      cc           <- clientCompanyRepo
+                        .findById(com.shevchyk.core.domain.ClientCompanyId(ride.clientCompanyId))
+                        .mapError(InvoiceError.DatabaseError(_))
+                        .flatMap(ZIO.fromOption(_).mapError(_ => InvoiceError.ClientCompanyNotFound(ride.clientCompanyId)))
+      profile      <- billingProfileRepo
+                        .findByCompany(taxiCompanyId)
+                        .mapError(InvoiceError.DatabaseError(_))
+                        .map(_.getOrElse(CompanyBillingProfile(taxiCompanyId, legalName = Some(companyName))))
+      // Stable, idempotent receipt number derived from the ride (no shared counter).
+      receiptNumber = s"Q-${ride.rideId.toString.take(8).toUpperCase}"
+      bytes        <- PdfGenerator
+                        .generateReceiptBytes(
+                          receiptNumber,
+                          ride.pickupAddress,
+                          ride.dropoffAddress,
+                          ride.pickupDatetime,
+                          ride.price,
+                          taxRate,
+                          profile,
+                          cc
+                        )
+                        .mapError(InvoiceError.PdfGenerationError(_))
+    } yield bytes
+
+  // Generate the PDF, load the recipient, and email the invoice (or reminder).
+  // Fails with NoRecipientEmail when the client company has no address. Shared by
+  // sendInvoice and sendReminder so the "PDF → recipient → email" path lives once.
+  private def emailInvoice(
+      invoice: Invoice,
+      taxiCompanyId: CompanyId,
+      companyName: String,
+      storageDir: String,
+      isReminder: Boolean
+  ): IO[InvoiceError, Unit] =
+    for {
+      pdf   <- generatePdf(invoice.id, taxiCompanyId, companyName, storageDir)
+      cc    <- clientCompanyRepo
+                 .findById(invoice.clientCompanyId)
+                 .mapError(InvoiceError.DatabaseError(_))
+                 .flatMap(
+                   ZIO.fromOption(_).mapError(_ => InvoiceError.ClientCompanyNotFound(invoice.clientCompanyId.value))
+                 )
+      email <- ZIO.fromOption(cc.email).orElseFail(InvoiceError.NoRecipientEmail(invoice.id))
+      _     <- emailService
+                 .sendInvoiceEmail(
+                   InvoiceEmailData(
+                     toEmail = email,
+                     toName = cc.name,
+                     invoiceNumber = invoice.number,
+                     totalAmount = invoice.totalAmount,
+                     currency = invoice.currency,
+                     dueDate = invoice.dueDate,
+                     isReminder = isReminder,
+                     pdfAttachment = pdf,
+                     pdfFilename = s"${invoice.number.replace('/', '-')}.pdf"
+                   )
+                 )
+                 .mapError(InvoiceError.DatabaseError(_))
+    } yield ()
+
   override def sendInvoice(
       id: InvoiceId,
       taxiCompanyId: CompanyId,
@@ -204,8 +303,26 @@ class InvoiceServiceImpl(
         ZIO.when(invoice.status != InvoiceStatus.Draft)(
           ZIO.fail(InvoiceError.NotDraft(id))
         )
-      _       <- generatePdf(id, taxiCompanyId, companyName, storageDir)
+      _       <- emailInvoice(invoice, taxiCompanyId, companyName, storageDir, isReminder = false)
       updated  = invoice.copy(status = InvoiceStatus.Sent, sentAt = Some(Instant.now()))
+      saved   <- invoiceRepo.update(updated).mapError(InvoiceError.DatabaseError(_))
+    } yield saved
+
+  override def sendReminder(
+      id: InvoiceId,
+      taxiCompanyId: CompanyId,
+      companyName: String,
+      storageDir: String
+  ): IO[InvoiceError, Invoice] =
+    for {
+      invoice <- getInvoice(id, taxiCompanyId)
+      // Only sent, unpaid invoices get a reminder; ignore anything already paid/cancelled/draft.
+      _       <-
+        ZIO.when(invoice.status != InvoiceStatus.Sent)(
+          ZIO.fail(InvoiceError.InvalidStatus(invoice.status, "sent"))
+        )
+      _       <- emailInvoice(invoice, taxiCompanyId, companyName, storageDir, isReminder = true)
+      updated  = invoice.copy(reminderSentAt = Some(Instant.now()))
       saved   <- invoiceRepo.update(updated).mapError(InvoiceError.DatabaseError(_))
     } yield saved
 
@@ -241,7 +358,7 @@ class InvoiceServiceImpl(
 object InvoiceService:
 
   val layer: ZLayer[
-    InvoiceRepository & ClientCompanyRepository & CompanyBillingProfileRepository,
+    InvoiceRepository & ClientCompanyRepository & CompanyBillingProfileRepository & EmailSmsService,
     Nothing,
     InvoiceService
-  ] = ZLayer.fromFunction(InvoiceServiceImpl(_, _, _))
+  ] = ZLayer.fromFunction(InvoiceServiceImpl(_, _, _, _))

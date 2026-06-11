@@ -23,8 +23,9 @@ import java.util.UUID
 object StatsRoutesSpec extends ZIOSpecDefault {
 
   private val noopEmailSms: ZLayer[Any, Nothing, EmailSmsService] = ZLayer.succeed(new EmailSmsService:
-    def sendRideConfirmation(data: RideConfirmationData): Task[Unit] = ZIO.unit
-    def sendDriverAssignment(data: RideConfirmationData): Task[Unit] = ZIO.unit
+    def sendRideConfirmation(data: RideConfirmationData): Task[Unit]                       = ZIO.unit
+    def sendDriverAssignment(data: RideConfirmationData): Task[Unit]                       = ZIO.unit
+    def sendInvoiceEmail(data: com.shevchyk.core.application.InvoiceEmailData): Task[Unit] = ZIO.unit
   )
 
   private val testDriver = Person(

@@ -26,6 +26,7 @@ object InvoiceRoutes:
         case InvoiceError.ClientCompanyNotFound(_) => (Status.NotFound, "Client company not found")
         case InvoiceError.NotDraft(_)              => (Status.Conflict, "Invoice must be in draft status")
         case InvoiceError.RideNotBillable(id)      => (Status.BadRequest, s"Ride not billable: $id")
+        case InvoiceError.NoRecipientEmail(_)      => (Status.BadRequest, "Client company has no email address")
         case InvoiceError.InvalidStatus(cur, req)  => (Status.Conflict, s"Invalid status: ${cur}, required: $req")
         case InvoiceError.DatabaseError(c)         =>
           ZIO.logError(s"DB error: ${c.getMessage}")
@@ -118,9 +119,10 @@ object InvoiceRoutes:
           req       <- ZIO
                          .fromEither(bodyStr.fromJson[FillFromRidesRequest])
                          .mapError(_ => Response.status(Status.BadRequest))
-          _         <- ZIO.when(req.rideIds.isEmpty)(
-                         ZIO.fail(Response(Status.BadRequest, body = Body.fromString("""{"error":"rideIds must not be empty"}""")))
-                       )
+          _         <-
+            ZIO.when(req.rideIds.isEmpty)(
+              ZIO.fail(Response(Status.BadRequest, body = Body.fromString("""{"error":"rideIds must not be empty"}""")))
+            )
           service   <- ZIO.service[InvoiceService]
           invoice   <- service.fillFromRides(invoiceId, companyId, req.rideIds).mapError(e => e: Throwable)
         } yield Response.json(invoice.toJson)).catchAll {
@@ -173,6 +175,34 @@ object InvoiceRoutes:
         case e: InvoiceError => handleError(e)
         case e: Throwable    => ZIO.logError(e.getMessage).as(Response.status(Status.InternalServerError))
       }
+    },
+
+    // GET /api/billing/rides/:rideId/receipt?taxRate=19 — single-ride Quittung PDF
+    Method.GET / "api" / "billing" / "rides" / string("rideId") / "receipt" -> handler {
+      (rideId: String, request: Request) =>
+        (for {
+          user      <- AuthMiddleware.authenticateRequest(request)
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
+          companyId <- UuidParser.requireCompanyId(user.companyId)
+          rid       <- ZIO.attempt(UUID.fromString(rideId)).mapError(_ => Response.status(Status.BadRequest))
+          taxRate    = request.url
+                         .queryParam("taxRate")
+                         .flatMap(s => scala.util.Try(BigDecimal(s)).toOption)
+                         .getOrElse(BigDecimal(19))
+          service   <- ZIO.service[InvoiceService]
+          bytes     <- service.generateRideReceipt(rid, companyId, taxRate, companyName).mapError(e => e: Throwable)
+        } yield Response(
+          Status.Ok,
+          headers = Headers(
+            Header.ContentType(MediaType.application.pdf),
+            Header.Custom("Content-Disposition", s"""attachment; filename="quittung-$rideId.pdf"""")
+          ),
+          body = Body.fromChunk(zio.Chunk.fromArray(bytes))
+        )).catchAll {
+          case r: Response     => ZIO.succeed(r)
+          case e: InvoiceError => handleError(e)
+          case e: Throwable    => ZIO.logError(e.getMessage).as(Response.status(Status.InternalServerError))
+        }
     },
 
     // POST /api/billing/invoices/:id/send

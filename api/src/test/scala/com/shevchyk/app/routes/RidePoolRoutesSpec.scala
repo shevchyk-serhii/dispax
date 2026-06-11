@@ -15,16 +15,16 @@ import java.time.Instant
 import java.util.UUID
 
 class StubRideService extends RideService:
-  def getRideById(rideId: RideId): IO[RideError, Ride]                                                     = ZIO.fail(RideError.RideNotFound(rideId))
+  def getRideById(rideId: RideId): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
 
-  def createRide(request: CreateRideRequest): IO[RideError, Ride]                                          = ZIO.fail(
+  def createRide(request: CreateRideRequest): IO[RideError, Ride]        = ZIO.fail(
     RideError.RideNotFound(RideId(UUID.randomUUID()))
   )
-  def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                         = ZIO.succeed(Nil)
-  def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                   = ZIO.fail(RideError.RideNotFound(rideId))
-  def completeRide(rideId: RideId): IO[RideError, Ride]                                                    = ZIO.fail(RideError.RideNotFound(rideId))
+  def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]       = ZIO.succeed(Nil)
+  def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
+  def completeRide(rideId: RideId): IO[RideError, Ride]                  = ZIO.fail(RideError.RideNotFound(rideId))
 
-  def cancelRide(rideId: RideId, userId: PersonId, userRole: PersonRole): IO[RideError, Ride]              = ZIO.fail(
+  def cancelRide(rideId: RideId, userId: PersonId, userRole: PersonRole): IO[RideError, Ride] = ZIO.fail(
     RideError.RideNotFound(rideId)
   )
 
@@ -34,7 +34,7 @@ class StubRideService extends RideService:
       userRole: PersonRole,
       request: CancelRideRequest
   ): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
-  def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]                          = ZIO.succeed(Map.empty)
+  def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]             = ZIO.succeed(Map.empty)
 
   def updateRideStatus(
       rideId: RideId,
@@ -42,12 +42,12 @@ class StubRideService extends RideService:
       userId: PersonId,
       userRole: PersonRole
   ): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
-  def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                = ZIO.fail(RideError.RideNotFound(rideId))
-  def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]                                      = ZIO.succeed(Nil)
-  def getDriverRides(driverId: PersonId): IO[RideError, List[Ride]]                                        = ZIO.succeed(Nil)
-  def getClientRides(clientId: PersonId): IO[RideError, List[Ride]]                                        = ZIO.succeed(Nil)
-  def getAllRides: IO[RideError, List[Ride]]                                                               = ZIO.succeed(Nil)
-  def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]                                   = ZIO.succeed(Nil)
+  def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
+  def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]       = ZIO.succeed(Nil)
+  def getDriverRides(driverId: PersonId): IO[RideError, List[Ride]]         = ZIO.succeed(Nil)
+  def getClientRides(clientId: PersonId): IO[RideError, List[Ride]]         = ZIO.succeed(Nil)
+  def getAllRides: IO[RideError, List[Ride]]                                = ZIO.succeed(Nil)
+  def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]    = ZIO.succeed(Nil)
 
   def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]] = ZIO
     .succeed(Nil)
@@ -61,7 +61,7 @@ class StubRideService extends RideService:
       companyId: Option[CompanyId]
   ): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
 
-  def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride]                           = ZIO.fail(
+  def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride]                   = ZIO.fail(
     RideError.RideNotFound(rideId)
   )
 
@@ -70,12 +70,12 @@ class StubRideService extends RideService:
       paymentStatus: PaymentStatus,
       paymentMethod: Option[PaymentMethod]
   ): IO[RideError, Ride] = ZIO.fail(RideError.RideNotFound(rideId))
-  def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                             = ZIO.succeed(Nil)
-  def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                         = ZIO.succeed(Map.empty)
-  def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                     = ZIO.succeed(BigDecimal(0))
-  def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                     = ZIO.succeed(BigDecimal(0))
-  def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                 = ZIO.succeed(0.0)
-  def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]]         = ZIO.succeed(Nil)
+  def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                     = ZIO.succeed(Nil)
+  def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                 = ZIO.succeed(Map.empty)
+  def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                             = ZIO.succeed(BigDecimal(0))
+  def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                             = ZIO.succeed(BigDecimal(0))
+  def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                         = ZIO.succeed(0.0)
+  def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]] = ZIO.succeed(Nil)
 
   def getDriverEarnings(
       driverId: PersonId,

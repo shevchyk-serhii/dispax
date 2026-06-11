@@ -7,7 +7,7 @@ import java.time.{Instant, ZoneOffset}
 
 class InMemoryRideRepository extends RideRepository:
 
-  private val rides                           = Unsafe.unsafe { implicit unsafe =>
+  private val rides = Unsafe.unsafe { implicit unsafe =>
     Runtime.default.unsafe.run(Ref.Synchronized.make(Map.empty[RideId, Ride])).getOrThrowFiberFailure()
   }
 

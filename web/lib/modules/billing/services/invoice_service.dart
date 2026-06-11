@@ -80,6 +80,15 @@ class InvoiceService {
     throw ApiException('Failed to download PDF: ${response.statusCode}');
   }
 
+  /// Single-ride German taxi receipt ("Quittung") PDF. The price is treated as gross.
+  Future<Uint8List> downloadRideReceipt(String rideId, {double taxRate = 19}) async {
+    final response = await _apiClient.get('/billing/rides/$rideId/receipt?taxRate=${taxRate.toStringAsFixed(0)}');
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    }
+    throw ApiException('Failed to download receipt: ${response.statusCode}');
+  }
+
   Future<Invoice> sendInvoice(String id) async {
     final response = await _apiClient.post('/billing/invoices/$id/send', {});
     if (response.statusCode == 200) {

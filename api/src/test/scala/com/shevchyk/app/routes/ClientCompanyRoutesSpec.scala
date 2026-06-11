@@ -13,9 +13,9 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters.*
 
 class LocalInMemoryClientCompanyRepo extends ClientCompanyRepository:
-  private val store                                                   = new ConcurrentHashMap[ClientCompanyId, ClientCompany]()
-  def create(c: ClientCompany): Task[ClientCompany]                   = ZIO.succeed { store.put(c.id, c); c }
-  def findById(id: ClientCompanyId): Task[Option[ClientCompany]]      = ZIO.succeed(Option(store.get(id)))
+  private val store                                              = new ConcurrentHashMap[ClientCompanyId, ClientCompany]()
+  def create(c: ClientCompany): Task[ClientCompany]              = ZIO.succeed { store.put(c.id, c); c }
+  def findById(id: ClientCompanyId): Task[Option[ClientCompany]] = ZIO.succeed(Option(store.get(id)))
 
   def findByTaxiCompany(taxiId: CompanyId): Task[List[ClientCompany]] = ZIO.succeed(
     store.values.asScala.filter(_.taxiCompanyId == taxiId).toList.sortBy(_.name)
@@ -24,30 +24,30 @@ class LocalInMemoryClientCompanyRepo extends ClientCompanyRepository:
   def delete(id: ClientCompanyId): Task[Boolean]                      = ZIO.succeed(Option(store.remove(id)).isDefined)
 
 class LocalInMemoryPersonRepo extends PersonRepository:
-  private val store                                                                    = new ConcurrentHashMap[PersonId, Person]()
-  def create(p: Person): Task[Person]                                                  = ZIO.succeed { store.put(p.id, p); p }
-  def findById(id: PersonId): Task[Option[Person]]                                     = ZIO.succeed(Option(store.get(id)))
-  def findByEmail(email: String): Task[Option[Person]]                                 = ZIO.succeed(store.values.asScala.find(_.email == email))
-  def findByRole(role: PersonRole): Task[List[Person]]                                 = ZIO.succeed(store.values.asScala.filter(_.role == role).toList)
+  private val store                                    = new ConcurrentHashMap[PersonId, Person]()
+  def create(p: Person): Task[Person]                  = ZIO.succeed { store.put(p.id, p); p }
+  def findById(id: PersonId): Task[Option[Person]]     = ZIO.succeed(Option(store.get(id)))
+  def findByEmail(email: String): Task[Option[Person]] = ZIO.succeed(store.values.asScala.find(_.email == email))
+  def findByRole(role: PersonRole): Task[List[Person]] = ZIO.succeed(store.values.asScala.filter(_.role == role).toList)
 
   def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
     store.values.asScala.filter(p => p.role == role && p.companyId.contains(companyId)).toList
   )
 
-  def findByCompanyId(companyId: CompanyId): Task[List[Person]]                        = ZIO.succeed(
+  def findByCompanyId(companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
     store.values.asScala.filter(_.companyId.contains(companyId)).toList
   )
-  def findAll(): Task[List[Person]]                                                    = ZIO.succeed(store.values.asScala.toList)
-  def update(p: Person): Task[Person]                                                  = ZIO.succeed { store.put(p.id, p); p }
-  def delete(id: PersonId): Task[Unit]                                                 = ZIO.succeed { store.remove(id); () }
+  def findAll(): Task[List[Person]]                             = ZIO.succeed(store.values.asScala.toList)
+  def update(p: Person): Task[Person]                           = ZIO.succeed { store.put(p.id, p); p }
+  def delete(id: PersonId): Task[Unit]                          = ZIO.succeed { store.remove(id); () }
 
-  def findByStatus(status: UserStatus): Task[List[Person]]                             = ZIO.succeed(
+  def findByStatus(status: UserStatus): Task[List[Person]] = ZIO.succeed(
     store.values.asScala.filter(_.status == status).toList
   )
-  def searchByQuery(query: String): Task[List[Person]]                                 = ZIO.succeed(Nil)
-  def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
+  def searchByQuery(query: String): Task[List[Person]]     = ZIO.succeed(Nil)
+  def updateLastLogin(id: PersonId): Task[Unit]            = ZIO.unit
 
-  def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]        = ZIO.succeed(
+  def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] = ZIO.succeed(
     store.values.asScala.filter(_.clientCompanyId.contains(clientCompanyId)).toList
   )
 

@@ -20,6 +20,9 @@ trait InvoiceRepository:
       offset: Int
   ): Task[List[Invoice]]
   def update(invoice: Invoice): Task[Invoice]
+  // Sent, unpaid invoices whose due date has passed and which haven't been
+  // reminded yet — the overdue-reminder candidate set (cross-tenant).
+  def findOverdueUnpaid(now: java.time.Instant): Task[List[Invoice]]
   def delete(id: InvoiceId): Task[Boolean]
   def addItems(items: List[InvoiceItem]): Task[Unit]
   def deleteItems(invoiceId: InvoiceId): Task[Unit]
@@ -31,6 +34,7 @@ trait InvoiceRepository:
   def unlinkRides(invoiceId: InvoiceId, taxiCompanyId: CompanyId): Task[Unit]
   // Returns unbilled completed rides for a client company in a period
   def findUnbilledRides(clientCompanyId: ClientCompanyId, from: LocalDate, to: LocalDate): Task[List[UnbilledRide]]
+
   // Returns unbilled completed rides for a client company, taxi-company scoped,
   // optionally bounded by a pickup-date range (the billable-rides listing).
   def findBillableRides(
@@ -45,6 +49,10 @@ trait InvoiceRepository:
   // completed, or already billed). Each row carries its client_company_id so the
   // service can enforce the single-client-company rule.
   def findRidesByIds(taxiCompanyId: CompanyId, rideIds: List[UUID]): Task[List[UnbilledRide]]
+  // Returns a single completed ride (taxi-company scoped) for receipt generation.
+  // Unlike findRidesByIds, this does NOT require the ride to be unbilled — a
+  // per-ride Quittung must be printable even after the ride is on an invoice.
+  def findRideForReceipt(taxiCompanyId: CompanyId, rideId: UUID): Task[Option[UnbilledRide]]
 
 final case class UnbilledRide(
     rideId: UUID,

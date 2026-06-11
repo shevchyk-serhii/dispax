@@ -26,7 +26,7 @@ object NotificationOrchestratorSpec extends ZIOSpecDefault {
     def registerToken(personId: PersonId, token: String, platform: String): Task[Unit] = ZIO.unit
     def unregisterToken(token: String): Task[Unit]                                     = ZIO.unit
 
-    def sendToUser(personId: PersonId, n: PushNotification): Task[Unit]                =
+    def sendToUser(personId: PersonId, n: PushNotification): Task[Unit] =
       calls.update(_ + 1) *> (if fail then ZIO.fail(new RuntimeException("FCM down")) else ZIO.unit)
   }
 

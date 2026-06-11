@@ -202,7 +202,18 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
           ),
           child: Icon(_statusIcon(invoice.status), color: statusColor, size: 20),
         ),
-        title: Text(invoice.number, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            Flexible(child: Text(invoice.number, style: const TextStyle(fontWeight: FontWeight.bold))),
+            if (invoice.reminderSentAt != null) ...[
+              const SizedBox(width: 6),
+              Tooltip(
+                message: 'Zahlungserinnerung versendet',
+                child: Icon(Icons.notifications_active, size: 14, color: AppColors.info),
+              ),
+            ],
+          ],
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -573,7 +584,15 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                     ],
                   ),
                 ),
-                _StatusBadge(inv.status),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    _StatusBadge(inv.status),
+                    if (inv.reminderSentAt != null) _ReminderBadge(inv.reminderSentAt!),
+                  ],
+                ),
               ],
             ),
             const Divider(height: 24),
@@ -682,6 +701,40 @@ class _StatusBadge extends StatelessWidget {
         border: Border.all(color: color.withAlpha(80)),
       ),
       child: Text(status.displayName, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+    );
+  }
+}
+
+/// Shown next to the status badge once a payment reminder has been emailed for a
+/// sent-but-overdue invoice; carries the date it went out.
+class _ReminderBadge extends StatelessWidget {
+  final DateTime sentAt;
+  const _ReminderBadge(this.sentAt);
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+
+  @override
+  Widget build(BuildContext context) {
+    const color = AppColors.info;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(25),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withAlpha(80)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.notifications_active, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            'Erinnert ${_fmtDate(sentAt)}',
+            style: const TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+          ),
+        ],
+      ),
     );
   }
 }

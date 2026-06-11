@@ -21,7 +21,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
   // InMemory DriverLocationRepository
   class InMemoryDriverLocationRepository extends DriverLocationRepository:
 
-    private val locations    = Unsafe.unsafe { implicit unsafe =>
+    private val locations = Unsafe.unsafe { implicit unsafe =>
       Runtime.default.unsafe.run(Ref.Synchronized.make(Map.empty[PersonId, DriverLocation])).getOrThrowFiberFailure()
     }
 
@@ -166,8 +166,8 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
         // For a driver whose rides span multiple companies this is the first ride's
         // company — pin that behaviour so a future change is a conscious decision.
         test("checkGeofences uses the company of the driver's first ride") {
-          val companyA = CompanyId(UUID.fromString("00000001-0000-0000-0000-00000000000a"))
-          val companyB = CompanyId(UUID.fromString("00000001-0000-0000-0000-00000000000b"))
+          val companyA                         = CompanyId(UUID.fromString("00000001-0000-0000-0000-00000000000a"))
+          val companyB                         = CompanyId(UUID.fromString("00000001-0000-0000-0000-00000000000b"))
           def rideIn(company: CompanyId): Ride = Ride(
             id = RideId.generate(),
             clientId = PersonId(UUID.randomUUID()),
@@ -180,7 +180,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
             pickupDateTime = Instant.now().plusSeconds(3600)
           )
           for {
-            captured <- Ref.make(Option.empty[CompanyId])
+            captured         <- Ref.make(Option.empty[CompanyId])
             recordingGeofence = ZLayer.succeed[GeofenceService](
                                   new GeofenceService:
                                     def checkDriverLocation(
@@ -188,8 +188,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
                                         companyId: CompanyId,
                                         lat: Double,
                                         lng: Double
-                                    ): UIO[List[GeofenceAlert]] =
-                                      captured.set(Some(companyId)).as(Nil)
+                                    ): UIO[List[GeofenceAlert]] = captured.set(Some(companyId)).as(Nil)
                                     def checkClientProximity(
                                         driverId: PersonId,
                                         lat: Double,
@@ -198,22 +197,24 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
                                     ): UIO[Unit] = ZIO.unit
                                 )
             // Share a single RideRepository between seeding and the service.
-            rideRepoLayer = InMemoryRideRepository.layer
-            depsLayer = rideRepoLayer ++
-                          InMemoryDriverLocationRepository.layer ++
-                          EventHub.layer ++
-                          recordingGeofence ++
-                          noopPersonRepository
-            serviceLayer = depsLayer >+> DriverLocationService.layer
-            result <- (for {
-                        rideRepo <- ZIO.service[RideRepository]
-                        _        <- rideRepo.create(rideIn(companyA))
-                        _        <- rideRepo.create(rideIn(companyB))
-                        service  <- ZIO.service[DriverLocationService]
-                        _        <- service.updateLocation(testDriverId, 48.1, 11.5)
-                        // checkGeofences runs on a forked daemon — poll until it records.
-                        seen     <- captured.get.repeatUntil(_.isDefined).timeout(5.seconds)
-                      } yield seen).provide(serviceLayer)
+            rideRepoLayer     = InMemoryRideRepository.layer
+            depsLayer         =
+              rideRepoLayer ++
+                InMemoryDriverLocationRepository.layer ++
+                EventHub.layer ++
+                recordingGeofence ++
+                noopPersonRepository
+            serviceLayer      = depsLayer >+> DriverLocationService.layer
+            result           <-
+              (for {
+                rideRepo <- ZIO.service[RideRepository]
+                _        <- rideRepo.create(rideIn(companyA))
+                _        <- rideRepo.create(rideIn(companyB))
+                service  <- ZIO.service[DriverLocationService]
+                _        <- service.updateLocation(testDriverId, 48.1, 11.5)
+                // checkGeofences runs on a forked daemon — poll until it records.
+                seen     <- captured.get.repeatUntil(_.isDefined).timeout(5.seconds)
+              } yield seen).provide(serviceLayer)
           } yield assertTrue(result.flatten.contains(companyA))
         } @@ TestAspect.withLiveClock @@ TestAspect.flaky
       ),

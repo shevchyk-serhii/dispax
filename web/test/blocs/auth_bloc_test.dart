@@ -9,6 +9,7 @@ import 'package:dispax/blocs/auth/auth_event.dart';
 import 'package:dispax/blocs/auth/auth_state.dart';
 import 'package:dispax/modules/auth/services/biometric_service.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/modules/core/services/websocket_service.dart';
 import '../helpers/mocks.dart';
 import '../helpers/test_fixtures.dart';
 
@@ -230,10 +231,15 @@ void main() {
       final clientBefore = bloc.apiClient;
 
       bloc.add(const AuthLoginRequested(email: 'a@b.com', password: 'pass'));
-      await Future.delayed(const Duration(milliseconds: 50));
+      // Wait for the login to actually finish (deterministic, no fixed delay).
+      await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
 
       expect(bloc.apiClient, same(clientBefore));
-      bloc.close();
+
+      // Login starts the real WebSocket singleton (its reconnect timer would
+      // otherwise fire during a later test); stop it before tearing down.
+      WebSocketService.instance.disconnect();
+      await bloc.close();
     });
 
     test('setAuthToken is called with new token on repeated login', () async {
@@ -246,10 +252,14 @@ void main() {
 
       final bloc = buildBloc();
       bloc.add(const AuthLoginRequested(email: 'a@b.com', password: 'pass'));
-      await Future.delayed(const Duration(milliseconds: 50));
+      await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
 
       verify(() => mockApiClient.setAuthToken('new-token')).called(1);
-      bloc.close();
+
+      // Stop the real WebSocket singleton started by login so its reconnect
+      // timer doesn't leak into a later test.
+      WebSocketService.instance.disconnect();
+      await bloc.close();
     });
 
     blocTest<AuthBloc, AuthState>(

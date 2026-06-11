@@ -69,6 +69,7 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
         store.values().asScala.filter(_.taxiCompanyId == taxiCompanyId).toList.drop(offset).take(limit)
       )
       def update(invoice: Invoice): Task[Invoice]                                                            = ZIO.succeed { store.put(invoice.id, invoice); invoice }
+      def findOverdueUnpaid(now: java.time.Instant): Task[List[Invoice]]                                     = ZIO.succeed(Nil)
       def delete(id: InvoiceId): Task[Boolean]                                                               = ZIO.succeed(Option(store.remove(id)).isDefined)
       def addItems(items: List[InvoiceItem]): Task[Unit]                                                     = ZIO.succeed {
         items.groupBy(_.invoiceId).foreach { case (iid, is) => itemsStore.merge(iid, is, _ ++ _) }
@@ -91,8 +92,8 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
           from: Option[LocalDate],
           to: Option[LocalDate]
       ): Task[List[UnbilledRide]] = ZIO.succeed(Nil)
-      def findRidesByIds(taxiCompanyId: CompanyId, rideIds: List[UUID]): Task[List[UnbilledRide]] =
-        ZIO.succeed(Nil)
+      def findRidesByIds(taxiCompanyId: CompanyId, rideIds: List[UUID]): Task[List[UnbilledRide]]            = ZIO.succeed(Nil)
+      def findRideForReceipt(taxiCompanyId: CompanyId, rideId: UUID): Task[Option[UnbilledRide]]             = ZIO.succeed(None)
     }
   }
 
@@ -151,8 +152,15 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
     }
   }
 
+  private val noopEmail: ZLayer[Any, Nothing, com.shevchyk.core.application.EmailSmsService] = ZLayer.succeed(
+    new com.shevchyk.core.application.EmailSmsService:
+      def sendRideConfirmation(d: com.shevchyk.core.application.RideConfirmationData): Task[Unit] = ZIO.unit
+      def sendDriverAssignment(d: com.shevchyk.core.application.RideConfirmationData): Task[Unit] = ZIO.unit
+      def sendInvoiceEmail(d: com.shevchyk.core.application.InvoiceEmailData): Task[Unit]         = ZIO.unit
+  )
+
   private val testLayers =
-    (inMemoryInvoiceRepo ++ inMemoryClientCompanyRepo ++ inMemoryBillingProfileRepo >>> InvoiceService.layer) ++ testJwtService
+    (inMemoryInvoiceRepo ++ inMemoryClientCompanyRepo ++ inMemoryBillingProfileRepo ++ noopEmail >>> InvoiceService.layer) ++ testJwtService
 
   private def run(req: Request): ZIO[InvoiceService & JwtService, Nothing, Response] = InvoiceRoutes.authenticatedRoutes
     .run(req)
@@ -312,6 +320,42 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
               Body.fromString("{}")
             )
           )
+            .map(r => assertTrue(r.status == Status.Unauthorized))
+        }.provide(testLayers)
+      ),
+      suite("GET /api/billing/rides/:rideId/receipt")(
+        test("returns 400 for an unknown ride (not billable)") {
+          for {
+            tok      <- token(PersonRole.Dispatcher, dispatcherId)
+            response <- run(
+                          Request
+                            .get(URL.decode(s"/api/billing/rides/${UUID.randomUUID()}/receipt").toOption.get)
+                            .addHeader(Header.Authorization.Bearer(tok))
+                        )
+          } yield assertTrue(response.status == Status.BadRequest)
+        }.provide(testLayers),
+        test("returns 400 for invalid UUID") {
+          for {
+            tok      <- token(PersonRole.Dispatcher, dispatcherId)
+            response <- run(
+                          Request
+                            .get(URL.decode("/api/billing/rides/not-a-uuid/receipt").toOption.get)
+                            .addHeader(Header.Authorization.Bearer(tok))
+                        )
+          } yield assertTrue(response.status == Status.BadRequest)
+        }.provide(testLayers),
+        test("client is forbidden (403)") {
+          for {
+            tok      <- token(PersonRole.Client, clientId)
+            response <- run(
+                          Request
+                            .get(URL.decode(s"/api/billing/rides/${UUID.randomUUID()}/receipt").toOption.get)
+                            .addHeader(Header.Authorization.Bearer(tok))
+                        )
+          } yield assertTrue(response.status == Status.Forbidden)
+        }.provide(testLayers),
+        test("returns 401 without token") {
+          run(Request.get(URL.decode(s"/api/billing/rides/${UUID.randomUUID()}/receipt").toOption.get))
             .map(r => assertTrue(r.status == Status.Unauthorized))
         }.provide(testLayers)
       ),

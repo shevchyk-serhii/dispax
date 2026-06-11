@@ -1,5 +1,5 @@
 .PHONY: fmt fmt-watch dev prod test test-bdd test-all clean rebuild \
-        flutter-dev flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
+        flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
         emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules \
@@ -8,7 +8,10 @@
         deploy logs setup-hooks
 
 PROD_URL := https://dispax-o2trzxjbva-ew.a.run.app
-MAC_IP := $(shell ipconfig getifaddr en0)
+# Wi-Fi (en0) IP for physical devices on the same network; falls back to en1,
+# then to 127.0.0.1 when no LAN interface is up (e.g. en0 down → empty would
+# otherwise produce http://:8080 and silently send the app to the prod default).
+MAC_IP := $(shell ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo 127.0.0.1)
 GCP_PROJECT := project-6efcac64-991b-49f4-946
 GCP_REGION := europe-west1
 GCP_SERVICE := dispax
@@ -315,8 +318,17 @@ logs:
 
 # ─── Flutter ────────────────────────────────────────────────────────────────
 
-# Run Flutter on any connected device against local backend
+# Run Flutter against the LOCAL backend (localhost:8080). Uses 127.0.0.1, which
+# works for desktop/web (browser) and avoids the WiFi-IP/CORS fragility that
+# would otherwise fall back to the prod default. For a physical phone (which
+# can't reach localhost) use `flutter-dev-device`, which targets the Mac's LAN IP.
 flutter-dev:
+	cd $(FLUTTER_DIR) && flutter run \
+		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api
+
+# Run Flutter on a physical device against the local backend over the LAN.
+# Requires the phone and Mac to share a WiFi network and en0/en1 to be up.
+flutter-dev-device:
 	cd $(FLUTTER_DIR) && flutter run \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
 

@@ -194,6 +194,48 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     );
   }
 
+  // Single-ride Quittung: download the receipt PDF for one ride and preview it,
+  // reusing the same dialog scaffold as the invoice preview.
+  Future<void> _previewReceipt(BillableRide ride) async {
+    final messenger = ScaffoldMessenger.of(context);
+    Uint8List bytes;
+    try {
+      bytes = await _invoiceService.downloadRideReceipt(ride.rideId, taxRate: _taxRate);
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Quittung-Fehler: $e')));
+      return;
+    }
+    if (!mounted) return;
+    final fileName = 'quittung-${ride.rideId}.pdf';
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            AppBar(
+              automaticallyImplyLeading: false,
+              title: const Text('Quittung'),
+              actions: [
+                IconButton(
+                  tooltip: 'Herunterladen',
+                  icon: const Icon(Icons.download),
+                  onPressed: () => triggerPdfDownload(bytes, fileName),
+                ),
+                IconButton(
+                  tooltip: 'Schließen',
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ],
+            ),
+            Expanded(child: buildPdfPreview(bytes)),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _invoiceService.dispose();
@@ -280,9 +322,19 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                   }),
           title: Text('${ride.pickupAddress} → ${ride.dropoffAddress}'),
           subtitle: Text(_fmtDateTime(ride.pickupDatetime)),
-          secondary: Text(
-            '€${ride.price.toStringAsFixed(2)}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          secondary: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '€${ride.price.toStringAsFixed(2)}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                tooltip: 'Quittung',
+                icon: const Icon(Icons.receipt_long),
+                onPressed: _creating ? null : () => _previewReceipt(ride),
+              ),
+            ],
           ),
           controlAffinity: ListTileControlAffinity.leading,
           dense: true,

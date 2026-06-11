@@ -7,6 +7,7 @@ import com.shevchyk.billing.repository.{
   PostgresCompanyBillingProfileRepository,
   PostgresInvoiceRepository
 }
+import com.shevchyk.core.application.InvoiceEmailData
 import com.shevchyk.core.database.PostgresTestContainer
 import com.shevchyk.core.domain.*
 import doobie.*
@@ -60,10 +61,18 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
     currency = "EUR"
   )
 
+  // No-op email transport for tests: sendInvoice/sendReminder shouldn't need a real mailer here.
+  private val noopEmail =
+    new com.shevchyk.core.application.EmailSmsService:
+      def sendRideConfirmation(d: com.shevchyk.core.application.RideConfirmationData): Task[Unit] = ZIO.unit
+      def sendDriverAssignment(d: com.shevchyk.core.application.RideConfirmationData): Task[Unit] = ZIO.unit
+      def sendInvoiceEmail(d: com.shevchyk.core.application.InvoiceEmailData): Task[Unit]         = ZIO.unit
+
   private def makeService(xa: Transactor[Task]): InvoiceService = InvoiceServiceImpl(
     PostgresInvoiceRepository(xa),
     PostgresClientCompanyRepository(xa),
-    PostgresCompanyBillingProfileRepository(xa)
+    PostgresCompanyBillingProfileRepository(xa),
+    noopEmail
   )
 
   def spec =
@@ -404,15 +413,15 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
       },
       test("fillFromRides rejects a ride from another client company (same taxi company)") {
         for {
-          xa          <- ZIO.service[Transactor[Task]]
-          _           <- seedTestData(xa)
-          _           <- cleanData(xa)
-          _           <- linkClientToCompany(xa)
-          otherRide   <- insertOtherClientCompanyRide(xa, BigDecimal("70.00"), LocalDate.of(2026, 1, 13))
-          svc          = makeService(xa)
-          inv         <- svc.createInvoice(testCompanyId, makeRequest())
-          result      <- svc.fillFromRides(inv.id, testCompanyId, List(otherRide)).either
-          otherLink   <- rideInvoiceId(xa, otherRide)
+          xa        <- ZIO.service[Transactor[Task]]
+          _         <- seedTestData(xa)
+          _         <- cleanData(xa)
+          _         <- linkClientToCompany(xa)
+          otherRide <- insertOtherClientCompanyRide(xa, BigDecimal("70.00"), LocalDate.of(2026, 1, 13))
+          svc        = makeService(xa)
+          inv       <- svc.createInvoice(testCompanyId, makeRequest())
+          result    <- svc.fillFromRides(inv.id, testCompanyId, List(otherRide)).either
+          otherLink <- rideInvoiceId(xa, otherRide)
         } yield assertTrue(
           result match
             case Left(InvoiceError.RideNotBillable(id)) => id == otherRide
@@ -512,20 +521,163 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
       },
       test("listBillableRides returns the client company's completed unbilled rides") {
         for {
-          xa     <- ZIO.service[Transactor[Task]]
-          _      <- seedTestData(xa)
-          _      <- cleanData(xa)
-          _      <- linkClientToCompany(xa)
-          _      <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
-          _      <- insertCompletedRideReturningId(xa, BigDecimal("55.00"), LocalDate.of(2026, 1, 11))
-          svc     = makeService(xa)
-          rides  <- svc.listBillableRides(testCompanyId, clientCompanyId, None, None)
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanData(xa)
+          _     <- linkClientToCompany(xa)
+          _     <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          _     <- insertCompletedRideReturningId(xa, BigDecimal("55.00"), LocalDate.of(2026, 1, 11))
+          svc    = makeService(xa)
+          rides <- svc.listBillableRides(testCompanyId, clientCompanyId, None, None)
         } yield assertTrue(
           rides.length == 2,
           rides.forall(_.clientCompanyId == clientCompanyId.value)
         )
+      },
+      test("sendInvoice emails the invoice (isReminder=false) and transitions Draft → Sent") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          sent   <- Ref.make(List.empty[InvoiceEmailData])
+          svc     = makeRecordingService(xa, sent)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          result <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir)
+          emails <- sent.get
+        } yield assertTrue(
+          result.status == InvoiceStatus.Sent,
+          result.sentAt.isDefined,
+          emails.length == 1,
+          !emails.head.isReminder,
+          emails.head.toEmail == "svclient@test.com",
+          emails.head.invoiceNumber == inv.number,
+          emails.head.pdfAttachment.nonEmpty
+        )
+      },
+      test("sendInvoice fails with NoRecipientEmail when client company has no email") {
+        // Uses a separate client company with NULL email so it doesn't mutate the shared seed row.
+        val noEmailClient = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-000000000099"))
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <-
+            sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
+                          VALUES (${noEmailClient.value}, 'No Email GmbH', ${testCompanyId.value}, NULL)
+                          ON CONFLICT (id) DO UPDATE SET email = NULL""".update.run.transact(xa)
+          sent   <- Ref.make(List.empty[InvoiceEmailData])
+          svc     = makeRecordingService(xa, sent)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest(clientId = noEmailClient.value))
+          result <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir).either
+          emails <- sent.get
+        } yield assertTrue(
+          result match
+            case Left(InvoiceError.NoRecipientEmail(id)) => id == inv.id
+            case _                                       => false
+          ,
+          emails.isEmpty
+        )
+      },
+      test("sendReminder emails a reminder (isReminder=true) and stamps reminderSentAt once") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanData(xa)
+          sent    <- Ref.make(List.empty[InvoiceEmailData])
+          svc      = makeRecordingService(xa, sent)
+          inv     <- svc.createInvoice(testCompanyId, makeRequest())
+          _       <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir)
+          updated <- svc.sendReminder(inv.id, testCompanyId, "Test GmbH", storageDir)
+          emails  <- sent.get
+        } yield assertTrue(
+          updated.reminderSentAt.isDefined,
+          emails.length == 2,
+          !emails.head.isReminder,
+          emails(1).isReminder
+        )
+      },
+      test("generateRideReceipt produces a PDF for a completed ride") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("159.00"), LocalDate.of(2026, 3, 5))
+          svc     = makeService(xa)
+          bytes  <- svc.generateRideReceipt(rideId, testCompanyId, BigDecimal("19"), "Test GmbH")
+        } yield assertTrue(bytes.nonEmpty, bytes.take(4).sameElements("%PDF".getBytes("US-ASCII")))
+      },
+      test("generateRideReceipt works even after the ride has been billed") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("80.00"), LocalDate.of(2026, 3, 6))
+          svc     = makeService(xa)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          _      <- svc.fillFromRides(inv.id, testCompanyId, List(rideId))
+          bytes  <- svc.generateRideReceipt(rideId, testCompanyId, BigDecimal("19"), "Test GmbH")
+        } yield assertTrue(bytes.nonEmpty)
+      },
+      test("generateRideReceipt enforces company isolation (cross-tenant → RideNotBillable)") {
+        val otherCompanyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-0000000000ee"))
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 3, 7))
+          svc     = makeService(xa)
+          result <- svc.generateRideReceipt(rideId, otherCompanyId, BigDecimal("19"), "Test GmbH").either
+        } yield assertTrue(result match
+          case Left(InvoiceError.RideNotBillable(`rideId`)) => true
+          case _                                            => false
+        )
+      },
+      test("findOverdueUnpaid returns sent, unpaid, overdue, not-yet-reminded invoices") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanData(xa)
+          repo     = PostgresInvoiceRepository(xa)
+          sent    <- Ref.make(List.empty[InvoiceEmailData])
+          svc      = makeRecordingService(xa, sent)
+          // Overdue, sent, unpaid — should be picked up.
+          overdue <- svc.createInvoice(
+                       testCompanyId,
+                       makeRequest().copy(dueDate = Some(LocalDate.now().minusDays(3)))
+                     )
+          _       <- svc.sendInvoice(overdue.id, testCompanyId, "Test GmbH", storageDir)
+          // Still in the future — should be skipped.
+          future  <- svc.createInvoice(
+                       testCompanyId,
+                       makeRequest().copy(dueDate = Some(LocalDate.now().plusDays(10)))
+                     )
+          _       <- svc.sendInvoice(future.id, testCompanyId, "Test GmbH", storageDir)
+          found   <- repo.findOverdueUnpaid(java.time.Instant.now())
+        } yield assertTrue(
+          found.map(_.id).contains(overdue.id),
+          !found.map(_.id).contains(future.id)
+        )
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
+
+  private val storageDir = "/tmp/dispax-test-invoices"
+
+  // Records every sent invoice email so tests can assert delivery and the isReminder flag.
+  private def makeRecordingService(xa: Transactor[Task], sent: Ref[List[InvoiceEmailData]]): InvoiceService =
+    val recording =
+      new com.shevchyk.core.application.EmailSmsService:
+        def sendRideConfirmation(d: com.shevchyk.core.application.RideConfirmationData): Task[Unit] = ZIO.unit
+        def sendDriverAssignment(d: com.shevchyk.core.application.RideConfirmationData): Task[Unit] = ZIO.unit
+        def sendInvoiceEmail(d: InvoiceEmailData): Task[Unit]                                       = sent.update(_ :+ d)
+    InvoiceServiceImpl(
+      PostgresInvoiceRepository(xa),
+      PostgresClientCompanyRepository(xa),
+      PostgresCompanyBillingProfileRepository(xa),
+      recording
+    )
 
   // Link the seeded client person to the client company so findUnbilledRides' JOIN matches.
   private def linkClientToCompany(xa: Transactor[Task]): Task[Unit] =

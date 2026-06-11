@@ -68,30 +68,30 @@ object RideServiceSpec extends ZIOSpecDefault {
    * MockPersonRepository that returns specific persons by ID
    */
   final case class TestPersonRepository(persons: Map[PersonId, Person]) extends PersonRepository {
-    override def create(person: Person): Task[Person]                                                               = ZIO.succeed(person)
-    override def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.succeed(persons.get(id))
-    override def findByEmail(email: String): Task[Option[Person]]                                                   = ZIO.succeed(persons.values.find(_.email == email))
+    override def create(person: Person): Task[Person]             = ZIO.succeed(person)
+    override def findById(id: PersonId): Task[Option[Person]]     = ZIO.succeed(persons.get(id))
+    override def findByEmail(email: String): Task[Option[Person]] = ZIO.succeed(persons.values.find(_.email == email))
 
-    override def findByRole(role: PersonRole): Task[List[Person]]                                                   = ZIO.succeed(
+    override def findByRole(role: PersonRole): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(_.role == role).toList
     )
 
-    override def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]                   = ZIO.succeed(
+    override def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList
     )
 
-    override def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                          = ZIO.succeed(
+    override def findByCompanyId(companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(_.companyId.contains(companyId)).toList
     )
-    override def findAll(): Task[List[Person]]                                                                      = ZIO.succeed(persons.values.toList)
-    override def update(person: Person): Task[Person]                                                               = ZIO.succeed(person)
-    override def delete(id: PersonId): Task[Unit]                                                                   = ZIO.unit
+    override def findAll(): Task[List[Person]]                             = ZIO.succeed(persons.values.toList)
+    override def update(person: Person): Task[Person]                      = ZIO.succeed(person)
+    override def delete(id: PersonId): Task[Unit]                          = ZIO.unit
 
-    override def findByStatus(status: com.shevchyk.core.domain.UserStatus): Task[List[Person]]                      = ZIO.succeed(
+    override def findByStatus(status: com.shevchyk.core.domain.UserStatus): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(_.status == status).toList
     )
-    override def searchByQuery(query: String): Task[List[Person]]                                                   = ZIO.succeed(Nil)
-    override def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
+    override def searchByQuery(query: String): Task[List[Person]]                              = ZIO.succeed(Nil)
+    override def updateLastLogin(id: PersonId): Task[Unit]                                     = ZIO.unit
 
     override def findByClientCompany(clientCompanyId: com.shevchyk.core.domain.ClientCompanyId): Task[List[Person]] =
       ZIO.succeed(Nil)
@@ -108,8 +108,9 @@ object RideServiceSpec extends ZIOSpecDefault {
   )
 
   private val noopEmailSms: ZLayer[Any, Nothing, EmailSmsService] = ZLayer.succeed(new EmailSmsService:
-    def sendRideConfirmation(data: RideConfirmationData): Task[Unit] = ZIO.unit
-    def sendDriverAssignment(data: RideConfirmationData): Task[Unit] = ZIO.unit
+    def sendRideConfirmation(data: RideConfirmationData): Task[Unit]                       = ZIO.unit
+    def sendDriverAssignment(data: RideConfirmationData): Task[Unit]                       = ZIO.unit
+    def sendInvoiceEmail(data: com.shevchyk.core.application.InvoiceEmailData): Task[Unit] = ZIO.unit
   )
 
   val standardLayers =

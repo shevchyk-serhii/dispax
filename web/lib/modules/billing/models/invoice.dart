@@ -76,6 +76,7 @@ class Invoice {
   final DateTime? dueDate;
   final DateTime? sentAt;
   final DateTime? paidAt;
+  final DateTime? reminderSentAt;
   final String? pdfPath;
   final List<InvoiceItem> items;
   final DateTime createdAt;
@@ -98,6 +99,7 @@ class Invoice {
     this.dueDate,
     this.sentAt,
     this.paidAt,
+    this.reminderSentAt,
     this.pdfPath,
     required this.items,
     required this.createdAt,
@@ -121,6 +123,8 @@ class Invoice {
         dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate'] as String) : null,
         sentAt: json['sentAt'] != null ? DateTime.parse(json['sentAt'] as String) : null,
         paidAt: json['paidAt'] != null ? DateTime.parse(json['paidAt'] as String) : null,
+        reminderSentAt:
+            json['reminderSentAt'] != null ? DateTime.parse(json['reminderSentAt'] as String) : null,
         pdfPath: json['pdfPath'] as String?,
         items: (json['items'] as List<dynamic>? ?? [])
             .map((i) => InvoiceItem.fromJson(i as Map<String, dynamic>))

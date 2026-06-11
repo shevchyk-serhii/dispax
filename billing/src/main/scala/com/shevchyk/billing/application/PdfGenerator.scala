@@ -14,8 +14,9 @@ import java.time.{ZoneOffset, format => _}
 
 object PdfGenerator:
 
-  private val dateFormatter  = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-  private val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.GERMAN)
+  private val dateFormatter     = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+  private val dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
+  private val monthFormatter    = DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.GERMAN)
 
   // Monochrome (black & white) palette, matching the plain reference Rechnung.
   private val colorPrimary = Color.BLACK
@@ -93,6 +94,184 @@ object PdfGenerator:
       path
     }
   }
+
+  // Single-ride German taxi receipt ("Quittung / Rechnung"). A clean digital
+  // document, not a replica of the paper form. The price is treated as gross
+  // (Brutto, incl. MwSt); Netto and MwSt are derived from it. Ride type and
+  // payment method are static in v1 ("Stadtfahrt" / "Bar").
+  def generateReceiptBytes(
+      receiptNumber: String,
+      pickupAddress: String,
+      dropoffAddress: String,
+      pickupDatetime: java.time.Instant,
+      grossPrice: BigDecimal,
+      taxRatePct: BigDecimal,
+      issuer: CompanyBillingProfile,
+      recipient: ClientCompany
+  ): Task[Array[Byte]] = ZIO.attempt {
+    val out = new ByteArrayOutputStream()
+    val doc = new Document(PageSize.A4, 50, 50, 60, 50)
+    PdfWriter.getInstance(doc, out)
+    doc.open()
+
+    addReceiptIssuerHeader(doc, pickupDatetime, issuer)
+    doc.add(PdfChunk.NEWLINE)
+    addReceiptTitle(doc)
+    addReceiptRecipient(doc, receiptNumber, recipient)
+    doc.add(PdfChunk.NEWLINE)
+    addReceiptRideDetails(doc, pickupAddress, dropoffAddress, pickupDatetime)
+    doc.add(PdfChunk.NEWLINE)
+    addReceiptAmounts(doc, grossPrice, taxRatePct)
+    addReceiptSignature(doc)
+    addFooter(doc, issuer)
+
+    doc.close()
+    out.toByteArray
+  }
+
+  def generateReceiptToFile(
+      receiptNumber: String,
+      pickupAddress: String,
+      dropoffAddress: String,
+      pickupDatetime: java.time.Instant,
+      grossPrice: BigDecimal,
+      taxRatePct: BigDecimal,
+      issuer: CompanyBillingProfile,
+      recipient: ClientCompany,
+      path: String
+  ): Task[String] = generateReceiptBytes(
+    receiptNumber,
+    pickupAddress,
+    dropoffAddress,
+    pickupDatetime,
+    grossPrice,
+    taxRatePct,
+    issuer,
+    recipient
+  )
+    .flatMap { bytes =>
+      ZIO.attempt {
+        val file = new File(path)
+        file.getParentFile.mkdirs()
+        val fos  = new FileOutputStream(file)
+        fos.write(bytes)
+        fos.close()
+        path
+      }
+    }
+
+  private def addReceiptIssuerHeader(
+      doc: Document,
+      pickupDatetime: java.time.Instant,
+      profile: CompanyBillingProfile
+  ): Unit =
+    val table = new PdfPTable(2)
+    table.setWidthPercentage(100)
+    table.setWidths(Array(3f, 2f))
+
+    val issuer = new PdfPCell()
+    issuer.setBorder(Rectangle.NO_BORDER)
+    profile.businessType.foreach(bt => issuer.addElement(new Phrase(bt, fontNormal)))
+    profile.legalName.foreach(ln => issuer.addElement(new Phrase(ln, fontHeading)))
+    profile.addressLine1.foreach(a => issuer.addElement(new Phrase(a, fontNormal)))
+    profile.addressLine2.foreach(a => issuer.addElement(new Phrase(a, fontNormal)))
+    table.addCell(issuer)
+
+    val date     = pickupDatetime.atOffset(ZoneOffset.UTC).toLocalDate
+    val dateCell = new PdfPCell(new Phrase(date.format(dateFormatter), fontNormal))
+    dateCell.setBorder(Rectangle.NO_BORDER)
+    dateCell.setHorizontalAlignment(Element.ALIGN_RIGHT)
+    table.addCell(dateCell)
+
+    doc.add(table)
+
+  private def addReceiptTitle(doc: Document): Unit =
+    val title = new Paragraph("Quittung / Rechnung", fontTitle)
+    title.setAlignment(Element.ALIGN_RIGHT)
+    doc.add(title)
+    doc.add(new LineSeparator(1f, 100f, colorPrimary, Element.ALIGN_CENTER, 0f))
+
+  private def addReceiptRecipient(doc: Document, receiptNumber: String, recipient: ClientCompany): Unit =
+    val table = new PdfPTable(2)
+    table.setWidthPercentage(100)
+    table.setWidths(Array(3f, 2f))
+
+    val toCell = new PdfPCell()
+    toCell.setBorder(Rectangle.NO_BORDER)
+    toCell.addElement(new Phrase("Name, Anschrift des Rechnungsempfängers", fontSmall))
+    toCell.addElement(new Phrase(recipient.name, fontHeading))
+    recipient.address.foreach(a => toCell.addElement(new Phrase(a, fontNormal)))
+    table.addCell(toCell)
+
+    val nrCell = new PdfPCell()
+    nrCell.setBorder(Rectangle.NO_BORDER)
+    nrCell.setHorizontalAlignment(Element.ALIGN_RIGHT)
+    nrCell.addElement(new Phrase("Belegnr.:", fontSmall))
+    nrCell.addElement(new Phrase(receiptNumber, fontHeading))
+    table.addCell(nrCell)
+
+    doc.add(table)
+
+  private def addReceiptRideDetails(
+      doc: Document,
+      pickupAddress: String,
+      dropoffAddress: String,
+      pickupDatetime: java.time.Instant
+  ): Unit =
+    val table = new PdfPTable(2)
+    table.setWidthPercentage(100)
+    table.setWidths(Array(1.5f, 4f))
+
+    def row(label: String, value: String): Unit =
+      val lc = new PdfPCell(new Phrase(label, fontNormal))
+      lc.setBorder(Rectangle.NO_BORDER)
+      lc.setPaddingTop(4)
+      table.addCell(lc)
+      val vc = new PdfPCell(new Phrase(value, fontNormal))
+      vc.setBorder(Rectangle.NO_BORDER)
+      vc.setPaddingTop(4)
+      table.addCell(vc)
+
+    row("Fahrtart:", "Stadtfahrt")
+    row("Fahrt von:", pickupAddress)
+    row("nach:", dropoffAddress)
+    row("Datum/Uhrzeit:", pickupDatetime.atOffset(ZoneOffset.UTC).toLocalDateTime.format(dateTimeFormatter))
+    row("Zahlungsart:", "Bar")
+
+    doc.add(table)
+
+  // Brutto (gross) in → Netto and MwSt derived. Same HALF_UP rounding as the invoice path.
+  private def addReceiptAmounts(doc: Document, grossPrice: BigDecimal, taxRatePct: BigDecimal): Unit =
+    val gross = grossPrice.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    val net   = (gross / (1 + taxRatePct / 100)).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    val tax   = (gross - net).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+
+    val table = new PdfPTable(2)
+    table.setWidthPercentage(100)
+
+    def totalRow(label: String, value: String, bold: Boolean = false): Unit =
+      val f  = if bold then fontTotal else fontNormal
+      val lc = new PdfPCell(new Phrase(label, f))
+      lc.setBorder(Rectangle.NO_BORDER)
+      lc.setPaddingTop(6)
+      table.addCell(lc)
+      val vc = new PdfPCell(new Phrase(value, f))
+      vc.setBorder(Rectangle.NO_BORDER)
+      vc.setPaddingTop(6)
+      vc.setHorizontalAlignment(Element.ALIGN_RIGHT)
+      table.addCell(vc)
+
+    totalRow("Netto-Fahrpreis", formatMoney(net))
+    if taxRatePct > 0 then totalRow(s"MwSt. $taxRatePct%", formatMoney(tax))
+    totalRow("= Brutto-Fahrpreis", formatMoney(gross), bold = true)
+
+    doc.add(table)
+
+  private def addReceiptSignature(doc: Document): Unit =
+    val line = new Paragraph("____________________________", fontNormal)
+    line.setSpacingBefore(28f)
+    doc.add(line)
+    doc.add(new Paragraph("Datum, Unterschrift des Fahrers", fontSmall))
 
   // Issuer block (top-left) + invoice date (top-right), mirroring the sample Rechnung.
   private def addIssuerHeader(doc: Document, invoice: Invoice, profile: CompanyBillingProfile): Unit =

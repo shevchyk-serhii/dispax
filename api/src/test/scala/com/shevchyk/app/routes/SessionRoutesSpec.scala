@@ -19,7 +19,7 @@ class InMemoryTokenRepository extends TokenRepository:
   def findUserIdByToken(token: String): Task[Option[UUID]] = ZIO.succeed(tokens.get(token))
   def deleteByToken(token: String): Task[Unit]             = ZIO.succeed { tokens = tokens - token }
 
-  def deleteByUserId(userId: UUID): Task[Unit]             = ZIO.succeed {
+  def deleteByUserId(userId: UUID): Task[Unit] = ZIO.succeed {
     tokens = tokens.filter { case (_, uid) => uid != userId }
   }
 

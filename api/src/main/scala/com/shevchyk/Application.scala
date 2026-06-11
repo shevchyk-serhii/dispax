@@ -31,7 +31,7 @@ import com.shevchyk.billing.infrastructure.http.{
   ClientCompanyRoutes => BillingCompanyRoutes,
   BillingProfileRoutes
 }
-import com.shevchyk.billing.application.InvoiceService
+import com.shevchyk.billing.application.{InvoiceService, PaymentChecker}
 import com.shevchyk.billing.repository.{
   InvoiceRepository,
   ClientCompanyRepository => BillingClientCompanyRepository,
@@ -83,7 +83,7 @@ import com.shevchyk.core.repository.{
 }
 import com.shevchyk.app.routes.GeofenceRoutes
 import com.shevchyk.notification.application.{FcmService, PushNotificationListener, LoggingEmailSmsService}
-import com.shevchyk.app.ReminderScheduler
+import com.shevchyk.app.{ReminderScheduler, InvoiceReminderScheduler}
 import com.shevchyk.notification.repository.{
   InMemoryFcmTokenRepository,
   InMemoryNotificationRepository,
@@ -175,6 +175,7 @@ object Application extends ZIOAppDefault:
     .serviceWithZIO[ServerConfig] { serverConfig =>
       PushNotificationListener.start *>
         ReminderScheduler.start *>
+        InvoiceReminderScheduler.start *>
         ZIO.logInfo("Starting Dispax API Server (PostgreSQL)...") *>
         ZIO.logInfo("📋 Available APIs:") *>
         ZIO.logInfo("  🔍 /health - Health check") *>
@@ -250,6 +251,7 @@ object Application extends ZIOAppDefault:
       BillingClientCompanyRepository.layer,
       CompanyBillingProfileRepository.layer,
       InvoiceService.layer,
+      PaymentChecker.mockLayer,
       HereConfig.liveLayer,
       GeocodingService.layer,
       HereRoutingService.layer,

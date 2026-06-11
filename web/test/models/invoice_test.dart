@@ -84,6 +84,7 @@ void main() {
       String? dueDate,
       String? sentAt,
       String? paidAt,
+      String? reminderSentAt,
       String? pdfPath,
     }) =>
         {
@@ -106,6 +107,7 @@ void main() {
           if (dueDate != null) 'dueDate': dueDate,
           if (sentAt != null) 'sentAt': sentAt,
           if (paidAt != null) 'paidAt': paidAt,
+          if (reminderSentAt != null) 'reminderSentAt': reminderSentAt,
           if (pdfPath != null) 'pdfPath': pdfPath,
         };
 
@@ -131,6 +133,7 @@ void main() {
       expect(inv.dueDate, isNull);
       expect(inv.sentAt, isNull);
       expect(inv.paidAt, isNull);
+      expect(inv.reminderSentAt, isNull);
       expect(inv.pdfPath, isNull);
       expect(inv.items, isEmpty);
     });
@@ -141,12 +144,14 @@ void main() {
         dueDate: '2026-02-28',
         sentAt: '2026-01-10T09:00:00.000Z',
         paidAt: '2026-02-01T14:30:00.000Z',
+        reminderSentAt: '2026-03-05T08:00:00.000Z',
         pdfPath: '/tmp/invoices/INV-2026-0001.pdf',
       ));
       expect(inv.notes, 'Bitte bis 28.02 zahlen');
       expect(inv.dueDate, DateTime(2026, 2, 28));
       expect(inv.sentAt, DateTime.parse('2026-01-10T09:00:00.000Z'));
       expect(inv.paidAt, DateTime.parse('2026-02-01T14:30:00.000Z'));
+      expect(inv.reminderSentAt, DateTime.parse('2026-03-05T08:00:00.000Z'));
       expect(inv.pdfPath, '/tmp/invoices/INV-2026-0001.pdf');
     });
 

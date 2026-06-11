@@ -47,8 +47,8 @@ class StubRideRepository extends RideRepository:
       to: java.time.Instant,
       bucket: com.shevchyk.ride.repository.TimeBucket
   ): Task[List[(java.time.Instant, BigDecimal)]] = ZIO.succeed(Nil)
-  def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]    = ZIO.succeed(Nil)
-  def clearReminders(rideId: RideId): Task[Unit]                                                     = ZIO.unit
+  def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]] = ZIO.succeed(Nil)
+  def clearReminders(rideId: RideId): Task[Unit]                                                  = ZIO.unit
 
 class StubPersonRepository extends PersonRepository:
   private val store                                                                    = new ConcurrentHashMap[PersonId, Person]()
