@@ -161,22 +161,26 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
+        // In dark, borderDark == surfaceVariantDark (the fill), so the resting
+        // border was invisible and fields blended into the surface. Use the
+        // lighter borderSecondaryDark so the field outline reads against its
+        // own fill, and accent the focused state with the cyan brand color.
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
           borderSide: BorderSide(
-            color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+            color: isDark ? AppColors.borderSecondaryDark : AppColors.borderPrimary,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
           borderSide: BorderSide(
-            color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+            color: isDark ? AppColors.borderSecondaryDark : AppColors.borderPrimary,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-          borderSide: BorderSide(
-            color: colorScheme.primary,
+          borderSide: const BorderSide(
+            color: AppColors.accent,
             width: AppDimensions.inputFocusedBorderWidth,
           ),
         ),
