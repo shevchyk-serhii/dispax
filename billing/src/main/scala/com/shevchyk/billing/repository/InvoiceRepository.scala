@@ -31,10 +31,25 @@ trait InvoiceRepository:
   def unlinkRides(invoiceId: InvoiceId, taxiCompanyId: CompanyId): Task[Unit]
   // Returns unbilled completed rides for a client company in a period
   def findUnbilledRides(clientCompanyId: ClientCompanyId, from: LocalDate, to: LocalDate): Task[List[UnbilledRide]]
+  // Returns unbilled completed rides for a client company, taxi-company scoped,
+  // optionally bounded by a pickup-date range (the billable-rides listing).
+  def findBillableRides(
+      taxiCompanyId: CompanyId,
+      clientCompanyId: ClientCompanyId,
+      from: Option[LocalDate],
+      to: Option[LocalDate]
+  ): Task[List[UnbilledRide]]
+  // Returns the given rides (by id), restricted to completed/unbilled rides of
+  // this taxi company. Used to validate an explicit per-ride selection: any
+  // requested id absent from the result is not billable (wrong company, not
+  // completed, or already billed). Each row carries its client_company_id so the
+  // service can enforce the single-client-company rule.
+  def findRidesByIds(taxiCompanyId: CompanyId, rideIds: List[UUID]): Task[List[UnbilledRide]]
 
 final case class UnbilledRide(
     rideId: UUID,
     clientId: UUID,
+    clientCompanyId: UUID,
     pickupAddress: String,
     dropoffAddress: String,
     pickupDatetime: java.time.Instant,

@@ -8,6 +8,7 @@ import '../modules/billing/models/client_company.dart';
 import '../modules/billing/models/invoice.dart';
 import '../modules/billing/services/client_company_service.dart';
 import '../modules/billing/services/invoice_service.dart';
+import 'billing_rides_screen.dart';
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -32,7 +33,7 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     final apiClient = context.read<AuthBloc>().apiClient;
     _invoiceService = InvoiceService(apiClient: apiClient);
     _companyService = ClientCompanyService(apiClient: apiClient);
@@ -81,9 +82,11 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
           labelColor: Theme.of(context).colorScheme.primary,
           unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           indicatorColor: Theme.of(context).colorScheme.primary,
+          isScrollable: true,
           tabs: const [
             Tab(icon: Icon(Icons.receipt_long, size: 18), text: 'Rechnungen'),
             Tab(icon: Icon(Icons.business, size: 18), text: 'Unternehmen'),
+            Tab(icon: Icon(Icons.playlist_add_check, size: 18), text: 'Fahrten'),
           ],
         ),
         Expanded(
@@ -92,6 +95,7 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
             children: [
               _buildInvoicesTab(),
               _buildCompaniesTab(),
+              const BillingRidesScreen(),
             ],
           ),
         ),

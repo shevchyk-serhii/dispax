@@ -381,6 +381,149 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           // so the company-scoped UPDATE must leave it untouched.
           foreignLink.isEmpty
         )
+      },
+      test("fillFromRides links only the selected rides and leaves the rest unbilled") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          ride1  <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          ride2  <- insertCompletedRideReturningId(xa, BigDecimal("55.00"), LocalDate.of(2026, 1, 11))
+          svc     = makeService(xa)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          filled <- svc.fillFromRides(inv.id, testCompanyId, List(ride1))
+          link1  <- rideInvoiceId(xa, ride1)
+          link2  <- rideInvoiceId(xa, ride2)
+        } yield assertTrue(
+          filled.items.length == 1,
+          filled.subtotalAmount == BigDecimal("40.00"),
+          link1.contains(inv.id.value),
+          link2.isEmpty
+        )
+      },
+      test("fillFromRides rejects a ride from another client company (same taxi company)") {
+        for {
+          xa          <- ZIO.service[Transactor[Task]]
+          _           <- seedTestData(xa)
+          _           <- cleanData(xa)
+          _           <- linkClientToCompany(xa)
+          otherRide   <- insertOtherClientCompanyRide(xa, BigDecimal("70.00"), LocalDate.of(2026, 1, 13))
+          svc          = makeService(xa)
+          inv         <- svc.createInvoice(testCompanyId, makeRequest())
+          result      <- svc.fillFromRides(inv.id, testCompanyId, List(otherRide)).either
+          otherLink   <- rideInvoiceId(xa, otherRide)
+        } yield assertTrue(
+          result match
+            case Left(InvoiceError.RideNotBillable(id)) => id == otherRide
+            case _                                      => false
+          ,
+          // Nothing must have been linked.
+          otherLink.isEmpty
+        )
+      },
+      test("fillFromRides rejects an already-billed ride") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc     = makeService(xa)
+          inv1   <- svc.createInvoice(testCompanyId, makeRequest())
+          _      <- svc.fillFromRides(inv1.id, testCompanyId, List(rideId))
+          inv2   <- svc.createInvoice(testCompanyId, makeRequest())
+          result <- svc.fillFromRides(inv2.id, testCompanyId, List(rideId)).either
+        } yield assertTrue(
+          result match
+            case Left(InvoiceError.RideNotBillable(id)) => id == rideId
+            case _                                      => false
+        )
+      },
+      test("fillFromRides rejects a non-completed ride") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertRequestedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc     = makeService(xa)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          result <- svc.fillFromRides(inv.id, testCompanyId, List(rideId)).either
+        } yield assertTrue(
+          result match
+            case Left(InvoiceError.RideNotBillable(id)) => id == rideId
+            case _                                      => false
+        )
+      },
+      test("fillFromRides fails for a non-Draft invoice") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc     = makeService(xa)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          _      <- svc.fillFromRides(inv.id, testCompanyId, List(rideId))
+          _      <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", "/tmp")
+          result <- svc.fillFromRides(inv.id, testCompanyId, List(rideId)).either
+        } yield assertTrue(
+          result match
+            case Left(InvoiceError.NotDraft(_)) => true
+            case _                              => false
+        )
+      },
+      test("fillFromRides is idempotent: a re-run with the same ids does not duplicate") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          svc     = makeService(xa)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          first  <- svc.fillFromRides(inv.id, testCompanyId, List(rideId))
+          second <- svc.fillFromRides(inv.id, testCompanyId, List(rideId))
+        } yield assertTrue(
+          first.items.length == 1,
+          second.items.length == 1,
+          second.subtotalAmount == first.subtotalAmount
+        )
+      },
+      test("fillFromRides never links a ride owned by another taxi company") {
+        for {
+          xa          <- ZIO.service[Transactor[Task]]
+          _           <- seedTestData(xa)
+          _           <- cleanData(xa)
+          _           <- linkClientToCompany(xa)
+          foreignRide <- insertForeignCompanyRide(xa, BigDecimal("99.00"), LocalDate.of(2026, 1, 15))
+          svc          = makeService(xa)
+          inv         <- svc.createInvoice(testCompanyId, makeRequest())
+          result      <- svc.fillFromRides(inv.id, testCompanyId, List(foreignRide)).either
+          foreignLink <- rideInvoiceId(xa, foreignRide)
+        } yield assertTrue(
+          result match
+            case Left(InvoiceError.RideNotBillable(id)) => id == foreignRide
+            case _                                      => false
+          ,
+          foreignLink.isEmpty
+        )
+      },
+      test("listBillableRides returns the client company's completed unbilled rides") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          _      <- insertCompletedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 10))
+          _      <- insertCompletedRideReturningId(xa, BigDecimal("55.00"), LocalDate.of(2026, 1, 11))
+          svc     = makeService(xa)
+          rides  <- svc.listBillableRides(testCompanyId, clientCompanyId, None, None)
+        } yield assertTrue(
+          rides.length == 2,
+          rides.forall(_.clientCompanyId == clientCompanyId.value)
+        )
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
 
@@ -425,4 +568,42 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
 
   private def rideInvoiceId(xa: Transactor[Task], rideId: UUID): Task[Option[UUID]] =
     sql"SELECT invoice_id FROM rides WHERE id = $rideId".query[Option[UUID]].unique.transact(xa)
+
+  // A completed ride of OUR taxi company, but whose client belongs to a DIFFERENT
+  // client company — exercises the single-client-company rule in fillFromRides.
+  private def insertOtherClientCompanyRide(xa: Transactor[Task], price: BigDecimal, day: LocalDate): Task[UUID] =
+    val otherClientCompanyId = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-0000000000bb"))
+    val otherClientPersonId  = PersonId(UUID.fromString("00000002-0000-0000-0000-0000000000bb"))
+    val rideId               = UUID.randomUUID()
+    val pickup               = day.atTime(10, 0).atZone(java.time.ZoneOffset.UTC).toInstant
+    val program              =
+      for {
+        _ <-
+          sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
+                   VALUES (${otherClientCompanyId.value}, 'Other Client GmbH', ${testCompanyId.value}, 'otherclient@test.com')
+                   ON CONFLICT DO NOTHING""".update.run
+        _ <-
+          sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash, client_company_id)
+                   VALUES (${otherClientPersonId.value}, 'Other Client', 'otherclientp@test.com', 'client'::person_role,
+                           ${testCompanyId.value}, 'placeholder', ${otherClientCompanyId.value})
+                   ON CONFLICT DO NOTHING""".update.run
+        _ <-
+          sql"""INSERT INTO rides
+                     (id, client_id, creator_id, company_id, from_address, to_address,
+                      pickup_datetime, status, final_price_amount)
+                   VALUES ($rideId, ${otherClientPersonId.value}, ${otherClientPersonId.value},
+                           ${testCompanyId.value}, 'Pickup', 'Dropoff',
+                           $pickup, 'Completed'::ride_status, $price)""".update.run
+      } yield ()
+    program.transact(xa).as(rideId)
+
+  private def insertRequestedRideReturningId(xa: Transactor[Task], price: BigDecimal, day: LocalDate): Task[UUID] =
+    val rideId = UUID.randomUUID()
+    val pickup = day.atTime(10, 0).atZone(java.time.ZoneOffset.UTC).toInstant
+    sql"""INSERT INTO rides
+            (id, client_id, creator_id, company_id, from_address, to_address,
+             pickup_datetime, status, final_price_amount)
+          VALUES ($rideId, ${clientPersonId.value}, ${clientPersonId.value},
+                  ${testCompanyId.value}, 'Pickup', 'Dropoff',
+                  $pickup, 'Requested'::ride_status, $price)""".update.run.transact(xa).as(rideId)
 }

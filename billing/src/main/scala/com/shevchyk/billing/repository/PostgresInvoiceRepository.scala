@@ -281,13 +281,21 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
       .transact(xa)
       .unit
 
+  // Maps a billable-ride row to UnbilledRide. The SELECT column order across the
+  // queries below must match this tuple.
+  private def toUnbilledRide(
+      row: (UUID, UUID, UUID, String, String, Instant, BigDecimal)
+  ): UnbilledRide =
+    val (rideId, clientId, clientCompanyId, from, to, dt, price) = row
+    UnbilledRide(rideId, clientId, clientCompanyId, from, to, dt, price)
+
   override def findUnbilledRides(
       clientCompanyId: ClientCompanyId,
       from: LocalDate,
       to: LocalDate
   ): Task[List[UnbilledRide]] =
     sql"""
-      SELECT r.id, r.client_id, r.from_address, r.to_address,
+      SELECT r.id, r.client_id, p.client_company_id, r.from_address, r.to_address,
              r.pickup_datetime,
              COALESCE(r.final_price_amount, r.estimated_price_amount, 0)
       FROM rides r
@@ -299,12 +307,59 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
         AND r.pickup_datetime::date <= $to
       ORDER BY r.pickup_datetime
     """
-      .query[(UUID, UUID, String, String, Instant, BigDecimal)]
+      .query[(UUID, UUID, UUID, String, String, Instant, BigDecimal)]
       .to[List]
       .transact(xa)
-      .map(_.map { case (rideId, clientId, from, to, dt, price) =>
-        UnbilledRide(rideId, clientId, from, to, dt, price)
-      })
+      .map(_.map(toUnbilledRide))
+
+  override def findBillableRides(
+      taxiCompanyId: CompanyId,
+      clientCompanyId: ClientCompanyId,
+      from: Option[LocalDate],
+      to: Option[LocalDate]
+  ): Task[List[UnbilledRide]] =
+    val base =
+      fr"""
+        SELECT r.id, r.client_id, p.client_company_id, r.from_address, r.to_address,
+               r.pickup_datetime,
+               COALESCE(r.final_price_amount, r.estimated_price_amount, 0)
+        FROM rides r
+        JOIN persons p ON r.client_id = p.id
+        WHERE p.client_company_id = ${clientCompanyId.value}
+          AND r.company_id = ${taxiCompanyId.value}
+          AND r.status = 'Completed'
+          AND r.invoice_id IS NULL
+      """
+    val fromFilter = from.map(d => fr"AND r.pickup_datetime::date >= $d").getOrElse(Fragment.empty)
+    val toFilter   = to.map(d => fr"AND r.pickup_datetime::date <= $d").getOrElse(Fragment.empty)
+    (base ++ fromFilter ++ toFilter ++ fr"ORDER BY r.pickup_datetime")
+      .query[(UUID, UUID, UUID, String, String, Instant, BigDecimal)]
+      .to[List]
+      .transact(xa)
+      .map(_.map(toUnbilledRide))
+
+  override def findRidesByIds(
+      taxiCompanyId: CompanyId,
+      rideIds: List[UUID]
+  ): Task[List[UnbilledRide]] =
+    if rideIds.isEmpty then ZIO.succeed(Nil)
+    else
+      sql"""
+        SELECT r.id, r.client_id, p.client_company_id, r.from_address, r.to_address,
+               r.pickup_datetime,
+               COALESCE(r.final_price_amount, r.estimated_price_amount, 0)
+        FROM rides r
+        JOIN persons p ON r.client_id = p.id
+        WHERE r.id = ANY($rideIds)
+          AND r.company_id = ${taxiCompanyId.value}
+          AND r.status = 'Completed'
+          AND r.invoice_id IS NULL
+        ORDER BY r.pickup_datetime
+      """
+        .query[(UUID, UUID, UUID, String, String, Instant, BigDecimal)]
+        .to[List]
+        .transact(xa)
+        .map(_.map(toUnbilledRide))
 
 object PostgresInvoiceRepository:
   val layer: ZLayer[Transactor[Task], Nothing, InvoiceRepository] = ZLayer.fromFunction(PostgresInvoiceRepository(_))

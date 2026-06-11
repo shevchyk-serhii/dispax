@@ -90,10 +90,30 @@ final case class MarkPaidRequest(
     paidAt: Option[Instant] = None
 ) derives JsonCodec
 
+// Build an invoice from an explicit set of completed, unbilled rides (per-ride
+// billing), as an alternative to filling by period.
+final case class FillFromRidesRequest(
+    rideIds: List[UUID]
+) derives JsonCodec
+
+// A completed, unbilled ride eligible to be added to an invoice, shaped for the
+// billable-rides listing the dispatcher selects from.
+final case class BillableRideDto(
+    rideId: UUID,
+    clientId: UUID,
+    pickupAddress: String,
+    dropoffAddress: String,
+    pickupDatetime: Instant,
+    price: BigDecimal
+) derives JsonCodec
+
 enum InvoiceError extends Throwable:
   case NotFound(id: InvoiceId)
   case ClientCompanyNotFound(id: UUID)
   case InvalidStatus(current: InvoiceStatus, required: String)
   case NotDraft(id: InvoiceId)
+  // A selected ride can't be billed on this invoice: it belongs to another
+  // client company, another taxi company, isn't completed, or is already billed.
+  case RideNotBillable(rideId: UUID)
   case DatabaseError(cause: Throwable)
   case PdfGenerationError(cause: Throwable)

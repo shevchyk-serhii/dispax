@@ -19,6 +19,18 @@ trait InvoiceService:
       offset: Int
   ): Task[List[Invoice]]
   def autoFillFromPeriod(id: InvoiceId, taxiCompanyId: CompanyId): IO[InvoiceError, Invoice]
+  // Fill a draft invoice from an explicit set of rides (per-ride billing). All
+  // rideIds must be completed/unbilled rides of this taxi company AND belong to
+  // the invoice's client company, otherwise fails with RideNotBillable.
+  def fillFromRides(id: InvoiceId, taxiCompanyId: CompanyId, rideIds: List[UUID]): IO[InvoiceError, Invoice]
+  // Lists completed, unbilled rides of a client company (taxi-company scoped),
+  // optionally bounded by a pickup-date range — the selection table source.
+  def listBillableRides(
+      taxiCompanyId: CompanyId,
+      clientCompanyId: com.shevchyk.core.domain.ClientCompanyId,
+      from: Option[LocalDate],
+      to: Option[LocalDate]
+  ): Task[List[com.shevchyk.billing.repository.UnbilledRide]]
 
   def generatePdf(
       id: InvoiceId,
@@ -97,22 +109,57 @@ class InvoiceServiceImpl(
       rides   <- invoiceRepo
                    .findUnbilledRides(invoice.clientCompanyId, invoice.periodFrom, invoice.periodTo)
                    .mapError(InvoiceError.DatabaseError(_))
-      items    = rides.map { ride =>
-                   InvoiceItem(
-                     id = InvoiceItemId.generate(),
-                     invoiceId = id,
-                     rideId = Some(ride.rideId),
-                     description = s"${ride.pickupAddress} - ${ride.dropoffAddress}",
-                     quantity = BigDecimal(1),
-                     unitPrice = ride.price,
-                     total = ride.price,
-                     createdAt = ride.pickupDatetime
-                   )
-                 }
+      items    = rides.map(rideToItem(id, _))
       _       <- invoiceRepo.replaceItems(id, taxiCompanyId, items).mapError(InvoiceError.DatabaseError(_))
       updated <- recalculate(invoice.copy(items = items))
       saved   <- invoiceRepo.update(updated).mapError(InvoiceError.DatabaseError(_))
     } yield saved.copy(items = items)
+
+  // One invoice line per ride; shared by period auto-fill and per-ride filling.
+  private def rideToItem(invoiceId: InvoiceId, ride: com.shevchyk.billing.repository.UnbilledRide): InvoiceItem =
+    InvoiceItem(
+      id = InvoiceItemId.generate(),
+      invoiceId = invoiceId,
+      rideId = Some(ride.rideId),
+      description = s"${ride.pickupAddress} - ${ride.dropoffAddress}",
+      quantity = BigDecimal(1),
+      unitPrice = ride.price,
+      total = ride.price,
+      createdAt = ride.pickupDatetime
+    )
+
+  override def fillFromRides(
+      id: InvoiceId,
+      taxiCompanyId: CompanyId,
+      rideIds: List[UUID]
+  ): IO[InvoiceError, Invoice] =
+    for {
+      invoice <- getInvoice(id, taxiCompanyId)
+      _       <- ZIO.when(invoice.status != InvoiceStatus.Draft)(ZIO.fail(InvoiceError.NotDraft(id)))
+      // Detach this invoice's own rides first (idempotency, same as auto-fill):
+      // a ride already on this draft must re-count as billable on a re-run.
+      _       <- invoiceRepo.unlinkRides(id, taxiCompanyId).mapError(InvoiceError.DatabaseError(_))
+      fetched <- invoiceRepo.findRidesByIds(taxiCompanyId, rideIds).mapError(InvoiceError.DatabaseError(_))
+      // Every requested ride must come back from the company/status/unbilled-filtered
+      // query — a missing one is not billable on this invoice.
+      missing  = rideIds.toSet -- fetched.map(_.rideId).toSet
+      _       <- ZIO.foreachDiscard(missing.headOption)(rid => ZIO.fail(InvoiceError.RideNotBillable(rid)))
+      // Single-client-company rule: every ride must belong to the invoice's client company.
+      foreign  = fetched.find(_.clientCompanyId != invoice.clientCompanyId.value)
+      _       <- ZIO.foreachDiscard(foreign)(r => ZIO.fail(InvoiceError.RideNotBillable(r.rideId)))
+      items    = fetched.map(rideToItem(id, _))
+      _       <- invoiceRepo.replaceItems(id, taxiCompanyId, items).mapError(InvoiceError.DatabaseError(_))
+      updated <- recalculate(invoice.copy(items = items))
+      saved   <- invoiceRepo.update(updated).mapError(InvoiceError.DatabaseError(_))
+    } yield saved.copy(items = items)
+
+  override def listBillableRides(
+      taxiCompanyId: CompanyId,
+      clientCompanyId: com.shevchyk.core.domain.ClientCompanyId,
+      from: Option[LocalDate],
+      to: Option[LocalDate]
+  ): Task[List[com.shevchyk.billing.repository.UnbilledRide]] =
+    invoiceRepo.findBillableRides(taxiCompanyId, clientCompanyId, from, to)
 
   override def generatePdf(
       id: InvoiceId,

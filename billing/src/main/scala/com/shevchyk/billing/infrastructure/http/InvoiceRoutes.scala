@@ -5,11 +5,13 @@ import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.billing.application.InvoiceService
 import com.shevchyk.billing.domain.*
-import com.shevchyk.core.domain.CompanyId
+import com.shevchyk.billing.repository.UnbilledRide
+import com.shevchyk.core.domain.{ClientCompanyId, CompanyId}
 import zio.*
 import zio.http.*
 import zio.json.*
 
+import java.time.LocalDate
 import java.util.UUID
 
 object InvoiceRoutes:
@@ -23,6 +25,7 @@ object InvoiceRoutes:
         case InvoiceError.NotFound(_)              => (Status.NotFound, "Invoice not found")
         case InvoiceError.ClientCompanyNotFound(_) => (Status.NotFound, "Client company not found")
         case InvoiceError.NotDraft(_)              => (Status.Conflict, "Invoice must be in draft status")
+        case InvoiceError.RideNotBillable(id)      => (Status.BadRequest, s"Ride not billable: $id")
         case InvoiceError.InvalidStatus(cur, req)  => (Status.Conflict, s"Invalid status: ${cur}, required: $req")
         case InvoiceError.DatabaseError(c)         =>
           ZIO.logError(s"DB error: ${c.getMessage}")
@@ -101,6 +104,52 @@ object InvoiceRoutes:
           case e: InvoiceError => handleError(e)
           case e: Throwable    => ZIO.logError(e.getMessage).as(Response.status(Status.InternalServerError))
         }
+    },
+
+    // POST /api/billing/invoices/:id/fill-from-rides — per-ride billing
+    Method.POST / "api" / "billing" / "invoices" / string("id") / "fill-from-rides" -> handler {
+      (id: String, request: Request) =>
+        (for {
+          user      <- AuthMiddleware.authenticateRequest(request)
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
+          companyId <- UuidParser.requireCompanyId(user.companyId)
+          invoiceId <- ZIO.attempt(InvoiceId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
+          bodyStr   <- request.body.asString.mapError(_ => Response.status(Status.BadRequest))
+          req       <- ZIO
+                         .fromEither(bodyStr.fromJson[FillFromRidesRequest])
+                         .mapError(_ => Response.status(Status.BadRequest))
+          _         <- ZIO.when(req.rideIds.isEmpty)(
+                         ZIO.fail(Response(Status.BadRequest, body = Body.fromString("""{"error":"rideIds must not be empty"}""")))
+                       )
+          service   <- ZIO.service[InvoiceService]
+          invoice   <- service.fillFromRides(invoiceId, companyId, req.rideIds).mapError(e => e: Throwable)
+        } yield Response.json(invoice.toJson)).catchAll {
+          case r: Response     => ZIO.succeed(r)
+          case e: InvoiceError => handleError(e)
+          case e: Throwable    => ZIO.logError(e.getMessage).as(Response.status(Status.InternalServerError))
+        }
+    },
+
+    // GET /api/billing/billable-rides?clientCompanyId=&from=&to= — selection source
+    Method.GET / "api" / "billing" / "billable-rides" -> authenticatedHandler[InvoiceService] { (user, request) =>
+      (for {
+        companyId       <- UuidParser.requireCompanyId(user.companyId)
+        _               <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
+        clientCompanyId <- ZIO
+                             .fromOption(request.url.queryParam("clientCompanyId"))
+                             .flatMap(s => ZIO.attempt(ClientCompanyId(UUID.fromString(s))).orElseFail(()))
+                             .mapError(_ => Response.status(Status.BadRequest))
+        from             = request.url.queryParam("from").flatMap(s => scala.util.Try(LocalDate.parse(s)).toOption)
+        to               = request.url.queryParam("to").flatMap(s => scala.util.Try(LocalDate.parse(s)).toOption)
+        service         <- ZIO.service[InvoiceService]
+        rides           <- service.listBillableRides(companyId, clientCompanyId, from, to)
+        dtos             = rides.map(r =>
+                             BillableRideDto(r.rideId, r.clientId, r.pickupAddress, r.dropoffAddress, r.pickupDatetime, r.price)
+                           )
+      } yield Response.json(dtos.toJson)).catchAll {
+        case r: Response  => ZIO.succeed(r)
+        case e: Throwable => ZIO.logError(e.getMessage).as(Response.status(Status.InternalServerError))
+      }
     },
 
     // GET /api/billing/invoices/:id/pdf  — download bytes

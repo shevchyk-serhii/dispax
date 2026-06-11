@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import '../../core/services/api_client.dart';
 import '../models/invoice.dart';
+import '../models/billable_ride.dart';
 
 class InvoiceService {
   final ApiClient _apiClient;
@@ -45,6 +46,31 @@ class InvoiceService {
     }
     throw ApiException('Failed to auto-fill invoice: ${response.statusCode}');
   }
+
+  /// Completed, unbilled rides of a client company — the per-ride selection source.
+  Future<List<BillableRide>> getBillableRides(String clientCompanyId, {DateTime? from, DateTime? to}) async {
+    var endpoint = '/billing/billable-rides?clientCompanyId=$clientCompanyId';
+    if (from != null) endpoint += '&from=${_fmtDate(from)}';
+    if (to != null) endpoint += '&to=${_fmtDate(to)}';
+    final response = await _apiClient.get(endpoint);
+    if (response.statusCode == 200) {
+      final List<dynamic> json = jsonDecode(response.body);
+      return json.map((e) => BillableRide.fromJson(e as Map<String, dynamic>)).toList();
+    }
+    throw ApiException('Failed to fetch billable rides: ${response.statusCode}');
+  }
+
+  /// Fill a draft invoice from an explicit set of selected rides (per-ride billing).
+  Future<Invoice> fillFromRides(String id, List<String> rideIds) async {
+    final response = await _apiClient.post('/billing/invoices/$id/fill-from-rides', {'rideIds': rideIds});
+    if (response.statusCode == 200) {
+      return Invoice.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    }
+    throw ApiException('Failed to fill invoice from rides: ${response.statusCode}');
+  }
+
+  static String _fmtDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Future<Uint8List> downloadPdf(String id) async {
     final response = await _apiClient.get('/billing/invoices/$id/pdf');

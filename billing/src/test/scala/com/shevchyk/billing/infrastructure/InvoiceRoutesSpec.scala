@@ -85,6 +85,14 @@ object InvoiceRoutesSpec extends ZIOSpecDefault {
           from: LocalDate,
           to: LocalDate
       ): Task[List[UnbilledRide]] = ZIO.succeed(Nil)
+      def findBillableRides(
+          taxiCompanyId: CompanyId,
+          clientCompanyId: ClientCompanyId,
+          from: Option[LocalDate],
+          to: Option[LocalDate]
+      ): Task[List[UnbilledRide]] = ZIO.succeed(Nil)
+      def findRidesByIds(taxiCompanyId: CompanyId, rideIds: List[UUID]): Task[List[UnbilledRide]] =
+        ZIO.succeed(Nil)
     }
   }
 
