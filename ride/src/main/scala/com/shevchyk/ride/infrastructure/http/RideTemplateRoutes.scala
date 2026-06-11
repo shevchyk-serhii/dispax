@@ -77,9 +77,16 @@ object RideTemplateRoutes:
       (for {
         user        <- AuthMiddleware.authenticateRequest(request)
         _           <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY")
+        companyId   <- UuidParser.requireCompanyId(user.companyId)
         repo        <- ZIO.service[RideTemplateRepository]
         tmplId      <- UuidParser.parse(id).map(RideTemplateId(_))
-        deactivated <- repo.deactivate(tmplId)
+        // Enforce tenant isolation: findById/deactivate are not company-scoped,
+        // so verify ownership before deactivating; cross-tenant id → NotFound.
+        tmplOpt     <- repo.findById(tmplId)
+        deactivated <-
+          tmplOpt.filter(_.companyId == companyId) match
+            case Some(_) => repo.deactivate(tmplId)
+            case None    => ZIO.succeed(false)
       } yield if deactivated then Response(Status.NoContent) else Response.status(Status.NotFound)).catchAll {
         case response: Response => ZIO.succeed(response)
         case ex: Throwable      => handleError(ex)
@@ -94,10 +101,15 @@ object RideTemplateRoutes:
         genReq  <- ZIO
                      .fromEither(bodyStr.fromJson[GenerateRidesRequest])
                      .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+        companyId <- UuidParser.requireCompanyId(user.companyId)
         repo    <- ZIO.service[RideTemplateRepository]
         tmplId  <- UuidParser.parse(id).map(RideTemplateId(_))
         tmplOpt <- repo.findById(tmplId)
-        tmpl    <- ZIO.fromOption(tmplOpt).orElseFail(new RuntimeException("Template not found"))
+        // Enforce tenant isolation: only generate rides from a template that
+        // belongs to the caller's company; cross-tenant id → NotFound.
+        tmpl    <- ZIO
+                     .fromOption(tmplOpt.filter(_.companyId == companyId))
+                     .orElseFail(Response.status(Status.NotFound))
         from     = LocalDate.parse(genReq.fromDate)
         to       = LocalDate.parse(genReq.toDate)
         dates    = generateDates(tmpl, from, to)

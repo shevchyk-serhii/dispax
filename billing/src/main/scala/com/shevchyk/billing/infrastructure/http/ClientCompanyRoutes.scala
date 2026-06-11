@@ -52,15 +52,22 @@ object ClientCompanyRoutes:
     // PUT /api/billing/companies/:id
     Method.PUT / "api" / "billing" / "companies" / string("id") -> handler { (id: String, request: Request) =>
       (for {
-        user    <- AuthMiddleware.authenticateRequest(request)
-        _       <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
-        ccId    <- ZIO.attempt(ClientCompanyId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
-        bodyStr <- request.body.asString
-        req     <- ZIO
-                     .fromEither(bodyStr.fromJson[CreateClientCompanyRequest])
-                     .mapError(e => new RuntimeException(s"Invalid JSON: $e"))
-        repo    <- ZIO.service[ClientCompanyRepository]
-        result  <- repo.update(ccId, req)
+        user      <- AuthMiddleware.authenticateRequest(request)
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
+        companyId <- UuidParser.requireCompanyId(user.companyId)
+        ccId      <- ZIO.attempt(ClientCompanyId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
+        bodyStr   <- request.body.asString
+        req       <- ZIO
+                       .fromEither(bodyStr.fromJson[CreateClientCompanyRequest])
+                       .mapError(e => new RuntimeException(s"Invalid JSON: $e"))
+        repo      <- ZIO.service[ClientCompanyRepository]
+        // Enforce tenant isolation: update is not scoped by taxi_company_id, so
+        // verify ownership first; a cross-tenant id resolves to NotFound.
+        existing  <- repo.findById(ccId)
+        result    <-
+          existing.filter(_.taxiCompanyId == companyId) match
+            case None    => ZIO.none
+            case Some(_) => repo.update(ccId, req)
       } yield result match
         case Some(c) => Response.json(c.toJson)
         case None    => Response.status(Status.NotFound)
@@ -73,12 +80,19 @@ object ClientCompanyRoutes:
     // DELETE /api/billing/companies/:id
     Method.DELETE / "api" / "billing" / "companies" / string("id") -> handler { (id: String, request: Request) =>
       (for {
-        user    <- AuthMiddleware.authenticateRequest(request)
-        _       <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
-        ccId    <- ZIO.attempt(ClientCompanyId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
-        repo    <- ZIO.service[ClientCompanyRepository]
-        deleted <- repo.delete(ccId)
-        status   = if deleted then Status.NoContent else Status.NotFound
+        user      <- AuthMiddleware.authenticateRequest(request)
+        _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
+        companyId <- UuidParser.requireCompanyId(user.companyId)
+        ccId      <- ZIO.attempt(ClientCompanyId(UUID.fromString(id))).mapError(_ => Response.status(Status.BadRequest))
+        repo      <- ZIO.service[ClientCompanyRepository]
+        // Enforce tenant isolation: delete is not scoped by taxi_company_id, so
+        // verify ownership first; a cross-tenant id resolves to NotFound.
+        existing  <- repo.findById(ccId)
+        deleted   <-
+          existing.filter(_.taxiCompanyId == companyId) match
+            case None    => ZIO.succeed(false)
+            case Some(_) => repo.delete(ccId)
+        status     = if deleted then Status.NoContent else Status.NotFound
       } yield Response.status(status)).catchAll {
         case r: Response  => ZIO.succeed(r)
         case e: Throwable => handleError(e)

@@ -70,7 +70,7 @@ object NotificationRepositorySpec extends ZIOSpecDefault {
             repo   <- ZIO.service[NotificationRepository]
             n       = makeNotification(personId1, "Unread")
             saved  <- repo.save(n)
-            result <- repo.markAsRead(saved.id)
+            result <- repo.markAsRead(saved.id, personId1)
             found  <- repo.findByPersonId(personId1, 10, 0)
           } yield assertTrue(
             result == true &&
@@ -80,8 +80,19 @@ object NotificationRepositorySpec extends ZIOSpecDefault {
         test("returns false for non-existent notification") {
           for {
             repo   <- ZIO.service[NotificationRepository]
-            result <- repo.markAsRead(AppNotificationId.generate())
+            result <- repo.markAsRead(AppNotificationId.generate(), personId1)
           } yield assertTrue(result == false)
+        }.provide(InMemoryNotificationRepository.layer),
+        test("does not mark another person's notification as read (tenant isolation)") {
+          for {
+            repo   <- ZIO.service[NotificationRepository]
+            saved  <- repo.save(makeNotification(personId1, "Owned by p1"))
+            result <- repo.markAsRead(saved.id, personId2)
+            found  <- repo.findByPersonId(personId1, 10, 0)
+          } yield assertTrue(
+            result == false &&
+              found.head.isRead == false
+          )
         }.provide(InMemoryNotificationRepository.layer)
       ),
       suite("markAllAsRead")(
@@ -138,7 +149,7 @@ object NotificationRepositorySpec extends ZIOSpecDefault {
             repo    <- ZIO.service[NotificationRepository]
             n        = makeNotification(personId1, "To Delete")
             saved   <- repo.save(n)
-            deleted <- repo.delete(saved.id)
+            deleted <- repo.delete(saved.id, personId1)
             found   <- repo.findByPersonId(personId1, 10, 0)
           } yield assertTrue(
             deleted == true &&
@@ -148,8 +159,19 @@ object NotificationRepositorySpec extends ZIOSpecDefault {
         test("returns false for non-existent notification") {
           for {
             repo   <- ZIO.service[NotificationRepository]
-            result <- repo.delete(AppNotificationId.generate())
+            result <- repo.delete(AppNotificationId.generate(), personId1)
           } yield assertTrue(result == false)
+        }.provide(InMemoryNotificationRepository.layer),
+        test("does not delete another person's notification (tenant isolation)") {
+          for {
+            repo    <- ZIO.service[NotificationRepository]
+            saved   <- repo.save(makeNotification(personId1, "Owned by p1"))
+            deleted <- repo.delete(saved.id, personId2)
+            found   <- repo.findByPersonId(personId1, 10, 0)
+          } yield assertTrue(
+            deleted == false &&
+              found.size == 1
+          )
         }.provide(InMemoryNotificationRepository.layer)
       ),
       suite("deleteAllForPerson")(

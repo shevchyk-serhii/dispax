@@ -17,6 +17,7 @@ object AuditRoutes:
     Method.GET / "api" / "audit" -> RouteHelpers.authHandler("Audit") { (user, request) =>
       for {
         _          <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
+        companyId  <- UuidParser.requireCompanyId(user.companyId)
         entityType <- ZIO
                         .fromOption(request.url.queryParams.queryParam("entityType"))
                         .orElseFail(new RuntimeException("entityType query parameter is required"))
@@ -25,7 +26,9 @@ object AuditRoutes:
                         .orElseFail(new RuntimeException("entityId query parameter is required"))
         service    <- ZIO.service[AuditService]
         parsedId   <- UuidParser.parse(entityId)
-        entries    <- service.findByEntity(entityType, parsedId)
+        // Enforce tenant isolation: findByEntity is not company-scoped at the SQL
+        // level, so filter out audit entries of other companies before returning.
+        entries    <- service.findByEntity(entityType, parsedId).map(_.filter(_.companyId == companyId))
       } yield Response.json(entries.toJson)
     },
 

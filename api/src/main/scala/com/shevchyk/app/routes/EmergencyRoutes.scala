@@ -125,11 +125,18 @@ object EmergencyRoutes:
         RouteHelpers.authPathHandler("Emergency") { (user, rideId: String, request) =>
           for {
             _            <- AuthMiddleware.checkRole(user, "DISPATCHER")
+            companyId    <- UuidParser.requireCompanyId(user.companyId)
             rideService  <- ZIO.service[RideService]
             parsedRideId <- UuidParser.parseRideId(rideId)
             ride         <- rideService
                               .getRideById(parsedRideId)
                               .mapError(e => new RuntimeException(e.toString))
+            // Enforce tenant isolation: a dispatcher must not enumerate drivers/
+            // clients of a ride that belongs to another company. NotFound to avoid
+            // leaking cross-tenant existence.
+            _            <- ZIO
+                              .fail(Response.status(Status.NotFound))
+                              .when(ride.companyId != companyId)
             personRepo   <- ZIO.service[PersonRepository]
             drivers      <- personRepo.findByCompanyId(ride.companyId)
             blackRepo    <- ZIO.service[BlacklistRepository]

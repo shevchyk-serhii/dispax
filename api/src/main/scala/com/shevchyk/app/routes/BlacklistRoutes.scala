@@ -86,10 +86,16 @@ object BlacklistRoutes:
     Method.DELETE / "api" / "blacklist" / string("id") -> RouteHelpers.authPathHandler("Blacklist") {
       (user, id: String, _) =>
         for {
-          _       <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
-          repo    <- ZIO.service[BlacklistRepository]
-          entryId <- UuidParser.parse(id).map(BlacklistEntryId(_))
-          deleted <- repo.deactivate(entryId)
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
+          companyId <- UuidParser.requireCompanyId(user.companyId)
+          repo      <- ZIO.service[BlacklistRepository]
+          entryId   <- UuidParser.parse(id).map(BlacklistEntryId(_))
+          // Enforce tenant isolation: deactivate is not company-scoped, so verify
+          // the entry belongs to the caller's company before deactivating it.
+          entries   <- repo.findByCompanyId(companyId)
+          deleted   <-
+            if entries.exists(_.id == entryId) then repo.deactivate(entryId)
+            else ZIO.succeed(false)
         } yield if deleted then Response.status(Status.NoContent) else Response.status(Status.NotFound)
     }
   )

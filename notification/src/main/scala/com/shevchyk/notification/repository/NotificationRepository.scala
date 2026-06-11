@@ -9,10 +9,10 @@ import scala.jdk.CollectionConverters.*
 trait NotificationRepository:
   def save(notification: AppNotification): Task[AppNotification]
   def findByPersonId(personId: PersonId, limit: Int, offset: Int): Task[List[AppNotification]]
-  def markAsRead(id: AppNotificationId): Task[Boolean]
+  def markAsRead(id: AppNotificationId, personId: PersonId): Task[Boolean]
   def markAllAsRead(personId: PersonId): Task[Unit]
   def countUnread(personId: PersonId): Task[Int]
-  def delete(id: AppNotificationId): Task[Boolean]
+  def delete(id: AppNotificationId, personId: PersonId): Task[Boolean]
   def deleteAllForPerson(personId: PersonId): Task[Unit]
 
 class InMemoryNotificationRepository extends NotificationRepository:
@@ -34,8 +34,8 @@ class InMemoryNotificationRepository extends NotificationRepository:
       .take(limit)
   }
 
-  def markAsRead(id: AppNotificationId): Task[Boolean] = ZIO.succeed {
-    Option(store.get(id)) match
+  def markAsRead(id: AppNotificationId, personId: PersonId): Task[Boolean] = ZIO.succeed {
+    Option(store.get(id)).filter(_.personId == personId) match
       case Some(n) =>
         store.put(id, n.copy(isRead = true))
         true
@@ -54,8 +54,10 @@ class InMemoryNotificationRepository extends NotificationRepository:
     store.values().asScala.count(n => n.personId == personId && !n.isRead)
   }
 
-  def delete(id: AppNotificationId): Task[Boolean] = ZIO.succeed {
-    Option(store.remove(id)).isDefined
+  def delete(id: AppNotificationId, personId: PersonId): Task[Boolean] = ZIO.succeed {
+    Option(store.get(id)).filter(_.personId == personId) match
+      case Some(_) => Option(store.remove(id)).isDefined
+      case None    => false
   }
 
   def deleteAllForPerson(personId: PersonId): Task[Unit] = ZIO.succeed {

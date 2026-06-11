@@ -120,11 +120,14 @@ object GeofenceRoutes:
     Method.GET / "api" / "geofences" / "alerts" / "driver" / string("driverId") ->
       RouteHelpers.authPathHandler("Geofence") { (user, driverId: String, request) =>
         for {
-          _      <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
-          limit   = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
-          repo   <- ZIO.service[GeofenceRepository]
-          dPid   <- UuidParser.parsePersonId(driverId)
-          alerts <- repo.findAlertsByDriver(dPid, limit)
+          _         <- AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN")
+          companyId <- UuidParser.requireCompanyId(user.companyId)
+          limit      = request.url.queryParams.queryParam("limit").flatMap(_.toIntOption).getOrElse(50).min(100).max(1)
+          repo      <- ZIO.service[GeofenceRepository]
+          dPid      <- UuidParser.parsePersonId(driverId)
+          // Enforce tenant isolation: findAlertsByDriver is not company-scoped, so
+          // a dispatcher must not see alerts of a driver from another company.
+          alerts    <- repo.findAlertsByDriver(dPid, limit).map(_.filter(_.companyId == companyId))
         } yield Response.json(alerts.toJson)
       }
   )

@@ -38,8 +38,8 @@ final class PostgresNotificationRepository(xa: Transactor[Task]) extends Notific
       .to[List]
       .transact(xa)
 
-  override def markAsRead(id: AppNotificationId): Task[Boolean] =
-    sql"""UPDATE notifications SET is_read = true WHERE id = ${id.value}""".update.run
+  override def markAsRead(id: AppNotificationId, personId: PersonId): Task[Boolean] =
+    sql"""UPDATE notifications SET is_read = true WHERE id = ${id.value} AND person_id = ${personId.value}""".update.run
       .transact(xa)
       .map(_ > 0)
 
@@ -54,8 +54,8 @@ final class PostgresNotificationRepository(xa: Transactor[Task]) extends Notific
       .unique
       .transact(xa)
 
-  override def delete(id: AppNotificationId): Task[Boolean] =
-    sql"""DELETE FROM notifications WHERE id = ${id.value}""".update.run
+  override def delete(id: AppNotificationId, personId: PersonId): Task[Boolean] =
+    sql"""DELETE FROM notifications WHERE id = ${id.value} AND person_id = ${personId.value}""".update.run
       .transact(xa)
       .map(_ > 0)
 

@@ -127,10 +127,23 @@ object ClientCompanyRoutes:
     ) { (user, id: String, _) =>
       for {
         _               <- AuthMiddleware.checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
+        taxiCompanyId   <- UuidParser.requireCompanyId(user.companyId)
         clientCompanyId <- UuidParser.parseClientCompanyId(id)
-        personRepo      <- ZIO.service[PersonRepository]
-        members         <- personRepo.findByClientCompany(clientCompanyId)
-        dtos             = members.map(PersonDto.fromPerson)
-      } yield Response.json(dtos.toJson)
+        repo            <- ZIO.service[ClientCompanyRepository]
+        // Enforce tenant isolation: only expose members of a client company that
+        // belongs to the caller's taxi company. Otherwise NotFound to avoid
+        // leaking cross-tenant existence.
+        clientCompany   <- repo.findById(clientCompanyId)
+        response        <-
+          clientCompany.filter(_.taxiCompanyId == taxiCompanyId) match {
+            case None    => ZIO.succeed(Response.status(Status.NotFound))
+            case Some(_) =>
+              for {
+                personRepo <- ZIO.service[PersonRepository]
+                members    <- personRepo.findByClientCompany(clientCompanyId)
+                dtos        = members.map(PersonDto.fromPerson)
+              } yield Response.json(dtos.toJson)
+          }
+      } yield response
     }
   )

@@ -37,11 +37,13 @@ object NotificationRoutes:
 
     // PUT /api/notifications/{id}/read — mark as read
     Method.PUT / "api" / "notifications" / string("id") / "read" -> RouteHelpers.authPathHandler("Notification") {
-      (_, id: String, _) =>
+      (user, id: String, _) =>
         for {
           repo   <- ZIO.service[NotificationRepository]
           nId    <- UuidParser.parse(id).map(AppNotificationId(_))
-          marked <- repo.markAsRead(nId)
+          // Enforce ownership/tenant isolation: only the owning person can mark
+          // their notification read; a foreign id resolves to NotFound.
+          marked <- repo.markAsRead(nId, PersonId(user.userId))
         } yield if marked then Response(Status.NoContent) else Response.status(Status.NotFound)
     },
 
@@ -55,12 +57,14 @@ object NotificationRoutes:
 
     // DELETE /api/notifications/{id} — delete a notification
     Method.DELETE / "api" / "notifications" / string("id") -> RouteHelpers.authPathHandler("Notification") {
-      (_, id: String, _) =>
+      (user, id: String, _) =>
         for {
-          repo <- ZIO.service[NotificationRepository]
-          nId  <- UuidParser.parse(id).map(AppNotificationId(_))
-          _    <- repo.delete(nId)
-        } yield Response(Status.NoContent)
+          repo    <- ZIO.service[NotificationRepository]
+          nId     <- UuidParser.parse(id).map(AppNotificationId(_))
+          // Enforce ownership/tenant isolation: only the owning person can delete
+          // their notification; a foreign id resolves to NotFound.
+          deleted <- repo.delete(nId, PersonId(user.userId))
+        } yield if deleted then Response(Status.NoContent) else Response.status(Status.NotFound)
     },
 
     // DELETE /api/notifications — delete all notifications for user

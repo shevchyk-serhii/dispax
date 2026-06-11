@@ -177,6 +177,22 @@ object BillingClientCompanyRoutesSpec extends ZIOSpecDefault {
             )
           )
             .map(r => assertTrue(r.status == Status.Unauthorized))
+        }.provide(testLayers),
+        test("returns 404 for company of another taxi company (tenant isolation)") {
+          val otherCompanyId = CompanyId(UUID.fromString("00000099-0000-0000-0000-000000000099"))
+          for {
+            repo     <- ZIO.service[ClientCompanyRepository]
+            foreign  <- repo.create(CreateClientCompanyRequest("Foreign Co", None, None, None), otherCompanyId)
+            tok      <- token(PersonRole.Dispatcher, dispatcherId)
+            response <- run(
+                          Request
+                            .put(
+                              URL.decode(s"/api/billing/companies/${foreign.id.value}").toOption.get,
+                              Body.fromString(validCompanyJson)
+                            )
+                            .addHeader(Header.Authorization.Bearer(tok))
+                        )
+          } yield assertTrue(response.status == Status.NotFound)
         }.provide(testLayers)
       ),
       suite("DELETE /api/billing/companies/:id")(
@@ -203,6 +219,21 @@ object BillingClientCompanyRoutesSpec extends ZIOSpecDefault {
         test("returns 401 without token") {
           run(Request.delete(URL.decode(s"/api/billing/companies/${UUID.randomUUID()}").toOption.get))
             .map(r => assertTrue(r.status == Status.Unauthorized))
+        }.provide(testLayers),
+        test("returns 404 for company of another taxi company (tenant isolation)") {
+          val otherCompanyId = CompanyId(UUID.fromString("00000099-0000-0000-0000-000000000099"))
+          for {
+            repo     <- ZIO.service[ClientCompanyRepository]
+            foreign  <- repo.create(CreateClientCompanyRequest("Foreign Co", None, None, None), otherCompanyId)
+            tok      <- token(PersonRole.Dispatcher, dispatcherId)
+            response <- run(
+                          Request
+                            .delete(URL.decode(s"/api/billing/companies/${foreign.id.value}").toOption.get)
+                            .addHeader(Header.Authorization.Bearer(tok))
+                        )
+            // The foreign company must still exist (was not deleted).
+            still    <- repo.findById(foreign.id)
+          } yield assertTrue(response.status == Status.NotFound && still.isDefined)
         }.provide(testLayers)
       )
     )

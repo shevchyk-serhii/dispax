@@ -1056,8 +1056,10 @@ object TestApplication extends ZIOAppDefault:
               .drop(offset)
               .take(limit)
           )
-          def markAsRead(id: AppNotificationId): Task[Boolean]                                         = store.modify { m =>
-            m.get(id) match { case Some(n) => (true, m.updated(id, n.copy(isRead = true))); case None => (false, m) }
+          def markAsRead(id: AppNotificationId, personId: PersonId): Task[Boolean]                     = store.modify { m =>
+            m.get(id).filter(_.personId == personId) match {
+              case Some(n) => (true, m.updated(id, n.copy(isRead = true))); case None => (false, m)
+            }
           }
           def markAllAsRead(personId: PersonId): Task[Unit]                                            =
             store
@@ -1065,8 +1067,9 @@ object TestApplication extends ZIOAppDefault:
               .unit
           def countUnread(personId: PersonId): Task[Int]                                               = store.get
             .map(_.values.count(n => n.personId == personId && !n.isRead))
-          def delete(id: AppNotificationId): Task[Boolean]                                             = store.modify { m =>
-            val existed = m.contains(id); (existed, m.removed(id))
+          def delete(id: AppNotificationId, personId: PersonId): Task[Boolean]                         = store.modify { m =>
+            val existed = m.get(id).exists(_.personId == personId)
+            (existed, if existed then m.removed(id) else m)
           }
           def deleteAllForPerson(personId: PersonId): Task[Unit]                                       =
             store.update(_.filterNot((_, n) => n.personId == personId)).unit

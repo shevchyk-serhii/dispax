@@ -340,6 +340,17 @@ object ClientCompanyRoutesSpec extends ZIOSpecDefault {
             members.length == 1,
             members.head.email == "emp1@corp.com"
           )
+        },
+        test("returns 404 for client company of another taxi company (tenant isolation)") {
+          for {
+            repo    <- ZIO.service[ClientCompanyRepository]
+            company <- repo.create(makeCompany(taxiId = otherCompanyId))
+            token   <- generateToken(dispatcherId)
+            request  = Request
+                         .get(URL.decode(s"/api/client-companies/${company.id.value}/members").toOption.get)
+                         .addHeader(Header.Authorization.Bearer(token))
+            resp    <- runRequest(request)
+          } yield assertTrue(resp.status == Status.NotFound)
         }
       )
     ).provide(layers) @@ TestAspect.sequential
