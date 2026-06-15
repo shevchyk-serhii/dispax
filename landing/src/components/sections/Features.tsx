@@ -2,11 +2,18 @@ import { useTranslations } from "next-intl";
 import { Container } from "../ui/Container";
 import { SectionHeader } from "../ui/SectionHeader";
 import { Icons, IconName } from "../ui/icons";
+import { StatusBadge, FeatureStatus } from "../ui/StatusBadge";
 
 const primaryIcons: IconName[] = ["dashboard", "planeLand", "pin"];
-const secondaryIcons: IconName[] = ["shield", "chart"];
+const secondaryIcons: IconName[] = [
+  "shield",
+  "chart",
+  "swap",
+  "calendarCheck",
+  "fileShield",
+];
 
-type Item = { title: string; desc: string };
+type Item = { title: string; desc: string; status?: FeatureStatus };
 
 export function Features() {
   const t = useTranslations("features");
@@ -66,7 +73,7 @@ export function Features() {
           })}
         </div>
 
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {secondary.map((item, i) => {
             const Icon = Icons[secondaryIcons[i]];
             return (
@@ -78,9 +85,12 @@ export function Features() {
                   <Icon className="h-6 w-6" />
                 </span>
                 <div>
-                  <h3 className="text-lg font-semibold text-graphite-800">
-                    {item.title}
-                  </h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg font-semibold text-graphite-800">
+                      {item.title}
+                    </h3>
+                    {item.status && <StatusBadge status={item.status} />}
+                  </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted">
                     {item.desc}
                   </p>

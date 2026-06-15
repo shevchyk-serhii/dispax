@@ -53,9 +53,63 @@
       { "title": "Live tracking & ETA", "desc": "Driver position and arrival time live for the client. The client sees when the car is coming." }
     ],
     "secondary": [
-      { "title": "Tenant isolation", "desc": "Every company sees only its own data. Strict separation by CompanyId — secure and GDPR-compliant." },
-      { "title": "Reports & metrics", "desc": "Rides, revenue and distance driven at a glance. Visibility across the whole operation." }
+      { "title": "Tenant isolation", "desc": "Every company sees only its own data. Strict separation by CompanyId — secure and GDPR-compliant.", "status": "live" },
+      { "title": "Reports & metrics", "desc": "Rides, revenue and distance driven at a glance. Visibility across the whole operation.", "status": "live" },
+      { "title": "Emergency reassign", "desc": "Driver breaks down? One click suggests the nearest available driver and hands the ride over.", "status": "live" },
+      { "title": "Schedule validation", "desc": "Shifts are checked against real travel time — the system won't let you book an impossible schedule.", "status": "live" },
+      { "title": "GDPR & audit trail", "desc": "Consent management, data export and deletion requests. Every action logged with who, when and what.", "status": "soon" }
     ]
+  },
+  "spotlight": {
+    "eyebrow": "BUILT TO DIFFERENTIATE",
+    "title": "More than dispatch — an on-time operation",
+    "subtitle": "The features that set Dispax apart from generic taxi software and marketplace apps.",
+    "blocks": [
+      {
+        "title": "Predictive ETA monitoring",
+        "desc": "A background monitor recalculates every assigned ride's arrival time every minute. When a pickup is at risk, the dispatcher is alerted 5+ minutes before the client would ever call.",
+        "status": "live",
+        "bullets": [
+          "Live ETA via routing API, recomputed each minute",
+          "At-risk alert when the time buffer drops below 5 minutes",
+          "Push + dashboard alert with nearest backup drivers"
+        ]
+      },
+      {
+        "title": "Airport coordination",
+        "desc": "Geofence around the terminal, live location sharing both ways, and an optimal-entry calculator that keeps the car out of expensive parking until the client is actually at the exit.",
+        "status": "live",
+        "bullets": [
+          "Checkpoint chain from landed to meeting point",
+          "Two-way live location between driver and client",
+          "Optimal entry timing to cut parking costs"
+        ]
+      },
+      {
+        "title": "Billing & DATEV export",
+        "desc": "Build invoices that auto-fill from completed rides, send them as PDF, and export everything in the format German tax accounting expects — no double entry.",
+        "status": "soon",
+        "bullets": [
+          "Auto-fill invoices from completed rides",
+          "PDF generation and email delivery",
+          "DATEV-ready CSV export for rides and expenses"
+        ]
+      },
+      {
+        "title": "Ride pools & templates",
+        "desc": "Group several rides onto one driver for shared airport runs, and automate recurring routes with daily, weekday or weekly recurrence — generated as real rides on demand.",
+        "status": "soon",
+        "bullets": [
+          "Pool passengers onto a single optimised route",
+          "Recurring templates: daily, weekdays or weekly",
+          "Generate a batch of rides for any date range"
+        ]
+      }
+    ]
+  },
+  "badges": {
+    "live": "Live",
+    "soon": "Soon"
   },
   "how": {
     "eyebrow": "HOW IT WORKS",
