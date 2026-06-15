@@ -136,7 +136,8 @@ lazy val auth = (project in file("auth"))
   .dependsOn(core % "compile->compile;test->test")
   .settings(
     name := "dispax-auth",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jwtDependencies ++ bcryptDependencies ++ tapirDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jwtDependencies ++ bcryptDependencies ++ tapirDependencies ++ testcontainersDependencies,
+    Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
 
 lazy val ride = (project in file("ride"))
@@ -169,7 +170,8 @@ lazy val schedule = (project in file("schedule"))
   )
   .settings(
     name := "dispax-schedule",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ tapirDependencies
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ tapirDependencies ++ testcontainersDependencies,
+    Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
 
 lazy val firebaseDependencies = Seq(
@@ -177,10 +179,11 @@ lazy val firebaseDependencies = Seq(
 )
 
 lazy val notification = (project in file("notification"))
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
   .settings(
     name := "dispax-notification",
-    libraryDependencies ++= commonDependencies ++ jsonDependencies ++ firebaseDependencies
+    libraryDependencies ++= commonDependencies ++ jsonDependencies ++ dbDependencies ++ firebaseDependencies ++ testcontainersDependencies,
+    Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
 
 lazy val pdfDependencies = Seq(
