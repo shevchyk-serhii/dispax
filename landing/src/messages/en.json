@@ -1,0 +1,114 @@
+{
+  "nav": {
+    "features": "Features",
+    "how": "How it works",
+    "benefits": "Benefits",
+    "contact": "Contact",
+    "cta": "Request a demo"
+  },
+  "hero": {
+    "badge": "Ride dispatch for Munich & surroundings",
+    "title": "The client doesn't wait. Neither do you.",
+    "subtitle": "The dispatch platform for taxi and transfer businesses where punctuality matters. Assign rides, track drivers in real time, and coordinate airport pickups.",
+    "ctaPrimary": "Request a demo",
+    "ctaSecondary": "How it works",
+    "dashboard": {
+      "title": "Dispatcher Dashboard",
+      "meta": "Today · 12 rides",
+      "pending": "PENDING REQUESTS",
+      "schedule": "DRIVER SCHEDULE",
+      "urgent": "URGENT",
+      "open": "OPEN",
+      "rides": [
+        { "time": "09:30", "route": "MUC Airport → Marienplatz", "client": "Mr. Weber", "urgent": false },
+        { "time": "10:15", "route": "Schwabing → Central Station", "client": "Ms. Klein", "urgent": true },
+        { "time": "11:00", "route": "MUC T2 → Bogenhausen", "client": "BMW AG", "urgent": false }
+      ],
+      "drivers": [
+        { "name": "Stefan M.", "status": "Available" },
+        { "name": "Anna K.", "status": "Partial" },
+        { "name": "Tomas R.", "status": "Fully booked" }
+      ]
+    }
+  },
+  "problem": {
+    "eyebrow": "THE PROBLEM",
+    "title": "Dispatching with paper and phone costs you clients",
+    "subtitle": "For time-critical business clients, minutes decide. These four gaps make the difference.",
+    "items": [
+      { "title": "No live arrival time", "desc": "The client doesn't know when the driver arrives — and calls instead of waiting." },
+      { "title": "Airport pickups are painful", "desc": "Name boards, phone tag, searching at the terminal. Expensive parking minutes." },
+      { "title": "Information is scattered", "desc": "Ride, client and driver data live in chats, notes and people's heads." },
+      { "title": "No reminders", "desc": "Missed pickups because nobody was reminded in time." }
+    ]
+  },
+  "features": {
+    "eyebrow": "FEATURES",
+    "title": "Everything for the on-time transfer",
+    "subtitle": "From request to pickup — built for small and medium transport businesses.",
+    "flagBadge": "CORE FEATURE",
+    "primary": [
+      { "title": "Manual dispatch", "desc": "Pending requests at a glance, assign drivers in one click. Travel-time validation via Google, conflict detection included." },
+      { "title": "Airport coordination", "desc": "Real-time location sharing, geofence for optimal entry. Lower parking costs, faster meetups at the terminal." },
+      { "title": "Live tracking & ETA", "desc": "Driver position and arrival time live for the client. The client sees when the car is coming." }
+    ],
+    "secondary": [
+      { "title": "Tenant isolation", "desc": "Every company sees only its own data. Strict separation by CompanyId — secure and GDPR-compliant." },
+      { "title": "Reports & metrics", "desc": "Rides, revenue and distance driven at a glance. Visibility across the whole operation." }
+    ]
+  },
+  "how": {
+    "eyebrow": "HOW IT WORKS",
+    "title": "Four steps to an on-time ride",
+    "steps": [
+      { "num": "01", "title": "Capture the request", "desc": "Secretary, dispatcher, driver or client creates the ride." },
+      { "num": "02", "title": "Assign a driver", "desc": "The dispatcher assigns the right shift — with a travel-time check." },
+      { "num": "03", "title": "Coordinate live", "desc": "Driver and client share location, see ETA and meeting point." },
+      { "num": "04", "title": "Complete", "desc": "Finish the ride; metrics flow automatically into the report." }
+    ]
+  },
+  "benefits": {
+    "eyebrow": "BENEFITS",
+    "title": "Punctuality that keeps clients loyal",
+    "items": [
+      { "title": "Lower parking costs", "desc": "Geofence coordination at the airport — enter only when the client is actually there." },
+      { "title": "Faster meetups", "desc": "Real-time location sharing instead of phone tag and name boards." },
+      { "title": "More loyal clients", "desc": "Live ETA and driver details build trust with business clients." },
+      { "title": "Operations in view", "desc": "Reports, metrics and automatic reminders for the whole day." }
+    ],
+    "stats": [
+      { "value": "≤ 5 min", "label": "to assignment" },
+      { "value": "95 %", "label": "on-time pickup" },
+      { "value": "100 km", "label": "radius around Munich" },
+      { "value": "3 languages", "label": "DE · EN · UK" }
+    ]
+  },
+  "cta": {
+    "title": "Ready to stop keeping the client waiting?",
+    "subtitle": "Request a demo or secure early access. We'll get back to you within one business day.",
+    "placeholder": "you@company.com",
+    "submit": "Request a demo",
+    "note": "We never share your data. Unsubscribe anytime.",
+    "success": "Thanks! We'll be in touch shortly.",
+    "errorEmail": "Please enter a valid email address.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "sending": "Sending…"
+  },
+  "footer": {
+    "tagline": "Ride dispatch for taxi and transfer businesses. Munich & surroundings.",
+    "product": "Product",
+    "company": "Company",
+    "contact": "Contact",
+    "city": "Munich, Germany",
+    "links": {
+      "features": "Features",
+      "how": "How it works",
+      "benefits": "Benefits",
+      "contact": "Contact",
+      "imprint": "Imprint",
+      "privacy": "Privacy"
+    },
+    "copyright": "© 2026 Dispax. All rights reserved.",
+    "langs": "Deutsch · English"
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "nav": {
+    "features": "Funktionen",
+    "how": "So funktioniert's",
+    "benefits": "Vorteile",
+    "contact": "Kontakt",
+    "cta": "Demo anfragen"
+  },
+  "hero": {
+    "badge": "Ride-Dispatch für München & Umgebung",
+    "title": "Der Kunde wartet nicht. Sie auch nicht.",
+    "subtitle": "Die Dispatch-Plattform für Taxi- und Transferunternehmen, bei denen Pünktlichkeit zählt. Fahrten zuweisen, Fahrer in Echtzeit verfolgen, Flughafen-Abholungen koordinieren.",
+    "ctaPrimary": "Demo anfragen",
+    "ctaSecondary": "Wie es funktioniert",
+    "dashboard": {
+      "title": "Disponenten-Dashboard",
+      "meta": "Heute · 12 Fahrten",
+      "pending": "OFFENE ANFRAGEN",
+      "schedule": "FAHRER-ZEITPLAN",
+      "urgent": "DRINGEND",
+      "open": "OFFEN",
+      "rides": [
+        { "time": "09:30", "route": "MUC Flughafen → Marienplatz", "client": "Hr. Weber", "urgent": false },
+        { "time": "10:15", "route": "Schwabing → Hauptbahnhof", "client": "Fr. Klein", "urgent": true },
+        { "time": "11:00", "route": "MUC T2 → Bogenhausen", "client": "BMW AG", "urgent": false }
+      ],
+      "drivers": [
+        { "name": "Stefan M.", "status": "Verfügbar" },
+        { "name": "Anna K.", "status": "Teilweise" },
+        { "name": "Tomas R.", "status": "Ausgebucht" }
+      ]
+    }
+  },
+  "problem": {
+    "eyebrow": "DAS PROBLEM",
+    "title": "Disposition mit Zettel und Telefon kostet Sie Kunden",
+    "subtitle": "Bei zeitkritischen Geschäftskunden entscheiden Minuten. Diese vier Lücken machen den Unterschied.",
+    "items": [
+      { "title": "Keine Live-Ankunftszeit", "desc": "Der Kunde weiß nicht, wann der Fahrer kommt — und ruft an, statt zu warten." },
+      { "title": "Flughafen-Abholungen sind mühsam", "desc": "Namensschilder, Telefonketten, Suchen am Terminal. Teure Parkminuten." },
+      { "title": "Infos sind verstreut", "desc": "Fahrt-, Kunden- und Fahrerdaten liegen in Chats, Notizen und Köpfen." },
+      { "title": "Keine Erinnerungen", "desc": "Verpasste Abholungen, weil niemand rechtzeitig erinnert wurde." }
+    ]
+  },
+  "features": {
+    "eyebrow": "FUNKTIONEN",
+    "title": "Alles für den pünktlichen Transfer",
+    "subtitle": "Vom Auftrag bis zur Abholung — gebaut für kleine und mittlere Transportunternehmen.",
+    "flagBadge": "KERNFUNKTION",
+    "primary": [
+      { "title": "Manuelle Disposition", "desc": "Offene Anfragen im Blick, Fahrer per Klick zuweisen. Reisezeit-Validierung über Google, Konflikt-Erkennung inklusive." },
+      { "title": "Flughafen-Koordination", "desc": "Standort-Austausch in Echtzeit, Geofence für optimale Einfahrt. Weniger Parkkosten, schnelleres Treffen am Terminal." },
+      { "title": "Live-Tracking & ETA", "desc": "Fahrerposition und Ankunftszeit live für den Kunden. Der Kunde sieht, wann das Auto kommt." }
+    ],
+    "secondary": [
+      { "title": "Mandanten-Isolation", "desc": "Jedes Unternehmen sieht nur seine eigenen Daten. Strikte Trennung per CompanyId — sicher und DSGVO-konform." },
+      { "title": "Berichte & Kennzahlen", "desc": "Fahrten, Umsatz und gefahrene Kilometer auf einen Blick. Sichtbarkeit über den gesamten Betrieb." }
+    ]
+  },
+  "how": {
+    "eyebrow": "SO FUNKTIONIERT'S",
+    "title": "In vier Schritten zur pünktlichen Fahrt",
+    "steps": [
+      { "num": "01", "title": "Anfrage erfassen", "desc": "Sekretariat, Disponent, Fahrer oder Kunde legt die Fahrt an." },
+      { "num": "02", "title": "Fahrer zuweisen", "desc": "Der Disponent weist die passende Schicht zu — mit Reisezeit-Check." },
+      { "num": "03", "title": "Live koordinieren", "desc": "Fahrer und Kunde teilen Standort, sehen ETA und Treffpunkt." },
+      { "num": "04", "title": "Abschließen", "desc": "Fahrt abschließen, Kennzahlen fließen automatisch in den Bericht." }
+    ]
+  },
+  "benefits": {
+    "eyebrow": "VORTEILE",
+    "title": "Pünktlichkeit, die Kunden bindet",
+    "items": [
+      { "title": "Niedrigere Parkkosten", "desc": "Geofence-Koordination am Flughafen — einfahren, wenn der Kunde wirklich da ist." },
+      { "title": "Schnellere Treffen", "desc": "Standort-Austausch in Echtzeit statt Telefonketten und Namensschilder." },
+      { "title": "Loyalere Kunden", "desc": "Live-ETA und Fahrerdaten schaffen Vertrauen bei Geschäftskunden." },
+      { "title": "Betrieb im Blick", "desc": "Berichte, Kennzahlen und automatische Erinnerungen für den ganzen Tag." }
+    ],
+    "stats": [
+      { "value": "≤ 5 Min.", "label": "bis zur Zuweisung" },
+      { "value": "95 %", "label": "pünktliche Abholung" },
+      { "value": "100 km", "label": "Radius um München" },
+      { "value": "3 Sprachen", "label": "DE · EN · UK" }
+    ]
+  },
+  "cta": {
+    "title": "Bereit, den Kunden nicht mehr warten zu lassen?",
+    "subtitle": "Fragen Sie eine Demo an oder sichern Sie sich frühen Zugang. Wir melden uns innerhalb eines Werktags.",
+    "placeholder": "ihre@firma.de",
+    "submit": "Demo anfragen",
+    "note": "Keine Weitergabe Ihrer Daten. Jederzeit abbestellbar.",
+    "success": "Danke! Wir melden uns in Kürze.",
+    "errorEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    "errorGeneric": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "sending": "Wird gesendet…"
+  },
+  "footer": {
+    "tagline": "Ride-Dispatch für Taxi- und Transferunternehmen. München & Umgebung.",
+    "product": "Produkt",
+    "company": "Unternehmen",
+    "contact": "Kontakt",
+    "city": "München, Deutschland",
+    "links": {
+      "features": "Funktionen",
+      "how": "So funktioniert's",
+      "benefits": "Vorteile",
+      "contact": "Kontakt",
+      "imprint": "Impressum",
+      "privacy": "Datenschutz"
+    },
+    "copyright": "© 2026 Dispax. Alle Rechte vorbehalten.",
+    "langs": "Deutsch · English"
+  }
+}
