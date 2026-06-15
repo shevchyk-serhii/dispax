@@ -19,7 +19,7 @@ import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.infrastructure.http.AuthRoutes
-import com.shevchyk.auth.middleware.RateLimiter
+import com.shevchyk.auth.middleware.{AuthMiddleware, RateLimiter, UuidParser}
 import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.auth.domain.JwtError
 import com.shevchyk.auth.service.{JwtPayload, JwtService, JwtServiceImpl}
@@ -78,8 +78,15 @@ import com.shevchyk.driver.application.{DriverLocationService, HereRoutingServic
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.infrastructure.http.DriverRoutes
 import com.shevchyk.driver.repository.DriverLocationRepository
-import com.shevchyk.ride.application.service.{ChatService, ClientAddressService, ClientLocationService, RideService}
+import com.shevchyk.ride.application.service.{
+  AirportCheckpointService,
+  ChatService,
+  ClientAddressService,
+  ClientLocationService,
+  RideService
+}
 import com.shevchyk.ride.domain.{
+  AirportCheckpoint,
   ClientAddress,
   ClientAddressId,
   ClientLocation,
@@ -87,8 +94,11 @@ import com.shevchyk.ride.domain.{
   Expense,
   ExpenseCategory,
   ExpenseId,
+  MucCheckpoints,
   RecurrencePattern,
   Ride,
+  RideError,
+  RideSpecifics,
   RideStatus,
   RideTemplate,
   RideTemplateId
@@ -101,6 +111,7 @@ import com.shevchyk.ride.infrastructure.http.{
   RideTemplateRoutes,
   StatsRoutes
 }
+import com.shevchyk.ride.infrastructure.http.dto.{CheckpointStateResponse, MarkCheckpointRequest}
 import com.shevchyk.ride.domain.{RideRating, RideRatingId}
 import com.shevchyk.ride.repository.{
   ChatMessageRepository,
@@ -120,6 +131,7 @@ import com.shevchyk.schedule.repository.ScheduleDayRepository
 import org.mindrot.jbcrypt.BCrypt
 import zio.*
 import zio.http.*
+import zio.json.*
 import zio.logging.backend.SLF4J
 
 import java.time.{Instant, LocalDate, ZoneOffset}
@@ -437,18 +449,36 @@ object TestApplication extends ZIOAppDefault:
     scheduledTime = Some(Instant.now().plusSeconds(432000))
   )
 
+  // Dedicated ride for 34_airport_checkpoints — InProgress + ArrivalAirportTransfer
+  private val testRideAirportCheckpoint = Ride(
+    id = RideId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")),
+    clientId = testPersonId1,
+    creatorId = testPersonId33,
+    companyId = testCompanyId1,
+    driverId = Some(testPersonId10),
+    status = RideStatus.InProgress,
+    pickupLocation = Location("MUC Terminal 1"),
+    dropoffLocation = Location("München Hauptbahnhof"),
+    pickupDateTime = Instant.now().minusSeconds(1200),
+    scheduledTime = Some(Instant.now().minusSeconds(1200)),
+    startTime = Some(Instant.now().minusSeconds(1200)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH456")),
+    flightIsArrival = Some(true)
+  )
+
   private val inMemoryRideRepositoryLayer: ZLayer[Any, Nothing, RideRepository] = ZLayer.fromZIO(
     Ref.Synchronized
       .make(
         Map[RideId, Ride](
-          testRideId            -> testRideAssigned,
-          testRideRequested.id  -> testRideRequested,
-          testRideInProgress.id -> testRideInProgress,
-          testRideCompleted.id  -> testRideCompleted,
-          testRideAssigned2.id  -> testRideAssigned2,
-          testRideRequested2.id -> testRideRequested2,
-          testRideRequested3.id -> testRideRequested3,
-          testRideRequested4.id -> testRideRequested4
+          testRideId                        -> testRideAssigned,
+          testRideRequested.id              -> testRideRequested,
+          testRideInProgress.id             -> testRideInProgress,
+          testRideCompleted.id              -> testRideCompleted,
+          testRideAssigned2.id              -> testRideAssigned2,
+          testRideRequested2.id             -> testRideRequested2,
+          testRideRequested3.id             -> testRideRequested3,
+          testRideRequested4.id             -> testRideRequested4,
+          testRideAirportCheckpoint.id      -> testRideAirportCheckpoint
         )
       )
       .map { ridesRef =>
@@ -547,6 +577,8 @@ object TestApplication extends ZIOAppDefault:
               .toList
           )
           def clearReminders(id: RideId): Task[Unit]                                                            = ZIO.unit
+          def updateCheckpoint(id: RideId, checkpoint: AirportCheckpoint): Task[Unit] =
+            ridesRef.update(m => m.get(id).fold(m)(r => m.updated(id, r.copy(airportCheckpoint = Some(checkpoint))))).unit
           private def periodTime(r: Ride): Instant                                                              = r.endTime.getOrElse(r.pickupDateTime)
       }
   )
@@ -1076,6 +1108,68 @@ object TestApplication extends ZIOAppDefault:
     }
   )
 
+  // ─── Airport-checkpoint routes (inline, mirrors Tapir RideApi logic) ─────
+
+  private def handleAirportCheckpointError(ex: Throwable): UIO[Response] = ex match
+    case RideError.RideNotFound(_)         =>
+      ZIO.succeed(Response.status(Status.NotFound))
+    case RideError.InvalidOperation(msg)   =>
+      ZIO.succeed(Response(Status.UnprocessableEntity, body = Body.fromString(s"""{"error":"$msg"}""")))
+    case RideError.UnauthorizedAccess(_, _) =>
+      ZIO.succeed(Response.status(Status.Forbidden))
+    case other                             =>
+      ZIO.logError(s"AirportCheckpoint error: ${other.getMessage}") *>
+        ZIO.succeed(Response.status(Status.InternalServerError))
+
+  private val airportCheckpointRoutes
+      : Routes[AirportCheckpointService & RideService & JwtService, Response] =
+    Routes(
+      Method.POST / "api" / "rides" / string("rideId") / "airport-checkpoint" ->
+        handler { (rideId: String, request: Request) =>
+          (for {
+            user         <- AuthMiddleware.authenticateRequest(request)
+            _            <- AuthMiddleware.checkRole(user, "CLIENT")
+            bodyStr      <- request.body.asString
+            checkReq     <- ZIO
+                              .fromEither(bodyStr.fromJson[MarkCheckpointRequest])
+                              .mapError(err => new RuntimeException(s"Invalid JSON: $err"))
+            parsedRideId <- UuidParser.parseRideId(rideId)
+            companyId    <- UuidParser.requireCompanyId(user.companyId)
+            rideService  <- ZIO.service[RideService]
+            ride         <- rideService.getRideById(parsedRideId)
+            _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId)
+            checkpoint   <- ZIO
+                              .fromOption(AirportCheckpoint.fromString(checkReq.checkpoint))
+                              .orElseFail(new RuntimeException(s"Invalid checkpoint: ${checkReq.checkpoint}"))
+            svc          <- ZIO.service[AirportCheckpointService]
+            _            <- svc.markCheckpoint(ride, checkpoint, PersonId(user.userId))
+          } yield Response(Status.NoContent)).catchAll {
+            case response: Response => ZIO.succeed(response)
+            case ex: Throwable      => handleAirportCheckpointError(ex)
+          }
+        },
+      Method.GET / "api" / "rides" / string("rideId") / "airport-checkpoint" ->
+        handler { (rideId: String, request: Request) =>
+          (for {
+            user         <- AuthMiddleware.authenticateRequest(request)
+            _            <- AuthMiddleware.checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
+            parsedRideId <- UuidParser.parseRideId(rideId)
+            companyId    <- UuidParser.requireCompanyId(user.companyId)
+            rideService  <- ZIO.service[RideService]
+            ride         <- rideService.getRideById(parsedRideId)
+            _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId)
+          } yield Response.json(
+            CheckpointStateResponse(
+              checkpoint = ride.airportCheckpoint.map(AirportCheckpoint.toDbString),
+              checkpointName = ride.airportCheckpoint.map(MucCheckpoints.displayName)
+            ).toJson
+          )).catchAll {
+            case response: Response => ZIO.succeed(response)
+            case ex: Throwable      => handleAirportCheckpointError(ex)
+          }
+        }
+    )
+
   // ─── Routes aggregation ───────────────────────────────────────────────────
 
   private val allRoutes =
@@ -1109,6 +1203,7 @@ object TestApplication extends ZIOAppDefault:
       ClientAddressRoutes.authenticatedRoutes ++
       RideRoutes.clientLocationRoutes ++
       RideRoutes.chatRoutes ++
+      airportCheckpointRoutes ++
       DriverRoutes.authenticatedRoutes ++
       WebSocketRoutes.wsRoutes
 
@@ -1216,6 +1311,7 @@ object TestApplication extends ZIOAppDefault:
       DriverLocationService.layer,
       DriverLocationService.providerLayer,
       inMemoryClientLocationRepositoryLayer,
+      AirportCheckpointService.layer,
       ClientLocationService.layer,
       // Chat + templates
       InMemoryChatMessageRepository.layer,
