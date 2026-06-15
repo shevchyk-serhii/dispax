@@ -2,6 +2,7 @@ package com.shevchyk.notification.application
 
 import com.shevchyk.core.application.EventHub
 import com.shevchyk.core.domain.*
+import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.notification.repository.{
   InMemoryFcmTokenRepository,
   InMemoryNotificationRepository,
@@ -11,28 +12,61 @@ import zio.*
 import zio.test.*
 import zio.test.TestClock
 
+import java.time.Instant
 import java.util.UUID
 
 object PushNotificationListenerSpec extends ZIOSpecDefault {
 
-  private val companyId = UUID.fromString("00000001-0000-0000-0000-000000000001")
-  private val driverId  = UUID.fromString("00000002-0000-0000-0000-000000000002")
-  private val rideId    = UUID.fromString("00000003-0000-0000-0000-000000000003")
-  private val clientId  = UUID.fromString("00000004-0000-0000-0000-000000000004")
+  private val companyId   = UUID.fromString("00000001-0000-0000-0000-000000000001")
+  private val driverId    = UUID.fromString("00000002-0000-0000-0000-000000000002")
+  private val rideId      = UUID.fromString("00000003-0000-0000-0000-000000000003")
+  private val clientId    = UUID.fromString("00000004-0000-0000-0000-000000000004")
+  private val dispatcherId = UUID.fromString("00000005-0000-0000-0000-000000000005")
 
   private val testFcmLayer: ZLayer[Any, Nothing, FcmService] =
     InMemoryFcmTokenRepository.layer >>> FcmServiceSpec.testFcmServiceLayer
 
+  // PersonRepository stub: only findByRoleAndCompany is exercised (to resolve a
+  // company's dispatchers for EtaAtRisk alerts). One dispatcher in `companyId`.
+  private val dispatcher = Person(
+    id = PersonId(dispatcherId),
+    name = "Dispatcher",
+    email = "dispatcher@example.com",
+    role = PersonRole.Dispatcher,
+    companyId = Some(CompanyId(companyId))
+  )
+
+  private val personRepoStub: PersonRepository =
+    new PersonRepository:
+      def findByRoleAndCompany(role: PersonRole, company: CompanyId): Task[List[Person]] =
+        ZIO.succeed(
+          if role == PersonRole.Dispatcher && company == CompanyId(companyId) then List(dispatcher) else Nil
+        )
+      private def nope(m: String): Nothing = throw new NotImplementedError(s"unexpected PersonRepository.$m")
+      def create(person: Person): Task[Person]                           = nope("create")
+      def findById(id: PersonId): Task[Option[Person]]                   = nope("findById")
+      def findByEmail(email: String): Task[Option[Person]]               = nope("findByEmail")
+      def findByRole(role: PersonRole): Task[List[Person]]               = nope("findByRole")
+      def findByCompanyId(company: CompanyId): Task[List[Person]]        = nope("findByCompanyId")
+      def findAll(): Task[List[Person]]                                  = nope("findAll")
+      def update(person: Person): Task[Person]                           = nope("update")
+      def delete(id: PersonId): Task[Unit]                               = nope("delete")
+      def findByStatus(status: UserStatus): Task[List[Person]]           = nope("findByStatus")
+      def searchByQuery(query: String): Task[List[Person]]               = nope("searchByQuery")
+      def updateLastLogin(id: PersonId): Task[Unit]                      = nope("updateLastLogin")
+      def findByClientCompany(c: ClientCompanyId): Task[List[Person]]    = nope("findByClientCompany")
+
   private val baseLayers =
     EventHub.layer ++
       InMemoryNotificationRepository.layer ++
-      testFcmLayer
+      testFcmLayer ++
+      ZLayer.succeed(personRepoStub)
 
   // Publish event, advance clock by 200ms, read notifications for one person.
   private def publishAndCollect(
       event: WebSocketEvent,
       forPerson: PersonId
-  ): ZIO[EventHub & FcmService & NotificationRepository & Scope, Throwable, List[com.shevchyk.notification.domain.AppNotification]] =
+  ): ZIO[EventHub & FcmService & NotificationRepository & PersonRepository & Scope, Throwable, List[com.shevchyk.notification.domain.AppNotification]] =
     for {
       _         <- PushNotificationListener.start
       eventHub  <- ZIO.service[EventHub]
@@ -198,6 +232,27 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
                 notifs.exists(_.title == "Driver Approaching")
             )
           }
+        }
+      }.provide(baseLayers),
+      test("EtaAtRisk alerts the company's dispatcher") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.EtaAtRisk(rideId, driverId, clientId, 20, 10, -10, companyId),
+            PersonId(dispatcherId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.notificationType == "eta_at_risk") &&
+                notifs.exists(_.title == "Ride at risk of delay")
+            )
+          }
+        }
+      }.provide(baseLayers),
+      test("EtaAtRisk does not alert the client") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.EtaAtRisk(rideId, driverId, clientId, 20, 10, -10, companyId),
+            PersonId(clientId)
+          ).map(notifs => assertTrue(notifs.isEmpty))
         }
       }.provide(baseLayers)
     )

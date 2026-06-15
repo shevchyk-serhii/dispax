@@ -183,6 +183,7 @@ lazy val notification = (project in file("notification"))
   .settings(
     name := "dispax-notification",
     libraryDependencies ++= commonDependencies ++ jsonDependencies ++ dbDependencies ++ firebaseDependencies ++ testcontainersDependencies,
+    // Integration tests load Flyway migrations from the api resources.
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
 
