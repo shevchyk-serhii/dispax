@@ -1,6 +1,5 @@
 package com.shevchyk
 
-import com.shevchyk.ride.infrastructure.http.{RideRoutes, ExpenseRoutes, RideTemplateRoutes, StatsRoutes, ExportRoutes}
 import com.shevchyk.ride.application.service.{RideService, ClientLocationService, ChatService, ClientAddressService}
 import com.shevchyk.ride.repository.{
   RideRepository,
@@ -18,39 +17,18 @@ import com.shevchyk.ride.repository.{
   PostgresRideTemplateRepository
 }
 import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
-import com.shevchyk.driver.infrastructure.http.DriverRoutes
 import com.shevchyk.core.config.HereConfig
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.driver.repository.DriverLocationRepository
-import com.shevchyk.schedule.infrastructure.http.ScheduleRoutes
 import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
 import com.shevchyk.schedule.repository.ScheduleDayRepository
-import com.shevchyk.ride.infrastructure.http.ClientAddressRoutes
-import com.shevchyk.billing.infrastructure.http.{
-  InvoiceRoutes,
-  ClientCompanyRoutes => BillingCompanyRoutes,
-  BillingProfileRoutes
-}
 import com.shevchyk.billing.application.{InvoiceService, PaymentChecker}
 import com.shevchyk.billing.repository.{
   InvoiceRepository,
   ClientCompanyRepository => BillingClientCompanyRepository,
   CompanyBillingProfileRepository
 }
-import com.shevchyk.app.routes.{
-  UserRoutes,
-  WebSocketRoutes,
-  DevRoutes,
-  AuditRoutes,
-  CompanySettingsRoutes,
-  GdprRoutes,
-  SessionRoutes,
-  BlacklistRoutes,
-  EmergencyRoutes,
-  RidePoolRoutes,
-  NotificationPreferenceRoutes,
-  ClientCompanyRoutes
-}
+import com.shevchyk.app.routes.{WebSocketRoutes, DevRoutes}
 import com.shevchyk.core.repository.{
   PersonRepository,
   CompanySettingsRepository,
@@ -80,7 +58,6 @@ import com.shevchyk.core.repository.{
   PostgresRidePoolRepository,
   PostgresNotificationPreferenceRepository
 }
-import com.shevchyk.app.routes.GeofenceRoutes
 import com.shevchyk.notification.application.{FcmService, PushNotificationListener, LoggingEmailSmsService}
 import com.shevchyk.app.{ReminderScheduler, InvoiceReminderScheduler}
 import com.shevchyk.notification.repository.{
@@ -92,7 +69,6 @@ import com.shevchyk.notification.repository.{
   PostgresNotificationRepository,
   SentReminderRepository
 }
-import com.shevchyk.app.routes.NotificationRoutes
 import com.shevchyk.core.application.EmailSmsService
 import com.shevchyk.core.database.DatabaseConfig
 import com.shevchyk.core.config.ServerConfig

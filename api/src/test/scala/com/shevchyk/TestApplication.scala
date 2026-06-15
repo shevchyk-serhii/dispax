@@ -1,24 +1,9 @@
 package com.shevchyk
 
-import com.shevchyk.app.routes.{
-  AuditRoutes,
-  BlacklistRoutes,
-  ClientCompanyRoutes,
-  CompanySettingsRoutes,
-  EmergencyRoutes,
-  GdprRoutes,
-  GeofenceRoutes,
-  NotificationPreferenceRoutes,
-  NotificationRoutes,
-  RidePoolRoutes,
-  SessionRoutes,
-  UserRoutes,
-  WebSocketRoutes
-}
+import com.shevchyk.app.routes.WebSocketRoutes
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.domain.*
-import com.shevchyk.auth.infrastructure.http.AuthRoutes
 import com.shevchyk.auth.middleware.RateLimiter
 import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.auth.domain.JwtError
@@ -32,11 +17,6 @@ import com.shevchyk.billing.domain.{
   UpdateCompanyBillingProfileRequest
 }
 import com.shevchyk.billing.repository.UnbilledRide
-import com.shevchyk.billing.infrastructure.http.{
-  BillingProfileRoutes,
-  ClientCompanyRoutes => BillingCompanyRoutes,
-  InvoiceRoutes
-}
 import com.shevchyk.billing.repository.{
   ClientCompanyRepository => BillingClientCompanyRepository,
   CompanyBillingProfileRepository,
@@ -76,7 +56,6 @@ import com.shevchyk.notification.repository.{
 }
 import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
 import com.shevchyk.driver.domain.DriverLocation
-import com.shevchyk.driver.infrastructure.http.DriverRoutes
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.application.service.{ChatService, ClientAddressService, ClientLocationService, RideService}
 import com.shevchyk.ride.domain.{
@@ -93,14 +72,6 @@ import com.shevchyk.ride.domain.{
   RideTemplate,
   RideTemplateId
 }
-import com.shevchyk.ride.infrastructure.http.{
-  ClientAddressRoutes,
-  ExportRoutes,
-  ExpenseRoutes,
-  RideRoutes,
-  RideTemplateRoutes,
-  StatsRoutes
-}
 import com.shevchyk.ride.domain.{RideRating, RideRatingId}
 import com.shevchyk.ride.repository.{
   ChatMessageRepository,
@@ -115,7 +86,6 @@ import com.shevchyk.ride.repository.{
 }
 import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
 import com.shevchyk.schedule.domain.{ScheduleDay, ScheduleError}
-import com.shevchyk.schedule.infrastructure.http.ScheduleRoutes
 import com.shevchyk.schedule.repository.ScheduleDayRepository
 import org.mindrot.jbcrypt.BCrypt
 import zio.*
@@ -1078,38 +1048,15 @@ object TestApplication extends ZIOAppDefault:
 
   // ─── Routes aggregation ───────────────────────────────────────────────────
 
+  // Mount the same Tapir-described endpoints the production server uses
+  // (com.shevchyk.app.openapi.OpenApiServer), so the test suite exercises the
+  // real HTTP layer instead of the now-retired hand-written routes. Only the
+  // health check and the WebSocket upgrade remain as plain zio-http routes.
   private val allRoutes =
     Routes(
       Method.GET / "health" -> handler(Response.text("Dispax Modular API - OK"))
     ) ++
-      AuthRoutes.routes ++
-      UserRoutes.routes ++
-      UserRoutes.authenticatedRoutes ++
-      RideRoutes.authenticatedRoutes ++
-      RideRoutes.ratingRoutes ++
-      ExpenseRoutes.authenticatedRoutes ++
-      AuditRoutes.authenticatedRoutes ++
-      BlacklistRoutes.authenticatedRoutes ++
-      NotificationRoutes.authenticatedRoutes ++
-      NotificationPreferenceRoutes.authenticatedRoutes ++
-      SessionRoutes.authenticatedRoutes ++
-      GeofenceRoutes.authenticatedRoutes ++
-      GdprRoutes.authenticatedRoutes ++
-      RidePoolRoutes.authenticatedRoutes ++
-      CompanySettingsRoutes.authenticatedRoutes ++
-      ClientCompanyRoutes.authenticatedRoutes ++
-      ScheduleRoutes.authenticatedRoutes ++
-      EmergencyRoutes.authenticatedRoutes ++
-      BillingCompanyRoutes.authenticatedRoutes ++
-      InvoiceRoutes.authenticatedRoutes ++
-      BillingProfileRoutes.authenticatedRoutes ++
-      StatsRoutes.authenticatedRoutes ++
-      ExportRoutes.authenticatedRoutes ++
-      RideTemplateRoutes.authenticatedRoutes ++
-      ClientAddressRoutes.authenticatedRoutes ++
-      RideRoutes.clientLocationRoutes ++
-      RideRoutes.chatRoutes ++
-      DriverRoutes.authenticatedRoutes ++
+      com.shevchyk.app.openapi.OpenApiServer.routes ++
       WebSocketRoutes.wsRoutes
 
   def run: ZIO[ZIOAppArgs, Any, Any] = ZIO

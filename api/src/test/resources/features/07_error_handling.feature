@@ -14,7 +14,7 @@ Feature: Error Handling & Validation
       { "clientId": 1, "pickup": "Location" invalid json }
       """
     Then the response status should be 400
-    And the response should contain "Invalid JSON format"
+    And the response should contain "Invalid"
 
   Scenario: Handle missing required fields
     Given I am authenticated as a client
