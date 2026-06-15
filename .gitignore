@@ -111,3 +111,6 @@ infra/**/terraform.tfstate.backup
 infra/**/secrets.tfvars
 *.tfvars.json
 web/android/app/src/flutter_*.log
+
+### dev-flow agent artifacts ###
+docs/agent/
