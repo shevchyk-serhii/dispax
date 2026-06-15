@@ -92,6 +92,50 @@ export const Icons = {
       <path d="M8 11V8a4 4 0 0 1 8 0v3" />
     </Base>
   ),
+  radar: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M19.07 4.93a10 10 0 1 0 2.5 4.07" />
+      <path d="M15.5 8.5a5 5 0 1 0 1.4 2.3" />
+      <path d="M12 12 19 5" />
+      <circle cx="12" cy="12" r="1" />
+    </Base>
+  ),
+  receipt: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M5 3.5 6.5 5 8 3.5 9.5 5 11 3.5 12.5 5 14 3.5 15.5 5 17 3.5 18.5 5 19 4.5V20.5L17 19l-1.5 1.5L14 19l-1.5 1.5L11 19l-1.5 1.5L8 19l-1.5 1.5L5 19.5Z" />
+      <path d="M8 9h8" />
+      <path d="M8 13h5" />
+    </Base>
+  ),
+  layers: (p: IconProps) => (
+    <Base {...p}>
+      <path d="m12 3 9 5-9 5-9-5 9-5Z" />
+      <path d="m3 13 9 5 9-5" />
+    </Base>
+  ),
+  swap: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M7 4 3 8l4 4" />
+      <path d="M3 8h13a4 4 0 0 1 0 8h-1" />
+      <path d="m17 20 4-4-4-4" />
+      <path d="M21 16H8" />
+    </Base>
+  ),
+  calendarCheck: (p: IconProps) => (
+    <Base {...p}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M3.5 9.5h17" />
+      <path d="M8 3v3M16 3v3" />
+      <path d="m9 14 2 2 4-4" />
+    </Base>
+  ),
+  fileShield: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4" />
+      <path d="M13 3v4a1 1 0 0 0 1 1h4" />
+      <path d="M18 13.5 15 15v2.2c0 1.5 1.2 2.7 3 3.3 1.8-.6 3-1.8 3-3.3V15Z" />
+    </Base>
+  ),
 };
 
 export type IconName = keyof typeof Icons;

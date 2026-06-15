@@ -53,9 +53,63 @@
       { "title": "Live-Tracking & ETA", "desc": "Fahrerposition und Ankunftszeit live für den Kunden. Der Kunde sieht, wann das Auto kommt." }
     ],
     "secondary": [
-      { "title": "Mandanten-Isolation", "desc": "Jedes Unternehmen sieht nur seine eigenen Daten. Strikte Trennung per CompanyId — sicher und DSGVO-konform." },
-      { "title": "Berichte & Kennzahlen", "desc": "Fahrten, Umsatz und gefahrene Kilometer auf einen Blick. Sichtbarkeit über den gesamten Betrieb." }
+      { "title": "Mandanten-Isolation", "desc": "Jedes Unternehmen sieht nur seine eigenen Daten. Strikte Trennung per CompanyId — sicher und DSGVO-konform.", "status": "live" },
+      { "title": "Berichte & Kennzahlen", "desc": "Fahrten, Umsatz und gefahrene Kilometer auf einen Blick. Sichtbarkeit über den gesamten Betrieb.", "status": "live" },
+      { "title": "Notfall-Umverteilung", "desc": "Fahrer fällt aus? Ein Klick schlägt den nächsten verfügbaren Fahrer vor und übergibt die Fahrt.", "status": "live" },
+      { "title": "Zeitplan-Validierung", "desc": "Schichten werden gegen echte Reisezeiten geprüft — das System lässt keinen unmöglichen Zeitplan zu.", "status": "live" },
+      { "title": "DSGVO & Audit-Trail", "desc": "Einwilligungsverwaltung, Datenexport und Löschanfragen. Jede Aktion protokolliert: wer, wann, was.", "status": "soon" }
     ]
+  },
+  "spotlight": {
+    "eyebrow": "ENTWICKELT, UM SICH ABZUHEBEN",
+    "title": "Mehr als Disposition — ein pünktlicher Betrieb",
+    "subtitle": "Die Funktionen, die Dispax von generischer Taxi-Software und Marktplatz-Apps abheben.",
+    "blocks": [
+      {
+        "title": "Prädiktives ETA-Monitoring",
+        "desc": "Ein Hintergrund-Monitor berechnet jede Minute die Ankunftszeit jeder zugewiesenen Fahrt neu. Droht eine Abholung zu kippen, wird der Disponent alarmiert — 5+ Minuten bevor der Kunde überhaupt anruft.",
+        "status": "live",
+        "bullets": [
+          "Live-ETA über Routing-API, jede Minute neu berechnet",
+          "Alarm, wenn der Zeitpuffer unter 5 Minuten fällt",
+          "Push + Dashboard-Alarm mit den nächsten Ersatzfahrern"
+        ]
+      },
+      {
+        "title": "Flughafen-Koordination",
+        "desc": "Geofence rund ums Terminal, Live-Standort in beide Richtungen und ein Optimal-Einfahrt-Rechner, der das Auto aus teuren Parkzonen hält, bis der Kunde wirklich am Ausgang steht.",
+        "status": "live",
+        "bullets": [
+          "Checkpoint-Kette von gelandet bis zum Treffpunkt",
+          "Live-Standort zwischen Fahrer und Kunde in beide Richtungen",
+          "Optimale Einfahrtszeit senkt die Parkkosten"
+        ]
+      },
+      {
+        "title": "Abrechnung & DATEV-Export",
+        "desc": "Rechnungen, die sich automatisch aus abgeschlossenen Fahrten füllen, als PDF versenden und alles im Format exportieren, das die deutsche Buchhaltung erwartet — keine Doppelerfassung.",
+        "status": "soon",
+        "bullets": [
+          "Rechnungen automatisch aus abgeschlossenen Fahrten füllen",
+          "PDF-Erstellung und Versand per E-Mail",
+          "DATEV-fähiger CSV-Export für Fahrten und Ausgaben"
+        ]
+      },
+      {
+        "title": "Fahrt-Pools & Vorlagen",
+        "desc": "Mehrere Fahrten auf einen Fahrer bündeln für gemeinsame Flughafenfahrten und wiederkehrende Routen automatisieren — täglich, werktags oder wöchentlich, bei Bedarf als echte Fahrten erzeugt.",
+        "status": "soon",
+        "bullets": [
+          "Fahrgäste auf einer optimierten Route bündeln",
+          "Wiederkehrende Vorlagen: täglich, werktags oder wöchentlich",
+          "Fahrten-Batch für beliebige Zeiträume erzeugen"
+        ]
+      }
+    ]
+  },
+  "badges": {
+    "live": "Live",
+    "soon": "Bald"
   },
   "how": {
     "eyebrow": "SO FUNKTIONIERT'S",
