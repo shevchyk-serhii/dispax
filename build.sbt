@@ -1,6 +1,17 @@
 ThisBuild / version      := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "3.3.7"
 
+// Test-coverage (scoverage) exclusions: generated/derived/wiring code that carries
+// no testable logic — domain case classes & DTOs (data only), the DI/bootstrap
+// entrypoints, and the test-only in-memory app. Coverage stays focused on
+// application logic, HTTP endpoints and repositories.
+ThisBuild / coverageExcludedPackages := Seq(
+  "com\\.shevchyk\\.Application",
+  "com\\.shevchyk\\.TestApplication",
+  ".*\\.domain\\..*",
+  ".*\\.infrastructure\\.http\\.dto\\..*"
+).mkString(";")
+
 ThisBuild / assembly / assemblyMergeStrategy := {
   case x if x.endsWith("module-info.class")            => MergeStrategy.discard
   case x if x.contains("io.netty.versions.properties") => MergeStrategy.first

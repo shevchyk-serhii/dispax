@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test + Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache sbt
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.coursier
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', '**/plugins.sbt') }}
+          restore-keys: ${{ runner.os }}-sbt-
+
+      # Integration tests use Testcontainers, which needs a Docker daemon. It is
+      # available on ubuntu-latest runners out of the box.
+      - name: Run tests with coverage
+        run: sbt -batch coverage test coverageAggregate
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          echo "## Test coverage" >> "$GITHUB_STEP_SUMMARY"
+          report="target/scala-3.3.7/scoverage-report/scoverage.xml"
+          if [ -f "$report" ]; then
+            rate=$(grep -o 'statement-rate="[0-9.]*"' "$report" | head -1 | grep -o '[0-9.]*')
+            branch=$(grep -o 'branch-rate="[0-9.]*"' "$report" | head -1 | grep -o '[0-9.]*')
+            echo "- Statement coverage: **${rate}%**" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Branch coverage: **${branch}%**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Aggregate coverage report not found." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scoverage-report
+          path: |
+            target/scala-3.3.7/scoverage-report/**
+            '**/target/scala-3.3.7/scoverage-report/**'
+          if-no-files-found: ignore
