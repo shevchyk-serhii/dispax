@@ -4,11 +4,10 @@ import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{PersonId, PersonRole, RideId}
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, EtaService}
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.{DriverEarningsReport, EarningsPeriod}
-import com.shevchyk.ride.repository.ClientLocationRepository
 import com.shevchyk.ride.infrastructure.http.dto.{LocationDto, RideDto}
 import sttp.tapir.Schema
 import zio.*
@@ -75,19 +74,6 @@ object DriverEarningsDto:
 
 object DriverRoutes:
 
-  // Fallback ETA estimate when HERE API key is not configured (~50 km/h urban speed)
-  private def estimateEtaMinutes(dLat: Double, dLng: Double, pickLat: Double, pickLng: Double): Option[Int] =
-    val R     = 6371000.0
-    val dPhi  = math.toRadians(pickLat - dLat)
-    val dLam  = math.toRadians(pickLng - dLng)
-    val a     =
-      math.sin(dPhi / 2) * math.sin(dPhi / 2) +
-        math.cos(math.toRadians(dLat)) * math.cos(math.toRadians(pickLat)) *
-        math.sin(dLam / 2) * math.sin(dLam / 2)
-    val distM = R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    val eta   = math.ceil(distM / (50000.0 / 60.0)).toInt // 50 km/h → minutes
-    Some(math.max(1, eta))
-
   // Company isolation: ensure the target driver belongs to the caller's company.
   // Hide cross-tenant (or unknown) drivers as NotFound so existence is not revealed.
   private def assertDriverInCompany(
@@ -117,7 +103,7 @@ object DriverRoutes:
   )
 
   val authenticatedRoutes
-      : Routes[DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository & PersonRepository & JwtService, Response]     =
+      : Routes[DriverLocationService & RideService & EtaService & GeocodingService & PersonRepository & JwtService, Response]     =
     Routes(
       Method.PUT / "api" / "drivers" / string("driverId") / "location"     -> handler {
         (driverId: String, request: Request) =>
@@ -296,22 +282,10 @@ object DriverRoutes:
                               driverLat = driverLoc.map(_.latitude),
                               driverLng = driverLoc.map(_.longitude)
                             )
-            // Use real-time client location if available, fall back to pickup address coords
-            clientLoc    <- ZIO.serviceWithZIO[ClientLocationRepository](_.getLocation(parsedRideId)).orElse(ZIO.none)
-            eta          <-
-              (for {
-                dLat   <- driverLoc.map(_.latitude)
-                dLng   <- driverLoc.map(_.longitude)
-                destLat = clientLoc.map(_.latitude).getOrElse(ride.pickupLocation.latitude.getOrElse(0.0))
-                destLng = clientLoc.map(_.longitude).getOrElse(ride.pickupLocation.longitude.getOrElse(0.0))
-                if destLat != 0.0 || destLng != 0.0
-              } yield (dLat, dLng, destLat, destLng)) match {
-                case Some((dLat, dLng, destLat, destLng)) =>
-                  ZIO
-                    .serviceWithZIO[HereRoutingService](_.getEtaMinutes(dLat, dLng, destLat, destLng))
-                    .map(_.orElse(estimateEtaMinutes(dLat, dLng, destLat, destLng)))
-                case None                                 => ZIO.none
-              }
+            // ETA assembly (driver loc → client/pickup coords → HERE → fallback)
+            // lives in EtaService, the single source of truth shared with the
+            // predictive ETA monitor.
+            eta          <- ZIO.serviceWithZIO[EtaService](_.etaForRide(ride))
             proximity     = DriverProximityDto(
                               driverLocation = rideDto.driverLocation,
                               driverApproaching = rideDto.driverApproaching,

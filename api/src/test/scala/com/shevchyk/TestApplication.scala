@@ -74,7 +74,7 @@ import com.shevchyk.notification.repository.{
   InMemoryNotificationRepository,
   NotificationRepository
 }
-import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.infrastructure.http.DriverRoutes
 import com.shevchyk.driver.repository.DriverLocationRepository
@@ -1217,6 +1217,7 @@ object TestApplication extends ZIOAppDefault:
       DriverLocationService.providerLayer,
       inMemoryClientLocationRepositoryLayer,
       ClientLocationService.layer,
+      EtaService.layer,
       // Chat + templates
       InMemoryChatMessageRepository.layer,
       ChatService.layer,

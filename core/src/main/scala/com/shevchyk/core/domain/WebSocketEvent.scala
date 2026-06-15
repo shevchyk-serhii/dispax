@@ -64,5 +64,19 @@ object WebSocketEvent:
       companyId: UUID
   ) extends WebSocketEvent
 
+  /** The assigned driver is at risk of missing the pickup on time.
+   *  Emitted by the predictive ETA monitor to alert the company's dispatchers.
+   *  `slackMinutes` = minutesUntilPickup - etaMinutes (negative = already late).
+   */
+  final case class EtaAtRisk(
+      rideId: UUID,
+      driverId: UUID,
+      clientId: UUID,
+      etaMinutes: Int,
+      minutesUntilPickup: Int,
+      slackMinutes: Int,
+      companyId: UUID
+  ) extends WebSocketEvent
+
   given JsonEncoder[WebSocketEvent] = DeriveJsonEncoder.gen[WebSocketEvent]
   given JsonDecoder[WebSocketEvent] = DeriveJsonDecoder.gen[WebSocketEvent]

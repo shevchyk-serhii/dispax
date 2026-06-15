@@ -5,7 +5,7 @@ import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.{EventHub, GeofenceService, ActiveRideInfo, GeocodingService}
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.driver.infrastructure.http.DriverRoutes
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.application.service.RideService
@@ -186,11 +186,17 @@ object DriverRoutesSpec extends ZIOSpecDefault {
         .succeed(None)
   )
 
+  // EtaService assembled from the noop dependencies so the proximity endpoint
+  // exercises the real service wiring (ETA resolves to None without coords).
+  private val etaServiceLayer: ZLayer[Any, Nothing, EtaService] =
+    (driverLocationServiceLayer ++ noopHereRoutingService ++ GeocodingService.noop ++ noopClientLocationRepo) >>>
+      EtaService.layer
+
   private val testLayers =
-    driverLocationServiceLayer ++ noopRideServiceLayer ++ noopHereRoutingService ++ GeocodingService.noop ++ noopClientLocationRepo ++ noopPersonRepo ++ testJwtService
+    driverLocationServiceLayer ++ noopRideServiceLayer ++ etaServiceLayer ++ GeocodingService.noop ++ noopPersonRepo ++ testJwtService
 
   private def run(req: Request): ZIO[
-    DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository & PersonRepository & JwtService,
+    DriverLocationService & RideService & EtaService & GeocodingService & PersonRepository & JwtService,
     Nothing,
     Response
   ] = DriverRoutes.authenticatedRoutes.run(req).either.map {

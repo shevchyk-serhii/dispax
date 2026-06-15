@@ -17,7 +17,7 @@ import com.shevchyk.ride.repository.{
   PostgresRideRatingRepository,
   PostgresRideTemplateRepository
 }
-import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.driver.infrastructure.http.DriverRoutes
 import com.shevchyk.core.config.HereConfig
 import com.shevchyk.core.application.GeocodingService
@@ -82,7 +82,7 @@ import com.shevchyk.core.repository.{
 }
 import com.shevchyk.app.routes.GeofenceRoutes
 import com.shevchyk.notification.application.{FcmService, PushNotificationListener, LoggingEmailSmsService}
-import com.shevchyk.app.{ReminderScheduler, InvoiceReminderScheduler}
+import com.shevchyk.app.{ReminderScheduler, InvoiceReminderScheduler, PredictiveEtaMonitor}
 import com.shevchyk.notification.repository.{
   InMemoryFcmTokenRepository,
   InMemoryNotificationRepository,
@@ -90,7 +90,8 @@ import com.shevchyk.notification.repository.{
   FcmTokenRepository,
   PostgresFcmTokenRepository,
   PostgresNotificationRepository,
-  SentReminderRepository
+  SentReminderRepository,
+  EtaAlertRepository
 }
 import com.shevchyk.app.routes.NotificationRoutes
 import com.shevchyk.core.application.EmailSmsService
@@ -156,6 +157,7 @@ object Application extends ZIOAppDefault:
       PushNotificationListener.start *>
         ReminderScheduler.start *>
         InvoiceReminderScheduler.start *>
+        PredictiveEtaMonitor.start *>
         ZIO.logInfo("Starting Dispax API Server (PostgreSQL)...") *>
         ZIO.logInfo("📋 Available APIs:") *>
         ZIO.logInfo("  🔍 /health - Health check") *>
@@ -212,6 +214,7 @@ object Application extends ZIOAppDefault:
       FcmTokenRepository.layer,
       FcmService.layer,
       SentReminderRepository.layer,
+      EtaAlertRepository.layer,
       NotificationRepository.layer,
       LoggingEmailSmsService.layer,
       RideTemplateRepository.layer,
@@ -235,6 +238,7 @@ object Application extends ZIOAppDefault:
       HereConfig.liveLayer,
       GeocodingService.layer,
       HereRoutingService.layer,
+      EtaService.layer,
       Client.default,
       JwtConfig.live,
       JwtService.live,

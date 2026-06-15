@@ -166,10 +166,12 @@ lazy val firebaseDependencies = Seq(
 )
 
 lazy val notification = (project in file("notification"))
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
   .settings(
     name := "dispax-notification",
-    libraryDependencies ++= commonDependencies ++ jsonDependencies ++ firebaseDependencies
+    libraryDependencies ++= commonDependencies ++ jsonDependencies ++ firebaseDependencies ++ dbDependencies ++ testcontainersDependencies,
+    // Integration tests load Flyway migrations from the api resources.
+    Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
 
 lazy val pdfDependencies = Seq(
