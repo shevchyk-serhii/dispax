@@ -186,21 +186,32 @@ case class ValidationFieldError(
     message: String
 ) derives JsonCodec
 
+// -- Airport checkpoint DTOs ---------------------------------------------------
+
+case class MarkCheckpointRequest(
+    checkpoint: String // "landed" | "arrivals_hall" | "terminal_exit"
+) derives JsonCodec
+
+case class CheckpointStateResponse(
+    checkpoint: Option[String],
+    checkpointName: Option[String]
+) derives JsonCodec
+
 // -- Tapir schemas (alongside the zio-json codecs above) so these DTOs can be
 //    used directly as Tapir request/response bodies and appear in the OpenAPI doc.
-given sttp.tapir.Schema[PaymentStatus]              =
-  sttp.tapir.Schema.string
-given sttp.tapir.Schema[PaymentMethod]              =
-  sttp.tapir.Schema.string
-given sttp.tapir.Schema[RideDto]                    = sttp.tapir.Schema.derived[RideDto]
-given sttp.tapir.Schema[CreateRideApiRequest]       = sttp.tapir.Schema.derived[CreateRideApiRequest]
-given sttp.tapir.Schema[RideStatusUpdateRequest]    = sttp.tapir.Schema.derived[RideStatusUpdateRequest]
-given sttp.tapir.Schema[AssignDriverRequest]        = sttp.tapir.Schema.derived[AssignDriverRequest]
-given sttp.tapir.Schema[MarkPaymentRequest]         = sttp.tapir.Schema.derived[MarkPaymentRequest]
-given sttp.tapir.Schema[CancelRideApiRequest]       = sttp.tapir.Schema.derived[CancelRideApiRequest]
+given sttp.tapir.Schema[PaymentStatus]               = sttp.tapir.Schema.string
+given sttp.tapir.Schema[PaymentMethod]               = sttp.tapir.Schema.string
+given sttp.tapir.Schema[RideDto]                     = sttp.tapir.Schema.derived[RideDto]
+given sttp.tapir.Schema[CreateRideApiRequest]        = sttp.tapir.Schema.derived[CreateRideApiRequest]
+given sttp.tapir.Schema[RideStatusUpdateRequest]     = sttp.tapir.Schema.derived[RideStatusUpdateRequest]
+given sttp.tapir.Schema[AssignDriverRequest]         = sttp.tapir.Schema.derived[AssignDriverRequest]
+given sttp.tapir.Schema[MarkPaymentRequest]          = sttp.tapir.Schema.derived[MarkPaymentRequest]
+given sttp.tapir.Schema[CancelRideApiRequest]        = sttp.tapir.Schema.derived[CancelRideApiRequest]
 given sttp.tapir.Schema[UpdateRideDetailsApiRequest] = sttp.tapir.Schema.derived[UpdateRideDetailsApiRequest]
 given sttp.tapir.Schema[UpdateClientLocationRequest] = sttp.tapir.Schema.derived[UpdateClientLocationRequest]
-given sttp.tapir.Schema[SendChatMessageRequest]     = sttp.tapir.Schema.derived[SendChatMessageRequest]
+given sttp.tapir.Schema[SendChatMessageRequest]      = sttp.tapir.Schema.derived[SendChatMessageRequest]
+given sttp.tapir.Schema[MarkCheckpointRequest]       = sttp.tapir.Schema.derived[MarkCheckpointRequest]
+given sttp.tapir.Schema[CheckpointStateResponse]     = sttp.tapir.Schema.derived[CheckpointStateResponse]
 
 object LocationDto:
 

@@ -10,12 +10,15 @@ import '../../modules/ride_management/services/ride_service.dart';
 import '../modules/core/models/location.dart' as loc;
 import '../modules/core/services/location_service.dart';
 import '../modules/core/services/mapbox_service.dart';
+import '../modules/core/models/websocket_event.dart';
 import '../modules/core/services/websocket_service.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/date_utils.dart';
 import '../modules/flight_management/widgets/airport_entry_timer.dart';
+import '../modules/flight_management/widgets/airport_checkpoint_progress.dart';
+import '../modules/flight_management/muc_checkpoints.dart';
 
 class DriverMapScreen extends StatefulWidget {
   const DriverMapScreen({super.key});
@@ -28,6 +31,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   MapboxMap? _mapboxMap;
   PointAnnotationManager? _pointAnnotationManager;
   CircleAnnotationManager? _circleAnnotationManager;
+  CircleAnnotationManager? _checkpointAnnotationManager;
   CircleAnnotation? _clientCircleAnnotation;
   PointAnnotation? _clientLabelAnnotation;
   Uint8List? _clientMarkerImage;
@@ -35,6 +39,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   PointAnnotation? _driverSelfAnnotation;
   Timer? _pulseTimer;
   bool _pulseState = false;
+  String? _airportCheckpoint;
 
   StreamSubscription<geo.Position>? _locationSubscription;
   geo.Position? _currentPosition;
@@ -165,7 +170,48 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
           _updateClientMarker(event.latitude!, event.longitude!);
         }
       }
+
+      if (event.isAirportCheckpointReached &&
+          _currentRide != null &&
+          event.rideId == _currentRide!.id) {
+        setState(() {
+          _airportCheckpoint = event.checkpointType;
+          _currentRide = _currentRide!.copyWith(
+            airportCheckpoint: event.checkpointType,
+          );
+        });
+        _renderCheckpointMarkers();
+      }
     });
+  }
+
+  Future<void> _renderCheckpointMarkers() async {
+    if (_checkpointAnnotationManager == null) return;
+
+    await _checkpointAnnotationManager!.deleteAll();
+
+    final currentOrdinal = MucCheckpoints.ordinal(_airportCheckpoint);
+
+    for (int i = 0; i < MucCheckpoints.chain.length; i++) {
+      final cp = MucCheckpoints.chain[i];
+      final int color;
+      if (i < currentOrdinal) {
+        color = 0xFF4CAF50; // completed - green
+      } else if (i == currentOrdinal) {
+        color = 0xFFFF9800; // active - amber
+      } else {
+        color = 0xFF9E9E9E; // pending - grey
+      }
+
+      await _checkpointAnnotationManager!.create(CircleAnnotationOptions(
+        geometry: Point(coordinates: Position(cp.lon, cp.lat)),
+        circleRadius: 12.0,
+        circleColor: color,
+        circleStrokeWidth: 2.0,
+        circleStrokeColor: 0xFFFFFFFF,
+        circleOpacity: 0.85,
+      ));
+    }
   }
 
   Future<void> _updateClientMarker(double latitude, double longitude) async {
@@ -237,6 +283,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+    _checkpointAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
 
     await MapboxService.addDefaultImages(mapboxMap);
 
@@ -250,6 +297,10 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     }
 
     _updateMapMarkers();
+    // Re-render checkpoint markers if we already have checkpoint state
+    if (_airportCheckpoint != null) {
+      _renderCheckpointMarkers();
+    }
   }
 
   Future<void> _updateCurrentLocationMarker() async {
@@ -712,6 +763,13 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                   style: AppStyles.bodyMedium,
                 ),
               ],
+            ),
+          ],
+
+          if (_currentRide!.isAirportTransfer && _currentRide!.isArrival) ...[
+            const SizedBox(height: AppDimensions.paddingSmall),
+            AirportCheckpointProgress(
+              currentCheckpoint: _airportCheckpoint ?? _currentRide!.airportCheckpoint,
             ),
           ],
 

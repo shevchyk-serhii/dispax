@@ -354,4 +354,29 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get termsOfService => 'Nutzungsbedingungen';
+
+  @override
+  String get checkpointLanded => 'Gelandet';
+
+  @override
+  String get checkpointArrivalsHall => 'Ankunftshalle';
+
+  @override
+  String get checkpointTerminalExit => 'Terminalausgang';
+
+  @override
+  String get markCheckpointButton => 'Ich bin hier';
+
+  @override
+  String get airportCheckpointPanelTitle => 'Mein Standort im Terminal';
+
+  @override
+  String checkpointNotifTitle(String checkpoint) {
+    return 'Fahrgast hat $checkpoint erreicht';
+  }
+
+  @override
+  String checkpointNotifBody(String checkpointName) {
+    return 'Ihr Fahrgast befindet sich bei $checkpointName.';
+  }
 }

@@ -75,6 +75,7 @@ class Ride {
   final bool isVipRide;
   final bool preferredDriverUsed;
   final String? poolId;
+  final String? airportCheckpoint; // "landed" | "arrivals_hall" | "terminal_exit" | null
 
   const Ride({
     required this.id,
@@ -116,6 +117,7 @@ class Ride {
     this.isVipRide = false,
     this.preferredDriverUsed = false,
     this.poolId,
+    this.airportCheckpoint,
   });
 
   factory Ride.fromJson(Map<String, dynamic> json) {
@@ -163,6 +165,7 @@ class Ride {
       isVipRide: json['isVipRide'] ?? false,
       preferredDriverUsed: json['preferredDriverUsed'] ?? false,
       poolId: json['poolId'],
+      airportCheckpoint: json['airportCheckpoint'],
     );
   }
 
@@ -207,6 +210,7 @@ class Ride {
       'isVipRide': isVipRide,
       'preferredDriverUsed': preferredDriverUsed,
       'poolId': poolId,
+      'airportCheckpoint': airportCheckpoint,
     };
   }
 
@@ -250,6 +254,7 @@ class Ride {
     bool? isVipRide,
     bool? preferredDriverUsed,
     String? poolId,
+    Object? airportCheckpoint = _sentinel,
   }) {
     return Ride(
       id: id ?? this.id,
@@ -291,8 +296,13 @@ class Ride {
       isVipRide: isVipRide ?? this.isVipRide,
       preferredDriverUsed: preferredDriverUsed ?? this.preferredDriverUsed,
       poolId: poolId ?? this.poolId,
+      airportCheckpoint: airportCheckpoint == _sentinel
+          ? this.airportCheckpoint
+          : airportCheckpoint as String?,
     );
   }
+
+  static const _sentinel = Object();
 
   @override
   bool operator ==(Object other) {

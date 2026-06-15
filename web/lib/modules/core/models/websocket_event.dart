@@ -56,9 +56,12 @@ class WebSocketEvent {
   bool get isGeofenceTriggered => type == 'GeofenceTriggered';
   bool get isDriverApproaching => type == 'DriverApproaching';
   bool get isPoolUpdate => type == 'RideStatusChanged' && data['newStatus'] == 'PooledRide';
+  bool get isAirportCheckpointReached => type == 'AirportCheckpointReached';
 
   String? get geofenceName => data['geofenceName'];
   String? get alertType => data['alertType'];
   int? get distanceMeters => data['distanceMeters'];
   int? get threshold => data['threshold'];
+  String? get checkpointType => data['checkpointType'];
+  String? get checkpointName => data['checkpointName'];
 }

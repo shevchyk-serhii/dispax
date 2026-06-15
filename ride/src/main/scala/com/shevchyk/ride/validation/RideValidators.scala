@@ -174,3 +174,18 @@ given updateRideApiRequestValidator: Validator[UpdateRideApiRequest] with
         ZIO.fail(RideError.ValidationError("Passenger count must be between 1 and 8"))
       )
       .unit
+
+given markCheckpointRequestValidator: Validator[MarkCheckpointRequest] with
+  type Error = RideError
+
+  private val validCheckpoints = Set("landed", "arrivals_hall", "terminal_exit")
+
+  def validate(request: MarkCheckpointRequest): IO[RideError, MarkCheckpointRequest] = ZIO
+    .when(!validCheckpoints.contains(request.checkpoint.toLowerCase))(
+      ZIO.fail(
+        RideError.ValidationError(
+          s"Invalid checkpoint: '${request.checkpoint}'. Valid values: ${validCheckpoints.mkString(", ")}"
+        )
+      )
+    )
+    .as(request)

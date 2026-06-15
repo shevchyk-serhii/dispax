@@ -3,6 +3,7 @@ package com.shevchyk.notification.application
 import com.shevchyk.core.application.EventHub
 import com.shevchyk.core.domain.*
 import com.shevchyk.notification.repository.{
+  CheckpointNotificationRepository,
   InMemoryFcmTokenRepository,
   InMemoryNotificationRepository,
   NotificationRepository
@@ -26,13 +27,14 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
   private val baseLayers =
     EventHub.layer ++
       InMemoryNotificationRepository.layer ++
-      testFcmLayer
+      testFcmLayer ++
+      InMemoryCheckpointNotificationRepository.layer
 
   // Publish event, advance clock by 200ms, read notifications for one person.
   private def publishAndCollect(
       event: WebSocketEvent,
       forPerson: PersonId
-  ): ZIO[EventHub & FcmService & NotificationRepository & Scope, Throwable, List[com.shevchyk.notification.domain.AppNotification]] =
+  ): ZIO[EventHub & FcmService & NotificationRepository & CheckpointNotificationRepository & Scope, Throwable, List[com.shevchyk.notification.domain.AppNotification]] =
     for {
       _         <- PushNotificationListener.start
       eventHub  <- ZIO.service[EventHub]

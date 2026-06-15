@@ -2,6 +2,7 @@ package com.shevchyk.ride.domain
 
 import com.shevchyk.core.domain.*
 import java.time.Instant
+import zio.json.*
 
 /**
  * Shared ride scheduling policy, so the DTO validators and RideService agree.
@@ -18,6 +19,31 @@ object RidePolicy:
    */
   def isInThePast(time: Instant, now: Instant = Instant.now()): Boolean = time.isBefore(
     now.minusSeconds(ClockSkewToleranceSeconds)
+  )
+
+enum AirportCheckpoint:
+  case Landed, ArrivalsHall, TerminalExit
+
+  def isAfter(other: AirportCheckpoint): Boolean = ordinal > other.ordinal
+
+object AirportCheckpoint:
+
+  def fromString(s: String): Option[AirportCheckpoint] =
+    s.toLowerCase match
+      case "landed"        => Some(Landed)
+      case "arrivals_hall" => Some(ArrivalsHall)
+      case "terminal_exit" => Some(TerminalExit)
+      case _               => None
+
+  def toDbString(c: AirportCheckpoint): String =
+    c match
+      case Landed       => "landed"
+      case ArrivalsHall => "arrivals_hall"
+      case TerminalExit => "terminal_exit"
+
+  given JsonCodec[AirportCheckpoint] = JsonCodec.string.transformOrFail(
+    s => fromString(s).toRight(s"Unknown airport checkpoint: $s"),
+    toDbString
   )
 
 enum RideStatus:
@@ -100,7 +126,9 @@ final case class Ride(
     preferredDriverUsed: Boolean = false,
     poolId: Option[RidePoolId] = None,
     scheduleDayId: Option[java.util.UUID] = None,
-    invoiceId: Option[java.util.UUID] = None
+    invoiceId: Option[java.util.UUID] = None,
+    flightIsArrival: Option[Boolean] = None,
+    airportCheckpoint: Option[AirportCheckpoint] = None
 ):
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
@@ -111,6 +139,8 @@ final case class Ride(
   def canBeEdited: Boolean     = status == RideStatus.Requested || status == RideStatus.Assigned
 
   def isAirportTransfer: Boolean = specifics.exists(_.isInstanceOf[RideSpecifics.AirportTransfer])
+
+  def isArrivalAirportTransfer: Boolean = isAirportTransfer && flightIsArrival.getOrElse(false)
 
 final case class CreateRideRequest(
     clientId: PersonId,
@@ -156,5 +186,6 @@ enum RideError extends Throwable:
   case ExternalServiceError(service: String, cause: Throwable)
   case BusinessRuleViolation(rule: String, message: String)
   case TariffNotFound(id: TariffId)
+  case InvalidOperation(message: String)
 
 object RideError

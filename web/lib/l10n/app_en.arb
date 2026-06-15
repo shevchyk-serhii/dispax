@@ -143,5 +143,23 @@
   "about": "About",
   "version": "Version",
   "privacyPolicy": "Privacy Policy",
-  "termsOfService": "Terms of Service"
+  "termsOfService": "Terms of Service",
+
+  "checkpointLanded": "Landed",
+  "checkpointArrivalsHall": "Arrivals Hall",
+  "checkpointTerminalExit": "Terminal Exit",
+  "markCheckpointButton": "I'm here",
+  "airportCheckpointPanelTitle": "My location in terminal",
+  "checkpointNotifTitle": "Client reached {checkpoint}",
+  "@checkpointNotifTitle": {
+    "placeholders": {
+      "checkpoint": {"type": "String"}
+    }
+  },
+  "checkpointNotifBody": "Your client is at {checkpointName}.",
+  "@checkpointNotifBody": {
+    "placeholders": {
+      "checkpointName": {"type": "String"}
+    }
+  }
 }

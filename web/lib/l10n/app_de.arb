@@ -128,5 +128,23 @@
   "about": "Über",
   "version": "Version",
   "privacyPolicy": "Datenschutzrichtlinie",
-  "termsOfService": "Nutzungsbedingungen"
+  "termsOfService": "Nutzungsbedingungen",
+
+  "checkpointLanded": "Gelandet",
+  "checkpointArrivalsHall": "Ankunftshalle",
+  "checkpointTerminalExit": "Terminalausgang",
+  "markCheckpointButton": "Ich bin hier",
+  "airportCheckpointPanelTitle": "Mein Standort im Terminal",
+  "checkpointNotifTitle": "Fahrgast hat {checkpoint} erreicht",
+  "@checkpointNotifTitle": {
+    "placeholders": {
+      "checkpoint": {"type": "String"}
+    }
+  },
+  "checkpointNotifBody": "Ihr Fahrgast befindet sich bei {checkpointName}.",
+  "@checkpointNotifBody": {
+    "placeholders": {
+      "checkpointName": {"type": "String"}
+    }
+  }
 }

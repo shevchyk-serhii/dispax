@@ -1,7 +1,7 @@
 package com.shevchyk.ride.repository
 
 import com.shevchyk.core.domain.{RideId, PersonId, CompanyId}
-import com.shevchyk.ride.domain.{DriverEarnings, Ride, RideStatus}
+import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, Ride, RideStatus}
 import zio.*
 import java.time.{Instant, ZoneOffset}
 
@@ -158,6 +158,13 @@ class InMemoryRideRepository extends RideRepository:
   )
 
   override def clearReminders(rideId: RideId): Task[Unit] = ZIO.unit
+
+  override def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Unit] =
+    rides.update { m =>
+      m.get(rideId) match
+        case Some(ride) => m.updated(rideId, ride.copy(airportCheckpoint = Some(checkpoint)))
+        case None       => m
+    }.unit
 
 object InMemoryRideRepository:
   val layer: ZLayer[Any, Nothing, RideRepository] = ZLayer.succeed(new InMemoryRideRepository)

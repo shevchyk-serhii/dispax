@@ -64,5 +64,14 @@ object WebSocketEvent:
       companyId: UUID
   ) extends WebSocketEvent
 
+  final case class AirportCheckpointReached(
+      rideId: UUID,
+      driverId: UUID,
+      clientId: UUID,
+      checkpointType: String, // "landed" | "arrivals_hall" | "terminal_exit"
+      checkpointName: String, // human-readable display name
+      companyId: UUID
+  ) extends WebSocketEvent
+
   given JsonEncoder[WebSocketEvent] = DeriveJsonEncoder.gen[WebSocketEvent]
   given JsonDecoder[WebSocketEvent] = DeriveJsonDecoder.gen[WebSocketEvent]

@@ -1,7 +1,13 @@
 package com.shevchyk
 
 import com.shevchyk.ride.infrastructure.http.{RideRoutes, ExpenseRoutes, RideTemplateRoutes, StatsRoutes, ExportRoutes}
-import com.shevchyk.ride.application.service.{RideService, ClientLocationService, ChatService, ClientAddressService}
+import com.shevchyk.ride.application.service.{
+  RideService,
+  ClientLocationService,
+  AirportCheckpointService,
+  ChatService,
+  ClientAddressService
+}
 import com.shevchyk.ride.repository.{
   RideRepository,
   PostgresRideRepository,
@@ -84,6 +90,7 @@ import com.shevchyk.app.routes.GeofenceRoutes
 import com.shevchyk.notification.application.{FcmService, PushNotificationListener, LoggingEmailSmsService}
 import com.shevchyk.app.{ReminderScheduler, InvoiceReminderScheduler}
 import com.shevchyk.notification.repository.{
+  CheckpointNotificationRepository,
   InMemoryFcmTokenRepository,
   InMemoryNotificationRepository,
   NotificationRepository,
@@ -202,6 +209,7 @@ object Application extends ZIOAppDefault:
       ScheduleDayRepository.layer,
       ScheduleSvc.layer,
       ClientLocationRepository.layer,
+      AirportCheckpointService.layer,
       ClientLocationService.layer,
       ChatMessageRepository.layer,
       ChatService.layer,
@@ -212,6 +220,7 @@ object Application extends ZIOAppDefault:
       FcmTokenRepository.layer,
       FcmService.layer,
       SentReminderRepository.layer,
+      CheckpointNotificationRepository.layer,
       NotificationRepository.layer,
       LoggingEmailSmsService.layer,
       RideTemplateRepository.layer,

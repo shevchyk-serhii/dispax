@@ -128,5 +128,23 @@
   "about": "Про додаток",
   "version": "Версія",
   "privacyPolicy": "Політика конфіденційності",
-  "termsOfService": "Умови використання"
+  "termsOfService": "Умови використання",
+
+  "checkpointLanded": "Приземлився",
+  "checkpointArrivalsHall": "Зал прильотів",
+  "checkpointTerminalExit": "Вихід з терміналу",
+  "markCheckpointButton": "Я тут",
+  "airportCheckpointPanelTitle": "Моє місце в терміналі",
+  "checkpointNotifTitle": "Клієнт досяг {checkpoint}",
+  "@checkpointNotifTitle": {
+    "placeholders": {
+      "checkpoint": {"type": "String"}
+    }
+  },
+  "checkpointNotifBody": "Ваш клієнт знаходиться біля {checkpointName}.",
+  "@checkpointNotifBody": {
+    "placeholders": {
+      "checkpointName": {"type": "String"}
+    }
+  }
 }

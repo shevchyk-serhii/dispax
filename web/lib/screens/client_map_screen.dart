@@ -16,6 +16,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/date_utils.dart';
+import '../modules/flight_management/muc_checkpoints.dart';
 
 class ClientMapScreen extends StatefulWidget {
   const ClientMapScreen({super.key});
@@ -45,6 +46,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   String? _approachingBannerMessage;
   Timer? _pulseTimer;
   bool _pulseState = false;
+  final Set<String> _airportCheckpointSent = {};
 
   @override
   void initState() {
@@ -442,6 +444,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             _buildActiveRideInfo(),
             const SizedBox(height: AppDimensions.paddingMedium),
             _buildLocationSharingToggle(),
+            if (_activeRide!.isAirportTransfer &&
+                _activeRide!.isArrival &&
+                _activeRide!.status == RideStatus.inProgress) ...[
+              const SizedBox(height: AppDimensions.paddingMedium),
+              _buildAirportCheckpointPanel(),
+            ],
           ] else ...[
             const SizedBox(height: AppDimensions.paddingSmall),
             Text(
@@ -554,6 +562,79 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             ],
           ),
         ],
+      ],
+    );
+  }
+
+  int _checkpointOrdinal(String? key) {
+    const order = ['landed', 'arrivals_hall', 'terminal_exit'];
+    if (key == null) return -1;
+    return order.indexOf(key);
+  }
+
+  Widget _buildAirportCheckpointPanel() {
+    if (_activeRide == null) return const SizedBox.shrink();
+
+    final currentOrdinal = _checkpointOrdinal(_activeRide!.airportCheckpoint);
+
+    const checkpoints = [
+      ('landed', 'Landed'),
+      ('arrivals_hall', 'Arrivals Hall'),
+      ('terminal_exit', 'Terminal Exit'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'My location in terminal',
+          style: AppStyles.bodySmall.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: checkpoints.map((entry) {
+            final (key, label) = entry;
+            final buttonOrdinal = _checkpointOrdinal(key);
+            final isPassed = buttonOrdinal <= currentOrdinal;
+
+            return isPassed
+                ? OutlinedButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 16),
+                    label: Text(label),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF4CAF50),
+                      side: const BorderSide(color: Color(0xFF4CAF50)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    ),
+                  )
+                : ElevatedButton(
+                    onPressed: _airportCheckpointSent.contains(key)
+                        ? null
+                        : () async {
+                            try {
+                              await _rideService?.markAirportCheckpoint(_activeRide!.id, key);
+                              setState(() {
+                                _airportCheckpointSent.add(key);
+                                _activeRide = _activeRide!.copyWith(airportCheckpoint: key);
+                              });
+                            } catch (_) {
+                              // best-effort; silently ignore errors
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                    child: Text(label),
+                  );
+          }).toList(),
+        ),
       ],
     );
   }

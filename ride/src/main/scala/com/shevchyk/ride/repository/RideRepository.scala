@@ -1,6 +1,6 @@
 package com.shevchyk.ride.repository
 
-import com.shevchyk.ride.domain.{DriverEarnings, Ride, RideStatus}
+import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, Ride, RideStatus}
 import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId}
 import zio.*
 import java.time.Instant
@@ -41,6 +41,8 @@ trait RideRepository {
   def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]
   // Reset sent reminders for a ride (when pickupDateTime changes)
   def clearReminders(rideId: RideId): Task[Unit]
+  // Update the airport checkpoint column for an arrival-transfer ride
+  def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Unit]
 }
 
 object RideRepository {

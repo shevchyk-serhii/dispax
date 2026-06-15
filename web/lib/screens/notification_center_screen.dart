@@ -101,6 +101,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     'chat': 'Chat',
     'geofence': 'Geofence',
     'pool': 'Pools',
+    'airport_checkpoint': 'Checkpoints',
   };
 
   @override
