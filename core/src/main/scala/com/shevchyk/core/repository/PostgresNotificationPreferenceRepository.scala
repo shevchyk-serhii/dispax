@@ -35,14 +35,14 @@ final class PostgresNotificationPreferenceRepository(xa: Transactor[Task]) exten
       VALUES (${pref.id.value}, ${pref.personId.value}, ${pref.rideUpdates}, ${pref.chatMessages},
               ${pref.driverApproaching}, ${pref.geofenceAlerts}, ${pref.poolUpdates},
               ${pref.emailNotifications}, ${pref.smsNotifications},
-              ${pref.quietHoursStart}, ${pref.quietHoursEnd},
+              ${pref.quietHoursStart}::time, ${pref.quietHoursEnd}::time,
               NOW())
       ON CONFLICT (person_id) DO UPDATE SET
         ride_updates = ${pref.rideUpdates}, chat_messages = ${pref.chatMessages},
         driver_approaching = ${pref.driverApproaching}, geofence_alerts = ${pref.geofenceAlerts},
         pool_updates = ${pref.poolUpdates}, email_notifications = ${pref.emailNotifications},
         sms_notifications = ${pref.smsNotifications},
-        quiet_hours_start = ${pref.quietHoursStart}, quiet_hours_end = ${pref.quietHoursEnd},
+        quiet_hours_start = ${pref.quietHoursStart}::time, quiet_hours_end = ${pref.quietHoursEnd}::time,
         updated_at = NOW()
     """.update.run
       .transact(xa)
