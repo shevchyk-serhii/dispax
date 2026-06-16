@@ -36,10 +36,10 @@ object RideSchemas:
   given Schema[RecurrencePattern] = Schema.derivedEnumeration.defaultStringBased
 
   // Domain response bodies
-  given Schema[ChatMessage]  = Schema.derived
-  given Schema[RideRating]   = Schema.derived
-  given Schema[Expense]      = Schema.derived
-  given Schema[RideTemplate] = Schema.derived
+  given Schema[ChatMessage]   = Schema.derived
+  given Schema[RideRating]    = Schema.derived
+  given Schema[Expense]       = Schema.derived
+  given Schema[RideTemplate]  = Schema.derived
   given Schema[ClientAddress] = Schema.derived
 
   // Request bodies
@@ -51,16 +51,16 @@ object RideSchemas:
   given Schema[UpdateClientAddressRequest] = Schema.derived
 
   // Location responses
-  given Schema[LocationWithTimestamp]  = Schema.derived
-  given Schema[RideLocationsResponse]  = Schema.derived
+  given Schema[LocationWithTimestamp] = Schema.derived
+  given Schema[RideLocationsResponse] = Schema.derived
 
   // Export / stats responses
-  given Schema[DatevCsvSection]         = Schema.derived
-  given Schema[DatevSummarySection]     = Schema.derived
-  given Schema[DatevExportResponse]     = Schema.derived
-  given Schema[PayrollSummary]          = Schema.derived
-  given Schema[PeakHourEntry]           = Schema.derived
-  given Schema[ClientValueEntry]        = Schema.derived
-  given Schema[DriverPerformanceEntry]  = Schema.derived
-  given Schema[DriverRatingEntry]       = Schema.derived
-  given Schema[CancellationStatsEntry]  = Schema.derived
+  given Schema[DatevCsvSection]        = Schema.derived
+  given Schema[DatevSummarySection]    = Schema.derived
+  given Schema[DatevExportResponse]    = Schema.derived
+  given Schema[PayrollSummary]         = Schema.derived
+  given Schema[PeakHourEntry]          = Schema.derived
+  given Schema[ClientValueEntry]       = Schema.derived
+  given Schema[DriverPerformanceEntry] = Schema.derived
+  given Schema[DriverRatingEntry]      = Schema.derived
+  given Schema[CancellationStatsEntry] = Schema.derived

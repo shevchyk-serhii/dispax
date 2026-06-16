@@ -18,11 +18,11 @@ class BillableRide {
   });
 
   factory BillableRide.fromJson(Map<String, dynamic> json) => BillableRide(
-        rideId: json['rideId'] as String,
-        clientId: json['clientId'] as String,
-        pickupAddress: json['pickupAddress'] as String,
-        dropoffAddress: json['dropoffAddress'] as String,
-        pickupDatetime: DateTime.parse(json['pickupDatetime'] as String),
-        price: (json['price'] as num).toDouble(),
-      );
+    rideId: json['rideId'] as String,
+    clientId: json['clientId'] as String,
+    pickupAddress: json['pickupAddress'] as String,
+    dropoffAddress: json['dropoffAddress'] as String,
+    pickupDatetime: DateTime.parse(json['pickupDatetime'] as String),
+    price: (json['price'] as num).toDouble(),
+  );
 }

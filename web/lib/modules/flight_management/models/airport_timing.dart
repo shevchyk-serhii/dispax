@@ -95,15 +95,15 @@ class AirportTiming extends Equatable {
 
   @override
   List<Object?> get props => [
-        optimalEntryTime,
-        latestEntryTime,
-        travelTime,
-        bufferTime,
-        optimalParkingCost,
-        earlyEntryParkingCost,
-        savings,
-        flightStatus,
-        actualArrivalTime,
-        timeToDepart,
-      ];
+    optimalEntryTime,
+    latestEntryTime,
+    travelTime,
+    bufferTime,
+    optimalParkingCost,
+    earlyEntryParkingCost,
+    savings,
+    flightStatus,
+    actualArrivalTime,
+    timeToDepart,
+  ];
 }
