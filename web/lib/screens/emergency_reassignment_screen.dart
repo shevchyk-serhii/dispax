@@ -8,10 +8,12 @@ class EmergencyReassignmentScreen extends StatefulWidget {
   const EmergencyReassignmentScreen({super.key});
 
   @override
-  State<EmergencyReassignmentScreen> createState() => _EmergencyReassignmentScreenState();
+  State<EmergencyReassignmentScreen> createState() =>
+      _EmergencyReassignmentScreenState();
 }
 
-class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScreen> {
+class _EmergencyReassignmentScreenState
+    extends State<EmergencyReassignmentScreen> {
   List<Map<String, dynamic>> _reassignments = [];
   bool _isLoading = true;
   String? _error;
@@ -32,7 +34,8 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
       final apiClient = context.read<AuthBloc>().apiClient;
       final resp = await apiClient.get('/emergency/reassignments');
       setState(() {
-        _reassignments = (jsonDecode(resp.body) as List).cast<Map<String, dynamic>>();
+        _reassignments = (jsonDecode(resp.body) as List)
+            .cast<Map<String, dynamic>>();
         _isLoading = false;
       });
     } catch (e) {
@@ -98,7 +101,9 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                         onPressed: () async {
                           if (rideIdCtrl.text.isEmpty) return;
                           try {
-                            final apiClient = this.context.read<AuthBloc>().apiClient;
+                            final apiClient = this.context
+                                .read<AuthBloc>()
+                                .apiClient;
                             final resp = await apiClient.get(
                               '/emergency/suggest-drivers/${rideIdCtrl.text}',
                             );
@@ -124,16 +129,20 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                       labelText: 'Reason',
                       border: OutlineInputBorder(),
                     ),
-                    items: reasons.map((r) => DropdownMenuItem(
-                      value: r,
-                      child: Row(
-                        children: [
-                          Icon(reasonIcons[r], size: 20),
-                          const SizedBox(width: 8),
-                          Text(reasonLabels[r]!),
-                        ],
-                      ),
-                    )).toList(),
+                    items: reasons
+                        .map(
+                          (r) => DropdownMenuItem(
+                            value: r,
+                            child: Row(
+                              children: [
+                                Icon(reasonIcons[r], size: 20),
+                                const SizedBox(width: 8),
+                                Text(reasonLabels[r]!),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (v) {
                       if (v != null) setDialogState(() => selectedReason = v);
                     },
@@ -142,7 +151,13 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                   if (suggestedDrivers.isNotEmpty) ...[
                     const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Available Drivers:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      child: Text(
+                        'Available Drivers:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 6),
                     ...suggestedDrivers.map((d) {
@@ -152,17 +167,38 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
                           radius: 16,
-                          backgroundColor: isPreferred ? AppColors.warning.withAlpha(30) : Theme.of(context).colorScheme.surfaceContainerHighest,
+                          backgroundColor: isPreferred
+                              ? AppColors.warning.withAlpha(30)
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
                           child: Icon(
                             isPreferred ? Icons.star : Icons.person,
                             size: 16,
-                            color: isPreferred ? AppColors.warning : Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: isPreferred
+                                ? AppColors.warning
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        title: Text(d['name'] ?? '', style: const TextStyle(fontSize: 13)),
-                        subtitle: Text(d['phone'] ?? '', style: const TextStyle(fontSize: 11)),
+                        title: Text(
+                          d['name'] ?? '',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        subtitle: Text(
+                          d['phone'] ?? '',
+                          style: const TextStyle(fontSize: 11),
+                        ),
                         trailing: isPreferred
-                            ? const Text('Preferred', style: TextStyle(fontSize: 10, color: AppColors.warning, fontWeight: FontWeight.bold))
+                            ? const Text(
+                                'Preferred',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.warning,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
                             : null,
                         onTap: () {
                           setDialogState(() {
@@ -170,7 +206,9 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                           });
                         },
                         selected: newDriverIdCtrl.text == d['id'],
-                        selectedTileColor: Theme.of(context).colorScheme.primary.withAlpha(15),
+                        selectedTileColor: Theme.of(
+                          context,
+                        ).colorScheme.primary.withAlpha(15),
                       );
                     }),
                     const SizedBox(height: 12),
@@ -180,7 +218,8 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                     decoration: const InputDecoration(
                       labelText: 'New Driver ID (optional)',
                       border: OutlineInputBorder(),
-                      helperText: 'Leave empty to unassign and return to pending',
+                      helperText:
+                          'Leave empty to unassign and return to pending',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -214,15 +253,16 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                   await apiClient.post('/emergency/reassign', {
                     'rideId': rideIdCtrl.text,
                     'reason': selectedReason,
-                    if (newDriverIdCtrl.text.isNotEmpty) 'newDriverId': newDriverIdCtrl.text,
+                    if (newDriverIdCtrl.text.isNotEmpty)
+                      'newDriverId': newDriverIdCtrl.text,
                     if (notesCtrl.text.isNotEmpty) 'notes': notesCtrl.text,
                   });
                   if (dialogContext.mounted) Navigator.pop(dialogContext, true);
                 } catch (e) {
                   if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(content: Text('Error: $e')),
-                    );
+                    ScaffoldMessenger.of(
+                      dialogContext,
+                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
                   }
                 }
               },
@@ -254,36 +294,53 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          ElevatedButton(onPressed: _loadReassignments, child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : _reassignments.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.emergency, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
-                              const SizedBox(height: 12),
-                              Text('No emergency reassignments', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                            ],
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadReassignments,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(12),
-                            itemCount: _reassignments.length,
-                            itemBuilder: (context, index) => _buildReassignmentCard(_reassignments[index]),
-                          ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      ElevatedButton(
+                        onPressed: _loadReassignments,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : _reassignments.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.emergency,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No emergency reassignments',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadReassignments,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _reassignments.length,
+                    itemBuilder: (context, index) =>
+                        _buildReassignmentCard(_reassignments[index]),
+                  ),
+                ),
         ),
       ],
     );
@@ -294,7 +351,9 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [AppColors.errorStrong, AppColors.error]),
+        gradient: LinearGradient(
+          colors: [AppColors.errorStrong, AppColors.error],
+        ),
       ),
       child: SafeArea(
         bottom: false,
@@ -305,11 +364,19 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
             const Expanded(
               child: Text(
                 'Emergency Reassignments',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.add_circle_outline, color: Colors.white, size: 24),
+              icon: const Icon(
+                Icons.add_circle_outline,
+                color: Colors.white,
+                size: 24,
+              ),
               onPressed: _showCreateDialog,
             ),
             IconButton(
@@ -327,7 +394,8 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
     final status = r['status'] as String? ?? 'PENDING';
     final notes = r['notes'] as String?;
     final createdAt = r['createdAt'] as String? ?? '';
-    final originalDriverId = r['originalDriverId']?['value'] ?? r['originalDriverId'] ?? '';
+    final originalDriverId =
+        r['originalDriverId']?['value'] ?? r['originalDriverId'] ?? '';
     final newDriverId = r['newDriverId']?['value'] ?? r['newDriverId'];
     final rideId = r['rideId']?['value'] ?? r['rideId'] ?? '';
 
@@ -349,27 +417,43 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
                 Expanded(
                   child: Text(
                     _reasonLabel(reason),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: _statusColor(status).withAlpha(20),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     status,
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _statusColor(status)),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _statusColor(status),
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text('Ride: ${_shortId(rideId.toString())}', style: const TextStyle(fontSize: 12)),
+            Text(
+              'Ride: ${_shortId(rideId.toString())}',
+              style: const TextStyle(fontSize: 12),
+            ),
             Text(
               'Original driver: ${_shortId(originalDriverId.toString())}',
-              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             if (newDriverId != null)
               Text(
@@ -379,12 +463,22 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
             if (notes != null && notes.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(notes, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic)),
+                child: Text(
+                  notes,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ),
             const SizedBox(height: 4),
             Text(
               _formatDate(createdAt),
-              style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.outlineVariant),
+              style: TextStyle(
+                fontSize: 10,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
           ],
         ),
@@ -394,32 +488,48 @@ class _EmergencyReassignmentScreenState extends State<EmergencyReassignmentScree
 
   IconData _reasonIcon(String reason) {
     switch (reason) {
-      case 'DriverIllness': return Icons.sick;
-      case 'VehicleBreakdown': return Icons.car_crash;
-      case 'DriverNoShow': return Icons.person_off;
-      case 'Accident': return Icons.warning;
-      case 'PersonalEmergency': return Icons.emergency;
-      default: return Icons.more_horiz;
+      case 'DriverIllness':
+        return Icons.sick;
+      case 'VehicleBreakdown':
+        return Icons.car_crash;
+      case 'DriverNoShow':
+        return Icons.person_off;
+      case 'Accident':
+        return Icons.warning;
+      case 'PersonalEmergency':
+        return Icons.emergency;
+      default:
+        return Icons.more_horiz;
     }
   }
 
   String _reasonLabel(String reason) {
     switch (reason) {
-      case 'DriverIllness': return 'Driver Illness';
-      case 'VehicleBreakdown': return 'Vehicle Breakdown';
-      case 'DriverNoShow': return 'Driver No-Show';
-      case 'Accident': return 'Accident';
-      case 'PersonalEmergency': return 'Personal Emergency';
-      default: return reason;
+      case 'DriverIllness':
+        return 'Driver Illness';
+      case 'VehicleBreakdown':
+        return 'Vehicle Breakdown';
+      case 'DriverNoShow':
+        return 'Driver No-Show';
+      case 'Accident':
+        return 'Accident';
+      case 'PersonalEmergency':
+        return 'Personal Emergency';
+      default:
+        return reason;
     }
   }
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'PENDING': return AppColors.warning;
-      case 'REASSIGNED': return AppColors.success;
-      case 'CANCELLED': return Theme.of(context).colorScheme.onSurfaceVariant;
-      default: return Theme.of(context).colorScheme.onSurfaceVariant;
+      case 'PENDING':
+        return AppColors.warning;
+      case 'REASSIGNED':
+        return AppColors.success;
+      case 'CANCELLED':
+        return Theme.of(context).colorScheme.onSurfaceVariant;
+      default:
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 

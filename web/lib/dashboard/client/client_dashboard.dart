@@ -45,7 +45,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Discard changes?'),
-        content: const Text('You have unsaved ride details. If you leave, they will be lost.'),
+        content: const Text(
+          'You have unsaved ride details. If you leave, they will be lost.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -124,7 +126,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
           rideBloc: _rideBloc,
           formBloc: _createRideFormBloc,
           onCreated: () {
-            context.read<RideBloc>().add(RideLoadRequested(user: context.read<AuthBloc>().state.user!));
+            context.read<RideBloc>().add(
+              RideLoadRequested(user: context.read<AuthBloc>().state.user!),
+            );
             setState(() => _selectedIndex = 0);
           },
         );
@@ -157,7 +161,9 @@ class MyRidesTab extends StatelessWidget {
         if (rideState.status == RideStateStatus.initial) {
           final authState = context.read<AuthBloc>().state;
           if (authState.user != null) {
-             context.read<RideBloc>().add(RideLoadRequested(user: authState.user!));
+            context.read<RideBloc>().add(
+              RideLoadRequested(user: authState.user!),
+            );
           }
         }
 
@@ -173,21 +179,36 @@ class MyRidesTab extends StatelessWidget {
           );
         }
 
-        final activeRides = rideState.rides.where((ride) =>
-          ride.status != RideStatus.completed &&
-          ride.status != RideStatus.cancelled
-        ).toList();
+        final activeRides = rideState.rides
+            .where(
+              (ride) =>
+                  ride.status != RideStatus.completed &&
+                  ride.status != RideStatus.cancelled,
+            )
+            .toList();
 
         if (activeRides.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.event_available, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
+                Icon(
+                  Icons.event_available,
+                  size: 56,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
                 const SizedBox(height: 12),
-                Text('You have no active rides', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                Text(
+                  'You have no active rides',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 const SizedBox(height: 16),
-                const Text('Use "Book" tab to create one', style: TextStyle(fontSize: 12)),
+                const Text(
+                  'Use "Book" tab to create one',
+                  style: TextStyle(fontSize: 12),
+                ),
               ],
             ),
           );
@@ -200,8 +221,12 @@ class MyRidesTab extends StatelessWidget {
             itemBuilder: (context, index) {
               if (index == 0) {
                 final airportRides = activeRides
-                    .where((ride) => ride.isAirportTransfer &&
-                           (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress))
+                    .where(
+                      (ride) =>
+                          ride.isAirportTransfer &&
+                          (ride.status == RideStatus.assigned ||
+                              ride.status == RideStatus.inProgress),
+                    )
                     .toList();
 
                 if (airportRides.isEmpty) {
@@ -209,21 +234,33 @@ class MyRidesTab extends StatelessWidget {
                 }
 
                 return Column(
-                  children: airportRides.map((ride) => AirportEntryTimer(
-                    ride: ride,
-                    onEntryTimeReached: () {
-                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Departure time reached for flight ${ride.fullFlightInfo}')),
-                      );
-                    },
-                  )).toList(),
+                  children: airportRides
+                      .map(
+                        (ride) => AirportEntryTimer(
+                          ride: ride,
+                          onEntryTimeReached: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Departure time reached for flight ${ride.fullFlightInfo}',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                      .toList(),
                 );
               }
 
               final rideIndex = index - 1;
               final ride = activeRides[rideIndex];
-              final isTracking = ride.status == RideStatus.inProgress || ride.status == RideStatus.assigned;
-              final canCancel = ride.status == RideStatus.requested || ride.status == RideStatus.assigned;
+              final isTracking =
+                  ride.status == RideStatus.inProgress ||
+                  ride.status == RideStatus.assigned;
+              final canCancel =
+                  ride.status == RideStatus.requested ||
+                  ride.status == RideStatus.assigned;
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
@@ -240,11 +277,19 @@ class MyRidesTab extends StatelessWidget {
                         );
                       },
                       leading: CircleAvatar(
-                        backgroundColor: RideStatusStyles.getStatusColor(ride.status),
-                        child: Icon(RideStatusStyles.getStatusIcon(ride.status), color: Colors.white, size: 18),
+                        backgroundColor: RideStatusStyles.getStatusColor(
+                          ride.status,
+                        ),
+                        child: Icon(
+                          RideStatusStyles.getStatusIcon(ride.status),
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                       title: Text('${ride.from.address} → ${ride.to.address}'),
-                      subtitle: Text(AppDateUtils.formatDateTime(ride.pickupDateTime)),
+                      subtitle: Text(
+                        AppDateUtils.formatDateTime(ride.pickupDateTime),
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                     ),
                     if (isTracking || canCancel)
@@ -269,7 +314,10 @@ class MyRidesTab extends StatelessWidget {
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: () => _cancelRide(context, ride),
-                                  icon: const Icon(Icons.cancel_outlined, size: 16),
+                                  icon: const Icon(
+                                    Icons.cancel_outlined,
+                                    size: 16,
+                                  ),
                                   label: const Text('Cancel'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.error,
@@ -295,7 +343,9 @@ class MyRidesTab extends StatelessWidget {
       builder: (_) => const CancelRideDialog(isDispatcher: false),
     );
     if (result != null && context.mounted) {
-      final rideService = RideService(apiClient: context.read<AuthBloc>().apiClient);
+      final rideService = RideService(
+        apiClient: context.read<AuthBloc>().apiClient,
+      );
       try {
         await rideService.cancelRide(ride.id, result['reason'] as String);
         if (context.mounted) {
@@ -305,12 +355,11 @@ class MyRidesTab extends StatelessWidget {
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to cancel ride: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to cancel ride: $e')));
         }
       }
     }
   }
-
 }

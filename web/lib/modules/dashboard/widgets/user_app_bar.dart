@@ -67,7 +67,11 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
               backgroundColor: Theme.of(context).colorScheme.primary,
               child: Text(
                 user.name.split(' ').map((e) => e[0]).take(2).join(),
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -88,6 +92,8 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
         return 'Dispatcher Dashboard';
       case PersonRole.admin:
         return 'Admin Dashboard';
+      case PersonRole.superAdmin:
+        return 'Platform Admin';
     }
   }
 }

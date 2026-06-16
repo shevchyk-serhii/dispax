@@ -34,7 +34,9 @@ class RideActionsCard extends StatelessWidget {
     final secondaryActions = _getSecondaryActions(context);
     final dangerAction = _getDangerAction();
 
-    if (primaryAction == null && secondaryActions.isEmpty && dangerAction == null) {
+    if (primaryAction == null &&
+        secondaryActions.isEmpty &&
+        dangerAction == null) {
       return const SizedBox.shrink();
     }
 
@@ -122,31 +124,38 @@ class RideActionsCard extends StatelessWidget {
     final List<Widget> actions = [];
 
     if (onViewOnMap != null) {
-      actions.add(_buildSecondaryButton(
-        context,
-        icon: Icons.map_outlined,
-        label: 'View on Map',
-        onPressed: onViewOnMap!,
-      ));
+      actions.add(
+        _buildSecondaryButton(
+          context,
+          icon: Icons.map_outlined,
+          label: 'View on Map',
+          onPressed: onViewOnMap!,
+        ),
+      );
     }
 
     if (onShareRide != null) {
-      actions.add(_buildSecondaryButton(
-        context,
-        icon: Icons.ios_share_rounded,
-        label: 'Share',
-        onPressed: onShareRide!,
-      ));
+      actions.add(
+        _buildSecondaryButton(
+          context,
+          icon: Icons.ios_share_rounded,
+          label: 'Share',
+          onPressed: onShareRide!,
+        ),
+      );
     }
 
     if (onEditRide != null &&
-        (ride.status == RideStatus.requested || ride.status == RideStatus.assigned)) {
-      actions.add(_buildSecondaryButton(
-        context,
-        icon: Icons.edit_outlined,
-        label: 'Edit',
-        onPressed: onEditRide!,
-      ));
+        (ride.status == RideStatus.requested ||
+            ride.status == RideStatus.assigned)) {
+      actions.add(
+        _buildSecondaryButton(
+          context,
+          icon: Icons.edit_outlined,
+          label: 'Edit',
+          onPressed: onEditRide!,
+        ),
+      );
     }
 
     return actions;
@@ -154,7 +163,8 @@ class RideActionsCard extends StatelessWidget {
 
   Widget? _getDangerAction() {
     if (onCancelRide != null &&
-        (ride.status == RideStatus.requested || ride.status == RideStatus.assigned)) {
+        (ride.status == RideStatus.requested ||
+            ride.status == RideStatus.assigned)) {
       return _buildDangerButton(
         icon: Icons.cancel_outlined,
         label: 'Cancel Ride',

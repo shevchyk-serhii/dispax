@@ -37,10 +37,7 @@ class AuthBiometricSetupRequested extends AuthEvent {
   final bool enabled;
   final String? userId;
 
-  const AuthBiometricSetupRequested({
-    required this.enabled,
-    this.userId,
-  });
+  const AuthBiometricSetupRequested({required this.enabled, this.userId});
 
   @override
   List<Object?> get props => [enabled, userId];

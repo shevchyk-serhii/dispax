@@ -12,7 +12,8 @@ class CreateRideLocationSection extends StatefulWidget {
   const CreateRideLocationSection({super.key});
 
   @override
-  State<CreateRideLocationSection> createState() => _CreateRideLocationSectionState();
+  State<CreateRideLocationSection> createState() =>
+      _CreateRideLocationSectionState();
 }
 
 class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
@@ -26,7 +27,9 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
   void initState() {
     super.initState();
     _formBloc = context.read<CreateRideFormBloc>();
-    _addressService = ClientAddressService(apiClient: context.read<AuthBloc>().apiClient);
+    _addressService = ClientAddressService(
+      apiClient: context.read<AuthBloc>().apiClient,
+    );
 
     final currentClientId = _formBloc.state.selectedClientId;
     if (currentClientId != null) {
@@ -92,11 +95,18 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.location_on, color: AppColors.successStrong, size: 24),
+                    Icon(
+                      Icons.location_on,
+                      color: AppColors.successStrong,
+                      size: 24,
+                    ),
                     const SizedBox(width: AppDimensions.paddingSmall),
                     const Text(
                       'Ride Locations',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -108,19 +118,22 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                   initialValue: state.fromAddress,
                   suggestions: _savedAddresses,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Pick-up location is required';
+                    if (value == null || value.trim().isEmpty)
+                      return 'Pick-up location is required';
                     return null;
                   },
                   onChanged: (value) {
-                    context.read<CreateRideFormBloc>().add(FromAddressChanged(value));
+                    context.read<CreateRideFormBloc>().add(
+                      FromAddressChanged(value),
+                    );
                   },
                 ),
                 const SizedBox(height: AppDimensions.paddingSmall),
                 Center(
                   child: IconButton(
-                    onPressed: () => context
-                        .read<CreateRideFormBloc>()
-                        .add(const AddressesSwapped()),
+                    onPressed: () => context.read<CreateRideFormBloc>().add(
+                      const AddressesSwapped(),
+                    ),
                     icon: const Icon(Icons.swap_vert),
                     tooltip: 'Swap From / To',
                     style: IconButton.styleFrom(
@@ -136,11 +149,14 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                   initialValue: state.toAddress,
                   suggestions: _savedAddresses,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Drop-off location is required';
+                    if (value == null || value.trim().isEmpty)
+                      return 'Drop-off location is required';
                     return null;
                   },
                   onChanged: (value) {
-                    context.read<CreateRideFormBloc>().add(ToAddressChanged(value));
+                    context.read<CreateRideFormBloc>().add(
+                      ToAddressChanged(value),
+                    );
                   },
                 ),
               ],

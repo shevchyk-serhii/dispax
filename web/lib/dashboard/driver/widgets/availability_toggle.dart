@@ -60,7 +60,10 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Failed to update: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {
@@ -84,7 +87,9 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
               height: 12,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _isAvailable ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: _isAvailable
+                    ? AppColors.success
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 12),
@@ -103,7 +108,9 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
                     ),
                   ),
                   Text(
-                    _isAvailable ? 'You are accepting rides' : 'You are not accepting rides',
+                    _isAvailable
+                        ? 'You are accepting rides'
+                        : 'You are not accepting rides',
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.outlineVariant,

@@ -34,15 +34,23 @@ class RideStatusStyles {
     final isDark = brightness == Brightness.dark;
     switch (status) {
       case RideStatus.requested:
-        return isDark ? AppColors.rideRequestedBgDark : AppColors.rideRequestedBg;
+        return isDark
+            ? AppColors.rideRequestedBgDark
+            : AppColors.rideRequestedBg;
       case RideStatus.assigned:
         return isDark ? AppColors.rideAssignedBgDark : AppColors.rideAssignedBg;
       case RideStatus.inProgress:
-        return isDark ? AppColors.rideInProgressBgDark : AppColors.rideInProgressBg;
+        return isDark
+            ? AppColors.rideInProgressBgDark
+            : AppColors.rideInProgressBg;
       case RideStatus.completed:
-        return isDark ? AppColors.rideCompletedBgDark : AppColors.rideCompletedBg;
+        return isDark
+            ? AppColors.rideCompletedBgDark
+            : AppColors.rideCompletedBg;
       case RideStatus.cancelled:
-        return isDark ? AppColors.rideCancelledBgDark : AppColors.rideCancelledBg;
+        return isDark
+            ? AppColors.rideCancelledBgDark
+            : AppColors.rideCancelledBg;
     }
   }
 
@@ -55,7 +63,10 @@ class RideStatusStyles {
     Brightness brightness = Brightness.light,
   }) {
     if (brightness == Brightness.dark) {
-      return getStatusTextColor(status, brightness: brightness).withValues(alpha: 0.4);
+      return getStatusTextColor(
+        status,
+        brightness: brightness,
+      ).withValues(alpha: 0.4);
     }
     switch (status) {
       case RideStatus.requested:
@@ -82,15 +93,25 @@ class RideStatusStyles {
     final isDark = brightness == Brightness.dark;
     switch (status) {
       case RideStatus.requested:
-        return isDark ? AppColors.rideRequestedTextDark : AppColors.rideRequestedText;
+        return isDark
+            ? AppColors.rideRequestedTextDark
+            : AppColors.rideRequestedText;
       case RideStatus.assigned:
-        return isDark ? AppColors.rideAssignedTextDark : AppColors.rideAssignedText;
+        return isDark
+            ? AppColors.rideAssignedTextDark
+            : AppColors.rideAssignedText;
       case RideStatus.inProgress:
-        return isDark ? AppColors.rideInProgressTextDark : AppColors.rideInProgressText;
+        return isDark
+            ? AppColors.rideInProgressTextDark
+            : AppColors.rideInProgressText;
       case RideStatus.completed:
-        return isDark ? AppColors.rideCompletedTextDark : AppColors.rideCompletedText;
+        return isDark
+            ? AppColors.rideCompletedTextDark
+            : AppColors.rideCompletedText;
       case RideStatus.cancelled:
-        return isDark ? AppColors.rideCancelledTextDark : AppColors.rideCancelledText;
+        return isDark
+            ? AppColors.rideCancelledTextDark
+            : AppColors.rideCancelledText;
     }
   }
 
@@ -135,7 +156,8 @@ class RideStatusStyles {
   /// Pass [context] so the badge picks up the active theme brightness and
   /// renders correctly in dark mode; without it the badge falls back to the
   /// light palette.
-  static Widget createStatusBadge(RideStatus status, {
+  static Widget createStatusBadge(
+    RideStatus status, {
     BuildContext? context,
     double? fontSize,
     double? iconSize,
@@ -146,7 +168,8 @@ class RideStatusStyles {
         : Brightness.light;
     final textColor = getStatusTextColor(status, brightness: brightness);
     return Container(
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: getStatusBackgroundColor(status, brightness: brightness),
         borderRadius: BorderRadius.circular(12),
@@ -158,11 +181,7 @@ class RideStatusStyles {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            getStatusIcon(status),
-            size: iconSize ?? 16,
-            color: textColor,
-          ),
+          Icon(getStatusIcon(status), size: iconSize ?? 16, color: textColor),
           const SizedBox(width: 4),
           Text(
             getStatusDisplayName(status),

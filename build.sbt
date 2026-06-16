@@ -59,16 +59,18 @@ lazy val jsonDependencies = Seq(
 // and to interpret the same endpoints on the zio-http server. Version 1.11.x is
 // compatible with Scala 3.3.x, ZIO 2.1.x and zio-http 3.0.x.
 lazy val tapirVersion = "1.11.10"
+
 lazy val tapirDependencies = Seq(
-  "com.softwaremill.sttp.tapir" %% "tapir-core"            % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-zio"             % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-json-zio"        % tapirVersion
+  "com.softwaremill.sttp.tapir" %% "tapir-core"     % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-zio"      % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-json-zio" % tapirVersion
 )
+
 // Server interpreter + bundled Swagger UI. Only the api (root) module that mounts
 // the HTTP server needs these.
 lazy val tapirServerDependencies = Seq(
-  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"    % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle"  % tapirVersion
+  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"   % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
 )
 
 lazy val circeDependencies = Seq(

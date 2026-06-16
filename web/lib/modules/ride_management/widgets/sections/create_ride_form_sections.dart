@@ -15,14 +15,12 @@ import 'create_ride_driver_section.dart';
 class CreateRideFormSections extends StatelessWidget {
   final GlobalKey<FormState> formKey;
 
-  const CreateRideFormSections({
-    super.key,
-    required this.formKey,
-  });
+  const CreateRideFormSections({super.key, required this.formKey});
 
   @override
   Widget build(BuildContext context) {
-    final isDriver = context.read<AuthBloc>().state.user?.role == PersonRole.driver;
+    final isDriver =
+        context.read<AuthBloc>().state.user?.role == PersonRole.driver;
 
     return BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
       builder: (context, state) {
@@ -74,8 +72,13 @@ class _NotesSectionToggle extends StatelessWidget {
           shadowColor: AppColors.shadowMedium,
           child: SwitchListTile(
             value: state.showNotes,
-            onChanged: (_) => context.read<CreateRideFormBloc>().add(const NotesToggled()),
-            secondary: Icon(Icons.note_alt, color: AppColors.secretaryColor, size: 20),
+            onChanged: (_) =>
+                context.read<CreateRideFormBloc>().add(const NotesToggled()),
+            secondary: Icon(
+              Icons.note_alt,
+              color: AppColors.secretaryColor,
+              size: 20,
+            ),
             title: const Text(
               'Notes & Special Requirements',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -88,7 +91,9 @@ class _NotesSectionToggle extends StatelessWidget {
           curve: Curves.easeInOut,
           child: state.showNotes
               ? Padding(
-                  padding: const EdgeInsets.only(top: AppDimensions.paddingMedium),
+                  padding: const EdgeInsets.only(
+                    top: AppDimensions.paddingMedium,
+                  ),
                   child: CreateRideNotesSection(
                     notes: state.notes,
                     specialRequirements: state.specialRequirements,

@@ -31,9 +31,7 @@ class LoginCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(AppDimensions.radiusXLarge),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
@@ -53,7 +51,9 @@ class LoginCard extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: AppDimensions.paddingXLarge + AppDimensions.paddingSmall),
+            const SizedBox(
+              height: AppDimensions.paddingXLarge + AppDimensions.paddingSmall,
+            ),
 
             LoginForm(
               onSubmit: onSubmit,

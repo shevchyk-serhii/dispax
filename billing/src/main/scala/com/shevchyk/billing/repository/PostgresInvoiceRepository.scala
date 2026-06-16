@@ -379,5 +379,55 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
       .transact(xa)
       .map(_.map(toUnbilledRide))
 
+  // ---------------------------------------------------------------------------
+  // Platform-level (cross-tenant) methods — SuperAdmin only
+  // No taxi_company_id filter in any of these queries. Names are intentionally
+  // explicit (Platform / ByCompany) to make the cross-tenant intent auditable.
+  // ---------------------------------------------------------------------------
+
+  override def findAllPlatform(
+      status: Option[InvoiceStatus],
+      limit: Int,
+      offset: Int
+  ): Task[List[Invoice]] =
+    val base   = fr"SELECT" ++ invoiceColumns ++ fr"FROM invoices"
+    val where  = status.fold(Fragment.empty)(s => fr"WHERE status = ${InvoiceStatus.asString(s)}")
+    val paging = fr"ORDER BY created_at DESC LIMIT $limit OFFSET $offset"
+    (base ++ where ++ paging)
+      .query[InvoiceRow]
+      .to[List]
+      .transact(xa)
+      .map(_.map(toInvoice.tupled))
+
+  override def sumRevenueByCompany(
+      from: java.time.Instant,
+      to: java.time.Instant
+  ): Task[Map[java.util.UUID, BigDecimal]] =
+    sql"""
+      SELECT taxi_company_id, COALESCE(SUM(total_amount), 0)
+      FROM invoices
+      WHERE status = 'paid'
+        AND created_at >= $from
+        AND created_at <= $to
+      GROUP BY taxi_company_id
+    """
+      .query[(java.util.UUID, BigDecimal)]
+      .to[List]
+      .transact(xa)
+      .map(_.toMap)
+
+  override def countOverdueByCompany(): Task[Map[java.util.UUID, Int]] =
+    sql"""
+      SELECT taxi_company_id, COUNT(*)::int
+      FROM invoices
+      WHERE status = 'sent'
+        AND due_date < CURRENT_DATE
+      GROUP BY taxi_company_id
+    """
+      .query[(java.util.UUID, Int)]
+      .to[List]
+      .transact(xa)
+      .map(_.toMap)
+
 object PostgresInvoiceRepository:
   val layer: ZLayer[Transactor[Task], Nothing, InvoiceRepository] = ZLayer.fromFunction(PostgresInvoiceRepository(_))

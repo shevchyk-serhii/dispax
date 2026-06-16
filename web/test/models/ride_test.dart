@@ -37,8 +37,12 @@ void main() {
       final json = ride.toJson();
       final dateStr = json['pickupDateTime'] as String;
 
-      expect(dateStr.endsWith('Z'), isTrue,
-          reason: 'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr');
+      expect(
+        dateStr.endsWith('Z'),
+        isTrue,
+        reason:
+            'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr',
+      );
     });
 
     test('toJson serializes UTC DateTime as UTC (ends with Z)', () {
@@ -48,8 +52,12 @@ void main() {
       final json = ride.toJson();
       final dateStr = json['pickupDateTime'] as String;
 
-      expect(dateStr.endsWith('Z'), isTrue,
-          reason: 'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr');
+      expect(
+        dateStr.endsWith('Z'),
+        isTrue,
+        reason:
+            'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr',
+      );
       expect(dateStr, '2026-03-15T10:00:00.000Z');
     });
 
@@ -135,10 +143,7 @@ void main() {
 
     test('overrides specified fields', () {
       final original = TestFixtures.ride();
-      final copied = original.copyWith(
-        clientName: 'New Name',
-        price: 99.99,
-      );
+      final copied = original.copyWith(clientName: 'New Name', price: 99.99);
 
       expect(copied.clientName, 'New Name');
       expect(copied.price, 99.99);
@@ -192,10 +197,22 @@ void main() {
     });
 
     test('flightStatusIcon maps known statuses', () {
-      expect(TestFixtures.airportRide(flightStatus: 'On Time').flightStatusIcon, '✅');
-      expect(TestFixtures.airportRide(flightStatus: 'Delayed').flightStatusIcon, '⏰');
-      expect(TestFixtures.airportRide(flightStatus: 'Cancelled').flightStatusIcon, '❌');
-      expect(TestFixtures.airportRide(flightStatus: 'Other').flightStatusIcon, '❓');
+      expect(
+        TestFixtures.airportRide(flightStatus: 'On Time').flightStatusIcon,
+        '✅',
+      );
+      expect(
+        TestFixtures.airportRide(flightStatus: 'Delayed').flightStatusIcon,
+        '⏰',
+      );
+      expect(
+        TestFixtures.airportRide(flightStatus: 'Cancelled').flightStatusIcon,
+        '❌',
+      );
+      expect(
+        TestFixtures.airportRide(flightStatus: 'Other').flightStatusIcon,
+        '❓',
+      );
     });
 
     test('flightStatusIcon returns empty for null flightStatus', () {
@@ -236,7 +253,10 @@ void main() {
     });
 
     test('fullFlightInfo returns empty when no flight number', () {
-      final ride = TestFixtures.ride(isAirportTransfer: true, flightNumber: null);
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        flightNumber: null,
+      );
       expect(ride.fullFlightInfo, '');
     });
 

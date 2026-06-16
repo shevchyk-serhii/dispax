@@ -159,5 +159,41 @@ class InMemoryRideRepository extends RideRepository:
 
   override def clearReminders(rideId: RideId): Task[Unit] = ZIO.unit
 
+  // ---------------------------------------------------------------------------
+  // Platform-level analytics (SuperAdmin) — in-memory implementations
+  // ---------------------------------------------------------------------------
+
+  override def countAllRidesByStatus(): Task[Map[String, Int]] = rides.get.map(
+    _.values.groupBy(_.status.toString).map((k, v) => k -> v.size)
+  )
+
+  override def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal] = rides.get.map(
+    _.values
+      .filter(r =>
+        r.status == RideStatus.Completed &&
+          r.endTime.exists(t => !t.isBefore(from) && !t.isAfter(to))
+      )
+      .flatMap(r => r.finalPrice.orElse(r.estimatedPrice))
+      .sum
+  )
+
+  override def countRidesByCompany(from: Instant, to: Instant): Task[Map[java.util.UUID, Int]] = rides.get.map(
+    _.values
+      .filter(r => !r.requestTime.isBefore(from) && !r.requestTime.isAfter(to))
+      .groupBy(_.companyId.value)
+      .map((k, v) => k -> v.size)
+  )
+
+  override def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[java.util.UUID, BigDecimal]] =
+    rides.get.map(
+      _.values
+        .filter(r =>
+          r.status == RideStatus.Completed &&
+            r.endTime.exists(t => !t.isBefore(from) && !t.isAfter(to))
+        )
+        .groupBy(_.companyId.value)
+        .map((k, v) => k -> v.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).sum)
+    )
+
 object InMemoryRideRepository:
   val layer: ZLayer[Any, Nothing, RideRepository] = ZLayer.succeed(new InMemoryRideRepository)

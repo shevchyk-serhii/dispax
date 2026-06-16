@@ -53,22 +53,26 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          const SizedBox(height: 12),
-                          ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      child: _buildContent(),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _loadData, child: _buildContent()),
         ),
       ],
     );
@@ -90,7 +94,11 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
             const Expanded(
               child: Text(
                 'Driver Ratings',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
@@ -111,9 +119,16 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.star_border, size: 56, color: colorScheme.outlineVariant),
+            Icon(
+              Icons.star_border,
+              size: 56,
+              color: colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 12),
-            Text('No ratings data available', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            Text(
+              'No ratings data available',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
           ],
         ),
       );
@@ -147,7 +162,11 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                       backgroundColor: AppColors.driverColor.withAlpha(30),
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : '?',
-                        style: TextStyle(color: AppColors.driverColor, fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          color: AppColors.driverColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -155,18 +174,37 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text('$reviewCount reviews', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            '$reviewCount reviews',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.star, color: AppColors.warning, size: 20),
+                        const Icon(
+                          Icons.star,
+                          color: AppColors.warning,
+                          size: 20,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           avgRating.toStringAsFixed(1),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -175,11 +213,14 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                 // Star breakdown bar
                 const SizedBox(height: 8),
                 Row(
-                  children: List.generate(5, (i) => Icon(
-                    i < avgRating.round() ? Icons.star : Icons.star_border,
-                    color: AppColors.warning,
-                    size: 16,
-                  )),
+                  children: List.generate(
+                    5,
+                    (i) => Icon(
+                      i < avgRating.round() ? Icons.star : Icons.star_border,
+                      color: AppColors.warning,
+                      size: 16,
+                    ),
+                  ),
                 ),
                 // Recent reviews
                 if (recentReviews.isNotEmpty) ...[
@@ -195,11 +236,14 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            children: List.generate(5, (i) => Icon(
-                              i < rating ? Icons.star : Icons.star_border,
-                              color: AppColors.warning,
-                              size: 12,
-                            )),
+                            children: List.generate(
+                              5,
+                              (i) => Icon(
+                                i < rating ? Icons.star : Icons.star_border,
+                                color: AppColors.warning,
+                                size: 12,
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -207,11 +251,20 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 if (comment != null && comment.isNotEmpty)
-                                  Text(comment, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
+                                  Text(
+                                    comment,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
                                 if (date != null)
                                   Text(
                                     _formatDate(date),
-                                    style: TextStyle(fontSize: 10, color: colorScheme.outlineVariant),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: colorScheme.outlineVariant,
+                                    ),
                                   ),
                               ],
                             ),

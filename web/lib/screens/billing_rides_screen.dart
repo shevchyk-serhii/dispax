@@ -54,9 +54,17 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     });
     try {
       final companies = await _companyService.getCompanies();
-      if (mounted) setState(() { _companies = companies; _loadingCompanies = false; });
+      if (mounted)
+        setState(() {
+          _companies = companies;
+          _loadingCompanies = false;
+        });
     } catch (e) {
-      if (mounted) setState(() { _loadingCompanies = false; _error = e.toString(); });
+      if (mounted)
+        setState(() {
+          _loadingCompanies = false;
+          _error = e.toString();
+        });
     }
   }
 
@@ -71,14 +79,23 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     setState(() => _loadingRides = true);
     try {
       final rides = await _invoiceService.getBillableRides(company.id);
-      if (mounted) setState(() { _rides = rides; _loadingRides = false; });
+      if (mounted)
+        setState(() {
+          _rides = rides;
+          _loadingRides = false;
+        });
     } catch (e) {
-      if (mounted) setState(() { _loadingRides = false; _error = e.toString(); });
+      if (mounted)
+        setState(() {
+          _loadingRides = false;
+          _error = e.toString();
+        });
     }
   }
 
-  double get _selectedSubtotal =>
-      _rides.where((r) => _selectedRideIds.contains(r.rideId)).fold(0.0, (s, r) => s + r.price);
+  double get _selectedSubtotal => _rides
+      .where((r) => _selectedRideIds.contains(r.rideId))
+      .fold(0.0, (s, r) => s + r.price);
 
   double get _selectedTax => _selectedSubtotal * _taxRate / 100;
 
@@ -88,17 +105,28 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _creating = true);
     try {
-      final selected = _rides.where((r) => _selectedRideIds.contains(r.rideId)).toList();
+      final selected = _rides
+          .where((r) => _selectedRideIds.contains(r.rideId))
+          .toList();
       // Period is required by the backend; derive it from the selected rides.
       final dates = selected.map((r) => r.pickupDatetime).toList()..sort();
-      final invoice = await _invoiceService.createInvoice(CreateInvoiceRequest(
-        clientCompanyId: company.id,
-        periodFrom: DateTime(dates.first.year, dates.first.month, dates.first.day),
-        periodTo: DateTime(dates.last.year, dates.last.month, dates.last.day),
-        taxRate: _taxRate,
-        currency: 'EUR',
-      ));
-      final filled = await _invoiceService.fillFromRides(invoice.id, _selectedRideIds.toList());
+      final invoice = await _invoiceService.createInvoice(
+        CreateInvoiceRequest(
+          clientCompanyId: company.id,
+          periodFrom: DateTime(
+            dates.first.year,
+            dates.first.month,
+            dates.first.day,
+          ),
+          periodTo: DateTime(dates.last.year, dates.last.month, dates.last.day),
+          taxRate: _taxRate,
+          currency: 'EUR',
+        ),
+      );
+      final filled = await _invoiceService.fillFromRides(
+        invoice.id,
+        _selectedRideIds.toList(),
+      );
       if (!mounted) return;
       setState(() {
         _selectedRideIds.clear();
@@ -142,9 +170,13 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
               try {
                 final bytes = await _invoiceService.downloadPdf(invoice.id);
                 triggerPdfDownload(bytes, 'invoice-${invoice.number}.pdf');
-                messenger.showSnackBar(const SnackBar(content: Text('PDF heruntergeladen')));
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('PDF heruntergeladen')),
+                );
               } catch (e) {
-                messenger.showSnackBar(SnackBar(content: Text('PDF-Fehler: $e')));
+                messenger.showSnackBar(
+                  SnackBar(content: Text('PDF-Fehler: $e')),
+                );
               }
             },
             icon: const Icon(Icons.picture_as_pdf),
@@ -178,7 +210,10 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                 IconButton(
                   tooltip: 'Herunterladen',
                   icon: const Icon(Icons.download),
-                  onPressed: () => triggerPdfDownload(bytes, 'invoice-${invoice.number}.pdf'),
+                  onPressed: () => triggerPdfDownload(
+                    bytes,
+                    'invoice-${invoice.number}.pdf',
+                  ),
                 ),
                 IconButton(
                   tooltip: 'Schließen',
@@ -200,7 +235,10 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     final messenger = ScaffoldMessenger.of(context);
     Uint8List bytes;
     try {
-      bytes = await _invoiceService.downloadRideReceipt(ride.rideId, taxRate: _taxRate);
+      bytes = await _invoiceService.downloadRideReceipt(
+        ride.rideId,
+        taxRate: _taxRate,
+      );
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Quittung-Fehler: $e')));
       return;
@@ -259,7 +297,9 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                     prefixIcon: Icon(Icons.business),
                   ),
                   items: _companies
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
+                      .map(
+                        (c) => DropdownMenuItem(value: c, child: Text(c.name)),
+                      )
                       .toList(),
                   onChanged: _creating ? null : _onCompanySelected,
                 ),
@@ -293,7 +333,11 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, size: 56, color: AppColors.success),
+            Icon(
+              Icons.check_circle_outline,
+              size: 56,
+              color: AppColors.success,
+            ),
             const SizedBox(height: 12),
             Text(
               'Keine abrechenbaren Fahrten',
@@ -314,12 +358,12 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
           onChanged: _creating
               ? null
               : (v) => setState(() {
-                    if (v == true) {
-                      _selectedRideIds.add(ride.rideId);
-                    } else {
-                      _selectedRideIds.remove(ride.rideId);
-                    }
-                  }),
+                  if (v == true) {
+                    _selectedRideIds.add(ride.rideId);
+                  } else {
+                    _selectedRideIds.remove(ride.rideId);
+                  }
+                }),
           title: Text('${ride.pickupAddress} → ${ride.dropoffAddress}'),
           subtitle: Text(_fmtDateTime(ride.pickupDatetime)),
           secondary: Row(
@@ -359,7 +403,10 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                   child: Text(
                     '$count Fahrten · Netto €${_selectedSubtotal.toStringAsFixed(2)} · '
                     'MwSt €${_selectedTax.toStringAsFixed(2)} · Gesamt €${total.toStringAsFixed(2)}',
-                    style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 SizedBox(
@@ -367,8 +414,12 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                   child: TextFormField(
                     initialValue: _taxRate.toStringAsFixed(0),
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'MwSt %', isDense: true),
-                    onChanged: (v) => setState(() => _taxRate = double.tryParse(v) ?? 0),
+                    decoration: const InputDecoration(
+                      labelText: 'MwSt %',
+                      isDense: true,
+                    ),
+                    onChanged: (v) =>
+                        setState(() => _taxRate = double.tryParse(v) ?? 0),
                   ),
                 ),
               ],
@@ -379,7 +430,11 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
               child: FilledButton.icon(
                 onPressed: (count == 0 || _creating) ? null : _createInvoice,
                 icon: _creating
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Icon(Icons.receipt_long),
                 label: const Text('Rechnung erstellen'),
               ),

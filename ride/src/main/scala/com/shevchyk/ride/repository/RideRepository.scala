@@ -41,6 +41,33 @@ trait RideRepository {
   def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]
   // Reset sent reminders for a ride (when pickupDateTime changes)
   def clearReminders(rideId: RideId): Task[Unit]
+
+  // ---------------------------------------------------------------------------
+  // Platform-level (cross-tenant) analytics — SuperAdmin only.
+  // No company_id parameter in any of these methods. Names contain `All` or
+  // `Platform` to make the absence of tenant filtering explicit and grep-auditable.
+  // These methods must only be called from SuperAdminApi after requireSuperAdmin().
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Count of rides per status, across ALL companies.
+   */
+  def countAllRidesByStatus(): Task[Map[String, Int]]
+
+  /**
+   * Sum of final_price_amount for Completed rides in [from, to) across ALL companies.
+   */
+  def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]
+
+  /**
+   * Count of rides per company in [from, to), keyed by raw UUID.
+   */
+  def countRidesByCompany(from: Instant, to: Instant): Task[Map[java.util.UUID, Int]]
+
+  /**
+   * Sum of revenue per company in [from, to), keyed by raw UUID.
+   */
+  def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[java.util.UUID, BigDecimal]]
 }
 
 object RideRepository {

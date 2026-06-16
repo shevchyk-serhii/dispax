@@ -50,8 +50,12 @@ void main() {
       final json = request.toJson();
       final dateStr = json['pickupDateTime'] as String;
 
-      expect(dateStr.endsWith('Z'), isTrue,
-          reason: 'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr');
+      expect(
+        dateStr.endsWith('Z'),
+        isTrue,
+        reason:
+            'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr',
+      );
     });
 
     test('toJson serializes UTC DateTime as UTC (ends with Z)', () {
@@ -61,8 +65,12 @@ void main() {
       final json = request.toJson();
       final dateStr = json['pickupDateTime'] as String;
 
-      expect(dateStr.endsWith('Z'), isTrue,
-          reason: 'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr');
+      expect(
+        dateStr.endsWith('Z'),
+        isTrue,
+        reason:
+            'pickupDateTime must be UTC ISO-8601 (ending with Z), got: $dateStr',
+      );
       expect(dateStr, '2026-03-15T10:00:00.000Z');
     });
   });

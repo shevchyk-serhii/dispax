@@ -54,7 +54,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     ),
   );
   await plugin.show(
-    (message.messageId ?? message.sentTime?.millisecondsSinceEpoch.toString() ?? '').hashCode,
+    (message.messageId ??
+            message.sentTime?.millisecondsSinceEpoch.toString() ??
+            '')
+        .hashCode,
     notification.title,
     notification.body,
     const NotificationDetails(android: androidDetails, iOS: iosDetails),
@@ -64,9 +67,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 final themeModeNotifier = ValueNotifier<ThemeMode>(ThemeMode.system);
 
 ThemeMode themeFromString(String? value) => switch (value) {
-  'light'  => ThemeMode.light,
-  'dark'   => ThemeMode.dark,
-  _        => ThemeMode.system,
+  'light' => ThemeMode.light,
+  'dark' => ThemeMode.dark,
+  _ => ThemeMode.system,
 };
 
 void main() async {
@@ -79,9 +82,7 @@ void main() async {
   // bool.fromEnvironment non-const, which throws on the DDC/web compiler
   // and crashes main() before runApp (white screen). Skip it on web.
   if (!kIsWeb) {
-    MapboxOptions.setAccessToken(
-      'MAPBOX_PUBLIC_TOKEN_REMOVED',
-    );
+    MapboxOptions.setAccessToken('MAPBOX_PUBLIC_TOKEN_REMOVED');
   }
 
   try {
@@ -90,10 +91,15 @@ void main() async {
     );
 
     // Skip messaging on iOS simulator
-    final bool isIosSimulator = !kIsWeb && Platform.isIOS && !Platform.environment.containsKey('SIMULATOR_DEVICE_NAME');
-    
+    final bool isIosSimulator =
+        !kIsWeb &&
+        Platform.isIOS &&
+        !Platform.environment.containsKey('SIMULATOR_DEVICE_NAME');
+
     if (!isIosSimulator) {
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
       await PushNotificationService.instance.initialize();
     }
   } catch (e) {
@@ -118,19 +124,19 @@ class MyApp extends StatelessWidget {
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: themeModeNotifier,
         builder: (context, themeMode, _) => MaterialApp(
-        title: 'Dispax',
-        theme: AppTheme.theme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: themeMode,
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const AppRoot(),
-      ),
+          title: 'Dispax',
+          theme: AppTheme.theme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const AppRoot(),
+        ),
       ),
     );
   }
@@ -143,12 +149,11 @@ class AppRoot extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
-        if (authState.status == AuthStatus.initial || authState.status == AuthStatus.loading) {
+        if (authState.status == AuthStatus.initial ||
+            authState.status == AuthStatus.loading) {
           return const Scaffold(
             backgroundColor: AppColors.brand900,
-            body: Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
+            body: Center(child: CircularProgressIndicator(color: Colors.white)),
           );
         }
 
@@ -164,7 +169,9 @@ class AppRoot extends StatelessWidget {
               ),
               BlocProvider<ScheduleBloc>(
                 create: (context) => ScheduleBloc(
-                  scheduleService: ScheduleService(apiClient: authBloc.apiClient),
+                  scheduleService: ScheduleService(
+                    apiClient: authBloc.apiClient,
+                  ),
                 ),
               ),
             ],
@@ -210,10 +217,14 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
       }
     });
 
-    _fcmSubscription = PushNotificationService.instance.onMessage.listen((message) {
+    _fcmSubscription = PushNotificationService.instance.onMessage.listen((
+      message,
+    ) {
       if (!mounted) return;
       final type = message.data['type'];
-      if (type == 'ride_assigned' || type == 'ride_updated' || type == 'ride_created') {
+      if (type == 'ride_assigned' ||
+          type == 'ride_updated' ||
+          type == 'ride_created') {
         _refreshRides();
       }
     });

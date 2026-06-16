@@ -51,25 +51,24 @@ class AirportTransferCard extends StatelessWidget {
               children: [
                 Icon(
                   isAirportTransfer
-                    ? (isArrival ? Icons.flight_land : Icons.flight_takeoff)
-                    : Icons.flight,
+                      ? (isArrival ? Icons.flight_land : Icons.flight_takeoff)
+                      : Icons.flight,
                   color: Theme.of(context).colorScheme.primary,
-                  size: 24
+                  size: 24,
                 ),
                 const SizedBox(width: AppDimensions.paddingSmall),
                 const Text(
                   'Airport Transfer',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: AppDimensions.paddingMedium),
             SwitchListTile(
               title: const Text('Airport Transfer'),
-              subtitle: const Text('Enable if this is an airport pickup/drop-off'),
+              subtitle: const Text(
+                'Enable if this is an airport pickup/drop-off',
+              ),
               value: isAirportTransfer,
               onChanged: onAirportTransferChanged,
             ),
@@ -78,7 +77,9 @@ class AirportTransferCard extends StatelessWidget {
               const SizedBox(height: AppDimensions.paddingSmall),
               RadioGroup<bool>(
                 groupValue: isArrival,
-                onChanged: (v) { if (v != null) onArrivalChanged(v); },
+                onChanged: (v) {
+                  if (v != null) onArrivalChanged(v);
+                },
                 child: Row(
                   children: [
                     Expanded(
@@ -86,9 +87,18 @@ class AirportTransferCard extends StatelessWidget {
                         title: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.flight_takeoff, size: 16, color: AppColors.info),
+                            Icon(
+                              Icons.flight_takeoff,
+                              size: 16,
+                              color: AppColors.info,
+                            ),
                             const SizedBox(width: 4),
-                            Flexible(child: Text('Departure', overflow: TextOverflow.ellipsis)),
+                            Flexible(
+                              child: Text(
+                                'Departure',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         ),
                         subtitle: const Text('To airport'),
@@ -100,9 +110,18 @@ class AirportTransferCard extends StatelessWidget {
                         title: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.flight_land, size: 16, color: AppColors.success),
+                            Icon(
+                              Icons.flight_land,
+                              size: 16,
+                              color: AppColors.success,
+                            ),
                             const SizedBox(width: 4),
-                            Flexible(child: Text('Arrival', overflow: TextOverflow.ellipsis)),
+                            Flexible(
+                              child: Text(
+                                'Arrival',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         ),
                         subtitle: const Text('From airport'),
@@ -117,15 +136,21 @@ class AirportTransferCard extends StatelessWidget {
                 value: flightNumber,
                 labelText: 'Flight Number',
                 hintText: 'e.g. LH123, BA456',
-                prefixIconData: isArrival ? Icons.flight_land : Icons.flight_takeoff,
+                prefixIconData: isArrival
+                    ? Icons.flight_land
+                    : Icons.flight_takeoff,
                 prefixIconColor: AppColors.secretaryColor,
                 onChanged: onFlightNumberChanged ?? (_) {},
-                validator: flightNumberValidator ?? (isAirportTransfer ? (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Flight number is required for airport transfers';
-                  }
-                  return null;
-                } : null),
+                validator:
+                    flightNumberValidator ??
+                    (isAirportTransfer
+                        ? (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Flight number is required for airport transfers';
+                            }
+                            return null;
+                          }
+                        : null),
               ),
               const SizedBox(height: AppDimensions.paddingMedium),
               Row(
@@ -135,16 +160,25 @@ class AirportTransferCard extends StatelessWidget {
                       decoration: InputDecoration(
                         labelText: 'Gate',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
                         ),
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
                       ),
                       initialValue: selectedGate,
-                      items: gates.map((gate) => DropdownMenuItem(
-                        value: gate,
-                        child: Text(gate),
-                      )).toList(),
+                      items: gates
+                          .map(
+                            (gate) => DropdownMenuItem(
+                              value: gate,
+                              child: Text(gate),
+                            ),
+                          )
+                          .toList(),
                       onChanged: onGateChanged,
                     ),
                   ),
@@ -154,16 +188,25 @@ class AirportTransferCard extends StatelessWidget {
                       decoration: InputDecoration(
                         labelText: 'Terminal',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
                         ),
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
                       ),
                       initialValue: selectedTerminal,
-                      items: terminals.map((terminal) => DropdownMenuItem(
-                        value: terminal,
-                        child: Text(terminal),
-                      )).toList(),
+                      items: terminals
+                          .map(
+                            (terminal) => DropdownMenuItem(
+                              value: terminal,
+                              child: Text(terminal),
+                            ),
+                          )
+                          .toList(),
                       onChanged: onTerminalChanged,
                     ),
                   ),

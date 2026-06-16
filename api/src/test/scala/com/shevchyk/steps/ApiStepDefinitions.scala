@@ -2241,6 +2241,45 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     assert(lastResponseBody.nonEmpty, "Response should contain entries")
   }
 
+  // ─── SuperAdmin step definitions ─────────────────────────────────────────
+
+  /**
+   * SuperAdmin has no company and uses a special static token that TestApplication's
+   * testJwtServiceLayer will NOT find in testStaticTokenPayloads, so it falls back to
+   * real JWT validation. We generate a real JWT with role=SuperAdmin, companyId=None.
+   *
+   * The TestApplication's JwtService validates real tokens via the real JwtServiceImpl.
+   * So we produce a signed JWT here with the shared test secret.
+   */
+  Given("""^I am authenticated as a superadmin$""") { () =>
+    // Use a dynamically-signed JWT with role SuperAdmin and no companyId.
+    // Use JwtConfig.live so the secret/issuer/audience match what TestApplication uses.
+    import com.shevchyk.auth.config.JwtConfig
+    import com.shevchyk.auth.service.JwtService
+    import com.shevchyk.core.domain.*
+    val runtime = Runtime.default
+    val token = Unsafe.unsafe { implicit u =>
+      runtime.unsafe.run(
+        ZIO
+          .serviceWithZIO[JwtService](
+            _.generateToken(
+              Person(
+                id = PersonId(UUID.fromString("f0f0f0f0-f0f0-f0f0-f0f0-f0f0f0f0f0f0")),
+                email = "superadmin-bdd@dispax.de",
+                name = "BDD SuperAdmin",
+                role = PersonRole.SuperAdmin,
+                companyId = None,
+                passwordHash = "hash"
+              )
+            )
+          )
+          .provide(JwtConfig.live >>> JwtService.live)
+      ).getOrThrow()
+    }
+    authToken = Some(token)
+    currentUserId = Some(PersonId(UUID.fromString("f0f0f0f0-f0f0-f0f0-f0f0-f0f0f0f0f0f0")))
+  }
+
   def getMockResponseBody(requestPath: String, method: String): String = {
     (method, requestPath) match {
       case ("GET", p) if p.contains("/api/flights/") && p.endsWith("/arrivals")   => """[

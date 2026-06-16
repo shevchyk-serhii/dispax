@@ -36,7 +36,10 @@ class _ClientListPanelState extends State<ClientListPanel> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Manage Clients', style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary)),
+        title: Text(
+          'Manage Clients',
+          style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary),
+        ),
         backgroundColor: AppColors.secretaryColor,
         foregroundColor: AppColors.textOnPrimary,
         elevation: AppDimensions.appBarElevation,
@@ -69,16 +72,22 @@ class _ClientListPanelState extends State<ClientListPanel> {
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
-                          context.read<ClientBloc>().add(const ClientSearchRequested(query: ''));
+                          context.read<ClientBloc>().add(
+                            const ClientSearchRequested(query: ''),
+                          );
                         },
                       )
                     : null,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusMedium,
+                  ),
                 ),
               ),
               onChanged: (query) {
-                context.read<ClientBloc>().add(ClientSearchRequested(query: query));
+                context.read<ClientBloc>().add(
+                  ClientSearchRequested(query: query),
+                );
                 setState(() {});
               },
             ),
@@ -95,13 +104,19 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: AppColors.error,
+                        ),
                         const SizedBox(height: 12),
                         Text(state.errorMessage ?? 'An error occurred'),
                         const SizedBox(height: 12),
                         ElevatedButton(
                           onPressed: () {
-                            context.read<ClientBloc>().add(const ClientLoadRequested());
+                            context.read<ClientBloc>().add(
+                              const ClientLoadRequested(),
+                            );
                           },
                           child: const Text('Retry'),
                         ),
@@ -117,11 +132,21 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.people_outline, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+                        Icon(
+                          Icons.people_outline,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
                         const SizedBox(height: 16),
                         Text(
-                          state.searchQuery.isNotEmpty ? 'No clients match your search' : 'No clients yet',
-                          style: AppStyles.bodyLarge.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          state.searchQuery.isNotEmpty
+                              ? 'No clients match your search'
+                              : 'No clients yet',
+                          style: AppStyles.bodyLarge.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -133,7 +158,9 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     context.read<ClientBloc>().add(const ClientLoadRequested());
                   },
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingMedium),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppDimensions.paddingMedium,
+                    ),
                     itemCount: clients.length,
                     itemBuilder: (context, index) {
                       return _buildClientCard(context, clients[index]);
@@ -177,7 +204,14 @@ class _ClientListPanelState extends State<ClientListPanel> {
                   color: AppColors.warningBorder,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text('VIP', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.warning)),
+                child: const Text(
+                  'VIP',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.warning,
+                  ),
+                ),
               ),
             ],
           ],
@@ -202,7 +236,10 @@ class _ClientListPanelState extends State<ClientListPanel> {
             const PopupMenuItem(value: 'edit', child: Text('Edit')),
             const PopupMenuItem(
               value: 'deactivate',
-              child: Text('Deactivate', style: TextStyle(color: AppColors.error)),
+              child: Text(
+                'Deactivate',
+                style: TextStyle(color: AppColors.error),
+              ),
             ),
           ],
         ),
@@ -240,7 +277,9 @@ class _ClientListPanelState extends State<ClientListPanel> {
                       labelText: 'Name',
                       prefixIcon: Icon(Icons.person),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? 'Name is required'
+                        : null,
                   ),
                   const SizedBox(height: AppDimensions.paddingMedium),
                   TextFormField(
@@ -251,7 +290,8 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Email is required';
+                      if (v == null || v.trim().isEmpty)
+                        return 'Email is required';
                       if (!v.contains('@')) return 'Invalid email';
                       return null;
                     },
@@ -275,18 +315,22 @@ class _ClientListPanelState extends State<ClientListPanel> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.secretaryColor),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.secretaryColor,
+              ),
               onPressed: () {
                 if (formKey.currentState!.validate()) {
-                  context.read<ClientBloc>().add(ClientCreateRequested(
-                    request: CreateUserRequest(
-                      name: nameController.text.trim(),
-                      email: emailController.text.trim(),
-                      phone: phoneController.text.trim().isNotEmpty
-                          ? phoneController.text.trim()
-                          : null,
+                  context.read<ClientBloc>().add(
+                    ClientCreateRequested(
+                      request: CreateUserRequest(
+                        name: nameController.text.trim(),
+                        email: emailController.text.trim(),
+                        phone: phoneController.text.trim().isNotEmpty
+                            ? phoneController.text.trim()
+                            : null,
+                      ),
                     ),
-                  ));
+                  );
                   Navigator.of(dialogContext).pop();
                 }
               },
@@ -321,7 +365,9 @@ class _ClientListPanelState extends State<ClientListPanel> {
                       labelText: 'Name',
                       prefixIcon: Icon(Icons.person),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? 'Name is required'
+                        : null,
                   ),
                   const SizedBox(height: AppDimensions.paddingMedium),
                   TextFormField(
@@ -332,7 +378,8 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Email is required';
+                      if (v == null || v.trim().isEmpty)
+                        return 'Email is required';
                       if (!v.contains('@')) return 'Invalid email';
                       return null;
                     },
@@ -356,19 +403,23 @@ class _ClientListPanelState extends State<ClientListPanel> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.secretaryColor),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.secretaryColor,
+              ),
               onPressed: () {
                 if (formKey.currentState!.validate()) {
-                  context.read<ClientBloc>().add(ClientUpdateRequested(
-                    clientId: client.id,
-                    request: UpdateUserRequest(
-                      name: nameController.text.trim(),
-                      email: emailController.text.trim(),
-                      phone: phoneController.text.trim().isNotEmpty
-                          ? phoneController.text.trim()
-                          : null,
+                  context.read<ClientBloc>().add(
+                    ClientUpdateRequested(
+                      clientId: client.id,
+                      request: UpdateUserRequest(
+                        name: nameController.text.trim(),
+                        email: emailController.text.trim(),
+                        phone: phoneController.text.trim().isNotEmpty
+                            ? phoneController.text.trim()
+                            : null,
+                      ),
                     ),
-                  ));
+                  );
                   Navigator.of(dialogContext).pop();
                 }
               },

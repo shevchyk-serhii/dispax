@@ -35,15 +35,15 @@ void main() {
 
   group('InvoiceItem.fromJson', () {
     Map<String, dynamic> _itemJson({String? rideId}) => {
-          'id': 'item-1',
-          'invoiceId': 'inv-1',
-          if (rideId != null) 'rideId': rideId,
-          'description': 'Airport MUC → Marienplatz',
-          'quantity': 1,
-          'unitPrice': 85.0,
-          'total': 85.0,
-          'createdAt': '2026-05-15T10:00:00.000Z',
-        };
+      'id': 'item-1',
+      'invoiceId': 'inv-1',
+      if (rideId != null) 'rideId': rideId,
+      'description': 'Airport MUC → Marienplatz',
+      'quantity': 1,
+      'unitPrice': 85.0,
+      'total': 85.0,
+      'createdAt': '2026-05-15T10:00:00.000Z',
+    };
 
     test('parses all fields correctly', () {
       final item = InvoiceItem.fromJson(_itemJson(rideId: 'ride-99'));
@@ -86,30 +86,29 @@ void main() {
       String? paidAt,
       String? reminderSentAt,
       String? pdfPath,
-    }) =>
-        {
-          'id': 'inv-1',
-          'number': 'INV-2026-0001',
-          'clientCompanyId': 'cc-1',
-          'taxiCompanyId': 'tc-1',
-          'status': status,
-          'periodFrom': '2026-01-01',
-          'periodTo': '2026-01-31',
-          'subtotalAmount': 100.0,
-          'taxRate': 19.0,
-          'taxAmount': 19.0,
-          'totalAmount': 119.0,
-          'currency': 'EUR',
-          'items': items,
-          'createdAt': '2026-01-01T12:00:00.000Z',
-          'updatedAt': '2026-01-02T08:00:00.000Z',
-          if (notes != null) 'notes': notes,
-          if (dueDate != null) 'dueDate': dueDate,
-          if (sentAt != null) 'sentAt': sentAt,
-          if (paidAt != null) 'paidAt': paidAt,
-          if (reminderSentAt != null) 'reminderSentAt': reminderSentAt,
-          if (pdfPath != null) 'pdfPath': pdfPath,
-        };
+    }) => {
+      'id': 'inv-1',
+      'number': 'INV-2026-0001',
+      'clientCompanyId': 'cc-1',
+      'taxiCompanyId': 'tc-1',
+      'status': status,
+      'periodFrom': '2026-01-01',
+      'periodTo': '2026-01-31',
+      'subtotalAmount': 100.0,
+      'taxRate': 19.0,
+      'taxAmount': 19.0,
+      'totalAmount': 119.0,
+      'currency': 'EUR',
+      'items': items,
+      'createdAt': '2026-01-01T12:00:00.000Z',
+      'updatedAt': '2026-01-02T08:00:00.000Z',
+      if (notes != null) 'notes': notes,
+      if (dueDate != null) 'dueDate': dueDate,
+      if (sentAt != null) 'sentAt': sentAt,
+      if (paidAt != null) 'paidAt': paidAt,
+      if (reminderSentAt != null) 'reminderSentAt': reminderSentAt,
+      if (pdfPath != null) 'pdfPath': pdfPath,
+    };
 
     test('parses required fields correctly', () {
       final inv = Invoice.fromJson(_invoiceJson());
@@ -139,14 +138,16 @@ void main() {
     });
 
     test('parses optional fields when present', () {
-      final inv = Invoice.fromJson(_invoiceJson(
-        notes: 'Bitte bis 28.02 zahlen',
-        dueDate: '2026-02-28',
-        sentAt: '2026-01-10T09:00:00.000Z',
-        paidAt: '2026-02-01T14:30:00.000Z',
-        reminderSentAt: '2026-03-05T08:00:00.000Z',
-        pdfPath: '/tmp/invoices/INV-2026-0001.pdf',
-      ));
+      final inv = Invoice.fromJson(
+        _invoiceJson(
+          notes: 'Bitte bis 28.02 zahlen',
+          dueDate: '2026-02-28',
+          sentAt: '2026-01-10T09:00:00.000Z',
+          paidAt: '2026-02-01T14:30:00.000Z',
+          reminderSentAt: '2026-03-05T08:00:00.000Z',
+          pdfPath: '/tmp/invoices/INV-2026-0001.pdf',
+        ),
+      );
       expect(inv.notes, 'Bitte bis 28.02 zahlen');
       expect(inv.dueDate, DateTime(2026, 2, 28));
       expect(inv.sentAt, DateTime.parse('2026-01-10T09:00:00.000Z'));
@@ -179,8 +180,11 @@ void main() {
         'Cancelled': InvoiceStatus.cancelled,
       }.entries) {
         final inv = Invoice.fromJson(_invoiceJson(status: entry.key));
-        expect(inv.status, entry.value,
-            reason: 'status "${entry.key}" should map to ${entry.value}');
+        expect(
+          inv.status,
+          entry.value,
+          reason: 'status "${entry.key}" should map to ${entry.value}',
+        );
       }
     });
   });

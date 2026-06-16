@@ -144,7 +144,9 @@ class RideService {
       } else if (response.statusCode == 404) {
         return false;
       } else {
-        throw ApiException('Failed to update ride status: ${response.statusCode}');
+        throw ApiException(
+          'Failed to update ride status: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw ApiException('Error updating ride status: $e');
@@ -159,7 +161,9 @@ class RideService {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((json) => Ride.fromJson(json)).toList();
       } else {
-        throw ApiException('Failed to fetch client rides: ${response.statusCode}');
+        throw ApiException(
+          'Failed to fetch client rides: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw ApiException('Error fetching client rides: $e');
@@ -174,7 +178,9 @@ class RideService {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((json) => Ride.fromJson(json)).toList();
       } else {
-        throw ApiException('Failed to fetch pending rides: ${response.statusCode}');
+        throw ApiException(
+          'Failed to fetch pending rides: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw ApiException('Error fetching pending rides: $e');
@@ -183,9 +189,10 @@ class RideService {
 
   Future<Ride> assignDriver(String rideId, String driverId) async {
     try {
-      final response = await privateApiClient.put('/rides/$rideId/assign-driver', {
-        'driverId': driverId,
-      });
+      final response = await privateApiClient.put(
+        '/rides/$rideId/assign-driver',
+        {'driverId': driverId},
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> json = jsonDecode(response.body);
@@ -200,9 +207,10 @@ class RideService {
 
   Future<Ride> reassignDriver(String rideId, String newDriverId) async {
     try {
-      final response = await privateApiClient.put('/rides/$rideId/reassign-driver', {
-        'driverId': newDriverId,
-      });
+      final response = await privateApiClient.put(
+        '/rides/$rideId/reassign-driver',
+        {'driverId': newDriverId},
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> json = jsonDecode(response.body);
@@ -215,13 +223,19 @@ class RideService {
     }
   }
 
-  Future<void> updateDriverLocation(String driverId, double latitude, double longitude) async {
+  Future<void> updateDriverLocation(
+    String driverId,
+    double latitude,
+    double longitude,
+  ) async {
     try {
-      final response = await privateApiClient.put('/drivers/$driverId/location', {
-        'latitude': latitude,
-        'longitude': longitude,
-      });
-      debugPrint('📍 Location update: ${response.statusCode} ($latitude, $longitude)');
+      final response = await privateApiClient.put(
+        '/drivers/$driverId/location',
+        {'latitude': latitude, 'longitude': longitude},
+      );
+      debugPrint(
+        '📍 Location update: ${response.statusCode} ($latitude, $longitude)',
+      );
     } catch (e) {
       debugPrint('📍 Location update failed: $e');
     }
@@ -229,7 +243,9 @@ class RideService {
 
   Future<Map<String, dynamic>?> getDriverProximity(String rideId) async {
     try {
-      final response = await privateApiClient.get('/rides/$rideId/driver-location');
+      final response = await privateApiClient.get(
+        '/rides/$rideId/driver-location',
+      );
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -240,7 +256,11 @@ class RideService {
     }
   }
 
-  Future<void> updateClientLocation(String rideId, double latitude, double longitude) async {
+  Future<void> updateClientLocation(
+    String rideId,
+    double latitude,
+    double longitude,
+  ) async {
     try {
       await privateApiClient.post('/rides/$rideId/client-location', {
         'latitude': latitude,

@@ -23,9 +23,7 @@ class EarningsScreen extends StatelessWidget {
         return cubit;
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('My Earnings'),
-        ),
+        appBar: AppBar(title: const Text('My Earnings')),
         body: AppTheme.buildGradientContainer(
           colors: AppColors.driverGradient,
           child: const _EarningsBody(),
@@ -238,7 +236,12 @@ class _EarningsBody extends StatelessWidget {
     );
   }
 
-  Widget _bar(ColorScheme colorScheme, EarningsBucket bucket, double maxAmount, String period) {
+  Widget _bar(
+    ColorScheme colorScheme,
+    EarningsBucket bucket,
+    double maxAmount,
+    String period,
+  ) {
     final fraction = maxAmount == 0 ? 0.0 : bucket.amount / maxAmount;
     final label = period == 'day'
         ? '${bucket.bucketStart.hour}'

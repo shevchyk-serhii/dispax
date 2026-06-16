@@ -367,7 +367,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     const SizedBox(width: 4),
                     Text(
                       ride.flightNumber!,
-                      style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ],
                 ),

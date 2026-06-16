@@ -51,9 +51,17 @@ void main() {
     test('filteredClients filters by phone', () {
       final clients = [
         TestFixtures.person(
-            id: 'c1', name: 'Alice', email: 'a@t.com', phone: '+491111'),
+          id: 'c1',
+          name: 'Alice',
+          email: 'a@t.com',
+          phone: '+491111',
+        ),
         TestFixtures.person(
-            id: 'c2', name: 'Bob', email: 'b@t.com', phone: '+492222'),
+          id: 'c2',
+          name: 'Bob',
+          email: 'b@t.com',
+          phone: '+492222',
+        ),
       ];
       final state = ClientState(
         status: ClientStateStatus.loaded,

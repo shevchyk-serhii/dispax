@@ -27,7 +27,10 @@ class ExpenseService {
 
   Future<Expense> createExpense(CreateExpenseRequest request) async {
     try {
-      final response = await privateApiClient.post('/expenses', request.toJson());
+      final response = await privateApiClient.post(
+        '/expenses',
+        request.toJson(),
+      );
 
       if (response.statusCode == 201) {
         return Expense.fromJson(jsonDecode(response.body));

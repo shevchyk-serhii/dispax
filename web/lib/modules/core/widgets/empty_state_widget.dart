@@ -23,7 +23,11 @@ class EmptyStateWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+              Icon(
+                icon,
+                size: 64,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               const SizedBox(height: 16),
             ],
             Text(

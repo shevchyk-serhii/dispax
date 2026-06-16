@@ -39,7 +39,9 @@ class LocationOptionItem extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                isSelected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
                 color: isSelected
                     ? AppColors.clientColor
                     : AppColors.textOnPrimary.withAlpha(128),
@@ -50,7 +52,9 @@ class LocationOptionItem extends StatelessWidget {
                   location,
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.textOnPrimary,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
               ),

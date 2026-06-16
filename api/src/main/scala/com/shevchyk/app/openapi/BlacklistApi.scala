@@ -30,54 +30,49 @@ object BlacklistApi:
 
   // -- Endpoint descriptions ------------------------------------------------
 
-  val listEndpoint =
-    secureEndpoint.get
-      .in("api" / "blacklist")
-      .out(jsonBody[List[BlacklistEntry]])
-      .tag(blacklistTag)
-      .summary("List blacklist entries for the company (dispatcher, admin)")
+  val listEndpoint = secureEndpoint.get
+    .in("api" / "blacklist")
+    .out(jsonBody[List[BlacklistEntry]])
+    .tag(blacklistTag)
+    .summary("List blacklist entries for the company (dispatcher, admin)")
 
-  val createEndpoint =
-    secureEndpoint.post
-      .in("api" / "blacklist")
-      .in(jsonBody[CreateBlacklistRequest])
-      .out(statusCode(StatusCode.Created).and(jsonBody[BlacklistEntry]))
-      .tag(blacklistTag)
-      .summary("Add a blacklist entry (dispatcher, admin)")
+  val createEndpoint = secureEndpoint.post
+    .in("api" / "blacklist")
+    .in(jsonBody[CreateBlacklistRequest])
+    .out(statusCode(StatusCode.Created).and(jsonBody[BlacklistEntry]))
+    .tag(blacklistTag)
+    .summary("Add a blacklist entry (dispatcher, admin)")
 
-  val checkEndpoint =
-    secureEndpoint.get
-      .in("api" / "blacklist" / "check")
-      .in(query[Option[String]]("clientId"))
-      .in(query[Option[String]]("driverId"))
-      .out(stringBody.map(s => s)(s => s))
-      .tag(blacklistTag)
-      .summary("Check if a client/driver pair is blacklisted (dispatcher, secretary)")
+  val checkEndpoint = secureEndpoint.get
+    .in("api" / "blacklist" / "check")
+    .in(query[Option[String]]("clientId"))
+    .in(query[Option[String]]("driverId"))
+    .out(stringBody.map(s => s)(s => s))
+    .tag(blacklistTag)
+    .summary("Check if a client/driver pair is blacklisted (dispatcher, secretary)")
 
-  val deleteEndpoint =
-    secureEndpoint.delete
-      .in("api" / "blacklist" / path[String]("id"))
-      .out(statusCode)
-      .tag(blacklistTag)
-      .summary("Remove a blacklist entry (dispatcher, admin)")
+  val deleteEndpoint = secureEndpoint.delete
+    .in("api" / "blacklist" / path[String]("id"))
+    .out(statusCode)
+    .tag(blacklistTag)
+    .summary("Remove a blacklist entry (dispatcher, admin)")
 
   val endpoints = List(listEndpoint, createEndpoint, checkEndpoint, deleteEndpoint)
 
   // -- Server logic ---------------------------------------------------------
 
-  private val listServer: ZServerEndpoint[BlacklistEnv, Any] =
-    listEndpoint.serverLogic[BlacklistEnv] { user => _ =>
-      (for {
-        _         <- checkRole(user, "DISPATCHER", "ADMIN")
-        repo      <- ZIO.service[BlacklistRepository]
-        companyId <- requireCompanyId(user.companyId)
-        entries   <- repo.findByCompanyId(companyId).mapError(internal)
-      } yield entries)
-    }
+  private val listServer: ZServerEndpoint[BlacklistEnv, Any] = listEndpoint.serverLogic[BlacklistEnv] { user => _ =>
+    for {
+      _         <- checkRole(user, "DISPATCHER", "ADMIN")
+      repo      <- ZIO.service[BlacklistRepository]
+      companyId <- requireCompanyId(user.companyId)
+      entries   <- repo.findByCompanyId(companyId).mapError(internal)
+    } yield entries
+  }
 
-  private val createServer: ZServerEndpoint[BlacklistEnv, Any] =
-    createEndpoint.serverLogic[BlacklistEnv] { user => req =>
-      (for {
+  private val createServer: ZServerEndpoint[BlacklistEnv, Any] = createEndpoint.serverLogic[BlacklistEnv] {
+    user => req =>
+      for {
         _         <- checkRole(user, "DISPATCHER", "ADMIN")
         repo      <- ZIO.service[BlacklistRepository]
         companyId <- requireCompanyId(user.companyId)
@@ -93,40 +88,40 @@ object BlacklistApi:
                      )
         created   <- repo.create(entry).mapError(internal)
         audit     <- ZIO.service[AuditService]
-        _         <- audit
-                       .log(
-                         AuditLogEntry(
-                           id = AuditLogId.generate(),
-                           companyId = entry.companyId,
-                           actorId = PersonId(user.userId),
-                           action = AuditAction.UserUpdated,
-                           entityType = "blacklist",
-                           entityId = entry.id.value,
-                           newValue = Some(s"client=${req.clientId}, driver=${req.driverId}")
-                         )
-                       )
-                       .ignore
-      } yield created)
-    }
+        _         <-
+          audit
+            .log(
+              AuditLogEntry(
+                id = AuditLogId.generate(),
+                companyId = entry.companyId,
+                actorId = PersonId(user.userId),
+                action = AuditAction.UserUpdated,
+                entityType = "blacklist",
+                entityId = entry.id.value,
+                newValue = Some(s"client=${req.clientId}, driver=${req.driverId}")
+              )
+            )
+            .ignore
+      } yield created
+  }
 
-  private val checkServer: ZServerEndpoint[BlacklistEnv, Any] =
-    checkEndpoint.serverLogic[BlacklistEnv] { user =>
-      { case (clientIdOpt, driverIdOpt) =>
-        (for {
-          _        <- checkRole(user, "DISPATCHER", "SECRETARY")
-          clientId <- ZIO.fromOption(clientIdOpt).orElseFail(internal(new RuntimeException("clientId required")))
-          driverId <- ZIO.fromOption(driverIdOpt).orElseFail(internal(new RuntimeException("driverId required")))
-          repo     <- ZIO.service[BlacklistRepository]
-          cPid     <- parsePersonId(clientId)
-          dPid     <- parsePersonId(driverId)
-          blocked  <- repo.isBlacklisted(cPid, dPid).mapError(internal)
-        } yield s"""{"blacklisted":$blocked}""")
-      }
+  private val checkServer: ZServerEndpoint[BlacklistEnv, Any] = checkEndpoint.serverLogic[BlacklistEnv] { user =>
+    { case (clientIdOpt, driverIdOpt) =>
+      for {
+        _        <- checkRole(user, "DISPATCHER", "SECRETARY")
+        clientId <- ZIO.fromOption(clientIdOpt).orElseFail(internal(new RuntimeException("clientId required")))
+        driverId <- ZIO.fromOption(driverIdOpt).orElseFail(internal(new RuntimeException("driverId required")))
+        repo     <- ZIO.service[BlacklistRepository]
+        cPid     <- parsePersonId(clientId)
+        dPid     <- parsePersonId(driverId)
+        blocked  <- repo.isBlacklisted(cPid, dPid).mapError(internal)
+      } yield s"""{"blacklisted":$blocked}"""
     }
+  }
 
-  private val deleteServer: ZServerEndpoint[BlacklistEnv, Any] =
-    deleteEndpoint.serverLogic[BlacklistEnv] { user => id =>
-      (for {
+  private val deleteServer: ZServerEndpoint[BlacklistEnv, Any] = deleteEndpoint.serverLogic[BlacklistEnv] {
+    user => id =>
+      for {
         _         <- checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- requireCompanyId(user.companyId)
         repo      <- ZIO.service[BlacklistRepository]
@@ -137,8 +132,8 @@ object BlacklistApi:
         deleted   <-
           if entries.exists(_.id == entryId) then repo.deactivate(entryId).mapError(internal)
           else ZIO.succeed(false)
-      } yield if deleted then StatusCode.NoContent else StatusCode.NotFound)
-    }
+      } yield if deleted then StatusCode.NoContent else StatusCode.NotFound
+  }
 
   val serverEndpoints: List[ZServerEndpoint[BlacklistEnv, Any]] = List(
     checkServer,

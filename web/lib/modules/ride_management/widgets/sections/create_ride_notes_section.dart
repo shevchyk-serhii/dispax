@@ -77,7 +77,9 @@ class CreateRideNotesSection extends StatelessWidget {
                 label: Text(req),
                 selected: isSelected,
                 onSelected: (_) {
-                  context.read<CreateRideFormBloc>().add(SpecialRequirementToggled(req));
+                  context.read<CreateRideFormBloc>().add(
+                    SpecialRequirementToggled(req),
+                  );
                 },
                 selectedColor: AppColors.secretaryColor.withAlpha(40),
                 checkmarkColor: AppColors.secretaryColor,

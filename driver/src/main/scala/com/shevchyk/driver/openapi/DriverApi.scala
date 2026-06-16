@@ -42,8 +42,11 @@ object DriverApi:
 
   private val driverTag = "Drivers"
 
-  /** Response body for `GET /api/drivers/{driverId}/availability` — mirrors the old `{"status":"..."}` JSON. */
+  /**
+   * Response body for `GET /api/drivers/{driverId}/availability` — mirrors the old `{"status":"..."}` JSON.
+   */
   final case class AvailabilityResponse(status: String) derives zio.json.JsonCodec
+
   object AvailabilityResponse:
     given Schema[AvailabilityResponse] = Schema.derived[AvailabilityResponse]
 
@@ -55,45 +58,42 @@ object DriverApi:
   private type Err = (StatusCode, ApiError)
 
   // -- Authenticated base endpoint (mirrors AuthMiddleware.authenticateRequest) --
-  private val secureEndpoint =
-    endpoint
-      .securityIn(auth.bearer[String]())
-      .errorOut(statusCode.and(jsonBody[ApiError]))
-      .zServerSecurityLogic[JwtService, AuthenticatedUser] { token =>
-        ZIO
-          .serviceWithZIO[JwtService](_.validateToken(token))
-          .mapBoth(
-            {
-              case _: InvalidTokenError | _: ExpiredTokenError =>
-                (StatusCode.Unauthorized, ApiError("Invalid or expired token"))
-              case _: JwtError                                 =>
-                (StatusCode.Unauthorized, ApiError("Authentication failed"))
-              case _                                           =>
-                (StatusCode.InternalServerError, ApiError("Internal server error"))
-            },
-            payload =>
-              AuthenticatedUser(
-                userId = payload.userId,
-                email = payload.email,
-                role = payload.role.toString,
-                companyId = payload.companyId,
-                clientCompanyId = payload.clientCompanyId
-              )
-          )
-      }
+  private val secureEndpoint = endpoint
+    .securityIn(auth.bearer[String]())
+    .errorOut(statusCode.and(jsonBody[ApiError]))
+    .zServerSecurityLogic[JwtService, AuthenticatedUser] { token =>
+      ZIO
+        .serviceWithZIO[JwtService](_.validateToken(token))
+        .mapBoth(
+          {
+            case _: InvalidTokenError | _: ExpiredTokenError =>
+              (StatusCode.Unauthorized, ApiError("Invalid or expired token"))
+            case _: JwtError                                 => (StatusCode.Unauthorized, ApiError("Authentication failed"))
+            case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
+          },
+          payload =>
+            AuthenticatedUser(
+              userId = payload.userId,
+              email = payload.email,
+              role = payload.role.toString,
+              companyId = payload.companyId,
+              clientCompanyId = payload.clientCompanyId
+            )
+        )
+    }
 
   // -- Helpers (replicate AuthMiddleware / UuidParser behaviour) -----------
 
   private val internalError: Err = (StatusCode.InternalServerError, ApiError("Internal server error"))
 
-  private def parseUuid(value: String): ZIO[Any, Err, UUID] =
-    ZIO.attempt(UUID.fromString(value)).orElseFail((StatusCode.BadRequest, ApiError("Invalid UUID format")))
+  private def parseUuid(value: String): ZIO[Any, Err, UUID] = ZIO
+    .attempt(UUID.fromString(value))
+    .orElseFail((StatusCode.BadRequest, ApiError("Invalid UUID format")))
 
-  private def requireCompanyId(companyIdOpt: Option[UUID]): ZIO[Any, Err, CompanyId] =
-    ZIO
-      .fromOption(companyIdOpt)
-      .map(CompanyId(_))
-      .orElseFail((StatusCode.BadRequest, ApiError("User must belong to a company")))
+  private def requireCompanyId(companyIdOpt: Option[UUID]): ZIO[Any, Err, CompanyId] = ZIO
+    .fromOption(companyIdOpt)
+    .map(CompanyId(_))
+    .orElseFail((StatusCode.BadRequest, ApiError("User must belong to a company")))
 
   private def checkRole(user: AuthenticatedUser, roles: String*): ZIO[Any, Err, Unit] =
     val userRoleUpper = user.role.toUpperCase
@@ -148,53 +148,49 @@ object DriverApi:
 
   // -- Endpoint descriptions -----------------------------------------------
 
-  val updateLocationEndpoint =
-    secureEndpoint.put
-      .in("api" / "drivers" / path[String]("driverId") / "location")
-      .in(jsonBody[UpdateLocationRequest])
-      .out(statusCode(StatusCode.NoContent))
-      .tag(driverTag)
-      .summary("Update a driver's current location")
+  val updateLocationEndpoint = secureEndpoint.put
+    .in("api" / "drivers" / path[String]("driverId") / "location")
+    .in(jsonBody[UpdateLocationRequest])
+    .out(statusCode(StatusCode.NoContent))
+    .tag(driverTag)
+    .summary("Update a driver's current location")
 
-  val updateAvailabilityEndpoint =
-    secureEndpoint.put
-      .in("api" / "drivers" / path[String]("driverId") / "availability")
-      .in(jsonBody[UpdateAvailabilityRequest])
-      .out(statusCode(StatusCode.NoContent))
-      .tag(driverTag)
-      .summary("Update a driver's availability status")
+  val updateAvailabilityEndpoint = secureEndpoint.put
+    .in("api" / "drivers" / path[String]("driverId") / "availability")
+    .in(jsonBody[UpdateAvailabilityRequest])
+    .out(statusCode(StatusCode.NoContent))
+    .tag(driverTag)
+    .summary("Update a driver's availability status")
 
-  val getAvailabilityEndpoint =
-    secureEndpoint.get
-      .in("api" / "drivers" / path[String]("driverId") / "availability")
-      .out(jsonBody[AvailabilityResponse])
-      .tag(driverTag)
-      .summary("Get a driver's availability status")
+  val getAvailabilityEndpoint = secureEndpoint.get
+    .in("api" / "drivers" / path[String]("driverId") / "availability")
+    .out(jsonBody[AvailabilityResponse])
+    .tag(driverTag)
+    .summary("Get a driver's availability status")
 
-  val getEarningsEndpoint =
-    secureEndpoint.get
-      .in("api" / "drivers" / path[String]("driverId") / "earnings")
-      .in(query[Option[String]]("period"))
-      .in(query[Option[String]]("date"))
-      .out(jsonBody[DriverEarningsDto])
-      .tag(driverTag)
-      .summary("Get a driver's earnings report")
+  val getEarningsEndpoint = secureEndpoint.get
+    .in("api" / "drivers" / path[String]("driverId") / "earnings")
+    .in(query[Option[String]]("period"))
+    .in(query[Option[String]]("date"))
+    .out(jsonBody[DriverEarningsDto])
+    .tag(driverTag)
+    .summary("Get a driver's earnings report")
 
-  val getAvailableDriversEndpoint =
-    secureEndpoint.get
-      .in("api" / "drivers" / "available")
-      .out(jsonBody[List[AvailableDriverDto]])
-      .tag(driverTag)
-      .summary("List available drivers for the company")
+  val getAvailableDriversEndpoint = secureEndpoint.get
+    .in("api" / "drivers" / "available")
+    .out(jsonBody[List[AvailableDriverDto]])
+    .tag(driverTag)
+    .summary("List available drivers for the company")
 
-  val getRideDriverLocationEndpoint =
-    secureEndpoint.get
-      .in("api" / "rides" / path[String]("rideId") / "driver-location")
-      .out(jsonBody[DriverProximityDto])
-      .tag(driverTag)
-      .summary("Get driver proximity/ETA for a ride")
+  val getRideDriverLocationEndpoint = secureEndpoint.get
+    .in("api" / "rides" / path[String]("rideId") / "driver-location")
+    .out(jsonBody[DriverProximityDto])
+    .tag(driverTag)
+    .summary("Get driver proximity/ETA for a ride")
 
-  /** All endpoint descriptions, used to generate the OpenAPI document. */
+  /**
+   * All endpoint descriptions, used to generate the OpenAPI document.
+   */
   val endpoints = List(
     updateLocationEndpoint,
     updateAvailabilityEndpoint,
@@ -206,22 +202,24 @@ object DriverApi:
 
   // -- Server logic --------------------------------------------------------
 
-  private val updateLocationServer: ZServerEndpoint[DriverEnv, Any] =
-    updateLocationEndpoint.serverLogic { user => (driverId, req) =>
-      (for {
+  private val updateLocationServer: ZServerEndpoint[DriverEnv, Any] = updateLocationEndpoint.serverLogic {
+    user => (driverId, req) =>
+      for {
         driverUuid <- parseUuid(driverId)
         _          <- checkRoleOrOwner(user, driverUuid, "DISPATCHER")
         companyId  <- requireCompanyId(user.companyId)
         _          <- assertDriverInCompany(driverUuid, companyId)
         _          <- ZIO
-                        .serviceWithZIO[DriverLocationService](_.updateLocation(PersonId(driverUuid), req.latitude, req.longitude))
+                        .serviceWithZIO[DriverLocationService](
+                          _.updateLocation(PersonId(driverUuid), req.latitude, req.longitude)
+                        )
                         .orElseFail(internalError)
-      } yield ())
-    }
+      } yield ()
+  }
 
-  private val updateAvailabilityServer: ZServerEndpoint[DriverEnv, Any] =
-    updateAvailabilityEndpoint.serverLogic { user => (driverId, req) =>
-      (for {
+  private val updateAvailabilityServer: ZServerEndpoint[DriverEnv, Any] = updateAvailabilityEndpoint.serverLogic {
+    user => (driverId, req) =>
+      for {
         driverUuid <- parseUuid(driverId)
         _          <- checkRoleOrOwner(user, driverUuid, "DISPATCHER")
         companyId  <- requireCompanyId(user.companyId)
@@ -232,12 +230,12 @@ object DriverApi:
         _          <- ZIO
                         .serviceWithZIO[DriverLocationService](_.updateAvailability(PersonId(driverUuid), req.status))
                         .orElseFail(internalError)
-      } yield ())
-    }
+      } yield ()
+  }
 
-  private val getAvailabilityServer: ZServerEndpoint[DriverEnv, Any] =
-    getAvailabilityEndpoint.serverLogic { user => driverId =>
-      (for {
+  private val getAvailabilityServer: ZServerEndpoint[DriverEnv, Any] = getAvailabilityEndpoint.serverLogic {
+    user => driverId =>
+      for {
         driverUuid <- parseUuid(driverId)
         _          <- checkRoleOrOwner(user, driverUuid, "DISPATCHER", "SECRETARY")
         companyId  <- requireCompanyId(user.companyId)
@@ -245,12 +243,12 @@ object DriverApi:
         status     <- ZIO
                         .serviceWithZIO[DriverLocationService](_.getAvailability(PersonId(driverUuid)))
                         .orElseFail(internalError)
-      } yield AvailabilityResponse(status.getOrElse("Offline")))
-    }
+      } yield AvailabilityResponse(status.getOrElse("Offline"))
+  }
 
-  private val getEarningsServer: ZServerEndpoint[DriverEnv, Any] =
-    getEarningsEndpoint.serverLogic { user => (driverId, periodOpt, dateOpt) =>
-      (for {
+  private val getEarningsServer: ZServerEndpoint[DriverEnv, Any] = getEarningsEndpoint.serverLogic {
+    user => (driverId, periodOpt, dateOpt) =>
+      for {
         driverUuid <- parseUuid(driverId)
         _          <- checkRoleOrOwner(user, driverUuid, "DISPATCHER")
         companyId  <- requireCompanyId(user.companyId)
@@ -262,25 +260,27 @@ object DriverApi:
                         .attempt(dateOpt.map(java.time.LocalDate.parse).getOrElse(java.time.LocalDate.now()))
                         .orElseFail((StatusCode.BadRequest, ApiError("Invalid date. Use ISO format YYYY-MM-DD")))
         report     <- ZIO
-                        .serviceWithZIO[RideService](_.getDriverEarnings(PersonId(driverUuid), companyId, period, anchorDate))
+                        .serviceWithZIO[RideService](
+                          _.getDriverEarnings(PersonId(driverUuid), companyId, period, anchorDate)
+                        )
                         .orElseFail(internalError)
-      } yield toEarningsDto(report))
-    }
+      } yield toEarningsDto(report)
+  }
 
-  private val getAvailableDriversServer: ZServerEndpoint[DriverEnv, Any] =
-    getAvailableDriversEndpoint.serverLogic { user => _ =>
-      (for {
+  private val getAvailableDriversServer: ZServerEndpoint[DriverEnv, Any] = getAvailableDriversEndpoint.serverLogic {
+    user => _ =>
+      for {
         _         <- checkRole(user, "DISPATCHER", "SECRETARY")
         companyId <- requireCompanyId(user.companyId)
         drivers   <- ZIO
                        .serviceWithZIO[DriverLocationService](_.getAvailableDrivers(companyId))
                        .orElseFail(internalError)
-      } yield drivers)
-    }
+      } yield drivers
+  }
 
-  private val getRideDriverLocationServer: ZServerEndpoint[DriverEnv, Any] =
-    getRideDriverLocationEndpoint.serverLogic { user => rideId =>
-      (for {
+  private val getRideDriverLocationServer: ZServerEndpoint[DriverEnv, Any] = getRideDriverLocationEndpoint.serverLogic {
+    user => rideId =>
+      for {
         companyId    <- requireCompanyId(user.companyId)
         parsedRideId <- parseUuid(rideId).map(RideId(_))
         rideService  <- ZIO.service[RideService]
@@ -307,10 +307,11 @@ object DriverApi:
               .orElse(ZIO.succeed(ride0))
           else ZIO.succeed(ride0)
         locService   <- ZIO.service[DriverLocationService]
-        driverLoc    <- (ride.driverId match {
-                          case Some(dId) => locService.getLocation(dId)
-                          case None      => ZIO.none
-                        }).orElseFail(internalError)
+        driverLoc    <-
+          (ride.driverId match {
+            case Some(dId) => locService.getLocation(dId)
+            case None      => ZIO.none
+          }).orElseFail(internalError)
         rideDto       = RideDto.fromDomain(
                           ride,
                           driverLat = driverLoc.map(_.latitude),
@@ -338,10 +339,12 @@ object DriverApi:
                           driverDistanceMeters = rideDto.driverDistanceMeters,
                           etaMinutes = eta
                         )
-      } yield proximity)
-    }
+      } yield proximity
+  }
 
-  /** All server endpoints, interpreted into zio-http Routes by the api module. */
+  /**
+   * All server endpoints, interpreted into zio-http Routes by the api module.
+   */
   val serverEndpoints: List[ZServerEndpoint[DriverEnv, Any]] = List(
     updateLocationServer,
     updateAvailabilityServer,

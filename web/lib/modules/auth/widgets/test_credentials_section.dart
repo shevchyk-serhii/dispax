@@ -17,21 +17,14 @@ class TestCredentialsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          'Quick Access for Testing',
-          style: AppStyles.glassTitleMedium,
-        ),
+        Text('Quick Access for Testing', style: AppStyles.glassTitleMedium),
         const SizedBox(height: AppDimensions.paddingMedium),
 
-        TestCredentialsCard(
-          onCredentialTap: onCredentialTap,
-        ),
+        TestCredentialsCard(onCredentialTap: onCredentialTap),
 
         const SizedBox(height: AppDimensions.paddingMedium),
 
-        QuickLoginButtons(
-          onQuickLogin: onQuickLogin,
-        ),
+        QuickLoginButtons(onQuickLogin: onQuickLogin),
       ],
     );
   }

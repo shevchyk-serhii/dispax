@@ -19,19 +19,33 @@ void main() {
       build: CreateRideFormBloc.new,
       act: (bloc) {
         bloc.add(const ClientSelected(clientId: 'c-1', clientName: 'Alice'));
-        bloc.add(const FromAddressChanged('Main Street 1')); // no "airport" → no auto-toggle
+        bloc.add(
+          const FromAddressChanged('Main Street 1'),
+        ); // no "airport" → no auto-toggle
         bloc.add(const ToAddressChanged('Central Hotel'));
         bloc.add(FormSubmitted());
       },
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.selectedClientId, 'clientId', 'c-1'),
-        isA<CreateRideFormState>()
-            .having((s) => s.fromAddress, 'fromAddress', 'Main Street 1'),
-        isA<CreateRideFormState>()
-            .having((s) => s.toAddress, 'toAddress', 'Central Hotel'),
-        isA<CreateRideFormState>()
-            .having((s) => s.status, 'status', CreateRideFormStatus.submitting),
+        isA<CreateRideFormState>().having(
+          (s) => s.selectedClientId,
+          'clientId',
+          'c-1',
+        ),
+        isA<CreateRideFormState>().having(
+          (s) => s.fromAddress,
+          'fromAddress',
+          'Main Street 1',
+        ),
+        isA<CreateRideFormState>().having(
+          (s) => s.toAddress,
+          'toAddress',
+          'Central Hotel',
+        ),
+        isA<CreateRideFormState>().having(
+          (s) => s.status,
+          'status',
+          CreateRideFormStatus.submitting,
+        ),
       ],
     );
 
@@ -53,9 +67,21 @@ void main() {
         bloc.add(FormCleared());
       },
       expect: () => [
-        isA<CreateRideFormState>().having((s) => s.isModified, 'isModified', true),
-        isA<CreateRideFormState>().having((s) => s.isModified, 'isModified', true),
-        isA<CreateRideFormState>().having((s) => s.isModified, 'isModified', false),
+        isA<CreateRideFormState>().having(
+          (s) => s.isModified,
+          'isModified',
+          true,
+        ),
+        isA<CreateRideFormState>().having(
+          (s) => s.isModified,
+          'isModified',
+          true,
+        ),
+        isA<CreateRideFormState>().having(
+          (s) => s.isModified,
+          'isModified',
+          false,
+        ),
       ],
     );
 

@@ -71,7 +71,9 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Discard changes?'),
-        content: const Text('You have unsaved ride details. If you leave, they will be lost.'),
+        content: const Text(
+          'You have unsaved ride details. If you leave, they will be lost.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -93,46 +95,49 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   // All screens in order
   List<Widget> get _allScreens => [
-    const PendingRidesPanel(),                  // 0: Home
-    DriverSchedulePanel(                         // 1: Schedule
+    const PendingRidesPanel(), // 0: Home
+    DriverSchedulePanel(
+      // 1: Schedule
       selectedDate: _selectedDate,
       onDateChanged: (date) => setState(() => _selectedDate = date),
     ),
-    const AnalyticsPanel(),                      // 2: Analytics
-    CreateRideScreen(                             // 3: New Ride
+    const AnalyticsPanel(), // 2: Analytics
+    CreateRideScreen(
+      // 3: New Ride
       rideBloc: _rideBloc,
       formBloc: _createRideFormBloc,
       onCreated: () {
         final user = context.read<AuthBloc>().state.user;
-        if (user != null) context.read<RideBloc>().add(RideLoadRequested(user: user));
+        if (user != null)
+          context.read<RideBloc>().add(RideLoadRequested(user: user));
         setState(() => _mobileTabIndex = 0);
       },
     ),
-    _buildMoreScreen(),                          // 4: More menu
+    _buildMoreScreen(), // 4: More menu
     // Extended screens (accessed via More)
-    const DriverEarningsPanel(),                 // 5
-    const PeakHoursPanel(),                      // 6
-    const ClientValuePanel(),                    // 7
-    const DriverScorecardPanel(),                // 8
-    const DriverRatingsPanel(),                  // 9
-    const AuditLogScreen(),                      // 10
-    const AdminUsersScreen(),                    // 11
-    const CompanySettingsScreen(),               // 12
-    const ExpenseScreen(),                       // 13
-    const RideExportScreen(),                    // 14
-    const BillingScreen(),                       // 15
-    const RideTemplatesScreen(),                 // 16
-    const PaymentScreen(),                       // 17
-    const PayrollScreen(),                       // 18
-    const SettingsScreen(),                      // 19
-    const GeofenceScreen(),                      // 20
-    const DatevExportScreen(),                   // 21
-    const BlacklistScreen(),                     // 22
-    const EmergencyReassignmentScreen(),         // 23
-    const RidePoolScreen(),                      // 24
-    const NotificationCenterScreen(),            // 25
-    const GdprScreen(),                          // 26
-    const SessionManagementScreen(),             // 27
+    const DriverEarningsPanel(), // 5
+    const PeakHoursPanel(), // 6
+    const ClientValuePanel(), // 7
+    const DriverScorecardPanel(), // 8
+    const DriverRatingsPanel(), // 9
+    const AuditLogScreen(), // 10
+    const AdminUsersScreen(), // 11
+    const CompanySettingsScreen(), // 12
+    const ExpenseScreen(), // 13
+    const RideExportScreen(), // 14
+    const BillingScreen(), // 15
+    const RideTemplatesScreen(), // 16
+    const PaymentScreen(), // 17
+    const PayrollScreen(), // 18
+    const SettingsScreen(), // 19
+    const GeofenceScreen(), // 20
+    const DatevExportScreen(), // 21
+    const BlacklistScreen(), // 22
+    const EmergencyReassignmentScreen(), // 23
+    const RidePoolScreen(), // 24
+    const NotificationCenterScreen(), // 25
+    const GdprScreen(), // 26
+    const SessionManagementScreen(), // 27
   ];
 
   @override
@@ -177,16 +182,17 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           Expanded(
             child: Row(
               children: [
-                Expanded(
-                  flex: 2,
-                  child: const PendingRidesPanel(),
+                Expanded(flex: 2, child: const PendingRidesPanel()),
+                Container(
+                  width: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant,
                 ),
-                Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
                 Expanded(
                   flex: 3,
                   child: DriverSchedulePanel(
                     selectedDate: _selectedDate,
-                    onDateChanged: (date) => setState(() => _selectedDate = date),
+                    onDateChanged: (date) =>
+                        setState(() => _selectedDate = date),
                   ),
                 ),
               ],
@@ -210,10 +216,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   Widget _buildMobileView() {
     return Scaffold(
-      body: IndexedStack(
-        index: _mobileTabIndex,
-        children: _allScreens,
-      ),
+      body: IndexedStack(index: _mobileTabIndex, children: _allScreens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _navIndexForScreen(_mobileTabIndex),
         onTap: (navIndex) async {
@@ -225,7 +228,8 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
             _moreNavIndex => 4,
             _ => navIndex,
           };
-          if (_mobileTabIndex == _createRideTabIndex && screenIndex != _createRideTabIndex) {
+          if (_mobileTabIndex == _createRideTabIndex &&
+              screenIndex != _createRideTabIndex) {
             final canLeave = await _confirmLeaveCreateRide(context);
             if (!canLeave) return;
           }
@@ -281,29 +285,129 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   Widget _buildMoreScreen() {
     final items = [
       // Unified corporate graphite; only genuinely destructive items stay red.
-      _MoreMenuItem(Icons.euro, 'Earnings', 5, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.access_time_filled, 'Peak Hours', 6, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.diamond, 'Client Value', 7, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.leaderboard, 'Drivers', 8, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.star, 'Ratings', 9, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.history, 'Audit Log', 10, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.admin_panel_settings, 'Admin', 11, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.business, 'Company', 12, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.receipt_long, 'Expenses', 13, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.download, 'Export', 14, Theme.of(context).colorScheme.primary),
+      _MoreMenuItem(
+        Icons.euro,
+        'Earnings',
+        5,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.access_time_filled,
+        'Peak Hours',
+        6,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.diamond,
+        'Client Value',
+        7,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.leaderboard,
+        'Drivers',
+        8,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.star,
+        'Ratings',
+        9,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.history,
+        'Audit Log',
+        10,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.admin_panel_settings,
+        'Admin',
+        11,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.business,
+        'Company',
+        12,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.receipt_long,
+        'Expenses',
+        13,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.download,
+        'Export',
+        14,
+        Theme.of(context).colorScheme.primary,
+      ),
       // Billing (screen 15) now has a dedicated bottom-nav tab, so it's omitted here.
-      _MoreMenuItem(Icons.repeat, 'Templates', 16, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.payment, 'Payments', 17, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.account_balance_wallet, 'Payroll', 18, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.settings, 'Settings', 19, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.share_location, 'Geofences', 20, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.account_balance, 'DATEV', 21, Theme.of(context).colorScheme.primary),
+      _MoreMenuItem(
+        Icons.repeat,
+        'Templates',
+        16,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.payment,
+        'Payments',
+        17,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.account_balance_wallet,
+        'Payroll',
+        18,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.settings,
+        'Settings',
+        19,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.share_location,
+        'Geofences',
+        20,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.account_balance,
+        'DATEV',
+        21,
+        Theme.of(context).colorScheme.primary,
+      ),
       _MoreMenuItem(Icons.block, 'Blacklist', 22, AppColors.error),
       _MoreMenuItem(Icons.emergency, 'Emergency', 23, AppColors.error),
-      _MoreMenuItem(Icons.groups, 'Ride Pools', 24, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.notifications, 'Notifications', 25, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.privacy_tip, 'GDPR', 26, Theme.of(context).colorScheme.primary),
-      _MoreMenuItem(Icons.devices, 'Sessions', 27, Theme.of(context).colorScheme.primary),
+      _MoreMenuItem(
+        Icons.groups,
+        'Ride Pools',
+        24,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.notifications,
+        'Notifications',
+        25,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.privacy_tip,
+        'GDPR',
+        26,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.devices,
+        'Sessions',
+        27,
+        Theme.of(context).colorScheme.primary,
+      ),
     ];
 
     return Column(
@@ -318,7 +422,11 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
             bottom: false,
             child: Text(
               'More',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -350,7 +458,11 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
                       const SizedBox(height: 8),
                       Text(
                         item.label,
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: item.color),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: item.color,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],

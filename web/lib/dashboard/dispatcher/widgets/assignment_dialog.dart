@@ -30,7 +30,11 @@ class AssignmentDialog extends StatelessWidget {
           children: [
             _buildSection('Ride Details', [
               _buildRow(context, 'Client', ride.clientName),
-              _buildRow(context, 'Time', DateFormat('dd.MM.yyyy HH:mm').format(ride.pickupDateTime)),
+              _buildRow(
+                context,
+                'Time',
+                DateFormat('dd.MM.yyyy HH:mm').format(ride.pickupDateTime),
+              ),
               _buildRow(context, 'From', ride.from.address),
               _buildRow(context, 'To', ride.to.address),
               if (ride.flightNumber != null)
@@ -66,13 +70,18 @@ class AssignmentDialog extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    ...conflicts.map((c) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        '${DateFormat('HH:mm').format(c.pickupDateTime)} - ${c.from.address} -> ${c.to.address}',
-                        style: TextStyle(fontSize: 13, color: AppColors.rideCancelledText),
+                    ...conflicts.map(
+                      (c) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '${DateFormat('HH:mm').format(c.pickupDateTime)} - ${c.from.address} -> ${c.to.address}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.rideCancelledText,
+                          ),
+                        ),
                       ),
-                    )),
+                    ),
                   ],
                 ),
               ),
@@ -91,7 +100,9 @@ class AssignmentDialog extends StatelessWidget {
             onConfirm();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: conflicts.isNotEmpty ? AppColors.warning : Theme.of(context).colorScheme.primary,
+            backgroundColor: conflicts.isNotEmpty
+                ? AppColors.warning
+                : Theme.of(context).colorScheme.primary,
           ),
           child: Text(
             conflicts.isNotEmpty ? 'Assign Anyway' : 'Assign',
@@ -106,7 +117,10 @@ class AssignmentDialog extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
         const SizedBox(height: 8),
         ...children,
       ],
@@ -121,9 +135,20 @@ class AssignmentDialog extends StatelessWidget {
         children: [
           SizedBox(
             width: 60,
-            child: Text('$label:', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 13,
+              ),
+            ),
           ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+          ),
         ],
       ),
     );

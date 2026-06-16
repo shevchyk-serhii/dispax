@@ -35,7 +35,9 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
       if (resp.statusCode == 200) {
         final decoded = jsonDecode(resp.body);
         setState(() {
-          _entries = (decoded is List) ? decoded.cast<Map<String, dynamic>>() : [];
+          _entries = (decoded is List)
+              ? decoded.cast<Map<String, dynamic>>()
+              : [];
           _isLoading = false;
         });
       } else {
@@ -102,7 +104,9 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
             onPressed: () async {
               if (clientIdCtrl.text.isEmpty || driverIdCtrl.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Client ID and Driver ID are required')),
+                  const SnackBar(
+                    content: Text('Client ID and Driver ID are required'),
+                  ),
                 );
                 return;
               }
@@ -116,9 +120,9 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
                 if (context.mounted) Navigator.pop(context, true);
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -136,9 +140,14 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Remove Blacklist Entry'),
-        content: const Text('Are you sure you want to remove this blacklist entry?'),
+        content: const Text(
+          'Are you sure you want to remove this blacklist entry?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
@@ -156,9 +165,9 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
       _loadEntries();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -171,36 +180,53 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          ElevatedButton(onPressed: _loadEntries, child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : _entries.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.block, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
-                              const SizedBox(height: 12),
-                              Text('No blacklist entries', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                            ],
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadEntries,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(12),
-                            itemCount: _entries.length,
-                            itemBuilder: (context, index) => _buildEntryCard(_entries[index]),
-                          ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      ElevatedButton(
+                        onPressed: _loadEntries,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : _entries.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.block,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No blacklist entries',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadEntries,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _entries.length,
+                    itemBuilder: (context, index) =>
+                        _buildEntryCard(_entries[index]),
+                  ),
+                ),
         ),
       ],
     );
@@ -222,11 +248,19 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
             const Expanded(
               child: Text(
                 'Blacklist',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.add_circle_outline, color: Colors.white, size: 24),
+              icon: const Icon(
+                Icons.add_circle_outline,
+                color: Colors.white,
+                size: 24,
+              ),
               onPressed: _showAddDialog,
             ),
             IconButton(
@@ -265,10 +299,19 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
               style: const TextStyle(fontSize: 12),
             ),
             if (reason != null && reason.isNotEmpty)
-              Text(reason, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(
+                reason,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             Text(
               _formatDate(createdAt),
-              style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.outlineVariant),
+              style: TextStyle(
+                fontSize: 10,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
           ],
         ),

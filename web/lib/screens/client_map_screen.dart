@@ -77,10 +77,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       final authState = context.read<AuthBloc>().state;
       final rideState = context.read<RideBloc>().state;
       if (authState.user != null) {
-        final activeRide = rideState.rides.where((ride) =>
-          ride.clientId == authState.user!.id &&
-          (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)
-        ).firstOrNull;
+        final activeRide = rideState.rides
+            .where(
+              (ride) =>
+                  ride.clientId == authState.user!.id &&
+                  (ride.status == RideStatus.assigned ||
+                      ride.status == RideStatus.inProgress),
+            )
+            .firstOrNull;
         if (activeRide != null) {
           _activeRide = activeRide;
         }
@@ -172,27 +176,33 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         _currentPosition = position;
       });
       if (_mapboxMap != null) {
-        _mapboxMap!.setCamera(MapboxService.createCameraOptions(
-          latitude: position.latitude,
-          longitude: position.longitude,
-          zoom: 15.0,
-        ));
+        _mapboxMap!.setCamera(
+          MapboxService.createCameraOptions(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            zoom: 15.0,
+          ),
+        );
       }
     }
 
     final started = await _locationService.startLocationTracking();
     if (started) {
-      _locationSubscription = _locationService.positionStream.listen((geo.Position position) {
+      _locationSubscription = _locationService.positionStream.listen((
+        geo.Position position,
+      ) {
         setState(() {
           _currentPosition = position;
         });
         if (_firstGpsFix) {
           _firstGpsFix = false;
-          _mapboxMap?.setCamera(MapboxService.createCameraOptions(
-            latitude: position.latitude,
-            longitude: position.longitude,
-            zoom: 15.0,
-          ));
+          _mapboxMap?.setCamera(
+            MapboxService.createCameraOptions(
+              latitude: position.latitude,
+              longitude: position.longitude,
+              zoom: 15.0,
+            ),
+          );
         }
         _updateCurrentLocationMarker();
 
@@ -211,9 +221,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
 
-    _driverAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
-    _selfAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
-    _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+    _driverAnnotationManager = await mapboxMap.annotations
+        .createPointAnnotationManager();
+    _selfAnnotationManager = await mapboxMap.annotations
+        .createPointAnnotationManager();
+    _circleAnnotationManager = await mapboxMap.annotations
+        .createCircleAnnotationManager();
 
     if (_currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
@@ -237,47 +250,55 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       _selfAnnotation = null;
     }
 
-    _clientMarkerImage ??= (await rootBundle.load('assets/client_marker.png'))
-        .buffer.asUint8List();
+    _clientMarkerImage ??= (await rootBundle.load(
+      'assets/client_marker.png',
+    )).buffer.asUint8List();
 
-    _selfAnnotation = await _selfAnnotationManager?.create(PointAnnotationOptions(
-      geometry: Point(coordinates: Position(
-        _currentPosition!.longitude,
-        _currentPosition!.latitude,
-      )),
-      image: _clientMarkerImage,
-      iconSize: 1.5,
-      textField: name,
-      textSize: 13.0,
-      textColor: 0xFF1B5E20,
-      textHaloColor: 0xFFFFFFFF,
-      textHaloWidth: 2.0,
-      textOffset: [0.0, -2.5],
-    ));
+    _selfAnnotation = await _selfAnnotationManager?.create(
+      PointAnnotationOptions(
+        geometry: Point(
+          coordinates: Position(
+            _currentPosition!.longitude,
+            _currentPosition!.latitude,
+          ),
+        ),
+        image: _clientMarkerImage,
+        iconSize: 1.5,
+        textField: name,
+        textSize: 13.0,
+        textColor: 0xFF1B5E20,
+        textHaloColor: 0xFFFFFFFF,
+        textHaloWidth: 2.0,
+        textOffset: [0.0, -2.5],
+      ),
+    );
   }
 
   Future<void> _updateDriverMarker(double latitude, double longitude) async {
     if (_driverAnnotationManager == null) return;
 
-    _driverMarkerImage ??= (await rootBundle.load('assets/driver_marker.png'))
-        .buffer.asUint8List();
+    _driverMarkerImage ??= (await rootBundle.load(
+      'assets/driver_marker.png',
+    )).buffer.asUint8List();
     final Uint8List imageData = _driverMarkerImage!;
 
     if (_driverAnnotation != null) {
       await _driverAnnotationManager?.delete(_driverAnnotation!);
       _driverAnnotation = null;
     }
-    _driverAnnotation = await _driverAnnotationManager?.create(PointAnnotationOptions(
-      geometry: Point(coordinates: Position(longitude, latitude)),
-      image: imageData,
-      iconSize: 2.0,
-      textField: _activeRide?.driverName,
-      textSize: 13.0,
-      textColor: 0xFF0D47A1,
-      textHaloColor: 0xFFFFFFFF,
-      textHaloWidth: 2.0,
-      textOffset: [0.0, 2.5],
-    ));
+    _driverAnnotation = await _driverAnnotationManager?.create(
+      PointAnnotationOptions(
+        geometry: Point(coordinates: Position(longitude, latitude)),
+        image: imageData,
+        iconSize: 2.0,
+        textField: _activeRide?.driverName,
+        textSize: 13.0,
+        textColor: 0xFF0D47A1,
+        textHaloColor: 0xFFFFFFFF,
+        textHaloWidth: 2.0,
+        textOffset: [0.0, 2.5],
+      ),
+    );
   }
 
   void _updateMapMarkers() {
@@ -348,10 +369,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       zoom = 11.0;
     }
 
-    _mapboxMap!.setCamera(CameraOptions(
-      center: Point(coordinates: Position(centerLng, centerLat)),
-      zoom: zoom,
-    ));
+    _mapboxMap!.setCamera(
+      CameraOptions(
+        center: Point(coordinates: Position(centerLng, centerLat)),
+        zoom: zoom,
+      ),
+    );
   }
 
   bool _driverApproachingShown = false;
@@ -362,13 +385,16 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     return Scaffold(
       body: BlocListener<RideBloc, RideState>(
         listener: (context, state) {
-
           final authState = context.read<AuthBloc>().state;
           if (authState.isAuthenticated && authState.user != null) {
-            final activeRide = state.rides.where((ride) =>
-              ride.clientId == authState.user!.id &&
-              (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)
-            ).firstOrNull;
+            final activeRide = state.rides
+                .where(
+                  (ride) =>
+                      ride.clientId == authState.user!.id &&
+                      (ride.status == RideStatus.assigned ||
+                          ride.status == RideStatus.inProgress),
+                )
+                .firstOrNull;
 
             if (activeRide != _activeRide) {
               setState(() {
@@ -380,7 +406,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         },
         child: Stack(
           children: [
-
             MapWidget(
               key: const ValueKey('client_map'),
               onMapCreated: _onMapCreated,
@@ -396,11 +421,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               ),
             ),
 
-            Positioned(
-              bottom: 100,
-              right: 16,
-              child: _buildControlButtons(),
-            ),
+            Positioned(bottom: 100, right: 16, child: _buildControlButtons()),
           ],
         ),
       ),
@@ -428,11 +449,17 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.location_on, color: AppColors.clientColor, size: AppDimensions.iconMedium),
+              Icon(
+                Icons.location_on,
+                color: AppColors.clientColor,
+                size: AppDimensions.iconMedium,
+              ),
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 'Your Location',
-                style: AppStyles.titleMedium.copyWith(color: Theme.of(context).colorScheme.onSurface),
+                style: AppStyles.titleMedium.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ],
           ),
@@ -446,7 +473,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             const SizedBox(height: AppDimensions.paddingSmall),
             Text(
               'No active ride',
-              style: AppStyles.bodyMedium.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: AppStyles.bodyMedium.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -459,14 +488,18 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       children: [
         Icon(
           _sharingLocation ? Icons.location_on : Icons.location_off,
-          color: _sharingLocation ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant,
+          color: _sharingLocation
+              ? AppColors.success
+              : Theme.of(context).colorScheme.onSurfaceVariant,
           size: AppDimensions.iconSmall,
         ),
         const SizedBox(width: AppDimensions.paddingSmall),
         Expanded(
           child: Text(
             'Share my location',
-            style: AppStyles.bodySmall.copyWith(color: Theme.of(context).colorScheme.onSurface),
+            style: AppStyles.bodySmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ),
         Switch(
@@ -507,7 +540,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           ),
           child: Text(
             _activeRide!.statusDisplayName,
-            style: AppStyles.labelSmall.copyWith(color: AppColors.textOnPrimary),
+            style: AppStyles.labelSmall.copyWith(
+              color: AppColors.textOnPrimary,
+            ),
           ),
         ),
 
@@ -515,11 +550,17 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
         Row(
           children: [
-            Icon(Icons.schedule, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
+            Icon(
+              Icons.schedule,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              size: AppDimensions.iconSmall,
+            ),
             const SizedBox(width: AppDimensions.paddingSmall),
             Text(
               'Pickup: ${AppDateUtils.formatDateTime(_activeRide!.pickupDateTime)}',
-              style: AppStyles.bodySmall.copyWith(color: Theme.of(context).colorScheme.onSurface),
+              style: AppStyles.bodySmall.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ],
         ),
@@ -528,12 +569,18 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
         Row(
           children: [
-            Icon(Icons.route, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
+            Icon(
+              Icons.route,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              size: AppDimensions.iconSmall,
+            ),
             const SizedBox(width: AppDimensions.paddingSmall),
             Expanded(
               child: Text(
                 '${_activeRide!.from.address} -> ${_activeRide!.to.address}',
-                style: AppStyles.bodySmall.copyWith(color: Theme.of(context).colorScheme.onSurface),
+                style: AppStyles.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -545,11 +592,17 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           const SizedBox(height: AppDimensions.paddingSmall),
           Row(
             children: [
-              Icon(Icons.person, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
+              Icon(
+                Icons.person,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: AppDimensions.iconSmall,
+              ),
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 'Driver: ${_activeRide!.driverName}',
-                style: AppStyles.bodySmall.copyWith(color: Theme.of(context).colorScheme.onSurface),
+                style: AppStyles.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ],
           ),
@@ -560,7 +613,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   Widget _buildApproachingBanner() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingMedium),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.paddingMedium,
+      ),
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.paddingLarge,
         vertical: AppDimensions.paddingSmall,
@@ -583,7 +638,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           Expanded(
             child: Text(
               _approachingBannerMessage!,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
             ),
           ),
           GestureDetector(
@@ -612,7 +671,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             heroTag: 'center_route',
             onPressed: _centerOnRoute,
             backgroundColor: Theme.of(context).colorScheme.primary,
-            child: Icon(Icons.route, color: Theme.of(context).colorScheme.onPrimary),
+            child: Icon(
+              Icons.route,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
           ),
         ],
       ],

@@ -20,6 +20,7 @@ class PendingRidesPanel extends StatefulWidget {
 }
 
 enum _SortMode { timeAsc, timeDesc, client }
+
 enum _FilterMode { all, today, airport }
 
 class _PendingRidesPanelState extends State<PendingRidesPanel> {
@@ -36,18 +37,23 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   }
 
   List<Ride> _applyFiltersAndSort(List<Ride> rides) {
-    final statusFilter = _tabIndex == 0 ? RideStatus.requested : RideStatus.assigned;
+    final statusFilter = _tabIndex == 0
+        ? RideStatus.requested
+        : RideStatus.assigned;
     var filtered = rides.where((r) => r.status == statusFilter).toList();
 
     // Apply filter
     switch (_filterMode) {
       case _FilterMode.today:
         final now = DateTime.now();
-        filtered = filtered.where((r) =>
-          r.pickupDateTime.year == now.year &&
-          r.pickupDateTime.month == now.month &&
-          r.pickupDateTime.day == now.day
-        ).toList();
+        filtered = filtered
+            .where(
+              (r) =>
+                  r.pickupDateTime.year == now.year &&
+                  r.pickupDateTime.month == now.month &&
+                  r.pickupDateTime.day == now.day,
+            )
+            .toList();
       case _FilterMode.airport:
         filtered = filtered.where((r) => r.isAirportTransfer).toList();
       case _FilterMode.all:
@@ -57,12 +63,15 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     // Apply search
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
-      filtered = filtered.where((r) =>
-        r.clientName.toLowerCase().contains(q) ||
-        r.from.address.toLowerCase().contains(q) ||
-        r.to.address.toLowerCase().contains(q) ||
-        (r.flightNumber?.toLowerCase().contains(q) ?? false)
-      ).toList();
+      filtered = filtered
+          .where(
+            (r) =>
+                r.clientName.toLowerCase().contains(q) ||
+                r.from.address.toLowerCase().contains(q) ||
+                r.to.address.toLowerCase().contains(q) ||
+                (r.flightNumber?.toLowerCase().contains(q) ?? false),
+          )
+          .toList();
     }
 
     // Apply sort
@@ -100,7 +109,9 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
 
               return RefreshIndicator(
                 onRefresh: () async {
-                  context.read<RideBloc>().add(const RideLoadPendingRequested());
+                  context.read<RideBloc>().add(
+                    const RideLoadPendingRequested(),
+                  );
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.all(AppDimensions.paddingMedium),
@@ -110,7 +121,11 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                     if (_tabIndex == 1) {
                       return _AssignedRideCard(
                         ride: ride,
-                        onReassign: () => _showDriverSelectionSheet(context, ride, isReassign: true),
+                        onReassign: () => _showDriverSelectionSheet(
+                          context,
+                          ride,
+                          isReassign: true,
+                        ),
                       );
                     }
                     return Draggable<Ride>(
@@ -145,18 +160,18 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   Widget _buildTabBar() {
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, state) {
-        final pendingCount = state.rides.where((r) => r.status == RideStatus.requested).length;
-        final assignedCount = state.rides.where((r) => r.status == RideStatus.assigned).length;
+        final pendingCount = state.rides
+            .where((r) => r.status == RideStatus.requested)
+            .length;
+        final assignedCount = state.rides
+            .where((r) => r.status == RideStatus.assigned)
+            .length;
         return Container(
           color: Theme.of(context).colorScheme.surface,
           child: Row(
             children: [
-              Expanded(
-                child: _buildTab(0, 'Pending', pendingCount),
-              ),
-              Expanded(
-                child: _buildTab(1, 'Assigned', assignedCount),
-              ),
+              Expanded(child: _buildTab(0, 'Pending', pendingCount)),
+              Expanded(child: _buildTab(1, 'Assigned', assignedCount)),
             ],
           ),
         );
@@ -189,7 +204,9 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: selected ? AppColors.accent : colorScheme.onSurfaceVariant,
+                color: selected
+                    ? AppColors.accent
+                    : colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 6),
@@ -227,9 +244,15 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search client, address...',
-                hintStyle: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
+                hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 prefixIcon: const Icon(Icons.search, size: 18),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 12,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: colorScheme.outlineVariant),
@@ -254,13 +277,47 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               _buildFilterChip('Airport', _FilterMode.airport),
               const Spacer(),
               PopupMenuButton<_SortMode>(
-                icon: Icon(Icons.sort, size: 20, color: colorScheme.onSurfaceVariant),
+                icon: Icon(
+                  Icons.sort,
+                  size: 20,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 tooltip: 'Sort',
                 onSelected: (mode) => setState(() => _sortMode = mode),
                 itemBuilder: (_) => [
-                  PopupMenuItem(value: _SortMode.timeAsc, child: Text('Time (earliest first)', style: TextStyle(fontWeight: _sortMode == _SortMode.timeAsc ? FontWeight.bold : FontWeight.normal))),
-                  PopupMenuItem(value: _SortMode.timeDesc, child: Text('Time (latest first)', style: TextStyle(fontWeight: _sortMode == _SortMode.timeDesc ? FontWeight.bold : FontWeight.normal))),
-                  PopupMenuItem(value: _SortMode.client, child: Text('Client name', style: TextStyle(fontWeight: _sortMode == _SortMode.client ? FontWeight.bold : FontWeight.normal))),
+                  PopupMenuItem(
+                    value: _SortMode.timeAsc,
+                    child: Text(
+                      'Time (earliest first)',
+                      style: TextStyle(
+                        fontWeight: _sortMode == _SortMode.timeAsc
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: _SortMode.timeDesc,
+                    child: Text(
+                      'Time (latest first)',
+                      style: TextStyle(
+                        fontWeight: _sortMode == _SortMode.timeDesc
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: _SortMode.client,
+                    child: Text(
+                      'Client name',
+                      style: TextStyle(
+                        fontWeight: _sortMode == _SortMode.client
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -278,7 +335,9 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: selected ? colorScheme.primary : colorScheme.surfaceContainerLow,
+          color: selected
+              ? colorScheme.primary
+              : colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Text(
@@ -286,7 +345,9 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+            color: selected
+                ? colorScheme.onPrimary
+                : colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -304,11 +365,19 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         bottom: false,
         child: BlocBuilder<RideBloc, RideState>(
           builder: (context, state) {
-            final pendingCount = state.rides.where((r) => r.status == RideStatus.requested).length;
-            final assignedCount = state.rides.where((r) => r.status == RideStatus.assigned).length;
+            final pendingCount = state.rides
+                .where((r) => r.status == RideStatus.requested)
+                .length;
+            final assignedCount = state.rides
+                .where((r) => r.status == RideStatus.assigned)
+                .length;
             return Row(
               children: [
-                const Icon(Icons.pending_actions, color: Colors.white, size: 24),
+                const Icon(
+                  Icons.pending_actions,
+                  color: Colors.white,
+                  size: 24,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -316,19 +385,32 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                     children: [
                       const Text(
                         'Ride Management',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         '$pendingCount pending · $assignedCount assigned',
-                        style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 13),
+                        style: TextStyle(
+                          color: Colors.white.withAlpha(200),
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 const NotificationBell(),
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-                  onPressed: () => context.read<RideBloc>().add(const RideLoadPendingRequested()),
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  onPressed: () => context.read<RideBloc>().add(
+                    const RideLoadPendingRequested(),
+                  ),
                 ),
               ],
             );
@@ -338,7 +420,11 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     );
   }
 
-  void _showDriverSelectionSheet(BuildContext context, Ride ride, {bool isReassign = false}) {
+  void _showDriverSelectionSheet(
+    BuildContext context,
+    Ride ride, {
+    bool isReassign = false,
+  }) {
     final scheduleState = context.read<ScheduleBloc>().state;
     final rideState = context.read<RideBloc>().state;
     final authBloc = context.read<AuthBloc>();
@@ -371,15 +457,16 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               conflicts: conflicts,
               onConfirm: () {
                 if (isReassign) {
-                  context.read<RideBloc>().add(RideReassignRequested(
-                    rideId: ride.id,
-                    newDriverId: driverId,
-                  ));
+                  context.read<RideBloc>().add(
+                    RideReassignRequested(
+                      rideId: ride.id,
+                      newDriverId: driverId,
+                    ),
+                  );
                 } else {
-                  context.read<RideBloc>().add(RideAssignRequested(
-                    rideId: ride.id,
-                    driverId: driverId,
-                  ));
+                  context.read<RideBloc>().add(
+                    RideAssignRequested(rideId: ride.id, driverId: driverId),
+                  );
                 }
               },
             ),
@@ -400,11 +487,17 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           const SizedBox(height: 12),
           Text(
             isPending ? 'No pending rides' : 'No assigned rides',
-            style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 16,
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
-            isPending ? 'All rides have been assigned' : 'No rides currently assigned to drivers',
+            isPending
+                ? 'All rides have been assigned'
+                : 'No rides currently assigned to drivers',
             style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
           ),
         ],
@@ -435,16 +528,26 @@ class _PendingRideCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.access_time, size: 16, color: AppColors.rideRequested),
+                    Icon(
+                      Icons.access_time,
+                      size: 16,
+                      color: AppColors.rideRequested,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       DateFormat('dd.MM HH:mm').format(ride.pickupDateTime),
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.rideRequestedBg,
                     borderRadius: BorderRadius.circular(10),
@@ -452,7 +555,11 @@ class _PendingRideCard extends StatelessWidget {
                   ),
                   child: Text(
                     'PENDING',
-                    style: TextStyle(color: AppColors.rideRequestedText, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: AppColors.rideRequestedText,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -480,7 +587,11 @@ class _PendingRideCard extends StatelessWidget {
   Widget _buildInfoRow(BuildContext context, IconData icon, String value) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Icon(
+          icon,
+          size: 14,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -517,16 +628,26 @@ class _AssignedRideCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.access_time, size: 16, color: AppColors.infoStrong),
+                    Icon(
+                      Icons.access_time,
+                      size: 16,
+                      color: AppColors.infoStrong,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       DateFormat('dd.MM HH:mm').format(ride.pickupDateTime),
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.infoBg,
                     borderRadius: BorderRadius.circular(10),
@@ -534,7 +655,11 @@ class _AssignedRideCard extends StatelessWidget {
                   ),
                   child: Text(
                     'ASSIGNED',
-                    style: TextStyle(color: AppColors.infoStrong, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: AppColors.infoStrong,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -559,8 +684,14 @@ class _AssignedRideCard extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.warningStrong,
                   side: BorderSide(color: AppColors.warning),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -573,7 +704,11 @@ class _AssignedRideCard extends StatelessWidget {
   Widget _buildInfoRow(BuildContext context, IconData icon, String value) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Icon(
+          icon,
+          size: 14,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -594,7 +729,8 @@ class _DriverSelectionSheet extends StatefulWidget {
   final Set<String> scheduledDriverIds;
   final UserService userService;
   final bool isReassign;
-  final void Function(String driverId, String driverLabel, List<Ride> conflicts) onAssign;
+  final void Function(String driverId, String driverLabel, List<Ride> conflicts)
+  onAssign;
 
   const _DriverSelectionSheet({
     required this.ride,
@@ -641,7 +777,9 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,7 +789,9 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onPrimary.withAlpha(140),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onPrimary.withAlpha(140),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -659,12 +799,21 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                 const SizedBox(height: 12),
                 Text(
                   widget.isReassign ? 'Reassign Driver' : 'Select Driver',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${widget.ride.clientName} — ${DateFormat('dd.MM HH:mm').format(widget.ride.pickupDateTime)}',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withAlpha(180), fontSize: 13),
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onPrimary.withAlpha(180),
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -677,7 +826,12 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
 
   Widget _buildBody(ScrollController scrollController) {
     if (_error != null) {
-      return Center(child: Text('Error: $_error', style: const TextStyle(color: AppColors.error)));
+      return Center(
+        child: Text(
+          'Error: $_error',
+          style: const TextStyle(color: AppColors.error),
+        ),
+      );
     }
     if (_drivers == null) {
       return const Center(child: CircularProgressIndicator());
@@ -702,25 +856,32 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
         final driver = drivers[index];
         final isScheduled = widget.scheduledDriverIds.contains(driver.id);
         final driverRides = widget.rideState.rides
-            .where((r) =>
-                r.driverId == driver.id &&
-                r.status != RideStatus.cancelled &&
-                r.status != RideStatus.completed)
+            .where(
+              (r) =>
+                  r.driverId == driver.id &&
+                  r.status != RideStatus.cancelled &&
+                  r.status != RideStatus.completed,
+            )
             .toList();
-        final conflicts = ConflictDetector.findConflicts(widget.ride, driverRides);
+        final conflicts = ConflictDetector.findConflicts(
+          widget.ride,
+          driverRides,
+        );
         final rideCount = driverRides.length;
         final loadColor = rideCount == 0
             ? AppColors.success
             : rideCount <= 2
-                ? AppColors.warning
-                : AppColors.error;
+            ? AppColors.warning
+            : AppColors.error;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
             side: BorderSide(
-              color: conflicts.isNotEmpty ? AppColors.error.withAlpha(100) : Colors.transparent,
+              color: conflicts.isNotEmpty
+                  ? AppColors.error.withAlpha(100)
+                  : Colors.transparent,
             ),
           ),
           child: ListTile(
@@ -731,19 +892,31 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
             title: Row(
               children: [
                 Expanded(
-                  child: Text(driver.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    driver.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
                 if (isScheduled)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.success.withAlpha(30),
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: AppColors.success.withAlpha(80)),
+                      border: Border.all(
+                        color: AppColors.success.withAlpha(80),
+                      ),
                     ),
                     child: const Text(
                       'Scheduled',
-                      style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: AppColors.success,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
               ],
@@ -758,7 +931,11 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                 if (conflicts.isNotEmpty)
                   Text(
                     '${conflicts.length} time conflict${conflicts.length == 1 ? '' : 's'}',
-                    style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: AppColors.error,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
               ],
             ),

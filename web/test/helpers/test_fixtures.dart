@@ -50,7 +50,8 @@ class TestFixtures {
       companyId: 'company-1',
       licenseNumber: licenseNumber,
       phone: '+491111111111',
-      vehicleInfo: vehicleInfo ?? const VehicleInfo(make: 'BMW', model: '5 Series'),
+      vehicleInfo:
+          vehicleInfo ?? const VehicleInfo(make: 'BMW', model: '5 Series'),
     );
   }
 

@@ -16,10 +16,36 @@ class QuickLoginButtons extends StatelessWidget {
       crossAxisSpacing: 12,
       childAspectRatio: 2.2,
       children: [
-        _buildButton('Client',     'client1@bmw.de',          Icons.person,           AppColors.clientColor),
-        _buildButton('Driver',     'driver1@dispax.de',      Icons.drive_eta,        AppColors.driverColor),
-        _buildButton('Secretary',  'secretary@dispax.de',    Icons.business_center,  AppColors.secretaryColor),
-        _buildButton('Dispatcher', 'dispatcher@dispax.de',   Icons.dashboard,        AppColors.dispatcherColor),
+        _buildButton(
+          'Client',
+          'client1@bmw.de',
+          Icons.person,
+          AppColors.clientColor,
+        ),
+        _buildButton(
+          'Driver',
+          'driver1@dispax.de',
+          Icons.drive_eta,
+          AppColors.driverColor,
+        ),
+        _buildButton(
+          'Secretary',
+          'secretary@dispax.de',
+          Icons.business_center,
+          AppColors.secretaryColor,
+        ),
+        _buildButton(
+          'Dispatcher',
+          'dispatcher@dispax.de',
+          Icons.dashboard,
+          AppColors.dispatcherColor,
+        ),
+        _buildButton(
+          'SuperAdmin',
+          'superadmin@dispax.de',
+          Icons.admin_panel_settings,
+          AppColors.superAdminColor,
+        ),
       ],
     );
   }
@@ -44,7 +70,11 @@ class QuickLoginButtons extends StatelessWidget {
                 // The login screen sits on a fixed dark gradient (the label is
                 // hardcoded white), and the role colors are graphite — drawing
                 // the icon in `color` made it invisible. Match the label.
-                Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 22),
+                Icon(
+                  icon,
+                  color: Colors.white.withValues(alpha: 0.9),
+                  size: 22,
+                ),
                 const SizedBox(height: 4),
                 Text(
                   role,

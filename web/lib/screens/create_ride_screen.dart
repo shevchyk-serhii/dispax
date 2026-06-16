@@ -39,7 +39,8 @@ class CreateRideScreenContent extends StatefulWidget {
   const CreateRideScreenContent({super.key, this.onCreated});
 
   @override
-  State<CreateRideScreenContent> createState() => _CreateRideScreenContentState();
+  State<CreateRideScreenContent> createState() =>
+      _CreateRideScreenContentState();
 }
 
 class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
@@ -94,7 +95,9 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
         appBar: AppBar(
           title: Text(
             'Create New Ride',
-            style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary),
+            style: AppStyles.titleLarge.copyWith(
+              color: AppColors.textOnPrimary,
+            ),
           ),
           backgroundColor: AppColors.secretaryColor,
           foregroundColor: AppColors.textOnPrimary,

@@ -51,37 +51,37 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Reports', style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary)),
+        title: Text(
+          'Reports',
+          style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary),
+        ),
         backgroundColor: AppColors.secretaryColor,
         foregroundColor: AppColors.textOnPrimary,
         elevation: AppDimensions.appBarElevation,
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadStats,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadStats),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                      const SizedBox(height: 12),
-                      Text(_error!, style: AppStyles.bodyMedium),
-                      const SizedBox(height: 12),
-                      ElevatedButton(onPressed: _loadStats, child: const Text('Retry')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                  const SizedBox(height: 12),
+                  Text(_error!, style: AppStyles.bodyMedium),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _loadStats,
+                    child: const Text('Retry'),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadStats,
-                  child: _buildContent(),
-                ),
+                ],
+              ),
+            )
+          : RefreshIndicator(onRefresh: _loadStats, child: _buildContent()),
     );
   }
 
@@ -104,25 +104,55 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
         // Overview cards
         Row(
           children: [
-            _buildStatCard('Total Rides', total.toString(), Icons.directions_car, Theme.of(context).colorScheme.primary),
+            _buildStatCard(
+              'Total Rides',
+              total.toString(),
+              Icons.directions_car,
+              Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(width: 12),
-            _buildStatCard('Completed', completed.toString(), Icons.check_circle, AppColors.success),
+            _buildStatCard(
+              'Completed',
+              completed.toString(),
+              Icons.check_circle,
+              AppColors.success,
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildStatCard('In Progress', inProgress.toString(), Icons.play_circle, AppColors.rideInProgress),
+            _buildStatCard(
+              'In Progress',
+              inProgress.toString(),
+              Icons.play_circle,
+              AppColors.rideInProgress,
+            ),
             const SizedBox(width: 12),
-            _buildStatCard('Requested', requested.toString(), Icons.pending, AppColors.rideRequested),
+            _buildStatCard(
+              'Requested',
+              requested.toString(),
+              Icons.pending,
+              AppColors.rideRequested,
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildStatCard('Assigned', assigned.toString(), Icons.assignment, AppColors.rideAssigned),
+            _buildStatCard(
+              'Assigned',
+              assigned.toString(),
+              Icons.assignment,
+              AppColors.rideAssigned,
+            ),
             const SizedBox(width: 12),
-            _buildStatCard('Cancelled', cancelled.toString(), Icons.cancel, AppColors.error),
+            _buildStatCard(
+              'Cancelled',
+              cancelled.toString(),
+              Icons.cancel,
+              AppColors.error,
+            ),
           ],
         ),
 
@@ -134,7 +164,9 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,9 +176,17 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
               _buildMetricRow(
                 'Cancellation Rate',
                 '${cancelRate.toStringAsFixed(1)}%',
-                cancelRate < 10 ? AppColors.success : cancelRate < 25 ? AppColors.warning : AppColors.error,
+                cancelRate < 10
+                    ? AppColors.success
+                    : cancelRate < 25
+                    ? AppColors.warning
+                    : AppColors.error,
               ),
-              _buildMetricRow('Total Clients', clients.toString(), AppColors.clientColor),
+              _buildMetricRow(
+                'Total Clients',
+                clients.toString(),
+                AppColors.clientColor,
+              ),
             ],
           ),
         ),
@@ -159,7 +199,9 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,18 +209,43 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
               Text('Status Breakdown', style: AppStyles.titleSmall),
               const SizedBox(height: 16),
               if (total > 0) ...[
-                _buildStatusBar('Completed', completed, total, AppColors.success),
+                _buildStatusBar(
+                  'Completed',
+                  completed,
+                  total,
+                  AppColors.success,
+                ),
                 const SizedBox(height: 8),
-                _buildStatusBar('In Progress', inProgress, total, AppColors.rideInProgress),
+                _buildStatusBar(
+                  'In Progress',
+                  inProgress,
+                  total,
+                  AppColors.rideInProgress,
+                ),
                 const SizedBox(height: 8),
-                _buildStatusBar('Assigned', assigned, total, AppColors.rideAssigned),
+                _buildStatusBar(
+                  'Assigned',
+                  assigned,
+                  total,
+                  AppColors.rideAssigned,
+                ),
                 const SizedBox(height: 8),
-                _buildStatusBar('Requested', requested, total, AppColors.rideRequested),
+                _buildStatusBar(
+                  'Requested',
+                  requested,
+                  total,
+                  AppColors.rideRequested,
+                ),
                 const SizedBox(height: 8),
                 _buildStatusBar('Cancelled', cancelled, total, AppColors.error),
               ] else
                 Center(
-                  child: Text('No ride data yet', style: AppStyles.bodyMedium.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  child: Text(
+                    'No ride data yet',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -187,7 +254,12 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -204,11 +276,20 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(value,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
                   ),
-                  Text(label,
-                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -225,15 +306,26 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: color.withAlpha(20),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(value,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -249,7 +341,13 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
       children: [
         SizedBox(
           width: 80,
-          child: Text(label, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -280,7 +378,10 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
           width: 50,
           child: Text(
             '$value ($percentage%)',
-            style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       ],

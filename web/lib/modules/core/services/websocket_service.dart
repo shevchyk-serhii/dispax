@@ -22,7 +22,9 @@ class WebSocketService {
   Stream<WebSocketEvent> get eventStream => _eventController.stream;
 
   String get _wsUrl {
-    final uri = Uri.parse('$_wsBaseUrl/api/ws').replace(queryParameters: {'token': _token!});
+    final uri = Uri.parse(
+      '$_wsBaseUrl/api/ws',
+    ).replace(queryParameters: {'token': _token!});
     return uri.toString();
   }
 
@@ -80,7 +82,9 @@ class WebSocketService {
     final delay = max(1, min(30, pow(2, _reconnectAttempt).toInt()));
     _reconnectAttempt++;
 
-    debugPrint('WebSocket reconnecting in ${delay}s (attempt $_reconnectAttempt)');
+    debugPrint(
+      'WebSocket reconnecting in ${delay}s (attempt $_reconnectAttempt)',
+    );
     _reconnectTimer = Timer(Duration(seconds: delay), _doConnect);
   }
 

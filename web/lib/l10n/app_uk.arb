@@ -128,5 +128,20 @@
   "about": "Про додаток",
   "version": "Версія",
   "privacyPolicy": "Політика конфіденційності",
-  "termsOfService": "Умови використання"
+  "termsOfService": "Умови використання",
+
+  "superAdminDashboard": "Адміністратор платформи",
+  "companies": "Компанії",
+  "companiesList": "Список компаній",
+  "platformAnalytics": "Аналітика платформи",
+  "platformRevenue": "Дохід платформи",
+  "activeConnections": "Активні з'єднання",
+  "companyStatus": "Статус компанії",
+  "subscriptionPlan": "План підписки",
+  "totalRides": "Всього поїздок",
+  "completedRides": "Завершені поїздки",
+  "cancelledRides": "Скасовані поїздки",
+  "billingAnalytics": "Аналітика рахунків",
+  "connectionAnalytics": "Аналітика підключень",
+  "superAdminSettings": "Налаштування платформи"
 }

@@ -97,7 +97,11 @@ class TodayRideCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.access_time, color: colorScheme.onSurfaceVariant, size: 18),
+              Icon(
+                Icons.access_time,
+                color: colorScheme.onSurfaceVariant,
+                size: 18,
+              ),
               const SizedBox(width: 6),
               Text(
                 DateFormat.Hm().format(ride.pickupDateTime),

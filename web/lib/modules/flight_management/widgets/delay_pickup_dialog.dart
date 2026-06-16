@@ -18,7 +18,9 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       title: Text(
         'Delay by how long?',
-        style: AppStyles.titleMedium.copyWith(color: Theme.of(context).colorScheme.onSurface),
+        style: AppStyles.titleMedium.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
       ),
       content: RadioGroup<int>(
         groupValue: _selectedDelay,
@@ -27,13 +29,19 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
         },
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: _delayOptions.map((delay) => RadioListTile<int>(
-            title: Text(
-              '$delay minutes',
-              style: AppStyles.bodyMedium.copyWith(color: Theme.of(context).colorScheme.onSurface),
-            ),
-            value: delay,
-          )).toList(),
+          children: _delayOptions
+              .map(
+                (delay) => RadioListTile<int>(
+                  title: Text(
+                    '$delay minutes',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  value: delay,
+                ),
+              )
+              .toList(),
         ),
       ),
       actions: [
@@ -41,7 +49,9 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             'Cancel',
-            style: AppStyles.labelMedium.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: AppStyles.labelMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         ElevatedButton(

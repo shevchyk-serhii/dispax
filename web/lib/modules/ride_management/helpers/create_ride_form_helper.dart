@@ -9,9 +9,31 @@ class CreateRideFormHelper {
   // Note: Gates and terminals are kept in UI for future backend support
   // Currently, backend doesn't use these fields in CreateRideRequest.toDomain()
   static const List<String> gates = [
-    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10',
-    'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'B10',
-    'C1', 'C2', 'C3', 'C4', 'C5',
+    'A1',
+    'A2',
+    'A3',
+    'A4',
+    'A5',
+    'A6',
+    'A7',
+    'A8',
+    'A9',
+    'A10',
+    'B1',
+    'B2',
+    'B3',
+    'B4',
+    'B5',
+    'B6',
+    'B7',
+    'B8',
+    'B9',
+    'B10',
+    'C1',
+    'C2',
+    'C3',
+    'C4',
+    'C5',
   ];
 
   static const List<String> terminals = ['1', '2', '3'];
@@ -47,7 +69,9 @@ class CreateRideFormHelper {
           time.hour + (roundedMinute == 60 ? 1 : 0),
           roundedMinute == 60 ? 0 : roundedMinute,
         );
-        context.read<CreateRideFormBloc>().add(PickupDateTimeChanged(newDateTime));
+        context.read<CreateRideFormBloc>().add(
+          PickupDateTimeChanged(newDateTime),
+        );
       }
     }
   }
@@ -99,8 +123,11 @@ class CreateRideFormHelper {
       from: Location(address: formState.fromAddress.trim()),
       to: Location(address: formState.toAddress.trim()),
       clientName: formState.clientName.trim(),
-      newClientPhone: formState.isNewClient ? formState.newClientPhone.trim() : null,
-      flightNumber: formState.isAirportTransfer && formState.flightNumber.isNotEmpty
+      newClientPhone: formState.isNewClient
+          ? formState.newClientPhone.trim()
+          : null,
+      flightNumber:
+          formState.isAirportTransfer && formState.flightNumber.isNotEmpty
           ? formState.flightNumber.trim()
           : null,
       isAirportTransfer: formState.isAirportTransfer,

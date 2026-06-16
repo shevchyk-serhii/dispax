@@ -1,4 +1,3 @@
-
 export 'models/person.dart';
 export 'models/location.dart';
 export 'services/api_client.dart';

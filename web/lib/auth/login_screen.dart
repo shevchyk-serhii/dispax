@@ -75,11 +75,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.all(AppDimensions.paddingLarge),
                   child: Column(
                     children: [
-                      const SizedBox(height: AppDimensions.paddingXXLarge + AppDimensions.paddingMedium),
+                      const SizedBox(
+                        height:
+                            AppDimensions.paddingXXLarge +
+                            AppDimensions.paddingMedium,
+                      ),
 
                       const AppHeader(),
 
-                      const SizedBox(height: AppDimensions.paddingXXLarge + AppDimensions.paddingMedium),
+                      const SizedBox(
+                        height:
+                            AppDimensions.paddingXXLarge +
+                            AppDimensions.paddingMedium,
+                      ),
 
                       LoginCard(
                         formKey: _formKey,
@@ -97,7 +105,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           _emailController.text = email;
                           _passwordController.text = password;
                         },
-                        onQuickLogin: (email) => AuthHelper.quickLogin(context, email),
+                        onQuickLogin: (email) =>
+                            AuthHelper.quickLogin(context, email),
                       ),
 
                       const SizedBox(height: AppDimensions.paddingXLarge),

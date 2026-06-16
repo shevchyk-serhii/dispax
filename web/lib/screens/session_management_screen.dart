@@ -8,7 +8,8 @@ class SessionManagementScreen extends StatefulWidget {
   const SessionManagementScreen({super.key});
 
   @override
-  State<SessionManagementScreen> createState() => _SessionManagementScreenState();
+  State<SessionManagementScreen> createState() =>
+      _SessionManagementScreenState();
 }
 
 class _SessionManagementScreenState extends State<SessionManagementScreen> {
@@ -35,7 +36,8 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
 
       if (resp.statusCode == 200) {
         setState(() {
-          _sessions = (jsonDecode(resp.body) as List).cast<Map<String, dynamic>>();
+          _sessions = (jsonDecode(resp.body) as List)
+              .cast<Map<String, dynamic>>();
           _isLoading = false;
         });
       } else {
@@ -58,7 +60,9 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Revoke Session'),
-        content: const Text('This will log out the device associated with this session.'),
+        content: const Text(
+          'This will log out the device associated with this session.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -80,14 +84,14 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       await apiClient.delete('/sessions/$sessionId');
       _loadSessions();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Session revoked')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Session revoked')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -125,15 +129,17 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final otherSessions = _sessions.where((s) => s['isCurrent'] != true).toList();
+    final otherSessions = _sessions
+        .where((s) => s['isCurrent'] != true)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -149,27 +155,31 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                      const SizedBox(height: 12),
-                      Text(_error!),
-                      ElevatedButton(onPressed: _loadSessions, child: const Text('Retry')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                  const SizedBox(height: 12),
+                  Text(_error!),
+                  ElevatedButton(
+                    onPressed: _loadSessions,
+                    child: const Text('Retry'),
                   ),
-                )
-              : _sessions.isEmpty
-                  ? const Center(child: Text('No active sessions'))
-                  : RefreshIndicator(
-                      onRefresh: _loadSessions,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: _sessions.length,
-                        itemBuilder: (context, index) => _buildSessionCard(_sessions[index]),
-                      ),
-                    ),
+                ],
+              ),
+            )
+          : _sessions.isEmpty
+          ? const Center(child: Text('No active sessions'))
+          : RefreshIndicator(
+              onRefresh: _loadSessions,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: _sessions.length,
+                itemBuilder: (context, index) =>
+                    _buildSessionCard(_sessions[index]),
+              ),
+            ),
     );
   }
 
@@ -197,7 +207,9 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
               children: [
                 Icon(
                   _deviceIcon(deviceInfo),
-                  color: isCurrent ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: isCurrent
+                      ? AppColors.success
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   size: 28,
                 ),
                 const SizedBox(width: 12),
@@ -210,14 +222,20 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                           Expanded(
                             child: Text(
                               deviceInfo,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (isCurrent)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.success.withAlpha(20),
                                 borderRadius: BorderRadius.circular(12),
@@ -236,7 +254,10 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'IP: $ipAddress',
-                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -246,16 +267,26 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.access_time, size: 14, color: Theme.of(context).colorScheme.outlineVariant),
+                Icon(
+                  Icons.access_time,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Created: ${_formatDateTime(createdAt)}',
-                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Last active: ${_formatDateTime(lastActive)}',
-                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
               ],
             ),
@@ -279,11 +310,15 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
 
   IconData _deviceIcon(String deviceInfo) {
     final lower = deviceInfo.toLowerCase();
-    if (lower.contains('iphone') || lower.contains('ios')) return Icons.phone_iphone;
+    if (lower.contains('iphone') || lower.contains('ios'))
+      return Icons.phone_iphone;
     if (lower.contains('android')) return Icons.phone_android;
     if (lower.contains('ipad') || lower.contains('tablet')) return Icons.tablet;
-    if (lower.contains('web') || lower.contains('browser')) return Icons.language;
-    if (lower.contains('mac') || lower.contains('windows') || lower.contains('linux')) {
+    if (lower.contains('web') || lower.contains('browser'))
+      return Icons.language;
+    if (lower.contains('mac') ||
+        lower.contains('windows') ||
+        lower.contains('linux')) {
       return Icons.laptop;
     }
     return Icons.devices;

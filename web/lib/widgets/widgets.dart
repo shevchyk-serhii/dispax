@@ -1,5 +1,3 @@
-
-
 export '../modules/core/widgets/widgets.dart';
 
 export '../modules/auth/widgets/widgets.dart';

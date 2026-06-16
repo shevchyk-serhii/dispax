@@ -69,26 +69,41 @@ class _PaymentScreenState extends State<PaymentScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${ride.clientName}: ${ride.from.address} -> ${ride.to.address}'),
+              Text(
+                '${ride.clientName}: ${ride.from.address} -> ${ride.to.address}',
+              ),
               if (ride.price != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text('Amount: ${ride.price!.toStringAsFixed(2)} EUR',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: Text(
+                    'Amount: ${ride.price!.toStringAsFixed(2)} EUR',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               const SizedBox(height: 16),
-              const Text('Payment Method:', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text(
+                'Payment Method:',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
               const SizedBox(height: 8),
               RadioGroup<String>(
                 groupValue: selectedMethod,
-                onChanged: (v) => setDialogState(() => selectedMethod = v ?? 'Cash'),
+                onChanged: (v) =>
+                    setDialogState(() => selectedMethod = v ?? 'Cash'),
                 child: Column(
-                  children: ['Cash', 'Card', 'Invoice'].map((method) => RadioListTile<String>(
-                    title: Text(method),
-                    value: method,
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  )).toList(),
+                  children: ['Cash', 'Card', 'Invoice']
+                      .map(
+                        (method) => RadioListTile<String>(
+                          title: Text(method),
+                          value: method,
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             ],
@@ -123,12 +138,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payment recorded'), backgroundColor: AppColors.success),
+          const SnackBar(
+            content: Text('Payment recorded'),
+            backgroundColor: AppColors.success,
+          ),
         );
         _loadUnpaidRides();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: ${response.body}'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Failed: ${response.body}'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } catch (e) {
@@ -167,7 +188,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             const Expanded(
               child: Text(
                 'Payments',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
@@ -194,7 +219,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             const SizedBox(height: 12),
             Text(_error!),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _loadUnpaidRides, child: const Text('Retry')),
+            ElevatedButton(
+              onPressed: _loadUnpaidRides,
+              child: const Text('Retry'),
+            ),
           ],
         ),
       );
@@ -209,7 +237,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             const SizedBox(height: 12),
             Text(
               'All rides are paid',
-              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -225,7 +257,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
           final ride = _unpaidRides[index];
           return Card(
             margin: const EdgeInsets.only(bottom: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -236,18 +270,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       Expanded(
                         child: Text(
                           ride.clientName,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.warning.withAlpha(30),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Text(
                           'Unpaid',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.warning),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.warning,
+                          ),
                         ),
                       ),
                     ],
@@ -255,23 +299,41 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.schedule, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.schedule,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 4),
                       Text(
-                        DateFormat('dd.MM.yyyy HH:mm').format(ride.pickupDateTime),
-                        style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        DateFormat(
+                          'dd.MM.yyyy HH:mm',
+                        ).format(ride.pickupDateTime),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 14, color: AppColors.successStrong),
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: AppColors.successStrong,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           '${ride.from.address} -> ${ride.to.address}',
-                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -282,7 +344,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '${ride.price!.toStringAsFixed(2)} EUR',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 10),

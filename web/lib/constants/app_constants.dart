@@ -1,5 +1,4 @@
 class AppConstants {
-
   static const String baseUrl = 'https://dispax-o2trzxjbva-ew.a.run.app';
 
   static const double defaultPadding = 16.0;

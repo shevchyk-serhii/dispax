@@ -67,10 +67,7 @@ class RideStatusUpdateRequested extends RideEvent {
   final String rideId;
   final RideStatus status;
 
-  const RideStatusUpdateRequested({
-    required this.rideId,
-    required this.status,
-  });
+  const RideStatusUpdateRequested({required this.rideId, required this.status});
 
   @override
   List<Object> get props => [rideId, status];
@@ -94,7 +91,10 @@ class RideReassignRequested extends RideEvent {
   final String rideId;
   final String newDriverId;
 
-  const RideReassignRequested({required this.rideId, required this.newDriverId});
+  const RideReassignRequested({
+    required this.rideId,
+    required this.newDriverId,
+  });
 
   @override
   List<Object> get props => [rideId, newDriverId];

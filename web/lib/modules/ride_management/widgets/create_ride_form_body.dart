@@ -7,10 +7,7 @@ import 'sections/create_ride_form_sections.dart';
 class CreateRideFormBody extends StatelessWidget {
   final GlobalKey<FormState> formKey;
 
-  const CreateRideFormBody({
-    super.key,
-    required this.formKey,
-  });
+  const CreateRideFormBody({super.key, required this.formKey});
 
   @override
   Widget build(BuildContext context) {

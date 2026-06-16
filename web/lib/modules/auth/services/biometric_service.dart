@@ -10,11 +10,9 @@ class BiometricService {
   static const String _biometricUserIdKey = 'biometric_user_id';
 
   final LocalAuthentication _localAuth = LocalAuthentication();
-  
+
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
@@ -35,7 +33,8 @@ class BiometricService {
   /// Gets the list of available biometric types on the device
   Future<List<BiometricType>> get availableBiometrics async {
     try {
-      final List<BiometricType> biometrics = await _localAuth.getAvailableBiometrics();
+      final List<BiometricType> biometrics = await _localAuth
+          .getAvailableBiometrics();
       return biometrics;
     } catch (e) {
       debugPrint('Error getting available biometrics: $e');
@@ -87,7 +86,6 @@ class BiometricService {
     bool stickyAuth = true,
   }) async {
     try {
-
       if (!await isAvailable) {
         return BiometricAuthResult.unavailable;
       }
@@ -96,8 +94,8 @@ class BiometricService {
         return BiometricAuthResult.disabled;
       }
 
-      final String localizedReason = reason ??
-          'Confirm your identity to sign in to Dispax';
+      final String localizedReason =
+          reason ?? 'Confirm your identity to sign in to Dispax';
 
       final bool didAuthenticate = await _localAuth.authenticate(
         localizedReason: localizedReason,

@@ -55,22 +55,34 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   List<Map<String, dynamic>> get _filteredUsers {
     var filtered = _users.toList();
     if (_roleFilter != 'All') {
-      filtered = filtered.where((u) =>
-        (u['role'] as String? ?? '').toLowerCase() == _roleFilter.toLowerCase()
-      ).toList();
+      filtered = filtered
+          .where(
+            (u) =>
+                (u['role'] as String? ?? '').toLowerCase() ==
+                _roleFilter.toLowerCase(),
+          )
+          .toList();
     }
     final search = _searchController.text.trim().toLowerCase();
     if (search.isNotEmpty) {
-      filtered = filtered.where((u) =>
-        (u['name'] as String? ?? '').toLowerCase().contains(search) ||
-        (u['email'] as String? ?? '').toLowerCase().contains(search)
-      ).toList();
+      filtered = filtered
+          .where(
+            (u) =>
+                (u['name'] as String? ?? '').toLowerCase().contains(search) ||
+                (u['email'] as String? ?? '').toLowerCase().contains(search),
+          )
+          .toList();
     }
     return filtered;
   }
 
   Map<String, int> get _roleCounts {
-    final counts = <String, int>{'driver': 0, 'client': 0, 'secretary': 0, 'dispatcher': 0};
+    final counts = <String, int>{
+      'driver': 0,
+      'client': 0,
+      'secretary': 0,
+      'dispatcher': 0,
+    };
     for (final u in _users) {
       final role = (u['role'] as String? ?? '').toLowerCase();
       counts[role] = (counts[role] ?? 0) + 1;
@@ -80,20 +92,29 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   Color _roleColor(String role) {
     switch (role.toLowerCase()) {
-      case 'driver': return AppColors.driverColor;
-      case 'client': return AppColors.clientColor;
-      case 'secretary': return AppColors.secretaryColor;
-      case 'dispatcher': return AppColors.dispatcherColor;
-      default: return Theme.of(context).colorScheme.onSurfaceVariant;
+      case 'driver':
+        return AppColors.driverColor;
+      case 'client':
+        return AppColors.clientColor;
+      case 'secretary':
+        return AppColors.secretaryColor;
+      case 'dispatcher':
+        return AppColors.dispatcherColor;
+      default:
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 
   Color _statusColor(String? status) {
     switch (status?.toLowerCase()) {
-      case 'active': return AppColors.success;
-      case 'suspended': return AppColors.warning;
-      case 'inactive': return Theme.of(context).colorScheme.onSurfaceVariant;
-      default: return AppColors.success;
+      case 'active':
+        return AppColors.success;
+      case 'suspended':
+        return AppColors.warning;
+      case 'inactive':
+        return Theme.of(context).colorScheme.onSurfaceVariant;
+      default:
+        return AppColors.success;
     }
   }
 
@@ -104,32 +125,49 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       _loadUsers();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Role updated to $newRole'), backgroundColor: AppColors.success),
+          SnackBar(
+            content: Text('Role updated to $newRole'),
+            backgroundColor: AppColors.success,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
   }
 
-  Future<void> _changeStatus(Map<String, dynamic> user, String newStatus) async {
+  Future<void> _changeStatus(
+    Map<String, dynamic> user,
+    String newStatus,
+  ) async {
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
-      await apiClient.patch('/users/${user['id']}/status', {'status': newStatus});
+      await apiClient.patch('/users/${user['id']}/status', {
+        'status': newStatus,
+      });
       _loadUsers();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Status updated to $newStatus'), backgroundColor: AppColors.success),
+          SnackBar(
+            content: Text('Status updated to $newStatus'),
+            backgroundColor: AppColors.success,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
@@ -152,33 +190,49 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               children: [
                 TextField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: emailCtrl,
-                  decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: passwordCtrl,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: selectedRole,
-                  decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    labelText: 'Role',
+                    border: OutlineInputBorder(),
+                  ),
                   items: ['driver', 'client', 'secretary', 'dispatcher']
                       .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                       .toList(),
-                  onChanged: (v) => setDialogState(() => selectedRole = v ?? 'client'),
+                  onChanged: (v) =>
+                      setDialogState(() => selectedRole = v ?? 'client'),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
               onPressed: () async {
                 try {
@@ -194,7 +248,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
+                      SnackBar(
+                        content: Text('Failed: $e'),
+                        backgroundColor: AppColors.error,
+                      ),
                     );
                   }
                 }
@@ -218,22 +275,26 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          const SizedBox(height: 12),
-                          ElevatedButton(onPressed: _loadUsers, child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadUsers,
-                      child: _buildContent(),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadUsers,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _loadUsers, child: _buildContent()),
         ),
       ],
     );
@@ -250,12 +311,20 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         bottom: false,
         child: Row(
           children: [
-            const Icon(Icons.admin_panel_settings, color: Colors.white, size: 24),
+            const Icon(
+              Icons.admin_panel_settings,
+              color: Colors.white,
+              size: 24,
+            ),
             const SizedBox(width: 10),
             const Expanded(
               child: Text(
                 'User Management',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
@@ -280,10 +349,27 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatChip('Total', _users.length.toString(), Theme.of(context).colorScheme.primary),
-          _buildStatChip('Drivers', (counts['driver'] ?? 0).toString(), AppColors.driverColor),
-          _buildStatChip('Clients', (counts['client'] ?? 0).toString(), AppColors.clientColor),
-          _buildStatChip('Staff', ((counts['secretary'] ?? 0) + (counts['dispatcher'] ?? 0)).toString(), AppColors.secretaryColor),
+          _buildStatChip(
+            'Total',
+            _users.length.toString(),
+            Theme.of(context).colorScheme.primary,
+          ),
+          _buildStatChip(
+            'Drivers',
+            (counts['driver'] ?? 0).toString(),
+            AppColors.driverColor,
+          ),
+          _buildStatChip(
+            'Clients',
+            (counts['client'] ?? 0).toString(),
+            AppColors.clientColor,
+          ),
+          _buildStatChip(
+            'Staff',
+            ((counts['secretary'] ?? 0) + (counts['dispatcher'] ?? 0))
+                .toString(),
+            AppColors.secretaryColor,
+          ),
         ],
       ),
     );
@@ -292,8 +378,21 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   Widget _buildStatChip(String label, String value, Color color) {
     return Column(
       children: [
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),
-        Text(label, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
       ],
     );
   }
@@ -311,7 +410,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 prefixIcon: Icon(Icons.search, size: 20),
                 isDense: true,
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -320,9 +422,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           DropdownButton<String>(
             value: _roleFilter,
             underline: const SizedBox(),
-            items: ['All', 'Driver', 'Client', 'Secretary', 'Dispatcher']
-                .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                .toList(),
+            items: [
+              'All',
+              'Driver',
+              'Client',
+              'Secretary',
+              'Dispatcher',
+            ].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
             onChanged: (v) {
               if (v != null) setState(() => _roleFilter = v);
             },
@@ -339,9 +445,18 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
+            Icon(
+              Icons.people_outline,
+              size: 56,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 12),
-            Text('No users found', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              'No users found',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       );
@@ -363,7 +478,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHighest),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
           ),
           child: Row(
             children: [
@@ -372,7 +489,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 backgroundColor: _roleColor(role).withAlpha(30),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: TextStyle(color: _roleColor(role), fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: _roleColor(role),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -380,27 +500,59 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    Text(email, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      email,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: _roleColor(role).withAlpha(20),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Text(role, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _roleColor(role))),
+                          child: Text(
+                            role,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: _roleColor(role),
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: _statusColor(status).withAlpha(20),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Text(status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _statusColor(status))),
+                          child: Text(
+                            status,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: _statusColor(status),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -417,18 +569,41 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   }
                 },
                 itemBuilder: (_) => [
-                  const PopupMenuItem(enabled: false, child: Text('Change Role', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const PopupMenuItem(
+                    enabled: false,
+                    child: Text(
+                      'Change Role',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                   ...['driver', 'client', 'secretary', 'dispatcher']
                       .where((r) => r != role.toLowerCase())
-                      .map((r) => PopupMenuItem(value: 'role:$r', child: Text(r))),
+                      .map(
+                        (r) => PopupMenuItem(value: 'role:$r', child: Text(r)),
+                      ),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(enabled: false, child: Text('Change Status', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const PopupMenuItem(
+                    enabled: false,
+                    child: Text(
+                      'Change Status',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                   if (status.toLowerCase() != 'active')
-                    const PopupMenuItem(value: 'status:Active', child: Text('Activate')),
+                    const PopupMenuItem(
+                      value: 'status:Active',
+                      child: Text('Activate'),
+                    ),
                   if (status.toLowerCase() != 'suspended')
-                    const PopupMenuItem(value: 'status:Suspended', child: Text('Suspend')),
+                    const PopupMenuItem(
+                      value: 'status:Suspended',
+                      child: Text('Suspend'),
+                    ),
                   if (status.toLowerCase() != 'inactive')
-                    const PopupMenuItem(value: 'status:Inactive', child: Text('Deactivate')),
+                    const PopupMenuItem(
+                      value: 'status:Inactive',
+                      child: Text('Deactivate'),
+                    ),
                 ],
               ),
             ],

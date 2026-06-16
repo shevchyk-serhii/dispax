@@ -44,7 +44,11 @@ class LoginForm extends StatelessWidget {
       labelText: label,
       labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
       hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-      prefixIcon: Icon(prefixIconData, color: Colors.white.withValues(alpha: 0.5), size: 20),
+      prefixIcon: Icon(
+        prefixIconData,
+        color: Colors.white.withValues(alpha: 0.5),
+        size: 20,
+      ),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.white.withValues(alpha: 0.06),
@@ -86,11 +90,14 @@ class LoginForm extends StatelessWidget {
                   prefixIconData: Icons.lock_outline,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
                       color: Colors.white.withValues(alpha: 0.5),
                       size: 20,
                     ),
-                    onPressed: () => obscurePasswordNotifier.value = !obscurePasswordNotifier.value,
+                    onPressed: () => obscurePasswordNotifier.value =
+                        !obscurePasswordNotifier.value,
                   ),
                 ),
                 validator: Validators.password,
@@ -108,7 +115,9 @@ class LoginForm extends StatelessWidget {
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.defaultBorderRadius,
+                  ),
                 ),
               ),
               child: const Text(

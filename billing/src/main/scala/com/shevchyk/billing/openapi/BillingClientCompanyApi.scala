@@ -31,37 +31,35 @@ object BillingClientCompanyApi:
   // Endpoint descriptions
   // ======================================================================
 
-  val listCompaniesEndpoint =
-    secureEndpoint.get
-      .in("api" / "billing" / "companies")
-      .out(jsonBody[List[ClientCompany]])
-      .tag(companyTag)
-      .summary("List billing client companies")
+  val listCompaniesEndpoint = secureEndpoint.get
+    .in("api" / "billing" / "companies")
+    .out(jsonBody[List[ClientCompany]])
+    .tag(companyTag)
+    .summary("List billing client companies")
 
-  val createCompanyEndpoint =
-    secureEndpoint.post
-      .in("api" / "billing" / "companies")
-      .in(jsonBody[CreateClientCompanyRequest])
-      .out(statusCode(StatusCode.Created).and(jsonBody[ClientCompany]))
-      .tag(companyTag)
-      .summary("Create a billing client company")
+  val createCompanyEndpoint = secureEndpoint.post
+    .in("api" / "billing" / "companies")
+    .in(jsonBody[CreateClientCompanyRequest])
+    .out(statusCode(StatusCode.Created).and(jsonBody[ClientCompany]))
+    .tag(companyTag)
+    .summary("Create a billing client company")
 
-  val updateCompanyEndpoint =
-    secureEndpoint.put
-      .in("api" / "billing" / "companies" / path[String]("id"))
-      .in(jsonBody[CreateClientCompanyRequest])
-      .out(jsonBody[ClientCompany])
-      .tag(companyTag)
-      .summary("Update a billing client company")
+  val updateCompanyEndpoint = secureEndpoint.put
+    .in("api" / "billing" / "companies" / path[String]("id"))
+    .in(jsonBody[CreateClientCompanyRequest])
+    .out(jsonBody[ClientCompany])
+    .tag(companyTag)
+    .summary("Update a billing client company")
 
-  val deleteCompanyEndpoint =
-    secureEndpoint.delete
-      .in("api" / "billing" / "companies" / path[String]("id"))
-      .out(statusCode(StatusCode.NoContent))
-      .tag(companyTag)
-      .summary("Delete a billing client company")
+  val deleteCompanyEndpoint = secureEndpoint.delete
+    .in("api" / "billing" / "companies" / path[String]("id"))
+    .out(statusCode(StatusCode.NoContent))
+    .tag(companyTag)
+    .summary("Delete a billing client company")
 
-  /** All endpoint descriptions, used to generate the OpenAPI document. */
+  /**
+   * All endpoint descriptions, used to generate the OpenAPI document.
+   */
   val endpoints = List(
     listCompaniesEndpoint,
     createCompanyEndpoint,
@@ -73,29 +71,29 @@ object BillingClientCompanyApi:
   // Server logic
   // ======================================================================
 
-  private val listCompaniesServer: ZServerEndpoint[BillingCompanyEnv, Any] =
-    listCompaniesEndpoint.serverLogic { user => _ =>
-      (for {
+  private val listCompaniesServer: ZServerEndpoint[BillingCompanyEnv, Any] = listCompaniesEndpoint.serverLogic {
+    user => _ =>
+      for {
         companyId <- requireCompanyId(user.companyId)
         _         <- checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
         repo      <- ZIO.service[ClientCompanyRepository]
         companies <- repo.findByTaxiCompany(companyId).mapError(_ => internalError)
-      } yield companies)
-    }
+      } yield companies
+  }
 
-  private val createCompanyServer: ZServerEndpoint[BillingCompanyEnv, Any] =
-    createCompanyEndpoint.serverLogic { user => req =>
-      (for {
+  private val createCompanyServer: ZServerEndpoint[BillingCompanyEnv, Any] = createCompanyEndpoint.serverLogic {
+    user => req =>
+      for {
         companyId <- requireCompanyId(user.companyId)
         _         <- checkRole(user, "DISPATCHER", "ADMIN")
         repo      <- ZIO.service[ClientCompanyRepository]
         company   <- repo.create(req, companyId).mapError(_ => internalError)
-      } yield company)
-    }
+      } yield company
+  }
 
-  private val updateCompanyServer: ZServerEndpoint[BillingCompanyEnv, Any] =
-    updateCompanyEndpoint.serverLogic { user => (id, req) =>
-      (for {
+  private val updateCompanyServer: ZServerEndpoint[BillingCompanyEnv, Any] = updateCompanyEndpoint.serverLogic {
+    user => (id, req) =>
+      for {
         _         <- checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- requireCompanyId(user.companyId)
         ccId      <- parseClientCompanyId(id)
@@ -103,18 +101,19 @@ object BillingClientCompanyApi:
         // Enforce tenant isolation: update is not scoped by taxi_company_id, so
         // verify ownership first; a cross-tenant id resolves to NotFound.
         existing  <- repo.findById(ccId).mapError(_ => internalError)
-        result    <- existing.filter(_.taxiCompanyId == companyId) match
-                       case None    => ZIO.none
-                       case Some(_) => repo.update(ccId, req).mapError(_ => internalError)
+        result    <-
+          existing.filter(_.taxiCompanyId == companyId) match
+            case None    => ZIO.none
+            case Some(_) => repo.update(ccId, req).mapError(_ => internalError)
         company   <- ZIO
                        .fromOption(result)
                        .orElseFail((StatusCode.NotFound, ApiError("Not found")))
-      } yield company)
-    }
+      } yield company
+  }
 
-  private val deleteCompanyServer: ZServerEndpoint[BillingCompanyEnv, Any] =
-    deleteCompanyEndpoint.serverLogic { user => id =>
-      (for {
+  private val deleteCompanyServer: ZServerEndpoint[BillingCompanyEnv, Any] = deleteCompanyEndpoint.serverLogic {
+    user => id =>
+      for {
         _         <- checkRole(user, "DISPATCHER", "ADMIN")
         companyId <- requireCompanyId(user.companyId)
         ccId      <- parseClientCompanyId(id)
@@ -122,16 +121,19 @@ object BillingClientCompanyApi:
         // Enforce tenant isolation: delete is not scoped by taxi_company_id, so
         // verify ownership first; a cross-tenant id resolves to NotFound.
         existing  <- repo.findById(ccId).mapError(_ => internalError)
-        deleted   <- existing.filter(_.taxiCompanyId == companyId) match
-                       case None    => ZIO.succeed(false)
-                       case Some(_) => repo.delete(ccId).mapError(_ => internalError)
+        deleted   <-
+          existing.filter(_.taxiCompanyId == companyId) match
+            case None    => ZIO.succeed(false)
+            case Some(_) => repo.delete(ccId).mapError(_ => internalError)
         _         <- ZIO
                        .fail((StatusCode.NotFound, ApiError("Not found")))
                        .when(!deleted)
-      } yield ())
-    }
+      } yield ()
+  }
 
-  /** All server endpoints, interpreted into zio-http Routes by the api module. */
+  /**
+   * All server endpoints, interpreted into zio-http Routes by the api module.
+   */
   val serverEndpoints: List[ZServerEndpoint[BillingCompanyEnv, Any]] = List(
     listCompaniesServer,
     createCompanyServer,

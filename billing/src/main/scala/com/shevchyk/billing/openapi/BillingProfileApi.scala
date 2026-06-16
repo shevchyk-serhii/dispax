@@ -30,22 +30,22 @@ object BillingProfileApi:
   // Endpoint descriptions
   // ======================================================================
 
-  val getProfileEndpoint =
-    secureEndpoint.get
-      .in("api" / "billing" / "profile")
-      .out(jsonBody[CompanyBillingProfile])
-      .tag(billingProfileTag)
-      .summary("Get the current company's invoice issuer details")
+  val getProfileEndpoint = secureEndpoint.get
+    .in("api" / "billing" / "profile")
+    .out(jsonBody[CompanyBillingProfile])
+    .tag(billingProfileTag)
+    .summary("Get the current company's invoice issuer details")
 
-  val updateProfileEndpoint =
-    secureEndpoint.put
-      .in("api" / "billing" / "profile")
-      .in(jsonBody[UpdateCompanyBillingProfileRequest])
-      .out(jsonBody[CompanyBillingProfile])
-      .tag(billingProfileTag)
-      .summary("Create or update the current company's invoice issuer details")
+  val updateProfileEndpoint = secureEndpoint.put
+    .in("api" / "billing" / "profile")
+    .in(jsonBody[UpdateCompanyBillingProfileRequest])
+    .out(jsonBody[CompanyBillingProfile])
+    .tag(billingProfileTag)
+    .summary("Create or update the current company's invoice issuer details")
 
-  /** All endpoint descriptions, used to generate the OpenAPI document. */
+  /**
+   * All endpoint descriptions, used to generate the OpenAPI document.
+   */
   val endpoints = List(
     getProfileEndpoint,
     updateProfileEndpoint
@@ -55,27 +55,28 @@ object BillingProfileApi:
   // Server logic
   // ======================================================================
 
-  private val getProfileServer: ZServerEndpoint[BillingProfileEnv, Any] =
-    getProfileEndpoint.serverLogic { user => _ =>
-      (for {
-        companyId <- requireCompanyId(user.companyId)
-        _         <- checkRole(user, "DISPATCHER", "ADMIN")
-        repo      <- ZIO.service[CompanyBillingProfileRepository]
-        profile   <- repo.findByCompany(companyId).mapError(_ => internalError)
-      } yield profile.getOrElse(CompanyBillingProfile(companyId)))
-    }
+  private val getProfileServer: ZServerEndpoint[BillingProfileEnv, Any] = getProfileEndpoint.serverLogic { user => _ =>
+    for {
+      companyId <- requireCompanyId(user.companyId)
+      _         <- checkRole(user, "DISPATCHER", "ADMIN")
+      repo      <- ZIO.service[CompanyBillingProfileRepository]
+      profile   <- repo.findByCompany(companyId).mapError(_ => internalError)
+    } yield profile.getOrElse(CompanyBillingProfile(companyId))
+  }
 
-  private val updateProfileServer: ZServerEndpoint[BillingProfileEnv, Any] =
-    updateProfileEndpoint.serverLogic { user => req =>
-      (for {
+  private val updateProfileServer: ZServerEndpoint[BillingProfileEnv, Any] = updateProfileEndpoint.serverLogic {
+    user => req =>
+      for {
         companyId <- requireCompanyId(user.companyId)
         _         <- checkRole(user, "DISPATCHER", "ADMIN")
         repo      <- ZIO.service[CompanyBillingProfileRepository]
         profile   <- repo.upsert(companyId, req).mapError(_ => internalError)
-      } yield profile)
-    }
+      } yield profile
+  }
 
-  /** All server endpoints, interpreted into zio-http Routes by the api module. */
+  /**
+   * All server endpoints, interpreted into zio-http Routes by the api module.
+   */
   val serverEndpoints: List[ZServerEndpoint[BillingProfileEnv, Any]] = List(
     getProfileServer,
     updateProfileServer

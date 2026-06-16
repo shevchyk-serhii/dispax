@@ -14,7 +14,10 @@ class MapboxService {
   );
 
   static String get accessToken {
-    assert(_accessToken.isNotEmpty, 'MAPBOX_ACCESS_TOKEN must be set via --dart-define');
+    assert(
+      _accessToken.isNotEmpty,
+      'MAPBOX_ACCESS_TOKEN must be set via --dart-define',
+    );
     return _accessToken;
   }
 
@@ -51,7 +54,9 @@ class MapboxService {
 
   static Future<List<double>?> geocodeAddress(String address) async {
     if (_accessToken.isEmpty) {
-      debugPrint('MapboxService: MAPBOX_ACCESS_TOKEN not set, geocoding unavailable');
+      debugPrint(
+        'MapboxService: MAPBOX_ACCESS_TOKEN not set, geocoding unavailable',
+      );
       return null;
     }
 
@@ -73,7 +78,9 @@ class MapboxService {
           return [coordinates[1].toDouble(), coordinates[0].toDouble()];
         }
       } else {
-        debugPrint('MapboxService: Geocoding failed with status ${response.statusCode}');
+        debugPrint(
+          'MapboxService: Geocoding failed with status ${response.statusCode}',
+        );
       }
     } catch (e) {
       debugPrint('MapboxService: Geocoding error: $e');
@@ -99,7 +106,6 @@ class MapboxService {
     double toLat,
     double toLng,
   ) async {
-
     return [Position(fromLng, fromLat), Position(toLng, toLat)];
   }
 
@@ -169,23 +175,29 @@ class MapboxService {
     final List<CircleAnnotationOptions> markers = [];
 
     if (from.latitude != null && from.longitude != null) {
-      markers.add(CircleAnnotationOptions(
-        geometry: Point(coordinates: Position(from.longitude!, from.latitude!)),
-        circleRadius: 8.0,
-        circleColor: _parseColor('green'),
-        circleStrokeWidth: 2.0,
-        circleStrokeColor: 0xFFFFFFFF,
-      ));
+      markers.add(
+        CircleAnnotationOptions(
+          geometry: Point(
+            coordinates: Position(from.longitude!, from.latitude!),
+          ),
+          circleRadius: 8.0,
+          circleColor: _parseColor('green'),
+          circleStrokeWidth: 2.0,
+          circleStrokeColor: 0xFFFFFFFF,
+        ),
+      );
     }
 
     if (to.latitude != null && to.longitude != null) {
-      markers.add(CircleAnnotationOptions(
-        geometry: Point(coordinates: Position(to.longitude!, to.latitude!)),
-        circleRadius: 8.0,
-        circleColor: _parseColor('red'),
-        circleStrokeWidth: 2.0,
-        circleStrokeColor: 0xFFFFFFFF,
-      ));
+      markers.add(
+        CircleAnnotationOptions(
+          geometry: Point(coordinates: Position(to.longitude!, to.latitude!)),
+          circleRadius: 8.0,
+          circleColor: _parseColor('red'),
+          circleStrokeWidth: 2.0,
+          circleStrokeColor: 0xFFFFFFFF,
+        ),
+      );
     }
 
     return markers;
@@ -207,7 +219,9 @@ class MapboxService {
     }
 
     if (currentPosition != null) {
-      positions.add(Position(currentPosition.longitude, currentPosition.latitude));
+      positions.add(
+        Position(currentPosition.longitude, currentPosition.latitude),
+      );
     }
 
     if (positions.isEmpty) {
@@ -225,10 +239,22 @@ class MapboxService {
       );
     }
 
-    double minLat = positions.map((p) => p.lat).reduce((a, b) => a < b ? a : b).toDouble();
-    double maxLat = positions.map((p) => p.lat).reduce((a, b) => a > b ? a : b).toDouble();
-    double minLng = positions.map((p) => p.lng).reduce((a, b) => a < b ? a : b).toDouble();
-    double maxLng = positions.map((p) => p.lng).reduce((a, b) => a > b ? a : b).toDouble();
+    double minLat = positions
+        .map((p) => p.lat)
+        .reduce((a, b) => a < b ? a : b)
+        .toDouble();
+    double maxLat = positions
+        .map((p) => p.lat)
+        .reduce((a, b) => a > b ? a : b)
+        .toDouble();
+    double minLng = positions
+        .map((p) => p.lng)
+        .reduce((a, b) => a < b ? a : b)
+        .toDouble();
+    double maxLng = positions
+        .map((p) => p.lng)
+        .reduce((a, b) => a > b ? a : b)
+        .toDouble();
 
     double centerLat = (minLat + maxLat) / 2;
     double centerLng = (minLng + maxLng) / 2;
@@ -256,14 +282,11 @@ class MapboxService {
 
   static bool isRideInProgress(Ride ride) {
     return ride.status == RideStatus.assigned ||
-           ride.status == RideStatus.inProgress;
+        ride.status == RideStatus.inProgress;
   }
 
   static Future<void> addDefaultImages(MapboxMap mapboxMap) async {
-
-    try {
-
-    } catch (e) {
+    try {} catch (e) {
       developer.log('Error adding marker images: $e', name: 'MapboxService');
     }
   }

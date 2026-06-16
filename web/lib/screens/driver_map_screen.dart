@@ -66,7 +66,10 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       _syncRidesFromBloc();
       _refreshEta();
     });
-    _etaTimer = Timer.periodic(const Duration(seconds: 90), (_) => _refreshEta());
+    _etaTimer = Timer.periodic(
+      const Duration(seconds: 90),
+      (_) => _refreshEta(),
+    );
   }
 
   Future<void> _refreshEta() async {
@@ -87,15 +90,22 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     final rideState = context.read<RideBloc>().state;
     if (!authState.isAuthenticated || authState.user == null) return;
 
-    final driverRides = rideState.rides.where((ride) =>
-      ride.driverId == authState.user!.id &&
-      (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)
-    ).toList();
+    final driverRides = rideState.rides
+        .where(
+          (ride) =>
+              ride.driverId == authState.user!.id &&
+              (ride.status == RideStatus.assigned ||
+                  ride.status == RideStatus.inProgress),
+        )
+        .toList();
 
-    final currentRide = driverRides.where((r) => r.status == RideStatus.inProgress).firstOrNull
-      ?? (driverRides.where((r) => r.status == RideStatus.assigned).toList()
-          ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime)))
-          .firstOrNull;
+    final currentRide =
+        driverRides
+            .where((r) => r.status == RideStatus.inProgress)
+            .firstOrNull ??
+        (driverRides.where((r) => r.status == RideStatus.assigned).toList()
+              ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime)))
+            .firstOrNull;
 
     setState(() {
       _assignedRides = driverRides;
@@ -139,7 +149,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       if (event.isGeofenceTriggered) {
         final geofenceName = event.geofenceName ?? 'Unknown zone';
         final isEntry = event.alertType == 'entry';
-        final message = isEntry ? 'Entered $geofenceName' : 'Left $geofenceName';
+        final message = isEntry
+            ? 'Entered $geofenceName'
+            : 'Left $geofenceName';
         setState(() => _geofenceOverlayMessage = message);
         _geofenceOverlayTimer?.cancel();
         _geofenceOverlayTimer = Timer(const Duration(seconds: 4), () {
@@ -152,7 +164,8 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
           event.latitude != null &&
           event.longitude != null) {
         final rideId = event.rideId;
-        if (_currentRide != null && (rideId == null || rideId == _currentRide!.id)) {
+        if (_currentRide != null &&
+            (rideId == null || rideId == _currentRide!.id)) {
           setState(() {
             _currentRide = _currentRide!.copyWith(
               clientLocation: loc.Location(
@@ -180,24 +193,26 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       _clientLabelAnnotation = null;
     }
 
-    _clientMarkerImage ??= (await rootBundle.load('assets/client_marker.png'))
-        .buffer.asUint8List();
+    _clientMarkerImage ??= (await rootBundle.load(
+      'assets/client_marker.png',
+    )).buffer.asUint8List();
 
-    _clientLabelAnnotation = await _pointAnnotationManager!.create(PointAnnotationOptions(
-      geometry: Point(coordinates: Position(longitude, latitude)),
-      image: _clientMarkerImage,
-      iconSize: 1.5,
-      textField: _currentRide?.clientName,
-      textSize: 13.0,
-      textColor: 0xFF1B5E20,
-      textHaloColor: 0xFFFFFFFF,
-      textHaloWidth: 2.0,
-      textOffset: [0.0, -2.5],
-    ));
+    _clientLabelAnnotation = await _pointAnnotationManager!.create(
+      PointAnnotationOptions(
+        geometry: Point(coordinates: Position(longitude, latitude)),
+        image: _clientMarkerImage,
+        iconSize: 1.5,
+        textField: _currentRide?.clientName,
+        textSize: 13.0,
+        textColor: 0xFF1B5E20,
+        textHaloColor: 0xFFFFFFFF,
+        textHaloWidth: 2.0,
+        textOffset: [0.0, -2.5],
+      ),
+    );
   }
 
   Future<void> _initializeLocation() async {
-
     final position = await _locationService.getCurrentPosition();
     if (position != null) {
       setState(() {
@@ -208,7 +223,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
     final started = await _locationService.startLocationTracking();
     if (started) {
-      _locationSubscription = _locationService.positionStream.listen((geo.Position position) {
+      _locationSubscription = _locationService.positionStream.listen((
+        geo.Position position,
+      ) {
         final isFirst = _currentPosition == null;
         setState(() {
           _currentPosition = position;
@@ -217,11 +234,13 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         _sendLocationUpdate();
         // Center map on first real GPS fix if map was created without position
         if (isFirst && _mapboxMap != null && _currentRide == null) {
-          _mapboxMap!.setCamera(MapboxService.createCameraOptions(
-            latitude: position.latitude,
-            longitude: position.longitude,
-            zoom: 15.0,
-          ));
+          _mapboxMap!.setCamera(
+            MapboxService.createCameraOptions(
+              latitude: position.latitude,
+              longitude: position.longitude,
+              zoom: 15.0,
+            ),
+          );
         }
       });
     }
@@ -235,8 +254,10 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
 
-    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
-    _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+    _pointAnnotationManager = await mapboxMap.annotations
+        .createPointAnnotationManager();
+    _circleAnnotationManager = await mapboxMap.annotations
+        .createCircleAnnotationManager();
 
     await MapboxService.addDefaultImages(mapboxMap);
 
@@ -262,23 +283,28 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       _driverSelfAnnotation = null;
     }
 
-    _driverMarkerImage ??= (await rootBundle.load('assets/driver_marker.png'))
-        .buffer.asUint8List();
+    _driverMarkerImage ??= (await rootBundle.load(
+      'assets/driver_marker.png',
+    )).buffer.asUint8List();
 
-    _driverSelfAnnotation = await _pointAnnotationManager?.create(PointAnnotationOptions(
-      geometry: Point(coordinates: Position(
-        _currentPosition!.longitude,
-        _currentPosition!.latitude,
-      )),
-      image: _driverMarkerImage,
-      iconSize: 2.0,
-      textField: driverName,
-      textSize: 13.0,
-      textColor: 0xFF0D47A1,
-      textHaloColor: 0xFFFFFFFF,
-      textHaloWidth: 2.0,
-      textOffset: [0.0, 2.5],
-    ));
+    _driverSelfAnnotation = await _pointAnnotationManager?.create(
+      PointAnnotationOptions(
+        geometry: Point(
+          coordinates: Position(
+            _currentPosition!.longitude,
+            _currentPosition!.latitude,
+          ),
+        ),
+        image: _driverMarkerImage,
+        iconSize: 2.0,
+        textField: driverName,
+        textSize: 13.0,
+        textColor: 0xFF0D47A1,
+        textHaloColor: 0xFFFFFFFF,
+        textHaloWidth: 2.0,
+        textOffset: [0.0, 2.5],
+      ),
+    );
 
     if (_currentRide?.clientLocation?.latitude != null &&
         _currentRide?.clientLocation?.longitude != null) {
@@ -304,46 +330,70 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     for (final ride in _assignedRides) {
       if (ride.id == _currentRide?.id) continue;
       if (ride.from.latitude != null && ride.from.longitude != null) {
-        _circleAnnotationManager?.create(CircleAnnotationOptions(
-          geometry: Point(coordinates: Position(ride.from.longitude!, ride.from.latitude!)),
-          circleRadius: 5.0,
-          circleColor: 0xFF9E9E9E,
-          circleStrokeWidth: 1.5,
-          circleStrokeColor: 0xFFFFFFFF,
-        ));
+        _circleAnnotationManager?.create(
+          CircleAnnotationOptions(
+            geometry: Point(
+              coordinates: Position(ride.from.longitude!, ride.from.latitude!),
+            ),
+            circleRadius: 5.0,
+            circleColor: 0xFF9E9E9E,
+            circleStrokeWidth: 1.5,
+            circleStrokeColor: 0xFFFFFFFF,
+          ),
+        );
       }
       if (ride.to.latitude != null && ride.to.longitude != null) {
-        _circleAnnotationManager?.create(CircleAnnotationOptions(
-          geometry: Point(coordinates: Position(ride.to.longitude!, ride.to.latitude!)),
-          circleRadius: 5.0,
-          circleColor: 0xFF9E9E9E,
-          circleStrokeWidth: 1.5,
-          circleStrokeColor: 0xFFFFFFFF,
-        ));
+        _circleAnnotationManager?.create(
+          CircleAnnotationOptions(
+            geometry: Point(
+              coordinates: Position(ride.to.longitude!, ride.to.latitude!),
+            ),
+            circleRadius: 5.0,
+            circleColor: 0xFF9E9E9E,
+            circleStrokeWidth: 1.5,
+            circleStrokeColor: 0xFFFFFFFF,
+          ),
+        );
       }
     }
 
     if (_currentRide == null) return;
 
     // Priority ride: large pickup marker (client location), smaller drop-off
-    if (_currentRide!.from.latitude != null && _currentRide!.from.longitude != null) {
-      _circleAnnotationManager?.create(CircleAnnotationOptions(
-        geometry: Point(coordinates: Position(_currentRide!.from.longitude!, _currentRide!.from.latitude!)),
-        circleRadius: 16.0,
-        circleColor: 0xFF4CAF50,
-        circleStrokeWidth: 3.0,
-        circleStrokeColor: 0xFFFFFFFF,
-      ));
+    if (_currentRide!.from.latitude != null &&
+        _currentRide!.from.longitude != null) {
+      _circleAnnotationManager?.create(
+        CircleAnnotationOptions(
+          geometry: Point(
+            coordinates: Position(
+              _currentRide!.from.longitude!,
+              _currentRide!.from.latitude!,
+            ),
+          ),
+          circleRadius: 16.0,
+          circleColor: 0xFF4CAF50,
+          circleStrokeWidth: 3.0,
+          circleStrokeColor: 0xFFFFFFFF,
+        ),
+      );
     }
 
-    if (_currentRide!.to.latitude != null && _currentRide!.to.longitude != null) {
-      _circleAnnotationManager?.create(CircleAnnotationOptions(
-        geometry: Point(coordinates: Position(_currentRide!.to.longitude!, _currentRide!.to.latitude!)),
-        circleRadius: 10.0,
-        circleColor: 0xFFF44336,
-        circleStrokeWidth: 2.0,
-        circleStrokeColor: 0xFFFFFFFF,
-      ));
+    if (_currentRide!.to.latitude != null &&
+        _currentRide!.to.longitude != null) {
+      _circleAnnotationManager?.create(
+        CircleAnnotationOptions(
+          geometry: Point(
+            coordinates: Position(
+              _currentRide!.to.longitude!,
+              _currentRide!.to.latitude!,
+            ),
+          ),
+          circleRadius: 10.0,
+          circleColor: 0xFFF44336,
+          circleStrokeWidth: 2.0,
+          circleStrokeColor: 0xFFFFFFFF,
+        ),
+      );
     }
 
     // Real-time client location (if shared via WebSocket)
@@ -358,22 +408,30 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     // Focus camera: pickup coords → driver position → Munich (default)
     final pickup = _currentRide!.from;
     if (pickup.latitude != null && pickup.longitude != null) {
-      _mapboxMap?.setCamera(CameraOptions(
-        center: Point(coordinates: Position(pickup.longitude!, pickup.latitude!)),
-        zoom: 14.0,
-      ));
+      _mapboxMap?.setCamera(
+        CameraOptions(
+          center: Point(
+            coordinates: Position(pickup.longitude!, pickup.latitude!),
+          ),
+          zoom: 14.0,
+        ),
+      );
     } else if (_currentPosition != null) {
-      _mapboxMap?.setCamera(MapboxService.createCameraOptions(
-        latitude: _currentPosition!.latitude,
-        longitude: _currentPosition!.longitude,
-        zoom: 14.0,
-      ));
+      _mapboxMap?.setCamera(
+        MapboxService.createCameraOptions(
+          latitude: _currentPosition!.latitude,
+          longitude: _currentPosition!.longitude,
+          zoom: 14.0,
+        ),
+      );
     } else {
       // Munich fallback when no coordinates available yet
-      _mapboxMap?.setCamera(CameraOptions(
-        center: Point(coordinates: Position(11.5820, 48.1351)),
-        zoom: 12.0,
-      ));
+      _mapboxMap?.setCamera(
+        CameraOptions(
+          center: Point(coordinates: Position(11.5820, 48.1351)),
+          zoom: 12.0,
+        ),
+      );
     }
   }
 
@@ -401,15 +459,12 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   void _updateRideStatus(Ride ride, RideStatus newStatus) {
-
-    context.read<RideBloc>().add(RideStatusUpdateRequested(
-      rideId: ride.id,
-      status: newStatus,
-    ));
+    context.read<RideBloc>().add(
+      RideStatusUpdateRequested(rideId: ride.id, status: newStatus),
+    );
   }
 
   void _onAirportEntryTimeReached(Ride ride) {
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -432,21 +487,32 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     return Scaffold(
       body: BlocListener<RideBloc, RideState>(
         listener: (context, state) {
-
           final authState = context.read<AuthBloc>().state;
           if (authState.isAuthenticated && authState.user != null) {
-            final driverRides = state.rides.where((ride) =>
-              ride.driverId == authState.user!.id &&
-              (ride.status == RideStatus.assigned || ride.status == RideStatus.inProgress)
-            ).toList();
+            final driverRides = state.rides
+                .where(
+                  (ride) =>
+                      ride.driverId == authState.user!.id &&
+                      (ride.status == RideStatus.assigned ||
+                          ride.status == RideStatus.inProgress),
+                )
+                .toList();
 
             // inProgress first, then earliest assigned
-            final currentRide = driverRides.where((r) => r.status == RideStatus.inProgress).firstOrNull
-              ?? (driverRides.where((r) => r.status == RideStatus.assigned).toList()
-                  ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime)))
-                  .firstOrNull;
+            final currentRide =
+                driverRides
+                    .where((r) => r.status == RideStatus.inProgress)
+                    .firstOrNull ??
+                (driverRides
+                        .where((r) => r.status == RideStatus.assigned)
+                        .toList()
+                      ..sort(
+                        (a, b) => a.pickupDateTime.compareTo(b.pickupDateTime),
+                      ))
+                    .firstOrNull;
 
-            if (driverRides != _assignedRides || currentRide?.id != _currentRide?.id) {
+            if (driverRides != _assignedRides ||
+                currentRide?.id != _currentRide?.id) {
               setState(() {
                 _assignedRides = driverRides;
                 _currentRide = currentRide;
@@ -458,7 +524,6 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         },
         child: Stack(
           children: [
-
             MapWidget(
               key: const ValueKey('driver_map'),
               onMapCreated: _onMapCreated,
@@ -469,16 +534,26 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                 children: [
                   _buildInfoPanel(),
 
-                  if (_geofenceOverlayMessage != null)
-                    _buildGeofenceOverlay(),
+                  if (_geofenceOverlayMessage != null) _buildGeofenceOverlay(),
 
-                  if (_assignedRides.any((ride) => ride.isAirportTransfer && ride.status == RideStatus.assigned))
+                  if (_assignedRides.any(
+                    (ride) =>
+                        ride.isAirportTransfer &&
+                        ride.status == RideStatus.assigned,
+                  ))
                     ..._assignedRides
-                        .where((ride) => ride.isAirportTransfer && ride.status == RideStatus.assigned)
-                        .map((ride) => AirportEntryTimer(
-                              ride: ride,
-                              onEntryTimeReached: () => _onAirportEntryTimeReached(ride),
-                            )),
+                        .where(
+                          (ride) =>
+                              ride.isAirportTransfer &&
+                              ride.status == RideStatus.assigned,
+                        )
+                        .map(
+                          (ride) => AirportEntryTimer(
+                            ride: ride,
+                            onEntryTimeReached: () =>
+                                _onAirportEntryTimeReached(ride),
+                          ),
+                        ),
                 ],
               ),
             ),
@@ -505,7 +580,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   Widget _buildGeofenceOverlay() {
     final isEntry = _geofenceOverlayMessage?.startsWith('Entered') ?? false;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingMedium),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.paddingMedium,
+      ),
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.paddingLarge,
         vertical: AppDimensions.paddingSmall,
@@ -532,7 +609,11 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
           Expanded(
             child: Text(
               _geofenceOverlayMessage!,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
             ),
           ),
           GestureDetector(
@@ -565,11 +646,17 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.drive_eta, color: AppColors.driverColor, size: AppDimensions.iconMedium),
+              Icon(
+                Icons.drive_eta,
+                color: AppColors.driverColor,
+                size: AppDimensions.iconMedium,
+              ),
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 'Driver Dashboard',
-                style: AppStyles.titleMedium.copyWith(color: Theme.of(context).colorScheme.onSurface),
+                style: AppStyles.titleMedium.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ],
           ),
@@ -581,7 +668,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             children: [
               Text(
                 'Assigned Rides: ${_assignedRides.length}',
-                style: AppStyles.bodyMedium.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: AppStyles.bodyMedium.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               if (_currentRide != null)
                 Container(
@@ -591,11 +680,15 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.driverColor,
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusSmall,
+                    ),
                   ),
                   child: Text(
                     'IN PROGRESS',
-                    style: AppStyles.labelSmall.copyWith(color: AppColors.textOnPrimary),
+                    style: AppStyles.labelSmall.copyWith(
+                      color: AppColors.textOnPrimary,
+                    ),
                   ),
                 ),
             ],
@@ -628,7 +721,6 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-
           Row(
             children: [
               Expanded(
@@ -644,11 +736,15 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: _getRideStatusColor(_currentRide!.status),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                 ),
                 child: Text(
                   _currentRide!.statusDisplayName,
-                  style: AppStyles.labelSmall.copyWith(color: AppColors.textOnPrimary),
+                  style: AppStyles.labelSmall.copyWith(
+                    color: AppColors.textOnPrimary,
+                  ),
                 ),
               ),
             ],
@@ -658,7 +754,11 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
           Row(
             children: [
-              Icon(Icons.schedule, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
+              Icon(
+                Icons.schedule,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: AppDimensions.iconSmall,
+              ),
               const SizedBox(width: AppDimensions.paddingSmall),
               Text(
                 AppDateUtils.formatDateTime(_currentRide!.pickupDateTime),
@@ -671,7 +771,11 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
           Row(
             children: [
-              Icon(Icons.route, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
+              Icon(
+                Icons.route,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: AppDimensions.iconSmall,
+              ),
               const SizedBox(width: AppDimensions.paddingSmall),
               Expanded(
                 child: Text(
@@ -688,7 +792,11 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             const SizedBox(height: AppDimensions.paddingSmall),
             Row(
               children: [
-                Icon(Icons.timer_outlined, color: AppColors.accent, size: AppDimensions.iconSmall),
+                Icon(
+                  Icons.timer_outlined,
+                  color: AppColors.accent,
+                  size: AppDimensions.iconSmall,
+                ),
                 const SizedBox(width: AppDimensions.paddingSmall),
                 Text(
                   '~${_currentRide!.etaMinutes} min to client',
@@ -705,12 +813,13 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             const SizedBox(height: AppDimensions.paddingSmall),
             Row(
               children: [
-                Icon(Icons.flight, color: Theme.of(context).colorScheme.onSurfaceVariant, size: AppDimensions.iconSmall),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                Text(
-                  _currentRide!.fullFlightInfo,
-                  style: AppStyles.bodyMedium,
+                Icon(
+                  Icons.flight,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  size: AppDimensions.iconSmall,
                 ),
+                const SizedBox(width: AppDimensions.paddingSmall),
+                Text(_currentRide!.fullFlightInfo, style: AppStyles.bodyMedium),
               ],
             ),
           ],
@@ -719,7 +828,8 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
           if (_currentRide!.status == RideStatus.assigned)
             ElevatedButton(
-              onPressed: () => _updateRideStatus(_currentRide!, RideStatus.inProgress),
+              onPressed: () =>
+                  _updateRideStatus(_currentRide!, RideStatus.inProgress),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.driverColor,
                 foregroundColor: AppColors.textOnPrimary,
@@ -728,7 +838,8 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             )
           else if (_currentRide!.status == RideStatus.inProgress)
             ElevatedButton(
-              onPressed: () => _updateRideStatus(_currentRide!, RideStatus.completed),
+              onPressed: () =>
+                  _updateRideStatus(_currentRide!, RideStatus.completed),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.clientColor,
                 foregroundColor: AppColors.textOnPrimary,
@@ -757,7 +868,10 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             heroTag: 'show_all_rides',
             onPressed: _showAllRides,
             backgroundColor: Theme.of(context).colorScheme.primary,
-            child: Icon(Icons.list, color: Theme.of(context).colorScheme.onPrimary),
+            child: Icon(
+              Icons.list,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
           ),
         ],
       ],
@@ -776,7 +890,6 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   void _showAllRides() {
-
     if (_mapboxMap == null || _assignedRides.isEmpty) return;
 
     double minLat = double.infinity;
@@ -801,10 +914,18 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     }
 
     if (_currentPosition != null) {
-      minLat = minLat > _currentPosition!.latitude ? _currentPosition!.latitude : minLat;
-      maxLat = maxLat < _currentPosition!.latitude ? _currentPosition!.latitude : maxLat;
-      minLng = minLng > _currentPosition!.longitude ? _currentPosition!.longitude : minLng;
-      maxLng = maxLng < _currentPosition!.longitude ? _currentPosition!.longitude : maxLng;
+      minLat = minLat > _currentPosition!.latitude
+          ? _currentPosition!.latitude
+          : minLat;
+      maxLat = maxLat < _currentPosition!.latitude
+          ? _currentPosition!.latitude
+          : maxLat;
+      minLng = minLng > _currentPosition!.longitude
+          ? _currentPosition!.longitude
+          : minLng;
+      maxLng = maxLng < _currentPosition!.longitude
+          ? _currentPosition!.longitude
+          : maxLng;
     }
 
     final centerLat = (minLat + maxLat) / 2;

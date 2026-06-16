@@ -18,7 +18,9 @@ class ConflictDetector {
       }
 
       final existingStart = existing.pickupDateTime;
-      final existingEnd = existingStart.add(const Duration(minutes: _overlapWindowMinutes));
+      final existingEnd = existingStart.add(
+        const Duration(minutes: _overlapWindowMinutes),
+      );
 
       return newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart);
     }).toList();

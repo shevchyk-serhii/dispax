@@ -20,7 +20,8 @@ class BillingScreen extends StatefulWidget {
   State<BillingScreen> createState() => _BillingScreenState();
 }
 
-class _BillingScreenState extends State<BillingScreen> with SingleTickerProviderStateMixin {
+class _BillingScreenState extends State<BillingScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late InvoiceService _invoiceService;
   late ClientCompanyService _companyService;
@@ -51,9 +52,17 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
     });
     try {
       final invoices = await _invoiceService.getInvoices(status: _statusFilter);
-      if (mounted) setState(() { _invoices = invoices; _loadingInvoices = false; });
+      if (mounted)
+        setState(() {
+          _invoices = invoices;
+          _loadingInvoices = false;
+        });
     } catch (e) {
-      if (mounted) setState(() { _loadingInvoices = false; _invoiceError = e.toString(); });
+      if (mounted)
+        setState(() {
+          _loadingInvoices = false;
+          _invoiceError = e.toString();
+        });
     }
   }
 
@@ -64,9 +73,17 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
     });
     try {
       final companies = await _companyService.getCompanies();
-      if (mounted) setState(() { _companies = companies; _loadingCompanies = false; });
+      if (mounted)
+        setState(() {
+          _companies = companies;
+          _loadingCompanies = false;
+        });
     } catch (e) {
-      if (mounted) setState(() { _loadingCompanies = false; _companyError = e.toString(); });
+      if (mounted)
+        setState(() {
+          _loadingCompanies = false;
+          _companyError = e.toString();
+        });
     }
   }
 
@@ -89,7 +106,10 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
           tabs: const [
             Tab(icon: Icon(Icons.receipt_long, size: 18), text: 'Rechnungen'),
             Tab(icon: Icon(Icons.business, size: 18), text: 'Unternehmen'),
-            Tab(icon: Icon(Icons.playlist_add_check, size: 18), text: 'Fahrten'),
+            Tab(
+              icon: Icon(Icons.playlist_add_check, size: 18),
+              text: 'Fahrten',
+            ),
           ],
         ),
         Expanded(
@@ -122,12 +142,19 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
             const Expanded(
               child: Text(
                 'Abrechnung',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
               icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: () { _loadInvoices(); _loadCompanies(); },
+              onPressed: () {
+                _loadInvoices();
+                _loadCompanies();
+              },
             ),
           ],
         ),
@@ -145,24 +172,29 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
           child: _loadingInvoices
               ? const Center(child: CircularProgressIndicator())
               : _invoiceError != null
-                  ? _buildError(_invoiceError!, _loadInvoices)
-                  : _invoices.isEmpty
-                      ? _buildEmpty('Keine Rechnungen', Icons.receipt)
-                      : RefreshIndicator(
-                          onRefresh: _loadInvoices,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(12),
-                            itemCount: _invoices.length,
-                            itemBuilder: (_, i) => _buildInvoiceCard(_invoices[i]),
-                          ),
-                        ),
+              ? _buildError(_invoiceError!, _loadInvoices)
+              : _invoices.isEmpty
+              ? _buildEmpty('Keine Rechnungen', Icons.receipt)
+              : RefreshIndicator(
+                  onRefresh: _loadInvoices,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _invoices.length,
+                    itemBuilder: (_, i) => _buildInvoiceCard(_invoices[i]),
+                  ),
+                ),
         ),
       ],
     );
   }
 
   Widget _buildStatusFilters() {
-    final filters = [null, InvoiceStatus.draft, InvoiceStatus.sent, InvoiceStatus.paid];
+    final filters = [
+      null,
+      InvoiceStatus.draft,
+      InvoiceStatus.sent,
+      InvoiceStatus.paid,
+    ];
     final labels = ['Alle', 'Entwurf', 'Gesendet', 'Bezahlt'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -176,7 +208,9 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
               label: Text(labels[i]),
               selected: selected,
               onSelected: (_) => _setFilter(filters[i]),
-              selectedColor: Theme.of(context).colorScheme.primary.withAlpha(30),
+              selectedColor: Theme.of(
+                context,
+              ).colorScheme.primary.withAlpha(30),
               checkmarkColor: Theme.of(context).colorScheme.primary,
             ),
           );
@@ -187,8 +221,11 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
 
   Widget _buildInvoiceCard(Invoice invoice) {
     final statusColor = _statusColor(invoice.status);
-    final company = _companies.where((c) => c.id == invoice.clientCompanyId).firstOrNull;
-    final companyName = company?.name ?? invoice.clientCompanyId.substring(0, 8);
+    final company = _companies
+        .where((c) => c.id == invoice.clientCompanyId)
+        .firstOrNull;
+    final companyName =
+        company?.name ?? invoice.clientCompanyId.substring(0, 8);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -200,16 +237,29 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
             color: statusColor.withAlpha(30),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(_statusIcon(invoice.status), color: statusColor, size: 20),
+          child: Icon(
+            _statusIcon(invoice.status),
+            color: statusColor,
+            size: 20,
+          ),
         ),
         title: Row(
           children: [
-            Flexible(child: Text(invoice.number, style: const TextStyle(fontWeight: FontWeight.bold))),
+            Flexible(
+              child: Text(
+                invoice.number,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
             if (invoice.reminderSentAt != null) ...[
               const SizedBox(width: 6),
               Tooltip(
                 message: 'Zahlungserinnerung versendet',
-                child: Icon(Icons.notifications_active, size: 14, color: AppColors.info),
+                child: Icon(
+                  Icons.notifications_active,
+                  size: 14,
+                  color: AppColors.info,
+                ),
               ),
             ],
           ],
@@ -217,10 +267,19 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(companyName, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
+            Text(
+              companyName,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
             Text(
               '${_fmtDate(invoice.periodFrom)} – ${_fmtDate(invoice.periodTo)}',
-              style: TextStyle(color: Theme.of(context).colorScheme.outlineVariant, fontSize: 11),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                fontSize: 11,
+              ),
             ),
           ],
         ),
@@ -240,7 +299,11 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
               ),
               child: Text(
                 invoice.status.displayName,
-                style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: statusColor,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -254,7 +317,9 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (_) => _InvoiceDetailSheet(
         invoice: invoice,
         invoiceService: _invoiceService,
@@ -271,24 +336,27 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
         _loadingCompanies
             ? const Center(child: CircularProgressIndicator())
             : _companyError != null
-                ? _buildError(_companyError!, _loadCompanies)
-                : _companies.isEmpty
-                    ? _buildEmpty('Keine Unternehmen', Icons.business)
-                    : RefreshIndicator(
-                        onRefresh: _loadCompanies,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
-                          itemCount: _companies.length,
-                          itemBuilder: (_, i) => _buildCompanyCard(_companies[i]),
-                        ),
-                      ),
+            ? _buildError(_companyError!, _loadCompanies)
+            : _companies.isEmpty
+            ? _buildEmpty('Keine Unternehmen', Icons.business)
+            : RefreshIndicator(
+                onRefresh: _loadCompanies,
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
+                  itemCount: _companies.length,
+                  itemBuilder: (_, i) => _buildCompanyCard(_companies[i]),
+                ),
+              ),
         Positioned(
           bottom: 16,
           right: 16,
           child: FloatingActionButton(
             onPressed: _showAddCompanyDialog,
             backgroundColor: Theme.of(context).colorScheme.primary,
-            child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
+            child: Icon(
+              Icons.add,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
           ),
         ),
       ],
@@ -303,19 +371,42 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
           backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(30),
           child: Text(
             company.name.isNotEmpty ? company.name[0].toUpperCase() : '?',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ),
-        title: Text(company.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: company.email != null ? Text(company.email!, style: const TextStyle(fontSize: 12)) : null,
+        title: Text(
+          company.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: company.email != null
+            ? Text(company.email!, style: const TextStyle(fontSize: 12))
+            : null,
         trailing: PopupMenuButton<String>(
           onSelected: (action) {
             if (action == 'edit') _showEditCompanyDialog(company);
             if (action == 'delete') _confirmDeleteCompany(company);
           },
           itemBuilder: (_) => [
-            const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Bearbeiten'))),
-            const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: AppColors.error), title: Text('Löschen', style: TextStyle(color: AppColors.error)))),
+            const PopupMenuItem(
+              value: 'edit',
+              child: ListTile(
+                leading: Icon(Icons.edit),
+                title: Text('Bearbeiten'),
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: ListTile(
+                leading: Icon(Icons.delete, color: AppColors.error),
+                title: Text(
+                  'Löschen',
+                  style: TextStyle(color: AppColors.error),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -323,7 +414,8 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
   }
 
   void _showAddCompanyDialog() => _showCompanyDialog(null);
-  void _showEditCompanyDialog(ClientCompany company) => _showCompanyDialog(company);
+  void _showEditCompanyDialog(ClientCompany company) =>
+      _showCompanyDialog(company);
 
   void _showCompanyDialog(ClientCompany? existing) {
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
@@ -335,29 +427,54 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(existing == null ? 'Unternehmen hinzufügen' : 'Unternehmen bearbeiten'),
+        title: Text(
+          existing == null
+              ? 'Unternehmen hinzufügen'
+              : 'Unternehmen bearbeiten',
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name *')),
-              TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'E-Mail')),
-              TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Telefon')),
-              TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Adresse')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Name *'),
+              ),
+              TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(labelText: 'E-Mail'),
+              ),
+              TextField(
+                controller: phoneCtrl,
+                decoration: const InputDecoration(labelText: 'Telefon'),
+              ),
+              TextField(
+                controller: addressCtrl,
+                decoration: const InputDecoration(labelText: 'Adresse'),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Abbrechen'),
+          ),
           ElevatedButton(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx);
               final req = CreateClientCompanyRequest(
                 name: nameCtrl.text.trim(),
-                email: emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
-                phone: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
-                address: addressCtrl.text.trim().isEmpty ? null : addressCtrl.text.trim(),
+                email: emailCtrl.text.trim().isEmpty
+                    ? null
+                    : emailCtrl.text.trim(),
+                phone: phoneCtrl.text.trim().isEmpty
+                    ? null
+                    : phoneCtrl.text.trim(),
+                address: addressCtrl.text.trim().isEmpty
+                    ? null
+                    : addressCtrl.text.trim(),
               );
               try {
                 if (existing == null) {
@@ -390,7 +507,10 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
         title: const Text('Unternehmen löschen?'),
         content: Text('${company.name} wird gelöscht.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Abbrechen'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
@@ -412,43 +532,53 @@ class _BillingScreenState extends State<BillingScreen> with SingleTickerProvider
   // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
   Color _statusColor(InvoiceStatus status) => switch (status) {
-        InvoiceStatus.draft => Theme.of(context).colorScheme.onSurfaceVariant,
-        InvoiceStatus.sent => AppColors.warning,
-        InvoiceStatus.paid => AppColors.success,
-        InvoiceStatus.cancelled => AppColors.error,
-      };
+    InvoiceStatus.draft => Theme.of(context).colorScheme.onSurfaceVariant,
+    InvoiceStatus.sent => AppColors.warning,
+    InvoiceStatus.paid => AppColors.success,
+    InvoiceStatus.cancelled => AppColors.error,
+  };
 
   IconData _statusIcon(InvoiceStatus status) => switch (status) {
-        InvoiceStatus.draft => Icons.edit_note,
-        InvoiceStatus.sent => Icons.send,
-        InvoiceStatus.paid => Icons.check_circle,
-        InvoiceStatus.cancelled => Icons.cancel,
-      };
+    InvoiceStatus.draft => Icons.edit_note,
+    InvoiceStatus.sent => Icons.send,
+    InvoiceStatus.paid => Icons.check_circle,
+    InvoiceStatus.cancelled => Icons.cancel,
+  };
 
-  String _fmtDate(DateTime d) => '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
 
   Widget _buildEmpty(String msg, IconData icon) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
-            const SizedBox(height: 12),
-            Text(msg, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          ],
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          size: 64,
+          color: Theme.of(context).colorScheme.outlineVariant,
         ),
-      );
+        const SizedBox(height: 12),
+        Text(
+          msg,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildError(String msg, VoidCallback retry) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: AppColors.error),
-            const SizedBox(height: 12),
-            Text(msg, textAlign: TextAlign.center),
-            ElevatedButton(onPressed: retry, child: const Text('Wiederholen')),
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.error_outline, size: 48, color: AppColors.error),
+        const SizedBox(height: 12),
+        Text(msg, textAlign: TextAlign.center),
+        ElevatedButton(onPressed: retry, child: const Text('Wiederholen')),
+      ],
+    ),
+  );
 
   @override
   void dispose() {
@@ -510,7 +640,8 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
     }
   }
 
-  String _fmtDate(DateTime d) => '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
 
   Future<void> _previewPdf(Invoice inv) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -538,7 +669,8 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                 IconButton(
                   tooltip: 'Herunterladen',
                   icon: const Icon(Icons.download),
-                  onPressed: () => triggerPdfDownload(bytes, 'invoice-${inv.number}.pdf'),
+                  onPressed: () =>
+                      triggerPdfDownload(bytes, 'invoice-${inv.number}.pdf'),
                 ),
                 IconButton(
                   tooltip: 'Schließen',
@@ -570,7 +702,16 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
         child: ListView(
           controller: scrollCtrl,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2)))),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -578,9 +719,19 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(inv.number, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      Text('${_fmtDate(inv.periodFrom)} – ${_fmtDate(inv.periodTo)}',
-                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      Text(
+                        inv.number,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${_fmtDate(inv.periodFrom)} – ${_fmtDate(inv.periodTo)}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -590,88 +741,129 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                   alignment: WrapAlignment.end,
                   children: [
                     _StatusBadge(inv.status),
-                    if (inv.reminderSentAt != null) _ReminderBadge(inv.reminderSentAt!),
+                    if (inv.reminderSentAt != null)
+                      _ReminderBadge(inv.reminderSentAt!),
                   ],
                 ),
               ],
             ),
             const Divider(height: 24),
             if (inv.items.isNotEmpty) ...[
-              const Text('Positionen', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Positionen',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
-              ...inv.items.map((item) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Expanded(child: Text(item.description, style: const TextStyle(fontSize: 13))),
-                        Text('€${item.total.toStringAsFixed(2)}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ],
-                    ),
-                  )),
+              ...inv.items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.description,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                      Text(
+                        '€${item.total.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const Divider(),
             ],
             _TotalRow('Zwischensumme', inv.subtotalAmount),
-            if (inv.taxRate > 0) _TotalRow('MwSt. ${inv.taxRate.toStringAsFixed(0)}%', inv.taxAmount),
+            if (inv.taxRate > 0)
+              _TotalRow(
+                'MwSt. ${inv.taxRate.toStringAsFixed(0)}%',
+                inv.taxAmount,
+              ),
             _TotalRow('Gesamt (${inv.currency})', inv.totalAmount, bold: true),
             const SizedBox(height: 16),
-            if (_loading) const Center(child: CircularProgressIndicator())
-            else Column(
-              children: [
-                if (isDraft) ...[
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else
+              Column(
+                children: [
+                  if (isDraft) ...[
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          _action(() => widget.invoiceService.autoFill(inv.id)),
+                      icon: const Icon(Icons.auto_fix_high),
+                      label: const Text('Fahrten automatisch laden'),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      onPressed: () => _action(
+                        () => widget.invoiceService.sendInvoice(inv.id),
+                      ),
+                      icon: const Icon(Icons.send),
+                      label: const Text('Rechnung senden'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () => _action(
+                        () => widget.invoiceService.deleteInvoice(inv.id),
+                      ),
+                      icon: const Icon(Icons.delete, color: AppColors.error),
+                      label: const Text(
+                        'Löschen',
+                        style: TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                  ],
+                  if (isSent) ...[
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          _action(() => widget.invoiceService.markPaid(inv.id)),
+                      icon: const Icon(Icons.check_circle),
+                      label: const Text('Als bezahlt markieren'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   OutlinedButton.icon(
-                    onPressed: () => _action(() => widget.invoiceService.autoFill(inv.id)),
-                    icon: const Icon(Icons.auto_fix_high),
-                    label: const Text('Fahrten automatisch laden'),
+                    onPressed: () async {
+                      setState(() => _loading = true);
+                      final messenger = ScaffoldMessenger.of(context);
+                      try {
+                        final bytes = await widget.invoiceService.downloadPdf(
+                          inv.id,
+                        );
+                        triggerPdfDownload(bytes, 'invoice-${inv.number}.pdf');
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('PDF heruntergeladen')),
+                        );
+                      } catch (e) {
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Fehler: $e')),
+                        );
+                      } finally {
+                        if (mounted) setState(() => _loading = false);
+                      }
+                    },
+                    icon: const Icon(Icons.picture_as_pdf),
+                    label: const Text('PDF herunterladen'),
                   ),
                   const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => _action(() => widget.invoiceService.sendInvoice(inv.id)),
-                    icon: const Icon(Icons.send),
-                    label: const Text('Rechnung senden'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () => _action(() => widget.invoiceService.deleteInvoice(inv.id)),
-                    icon: const Icon(Icons.delete, color: AppColors.error),
-                    label: const Text('Löschen', style: TextStyle(color: AppColors.error)),
+                  OutlinedButton.icon(
+                    onPressed: () => _previewPdf(inv),
+                    icon: const Icon(Icons.visibility),
+                    label: const Text('Vorschau'),
                   ),
                 ],
-                if (isSent) ...[
-                  ElevatedButton.icon(
-                    onPressed: () => _action(() => widget.invoiceService.markPaid(inv.id)),
-                    icon: const Icon(Icons.check_circle),
-                    label: const Text('Als bezahlt markieren'),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    setState(() => _loading = true);
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      final bytes = await widget.invoiceService.downloadPdf(inv.id);
-                      triggerPdfDownload(bytes, 'invoice-${inv.number}.pdf');
-                      messenger.showSnackBar(const SnackBar(content: Text('PDF heruntergeladen')));
-                    } catch (e) {
-                      messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
-                    } finally {
-                      if (mounted) setState(() => _loading = false);
-                    }
-                  },
-                  icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('PDF herunterladen'),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => _previewPdf(inv),
-                  icon: const Icon(Icons.visibility),
-                  label: const Text('Vorschau'),
-                ),
-              ],
-            ),
+              ),
           ],
         ),
       ),
@@ -684,11 +876,11 @@ class _StatusBadge extends StatelessWidget {
   const _StatusBadge(this.status);
 
   Color _color(BuildContext context) => switch (status) {
-        InvoiceStatus.draft => Theme.of(context).colorScheme.onSurfaceVariant,
-        InvoiceStatus.sent => AppColors.warning,
-        InvoiceStatus.paid => AppColors.success,
-        InvoiceStatus.cancelled => AppColors.error,
-      };
+    InvoiceStatus.draft => Theme.of(context).colorScheme.onSurfaceVariant,
+    InvoiceStatus.sent => AppColors.warning,
+    InvoiceStatus.paid => AppColors.success,
+    InvoiceStatus.cancelled => AppColors.error,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -700,7 +892,14 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withAlpha(80)),
       ),
-      child: Text(status.displayName, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+      child: Text(
+        status.displayName,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 }
@@ -731,7 +930,11 @@ class _ReminderBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             'Erinnert ${_fmtDate(sentAt)}',
-            style: const TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+            style: const TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -747,16 +950,25 @@ class _TotalRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null),
-            Text('€${amount.toStringAsFixed(2)}',
-                style: bold
-                    ? TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 16)
-                    : null),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
         ),
-      );
+        Text(
+          '€${amount.toStringAsFixed(2)}',
+          style: bold
+              ? TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 16,
+                )
+              : null,
+        ),
+      ],
+    ),
+  );
 }

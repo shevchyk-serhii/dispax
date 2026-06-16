@@ -55,7 +55,6 @@ class _RideMapWidgetState extends State<RideMapWidget> {
     double zoom = 12.0;
 
     if (widget.fromLocation != null) {
-
       _updateCameraToLocations();
     }
 
@@ -99,7 +98,6 @@ class _RideMapWidgetState extends State<RideMapWidget> {
     }
 
     if (fromCoords != null && toCoords != null) {
-
       double centerLat = (fromCoords[0] + toCoords[0]) / 2;
       double centerLng = (fromCoords[1] + toCoords[1]) / 2;
 

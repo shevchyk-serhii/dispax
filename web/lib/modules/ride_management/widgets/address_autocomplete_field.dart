@@ -24,7 +24,8 @@ class AddressAutocompleteField extends StatefulWidget {
   });
 
   @override
-  State<AddressAutocompleteField> createState() => _AddressAutocompleteFieldState();
+  State<AddressAutocompleteField> createState() =>
+      _AddressAutocompleteFieldState();
 }
 
 class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
@@ -68,10 +69,12 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
     if (query.isEmpty) return widget.suggestions.take(5).toList();
     final lower = query.toLowerCase();
     return widget.suggestions
-        .where((a) =>
-            a.address.toLowerCase().contains(lower) ||
-            a.label.toLowerCase().contains(lower) ||
-            a.aliases.any((alias) => alias.toLowerCase().contains(lower)))
+        .where(
+          (a) =>
+              a.address.toLowerCase().contains(lower) ||
+              a.label.toLowerCase().contains(lower) ||
+              a.aliases.any((alias) => alias.toLowerCase().contains(lower)),
+        )
         .take(5)
         .toList();
   }
@@ -97,7 +100,10 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
               decoration: InputDecoration(
                 labelText: widget.labelText,
                 hintText: widget.hintText,
-                prefixIcon: Icon(widget.prefixIconData, color: AppColors.secretaryColor),
+                prefixIcon: Icon(
+                  widget.prefixIconData,
+                  color: AppColors.secretaryColor,
+                ),
                 suffixIcon: controller.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close, size: 18),
@@ -111,7 +117,9 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
                       )
                     : null,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                 ),
               ),
               validator: widget.validator,
@@ -139,12 +147,32 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
                     final addr = options.elementAt(index);
                     return ListTile(
                       dense: true,
-                      leading: Icon(Icons.history, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      title: Text(addr.address, style: const TextStyle(fontSize: 14)),
-                      subtitle: Text(addr.label, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      leading: Icon(
+                        Icons.history,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      title: Text(
+                        addr.address,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      subtitle: Text(
+                        addr.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                       trailing: addr.useCount > 1
-                          ? Text('×${addr.useCount}',
-                              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant))
+                          ? Text(
+                              '×${addr.useCount}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.outlineVariant,
+                              ),
+                            )
                           : null,
                       onTap: () => onSelected(addr),
                     );

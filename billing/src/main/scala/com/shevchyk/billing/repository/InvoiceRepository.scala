@@ -54,6 +54,30 @@ trait InvoiceRepository:
   // per-ride Quittung must be printable even after the ride is on an invoice.
   def findRideForReceipt(taxiCompanyId: CompanyId, rideId: UUID): Task[Option[UnbilledRide]]
 
+  // ---------------------------------------------------------------------------
+  // Platform-level (cross-tenant) methods — SuperAdmin only.
+  // These methods have NO taxi_company_id filter by design; their names encode
+  // that intent (Platform / ByCompany suffix) to make them grep-auditable.
+  // They must only be called from SuperAdminApi after requireSuperAdmin().
+  // ---------------------------------------------------------------------------
+
+  /**
+   * All invoices across all companies, paginated. No company_id filter.
+   */
+  def findAllPlatform(status: Option[InvoiceStatus], limit: Int, offset: Int): Task[List[Invoice]]
+
+  /**
+   * Total paid invoice amounts grouped by taxi_company_id for the given period. Keys are raw UUIDs (the taxi-operator
+   * company id).
+   */
+  def sumRevenueByCompany(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, BigDecimal]]
+
+  /**
+   * Count of Sent (unpaid) invoices whose due_date < NOW(), grouped by taxi_company_id. Used to surface overdue-alert
+   * counts in the SuperAdmin billing dashboard.
+   */
+  def countOverdueByCompany(): Task[Map[UUID, Int]]
+
 final case class UnbilledRide(
     rideId: UUID,
     clientId: UUID,

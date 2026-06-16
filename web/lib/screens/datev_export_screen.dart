@@ -59,8 +59,10 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
 
   void _changeMonth(int delta) {
     setState(() {
-      _selectedMonth =
-          DateTime(_selectedMonth.year, _selectedMonth.month + delta);
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + delta,
+      );
     });
     _loadData();
   }
@@ -91,16 +93,11 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
       (_expenses['preview'] as List<dynamic>?)?.cast<String>() ?? [];
 
   String get _summaryCsv => _summary['csv'] as String? ?? '';
-  double get _netIncome =>
-      (_summary['netIncome'] as num?)?.toDouble() ?? 0;
+  double get _netIncome => (_summary['netIncome'] as num?)?.toDouble() ?? 0;
   List<Map<String, dynamic>> get _summaryLines =>
-      (_summary['lines'] as List<dynamic>?)
-          ?.cast<Map<String, dynamic>>() ??
-      [];
+      (_summary['lines'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
 
-  bool get _hasData =>
-      _data != null &&
-      (_revenueRows > 0 || _expensesRows > 0);
+  bool get _hasData => _data != null && (_revenueRows > 0 || _expensesRows > 0);
 
   // --- Clipboard ---
 
@@ -131,8 +128,18 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   @override
   Widget build(BuildContext context) {
     final monthNames = [
-      'Jan', 'Feb', 'M\u00e4r', 'Apr', 'Mai', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez',
+      'Jan',
+      'Feb',
+      'M\u00e4r',
+      'Apr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Dez',
     ];
     final monthLabel =
         '${monthNames[_selectedMonth.month - 1]} ${_selectedMonth.year}';
@@ -197,8 +204,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             ),
             child: Text(
               monthLabel,
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           IconButton(
@@ -224,13 +230,13 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                _error!,
-                textAlign: TextAlign.center,
-              ),
+              child: Text(_error!, textAlign: TextAlign.center),
             ),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _loadData, child: const Text('Erneut versuchen')),
+            ElevatedButton(
+              onPressed: _loadData,
+              child: const Text('Erneut versuchen'),
+            ),
           ],
         ),
       );
@@ -241,11 +247,17 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.account_balance, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+            Icon(
+              Icons.account_balance,
+              size: 64,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 12),
             Text(
               'Keine Daten f\u00fcr $monthLabel',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -361,8 +373,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             IconButton(
               icon: const Icon(Icons.copy, size: 18),
               tooltip: 'CSV kopieren',
-              onPressed: () =>
-                  _copyToClipboard(_expensesCsv, 'Ausgaben CSV'),
+              onPressed: () => _copyToClipboard(_expensesCsv, 'Ausgaben CSV'),
             ),
           ],
         ),
@@ -416,16 +427,14 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
         trailing: IconButton(
           icon: const Icon(Icons.copy, size: 18),
           tooltip: 'Zusammenfassung kopieren',
-          onPressed: () =>
-              _copyToClipboard(_summaryCsv, 'Zusammenfassung'),
+          onPressed: () => _copyToClipboard(_summaryCsv, 'Zusammenfassung'),
         ),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Column(
               children: [
-                for (final line in _summaryLines)
-                  _buildSummaryLine(line),
+                for (final line in _summaryLines) _buildSummaryLine(line),
                 const Divider(),
                 _buildNetIncomeLine(),
               ],
@@ -477,8 +486,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color:
-                    _netIncome >= 0 ? AppColors.success : AppColors.error,
+                color: _netIncome >= 0 ? AppColors.success : AppColors.error,
               ),
             ),
           ),
@@ -518,7 +526,10 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             const SizedBox(height: 6),
             Text(
               'DATEV Buchungsstapel Format \u2013 Import via DATEV Unternehmen Online',
-              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

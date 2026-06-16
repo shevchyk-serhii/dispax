@@ -41,7 +41,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void _listenForNewMessages() {
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
-      if (event.type == 'ChatMessageSent' && event.data['rideId'] == widget.ride.id) {
+      if (event.type == 'ChatMessageSent' &&
+          event.data['rideId'] == widget.ride.id) {
         _loadMessages();
       }
     });
@@ -73,15 +74,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
-      await apiClient.post('/rides/${widget.ride.id}/chat', {
-        'message': text,
-      });
+      await apiClient.post('/rides/${widget.ride.id}/chat', {'message': text});
       await _loadMessages();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
       }
     }
   }
@@ -101,13 +100,12 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = context.read<AuthBloc>().state.user?.id;
-    final isChatAvailable = widget.ride.status == RideStatus.assigned ||
-                            widget.ride.status == RideStatus.inProgress;
+    final isChatAvailable =
+        widget.ride.status == RideStatus.assigned ||
+        widget.ride.status == RideStatus.inProgress;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Chat - ${widget.ride.clientName}'),
-      ),
+      appBar: AppBar(title: Text('Chat - ${widget.ride.clientName}')),
       body: Column(
         children: [
           // Ride info bar
@@ -116,12 +114,19 @@ class _ChatScreenState extends State<ChatScreen> {
             color: AppColors.rideAssignedBg,
             child: Row(
               children: [
-                Icon(Icons.directions_car, size: 16, color: AppColors.rideAssigned),
+                Icon(
+                  Icons.directions_car,
+                  size: 16,
+                  color: AppColors.rideAssigned,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     '${widget.ride.from.address} → ${widget.ride.to.address}',
-                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -134,34 +139,46 @@ class _ChatScreenState extends State<ChatScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _messages.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.chat_bubble_outline, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No messages yet',
-                              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Start the conversation',
-                              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outlineVariant),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 56,
+                          color: Theme.of(context).colorScheme.outlineVariant,
                         ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollCtrl,
-                        padding: const EdgeInsets.all(12),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final msg = _messages[index];
-                          final isMe = msg.senderId == currentUserId;
-                          return _buildMessageBubble(msg, isMe);
-                        },
-                      ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No messages yet',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Start the conversation',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollCtrl,
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = _messages[index];
+                      final isMe = msg.senderId == currentUserId;
+                      return _buildMessageBubble(msg, isMe);
+                    },
+                  ),
           ),
           // Input
           if (isChatAvailable)
@@ -169,7 +186,13 @@ class _ChatScreenState extends State<ChatScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                border: Border(top: BorderSide(color: Theme.of(context).colorScheme.surfaceContainerHighest)),
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                  ),
+                ),
               ),
               child: SafeArea(
                 top: false,
@@ -180,12 +203,21 @@ class _ChatScreenState extends State<ChatScreen> {
                         controller: _messageCtrl,
                         decoration: InputDecoration(
                           hintText: 'Type a message...',
-                          hintStyle: TextStyle(color: Theme.of(context).colorScheme.outlineVariant),
+                          hintStyle: TextStyle(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                            borderSide: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
+                            ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
                         ),
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _sendMessage(),
@@ -195,7 +227,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     CircleAvatar(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       child: IconButton(
-                        icon: Icon(Icons.send, color: Theme.of(context).colorScheme.onPrimary, size: 20),
+                        icon: Icon(
+                          Icons.send,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          size: 20,
+                        ),
                         onPressed: _sendMessage,
                       ),
                     ),
@@ -210,7 +246,9 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Text(
                 'Chat is available only during active rides',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
         ],
@@ -224,23 +262,35 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
         decoration: BoxDecoration(
-          color: isMe ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: isMe
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
-            bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
+            bottomLeft: isMe
+                ? const Radius.circular(16)
+                : const Radius.circular(4),
+            bottomRight: isMe
+                ? const Radius.circular(4)
+                : const Radius.circular(16),
           ),
         ),
         child: Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(
               msg.message,
               style: TextStyle(
-                color: isMe ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
+                color: isMe
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
               ),
             ),
@@ -248,7 +298,9 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               _formatTime(msg.sentAt),
               style: TextStyle(
-                color: isMe ? Theme.of(context).colorScheme.onPrimary.withAlpha(180) : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: isMe
+                    ? Theme.of(context).colorScheme.onPrimary.withAlpha(180)
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 10,
               ),
             ),

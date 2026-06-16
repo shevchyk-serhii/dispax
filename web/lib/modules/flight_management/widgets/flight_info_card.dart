@@ -9,10 +9,7 @@ import '../../core/date_utils.dart';
 class FlightInfoCard extends StatelessWidget {
   final Ride ride;
 
-  const FlightInfoCard({
-    super.key,
-    required this.ride,
-  });
+  const FlightInfoCard({super.key, required this.ride});
 
   @override
   Widget build(BuildContext context) {

@@ -22,7 +22,12 @@ class ErrorDisplayWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (icon != null) Icon(icon, size: 64, color: Theme.of(context).colorScheme.outlineVariant),
+            if (icon != null)
+              Icon(
+                icon,
+                size: 64,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             const SizedBox(height: 16),
             Text(
               title,

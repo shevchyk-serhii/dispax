@@ -31,6 +31,7 @@ import com.shevchyk.billing.repository.{
 import com.shevchyk.app.routes.{WebSocketRoutes, DevRoutes}
 import com.shevchyk.core.repository.{
   PersonRepository,
+  CompanyRepository,
   CompanySettingsRepository,
   PostgresCompanySettingsRepository,
   ClientCompanyRepository,
@@ -169,6 +170,7 @@ object Application extends ZIOAppDefault:
       ) >>> Server.live,
       ServerConfig.liveLayer,
       PersonRepository.layer,
+      CompanyRepository.layer,
       TokenRepository.layer,
       RideRepository.layer,
       RideService.layer,

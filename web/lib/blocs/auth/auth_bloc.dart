@@ -27,11 +27,15 @@ class _TokenStorage implements TokenStorage {
   final bool _useFallback;
 
   _TokenStorage()
-      : _useFallback = kIsWeb || Platform.isMacOS,
-        _secure = (kIsWeb || Platform.isMacOS) ? null : const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
-  );
+    : _useFallback = kIsWeb || Platform.isMacOS,
+      _secure = (kIsWeb || Platform.isMacOS)
+          ? null
+          : const FlutterSecureStorage(
+              aOptions: AndroidOptions(encryptedSharedPreferences: true),
+              iOptions: IOSOptions(
+                accessibility: KeychainAccessibility.first_unlock_this_device,
+              ),
+            );
 
   @override
   Future<String?> read(String key) async {
@@ -117,8 +121,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         token = await _storage.read(privateTokenKey);
       } catch (e) {
         // Corrupted storage data — clear and start fresh
-        try { await _storage.delete(privateUserKey); } catch (_) {}
-        try { await _storage.delete(privateTokenKey); } catch (_) {}
+        try {
+          await _storage.delete(privateUserKey);
+        } catch (_) {}
+        try {
+          await _storage.delete(privateTokenKey);
+        } catch (_) {}
       }
 
       bool biometricAvailable = false;
@@ -138,20 +146,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         /// Configure services with authenticated API client
         AirportTimingService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
-        PushNotificationService.instance.registerTokenWithClient(privateApiClient);
+        PushNotificationService.instance.registerTokenWithClient(
+          privateApiClient,
+        );
 
         /// Connect WebSocket for real-time updates
-        WebSocketService.instance.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
+        WebSocketService.instance.connect(
+          token,
+          wsBaseUrl: ApiClient.wsBaseUrl,
+        );
 
-        emit(AuthState.authenticated(user,
-          biometricEnabled: biometricEnabled,
-          biometricAvailable: biometricAvailable,
-        ));
+        emit(
+          AuthState.authenticated(
+            user,
+            biometricEnabled: biometricEnabled,
+            biometricAvailable: biometricAvailable,
+          ),
+        );
       } else {
-        emit(AuthState.unauthenticated(
-          biometricEnabled: biometricEnabled,
-          biometricAvailable: biometricAvailable,
-        ));
+        emit(
+          AuthState.unauthenticated(
+            biometricEnabled: biometricEnabled,
+            biometricAvailable: biometricAvailable,
+          ),
+        );
       }
     } catch (e) {
       emit(AuthState.error('Initialization error: $e'));
@@ -171,7 +189,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
 
       if (loginResponse != null) {
-        await _storage.write(privateUserKey, jsonEncode(loginResponse['person']));
+        await _storage.write(
+          privateUserKey,
+          jsonEncode(loginResponse['person']),
+        );
         await _storage.write(privateTokenKey, loginResponse['token']);
 
         privateApiClient.setAuthToken(loginResponse['token']);
@@ -179,10 +200,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         /// Configure services with authenticated API client
         AirportTimingService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
-        PushNotificationService.instance.registerTokenWithClient(privateApiClient);
+        PushNotificationService.instance.registerTokenWithClient(
+          privateApiClient,
+        );
 
         /// Connect WebSocket for real-time updates
-        WebSocketService.instance.connect(loginResponse['token'], wsBaseUrl: ApiClient.wsBaseUrl);
+        WebSocketService.instance.connect(
+          loginResponse['token'],
+          wsBaseUrl: ApiClient.wsBaseUrl,
+        );
 
         final user = Person.fromJson(loginResponse['person']);
         emit(AuthState.authenticated(user));
@@ -237,18 +263,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final biometricEnabled = await privateBiometricService.isBiometricEnabled;
 
       if (!biometricAvailable) {
-        emit(state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: 'Biometrics is not available on this device',
-        ));
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: 'Biometrics is not available on this device',
+          ),
+        );
         return;
       }
 
       if (!biometricEnabled) {
-        emit(state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: 'Biometrics is not configured. Enable it in settings',
-        ));
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: 'Biometrics is not configured. Enable it in settings',
+          ),
+        );
         return;
       }
 
@@ -263,29 +293,41 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final user = Person.fromJson(userJson);
           privateApiClient.setAuthToken(token);
 
-          WebSocketService.instance.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
+          WebSocketService.instance.connect(
+            token,
+            wsBaseUrl: ApiClient.wsBaseUrl,
+          );
 
-          emit(AuthState.authenticated(user,
-            biometricEnabled: biometricEnabled,
-            biometricAvailable: biometricAvailable,
-          ));
+          emit(
+            AuthState.authenticated(
+              user,
+              biometricEnabled: biometricEnabled,
+              biometricAvailable: biometricAvailable,
+            ),
+          );
         } else {
-          emit(state.copyWith(
-            status: AuthStatus.error,
-            errorMessage: 'User data not found. Please log in again',
-          ));
+          emit(
+            state.copyWith(
+              status: AuthStatus.error,
+              errorMessage: 'User data not found. Please log in again',
+            ),
+          );
         }
       } else {
-        emit(state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: result.message,
-        ));
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: result.message,
+          ),
+        );
       }
     } catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Biometric authentication error: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: 'Biometric authentication error: $e',
+        ),
+      );
     }
   }
 
@@ -297,10 +339,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final biometricAvailable = await privateBiometricService.isAvailable;
 
       if (!biometricAvailable) {
-        emit(state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: 'Biometrics is not available on this device',
-        ));
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: 'Biometrics is not available on this device',
+          ),
+        );
         return;
       }
 
@@ -310,23 +354,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
 
         if (result.isSuccess) {
-          await privateBiometricService.setBiometricEnabled(true, userId: event.userId);
+          await privateBiometricService.setBiometricEnabled(
+            true,
+            userId: event.userId,
+          );
           emit(state.copyWith(biometricEnabled: true));
         } else {
-          emit(state.copyWith(
-            status: AuthStatus.error,
-            errorMessage: 'Failed to setup biometrics: ${result.message}',
-          ));
+          emit(
+            state.copyWith(
+              status: AuthStatus.error,
+              errorMessage: 'Failed to setup biometrics: ${result.message}',
+            ),
+          );
         }
       } else {
         await privateBiometricService.setBiometricEnabled(false);
         emit(state.copyWith(biometricEnabled: false));
       }
     } catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Biometric setup error: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: 'Biometric setup error: $e',
+        ),
+      );
     }
   }
 

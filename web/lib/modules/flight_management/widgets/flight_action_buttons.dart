@@ -25,7 +25,9 @@ class FlightActionButtons extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingLarge),
+            padding: const EdgeInsets.symmetric(
+              vertical: AppDimensions.paddingLarge,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
             ),
@@ -36,7 +38,9 @@ class FlightActionButtons extends StatelessWidget {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.onPrimary,
+                    ),
                   ),
                 )
               : Row(
@@ -60,10 +64,10 @@ class FlightActionButtons extends StatelessWidget {
           onPressed: isLoading ? null : onDelayPickup,
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.textOnPrimary,
-            side: BorderSide(
-              color: AppColors.textOnPrimary.withAlpha(100),
+            side: BorderSide(color: AppColors.textOnPrimary.withAlpha(100)),
+            padding: const EdgeInsets.symmetric(
+              vertical: AppDimensions.paddingLarge,
             ),
-            padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingLarge),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
             ),

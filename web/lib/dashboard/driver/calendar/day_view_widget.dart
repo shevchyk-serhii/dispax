@@ -29,14 +29,19 @@ class DayViewWidget extends StatelessWidget {
         return BlocBuilder<ScheduleBloc, ScheduleState>(
           builder: (context, scheduleState) {
             final dayRides = getRidesForDay(rideState.rides, selectedDay);
-            dayRides.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+            dayRides.sort(
+              (a, b) => a.pickupDateTime.compareTo(b.pickupDateTime),
+            );
 
-            final daySchedules = scheduleState.scheduleDays.where((d) =>
-              d.date.year == selectedDay.year &&
-              d.date.month == selectedDay.month &&
-              d.date.day == selectedDay.day &&
-              d.status != ScheduleDayStatus.cancelled
-            ).toList();
+            final daySchedules = scheduleState.scheduleDays
+                .where(
+                  (d) =>
+                      d.date.year == selectedDay.year &&
+                      d.date.month == selectedDay.month &&
+                      d.date.day == selectedDay.day &&
+                      d.status != ScheduleDayStatus.cancelled,
+                )
+                .toList();
 
             return Container(
               margin: const EdgeInsets.all(16),
@@ -72,7 +77,10 @@ class DayViewWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildScheduleBlock(BuildContext context, List<ScheduleDay> schedules) {
+  Widget _buildScheduleBlock(
+    BuildContext context,
+    List<ScheduleDay> schedules,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -101,55 +109,69 @@ class DayViewWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          ...schedules.map((s) => Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Row(
-              children: [
-                Icon(Icons.schedule, size: 14, color: colorScheme.primary),
-                const SizedBox(width: 6),
-                Text(
-                  '${s.startTime} — ${s.endTime}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _scheduleStatusColor(colorScheme, s.status).withAlpha(30),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    s.status.displayName,
+          ...schedules.map(
+            (s) => Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  Icon(Icons.schedule, size: 14, color: colorScheme.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${s.startTime} — ${s.endTime}',
                     style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: _scheduleStatusColor(colorScheme, s.status),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
                     ),
                   ),
-                ),
-                if (s.notes != null && s.notes!.isNotEmpty) ...[
                   const SizedBox(width: 8),
-                  Expanded(
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _scheduleStatusColor(
+                        colorScheme,
+                        s.status,
+                      ).withAlpha(30),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     child: Text(
-                      s.notes!,
-                      style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-                      overflow: TextOverflow.ellipsis,
+                      s.status.displayName,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: _scheduleStatusColor(colorScheme, s.status),
+                      ),
                     ),
                   ),
+                  if (s.notes != null && s.notes!.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        s.notes!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
   }
 
-  Color _scheduleStatusColor(ColorScheme colorScheme, ScheduleDayStatus status) {
+  Color _scheduleStatusColor(
+    ColorScheme colorScheme,
+    ScheduleDayStatus status,
+  ) {
     switch (status) {
       case ScheduleDayStatus.scheduled:
         return AppColors.info;
@@ -190,7 +212,10 @@ class DayViewWidget extends StatelessWidget {
               ),
               Text(
                 DateFormat.yMMMd().format(selectedDay),
-                style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -221,7 +246,11 @@ class DayViewWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_available, size: 64, color: colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.event_available,
+            size: 64,
+            color: colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No rides scheduled',
@@ -324,9 +353,19 @@ class DayViewWidget extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              buildLocationRow(context, Icons.person, 'Client', ride.clientName),
+              buildLocationRow(
+                context,
+                Icons.person,
+                'Client',
+                ride.clientName,
+              ),
               const SizedBox(height: 8),
-              buildLocationRow(context, Icons.location_on, 'From', ride.from.address),
+              buildLocationRow(
+                context,
+                Icons.location_on,
+                'From',
+                ride.from.address,
+              ),
               const SizedBox(height: 8),
               buildLocationRow(context, Icons.flag, 'To', ride.to.address),
               const SizedBox(height: 12),
@@ -338,7 +377,12 @@ class DayViewWidget extends StatelessWidget {
     );
   }
 
-  Widget buildLocationRow(BuildContext context, IconData icon, String label, String value) {
+  Widget buildLocationRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
@@ -391,10 +435,12 @@ class DayViewWidget extends StatelessWidget {
           Flexible(
             child: ElevatedButton.icon(
               onPressed: () {
-                context.read<RideBloc>().add(RideStatusUpdateRequested(
-                  rideId: ride.id,
-                  status: RideStatus.inProgress,
-                ));
+                context.read<RideBloc>().add(
+                  RideStatusUpdateRequested(
+                    rideId: ride.id,
+                    status: RideStatus.inProgress,
+                  ),
+                );
               },
               icon: const Icon(Icons.play_arrow, size: 18),
               label: const Text('Start'),
@@ -408,10 +454,12 @@ class DayViewWidget extends StatelessWidget {
           Flexible(
             child: ElevatedButton.icon(
               onPressed: () {
-                context.read<RideBloc>().add(RideStatusUpdateRequested(
-                  rideId: ride.id,
-                  status: RideStatus.completed,
-                ));
+                context.read<RideBloc>().add(
+                  RideStatusUpdateRequested(
+                    rideId: ride.id,
+                    status: RideStatus.completed,
+                  ),
+                );
               },
               icon: const Icon(Icons.check, size: 18),
               label: const Text('Complete'),
@@ -428,7 +476,11 @@ class DayViewWidget extends StatelessWidget {
   void _handleCall(BuildContext context, Ride ride) {
     final phone = ride.client.phone;
     if (phone == null || phone.isEmpty) {
-      NavigationHelper.showSnackBar(context, 'No phone number available', isError: true);
+      NavigationHelper.showSnackBar(
+        context,
+        'No phone number available',
+        isError: true,
+      );
       return;
     }
     showModalBottomSheet(
@@ -471,7 +523,10 @@ class DayViewWidget extends StatelessWidget {
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, 'pickup'),
               child: ListTile(
-                leading: const Icon(Icons.location_on, color: AppColors.success),
+                leading: const Icon(
+                  Icons.location_on,
+                  color: AppColors.success,
+                ),
                 title: Text(ride.from.address),
                 subtitle: const Text('Pickup location'),
               ),
@@ -508,7 +563,11 @@ class DayViewWidget extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        NavigationHelper.showSnackBar(context, 'Could not open navigation: $e', isError: true);
+        NavigationHelper.showSnackBar(
+          context,
+          'Could not open navigation: $e',
+          isError: true,
+        );
       }
     }
   }
@@ -526,7 +585,11 @@ class DayViewWidget extends StatelessWidget {
             color: colorScheme.outlineVariant,
             margin: const EdgeInsets.symmetric(horizontal: 16),
           ),
-          Icon(Icons.directions_car, size: 16, color: colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.directions_car,
+            size: 16,
+            color: colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 8),
           Text(
             '$minutes min travel time',

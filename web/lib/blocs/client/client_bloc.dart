@@ -41,10 +41,12 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
       final updatedClients = List.from(state.clients)..add(newClient);
       emit(ClientState.loaded(updatedClients.cast()));
     } catch (e) {
-      emit(state.copyWith(
-        status: ClientStateStatus.error,
-        errorMessage: 'Failed to create client: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: ClientStateStatus.error,
+          errorMessage: 'Failed to create client: $e',
+        ),
+      );
     }
   }
 
@@ -55,16 +57,21 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
     emit(state.copyWith(status: ClientStateStatus.loading));
 
     try {
-      final updated = await privateUserService.updateClient(event.clientId, event.request);
+      final updated = await privateUserService.updateClient(
+        event.clientId,
+        event.request,
+      );
       final updatedClients = state.clients.map((c) {
         return c.id == updated.id ? updated : c;
       }).toList();
       emit(ClientState.loaded(updatedClients));
     } catch (e) {
-      emit(state.copyWith(
-        status: ClientStateStatus.error,
-        errorMessage: 'Failed to update client: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: ClientStateStatus.error,
+          errorMessage: 'Failed to update client: $e',
+        ),
+      );
     }
   }
 
@@ -81,10 +88,12 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
           .toList();
       emit(ClientState.loaded(updatedClients));
     } catch (e) {
-      emit(state.copyWith(
-        status: ClientStateStatus.error,
-        errorMessage: 'Failed to deactivate client: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: ClientStateStatus.error,
+          errorMessage: 'Failed to deactivate client: $e',
+        ),
+      );
     }
   }
 

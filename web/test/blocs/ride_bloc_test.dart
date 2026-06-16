@@ -45,36 +45,34 @@ void main() {
     blocTest<RideBloc, RideState>(
       'RideLoadRequested emits loading then loaded on first load',
       build: () {
-        when(() => mockRideService.getRidesForUser(any()))
-            .thenAnswer((_) async => testRides);
+        when(
+          () => mockRideService.getRidesForUser(any()),
+        ).thenAnswer((_) async => testRides);
         return buildBloc();
       },
       act: (bloc) => bloc.add(RideLoadRequested(user: testUser)),
-      expect: () => [
-        RideState.loading(),
-        RideState.loaded(testRides),
-      ],
+      expect: () => [RideState.loading(), RideState.loaded(testRides)],
     );
 
     blocTest<RideBloc, RideState>(
       'RideLoadRequested emits loaded without loading on subsequent loads',
       build: () {
-        when(() => mockRideService.getRidesForUser(any()))
-            .thenAnswer((_) async => testRides);
+        when(
+          () => mockRideService.getRidesForUser(any()),
+        ).thenAnswer((_) async => testRides);
         return buildBloc();
       },
       seed: () => RideState.loaded([testRide]),
       act: (bloc) => bloc.add(RideLoadRequested(user: testUser)),
-      expect: () => [
-        RideState.loaded(testRides),
-      ],
+      expect: () => [RideState.loaded(testRides)],
     );
 
     blocTest<RideBloc, RideState>(
       'RideLoadRequested emits error on service failure',
       build: () {
-        when(() => mockRideService.getRidesForUser(any()))
-            .thenThrow(ApiException('Network error'));
+        when(
+          () => mockRideService.getRidesForUser(any()),
+        ).thenThrow(ApiException('Network error'));
         return buildBloc();
       },
       act: (bloc) => bloc.add(RideLoadRequested(user: testUser)),
@@ -87,22 +85,21 @@ void main() {
     blocTest<RideBloc, RideState>(
       'RideRefreshRequested emits loading then loaded',
       build: () {
-        when(() => mockRideService.getRidesForUser(any()))
-            .thenAnswer((_) async => testRides);
+        when(
+          () => mockRideService.getRidesForUser(any()),
+        ).thenAnswer((_) async => testRides);
         return buildBloc();
       },
       act: (bloc) => bloc.add(RideRefreshRequested(user: testUser)),
-      expect: () => [
-        RideState.loading(),
-        RideState.loaded(testRides),
-      ],
+      expect: () => [RideState.loading(), RideState.loaded(testRides)],
     );
 
     blocTest<RideBloc, RideState>(
       'RideRefreshRequested emits error on failure',
       build: () {
-        when(() => mockRideService.getRidesForUser(any()))
-            .thenThrow(ApiException('fail'));
+        when(
+          () => mockRideService.getRidesForUser(any()),
+        ).thenThrow(ApiException('fail'));
         return buildBloc();
       },
       act: (bloc) => bloc.add(RideRefreshRequested(user: testUser)),
@@ -148,8 +145,9 @@ void main() {
       'RideCreateRequested emits loading then loaded with new ride',
       build: () {
         final created = TestFixtures.ride(id: 'ride-created');
-        when(() => mockRideService.createRide(any()))
-            .thenAnswer((_) async => created);
+        when(
+          () => mockRideService.createRide(any()),
+        ).thenAnswer((_) async => created);
         return buildBloc();
       },
       seed: () => RideState.loaded([testRide]),
@@ -167,8 +165,9 @@ void main() {
     blocTest<RideBloc, RideState>(
       'RideCreateRequested emits error on failure',
       build: () {
-        when(() => mockRideService.createRide(any()))
-            .thenThrow(ApiException('fail'));
+        when(
+          () => mockRideService.createRide(any()),
+        ).thenThrow(ApiException('fail'));
         return buildBloc();
       },
       seed: () => RideState.loaded([testRide]),
@@ -184,15 +183,18 @@ void main() {
     blocTest<RideBloc, RideState>(
       'RideStatusUpdateRequested emits loading then loaded with updated status',
       build: () {
-        when(() => mockRideService.updateRideStatus(any(), any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockRideService.updateRideStatus(any(), any()),
+        ).thenAnswer((_) async => true);
         return buildBloc();
       },
       seed: () => RideState.loaded([testRide]),
-      act: (bloc) => bloc.add(const RideStatusUpdateRequested(
-        rideId: 'ride-1',
-        status: RideStatus.completed,
-      )),
+      act: (bloc) => bloc.add(
+        const RideStatusUpdateRequested(
+          rideId: 'ride-1',
+          status: RideStatus.completed,
+        ),
+      ),
       expect: () => [
         isA<RideState>().having((s) => s.isLoading, 'isLoading', true),
         isA<RideState>().having(
@@ -206,15 +208,18 @@ void main() {
     blocTest<RideBloc, RideState>(
       'RideStatusUpdateRequested emits error when service returns false',
       build: () {
-        when(() => mockRideService.updateRideStatus(any(), any()))
-            .thenAnswer((_) async => false);
+        when(
+          () => mockRideService.updateRideStatus(any(), any()),
+        ).thenAnswer((_) async => false);
         return buildBloc();
       },
       seed: () => RideState.loaded([testRide]),
-      act: (bloc) => bloc.add(const RideStatusUpdateRequested(
-        rideId: 'ride-1',
-        status: RideStatus.completed,
-      )),
+      act: (bloc) => bloc.add(
+        const RideStatusUpdateRequested(
+          rideId: 'ride-1',
+          status: RideStatus.completed,
+        ),
+      ),
       expect: () => [
         isA<RideState>().having((s) => s.isLoading, 'isLoading', true),
         isA<RideState>().having((s) => s.hasError, 'hasError', true),
@@ -224,8 +229,9 @@ void main() {
     blocTest<RideBloc, RideState>(
       'RideLoadPendingRequested emits loading then loaded',
       build: () {
-        when(() => mockRideService.getPendingRides())
-            .thenAnswer((_) async => testRides);
+        when(
+          () => mockRideService.getPendingRides(),
+        ).thenAnswer((_) async => testRides);
         return buildBloc();
       },
       act: (bloc) => bloc.add(const RideLoadPendingRequested()),
@@ -238,10 +244,13 @@ void main() {
     blocTest<RideBloc, RideState>(
       'RideAssignRequested emits assigning then loaded with updated ride',
       build: () {
-        final assigned =
-            testRide.copyWith(driverId: 'driver-1', status: RideStatus.assigned);
-        when(() => mockRideService.assignDriver('ride-1', 'driver-1'))
-            .thenAnswer((_) async => assigned);
+        final assigned = testRide.copyWith(
+          driverId: 'driver-1',
+          status: RideStatus.assigned,
+        );
+        when(
+          () => mockRideService.assignDriver('ride-1', 'driver-1'),
+        ).thenAnswer((_) async => assigned);
         return buildBloc();
       },
       seed: () => RideState.loaded([testRide]),
@@ -259,8 +268,9 @@ void main() {
     blocTest<RideBloc, RideState>(
       'RideAssignRequested emits error on failure',
       build: () {
-        when(() => mockRideService.assignDriver(any(), any()))
-            .thenThrow(ApiException('fail'));
+        when(
+          () => mockRideService.assignDriver(any(), any()),
+        ).thenThrow(ApiException('fail'));
         return buildBloc();
       },
       seed: () => RideState.loaded([testRide]),
@@ -276,10 +286,13 @@ void main() {
     blocTest<RideBloc, RideState>(
       'RideReassignRequested emits assigning then loaded',
       build: () {
-        final reassigned =
-            testRide.copyWith(driverId: 'driver-2', status: RideStatus.assigned);
-        when(() => mockRideService.reassignDriver('ride-1', 'driver-2'))
-            .thenAnswer((_) async => reassigned);
+        final reassigned = testRide.copyWith(
+          driverId: 'driver-2',
+          status: RideStatus.assigned,
+        );
+        when(
+          () => mockRideService.reassignDriver('ride-1', 'driver-2'),
+        ).thenAnswer((_) async => reassigned);
         return buildBloc();
       },
       seed: () => RideState.loaded([testRide]),
@@ -295,8 +308,9 @@ void main() {
     blocTest<RideBloc, RideState>(
       'RideReassignRequested emits error on failure',
       build: () {
-        when(() => mockRideService.reassignDriver(any(), any()))
-            .thenThrow(ApiException('fail'));
+        when(
+          () => mockRideService.reassignDriver(any(), any()),
+        ).thenThrow(ApiException('fail'));
         return buildBloc();
       },
       seed: () => RideState.loaded([testRide]),
@@ -318,7 +332,10 @@ void main() {
           TestFixtures.ride(id: 'ride-2', status: RideStatus.requested),
         ]),
         act: (bloc) => bloc.add(
-          const RideStatusReceived(rideId: 'ride-1', newStatus: RideStatus.assigned),
+          const RideStatusReceived(
+            rideId: 'ride-1',
+            newStatus: RideStatus.assigned,
+          ),
         ),
         expect: () => [
           isA<RideState>().having(
@@ -342,7 +359,10 @@ void main() {
           TestFixtures.ride(id: 'ride-2', status: RideStatus.requested),
         ]),
         act: (bloc) => bloc.add(
-          const RideStatusReceived(rideId: 'ride-1', newStatus: RideStatus.inProgress),
+          const RideStatusReceived(
+            rideId: 'ride-1',
+            newStatus: RideStatus.inProgress,
+          ),
         ),
         expect: () => [
           isA<RideState>().having(
@@ -358,7 +378,10 @@ void main() {
         build: buildBloc,
         seed: () => RideState.loaded([]),
         act: (bloc) => bloc.add(
-          const RideStatusReceived(rideId: 'ride-1', newStatus: RideStatus.cancelled),
+          const RideStatusReceived(
+            rideId: 'ride-1',
+            newStatus: RideStatus.cancelled,
+          ),
         ),
         expect: () => [],
       );
@@ -370,7 +393,10 @@ void main() {
           TestFixtures.ride(id: 'ride-1', status: RideStatus.requested),
         ]),
         act: (bloc) => bloc.add(
-          const RideStatusReceived(rideId: 'unknown-id', newStatus: RideStatus.cancelled),
+          const RideStatusReceived(
+            rideId: 'unknown-id',
+            newStatus: RideStatus.cancelled,
+          ),
         ),
         expect: () => [],
       );

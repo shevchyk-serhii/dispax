@@ -13,7 +13,7 @@ class LocationClarificationService {
     if (_instance == null) {
       throw StateError(
         'LocationClarificationService has not been configured. '
-        'Call LocationClarificationService.configure() with an authenticated ApiClient first.'
+        'Call LocationClarificationService.configure() with an authenticated ApiClient first.',
       );
     }
     return _instance!;
@@ -33,7 +33,9 @@ class LocationClarificationService {
     try {
       final position = await _locationService.getCurrentPosition();
       if (position == null) {
-        debugPrint('❌ Could not obtain GPS position for client-location update');
+        debugPrint(
+          '❌ Could not obtain GPS position for client-location update',
+        );
         return false;
       }
 

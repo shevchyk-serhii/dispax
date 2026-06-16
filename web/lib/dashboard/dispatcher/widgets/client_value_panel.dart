@@ -42,8 +42,11 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
       if (response.statusCode == 200) {
         _data = List<Map<String, dynamic>>.from(jsonDecode(response.body));
         // Sort by total revenue descending
-        _data!.sort((a, b) =>
-          ((b['totalRevenue'] as num?) ?? 0).compareTo((a['totalRevenue'] as num?) ?? 0));
+        _data!.sort(
+          (a, b) => ((b['totalRevenue'] as num?) ?? 0).compareTo(
+            (a['totalRevenue'] as num?) ?? 0,
+          ),
+        );
       }
       setState(() => _isLoading = false);
     } catch (e) {
@@ -58,9 +61,12 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
     if (_data == null) return [];
     final search = _searchController.text.trim().toLowerCase();
     if (search.isEmpty) return _data!;
-    return _data!.where((c) =>
-      (c['clientName'] as String? ?? '').toLowerCase().contains(search)
-    ).toList();
+    return _data!
+        .where(
+          (c) =>
+              (c['clientName'] as String? ?? '').toLowerCase().contains(search),
+        )
+        .toList();
   }
 
   @override
@@ -72,22 +78,26 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          const SizedBox(height: 12),
-                          ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      child: _buildContent(),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _loadData, child: _buildContent()),
         ),
       ],
     );
@@ -109,7 +119,11 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
             const Expanded(
               child: Text(
                 'Client Lifetime Value',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
@@ -130,16 +144,26 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline, size: 56, color: colorScheme.outlineVariant),
+            Icon(
+              Icons.people_outline,
+              size: 56,
+              color: colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 12),
-            Text('No client value data available', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            Text(
+              'No client value data available',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
           ],
         ),
       );
     }
 
     final totalClients = _data!.length;
-    final totalRevenue = _data!.fold<num>(0, (sum, c) => sum + ((c['totalRevenue'] as num?) ?? 0));
+    final totalRevenue = _data!.fold<num>(
+      0,
+      (sum, c) => sum + ((c['totalRevenue'] as num?) ?? 0),
+    );
     final avgValue = totalClients > 0 ? totalRevenue / totalClients : 0;
     final filtered = _filteredData;
 
@@ -149,11 +173,26 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
         // Summary
         Row(
           children: [
-            _buildSummaryCard('Clients', totalClients.toString(), AppColors.clientColor, colorScheme),
+            _buildSummaryCard(
+              'Clients',
+              totalClients.toString(),
+              AppColors.clientColor,
+              colorScheme,
+            ),
             const SizedBox(width: 12),
-            _buildSummaryCard('Total Rev.', '\u20AC${totalRevenue.toStringAsFixed(0)}', AppColors.success, colorScheme),
+            _buildSummaryCard(
+              'Total Rev.',
+              '\u20AC${totalRevenue.toStringAsFixed(0)}',
+              AppColors.success,
+              colorScheme,
+            ),
             const SizedBox(width: 12),
-            _buildSummaryCard('Avg Value', '\u20AC${avgValue.toStringAsFixed(0)}', colorScheme.primary, colorScheme),
+            _buildSummaryCard(
+              'Avg Value',
+              '\u20AC${avgValue.toStringAsFixed(0)}',
+              colorScheme.primary,
+              colorScheme,
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -191,7 +230,9 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
               color: isTop3 ? AppColors.warningBg : colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isTop3 ? AppColors.warning : colorScheme.surfaceContainerHighest,
+                color: isTop3
+                    ? AppColors.warning
+                    : colorScheme.surfaceContainerHighest,
               ),
             ),
             child: Row(
@@ -207,7 +248,11 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                     child: Center(
                       child: Text(
                         '#${index + 1}',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   )
@@ -217,7 +262,11 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                     backgroundColor: AppColors.clientColor.withAlpha(30),
                     child: Text(
                       name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: TextStyle(color: AppColors.clientColor, fontWeight: FontWeight.bold, fontSize: 12),
+                      style: TextStyle(
+                        color: AppColors.clientColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 const SizedBox(width: 12),
@@ -225,19 +274,40 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Text('$rides rides', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+                          Text(
+                            '$rides rides',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                           const SizedBox(width: 8),
-                          Text('avg \u20AC${avgPrice.toStringAsFixed(0)}', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+                          Text(
+                            'avg \u20AC${avgPrice.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                         ],
                       ),
                       if (firstRide != null || lastRide != null)
                         Text(
                           '${firstRide != null ? _formatDate(firstRide) : '?'} - ${lastRide != null ? _formatDate(lastRide) : 'present'}',
-                          style: TextStyle(fontSize: 10, color: colorScheme.outlineVariant),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: colorScheme.outlineVariant,
+                          ),
                         ),
                     ],
                   ),
@@ -258,7 +328,12 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
     );
   }
 
-  Widget _buildSummaryCard(String label, String value, Color color, ColorScheme colorScheme) {
+  Widget _buildSummaryCard(
+    String label,
+    String value,
+    Color color,
+    ColorScheme colorScheme,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -269,9 +344,22 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
         ),
         child: Column(
           children: [
-            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),

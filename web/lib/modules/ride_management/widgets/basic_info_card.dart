@@ -47,9 +47,14 @@ class BasicInfoCard extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: 'Client Name',
                 hintText: 'Enter client name',
-                prefixIcon: Icon(Icons.person_outline, color: AppColors.secretaryColor),
+                prefixIcon: Icon(
+                  Icons.person_outline,
+                  color: AppColors.secretaryColor,
+                ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                 ),
               ),
               validator: (value) {

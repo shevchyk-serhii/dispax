@@ -26,7 +26,9 @@ class _AppNotification {
       id: json['id'] ?? '',
       title: json['title'] ?? '',
       body: json['body'] ?? '',
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['createdAt'] ?? DateTime.now().toIso8601String(),
+      ),
       isRead: json['isRead'] ?? false,
     );
   }
@@ -63,7 +65,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (response.statusCode == 200 && mounted) {
         final List<dynamic> data = jsonDecode(response.body);
         setState(() {
-          _notifications = data.map((e) => _AppNotification.fromJson(e)).toList();
+          _notifications = data
+              .map((e) => _AppNotification.fromJson(e))
+              .toList();
           _isLoading = false;
         });
       } else {
@@ -90,7 +94,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
@@ -104,7 +111,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
@@ -118,7 +128,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           TextButton(
             onPressed: _markAllAsRead,
-            child: const Text('Mark all read', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Mark all read',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -140,7 +153,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             const SizedBox(height: 12),
             Text(_error!),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _loadNotifications, child: const Text('Retry')),
+            ElevatedButton(
+              onPressed: _loadNotifications,
+              child: const Text('Retry'),
+            ),
           ],
         ),
       );
@@ -151,11 +167,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.notifications_off, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
+            Icon(
+              Icons.notifications_off,
+              size: 56,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 12),
             Text(
               'No notifications',
-              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -172,11 +196,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           final n = _notifications[index];
           return Card(
             color: n.isRead ? null : AppColors.rideAssignedBg,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: ListTile(
               leading: Icon(
-                n.isRead ? Icons.notifications_none : Icons.notifications_active,
-                color: n.isRead ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.primary,
+                n.isRead
+                    ? Icons.notifications_none
+                    : Icons.notifications_active,
+                color: n.isRead
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : Theme.of(context).colorScheme.primary,
               ),
               title: Text(
                 n.title,
@@ -192,7 +222,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   const SizedBox(height: 4),
                   Text(
                     DateFormat('MMM d, HH:mm').format(n.createdAt),
-                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outlineVariant),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                 ],
               ),

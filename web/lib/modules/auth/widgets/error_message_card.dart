@@ -7,11 +7,7 @@ class ErrorMessageCard extends StatelessWidget {
   final String message;
   final VoidCallback? onDismiss;
 
-  const ErrorMessageCard({
-    super.key,
-    required this.message,
-    this.onDismiss,
-  });
+  const ErrorMessageCard({super.key, required this.message, this.onDismiss});
 
   @override
   Widget build(BuildContext context) {

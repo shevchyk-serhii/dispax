@@ -43,7 +43,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _rideUpdates = prefs.getBool('ride_updates') ?? true;
       _chatNotifications = prefs.getBool('chat_notifications') ?? true;
       // Take from the user profile (authoritative source), SharedPreferences as fallback
-      _reminderMinutes = user?.reminderMinutes ?? prefs.getInt('reminder_minutes') ?? 60;
+      _reminderMinutes =
+          user?.reminderMinutes ?? prefs.getInt('reminder_minutes') ?? 60;
     });
   }
 
@@ -62,9 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final user = authState.user;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
           if (user != null) _buildProfileSection(user),
@@ -105,9 +104,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: _roleGradient(user.role),
-        ),
+        gradient: LinearGradient(colors: _roleGradient(user.role)),
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
       ),
       child: Row(
@@ -117,7 +114,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             backgroundColor: Colors.white.withAlpha(60),
             child: Text(
               user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -127,17 +128,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text(
                   user.name,
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   user.email,
-                  style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 13),
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(200),
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   user.role.name.toUpperCase(),
-                  style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 11, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(180),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -231,7 +243,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: const Text('Remind me before ride'),
           subtitle: const Text('Push notification to leave on time'),
           trailing: _savingReminder
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : DropdownButton<int>(
                   value: _reminderMinutes,
                   underline: const SizedBox(),
@@ -261,7 +277,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Failed to save: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {
@@ -337,16 +356,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Biometric Login'),
             value: authState.biometricEnabled,
             onChanged: (v) {
-              context.read<AuthBloc>().add(AuthBiometricSetupRequested(
-                enabled: v,
-                userId: authState.user?.id,
-              ));
+              context.read<AuthBloc>().add(
+                AuthBiometricSetupRequested(
+                  enabled: v,
+                  userId: authState.user?.id,
+                ),
+              );
             },
           ),
         ListTile(
           leading: const Icon(Icons.devices),
           title: const Text('Active Sessions'),
-          subtitle: const Text('Manage logged-in devices', style: TextStyle(fontSize: 12)),
+          subtitle: const Text(
+            'Manage logged-in devices',
+            style: TextStyle(fontSize: 12),
+          ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(
             context,
@@ -365,7 +389,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ListTile(
           leading: const Icon(Icons.privacy_tip_outlined),
           title: const Text('Privacy & Data (GDPR)'),
-          subtitle: const Text('Manage consent, export & delete data', style: TextStyle(fontSize: 12)),
+          subtitle: const Text(
+            'Manage consent, export & delete data',
+            style: TextStyle(fontSize: 12),
+          ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(
             context,
@@ -384,7 +411,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ListTile(
           leading: const Icon(Icons.info_outline),
           title: const Text('Version'),
-          trailing: Text('1.0.0', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          trailing: Text(
+            '1.0.0',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
       ],
     );
@@ -406,13 +438,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                  ),
                   onPressed: () {
                     Navigator.pop(context);
                     context.read<AuthBloc>().add(const AuthLogoutRequested());
                     Navigator.of(context).popUntil((route) => route.isFirst);
                   },
-                  child: const Text('Logout', style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    'Logout',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -447,7 +484,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: currentCtrl,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Current Password'),
+                decoration: const InputDecoration(
+                  labelText: 'Current Password',
+                ),
                 validator: (v) => v == null || v.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 12),
@@ -465,7 +504,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextFormField(
                 controller: confirmCtrl,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Confirm New Password'),
+                decoration: const InputDecoration(
+                  labelText: 'Confirm New Password',
+                ),
                 validator: (v) {
                   if (v != newCtrl.text) return 'Passwords do not match';
                   return null;
@@ -492,7 +533,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (ctx.mounted) Navigator.pop(ctx);
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password changed successfully')),
+                      const SnackBar(
+                        content: Text('Password changed successfully'),
+                      ),
                     );
                   }
                 } catch (e) {
@@ -580,6 +623,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case PersonRole.dispatcher:
         return AppColors.dispatcherGradient;
       case PersonRole.admin:
+        return AppColors.dispatcherGradient;
+      case PersonRole.superAdmin:
         return AppColors.dispatcherGradient;
     }
   }

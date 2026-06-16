@@ -23,6 +23,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       case "dispatcher"       => PersonRole.Dispatcher
       case "admin"            => PersonRole.Admin
       case "client_secretary" => PersonRole.ClientSecretary
+      case "super_admin"      => PersonRole.SuperAdmin
     },
     {
       case PersonRole.Driver          => "driver"
@@ -31,6 +32,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       case PersonRole.Dispatcher      => "dispatcher"
       case PersonRole.Admin           => "admin"
       case PersonRole.ClientSecretary => "client_secretary"
+      case PersonRole.SuperAdmin      => "super_admin"
     }
   )
 

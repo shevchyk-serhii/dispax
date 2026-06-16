@@ -18,10 +18,10 @@ import zio.ZIO
 import java.time.{Instant, YearMonth, ZoneOffset}
 
 /**
- * Tapir descriptions and server logic for the DATEV export endpoints. Replaces the zio-http handlers in
- * `ExportRoutes`, keeping the exact paths, status codes, role checks, company isolation and content types. The CSV/
- * text endpoints respond with `text/csv` plain bodies; the full export responds with the JSON envelope. The pure DATEV
- * CSV generation is copied here so the same byte-for-byte output is produced.
+ * Tapir descriptions and server logic for the DATEV export endpoints. Replaces the zio-http handlers in `ExportRoutes`,
+ * keeping the exact paths, status codes, role checks, company isolation and content types. The CSV/ text endpoints
+ * respond with `text/csv` plain bodies; the full export responds with the JSON envelope. The pure DATEV CSV generation
+ * is copied here so the same byte-for-byte output is produced.
  */
 object ExportApi:
 
@@ -104,10 +104,9 @@ object ExportApi:
 
     (header +: lines).mkString("\n")
 
-  private def parseMonth(monthOpt: Option[String]): YearMonth =
-    monthOpt
-      .flatMap(s => scala.util.Try(YearMonth.parse(s)).toOption)
-      .getOrElse(YearMonth.now())
+  private def parseMonth(monthOpt: Option[String]): YearMonth = monthOpt
+    .flatMap(s => scala.util.Try(YearMonth.parse(s)).toOption)
+    .getOrElse(YearMonth.now())
 
   private def fetchData(
       companyId: CompanyId,
@@ -121,11 +120,10 @@ object ExportApi:
       expenseRepo   <- ZIO.service[ExpenseRepository]
       personRepo    <- ZIO.service[PersonRepository]
       allRides      <- rideService.getRidesByCompany(companyId)
-      completedRides =
-        allRides.filter { ride =>
-          ride.status == RideStatus.Completed &&
-          ride.endTime.exists(t => !t.isBefore(startInstant) && t.isBefore(endInstant))
-        }
+      completedRides = allRides.filter { ride =>
+                         ride.status == RideStatus.Completed &&
+                         ride.endTime.exists(t => !t.isBefore(startInstant) && t.isBefore(endInstant))
+                       }
       allExpenses   <- expenseRepo.findByCompanyId(companyId)
       monthExpenses  = allExpenses.filter { exp =>
                          !exp.createdAt.isBefore(startInstant) && exp.createdAt.isBefore(endInstant)
@@ -138,83 +136,82 @@ object ExportApi:
 
   // -- Endpoint descriptions -----------------------------------------------
 
-  val datevExportEndpoint =
-    secureEndpoint.get
-      .in("api" / "export" / "datev")
-      .in(query[Option[String]]("month"))
-      .out(jsonBody[DatevExportResponse])
-      .tag(exportTag)
-      .summary("Full DATEV export (JSON with three CSV sections)")
+  val datevExportEndpoint = secureEndpoint.get
+    .in("api" / "export" / "datev")
+    .in(query[Option[String]]("month"))
+    .out(jsonBody[DatevExportResponse])
+    .tag(exportTag)
+    .summary("Full DATEV export (JSON with three CSV sections)")
 
-  val datevRidesCsvEndpoint =
-    secureEndpoint.get
-      .in("api" / "export" / "datev" / "rides")
-      .in(query[Option[String]]("month"))
-      .out(stringBody.and(header(sttp.model.Header.contentType(MediaType.unsafeApply("text", "csv")))))
-      .tag(exportTag)
-      .summary("Rides revenue CSV (text/csv)")
+  val datevRidesCsvEndpoint = secureEndpoint.get
+    .in("api" / "export" / "datev" / "rides")
+    .in(query[Option[String]]("month"))
+    .out(stringBody.and(header(sttp.model.Header.contentType(MediaType.unsafeApply("text", "csv")))))
+    .tag(exportTag)
+    .summary("Rides revenue CSV (text/csv)")
 
-  val datevExpensesCsvEndpoint =
-    secureEndpoint.get
-      .in("api" / "export" / "datev" / "expenses")
-      .in(query[Option[String]]("month"))
-      .out(stringBody.and(header(sttp.model.Header.contentType(MediaType.unsafeApply("text", "csv")))))
-      .tag(exportTag)
-      .summary("Expenses CSV (text/csv)")
+  val datevExpensesCsvEndpoint = secureEndpoint.get
+    .in("api" / "export" / "datev" / "expenses")
+    .in(query[Option[String]]("month"))
+    .out(stringBody.and(header(sttp.model.Header.contentType(MediaType.unsafeApply("text", "csv")))))
+    .tag(exportTag)
+    .summary("Expenses CSV (text/csv)")
 
   val endpoints = List(datevExportEndpoint, datevRidesCsvEndpoint, datevExpensesCsvEndpoint)
 
   // -- Server logic --------------------------------------------------------
 
-  private val datevExportServer: ZServerEndpoint[ExportEnv, Any] =
-    datevExportEndpoint.serverLogic { user => monthOpt =>
-      (for {
-        _         <- checkRole(user, "DISPATCHER", "ADMIN")
-        companyId <- requireCompanyId(user.companyId)
-        month      = parseMonth(monthOpt)
-        result    <- fetchData(companyId, month)
-        (completedRides, monthExpenses, clientMap) = result
-        revenueCsv    = generateRevenueCsv(completedRides, clientMap)
-        expensesCsv   = generateExpensesCsv(monthExpenses)
-        summaryCsv    = generateSummaryCsv(completedRides, monthExpenses)
-        totalRevenue  = completedRides.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).map(_.doubleValue).sum
-        totalExpenses = monthExpenses.map(_.amount.doubleValue).sum
-      } yield DatevExportResponse(
-        month = month.toString,
-        revenue = DatevCsvSection(csv = revenueCsv, totalRows = completedRides.size, totalAmount = totalRevenue),
-        expenses = DatevCsvSection(csv = expensesCsv, totalRows = monthExpenses.size, totalAmount = totalExpenses),
-        summary = DatevSummarySection(
-          csv = summaryCsv,
-          totalRevenue = totalRevenue,
-          totalExpenses = totalExpenses,
-          netIncome = totalRevenue - totalExpenses
-        )
-      ))
-    }
+  private val datevExportServer: ZServerEndpoint[ExportEnv, Any] = datevExportEndpoint.serverLogic { user => monthOpt =>
+    for {
+      _                                         <- checkRole(user, "DISPATCHER", "ADMIN")
+      companyId                                 <- requireCompanyId(user.companyId)
+      month                                      = parseMonth(monthOpt)
+      result                                    <- fetchData(companyId, month)
+      (completedRides, monthExpenses, clientMap) = result
+      revenueCsv                                 = generateRevenueCsv(completedRides, clientMap)
+      expensesCsv                                = generateExpensesCsv(monthExpenses)
+      summaryCsv                                 = generateSummaryCsv(completedRides, monthExpenses)
+      totalRevenue                               = completedRides.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).map(_.doubleValue).sum
+      totalExpenses                              = monthExpenses.map(_.amount.doubleValue).sum
+    } yield DatevExportResponse(
+      month = month.toString,
+      revenue = DatevCsvSection(csv = revenueCsv, totalRows = completedRides.size, totalAmount = totalRevenue),
+      expenses = DatevCsvSection(csv = expensesCsv, totalRows = monthExpenses.size, totalAmount = totalExpenses),
+      summary = DatevSummarySection(
+        csv = summaryCsv,
+        totalRevenue = totalRevenue,
+        totalExpenses = totalExpenses,
+        netIncome = totalRevenue - totalExpenses
+      )
+    )
+  }
 
-  private val datevRidesCsvServer: ZServerEndpoint[ExportEnv, Any] =
-    datevRidesCsvEndpoint.serverLogic { user => monthOpt =>
-      (for {
-        _         <- checkRole(user, "DISPATCHER", "ADMIN")
-        companyId <- requireCompanyId(user.companyId)
-        month      = parseMonth(monthOpt)
-        result    <- fetchData(companyId, month)
+  private val datevRidesCsvServer: ZServerEndpoint[ExportEnv, Any] = datevRidesCsvEndpoint.serverLogic {
+    user => monthOpt =>
+      for {
+        _                             <- checkRole(user, "DISPATCHER", "ADMIN")
+        companyId                     <- requireCompanyId(user.companyId)
+        month                          = parseMonth(monthOpt)
+        result                        <- fetchData(companyId, month)
         (completedRides, _, clientMap) = result
-        csv        = generateRevenueCsv(completedRides, clientMap)
-      } yield csv)
-    }
+        csv                            = generateRevenueCsv(completedRides, clientMap)
+      } yield csv
+  }
 
-  private val datevExpensesCsvServer: ZServerEndpoint[ExportEnv, Any] =
-    datevExpensesCsvEndpoint.serverLogic { user => monthOpt =>
-      (for {
-        _         <- checkRole(user, "DISPATCHER", "ADMIN")
-        companyId <- requireCompanyId(user.companyId)
-        month      = parseMonth(monthOpt)
-        result    <- fetchData(companyId, month)
+  private val datevExpensesCsvServer: ZServerEndpoint[ExportEnv, Any] = datevExpensesCsvEndpoint.serverLogic {
+    user => monthOpt =>
+      for {
+        _                    <- checkRole(user, "DISPATCHER", "ADMIN")
+        companyId            <- requireCompanyId(user.companyId)
+        month                 = parseMonth(monthOpt)
+        result               <- fetchData(companyId, month)
         (_, monthExpenses, _) = result
-        csv        = generateExpensesCsv(monthExpenses)
-      } yield csv)
-    }
+        csv                   = generateExpensesCsv(monthExpenses)
+      } yield csv
+  }
 
-  val serverEndpoints: List[ZServerEndpoint[ExportEnv, Any]] =
-    List(datevExportServer, datevRidesCsvServer, datevExpensesCsvServer)
+  val serverEndpoints: List[ZServerEndpoint[ExportEnv, Any]] = List(
+    datevExportServer,
+    datevRidesCsvServer,
+    datevExpensesCsvServer
+  )

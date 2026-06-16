@@ -551,6 +551,65 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .transact(xa)
       .mapError(ex => RideError.DatabaseError(ex))
   }
+
+  // ---------------------------------------------------------------------------
+  // Platform-level (cross-tenant) analytics — SuperAdmin only.
+  // No company_id filter in these queries; names make the cross-tenant intent explicit.
+  // ---------------------------------------------------------------------------
+
+  override def countAllRidesByStatus(): Task[Map[String, Int]] =
+    sql"""
+      SELECT status::text, COUNT(*)::int
+      FROM rides
+      GROUP BY status
+    """
+      .query[(String, Int)]
+      .to[List]
+      .transact(xa)
+      .map(_.toMap)
+      .mapError(ex => RideError.DatabaseError(ex))
+
+  override def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal] =
+    sql"""
+      SELECT COALESCE(SUM(COALESCE(final_price_amount, estimated_price_amount, 0)), 0)
+      FROM rides
+      WHERE status = 'Completed'
+        AND end_time >= $from
+        AND end_time <= $to
+    """
+      .query[BigDecimal]
+      .unique
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+
+  override def countRidesByCompany(from: Instant, to: Instant): Task[Map[java.util.UUID, Int]] =
+    sql"""
+      SELECT company_id, COUNT(*)::int
+      FROM rides
+      WHERE request_time >= $from
+        AND request_time <= $to
+      GROUP BY company_id
+    """
+      .query[(java.util.UUID, Int)]
+      .to[List]
+      .transact(xa)
+      .map(_.toMap)
+      .mapError(ex => RideError.DatabaseError(ex))
+
+  override def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[java.util.UUID, BigDecimal]] =
+    sql"""
+      SELECT company_id, COALESCE(SUM(COALESCE(final_price_amount, estimated_price_amount, 0)), 0)
+      FROM rides
+      WHERE status = 'Completed'
+        AND end_time >= $from
+        AND end_time <= $to
+      GROUP BY company_id
+    """
+      .query[(java.util.UUID, BigDecimal)]
+      .to[List]
+      .transact(xa)
+      .map(_.toMap)
+      .mapError(ex => RideError.DatabaseError(ex))
 }
 
 object PostgresRideRepository {

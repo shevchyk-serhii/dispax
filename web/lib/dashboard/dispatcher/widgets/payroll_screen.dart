@@ -95,7 +95,9 @@ class _PayrollScreenState extends State<PayrollScreen> {
   void _copyPayrollCsv() {
     if (_payrollData == null) return;
 
-    final driverName = _drivers.where((d) => d.id == _selectedDriverId).firstOrNull?.name ?? 'Unknown';
+    final driverName =
+        _drivers.where((d) => d.id == _selectedDriverId).firstOrNull?.name ??
+        'Unknown';
     final totalRides = _payrollData!['totalRides'] ?? 0;
     final totalEarnings = (_payrollData!['totalEarnings'] ?? 0).toDouble();
     final totalExpenses = (_payrollData!['totalExpenses'] ?? 0).toDouble();
@@ -105,19 +107,26 @@ class _PayrollScreenState extends State<PayrollScreen> {
     final csv = StringBuffer();
     csv.writeln('Payroll Report');
     csv.writeln('Driver,$driverName');
-    csv.writeln('Period,${DateFormat('dd.MM.yyyy').format(_fromDate)} - ${DateFormat('dd.MM.yyyy').format(_toDate)}');
+    csv.writeln(
+      'Period,${DateFormat('dd.MM.yyyy').format(_fromDate)} - ${DateFormat('dd.MM.yyyy').format(_toDate)}',
+    );
     csv.writeln('');
     csv.writeln('Metric,Value');
     csv.writeln('Total Rides,$totalRides');
     csv.writeln('Total Earnings,${totalEarnings.toStringAsFixed(2)} EUR');
     csv.writeln('Total Expenses,${totalExpenses.toStringAsFixed(2)} EUR');
-    csv.writeln('Commission (${_commissionPercent.toStringAsFixed(0)}%),${commission.toStringAsFixed(2)} EUR');
+    csv.writeln(
+      'Commission (${_commissionPercent.toStringAsFixed(0)}%),${commission.toStringAsFixed(2)} EUR',
+    );
     csv.writeln('Net Pay,${netPay.toStringAsFixed(2)} EUR');
 
     Clipboard.setData(ClipboardData(text: csv.toString()));
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Payroll CSV copied to clipboard'), backgroundColor: AppColors.success),
+      const SnackBar(
+        content: Text('Payroll CSV copied to clipboard'),
+        backgroundColor: AppColors.success,
+      ),
     );
   }
 
@@ -163,12 +172,20 @@ class _PayrollScreenState extends State<PayrollScreen> {
         bottom: false,
         child: Row(
           children: [
-            const Icon(Icons.account_balance_wallet, color: Colors.white, size: 24),
+            const Icon(
+              Icons.account_balance_wallet,
+              color: Colors.white,
+              size: 24,
+            ),
             const SizedBox(width: 10),
             const Expanded(
               child: Text(
                 'Driver Payroll',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             if (_payrollData != null)
@@ -197,10 +214,9 @@ class _PayrollScreenState extends State<PayrollScreen> {
           DropdownButtonFormField<String>(
             decoration: const InputDecoration(labelText: 'Select Driver'),
             initialValue: _selectedDriverId,
-            items: _drivers.map((d) => DropdownMenuItem(
-              value: d.id,
-              child: Text(d.name),
-            )).toList(),
+            items: _drivers
+                .map((d) => DropdownMenuItem(value: d.id, child: Text(d.name)))
+                .toList(),
             onChanged: (v) => setState(() => _selectedDriverId = v),
           ),
           const SizedBox(height: AppDimensions.paddingMedium),
@@ -234,7 +250,10 @@ class _PayrollScreenState extends State<PayrollScreen> {
           // Commission slider
           Row(
             children: [
-              const Text('Commission: ', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text(
+                'Commission: ',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
               Expanded(
                 child: Slider(
                   value: _commissionPercent,
@@ -245,7 +264,10 @@ class _PayrollScreenState extends State<PayrollScreen> {
                   onChanged: (v) => setState(() => _commissionPercent = v),
                 ),
               ),
-              Text('${_commissionPercent.toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                '${_commissionPercent.toStringAsFixed(0)}%',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           const SizedBox(height: AppDimensions.paddingMedium),
@@ -265,12 +287,14 @@ class _PayrollScreenState extends State<PayrollScreen> {
           ),
           const SizedBox(height: AppDimensions.paddingLarge),
 
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator()),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
 
           if (_error != null)
             Center(
-              child: Text(_error!, style: const TextStyle(color: AppColors.error)),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: AppColors.error),
+              ),
             ),
 
           if (_payrollData != null && !_isLoading) _buildPayrollSummary(),
@@ -289,14 +313,42 @@ class _PayrollScreenState extends State<PayrollScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Payroll Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text(
+          'Payroll Summary',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 12),
-        _buildStatRow('Total Rides', '$totalRides', Icons.directions_car, Theme.of(context).colorScheme.primary),
-        _buildStatRow('Total Earnings', '${totalEarnings.toStringAsFixed(2)} EUR', Icons.trending_up, AppColors.success),
-        _buildStatRow('Total Expenses', '${totalExpenses.toStringAsFixed(2)} EUR', Icons.trending_down, AppColors.error),
-        _buildStatRow('Commission (${_commissionPercent.toStringAsFixed(0)}%)', '${commission.toStringAsFixed(2)} EUR', Icons.percent, AppColors.warning),
+        _buildStatRow(
+          'Total Rides',
+          '$totalRides',
+          Icons.directions_car,
+          Theme.of(context).colorScheme.primary,
+        ),
+        _buildStatRow(
+          'Total Earnings',
+          '${totalEarnings.toStringAsFixed(2)} EUR',
+          Icons.trending_up,
+          AppColors.success,
+        ),
+        _buildStatRow(
+          'Total Expenses',
+          '${totalExpenses.toStringAsFixed(2)} EUR',
+          Icons.trending_down,
+          AppColors.error,
+        ),
+        _buildStatRow(
+          'Commission (${_commissionPercent.toStringAsFixed(0)}%)',
+          '${commission.toStringAsFixed(2)} EUR',
+          Icons.percent,
+          AppColors.warning,
+        ),
         const Divider(thickness: 2),
-        _buildStatRow('Net Pay', '${netPay.toStringAsFixed(2)} EUR', Icons.account_balance_wallet, netPay >= 0 ? AppColors.success : AppColors.error),
+        _buildStatRow(
+          'Net Pay',
+          '${netPay.toStringAsFixed(2)} EUR',
+          Icons.account_balance_wallet,
+          netPay >= 0 ? AppColors.success : AppColors.error,
+        ),
       ],
     );
   }
@@ -309,7 +361,14 @@ class _PayrollScreenState extends State<PayrollScreen> {
           Icon(icon, size: 20, color: color),
           const SizedBox(width: 12),
           Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
-          Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
         ],
       ),
     );

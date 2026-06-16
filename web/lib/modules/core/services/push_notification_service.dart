@@ -28,9 +28,13 @@ class PushNotificationService {
 
   Future<void> initialize() async {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final isSimulator = Platform.environment.containsKey('SIMULATOR_DEVICE_NAME');
+      final isSimulator = Platform.environment.containsKey(
+        'SIMULATOR_DEVICE_NAME',
+      );
       if (isSimulator) {
-        debugPrint('PushNotificationService: Skipping initialization on iOS Simulator');
+        debugPrint(
+          'PushNotificationService: Skipping initialization on iOS Simulator',
+        );
         return;
       }
     }
@@ -80,7 +84,9 @@ class PushNotificationService {
   }
 
   Future<void> _initLocalNotifications() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -102,7 +108,9 @@ class PushNotificationService {
         playSound: true,
       );
       await _localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(channel);
     }
   }
@@ -124,10 +132,16 @@ class PushNotificationService {
       presentBadge: true,
       presentSound: true,
     );
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     await _localNotifications.show(
-      (message.messageId ?? message.sentTime?.millisecondsSinceEpoch.toString() ?? '').hashCode,
+      (message.messageId ??
+              message.sentTime?.millisecondsSinceEpoch.toString() ??
+              '')
+          .hashCode,
       notification.title,
       notification.body,
       details,

@@ -1,15 +1,9 @@
 class AppState {
   final bool isInitialized;
 
-  const AppState({
-    this.isInitialized = false,
-  });
+  const AppState({this.isInitialized = false});
 
-  AppState copyWith({
-    bool? isInitialized,
-  }) {
-    return AppState(
-      isInitialized: isInitialized ?? this.isInitialized,
-    );
+  AppState copyWith({bool? isInitialized}) {
+    return AppState(isInitialized: isInitialized ?? this.isInitialized);
   }
 }

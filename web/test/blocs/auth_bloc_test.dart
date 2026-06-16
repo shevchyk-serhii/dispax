@@ -26,20 +26,20 @@ void main() {
     when(() => mockApiClient.dispose()).thenReturn(null);
     when(() => mockApiClient.setAuthToken(any())).thenReturn(null);
     when(() => mockApiClient.clearAuthToken()).thenReturn(null);
-    when(() => mockBiometricService.isAvailable)
-        .thenAnswer((_) async => false);
-    when(() => mockBiometricService.isBiometricEnabled)
-        .thenAnswer((_) async => false);
+    when(() => mockBiometricService.isAvailable).thenAnswer((_) async => false);
+    when(
+      () => mockBiometricService.isBiometricEnabled,
+    ).thenAnswer((_) async => false);
     when(() => mockStorage.read(any())).thenAnswer((_) async => null);
     when(() => mockStorage.write(any(), any())).thenAnswer((_) async {});
     when(() => mockStorage.delete(any())).thenAnswer((_) async {});
   });
 
   AuthBloc buildBloc() => AuthBloc(
-        apiClient: mockApiClient,
-        biometricService: mockBiometricService,
-        storage: mockStorage,
-      );
+    apiClient: mockApiClient,
+    biometricService: mockBiometricService,
+    storage: mockStorage,
+  );
 
   group('AuthBloc', () {
     test('initial state is unauthenticated', () {
@@ -53,10 +53,7 @@ void main() {
       build: () {
         final person = TestFixtures.person();
         when(() => mockApiClient.login(any(), any())).thenAnswer(
-          (_) async => {
-            'person': person.toJson(),
-            'token': 'test-token',
-          },
+          (_) async => {'person': person.toJson(), 'token': 'test-token'},
         );
         return buildBloc();
       },
@@ -74,8 +71,9 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'AuthLoginRequested null response emits error',
       build: () {
-        when(() => mockApiClient.login(any(), any()))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockApiClient.login(any(), any()),
+        ).thenAnswer((_) async => null);
         return buildBloc();
       },
       act: (bloc) => bloc.add(
@@ -85,16 +83,20 @@ void main() {
         AuthState.loading(),
         isA<AuthState>()
             .having((s) => s.status, 'status', AuthStatus.error)
-            .having((s) => s.errorMessage, 'errorMessage',
-                'Invalid email or password'),
+            .having(
+              (s) => s.errorMessage,
+              'errorMessage',
+              'Invalid email or password',
+            ),
       ],
     );
 
     blocTest<AuthBloc, AuthState>(
       'AuthLoginRequested failure emits error',
       build: () {
-        when(() => mockApiClient.login(any(), any()))
-            .thenThrow(ApiException('Network error'));
+        when(
+          () => mockApiClient.login(any(), any()),
+        ).thenThrow(ApiException('Network error'));
         return buildBloc();
       },
       act: (bloc) => bloc.add(
@@ -112,8 +114,11 @@ void main() {
       act: (bloc) => bloc.add(const AuthLogoutRequested()),
       expect: () => [
         AuthState.loading(),
-        isA<AuthState>()
-            .having((s) => s.status, 'status', AuthStatus.unauthenticated),
+        isA<AuthState>().having(
+          (s) => s.status,
+          'status',
+          AuthStatus.unauthenticated,
+        ),
       ],
     );
 
@@ -121,17 +126,22 @@ void main() {
       'AuthInitializeRequested with stored data emits authenticated',
       build: () {
         final person = TestFixtures.person();
-        when(() => mockStorage.read(AuthBloc.privateUserKey))
-            .thenAnswer((_) async => jsonEncode(person.toJson()));
-        when(() => mockStorage.read(AuthBloc.privateTokenKey))
-            .thenAnswer((_) async => 'test-token');
+        when(
+          () => mockStorage.read(AuthBloc.privateUserKey),
+        ).thenAnswer((_) async => jsonEncode(person.toJson()));
+        when(
+          () => mockStorage.read(AuthBloc.privateTokenKey),
+        ).thenAnswer((_) async => 'test-token');
         return buildBloc();
       },
       act: (bloc) => bloc.add(const AuthInitializeRequested()),
       expect: () => [
         AuthState.loading(),
-        isA<AuthState>()
-            .having((s) => s.status, 'status', AuthStatus.authenticated),
+        isA<AuthState>().having(
+          (s) => s.status,
+          'status',
+          AuthStatus.authenticated,
+        ),
       ],
     );
 
@@ -141,8 +151,11 @@ void main() {
       act: (bloc) => bloc.add(const AuthInitializeRequested()),
       expect: () => [
         AuthState.loading(),
-        isA<AuthState>()
-            .having((s) => s.status, 'status', AuthStatus.unauthenticated),
+        isA<AuthState>().having(
+          (s) => s.status,
+          'status',
+          AuthStatus.unauthenticated,
+        ),
       ],
     );
 
@@ -161,8 +174,9 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'AuthBiometricLoginRequested when not available emits error',
       build: () {
-        when(() => mockBiometricService.isAvailable)
-            .thenAnswer((_) async => false);
+        when(
+          () => mockBiometricService.isAvailable,
+        ).thenAnswer((_) async => false);
         return buildBloc();
       },
       act: (bloc) => bloc.add(const AuthBiometricLoginRequested()),
@@ -170,18 +184,19 @@ void main() {
         isA<AuthState>().having((s) => s.isLoading, 'isLoading', true),
         isA<AuthState>()
             .having((s) => s.hasError, 'hasError', true)
-            .having((s) => s.errorMessage, 'msg',
-                contains('not available')),
+            .having((s) => s.errorMessage, 'msg', contains('not available')),
       ],
     );
 
     blocTest<AuthBloc, AuthState>(
       'AuthBiometricLoginRequested when not enabled emits error',
       build: () {
-        when(() => mockBiometricService.isAvailable)
-            .thenAnswer((_) async => true);
-        when(() => mockBiometricService.isBiometricEnabled)
-            .thenAnswer((_) async => false);
+        when(
+          () => mockBiometricService.isAvailable,
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockBiometricService.isBiometricEnabled,
+        ).thenAnswer((_) async => false);
         return buildBloc();
       },
       act: (bloc) => bloc.add(const AuthBiometricLoginRequested()),
@@ -189,24 +204,28 @@ void main() {
         isA<AuthState>().having((s) => s.isLoading, 'isLoading', true),
         isA<AuthState>()
             .having((s) => s.hasError, 'hasError', true)
-            .having((s) => s.errorMessage, 'msg',
-                contains('not configured')),
+            .having((s) => s.errorMessage, 'msg', contains('not configured')),
       ],
     );
 
     blocTest<AuthBloc, AuthState>(
       'AuthBiometricSetupRequested(true) sets biometricEnabled true',
       build: () {
-        when(() => mockBiometricService.isAvailable)
-            .thenAnswer((_) async => true);
-        when(() => mockBiometricService.authenticate(
-              reason: any(named: 'reason'),
-              stickyAuth: any(named: 'stickyAuth'),
-            )).thenAnswer((_) async => BiometricAuthResult.success);
-        when(() => mockBiometricService.setBiometricEnabled(
-              true,
-              userId: any(named: 'userId'),
-            )).thenAnswer((_) async => true);
+        when(
+          () => mockBiometricService.isAvailable,
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockBiometricService.authenticate(
+            reason: any(named: 'reason'),
+            stickyAuth: any(named: 'stickyAuth'),
+          ),
+        ).thenAnswer((_) async => BiometricAuthResult.success);
+        when(
+          () => mockBiometricService.setBiometricEnabled(
+            true,
+            userId: any(named: 'userId'),
+          ),
+        ).thenAnswer((_) async => true);
         return buildBloc();
       },
       seed: () => const AuthState(status: AuthStatus.authenticated),
@@ -214,8 +233,11 @@ void main() {
         const AuthBiometricSetupRequested(enabled: true, userId: 'user-1'),
       ),
       expect: () => [
-        isA<AuthState>()
-            .having((s) => s.biometricEnabled, 'biometricEnabled', true),
+        isA<AuthState>().having(
+          (s) => s.biometricEnabled,
+          'biometricEnabled',
+          true,
+        ),
       ],
     );
 
@@ -265,53 +287,62 @@ void main() {
     blocTest<AuthBloc, AuthState>(
       'AuthBiometricSetupRequested(false) sets biometricEnabled false',
       build: () {
-        when(() => mockBiometricService.isAvailable)
-            .thenAnswer((_) async => true);
-        when(() => mockBiometricService.setBiometricEnabled(false))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockBiometricService.isAvailable,
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockBiometricService.setBiometricEnabled(false),
+        ).thenAnswer((_) async => true);
         return buildBloc();
       },
       seed: () => const AuthState(
-          status: AuthStatus.authenticated, biometricEnabled: true),
-      act: (bloc) => bloc.add(
-        const AuthBiometricSetupRequested(enabled: false),
+        status: AuthStatus.authenticated,
+        biometricEnabled: true,
       ),
+      act: (bloc) =>
+          bloc.add(const AuthBiometricSetupRequested(enabled: false)),
       expect: () => [
-        isA<AuthState>()
-            .having((s) => s.biometricEnabled, 'biometricEnabled', false),
+        isA<AuthState>().having(
+          (s) => s.biometricEnabled,
+          'biometricEnabled',
+          false,
+        ),
       ],
     );
 
-    test('ApiClient 401 triggers auto-logout via onUnauthorized callback', () async {
-      final httpClient = MockClient((_) async => http.Response('', 401));
-      final realApiClient = ApiClient(
-        client: httpClient,
-        baseUrl: 'http://localhost:8080/api',
-      );
-      realApiClient.setAuthToken('expired-token');
+    test(
+      'ApiClient 401 triggers auto-logout via onUnauthorized callback',
+      () async {
+        final httpClient = MockClient((_) async => http.Response('', 401));
+        final realApiClient = ApiClient(
+          client: httpClient,
+          baseUrl: 'http://localhost:8080/api',
+        );
+        realApiClient.setAuthToken('expired-token');
 
-      final bloc = AuthBloc(
-        apiClient: realApiClient,
-        biometricService: mockBiometricService,
-        storage: mockStorage,
-      );
+        final bloc = AuthBloc(
+          apiClient: realApiClient,
+          biometricService: mockBiometricService,
+          storage: mockStorage,
+        );
 
-      // Trigger 401 — onUnauthorized fires → AuthLogoutRequested dispatched
-      try {
-        await realApiClient.get('/rides');
-      } on UnauthorizedException {
-        // expected
-      }
+        // Trigger 401 — onUnauthorized fires → AuthLogoutRequested dispatched
+        try {
+          await realApiClient.get('/rides');
+        } on UnauthorizedException {
+          // expected
+        }
 
-      // Give the bloc time to process the dispatched event
-      await Future.delayed(const Duration(milliseconds: 50));
+        // Give the bloc time to process the dispatched event
+        await Future.delayed(const Duration(milliseconds: 50));
 
-      expect(
-        bloc.state.status,
-        anyOf(AuthStatus.loading, AuthStatus.unauthenticated),
-      );
+        expect(
+          bloc.state.status,
+          anyOf(AuthStatus.loading, AuthStatus.unauthenticated),
+        );
 
-      await bloc.close();
-    });
+        await bloc.close();
+      },
+    );
   });
 }

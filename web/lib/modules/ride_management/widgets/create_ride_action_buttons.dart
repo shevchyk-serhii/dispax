@@ -41,7 +41,9 @@ class CreateRideActionButtons extends StatelessWidget {
                   backgroundColor: AppColors.secretaryColor,
                   foregroundColor: AppColors.textOnPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusSmall,
+                    ),
                   ),
                 ),
               ),
@@ -57,7 +59,9 @@ class CreateRideActionButtons extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.secretaryColor,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusSmall,
+                    ),
                   ),
                 ),
               ),

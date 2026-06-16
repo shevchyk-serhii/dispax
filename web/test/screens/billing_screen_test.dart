@@ -13,7 +13,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 
-class _MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
+class _MockAuthBloc extends MockBloc<AuthEvent, AuthState>
+    implements AuthBloc {}
 
 class _MockApiClient extends Mock implements ApiClient {}
 
@@ -28,28 +29,28 @@ void main() {
     required String number,
     required String clientCompanyId,
     String? reminderSentAt,
-  }) =>
-      {
-        'id': id,
-        'number': number,
-        'clientCompanyId': clientCompanyId,
-        'taxiCompanyId': 'tc-1',
-        'status': 'Sent',
-        'periodFrom': '2026-01-01',
-        'periodTo': '2026-01-31',
-        'subtotalAmount': 100.0,
-        'taxRate': 19.0,
-        'taxAmount': 19.0,
-        'totalAmount': 119.0,
-        'currency': 'EUR',
-        'sentAt': '2026-01-10T09:00:00.000Z',
-        if (reminderSentAt != null) 'reminderSentAt': reminderSentAt,
-        'items': const [],
-        'createdAt': '2026-01-01T12:00:00.000Z',
-        'updatedAt': '2026-01-02T08:00:00.000Z',
-      };
+  }) => {
+    'id': id,
+    'number': number,
+    'clientCompanyId': clientCompanyId,
+    'taxiCompanyId': 'tc-1',
+    'status': 'Sent',
+    'periodFrom': '2026-01-01',
+    'periodTo': '2026-01-31',
+    'subtotalAmount': 100.0,
+    'taxRate': 19.0,
+    'taxAmount': 19.0,
+    'totalAmount': 119.0,
+    'currency': 'EUR',
+    'sentAt': '2026-01-10T09:00:00.000Z',
+    if (reminderSentAt != null) 'reminderSentAt': reminderSentAt,
+    'items': const [],
+    'createdAt': '2026-01-01T12:00:00.000Z',
+    'updatedAt': '2026-01-02T08:00:00.000Z',
+  };
 
-  const companiesBody = '['
+  const companiesBody =
+      '['
       '{"id":"cc-reminded","name":"BMW AG","taxiCompanyId":"tc-1"},'
       '{"id":"cc-plain","name":"Siemens AG","taxiCompanyId":"tc-1"}'
       ']';
@@ -79,7 +80,9 @@ void main() {
     when(() => apiClient.get(any())).thenAnswer((invocation) async {
       final endpoint = invocation.positionalArguments.first as String;
       // Single-invoice fetch (detail sheet refresh): /billing/invoices/<id>.
-      final detail = RegExp(r'^/billing/invoices/([^/?]+)').firstMatch(endpoint);
+      final detail = RegExp(
+        r'^/billing/invoices/([^/?]+)',
+      ).firstMatch(endpoint);
       if (detail != null) {
         final inv = byId[detail.group(1)];
         if (inv != null) return http.Response(jsonEncode(inv), 200);
@@ -97,53 +100,58 @@ void main() {
   });
 
   Widget pumpApp() => MaterialApp(
-        home: BlocProvider<AuthBloc>.value(
-          value: authBloc,
-          child: const Scaffold(body: BillingScreen()),
+    home: BlocProvider<AuthBloc>.value(
+      value: authBloc,
+      child: const Scaffold(body: BillingScreen()),
+    ),
+  );
+
+  testWidgets(
+    'reminded invoice card shows the reminder bell, plain one does not',
+    (tester) async {
+      await tester.pumpWidget(pumpApp());
+      await tester.pumpAndSettle();
+
+      // Both invoices rendered.
+      expect(find.text('INV-2026-0001'), findsOneWidget);
+      expect(find.text('INV-2026-0002'), findsOneWidget);
+
+      // Exactly one reminder indicator — on the reminded invoice only.
+      final bells = find.byIcon(Icons.notifications_active);
+      expect(bells, findsOneWidget);
+
+      // The bell carries the German reminder tooltip.
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Tooltip && w.message == 'Zahlungserinnerung versendet',
         ),
+        findsOneWidget,
       );
 
-  testWidgets('reminded invoice card shows the reminder bell, plain one does not',
-      (tester) async {
-    await tester.pumpWidget(pumpApp());
-    await tester.pumpAndSettle();
+      // And it is tinted with the info colour, not a status colour.
+      final bellIcon = tester.widget<Icon>(bells);
+      expect(bellIcon.color, AppColors.info);
+    },
+  );
 
-    // Both invoices rendered.
-    expect(find.text('INV-2026-0001'), findsOneWidget);
-    expect(find.text('INV-2026-0002'), findsOneWidget);
+  testWidgets(
+    'invoice detail sheet shows the "Erinnert" badge for a reminded invoice',
+    (tester) async {
+      await tester.pumpWidget(pumpApp());
+      await tester.pumpAndSettle();
 
-    // Exactly one reminder indicator — on the reminded invoice only.
-    final bells = find.byIcon(Icons.notifications_active);
-    expect(bells, findsOneWidget);
+      // Open the reminded invoice's detail sheet.
+      await tester.tap(find.text('INV-2026-0001'));
+      await tester.pumpAndSettle();
 
-    // The bell carries the German reminder tooltip.
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is Tooltip && w.message == 'Zahlungserinnerung versendet',
-      ),
-      findsOneWidget,
-    );
+      // The reminder badge renders the German label with the sent date (dd.MM.yyyy).
+      expect(find.text('Erinnert 05.03.2026'), findsOneWidget);
+    },
+  );
 
-    // And it is tinted with the info colour, not a status colour.
-    final bellIcon = tester.widget<Icon>(bells);
-    expect(bellIcon.color, AppColors.info);
-  });
-
-  testWidgets('invoice detail sheet shows the "Erinnert" badge for a reminded invoice',
-      (tester) async {
-    await tester.pumpWidget(pumpApp());
-    await tester.pumpAndSettle();
-
-    // Open the reminded invoice's detail sheet.
-    await tester.tap(find.text('INV-2026-0001'));
-    await tester.pumpAndSettle();
-
-    // The reminder badge renders the German label with the sent date (dd.MM.yyyy).
-    expect(find.text('Erinnert 05.03.2026'), findsOneWidget);
-  });
-
-  testWidgets('invoice detail sheet has no reminder badge when not reminded',
-      (tester) async {
+  testWidgets('invoice detail sheet has no reminder badge when not reminded', (
+    tester,
+  ) async {
     await tester.pumpWidget(pumpApp());
     await tester.pumpAndSettle();
 

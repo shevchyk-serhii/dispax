@@ -86,8 +86,14 @@ void main() {
 
     group('GET', () {
       test('returns response on 200', () async {
-        final client = MockClient((_) async =>
-            http.Response(jsonEncode([{'id': '1'}]), 200));
+        final client = MockClient(
+          (_) async => http.Response(
+            jsonEncode([
+              {'id': '1'},
+            ]),
+            200,
+          ),
+        );
 
         final apiClient = ApiClient(
           client: client,
@@ -100,18 +106,16 @@ void main() {
       });
 
       test('throws ApiException on SocketException', () async {
-        final client = MockClient((_) async =>
-            throw http.ClientException('Connection refused'));
+        final client = MockClient(
+          (_) async => throw http.ClientException('Connection refused'),
+        );
 
         final apiClient = ApiClient(
           client: client,
           baseUrl: 'http://localhost:8080/api',
         );
 
-        expect(
-          () => apiClient.get('/rides'),
-          throwsA(isA<ApiException>()),
-        );
+        expect(() => apiClient.get('/rides'), throwsA(isA<ApiException>()));
       });
     });
 
@@ -145,51 +149,72 @@ void main() {
     });
 
     group('401 unauthorized handling', () {
-      test('get: 401 calls onUnauthorized and throws UnauthorizedException', () async {
-        final client = MockClient((_) async => http.Response('', 401));
-        final apiClient = ApiClient(client: client, baseUrl: 'http://localhost:8080/api');
+      test(
+        'get: 401 calls onUnauthorized and throws UnauthorizedException',
+        () async {
+          final client = MockClient((_) async => http.Response('', 401));
+          final apiClient = ApiClient(
+            client: client,
+            baseUrl: 'http://localhost:8080/api',
+          );
 
-        bool callbackFired = false;
-        apiClient.onUnauthorized = () => callbackFired = true;
+          bool callbackFired = false;
+          apiClient.onUnauthorized = () => callbackFired = true;
 
-        await expectLater(
-          () => apiClient.get('/secure'),
-          throwsA(isA<UnauthorizedException>()),
-        );
-        expect(callbackFired, isTrue);
-      });
+          await expectLater(
+            () => apiClient.get('/secure'),
+            throwsA(isA<UnauthorizedException>()),
+          );
+          expect(callbackFired, isTrue);
+        },
+      );
 
-      test('post: 401 calls onUnauthorized and throws UnauthorizedException', () async {
-        final client = MockClient((_) async => http.Response('', 401));
-        final apiClient = ApiClient(client: client, baseUrl: 'http://localhost:8080/api');
+      test(
+        'post: 401 calls onUnauthorized and throws UnauthorizedException',
+        () async {
+          final client = MockClient((_) async => http.Response('', 401));
+          final apiClient = ApiClient(
+            client: client,
+            baseUrl: 'http://localhost:8080/api',
+          );
 
-        bool callbackFired = false;
-        apiClient.onUnauthorized = () => callbackFired = true;
+          bool callbackFired = false;
+          apiClient.onUnauthorized = () => callbackFired = true;
 
-        await expectLater(
-          () => apiClient.post('/secure', {}),
-          throwsA(isA<UnauthorizedException>()),
-        );
-        expect(callbackFired, isTrue);
-      });
+          await expectLater(
+            () => apiClient.post('/secure', {}),
+            throwsA(isA<UnauthorizedException>()),
+          );
+          expect(callbackFired, isTrue);
+        },
+      );
 
-      test('put: 401 calls onUnauthorized and throws UnauthorizedException', () async {
-        final client = MockClient((_) async => http.Response('', 401));
-        final apiClient = ApiClient(client: client, baseUrl: 'http://localhost:8080/api');
+      test(
+        'put: 401 calls onUnauthorized and throws UnauthorizedException',
+        () async {
+          final client = MockClient((_) async => http.Response('', 401));
+          final apiClient = ApiClient(
+            client: client,
+            baseUrl: 'http://localhost:8080/api',
+          );
 
-        bool callbackFired = false;
-        apiClient.onUnauthorized = () => callbackFired = true;
+          bool callbackFired = false;
+          apiClient.onUnauthorized = () => callbackFired = true;
 
-        await expectLater(
-          () => apiClient.put('/secure', {}),
-          throwsA(isA<UnauthorizedException>()),
-        );
-        expect(callbackFired, isTrue);
-      });
+          await expectLater(
+            () => apiClient.put('/secure', {}),
+            throwsA(isA<UnauthorizedException>()),
+          );
+          expect(callbackFired, isTrue);
+        },
+      );
 
       test('200 response does not call onUnauthorized', () async {
         final client = MockClient((_) async => http.Response('[]', 200));
-        final apiClient = ApiClient(client: client, baseUrl: 'http://localhost:8080/api');
+        final apiClient = ApiClient(
+          client: client,
+          baseUrl: 'http://localhost:8080/api',
+        );
 
         bool callbackFired = false;
         apiClient.onUnauthorized = () => callbackFired = true;
@@ -198,15 +223,21 @@ void main() {
         expect(callbackFired, isFalse);
       });
 
-      test('no onUnauthorized callback: 401 still throws UnauthorizedException', () async {
-        final client = MockClient((_) async => http.Response('', 401));
-        final apiClient = ApiClient(client: client, baseUrl: 'http://localhost:8080/api');
+      test(
+        'no onUnauthorized callback: 401 still throws UnauthorizedException',
+        () async {
+          final client = MockClient((_) async => http.Response('', 401));
+          final apiClient = ApiClient(
+            client: client,
+            baseUrl: 'http://localhost:8080/api',
+          );
 
-        await expectLater(
-          () => apiClient.get('/secure'),
-          throwsA(isA<UnauthorizedException>()),
-        );
-      });
+          await expectLater(
+            () => apiClient.get('/secure'),
+            throwsA(isA<UnauthorizedException>()),
+          );
+        },
+      );
     });
   });
 }

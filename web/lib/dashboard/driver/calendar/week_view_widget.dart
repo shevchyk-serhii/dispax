@@ -43,7 +43,9 @@ class WeekViewWidget extends StatelessWidget {
           child: Column(
             children: [
               buildWeekHeader(context, weekDays),
-              Expanded(child: buildWeekTimeline(context, weekDays, rideState.rides)),
+              Expanded(
+                child: buildWeekTimeline(context, weekDays, rideState.rides),
+              ),
             ],
           ),
         );
@@ -121,7 +123,11 @@ class WeekViewWidget extends StatelessWidget {
     );
   }
 
-  Widget buildWeekTimeline(BuildContext context, List<DateTime> weekDays, List<Ride> rides) {
+  Widget buildWeekTimeline(
+    BuildContext context,
+    List<DateTime> weekDays,
+    List<Ride> rides,
+  ) {
     return SingleChildScrollView(
       child: SizedBox(
         height: 17 * 40.0,
@@ -150,7 +156,10 @@ class WeekViewWidget extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8),
             child: Text(
               '${hour.toString().padLeft(2, '0')}:00',
-              style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 10,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           );
         }),
@@ -164,18 +173,22 @@ class WeekViewWidget extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border(left: BorderSide(color: colorScheme.surfaceContainerHighest)),
+        border: Border(
+          left: BorderSide(color: colorScheme.surfaceContainerHighest),
+        ),
       ),
       child: Stack(
         children: [
-
           ...List.generate(
             17,
             (index) => Positioned(
               top: index * 40.0,
               left: 0,
               right: 0,
-              child: Container(height: 1, color: colorScheme.surfaceContainerLow),
+              child: Container(
+                height: 1,
+                color: colorScheme.surfaceContainerLow,
+              ),
             ),
           ),
 

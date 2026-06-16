@@ -18,7 +18,8 @@ class ClientRideHistoryScreen extends StatefulWidget {
   const ClientRideHistoryScreen({super.key});
 
   @override
-  State<ClientRideHistoryScreen> createState() => _ClientRideHistoryScreenState();
+  State<ClientRideHistoryScreen> createState() =>
+      _ClientRideHistoryScreenState();
 }
 
 class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
@@ -32,34 +33,46 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
   }
 
   List<Ride> getClientCompletedRides(List<Ride> rides, String? clientId) {
-    var filtered = rides.where((ride) =>
-      ride.clientId.toString() == clientId &&
-      (ride.status == RideStatus.completed || ride.status == RideStatus.cancelled)
-    ).toList();
+    var filtered = rides
+        .where(
+          (ride) =>
+              ride.clientId.toString() == clientId &&
+              (ride.status == RideStatus.completed ||
+                  ride.status == RideStatus.cancelled),
+        )
+        .toList();
 
     final now = DateTime.now();
     switch (_period) {
       case _ClientPeriodFilter.today:
-        filtered = filtered.where((r) =>
-          r.pickupDateTime.year == now.year &&
-          r.pickupDateTime.month == now.month &&
-          r.pickupDateTime.day == now.day
-        ).toList();
+        filtered = filtered
+            .where(
+              (r) =>
+                  r.pickupDateTime.year == now.year &&
+                  r.pickupDateTime.month == now.month &&
+                  r.pickupDateTime.day == now.day,
+            )
+            .toList();
         break;
       case _ClientPeriodFilter.week:
         final weekStart = now.subtract(Duration(days: now.weekday - 1));
         final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
-        filtered = filtered.where((r) => r.pickupDateTime.isAfter(start)).toList();
+        filtered = filtered
+            .where((r) => r.pickupDateTime.isAfter(start))
+            .toList();
         break;
       case _ClientPeriodFilter.month:
         final start = DateTime(now.year, now.month, 1);
-        filtered = filtered.where((r) => r.pickupDateTime.isAfter(start)).toList();
+        filtered = filtered
+            .where((r) => r.pickupDateTime.isAfter(start))
+            .toList();
         break;
       case _ClientPeriodFilter.all:
         break;
     }
 
-    return filtered..sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
+    return filtered
+      ..sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
   }
 
   @override
@@ -89,8 +102,11 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           }
 
           final completedRides = authState.user != null
-            ? getClientCompletedRides(rideState.rides, authState.user!.id.toString())
-            : <Ride>[];
+              ? getClientCompletedRides(
+                  rideState.rides,
+                  authState.user!.id.toString(),
+                )
+              : <Ride>[];
 
           if (completedRides.isEmpty && _period == _ClientPeriodFilter.all) {
             return _buildEmptyState();
@@ -139,7 +155,9 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
   Widget _buildPeriodSelector() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingLarge),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.paddingLarge,
+      ),
       child: Row(
         children: [
           _buildPeriodChip('Today', _ClientPeriodFilter.today),
@@ -161,10 +179,14 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.primary : Colors.white.withAlpha(40),
+          color: selected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.white.withAlpha(40),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? Theme.of(context).colorScheme.primary : Colors.white.withAlpha(80),
+            color: selected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.white.withAlpha(80),
           ),
         ),
         child: Text(
@@ -172,7 +194,9 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: selected ? Theme.of(context).colorScheme.onPrimary : Colors.white.withAlpha(200),
+            color: selected
+                ? Theme.of(context).colorScheme.onPrimary
+                : Colors.white.withAlpha(200),
           ),
         ),
       ),
@@ -181,10 +205,14 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
   String _periodLabel() {
     switch (_period) {
-      case _ClientPeriodFilter.today: return "Today's";
-      case _ClientPeriodFilter.week: return "This Week's";
-      case _ClientPeriodFilter.month: return "This Month's";
-      case _ClientPeriodFilter.all: return 'My Ride';
+      case _ClientPeriodFilter.today:
+        return "Today's";
+      case _ClientPeriodFilter.week:
+        return "This Week's";
+      case _ClientPeriodFilter.month:
+        return "This Month's";
+      case _ClientPeriodFilter.all:
+        return 'My Ride';
     }
   }
 
@@ -193,7 +221,6 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
       onRefresh: () async => loadRides(context),
       child: CustomScrollView(
         slivers: [
-
           SliverToBoxAdapter(
             child: Container(
               margin: const EdgeInsets.all(AppDimensions.paddingLarge),
@@ -229,7 +256,9 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
           SliverToBoxAdapter(child: _buildPeriodSelector()),
 
-          const SliverToBoxAdapter(child: SizedBox(height: AppDimensions.paddingMedium)),
+          const SliverToBoxAdapter(
+            child: SizedBox(height: AppDimensions.paddingMedium),
+          ),
 
           if (rides.isEmpty)
             SliverFillRemaining(
@@ -244,12 +273,15 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
               ),
             )
           else
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
+            SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
                 final ride = rides[index];
-                final showDateHeader = index == 0 ||
-                  !_isSameDay(rides[index - 1].pickupDateTime, ride.pickupDateTime);
+                final showDateHeader =
+                    index == 0 ||
+                    !_isSameDay(
+                      rides[index - 1].pickupDateTime,
+                      ride.pickupDateTime,
+                    );
 
                 return Column(
                   children: [
@@ -257,10 +289,8 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                     _buildRideCard(context, ride),
                   ],
                 );
-              },
-              childCount: rides.length,
+              }, childCount: rides.length),
             ),
-          ),
 
           const SliverToBoxAdapter(
             child: SizedBox(height: AppDimensions.paddingXLarge),
@@ -271,8 +301,12 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
   }
 
   Widget _buildStatsRow(List<Ride> rides) {
-    final completedCount = rides.where((r) => r.status == RideStatus.completed).length;
-    final cancelledCount = rides.where((r) => r.status == RideStatus.cancelled).length;
+    final completedCount = rides
+        .where((r) => r.status == RideStatus.completed)
+        .length;
+    final cancelledCount = rides
+        .where((r) => r.status == RideStatus.cancelled)
+        .length;
     final totalSpent = rides
         .where((r) => r.status == RideStatus.completed)
         .map((r) => r.price ?? 0.0)
@@ -388,10 +422,8 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => RideDetailsScreen(
-                  ride: ride,
-                  isClientView: true,
-                ),
+                builder: (context) =>
+                    RideDetailsScreen(ride: ride, isClientView: true),
               ),
             );
           },
@@ -400,7 +432,6 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -463,12 +494,15 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                         Text(
                           ride.driverName ?? 'Driver not assigned',
                           style: AppStyles.bodyMedium.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
                     ),
-                    if (ride.price != null && ride.status == RideStatus.completed)
+                    if (ride.price != null &&
+                        ride.status == RideStatus.completed)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppDimensions.paddingSmall,
@@ -476,7 +510,9 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.clientColor.withAlpha(50),
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall,
+                          ),
                         ),
                         child: Text(
                           '€${ride.price!.toStringAsFixed(2)}',
@@ -489,15 +525,22 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                   ],
                 ),
 
-                if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) ...[
+                if (ride.isAirportTransfer &&
+                    ride.fullFlightInfo.isNotEmpty) ...[
                   const SizedBox(height: AppDimensions.paddingSmall),
                   Container(
                     padding: const EdgeInsets.all(AppDimensions.paddingSmall),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withAlpha(30),
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withAlpha(30),
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusSmall,
+                      ),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.primary.withAlpha(100),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withAlpha(100),
                         width: 1,
                       ),
                     ),
@@ -529,12 +572,16 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                   if (ride.rating != null)
                     Row(
                       children: [
-                        ...List.generate(5, (i) => Icon(
-                          i < ride.rating! ? Icons.star : Icons.star_border,
-                          color: AppColors.warning,
-                          size: 16,
-                        )),
-                        if (ride.ratingComment != null && ride.ratingComment!.isNotEmpty) ...[
+                        ...List.generate(
+                          5,
+                          (i) => Icon(
+                            i < ride.rating! ? Icons.star : Icons.star_border,
+                            color: AppColors.warning,
+                            size: 16,
+                          ),
+                        ),
+                        if (ride.ratingComment != null &&
+                            ride.ratingComment!.isNotEmpty) ...[
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -555,8 +602,12 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                         icon: const Icon(Icons.star, size: 16),
                         label: const Text('Rate this ride'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.primary,
-                          side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           visualDensity: VisualDensity.compact,
                         ),
@@ -590,7 +641,10 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
         });
         if (mounted) {
           messenger.showSnackBar(
-            const SnackBar(content: Text('Thank you for your rating!'), backgroundColor: AppColors.success),
+            const SnackBar(
+              content: Text('Thank you for your rating!'),
+              backgroundColor: AppColors.success,
+            ),
           );
           if (user != null) {
             rideBloc.add(RideLoadRequested(user: user));
@@ -599,7 +653,10 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
       } catch (e) {
         if (mounted) {
           messenger.showSnackBar(
-            SnackBar(content: Text('Failed to submit rating: $e'), backgroundColor: AppColors.error),
+            SnackBar(
+              content: Text('Failed to submit rating: $e'),
+              backgroundColor: AppColors.error,
+            ),
           );
         }
       }
@@ -608,7 +665,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
   bool _isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
-           date1.month == date2.month &&
-           date1.day == date2.day;
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 }

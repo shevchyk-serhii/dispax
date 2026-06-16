@@ -53,7 +53,10 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     try {
       final fromStr = _formatDate(event.from);
       final toStr = _formatDate(event.to);
-      final days = await _scheduleService.getScheduleForDateRange(fromStr, toStr);
+      final days = await _scheduleService.getScheduleForDateRange(
+        fromStr,
+        toStr,
+      );
       emit(ScheduleState.loaded(days));
     } catch (e) {
       emit(ScheduleState.error('Failed to load schedule: $e'));
@@ -73,13 +76,16 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
         endTime: event.endTime,
         notes: event.notes,
       );
-      final updatedDays = List<ScheduleDay>.from(state.scheduleDays)..add(newDay);
+      final updatedDays = List<ScheduleDay>.from(state.scheduleDays)
+        ..add(newDay);
       emit(ScheduleState.loaded(updatedDays, driverId: state.lastDriverId));
     } catch (e) {
-      emit(state.copyWith(
-        status: ScheduleStateStatus.error,
-        errorMessage: 'Failed to create schedule day: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: ScheduleStateStatus.error,
+          errorMessage: 'Failed to create schedule day: $e',
+        ),
+      );
     }
   }
 
@@ -89,16 +95,20 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
   ) async {
     emit(state.copyWith(status: ScheduleStateStatus.loading));
     try {
-      final cancelled = await _scheduleService.cancelScheduleDay(event.scheduleDayId);
+      final cancelled = await _scheduleService.cancelScheduleDay(
+        event.scheduleDayId,
+      );
       final updatedDays = state.scheduleDays.map((day) {
         return day.id == cancelled.id ? cancelled : day;
       }).toList();
       emit(ScheduleState.loaded(updatedDays, driverId: state.lastDriverId));
     } catch (e) {
-      emit(state.copyWith(
-        status: ScheduleStateStatus.error,
-        errorMessage: 'Failed to cancel schedule day: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: ScheduleStateStatus.error,
+          errorMessage: 'Failed to cancel schedule day: $e',
+        ),
+      );
     }
   }
 

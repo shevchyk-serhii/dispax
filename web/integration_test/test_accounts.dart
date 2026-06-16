@@ -24,3 +24,4 @@ const String kDevDriver2 = 'driver2@dispax.de';
 const String kDevClient1 = 'client1@bmw.de';
 const String kDevClient2 = 'client2@siemens.de';
 const String kDevAdmin = 'admin@dispax.de';
+const String kDevSuperAdmin = 'superadmin@dispax.de';

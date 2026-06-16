@@ -1,4 +1,4 @@
-enum PersonRole { driver, client, secretary, dispatcher, admin }
+enum PersonRole { driver, client, secretary, dispatcher, admin, superAdmin }
 
 class Person {
   final String id;
@@ -41,10 +41,14 @@ class Person {
       name: json['name']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       role: PersonRole.values.firstWhere(
-        (e) => e.toString().split('.').last.toLowerCase() == json['role'].toString().toLowerCase(),
+        (e) =>
+            e.toString().split('.').last.toLowerCase() ==
+            json['role'].toString().toLowerCase(),
         orElse: () => PersonRole.client,
       ),
-      companyId: json['companyId'] != null ? _extractId(json['companyId']) : null,
+      companyId: json['companyId'] != null
+          ? _extractId(json['companyId'])
+          : null,
       licenseNumber: json['licenseNumber']?.toString(),
       phone: json['phone']?.toString(),
       vehicleInfo: json['vehicleInfo'] != null
@@ -78,6 +82,7 @@ class Person {
   bool get isSecretary => role == PersonRole.secretary;
   bool get isDispatcher => role == PersonRole.dispatcher;
   bool get isAdmin => role == PersonRole.admin;
+  bool get isSuperAdmin => role == PersonRole.superAdmin;
   bool get isActive => status == 'ACTIVE';
 }
 

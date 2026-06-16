@@ -69,7 +69,10 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to deactivate: $e'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('Failed to deactivate: $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
     }
   }
@@ -85,19 +88,26 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
-      final response = await apiClient.post('/ride-templates/$templateId/generate', {
-        'from': dateRange.start.toUtc().toIso8601String(),
-        'to': dateRange.end.toUtc().toIso8601String(),
-      });
+      final response = await apiClient
+          .post('/ride-templates/$templateId/generate', {
+            'from': dateRange.start.toUtc().toIso8601String(),
+            'to': dateRange.end.toUtc().toIso8601String(),
+          });
 
       if (!mounted) return;
       if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rides generated successfully'), backgroundColor: AppColors.success),
+          const SnackBar(
+            content: Text('Rides generated successfully'),
+            backgroundColor: AppColors.success,
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to generate rides: ${response.body}'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Failed to generate rides: ${response.body}'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } catch (e) {
@@ -136,65 +146,114 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   children: [
                     TextFormField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Template Name'),
-                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Template Name',
+                      ),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Required' : null,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Client'),
                       initialValue: selectedClientId,
-                      items: _clients.map((c) => DropdownMenuItem(
-                        value: c.id,
-                        child: Text(c.name),
-                      )).toList(),
-                      onChanged: (v) => setDialogState(() => selectedClientId = v),
+                      items: _clients
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c.id,
+                              child: Text(c.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) =>
+                          setDialogState(() => selectedClientId = v),
                       validator: (v) => v == null ? 'Required' : null,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     TextFormField(
                       controller: fromController,
-                      decoration: const InputDecoration(labelText: 'From Address'),
-                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      decoration: const InputDecoration(
+                        labelText: 'From Address',
+                      ),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Required' : null,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     TextFormField(
                       controller: toController,
-                      decoration: const InputDecoration(labelText: 'To Address'),
-                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      decoration: const InputDecoration(
+                        labelText: 'To Address',
+                      ),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Required' : null,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     TextFormField(
                       controller: timeController,
-                      decoration: const InputDecoration(labelText: 'Pickup Time (HH:mm)'),
-                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Pickup Time (HH:mm)',
+                      ),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Required' : null,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Recurrence'),
+                      decoration: const InputDecoration(
+                        labelText: 'Recurrence',
+                      ),
                       initialValue: recurrencePattern,
                       items: const [
                         DropdownMenuItem(value: 'Daily', child: Text('Daily')),
-                        DropdownMenuItem(value: 'Weekdays', child: Text('Weekdays')),
-                        DropdownMenuItem(value: 'Weekly-Mon', child: Text('Weekly Monday')),
-                        DropdownMenuItem(value: 'Weekly-Tue', child: Text('Weekly Tuesday')),
-                        DropdownMenuItem(value: 'Weekly-Wed', child: Text('Weekly Wednesday')),
-                        DropdownMenuItem(value: 'Weekly-Thu', child: Text('Weekly Thursday')),
-                        DropdownMenuItem(value: 'Weekly-Fri', child: Text('Weekly Friday')),
-                        DropdownMenuItem(value: 'Weekly-Sat', child: Text('Weekly Saturday')),
-                        DropdownMenuItem(value: 'Weekly-Sun', child: Text('Weekly Sunday')),
+                        DropdownMenuItem(
+                          value: 'Weekdays',
+                          child: Text('Weekdays'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Weekly-Mon',
+                          child: Text('Weekly Monday'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Weekly-Tue',
+                          child: Text('Weekly Tuesday'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Weekly-Wed',
+                          child: Text('Weekly Wednesday'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Weekly-Thu',
+                          child: Text('Weekly Thursday'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Weekly-Fri',
+                          child: Text('Weekly Friday'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Weekly-Sat',
+                          child: Text('Weekly Saturday'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Weekly-Sun',
+                          child: Text('Weekly Sunday'),
+                        ),
                       ],
-                      onChanged: (v) => setDialogState(() => recurrencePattern = v ?? 'Daily'),
+                      onChanged: (v) => setDialogState(
+                        () => recurrencePattern = v ?? 'Daily',
+                      ),
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     TextFormField(
                       controller: notesController,
-                      decoration: const InputDecoration(labelText: 'Notes (optional)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Notes (optional)',
+                      ),
                       maxLines: 2,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     TextFormField(
                       controller: priceController,
-                      decoration: const InputDecoration(labelText: 'Price (optional)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Price (optional)',
+                      ),
                       keyboardType: TextInputType.number,
                     ),
                   ],
@@ -219,26 +278,40 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   toAddress: toController.text,
                   pickupTime: timeController.text,
                   recurrencePattern: recurrencePattern,
-                  notes: notesController.text.isNotEmpty ? notesController.text : null,
-                  price: priceController.text.isNotEmpty ? double.tryParse(priceController.text) : null,
+                  notes: notesController.text.isNotEmpty
+                      ? notesController.text
+                      : null,
+                  price: priceController.text.isNotEmpty
+                      ? double.tryParse(priceController.text)
+                      : null,
                 );
 
                 try {
-                  final response = await apiClient.post('/ride-templates', request.toJson());
+                  final response = await apiClient.post(
+                    '/ride-templates',
+                    request.toJson(),
+                  );
 
                   if (!mounted) return;
                   navigator.pop();
-                  if (response.statusCode == 200 || response.statusCode == 201) {
+                  if (response.statusCode == 200 ||
+                      response.statusCode == 201) {
                     _loadData();
                   } else {
                     messenger.showSnackBar(
-                      SnackBar(content: Text('Failed: ${response.body}'), backgroundColor: AppColors.error),
+                      SnackBar(
+                        content: Text('Failed: ${response.body}'),
+                        backgroundColor: AppColors.error,
+                      ),
                     );
                   }
                 } catch (e) {
                   if (!mounted) return;
                   messenger.showSnackBar(
-                    SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppColors.error,
+                    ),
                   );
                 }
               },
@@ -287,7 +360,11 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
             const Expanded(
               child: Text(
                 'Ride Templates',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
@@ -327,16 +404,27 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.repeat, size: 56, color: Theme.of(context).colorScheme.outlineVariant),
+            Icon(
+              Icons.repeat,
+              size: 56,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 12),
             Text(
               'No active templates',
-              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               'Create a template to schedule recurring rides',
-              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outlineVariant),
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
           ],
         ),
@@ -350,14 +438,18 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
         itemCount: activeTemplates.length,
         itemBuilder: (context, index) {
           final template = activeTemplates[index];
-          final clientName = _clients
-              .where((c) => c.id == template.clientId)
-              .map((c) => c.name)
-              .firstOrNull ?? 'Unknown';
+          final clientName =
+              _clients
+                  .where((c) => c.id == template.clientId)
+                  .map((c) => c.name)
+                  .firstOrNull ??
+              'Unknown';
 
           return Card(
             margin: const EdgeInsets.only(bottom: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -368,18 +460,28 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                       Expanded(
                         child: Text(
                           template.name,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.secretaryColor.withAlpha(30),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           template.recurrencePattern,
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.secretaryColor),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.secretaryColor,
+                          ),
                         ),
                       ),
                     ],
@@ -387,28 +489,57 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.person, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.person,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 4),
-                      Text(clientName, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      Text(
+                        clientName,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.schedule, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.schedule,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 4),
-                      Text(template.pickupTime, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      Text(
+                        template.pickupTime,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 14, color: AppColors.successStrong),
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: AppColors.successStrong,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           '${template.fromAddress} -> ${template.toAddress}',
-                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -419,11 +550,20 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.euro, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        Icon(
+                          Icons.euro,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           template.price!.toStringAsFixed(2),
-                          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -438,7 +578,9 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                           label: const Text('Generate Rides'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.secretaryColor,
-                            side: const BorderSide(color: AppColors.secretaryColor),
+                            side: const BorderSide(
+                              color: AppColors.secretaryColor,
+                            ),
                           ),
                         ),
                       ),

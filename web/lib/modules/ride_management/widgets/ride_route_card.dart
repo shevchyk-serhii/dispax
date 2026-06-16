@@ -7,10 +7,7 @@ import '../../core/navigation_utils.dart';
 class RideRouteCard extends StatelessWidget {
   final Ride ride;
 
-  const RideRouteCard({
-    super.key,
-    required this.ride,
-  });
+  const RideRouteCard({super.key, required this.ride});
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +20,9 @@ class RideRouteCard extends StatelessWidget {
           children: [
             Text(
               'Route Information',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -53,7 +50,11 @@ class RideRouteCard extends StatelessWidget {
 
             Row(
               children: [
-                Icon(Icons.schedule, color: Theme.of(context).colorScheme.primary, size: 20),
+                Icon(
+                  Icons.schedule,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -67,7 +68,9 @@ class RideRouteCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        DateFormat('EEEE, MMM dd, yyyy \'at\' HH:mm').format(ride.pickupTime),
+                        DateFormat(
+                          'EEEE, MMM dd, yyyy \'at\' HH:mm',
+                        ).format(ride.pickupTime),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -83,7 +86,11 @@ class RideRouteCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.straighten, color: Theme.of(context).colorScheme.primary, size: 20),
+                  Icon(
+                    Icons.straighten,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +118,11 @@ class RideRouteCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.timer, color: Theme.of(context).colorScheme.primary, size: 20),
+                  Icon(
+                    Icons.timer,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,12 +182,15 @@ class RideRouteCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => NavigationUtils.openGoogleMapsRoute(ride.from, ride.to),
+                onPressed: () =>
+                    NavigationUtils.openGoogleMapsRoute(ride.from, ride.to),
                 icon: const Icon(Icons.map_outlined, size: 18),
                 label: const Text('Open in Google Maps'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.primary,
-                  side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -215,9 +229,9 @@ class RideRouteCard extends StatelessWidget {
               ),
               Text(
                 location,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),

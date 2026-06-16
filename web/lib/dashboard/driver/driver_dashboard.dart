@@ -38,7 +38,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Discard changes?'),
-        content: const Text('You have unsaved ride details. If you leave, they will be lost.'),
+        content: const Text(
+          'You have unsaved ride details. If you leave, they will be lost.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -69,7 +71,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
           rideBloc: _rideBloc,
           formBloc: _createRideFormBloc,
           onCreated: () {
-            context.read<RideBloc>().add(RideLoadRequested(user: context.read<AuthBloc>().state.user!));
+            context.read<RideBloc>().add(
+              RideLoadRequested(user: context.read<AuthBloc>().state.user!),
+            );
             setState(() => _selectedIndex = 0);
           },
         );

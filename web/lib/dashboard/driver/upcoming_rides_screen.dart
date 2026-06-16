@@ -62,7 +62,10 @@ class UpcomingRidesScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [AppColors.infoStrong, Theme.of(context).colorScheme.surface],
+              colors: [
+                AppColors.infoStrong,
+                Theme.of(context).colorScheme.surface,
+              ],
               stops: const [0.0, 0.2],
             ),
           ),
@@ -77,7 +80,6 @@ class UpcomingRidesScreen extends StatelessWidget {
   }
 
   Widget buildBody(BuildContext context, RideState rideState) {
-
     if (rideState.status == RideStateStatus.initial) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => loadUpcomingRides(context),
@@ -268,7 +270,11 @@ class UpcomingRidesScreen extends StatelessWidget {
     );
   }
 
-  Widget buildDateGroup(BuildContext context, String dateKey, List<Ride> rides) {
+  Widget buildDateGroup(
+    BuildContext context,
+    String dateKey,
+    List<Ride> rides,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final date = DateTime.parse(dateKey);
     final isToday = isSameDay(date, DateTime.now());
@@ -336,7 +342,9 @@ class UpcomingRidesScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
-            children: rides.map((ride) => buildUpcomingRideCard(context, ride)).toList(),
+            children: rides
+                .map((ride) => buildUpcomingRideCard(context, ride))
+                .toList(),
           ),
         ),
       ],
@@ -421,7 +429,11 @@ class UpcomingRidesScreen extends StatelessWidget {
               const SizedBox(height: 12),
               buildCompactRideInfo(context, Icons.person, ride.clientName),
               const SizedBox(height: 6),
-              buildCompactRideInfo(context, Icons.location_on, ride.from.address),
+              buildCompactRideInfo(
+                context,
+                Icons.location_on,
+                ride.from.address,
+              ),
               const SizedBox(height: 6),
               buildCompactRideInfo(context, Icons.flag, ride.to.address),
             ],
@@ -431,7 +443,11 @@ class UpcomingRidesScreen extends StatelessWidget {
     );
   }
 
-  Widget buildCompactRideInfo(BuildContext context, IconData icon, String text) {
+  Widget buildCompactRideInfo(
+    BuildContext context,
+    IconData icon,
+    String text,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
@@ -476,5 +492,4 @@ class UpcomingRidesScreen extends StatelessWidget {
   bool isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
-
 }

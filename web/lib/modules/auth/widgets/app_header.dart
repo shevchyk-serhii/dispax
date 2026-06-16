@@ -36,15 +36,9 @@ class AppHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppDimensions.paddingLarge),
-        Text(
-          'Dispax',
-          style: AppStyles.glassHeadlineLarge,
-        ),
+        Text('Dispax', style: AppStyles.glassHeadlineLarge),
         const SizedBox(height: AppDimensions.paddingSmall),
-        Text(
-          'Smart Mobility Solutions',
-          style: AppStyles.glassBodyLarge,
-        ),
+        Text('Smart Mobility Solutions', style: AppStyles.glassBodyLarge),
       ],
     );
   }

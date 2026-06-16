@@ -14,6 +14,7 @@ import com.shevchyk.billing.domain.{
   Invoice,
   InvoiceId,
   InvoiceItem,
+  InvoiceStatus,
   UpdateCompanyBillingProfileRequest
 }
 import com.shevchyk.billing.repository.UnbilledRide
@@ -38,6 +39,7 @@ import com.shevchyk.core.domain.{
 import com.shevchyk.core.repository.{
   BlacklistRepository,
   ClientCompanyRepository,
+  CompanyRepository,
   CompanySettingsRepository,
   EmergencyReassignmentRepository,
   GdprRepository,
@@ -517,6 +519,27 @@ object TestApplication extends ZIOAppDefault:
               .toList
           )
           def clearReminders(id: RideId): Task[Unit]                                                            = ZIO.unit
+          // Platform-level analytics (SuperAdmin) — stub implementations
+          def countAllRidesByStatus(): Task[Map[String, Int]]                                                   = ridesRef.get
+            .map(_.values.groupBy(_.status.toString).map((k, v) => k -> v.size))
+          def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                                       = ridesRef.get.map(
+            _.values
+              .filter(r => r.status == RideStatus.Completed && r.endTime.exists(t => !t.isBefore(from) && !t.isAfter(to)))
+              .flatMap(r => r.finalPrice.orElse(r.estimatedPrice))
+              .sum
+          )
+          def countRidesByCompany(from: Instant, to: Instant): Task[Map[java.util.UUID, Int]]                   = ridesRef.get.map(
+            _.values
+              .filter(r => !r.requestTime.isBefore(from) && !r.requestTime.isAfter(to))
+              .groupBy(_.companyId.value)
+              .map((k, v) => k -> v.size)
+          )
+          def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[java.util.UUID, BigDecimal]]    = ridesRef.get.map(
+            _.values
+              .filter(r => r.status == RideStatus.Completed && r.endTime.exists(t => !t.isBefore(from) && !t.isAfter(to)))
+              .groupBy(_.companyId.value)
+              .map((k, v) => k -> v.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).sum)
+          )
           private def periodTime(r: Ride): Instant                                                              = r.endTime.getOrElse(r.pickupDateTime)
       }
   )
@@ -690,6 +713,10 @@ object TestApplication extends ZIOAppDefault:
       def findRidesByIds(taxiCompanyId: CompanyId, rideIds: List[UUID]): Task[List[UnbilledRide]]            = ZIO.succeed(Nil)
       def findOverdueUnpaid(now: java.time.Instant): Task[List[Invoice]]                                     = ZIO.succeed(Nil)
       def findRideForReceipt(taxiCompanyId: CompanyId, rideId: UUID): Task[Option[UnbilledRide]]             = ZIO.succeed(None)
+      // Platform-level stubs (SuperAdmin only)
+      def findAllPlatform(status: Option[InvoiceStatus], limit: Int, offset: Int): Task[List[Invoice]]       = ZIO.succeed(Nil)
+      def sumRevenueByCompany(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, BigDecimal]]   = ZIO.succeed(Map.empty)
+      def countOverdueByCompany(): Task[Map[UUID, Int]]                                                       = ZIO.succeed(Map.empty)
   }
 
   private val inMemoryCompanyBillingProfileRepositoryLayer: ZLayer[Any, Nothing, CompanyBillingProfileRepository] =
@@ -841,6 +868,8 @@ object TestApplication extends ZIOAppDefault:
             if s.userId == userId && s.id != currentSessionId then s.copy(isActive = false) else s
           ); (ss.count(s => s.userId == userId && s.id != currentSessionId && s.isActive), updated)
         }
+        def countActivePlatform(): Task[Int]                             = store.get.map(_.count(_.isActive))
+        def countActiveByCompany(companyId: CompanyId): Task[Int]        = ZIO.succeed(0)
     }
   )
 
@@ -1126,6 +1155,16 @@ object TestApplication extends ZIOAppDefault:
       inMemoryGeofenceRepositoryLayer,
       GeofenceService.layer,
       GeocodingService.noop,
+      // SuperAdmin CompanyRepository stub (platform-level; not exercised in BDD tests)
+      ZLayer.succeed[CompanyRepository] {
+        import com.shevchyk.core.domain.{Company, CompanyId, CompanyStatus, SubscriptionPlan}
+        new CompanyRepository:
+          def findAll(): Task[List[Company]]                    = ZIO.succeed(Nil)
+          def findById(id: CompanyId): Task[Option[Company]]    = ZIO.succeed(None)
+          def create(company: Company): Task[Company]           = ZIO.succeed(company)
+          def update(company: Company): Task[Company]           = ZIO.succeed(company)
+          def countByStatus(): Task[Map[CompanyStatus, Int]]    = ZIO.succeed(Map.empty)
+      },
       // Core ClientCompanyRepository (used by ClientCompanyRoutes in api/) — seeded with test data
       ZLayer.succeed[ClientCompanyRepository] {
         val seeded = ClientCompany(

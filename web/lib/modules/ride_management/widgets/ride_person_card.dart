@@ -29,10 +29,14 @@ class RidePersonCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: isDriver ? AppColors.infoBorder : AppColors.successBorder,
+                  backgroundColor: isDriver
+                      ? AppColors.infoBorder
+                      : AppColors.successBorder,
                   child: Icon(
                     isDriver ? Icons.drive_eta : Icons.person,
-                    color: isDriver ? AppColors.infoStrong : AppColors.successStrong,
+                    color: isDriver
+                        ? AppColors.infoStrong
+                        : AppColors.successStrong,
                     size: 28,
                   ),
                 ),
@@ -50,16 +54,18 @@ class RidePersonCard extends StatelessWidget {
                       ),
                       Text(
                         person.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       if (person.phone?.isNotEmpty == true)
                         Text(
                           person.phone!,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                     ],
                   ),
@@ -100,8 +106,12 @@ class RidePersonCard extends StatelessWidget {
                         icon: const Icon(Icons.message, size: 18),
                         label: const Text('Message'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
@@ -132,13 +142,17 @@ class RidePersonCard extends StatelessWidget {
 
         Row(
           children: [
-            Icon(Icons.directions_car, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
+            Icon(
+              Icons.directions_car,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              size: 18,
+            ),
             const SizedBox(width: 8),
             Text(
               '${vehicle.make} ${vehicle.model}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -147,7 +161,11 @@ class RidePersonCard extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.palette, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
+              Icon(
+                Icons.palette,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Text(
                 vehicle.color!,
@@ -161,14 +179,20 @@ class RidePersonCard extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.confirmation_number, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 18),
+              Icon(
+                Icons.confirmation_number,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
                 child: Text(
                   vehicle.licensePlate!,

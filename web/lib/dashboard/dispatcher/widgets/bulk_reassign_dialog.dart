@@ -37,12 +37,15 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
   @override
   Widget build(BuildContext context) {
     final scheduleState = context.read<ScheduleBloc>().state;
-    final otherDrivers = scheduleState.scheduleDays
-        .where((d) =>
-            d.driverId != widget.fromDriverId &&
-            d.status != ScheduleDayStatus.cancelled)
-        .toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final otherDrivers =
+        scheduleState.scheduleDays
+            .where(
+              (d) =>
+                  d.driverId != widget.fromDriverId &&
+                  d.status != ScheduleDayStatus.cancelled,
+            )
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
@@ -57,14 +60,20 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.errorStrong,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Bulk Reassign Rides',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -87,47 +96,64 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                       children: [
                         Text(
                           'Select rides to reassign (${_selectedRideIds.length}/${widget.rides.length})',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                         TextButton(
                           onPressed: () {
                             setState(() {
-                              if (_selectedRideIds.length == widget.rides.length) {
+                              if (_selectedRideIds.length ==
+                                  widget.rides.length) {
                                 _selectedRideIds.clear();
                               } else {
-                                _selectedRideIds.addAll(widget.rides.map((r) => r.id));
+                                _selectedRideIds.addAll(
+                                  widget.rides.map((r) => r.id),
+                                );
                               }
                             });
                           },
-                          child: Text(_selectedRideIds.length == widget.rides.length ? 'Deselect All' : 'Select All'),
+                          child: Text(
+                            _selectedRideIds.length == widget.rides.length
+                                ? 'Deselect All'
+                                : 'Select All',
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    ...widget.rides.map((ride) => CheckboxListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      value: _selectedRideIds.contains(ride.id),
-                      onChanged: (v) {
-                        setState(() {
-                          if (v == true) {
-                            _selectedRideIds.add(ride.id);
-                          } else {
-                            _selectedRideIds.remove(ride.id);
-                          }
-                        });
-                      },
-                      title: Text(
-                        '${DateFormat('HH:mm').format(ride.pickupDateTime)} — ${ride.clientName}',
-                        style: const TextStyle(fontSize: 13),
+                    ...widget.rides.map(
+                      (ride) => CheckboxListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        value: _selectedRideIds.contains(ride.id),
+                        onChanged: (v) {
+                          setState(() {
+                            if (v == true) {
+                              _selectedRideIds.add(ride.id);
+                            } else {
+                              _selectedRideIds.remove(ride.id);
+                            }
+                          });
+                        },
+                        title: Text(
+                          '${DateFormat('HH:mm').format(ride.pickupDateTime)} — ${ride.clientName}',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        subtitle: Text(
+                          '${ride.from.address} → ${ride.to.address}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      subtitle: Text(
-                        '${ride.from.address} → ${ride.to.address}',
-                        style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )),
+                    ),
 
                     const SizedBox(height: 16),
                     const Divider(),
@@ -136,7 +162,10 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                     // Target driver selection
                     const Text(
                       'Reassign to:',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 8),
 
@@ -150,34 +179,45 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                         ),
                         child: const Text(
                           'No other drivers available for reassignment.',
-                          style: TextStyle(color: AppColors.warning, fontSize: 13),
+                          style: TextStyle(
+                            color: AppColors.warning,
+                            fontSize: 13,
+                          ),
                         ),
                       )
                     else
                       ...otherDrivers.map((schedule) {
                         final rideState = context.read<RideBloc>().state;
                         final rideCount = rideState.rides
-                            .where((r) =>
-                                r.driverId == schedule.driverId &&
-                                r.status != RideStatus.cancelled &&
-                                r.status != RideStatus.completed)
+                            .where(
+                              (r) =>
+                                  r.driverId == schedule.driverId &&
+                                  r.status != RideStatus.cancelled &&
+                                  r.status != RideStatus.completed,
+                            )
                             .length;
                         final loadColor = rideCount == 0
                             ? AppColors.success
                             : rideCount <= 2
-                                ? AppColors.warning
-                                : AppColors.error;
+                            ? AppColors.warning
+                            : AppColors.error;
                         final label = schedule.notes?.isNotEmpty == true
                             ? schedule.notes!
                             : 'Driver ${schedule.driverId.length > 8 ? schedule.driverId.substring(0, 8) : schedule.driverId}...';
-                        final isSelected = _selectedDriverId == schedule.driverId;
+                        final isSelected =
+                            _selectedDriverId == schedule.driverId;
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 6),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                             side: isSelected
-                                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
+                                ? BorderSide(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    width: 2,
+                                  )
                                 : BorderSide.none,
                           ),
                           color: isSelected ? AppColors.rideAssignedBg : null,
@@ -186,15 +226,35 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                             leading: CircleAvatar(
                               radius: 16,
                               backgroundColor: loadColor.withAlpha(40),
-                              child: Icon(Icons.person, color: loadColor, size: 18),
+                              child: Icon(
+                                Icons.person,
+                                color: loadColor,
+                                size: 18,
+                              ),
                             ),
-                            title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            title: Text(
+                              label,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
                             subtitle: Text(
                               '$rideCount ride${rideCount == 1 ? '' : 's'} • ${schedule.startTime}–${schedule.endTime}',
-                              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                             trailing: isSelected
-                                ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+                                ? Icon(
+                                    Icons.check_circle,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  )
                                 : null,
                             onTap: () {
                               setState(() {
@@ -214,13 +274,21 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Theme.of(context).colorScheme.surfaceContainerHighest)),
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                  ),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: _isReassigning ? null : () => Navigator.pop(context),
+                    onPressed: _isReassigning
+                        ? null
+                        : () => Navigator.pop(context),
                     child: const Text('Cancel'),
                   ),
                   const SizedBox(width: 8),
@@ -229,13 +297,20 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                       backgroundColor: AppColors.errorStrong,
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: _selectedRideIds.isEmpty || _selectedDriverId == null || _isReassigning
+                    onPressed:
+                        _selectedRideIds.isEmpty ||
+                            _selectedDriverId == null ||
+                            _isReassigning
                         ? null
                         : _executeBulkReassign,
                     icon: _isReassigning
                         ? const SizedBox(
-                            width: 16, height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Icon(Icons.swap_horiz),
                     label: Text(
@@ -258,10 +333,9 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
 
     final rideBloc = context.read<RideBloc>();
     for (final rideId in _selectedRideIds) {
-      rideBloc.add(RideReassignRequested(
-        rideId: rideId,
-        newDriverId: _selectedDriverId!,
-      ));
+      rideBloc.add(
+        RideReassignRequested(rideId: rideId, newDriverId: _selectedDriverId!),
+      );
     }
 
     Navigator.pop(context);

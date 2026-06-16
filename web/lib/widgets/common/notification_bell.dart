@@ -59,7 +59,11 @@ class _NotificationBellState extends State<NotificationBell> {
                 constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                 child: Text(
                   _unreadCount > 99 ? '99+' : '$_unreadCount',
-                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -67,9 +71,9 @@ class _NotificationBellState extends State<NotificationBell> {
         ],
       ),
       onPressed: () async {
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-        );
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
         _loadUnreadCount();
       },
       tooltip: 'Notifications',

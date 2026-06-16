@@ -50,13 +50,29 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
     final sorted = List<Map<String, dynamic>>.from(_data!);
     switch (_sortBy) {
       case 'rides':
-        sorted.sort((a, b) => ((b['totalRides'] as num?) ?? 0).compareTo((a['totalRides'] as num?) ?? 0));
+        sorted.sort(
+          (a, b) => ((b['totalRides'] as num?) ?? 0).compareTo(
+            (a['totalRides'] as num?) ?? 0,
+          ),
+        );
       case 'earnings':
-        sorted.sort((a, b) => ((b['totalEarnings'] as num?) ?? 0).compareTo((a['totalEarnings'] as num?) ?? 0));
+        sorted.sort(
+          (a, b) => ((b['totalEarnings'] as num?) ?? 0).compareTo(
+            (a['totalEarnings'] as num?) ?? 0,
+          ),
+        );
       case 'completion':
-        sorted.sort((a, b) => ((b['completionRate'] as num?) ?? 0).compareTo((a['completionRate'] as num?) ?? 0));
+        sorted.sort(
+          (a, b) => ((b['completionRate'] as num?) ?? 0).compareTo(
+            (a['completionRate'] as num?) ?? 0,
+          ),
+        );
       case 'rating':
-        sorted.sort((a, b) => ((b['avgRating'] as num?) ?? 0).compareTo((a['avgRating'] as num?) ?? 0));
+        sorted.sort(
+          (a, b) => ((b['avgRating'] as num?) ?? 0).compareTo(
+            (a['avgRating'] as num?) ?? 0,
+          ),
+        );
     }
     return sorted;
   }
@@ -70,22 +86,26 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          const SizedBox(height: 12),
-                          ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      child: _buildContent(),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _loadData, child: _buildContent()),
         ),
       ],
     );
@@ -107,7 +127,11 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
             const Expanded(
               child: Text(
                 'Driver Performance',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             PopupMenuButton<String>(
@@ -151,17 +175,30 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_outline, size: 56, color: colorScheme.outlineVariant),
+            Icon(
+              Icons.person_outline,
+              size: 56,
+              color: colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 12),
-            Text('No driver performance data', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            Text(
+              'No driver performance data',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
           ],
         ),
       );
     }
 
     final totalDrivers = data.length;
-    final totalRides = data.fold<num>(0, (s, d) => s + ((d['totalRides'] as num?) ?? 0));
-    final totalEarnings = data.fold<num>(0, (s, d) => s + ((d['totalEarnings'] as num?) ?? 0));
+    final totalRides = data.fold<num>(
+      0,
+      (s, d) => s + ((d['totalRides'] as num?) ?? 0),
+    );
+    final totalEarnings = data.fold<num>(
+      0,
+      (s, d) => s + ((d['totalEarnings'] as num?) ?? 0),
+    );
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -169,11 +206,26 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
         // Summary
         Row(
           children: [
-            _buildSummaryCard('Drivers', totalDrivers.toString(), AppColors.driverColor, colorScheme),
+            _buildSummaryCard(
+              'Drivers',
+              totalDrivers.toString(),
+              AppColors.driverColor,
+              colorScheme,
+            ),
             const SizedBox(width: 12),
-            _buildSummaryCard('Rides', totalRides.toString(), colorScheme.primary, colorScheme),
+            _buildSummaryCard(
+              'Rides',
+              totalRides.toString(),
+              colorScheme.primary,
+              colorScheme,
+            ),
             const SizedBox(width: 12),
-            _buildSummaryCard('Earnings', '\u20AC${totalEarnings.toStringAsFixed(0)}', AppColors.success, colorScheme),
+            _buildSummaryCard(
+              'Earnings',
+              '\u20AC${totalEarnings.toStringAsFixed(0)}',
+              AppColors.success,
+              colorScheme,
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -183,7 +235,8 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
           final name = driver['driverName'] as String? ?? 'Unknown';
           final rides = (driver['totalRides'] as num?) ?? 0;
           final earnings = (driver['totalEarnings'] as num?) ?? 0;
-          final completionRate = (driver['completionRate'] as num?)?.toDouble() ?? 0;
+          final completionRate =
+              (driver['completionRate'] as num?)?.toDouble() ?? 0;
           final onTimeRate = (driver['onTimeRate'] as num?)?.toDouble() ?? 0;
           final avgEarnings = rides > 0 ? earnings / rides : 0;
 
@@ -205,16 +258,30 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
                       backgroundColor: AppColors.driverColor.withAlpha(30),
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : '?',
-                        style: TextStyle(color: AppColors.driverColor, fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          color: AppColors.driverColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      child: Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                     Text(
                       '\u20AC${earnings.toStringAsFixed(0)}',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.success,
+                      ),
                     ),
                   ],
                 ),
@@ -222,33 +289,64 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
                 // Completion rate bar
                 Row(
                   children: [
-                    SizedBox(width: 80, child: Text('Completion', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant))),
+                    SizedBox(
+                      width: 80,
+                      child: Text(
+                        'Completion',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: completionRate / 100,
                           backgroundColor: colorScheme.surfaceContainerLow,
-                          color: completionRate >= 90 ? AppColors.success
-                              : completionRate >= 70 ? AppColors.warning
+                          color: completionRate >= 90
+                              ? AppColors.success
+                              : completionRate >= 70
+                              ? AppColors.warning
                               : AppColors.error,
                           minHeight: 10,
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text('${completionRate.toStringAsFixed(0)}%',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(
+                      '${completionRate.toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildMiniStat('Rides', rides.toString(), colorScheme.primary, colorScheme),
+                    _buildMiniStat(
+                      'Rides',
+                      rides.toString(),
+                      colorScheme.primary,
+                      colorScheme,
+                    ),
                     const SizedBox(width: 16),
-                    _buildMiniStat('Avg/ride', '\u20AC${avgEarnings.toStringAsFixed(0)}', AppColors.success, colorScheme),
+                    _buildMiniStat(
+                      'Avg/ride',
+                      '\u20AC${avgEarnings.toStringAsFixed(0)}',
+                      AppColors.success,
+                      colorScheme,
+                    ),
                     const SizedBox(width: 16),
-                    _buildMiniStat('On-time', '${onTimeRate.toStringAsFixed(0)}%', AppColors.info, colorScheme),
+                    _buildMiniStat(
+                      'On-time',
+                      '${onTimeRate.toStringAsFixed(0)}%',
+                      AppColors.info,
+                      colorScheme,
+                    ),
                   ],
                 ),
               ],
@@ -259,7 +357,12 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
     );
   }
 
-  Widget _buildSummaryCard(String label, String value, Color color, ColorScheme colorScheme) {
+  Widget _buildSummaryCard(
+    String label,
+    String value,
+    Color color,
+    ColorScheme colorScheme,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -270,21 +373,49 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
         ),
         child: Column(
           children: [
-            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMiniStat(String label, String value, Color color, ColorScheme colorScheme) {
+  Widget _buildMiniStat(
+    String label,
+    String value,
+    Color color,
+    ColorScheme colorScheme,
+  ) {
     return Row(
       children: [
-        Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
+        ),
       ],
     );
   }

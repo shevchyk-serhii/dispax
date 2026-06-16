@@ -29,7 +29,9 @@ class ScheduleService {
       if (response.statusCode == 201) {
         return ScheduleDay.fromJson(jsonDecode(response.body));
       } else {
-        throw ApiException('Failed to create schedule day: ${response.statusCode} ${response.body}');
+        throw ApiException(
+          'Failed to create schedule day: ${response.statusCode} ${response.body}',
+        );
       }
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -51,7 +53,9 @@ class ScheduleService {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((json) => ScheduleDay.fromJson(json)).toList();
       } else {
-        throw ApiException('Failed to create batch schedule: ${response.statusCode} ${response.body}');
+        throw ApiException(
+          'Failed to create batch schedule: ${response.statusCode} ${response.body}',
+        );
       }
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -67,7 +71,9 @@ class ScheduleService {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((json) => ScheduleDay.fromJson(json)).toList();
       } else {
-        throw ApiException('Failed to fetch driver schedule: ${response.statusCode}');
+        throw ApiException(
+          'Failed to fetch driver schedule: ${response.statusCode}',
+        );
       }
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -83,7 +89,9 @@ class ScheduleService {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((json) => ScheduleDay.fromJson(json)).toList();
       } else {
-        throw ApiException('Failed to fetch schedule for date: ${response.statusCode}');
+        throw ApiException(
+          'Failed to fetch schedule for date: ${response.statusCode}',
+        );
       }
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -91,7 +99,10 @@ class ScheduleService {
     }
   }
 
-  Future<List<ScheduleDay>> getScheduleForDateRange(String from, String to) async {
+  Future<List<ScheduleDay>> getScheduleForDateRange(
+    String from,
+    String to,
+  ) async {
     try {
       final response = await _apiClient.get('/schedules?from=$from&to=$to');
 
@@ -99,7 +110,9 @@ class ScheduleService {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((json) => ScheduleDay.fromJson(json)).toList();
       } else {
-        throw ApiException('Failed to fetch schedule for date range: ${response.statusCode}');
+        throw ApiException(
+          'Failed to fetch schedule for date range: ${response.statusCode}',
+        );
       }
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -126,7 +139,9 @@ class ScheduleService {
       if (response.statusCode == 200) {
         return ScheduleDay.fromJson(jsonDecode(response.body));
       } else {
-        throw ApiException('Failed to update schedule day: ${response.statusCode} ${response.body}');
+        throw ApiException(
+          'Failed to update schedule day: ${response.statusCode} ${response.body}',
+        );
       }
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -141,7 +156,9 @@ class ScheduleService {
       if (response.statusCode == 200) {
         return ScheduleDay.fromJson(jsonDecode(response.body));
       } else {
-        throw ApiException('Failed to cancel schedule day: ${response.statusCode}');
+        throw ApiException(
+          'Failed to cancel schedule day: ${response.statusCode}',
+        );
       }
     } catch (e) {
       if (e is ApiException) rethrow;

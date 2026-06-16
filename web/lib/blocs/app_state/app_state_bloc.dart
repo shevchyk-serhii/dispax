@@ -7,10 +7,7 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState> {
     on<AppInitialized>(onAppInitialized);
   }
 
-  void onAppInitialized(
-    AppInitialized event,
-    Emitter<AppState> emit,
-  ) {
+  void onAppInitialized(AppInitialized event, Emitter<AppState> emit) {
     emit(state.copyWith(isInitialized: true));
   }
 }

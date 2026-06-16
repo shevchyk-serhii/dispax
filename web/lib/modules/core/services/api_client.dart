@@ -13,11 +13,12 @@ class ApiClient {
 
   static String get wsBaseUrl {
     final base = _defaultBaseUrl.replaceFirst('/api', '');
-    return base.replaceFirst('http://', 'ws://').replaceFirst('https://', 'wss://');
+    return base
+        .replaceFirst('http://', 'ws://')
+        .replaceFirst('https://', 'wss://');
   }
 
   static String get _defaultBaseUrl {
-
     const customUrl = String.fromEnvironment('API_BASE_URL');
     if (customUrl.isNotEmpty) {
       return customUrl;
@@ -36,8 +37,8 @@ class ApiClient {
   String? privateAuthToken;
 
   ApiClient({http.Client? client, String? baseUrl})
-      : privateClient = client ?? http.Client(),
-        _baseUrl = baseUrl ?? _defaultBaseUrl;
+    : privateClient = client ?? http.Client(),
+      _baseUrl = baseUrl ?? _defaultBaseUrl;
 
   void setAuthToken(String token) {
     privateAuthToken = token;
@@ -48,14 +49,14 @@ class ApiClient {
   }
 
   static http.Response _utf8Response(http.Response r) => http.Response.bytes(
-        r.bodyBytes,
-        r.statusCode,
-        headers: {'content-type': 'application/json; charset=utf-8', ...r.headers},
-        request: r.request,
-        isRedirect: r.isRedirect,
-        persistentConnection: r.persistentConnection,
-        reasonPhrase: r.reasonPhrase,
-      );
+    r.bodyBytes,
+    r.statusCode,
+    headers: {'content-type': 'application/json; charset=utf-8', ...r.headers},
+    request: r.request,
+    isRedirect: r.isRedirect,
+    persistentConnection: r.persistentConnection,
+    reasonPhrase: r.reasonPhrase,
+  );
 
   Future<http.Response> get(String endpoint) async {
     try {
@@ -68,7 +69,9 @@ class ApiClient {
       final response = _utf8Response(raw);
 
       debugPrint('✅ Response status: ${response.statusCode}');
-      debugPrint('📄 Response body: ${response.body.length > 200 ? '${response.body.substring(0, 200)}...' : response.body}');
+      debugPrint(
+        '📄 Response body: ${response.body.length > 200 ? '${response.body.substring(0, 200)}...' : response.body}',
+      );
       if (response.statusCode == 401) _handleUnauthorized();
       return response;
     } on UnauthorizedException {
@@ -90,17 +93,23 @@ class ApiClient {
       throw ApiException('Format error: $e');
     } catch (e) {
       debugPrint('❌ General Exception: $e');
-      throw ApiException('Failed to perform GET request to $_baseUrl$endpoint: $e');
+      throw ApiException(
+        'Failed to perform GET request to $_baseUrl$endpoint: $e',
+      );
     }
   }
 
   Future<http.Response> post(String endpoint, Map<String, dynamic> data) async {
     try {
-      final response = _utf8Response(await privateClient.post(
-        Uri.parse('$_baseUrl$endpoint'),
-        headers: privateHeaders,
-        body: jsonEncode(data),
-      ).timeout(const Duration(seconds: 15)));
+      final response = _utf8Response(
+        await privateClient
+            .post(
+              Uri.parse('$_baseUrl$endpoint'),
+              headers: privateHeaders,
+              body: jsonEncode(data),
+            )
+            .timeout(const Duration(seconds: 15)),
+      );
       if (response.statusCode == 401) _handleUnauthorized();
       return response;
     } on UnauthorizedException {
@@ -112,11 +121,15 @@ class ApiClient {
 
   Future<http.Response> put(String endpoint, Map<String, dynamic> data) async {
     try {
-      final response = _utf8Response(await privateClient.put(
-        Uri.parse('$_baseUrl$endpoint'),
-        headers: privateHeaders,
-        body: jsonEncode(data),
-      ).timeout(const Duration(seconds: 15)));
+      final response = _utf8Response(
+        await privateClient
+            .put(
+              Uri.parse('$_baseUrl$endpoint'),
+              headers: privateHeaders,
+              body: jsonEncode(data),
+            )
+            .timeout(const Duration(seconds: 15)),
+      );
       if (response.statusCode == 401) _handleUnauthorized();
       return response;
     } on UnauthorizedException {
@@ -126,13 +139,20 @@ class ApiClient {
     }
   }
 
-  Future<http.Response> patch(String endpoint, Map<String, dynamic> data) async {
+  Future<http.Response> patch(
+    String endpoint,
+    Map<String, dynamic> data,
+  ) async {
     try {
-      final response = _utf8Response(await privateClient.patch(
-        Uri.parse('$_baseUrl$endpoint'),
-        headers: privateHeaders,
-        body: jsonEncode(data),
-      ).timeout(const Duration(seconds: 15)));
+      final response = _utf8Response(
+        await privateClient
+            .patch(
+              Uri.parse('$_baseUrl$endpoint'),
+              headers: privateHeaders,
+              body: jsonEncode(data),
+            )
+            .timeout(const Duration(seconds: 15)),
+      );
       if (response.statusCode == 401) _handleUnauthorized();
       return response;
     } on UnauthorizedException {
@@ -144,10 +164,11 @@ class ApiClient {
 
   Future<http.Response> delete(String endpoint) async {
     try {
-      final response = _utf8Response(await privateClient.delete(
-        Uri.parse('$_baseUrl$endpoint'),
-        headers: privateHeaders,
-      ).timeout(const Duration(seconds: 15)));
+      final response = _utf8Response(
+        await privateClient
+            .delete(Uri.parse('$_baseUrl$endpoint'), headers: privateHeaders)
+            .timeout(const Duration(seconds: 15)),
+      );
       if (response.statusCode == 401) _handleUnauthorized();
       return response;
     } on UnauthorizedException {

@@ -45,11 +45,13 @@ class LocationSelectionCard extends StatelessWidget {
 
           const SizedBox(height: AppDimensions.paddingLarge),
 
-          ...locationOptions.map((location) => LocationOptionItem(
-            location: location,
-            isSelected: selectedLocation == location,
-            onTap: () => onLocationSelected(location),
-          )),
+          ...locationOptions.map(
+            (location) => LocationOptionItem(
+              location: location,
+              isSelected: selectedLocation == location,
+              onTap: () => onLocationSelected(location),
+            ),
+          ),
 
           if (selectedLocation == 'Other location (specify below)') ...[
             const SizedBox(height: AppDimensions.paddingMedium),
@@ -60,7 +62,9 @@ class LocationSelectionCard extends StatelessWidget {
                 filled: true,
                 fillColor: Theme.of(context).colorScheme.surface.withAlpha(100),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusMedium,
+                  ),
                   borderSide: BorderSide.none,
                 ),
                 hintStyle: AppStyles.bodyMedium.copyWith(

@@ -61,7 +61,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: widget.isClientView ? 'My Ride #${_currentRide.id}' : 'Ride #${_currentRide.id}',
+        title: widget.isClientView
+            ? 'My Ride #${_currentRide.id}'
+            : 'Ride #${_currentRide.id}',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -70,7 +72,6 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   RideStatusCard(
                     ride: _currentRide,
                     isClientView: widget.isClientView,
@@ -81,7 +82,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                   if (_currentRide.confirmationSent)
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.successBg,
                         borderRadius: BorderRadius.circular(8),
@@ -89,11 +93,19 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.check_circle, size: 18, color: AppColors.successStrong),
+                          Icon(
+                            Icons.check_circle,
+                            size: 18,
+                            color: AppColors.successStrong,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Confirmation sent',
-                            style: TextStyle(fontSize: 13, color: AppColors.successStrong, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.successStrong,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -104,7 +116,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                     const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: _currentRide.paymentStatus == 'Paid'
                             ? AppColors.successBg
@@ -119,7 +134,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            _currentRide.paymentStatus == 'Paid' ? Icons.payment : Icons.pending,
+                            _currentRide.paymentStatus == 'Paid'
+                                ? Icons.payment
+                                : Icons.pending,
                             size: 18,
                             color: _currentRide.paymentStatus == 'Paid'
                                 ? AppColors.successStrong
@@ -156,17 +173,40 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Cancellation Details',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.errorStrong)),
+                          Text(
+                            'Cancellation Details',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.errorStrong,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text('Reason: ${_currentRide.cancellationReason}',
-                            style: TextStyle(fontSize: 13, color: AppColors.errorStrong)),
+                          Text(
+                            'Reason: ${_currentRide.cancellationReason}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.errorStrong,
+                            ),
+                          ),
                           if (_currentRide.cancelledBy != null)
-                            Text('Cancelled by: ${_currentRide.cancelledBy}',
-                              style: TextStyle(fontSize: 12, color: AppColors.errorStrong)),
-                          if (_currentRide.cancellationFee != null && _currentRide.cancellationFee! > 0)
-                            Text('Fee: \u20AC${_currentRide.cancellationFee!.toStringAsFixed(2)}',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.errorStrong)),
+                            Text(
+                              'Cancelled by: ${_currentRide.cancelledBy}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.errorStrong,
+                              ),
+                            ),
+                          if (_currentRide.cancellationFee != null &&
+                              _currentRide.cancellationFee! > 0)
+                            Text(
+                              'Fee: \u20AC${_currentRide.cancellationFee!.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.errorStrong,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -186,18 +226,37 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Rating', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.warningStrong)),
+                          Text(
+                            'Rating',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.warningStrong,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           Row(
-                            children: List.generate(5, (i) => Icon(
-                              i < _currentRide.rating! ? Icons.star : Icons.star_border,
-                              color: AppColors.warning,
-                              size: 20,
-                            )),
+                            children: List.generate(
+                              5,
+                              (i) => Icon(
+                                i < _currentRide.rating!
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                color: AppColors.warning,
+                                size: 20,
+                              ),
+                            ),
                           ),
-                          if (_currentRide.ratingComment != null && _currentRide.ratingComment!.isNotEmpty) ...[
+                          if (_currentRide.ratingComment != null &&
+                              _currentRide.ratingComment!.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            Text(_currentRide.ratingComment!, style: TextStyle(fontSize: 13, color: AppColors.warningStrong)),
+                            Text(
+                              _currentRide.ratingComment!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.warningStrong,
+                              ),
+                            ),
                           ],
                         ],
                       ),
@@ -225,7 +284,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                   ],
 
                   // Notes and special requirements
-                  if (_currentRide.notes != null && _currentRide.notes!.isNotEmpty) ...[
+                  if (_currentRide.notes != null &&
+                      _currentRide.notes!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
@@ -238,19 +298,40 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Notes', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.infoStrong)),
+                          Text(
+                            'Notes',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.infoStrong,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text(_currentRide.notes!, style: TextStyle(fontSize: 13, color: AppColors.infoStrong)),
+                          Text(
+                            _currentRide.notes!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.infoStrong,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ],
-                  if (_currentRide.specialRequirements != null && _currentRide.specialRequirements!.isNotEmpty) ...[
+                  if (_currentRide.specialRequirements != null &&
+                      _currentRide.specialRequirements!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Chip(
-                      label: Text(_currentRide.specialRequirements!, style: const TextStyle(fontSize: 12)),
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                      label: Text(
+                        _currentRide.specialRequirements!,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                       visualDensity: VisualDensity.compact,
                     ),
                   ],
@@ -309,11 +390,21 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                   RideActionsCard(
                     ride: _currentRide,
                     isClientView: widget.isClientView,
-                    onEditRide: _canEditRide() ? () => _editRide(context) : null,
-                    onCancelRide: _canCancelRide() ? () => _cancelRide(context) : null,
-                    onStartRide: _canStartRide() ? () => _startRide(context) : null,
-                    onCompleteRide: _canCompleteRide() ? () => _completeRide(context) : null,
-                    onAssignDriver: _canAssignDriver() ? () => _assignDriver(context) : null,
+                    onEditRide: _canEditRide()
+                        ? () => _editRide(context)
+                        : null,
+                    onCancelRide: _canCancelRide()
+                        ? () => _cancelRide(context)
+                        : null,
+                    onStartRide: _canStartRide()
+                        ? () => _startRide(context)
+                        : null,
+                    onCompleteRide: _canCompleteRide()
+                        ? () => _completeRide(context)
+                        : null,
+                    onAssignDriver: _canAssignDriver()
+                        ? () => _assignDriver(context)
+                        : null,
                     onViewOnMap: () => _viewOnMap(context),
                     onShareRide: () => _shareRide(context),
                   ),
@@ -324,7 +415,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   bool _canEditRide() {
-    final editableStatus = _currentRide.status == RideStatus.requested ||
+    final editableStatus =
+        _currentRide.status == RideStatus.requested ||
         _currentRide.status == RideStatus.assigned;
     if (!editableStatus) return false;
     final authState = context.read<AuthBloc>().state;
@@ -369,7 +461,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _editRide(BuildContext context) async {
-    final result = await NavigationUtils.navigateToEditRide(context, _currentRide);
+    final result = await NavigationUtils.navigateToEditRide(
+      context,
+      _currentRide,
+    );
     if (result != null) {
       setState(() {
         _currentRide = result;
@@ -469,8 +564,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _shareRide(BuildContext context) async {
-
-    final rideDetails = '''
+    final rideDetails =
+        '''
 Ride Details:
 From: ${_currentRide.pickupLocation}
 To: ${_currentRide.dropoffLocation}
@@ -485,7 +580,10 @@ Status: ${_currentRide.status.name}
     setState(() => _isLoading = true);
 
     try {
-      final success = await _rideService.updateRideStatus(_currentRide.id, newStatus);
+      final success = await _rideService.updateRideStatus(
+        _currentRide.id,
+        newStatus,
+      );
       if (success) {
         setState(() {
           _currentRide = _currentRide.copyWith(status: newStatus);
@@ -504,7 +602,10 @@ Status: ${_currentRide.status.name}
     setState(() => _isLoading = true);
 
     try {
-      final updatedRide = await _rideService.assignDriver(_currentRide.id, driver.id);
+      final updatedRide = await _rideService.assignDriver(
+        _currentRide.id,
+        driver.id,
+      );
       setState(() {
         _currentRide = updatedRide;
       });
@@ -523,39 +624,34 @@ Status: ${_currentRide.status.name}
     String message,
   ) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Confirm'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   void _showSuccessMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.success,
-      ),
+      SnackBar(content: Text(message), backgroundColor: AppColors.success),
     );
   }
 
   void _showErrorMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-      ),
+      SnackBar(content: Text(message), backgroundColor: AppColors.error),
     );
   }
 }

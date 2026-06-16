@@ -4,8 +4,10 @@ import '../../services/test_data_service.dart';
 import 'initialization_event.dart';
 import 'initialization_state.dart';
 
-class InitializationBloc extends Bloc<InitializationEvent, InitializationState> {
-  InitializationBloc() : super(const InitializationLoading('Initializing Dispax...')) {
+class InitializationBloc
+    extends Bloc<InitializationEvent, InitializationState> {
+  InitializationBloc()
+    : super(const InitializationLoading('Initializing Dispax...')) {
     on<InitializeApp>(onInitializeApp);
     on<RetryInitialization>(onRetryInitialization);
   }
@@ -32,7 +34,9 @@ class InitializationBloc extends Bloc<InitializationEvent, InitializationState> 
 
       final isServerAvailable = await TestDataService.isServerAvailable();
       if (!isServerAvailable) {
-        emit(const InitializationLoading('Server offline, using cached data...'));
+        emit(
+          const InitializationLoading('Server offline, using cached data...'),
+        );
         await Future.delayed(const Duration(milliseconds: 1000));
       }
 

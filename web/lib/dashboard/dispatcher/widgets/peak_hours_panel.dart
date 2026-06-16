@@ -53,22 +53,26 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          const SizedBox(height: 12),
-                          ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      child: _buildContent(),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _loadData, child: _buildContent()),
         ),
       ],
     );
@@ -90,7 +94,11 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
             const Expanded(
               child: Text(
                 'Peak Hours Analysis',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
@@ -111,9 +119,16 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.access_time, size: 56, color: colorScheme.outlineVariant),
+            Icon(
+              Icons.access_time,
+              size: 56,
+              color: colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 12),
-            Text('No peak hours data available', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            Text(
+              'No peak hours data available',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
           ],
         ),
       );
@@ -169,17 +184,38 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
         // Summary
         Row(
           children: [
-            _buildSummaryCard('Total Rides', totalRides.toString(), Icons.directions_car, colorScheme.primary, colorScheme),
+            _buildSummaryCard(
+              'Total Rides',
+              totalRides.toString(),
+              Icons.directions_car,
+              colorScheme.primary,
+              colorScheme,
+            ),
             const SizedBox(width: 12),
-            _buildSummaryCard('Busiest Day', dayLabels[busiestDay], Icons.calendar_today, AppColors.warning, colorScheme),
+            _buildSummaryCard(
+              'Busiest Day',
+              dayLabels[busiestDay],
+              Icons.calendar_today,
+              AppColors.warning,
+              colorScheme,
+            ),
             const SizedBox(width: 12),
-            _buildSummaryCard('Busiest Hour', '${busiestHour.toString().padLeft(2, '0')}:00', Icons.schedule, AppColors.error, colorScheme),
+            _buildSummaryCard(
+              'Busiest Hour',
+              '${busiestHour.toString().padLeft(2, '0')}:00',
+              Icons.schedule,
+              AppColors.error,
+              colorScheme,
+            ),
           ],
         ),
         const SizedBox(height: 20),
 
         // Heatmap
-        const Text('Ride Density Heatmap', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const Text(
+          'Ride Density Heatmap',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -190,54 +226,72 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
               Row(
                 children: [
                   const SizedBox(width: 40),
-                  ...List.generate(24, (h) => SizedBox(
-                    width: 28,
-                    child: Text(
-                      h.toString().padLeft(2, '0'),
-                      style: TextStyle(fontSize: 8, color: colorScheme.onSurfaceVariant),
-                      textAlign: TextAlign.center,
+                  ...List.generate(
+                    24,
+                    (h) => SizedBox(
+                      width: 28,
+                      child: Text(
+                        h.toString().padLeft(2, '0'),
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  )),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
               // Day rows
-              ...List.generate(7, (d) => Row(
-                children: [
-                  SizedBox(
-                    width: 40,
-                    child: Text(dayLabels[d], style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
-                  ),
-                  ...List.generate(24, (h) {
-                    final count = grid[d][h];
-                    final intensity = maxCount > 0 ? count / maxCount : 0.0;
-                    return Tooltip(
-                      message: '${dayLabels[d]} ${h.toString().padLeft(2, '0')}:00 - $count rides',
-                      child: Container(
-                        width: 26,
-                        height: 26,
-                        margin: const EdgeInsets.all(1),
-                        decoration: BoxDecoration(
-                          color: _heatmapColor(intensity, colorScheme),
-                          borderRadius: BorderRadius.circular(3),
+              ...List.generate(
+                7,
+                (d) => Row(
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      child: Text(
+                        dayLabels[d],
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.onSurfaceVariant,
                         ),
-                        child: count > 0
-                            ? Center(
-                                child: Text(
-                                  count.toString(),
-                                  style: TextStyle(
-                                    fontSize: 7,
-                                    color: intensity > 0.5 ? Colors.white : colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              )
-                            : null,
                       ),
-                    );
-                  }),
-                ],
-              )),
+                    ),
+                    ...List.generate(24, (h) {
+                      final count = grid[d][h];
+                      final intensity = maxCount > 0 ? count / maxCount : 0.0;
+                      return Tooltip(
+                        message:
+                            '${dayLabels[d]} ${h.toString().padLeft(2, '0')}:00 - $count rides',
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          margin: const EdgeInsets.all(1),
+                          decoration: BoxDecoration(
+                            color: _heatmapColor(intensity, colorScheme),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: count > 0
+                              ? Center(
+                                  child: Text(
+                                    count.toString(),
+                                    style: TextStyle(
+                                      fontSize: 7,
+                                      color: intensity > 0.5
+                                          ? Colors.white
+                                          : colorScheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                )
+                              : null,
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -247,17 +301,31 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Less ', style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant)),
-            ...[0.0, 0.25, 0.5, 0.75, 1.0].map((v) => Container(
-              width: 20,
-              height: 12,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: _heatmapColor(v, colorScheme),
-                borderRadius: BorderRadius.circular(2),
+            Text(
+              'Less ',
+              style: TextStyle(
+                fontSize: 10,
+                color: colorScheme.onSurfaceVariant,
               ),
-            )),
-            Text(' More', style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant)),
+            ),
+            ...[0.0, 0.25, 0.5, 0.75, 1.0].map(
+              (v) => Container(
+                width: 20,
+                height: 12,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: _heatmapColor(v, colorScheme),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(
+              ' More',
+              style: TextStyle(
+                fontSize: 10,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ],
@@ -272,7 +340,13 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
     return AppColors.errorStrong;
   }
 
-  Widget _buildSummaryCard(String label, String value, IconData icon, Color color, ColorScheme colorScheme) {
+  Widget _buildSummaryCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    ColorScheme colorScheme,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -285,8 +359,21 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(height: 4),
-            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),

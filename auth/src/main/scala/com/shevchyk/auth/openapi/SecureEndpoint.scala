@@ -39,22 +39,23 @@ object SecureEndpoint:
       )
       .zServerSecurityLogic[JwtService, AuthenticatedUser](validateBearer)
 
-  /** Validate the Bearer token into an [[AuthenticatedUser]], mapping JWT failures to a documented 401. */
-  private def validateBearer(token: String): ZIO[JwtService, ApiError, AuthenticatedUser] =
-    ZIO
-      .serviceWithZIO[JwtService](_.validateToken(token))
-      .mapBoth(
-        {
-          case _: InvalidTokenError | _: ExpiredTokenError => ApiError("Invalid or expired token")
-          case _: JwtError                                 => ApiError("Authentication failed")
-          case _                                           => ApiError("Internal server error")
-        },
-        payload =>
-          AuthenticatedUser(
-            userId = payload.userId,
-            email = payload.email,
-            role = payload.role.toString,
-            companyId = payload.companyId,
-            clientCompanyId = payload.clientCompanyId
-          )
-      )
+  /**
+   * Validate the Bearer token into an [[AuthenticatedUser]], mapping JWT failures to a documented 401.
+   */
+  private def validateBearer(token: String): ZIO[JwtService, ApiError, AuthenticatedUser] = ZIO
+    .serviceWithZIO[JwtService](_.validateToken(token))
+    .mapBoth(
+      {
+        case _: InvalidTokenError | _: ExpiredTokenError => ApiError("Invalid or expired token")
+        case _: JwtError                                 => ApiError("Authentication failed")
+        case _                                           => ApiError("Internal server error")
+      },
+      payload =>
+        AuthenticatedUser(
+          userId = payload.userId,
+          email = payload.email,
+          role = payload.role.toString,
+          companyId = payload.companyId,
+          clientCompanyId = payload.clientCompanyId
+        )
+    )

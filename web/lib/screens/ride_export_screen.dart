@@ -53,13 +53,17 @@ class _RideExportScreenState extends State<RideExportScreen> {
     var filtered = _rides;
 
     if (_filterStatus != 'All') {
-      filtered = filtered.where((r) => r.status.value == _filterStatus).toList();
+      filtered = filtered
+          .where((r) => r.status.value == _filterStatus)
+          .toList();
     }
 
     if (_dateRange != null) {
       filtered = filtered.where((r) {
         return r.pickupDateTime.isAfter(_dateRange!.start) &&
-            r.pickupDateTime.isBefore(_dateRange!.end.add(const Duration(days: 1)));
+            r.pickupDateTime.isBefore(
+              _dateRange!.end.add(const Duration(days: 1)),
+            );
       }).toList();
     }
 
@@ -74,12 +78,15 @@ class _RideExportScreenState extends State<RideExportScreen> {
     buffer.writeln('ID,Date,Client,From,To,Status,Driver,Price');
 
     for (final ride in rides) {
-      final date = '${ride.pickupDateTime.year}-${ride.pickupDateTime.month.toString().padLeft(2, '0')}-${ride.pickupDateTime.day.toString().padLeft(2, '0')}';
+      final date =
+          '${ride.pickupDateTime.year}-${ride.pickupDateTime.month.toString().padLeft(2, '0')}-${ride.pickupDateTime.day.toString().padLeft(2, '0')}';
       final from = ride.from.address.replaceAll(',', ';');
       final to = ride.to.address.replaceAll(',', ';');
       final price = ride.price?.toStringAsFixed(2) ?? '';
 
-      buffer.writeln('${ride.id},$date,${ride.clientName},$from,$to,${ride.status.value},${ride.driverName ?? ''},$price');
+      buffer.writeln(
+        '${ride.id},$date,${ride.clientName},$from,$to,${ride.status.value},${ride.driverName ?? ''},$price',
+      );
     }
 
     return buffer.toString();
@@ -93,7 +100,9 @@ class _RideExportScreenState extends State<RideExportScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('CSV data copied to clipboard (${_filteredRides.length} rides)'),
+          content: Text(
+            'CSV data copied to clipboard (${_filteredRides.length} rides)',
+          ),
           action: SnackBarAction(label: 'OK', onPressed: () {}),
         ),
       );
@@ -116,8 +125,13 @@ class _RideExportScreenState extends State<RideExportScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredRides;
-    final totalRevenue = filtered.fold<double>(0, (sum, r) => sum + (r.price ?? 0));
-    final completedCount = filtered.where((r) => r.status == RideStatus.completed).length;
+    final totalRevenue = filtered.fold<double>(
+      0,
+      (sum, r) => sum + (r.price ?? 0),
+    );
+    final completedCount = filtered
+        .where((r) => r.status == RideStatus.completed)
+        .length;
 
     return Column(
       children: [
@@ -128,24 +142,32 @@ class _RideExportScreenState extends State<RideExportScreen> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          ElevatedButton(onPressed: _loadRides, child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : filtered.isEmpty
-                      ? const Center(child: Text('No rides match the filters'))
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          itemCount: filtered.length,
-                          itemBuilder: (context, index) => _buildRideRow(filtered[index]),
-                        ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      ElevatedButton(
+                        onPressed: _loadRides,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : filtered.isEmpty
+              ? const Center(child: Text('No rides match the filters'))
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) =>
+                      _buildRideRow(filtered[index]),
+                ),
         ),
       ],
     );
@@ -167,7 +189,11 @@ class _RideExportScreenState extends State<RideExportScreen> {
             const Expanded(
               child: Text(
                 'Export Rides',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             FilledButton.icon(
@@ -202,11 +228,19 @@ class _RideExportScreenState extends State<RideExportScreen> {
                 labelText: 'Status',
                 border: OutlineInputBorder(),
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
               ),
-              items: ['All', 'Requested', 'Assigned', 'InProgress', 'Completed', 'Cancelled']
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                  .toList(),
+              items: [
+                'All',
+                'Requested',
+                'Assigned',
+                'InProgress',
+                'Completed',
+                'Cancelled',
+              ].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _filterStatus = v);
               },
@@ -247,7 +281,11 @@ class _RideExportScreenState extends State<RideExportScreen> {
         children: [
           _buildSummaryItem('Total', '$total', Icons.list),
           _buildSummaryItem('Completed', '$completed', Icons.check_circle),
-          _buildSummaryItem('Revenue', '\u20AC${revenue.toStringAsFixed(0)}', Icons.euro),
+          _buildSummaryItem(
+            'Revenue',
+            '\u20AC${revenue.toStringAsFixed(0)}',
+            Icons.euro,
+          ),
         ],
       ),
     );
@@ -258,15 +296,26 @@ class _RideExportScreenState extends State<RideExportScreen> {
       children: [
         Icon(icon, size: 20, color: AppColors.success),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        Text(label, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildRideRow(Ride ride) {
-    final date = '${ride.pickupDateTime.day}.${ride.pickupDateTime.month}.${ride.pickupDateTime.year}';
-    final time = '${ride.pickupDateTime.hour.toString().padLeft(2, '0')}:${ride.pickupDateTime.minute.toString().padLeft(2, '0')}';
+    final date =
+        '${ride.pickupDateTime.day}.${ride.pickupDateTime.month}.${ride.pickupDateTime.year}';
+    final time =
+        '${ride.pickupDateTime.hour.toString().padLeft(2, '0')}:${ride.pickupDateTime.minute.toString().padLeft(2, '0')}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 4),
@@ -279,8 +328,20 @@ class _RideExportScreenState extends State<RideExportScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(date, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  Text(time, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  Text(
+                    date,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    time,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -289,10 +350,19 @@ class _RideExportScreenState extends State<RideExportScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(ride.clientName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                  Text(
+                    ride.clientName,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   Text(
                     '${ride.from.address} \u2192 ${ride.to.address}',
-                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -308,16 +378,25 @@ class _RideExportScreenState extends State<RideExportScreen> {
               ),
               child: Text(
                 ride.status.value,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _statusColor(ride.status)),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: _statusColor(ride.status),
+                ),
               ),
             ),
             const SizedBox(width: 8),
             SizedBox(
               width: 50,
               child: Text(
-                ride.price != null ? '\u20AC${ride.price!.toStringAsFixed(0)}' : '-',
+                ride.price != null
+                    ? '\u20AC${ride.price!.toStringAsFixed(0)}'
+                    : '-',
                 textAlign: TextAlign.right,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
             ),
           ],

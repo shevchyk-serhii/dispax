@@ -73,20 +73,19 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     RideCreateRequested event,
     Emitter<RideState> emit,
   ) async {
-    emit(state.copyWith(
-      status: RideStateStatus.loading,
-      errorMessage: null,
-    ));
+    emit(state.copyWith(status: RideStateStatus.loading, errorMessage: null));
 
     try {
       final createdRide = await privateRideService.createRide(event.request);
       final updatedRides = List<Ride>.from(state.rides)..add(createdRide);
       emit(RideState(status: RideStateStatus.created, rides: updatedRides));
     } catch (e) {
-      emit(state.copyWith(
-        status: RideStateStatus.error,
-        errorMessage: 'Failed to create ride: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: RideStateStatus.error,
+          errorMessage: 'Failed to create ride: $e',
+        ),
+      );
     }
   }
 
@@ -94,13 +93,13 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     RideStatusUpdateRequested event,
     Emitter<RideState> emit,
   ) async {
-    emit(state.copyWith(
-      status: RideStateStatus.loading,
-      errorMessage: null,
-    ));
+    emit(state.copyWith(status: RideStateStatus.loading, errorMessage: null));
 
     try {
-      final success = await privateRideService.updateRideStatus(event.rideId, event.status);
+      final success = await privateRideService.updateRideStatus(
+        event.rideId,
+        event.status,
+      );
 
       if (success) {
         final updatedRides = state.rides.map((ride) {
@@ -112,16 +111,20 @@ class RideBloc extends Bloc<RideEvent, RideState> {
 
         emit(RideState.loaded(updatedRides));
       } else {
-        emit(state.copyWith(
-          status: RideStateStatus.error,
-          errorMessage: 'Failed to update ride status',
-        ));
+        emit(
+          state.copyWith(
+            status: RideStateStatus.error,
+            errorMessage: 'Failed to update ride status',
+          ),
+        );
       }
     } catch (e) {
-      emit(state.copyWith(
-        status: RideStateStatus.error,
-        errorMessage: 'Failed to update ride status: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: RideStateStatus.error,
+          errorMessage: 'Failed to update ride status: $e',
+        ),
+      );
     }
   }
 
@@ -146,16 +149,21 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     emit(state.copyWith(status: RideStateStatus.assigning));
 
     try {
-      final updatedRide = await privateRideService.assignDriver(event.rideId, event.driverId);
+      final updatedRide = await privateRideService.assignDriver(
+        event.rideId,
+        event.driverId,
+      );
       final updatedRides = state.rides.map((ride) {
         return ride.id == updatedRide.id ? updatedRide : ride;
       }).toList();
       emit(RideState.loaded(updatedRides));
     } catch (e) {
-      emit(state.copyWith(
-        status: RideStateStatus.error,
-        errorMessage: 'Failed to assign driver: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: RideStateStatus.error,
+          errorMessage: 'Failed to assign driver: $e',
+        ),
+      );
     }
   }
 
@@ -166,16 +174,21 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     emit(state.copyWith(status: RideStateStatus.assigning));
 
     try {
-      final updatedRide = await privateRideService.reassignDriver(event.rideId, event.newDriverId);
+      final updatedRide = await privateRideService.reassignDriver(
+        event.rideId,
+        event.newDriverId,
+      );
       final updatedRides = state.rides.map((ride) {
         return ride.id == updatedRide.id ? updatedRide : ride;
       }).toList();
       emit(RideState.loaded(updatedRides));
     } catch (e) {
-      emit(state.copyWith(
-        status: RideStateStatus.error,
-        errorMessage: 'Failed to reassign driver: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: RideStateStatus.error,
+          errorMessage: 'Failed to reassign driver: $e',
+        ),
+      );
     }
   }
 

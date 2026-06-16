@@ -1,7 +1,15 @@
 import 'package:equatable/equatable.dart';
 import '../../modules/ride_management/models/ride.dart';
 
-enum RideStateStatus { initial, loading, loaded, created, error, deleting, assigning }
+enum RideStateStatus {
+  initial,
+  loading,
+  loaded,
+  created,
+  error,
+  deleting,
+  assigning,
+}
 
 class RideState extends Equatable {
   final RideStateStatus status;
@@ -47,7 +55,8 @@ class RideState extends Equatable {
   }
 
   bool get isLoading => status == RideStateStatus.loading;
-  bool get isLoaded => status == RideStateStatus.loaded || status == RideStateStatus.created;
+  bool get isLoaded =>
+      status == RideStateStatus.loaded || status == RideStateStatus.created;
   bool get hasError => status == RideStateStatus.error;
   bool get isEmpty => rides.isEmpty && isLoaded;
   bool get isDeleting => status == RideStateStatus.deleting;

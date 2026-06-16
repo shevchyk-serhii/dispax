@@ -14,6 +14,21 @@ trait SessionRepository:
   def deactivateAllForUser(userId: PersonId): Task[Int]
   def deactivateAllExcept(userId: PersonId, currentSessionId: SessionId): Task[Int]
 
+  // ---------------------------------------------------------------------------
+  // Platform-level (cross-tenant) analytics — SuperAdmin only.
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Count of all active sessions across ALL companies. No company_id filter.
+   */
+  def countActivePlatform(): Task[Int]
+
+  /**
+   * Count of active sessions for users belonging to a specific company. Requires a JOIN to `persons` because `sessions`
+   * has no company_id column.
+   */
+  def countActiveByCompany(companyId: CompanyId): Task[Int]
+
 object SessionRepository:
 
   val inMemory: ZLayer[Any, Nothing, SessionRepository] = ZLayer.succeed(InMemorySessionRepository())
@@ -63,3 +78,11 @@ class InMemorySessionRepository extends SessionRepository:
     )
     count
   }
+
+  override def countActivePlatform(): Task[Int] = ZIO.succeed {
+    sessions.count(_.isActive)
+  }
+
+  // The in-memory implementation cannot perform the JOIN to persons,
+  // so it always returns 0. Integration tests should use the Postgres implementation.
+  override def countActiveByCompany(companyId: CompanyId): Task[Int] = ZIO.succeed(0)

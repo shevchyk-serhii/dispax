@@ -6,10 +6,7 @@ import '../../../constants/app_colors.dart';
 class RideFlightCard extends StatelessWidget {
   final Ride ride;
 
-  const RideFlightCard({
-    super.key,
-    required this.ride,
-  });
+  const RideFlightCard({super.key, required this.ride});
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +33,9 @@ class RideFlightCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'Flight Information',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -84,7 +81,11 @@ class RideFlightCard extends StatelessWidget {
 
             Row(
               children: [
-                Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary, size: 20),
+                Icon(
+                  Icons.info_outline,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,12 +98,19 @@ class RideFlightCard extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: _getFlightStatusColor(context).withValues(alpha: 0.1),
+                        color: _getFlightStatusColor(
+                          context,
+                        ).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: _getFlightStatusColor(context).withValues(alpha: 0.3),
+                          color: _getFlightStatusColor(
+                            context,
+                          ).withValues(alpha: 0.3),
                         ),
                       ),
                       child: Text(
@@ -125,7 +133,11 @@ class RideFlightCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.note, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
+                  Icon(
+                    Icons.note,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -167,9 +179,9 @@ class RideFlightCard extends StatelessWidget {
             ),
             Text(
               value,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),

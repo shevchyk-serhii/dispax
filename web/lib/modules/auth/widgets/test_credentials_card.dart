@@ -28,9 +28,26 @@ class TestCredentialsCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             buildCredentialRow('👤 Client', 'client1@bmw.de', Icons.person),
-            buildCredentialRow('🚗 Driver', 'driver1@dispax.de', Icons.drive_eta),
-            buildCredentialRow('📝 Secretary', 'secretary@dispax.de', Icons.business_center),
-            buildCredentialRow('📊 Dispatcher', 'dispatcher@dispax.de', Icons.dashboard),
+            buildCredentialRow(
+              '🚗 Driver',
+              'driver1@dispax.de',
+              Icons.drive_eta,
+            ),
+            buildCredentialRow(
+              '📝 Secretary',
+              'secretary@dispax.de',
+              Icons.business_center,
+            ),
+            buildCredentialRow(
+              '📊 Dispatcher',
+              'dispatcher@dispax.de',
+              Icons.dashboard,
+            ),
+            buildCredentialRow(
+              '🛡️ SuperAdmin',
+              'superadmin@dispax.de',
+              Icons.admin_panel_settings,
+            ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
@@ -61,16 +78,10 @@ class TestCredentialsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
           child: Row(
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: Colors.white.withValues(alpha: 0.8),
-              ),
+              Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.8)),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(

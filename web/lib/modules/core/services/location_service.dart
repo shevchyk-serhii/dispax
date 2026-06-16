@@ -60,7 +60,6 @@ class LocationService {
       _currentPosition = position;
       return position;
     } catch (e) {
-
       return null;
     }
   }
@@ -79,21 +78,16 @@ class LocationService {
         distanceFilter: 10,
       );
 
-      _positionSubscription = geo.Geolocator.getPositionStream(
-        locationSettings: locationSettings,
-      ).listen(
-        (geo.Position position) {
-          _currentPosition = position;
-          _positionController?.add(position);
-        },
-        onError: (error) {
-
-        },
-      );
+      _positionSubscription =
+          geo.Geolocator.getPositionStream(
+            locationSettings: locationSettings,
+          ).listen((geo.Position position) {
+            _currentPosition = position;
+            _positionController?.add(position);
+          }, onError: (error) {});
 
       return true;
     } catch (e) {
-
       return false;
     }
   }

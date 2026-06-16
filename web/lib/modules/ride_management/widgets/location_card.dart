@@ -37,7 +37,11 @@ class LocationCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.location_on, color: AppColors.successStrong, size: 24),
+                Icon(
+                  Icons.location_on,
+                  color: AppColors.successStrong,
+                  size: 24,
+                ),
                 const SizedBox(width: AppDimensions.paddingSmall),
                 const Text(
                   'Ride Locations',
@@ -51,9 +55,14 @@ class LocationCard extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: 'From',
                 hintText: 'Pick-up location',
-                prefixIcon: Icon(Icons.trip_origin, color: AppColors.secretaryColor),
+                prefixIcon: Icon(
+                  Icons.trip_origin,
+                  color: AppColors.secretaryColor,
+                ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                 ),
               ),
               validator: (value) {
@@ -70,9 +79,14 @@ class LocationCard extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: 'To',
                 hintText: 'Drop-off location',
-                prefixIcon: Icon(Icons.location_on, color: AppColors.secretaryColor),
+                prefixIcon: Icon(
+                  Icons.location_on,
+                  color: AppColors.secretaryColor,
+                ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                 ),
               ),
               validator: (value) {

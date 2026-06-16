@@ -90,6 +90,23 @@ final class PostgresSessionRepository(xa: Transactor[Task]) extends SessionRepos
         )
     }
 
+  override def countActivePlatform(): Task[Int] = sql"""SELECT COUNT(*)::int FROM sessions WHERE is_active = true"""
+    .query[Int]
+    .unique
+    .transact(xa)
+
+  override def countActiveByCompany(companyId: CompanyId): Task[Int] =
+    sql"""
+      SELECT COUNT(*)::int
+      FROM sessions s
+      JOIN persons p ON s.user_id = p.id
+      WHERE s.is_active = true
+        AND p.company_id = ${companyId.value}
+    """
+      .query[Int]
+      .unique
+      .transact(xa)
+
 object PostgresSessionRepository:
 
   val postgresLayer: ZLayer[Transactor[Task], Nothing, SessionRepository] = ZLayer.fromFunction(

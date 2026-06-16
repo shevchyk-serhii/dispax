@@ -35,7 +35,9 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
       final response = await apiClient.get('/stats/drivers');
 
       if (response.statusCode == 200) {
-        _driverStats = List<Map<String, dynamic>>.from(jsonDecode(response.body));
+        _driverStats = List<Map<String, dynamic>>.from(
+          jsonDecode(response.body),
+        );
       }
 
       setState(() => _isLoading = false);
@@ -52,11 +54,23 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
     final sorted = List<Map<String, dynamic>>.from(_driverStats!);
     switch (_sortBy) {
       case 'earnings':
-        sorted.sort((a, b) => ((b['earnings'] as num?) ?? 0).compareTo((a['earnings'] as num?) ?? 0));
+        sorted.sort(
+          (a, b) => ((b['earnings'] as num?) ?? 0).compareTo(
+            (a['earnings'] as num?) ?? 0,
+          ),
+        );
       case 'rides':
-        sorted.sort((a, b) => ((b['totalRides'] as num?) ?? 0).compareTo((a['totalRides'] as num?) ?? 0));
+        sorted.sort(
+          (a, b) => ((b['totalRides'] as num?) ?? 0).compareTo(
+            (a['totalRides'] as num?) ?? 0,
+          ),
+        );
       case 'name':
-        sorted.sort((a, b) => (a['driverName'] as String? ?? '').compareTo(b['driverName'] as String? ?? ''));
+        sorted.sort(
+          (a, b) => (a['driverName'] as String? ?? '').compareTo(
+            b['driverName'] as String? ?? '',
+          ),
+        );
     }
     return sorted;
   }
@@ -70,22 +84,26 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          const SizedBox(height: 12),
-                          ElevatedButton(onPressed: _loadStats, child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadStats,
-                      child: _buildContent(),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadStats,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _loadStats, child: _buildContent()),
         ),
       ],
     );
@@ -107,7 +125,11 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
             const Expanded(
               child: Text(
                 'Driver Earnings',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             PopupMenuButton<String>(
@@ -118,7 +140,8 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                   value: 'earnings',
                   child: Row(
                     children: [
-                      if (_sortBy == 'earnings') const Icon(Icons.check, size: 16),
+                      if (_sortBy == 'earnings')
+                        const Icon(Icons.check, size: 16),
                       if (_sortBy == 'earnings') const SizedBox(width: 8),
                       const Text('Sort by Earnings'),
                     ],
@@ -167,14 +190,23 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
           children: [
             Icon(Icons.bar_chart, size: 56, color: colorScheme.outlineVariant),
             const SizedBox(height: 12),
-            Text('No driver data available', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            Text(
+              'No driver data available',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
           ],
         ),
       );
     }
 
-    final totalEarnings = stats.fold<num>(0, (sum, s) => sum + ((s['earnings'] as num?) ?? 0));
-    final totalRides = stats.fold<num>(0, (sum, s) => sum + ((s['totalRides'] as num?) ?? 0));
+    final totalEarnings = stats.fold<num>(
+      0,
+      (sum, s) => sum + ((s['earnings'] as num?) ?? 0),
+    );
+    final totalRides = stats.fold<num>(
+      0,
+      (sum, s) => sum + ((s['totalRides'] as num?) ?? 0),
+    );
     final maxEarnings = stats.fold<num>(0, (max, s) {
       final e = (s['earnings'] as num?) ?? 0;
       return e > max ? e : max;
@@ -198,10 +230,20 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                   children: [
                     Text(
                       '\u20AC${totalEarnings.toStringAsFixed(0)}',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.success),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.success,
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    Text('Total Earnings', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+                    Text(
+                      'Total Earnings',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -219,10 +261,20 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                   children: [
                     Text(
                       '$totalRides',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: colorScheme.primary),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    Text('Total Rides', style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+                    Text(
+                      'Total Rides',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -261,16 +313,30 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                           backgroundColor: AppColors.driverColor.withAlpha(30),
                           child: Text(
                             name.isNotEmpty ? name[0].toUpperCase() : '?',
-                            style: TextStyle(color: AppColors.driverColor, fontWeight: FontWeight.bold, fontSize: 13),
+                            style: TextStyle(
+                              color: AppColors.driverColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                       ],
                     ),
                     Text(
                       '\u20AC${earnings.toStringAsFixed(0)}',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.success,
+                      ),
                     ),
                   ],
                 ),
@@ -291,7 +357,10 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                         height: 12,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppColors.success, AppColors.success.withAlpha(180)],
+                            colors: [
+                              AppColors.success,
+                              AppColors.success.withAlpha(180),
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -302,11 +371,26 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildMiniStat('Total', total.toString(), colorScheme.primary, colorScheme),
+                    _buildMiniStat(
+                      'Total',
+                      total.toString(),
+                      colorScheme.primary,
+                      colorScheme,
+                    ),
                     const SizedBox(width: 16),
-                    _buildMiniStat('Done', completed.toString(), AppColors.success, colorScheme),
+                    _buildMiniStat(
+                      'Done',
+                      completed.toString(),
+                      AppColors.success,
+                      colorScheme,
+                    ),
                     const SizedBox(width: 16),
-                    _buildMiniStat('Cancelled', cancelled.toString(), AppColors.error, colorScheme),
+                    _buildMiniStat(
+                      'Cancelled',
+                      cancelled.toString(),
+                      AppColors.error,
+                      colorScheme,
+                    ),
                   ],
                 ),
               ],
@@ -317,12 +401,27 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
     );
   }
 
-  Widget _buildMiniStat(String label, String value, Color color, ColorScheme colorScheme) {
+  Widget _buildMiniStat(
+    String label,
+    String value,
+    Color color,
+    ColorScheme colorScheme,
+  ) {
     return Row(
       children: [
-        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
+        ),
       ],
     );
   }

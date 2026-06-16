@@ -10,6 +10,7 @@ import 'driver/driver_dashboard.dart';
 import 'client/client_dashboard.dart';
 import 'secretary/secretary_dashboard.dart';
 import 'dispatcher/dispatcher_dashboard.dart';
+import 'superadmin/superadmin_dashboard.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -59,6 +60,8 @@ class DashboardScreen extends StatelessWidget {
         return const DispatcherDashboard();
       case PersonRole.admin:
         return const DispatcherDashboard();
+      case PersonRole.superAdmin:
+        return const SuperAdminDashboard();
     }
   }
 }

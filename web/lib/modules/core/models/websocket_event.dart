@@ -55,7 +55,8 @@ class WebSocketEvent {
   bool get isChatMessage => type == 'ChatMessageSent';
   bool get isGeofenceTriggered => type == 'GeofenceTriggered';
   bool get isDriverApproaching => type == 'DriverApproaching';
-  bool get isPoolUpdate => type == 'RideStatusChanged' && data['newStatus'] == 'PooledRide';
+  bool get isPoolUpdate =>
+      type == 'RideStatusChanged' && data['newStatus'] == 'PooledRide';
 
   String? get geofenceName => data['geofenceName'];
   String? get alertType => data['alertType'];

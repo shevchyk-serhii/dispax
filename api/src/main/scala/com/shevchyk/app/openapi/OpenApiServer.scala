@@ -9,12 +9,14 @@ import com.shevchyk.billing.application.InvoiceService
 import com.shevchyk.billing.openapi.{BillingClientCompanyApi, BillingProfileApi, InvoiceApi}
 import com.shevchyk.billing.repository.{
   ClientCompanyRepository => BillingClientCompanyRepository,
-  CompanyBillingProfileRepository
+  CompanyBillingProfileRepository,
+  InvoiceRepository
 }
 import com.shevchyk.core.application.{AuditService, EventHub, GeocodingService, GeofenceService}
 import com.shevchyk.core.repository.{
   BlacklistRepository,
   ClientCompanyRepository,
+  CompanyRepository,
   CompanySettingsRepository,
   EmergencyReassignmentRepository,
   GdprRepository,
@@ -28,20 +30,8 @@ import com.shevchyk.driver.application.{DriverLocationService, HereRoutingServic
 import com.shevchyk.driver.openapi.DriverApi
 import com.shevchyk.notification.application.FcmService
 import com.shevchyk.notification.repository.NotificationRepository
-import com.shevchyk.ride.application.service.{
-  ChatService,
-  ClientAddressService,
-  ClientLocationService,
-  RideService
-}
-import com.shevchyk.ride.openapi.{
-  ClientAddressApi,
-  ExpenseApi,
-  ExportApi,
-  RideApi,
-  RideTemplateApi,
-  StatsApi
-}
+import com.shevchyk.ride.application.service.{ChatService, ClientAddressService, ClientLocationService, RideService}
+import com.shevchyk.ride.openapi.{ClientAddressApi, ExpenseApi, ExportApi, RideApi, RideTemplateApi, StatsApi}
 import com.shevchyk.ride.repository.{
   ClientLocationRepository,
   ExpenseRepository,
@@ -75,22 +65,23 @@ object OpenApiServer:
    */
   type ApiEnv =
     JwtService & AuthService & RateLimiter & PersonRepository & FcmService & RideService & ScheduleService &
-      InvoiceService & ClientCompanyRepository & BillingClientCompanyRepository & CompanyBillingProfileRepository &
-      GdprRepository & RideRepository &
-      ExpenseRepository & NotificationRepository & AuditService & SessionRepository & TokenRepository &
-      NotificationPreferenceRepository & BlacklistRepository & CompanySettingsRepository & GeofenceRepository &
-      GeofenceService & RidePoolRepository & EventHub & EmergencyReassignmentRepository & RideRatingRepository &
-      ClientAddressService & ClientLocationService & ChatService & RideTemplateRepository & DriverLocationService &
-      HereRoutingService & GeocodingService & ClientLocationRepository
+      InvoiceService & InvoiceRepository & ClientCompanyRepository & BillingClientCompanyRepository &
+      CompanyBillingProfileRepository & GdprRepository & RideRepository & ExpenseRepository & NotificationRepository &
+      AuditService & SessionRepository & TokenRepository & NotificationPreferenceRepository & BlacklistRepository &
+      CompanySettingsRepository & GeofenceRepository & GeofenceService & RidePoolRepository & EventHub &
+      EmergencyReassignmentRepository & RideRatingRepository & ClientAddressService & ClientLocationService &
+      ChatService & RideTemplateRepository & DriverLocationService & HereRoutingService & GeocodingService &
+      ClientLocationRepository & CompanyRepository
 
   // `ZServerEndpoint`'s environment is invariant, so module lists cannot be merged
   // into one typed list. But `zio.http.Routes` is contravariant in its environment, so
   // interpreting each module separately and combining with `++` narrows the combined
   // environment to the intersection of all module environments — exactly [[ApiEnv]].
-  private def http[R](es: List[ZServerEndpoint[R, Any]]): Routes[R, Response] =
-    ZioHttpInterpreter().toHttp(es)
+  private def http[R](es: List[ZServerEndpoint[R, Any]]): Routes[R, Response] = ZioHttpInterpreter().toHttp(es)
 
-  /** All endpoint descriptions for the OpenAPI document, derived from the served endpoints. */
+  /**
+   * All endpoint descriptions for the OpenAPI document, derived from the served endpoints.
+   */
   private val allEndpoints: List[AnyEndpoint] =
     AuthApi.serverEndpoints.map(_.endpoint) :::
       UserApi.serverEndpoints.map(_.endpoint) :::
@@ -115,13 +106,18 @@ object OpenApiServer:
       NotificationApi.serverEndpoints.map(_.endpoint) :::
       NotificationPreferenceApi.serverEndpoints.map(_.endpoint) :::
       RidePoolApi.serverEndpoints.map(_.endpoint) :::
-      ClientCompanyApi.serverEndpoints.map(_.endpoint)
+      ClientCompanyApi.serverEndpoints.map(_.endpoint) :::
+      SuperAdminApi.serverEndpoints.map(_.endpoint)
 
-  /** Swagger UI + the generated OpenAPI document, served under `/docs`. */
-  private val swaggerEndpoints: List[ServerEndpoint[Any, Task]] =
-    SwaggerInterpreter().fromEndpoints[Task](allEndpoints, "Dispax API", "0.1.0")
+  /**
+   * Swagger UI + the generated OpenAPI document, served under `/docs`.
+   */
+  private val swaggerEndpoints: List[ServerEndpoint[Any, Task]] = SwaggerInterpreter()
+    .fromEndpoints[Task](allEndpoints, "Dispax API", "0.1.0")
 
-  /** zio-http routes that serve the documented API and the Swagger UI. */
+  /**
+   * zio-http routes that serve the documented API and the Swagger UI.
+   */
   val routes: Routes[ApiEnv, Response] =
     http(AuthApi.serverEndpoints) ++
       http(UserApi.serverEndpoints) ++
@@ -147,4 +143,5 @@ object OpenApiServer:
       http(NotificationPreferenceApi.serverEndpoints) ++
       http(RidePoolApi.serverEndpoints) ++
       http(ClientCompanyApi.serverEndpoints) ++
+      http(SuperAdminApi.serverEndpoints) ++
       http(swaggerEndpoints)

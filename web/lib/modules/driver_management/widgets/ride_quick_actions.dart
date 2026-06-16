@@ -160,7 +160,10 @@ class RideQuickActions extends StatelessWidget {
               SimpleDialogOption(
                 onPressed: () => Navigator.of(context).pop('pickup'),
                 child: ListTile(
-                  leading: const Icon(Icons.location_on, color: AppColors.success),
+                  leading: const Icon(
+                    Icons.location_on,
+                    color: AppColors.success,
+                  ),
                   title: Text(ride.from.address),
                   subtitle: const Text('Google Maps — Pickup'),
                 ),

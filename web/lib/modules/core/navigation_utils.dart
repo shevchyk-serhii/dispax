@@ -13,7 +13,8 @@ class NavigationUtils {
   static Future<void> openGoogleMapsNavigation(Location destination) async {
     final destinationAddress = Uri.encodeComponent(destination.address);
 
-    final googleMapsUrl = 'https://www.google.com/maps/dir/?api=1&destination=$destinationAddress&travelmode=driving';
+    final googleMapsUrl =
+        'https://www.google.com/maps/dir/?api=1&destination=$destinationAddress&travelmode=driving';
 
     try {
       final Uri uri = Uri.parse(googleMapsUrl);
@@ -23,20 +24,24 @@ class NavigationUtils {
         throw 'Could not launch Google Maps';
       }
     } catch (e) {
-
       await _tryGoogleMapsApp(destination);
     }
   }
 
-  static Future<void> openGoogleMapsRoute(Location origin, Location destination) async {
+  static Future<void> openGoogleMapsRoute(
+    Location origin,
+    Location destination,
+  ) async {
     final originParam = origin.latitude != null && origin.longitude != null
         ? '${origin.latitude},${origin.longitude}'
         : Uri.encodeComponent(origin.address);
-    final destinationParam = destination.latitude != null && destination.longitude != null
+    final destinationParam =
+        destination.latitude != null && destination.longitude != null
         ? '${destination.latitude},${destination.longitude}'
         : Uri.encodeComponent(destination.address);
 
-    final googleMapsUrl = 'https://www.google.com/maps/dir/?api=1&origin=$originParam&destination=$destinationParam&travelmode=driving';
+    final googleMapsUrl =
+        'https://www.google.com/maps/dir/?api=1&origin=$originParam&destination=$destinationParam&travelmode=driving';
 
     try {
       final Uri uri = Uri.parse(googleMapsUrl);
@@ -53,7 +58,8 @@ class NavigationUtils {
   static Future<void> _tryGoogleMapsApp(Location destination) async {
     final destinationAddress = Uri.encodeComponent(destination.address);
 
-    final appUrl = 'comgooglemaps://?daddr=$destinationAddress&directionsmode=driving';
+    final appUrl =
+        'comgooglemaps://?daddr=$destinationAddress&directionsmode=driving';
 
     try {
       final Uri uri = Uri.parse(appUrl);
@@ -67,15 +73,20 @@ class NavigationUtils {
     }
   }
 
-  static Future<void> _tryGoogleMapsAppWithRoute(Location origin, Location destination) async {
+  static Future<void> _tryGoogleMapsAppWithRoute(
+    Location origin,
+    Location destination,
+  ) async {
     final originParam = origin.latitude != null && origin.longitude != null
         ? '${origin.latitude},${origin.longitude}'
         : Uri.encodeComponent(origin.address);
-    final destinationParam = destination.latitude != null && destination.longitude != null
+    final destinationParam =
+        destination.latitude != null && destination.longitude != null
         ? '${destination.latitude},${destination.longitude}'
         : Uri.encodeComponent(destination.address);
 
-    final appUrl = 'comgooglemaps://?saddr=$originParam&daddr=$destinationParam&directionsmode=driving';
+    final appUrl =
+        'comgooglemaps://?saddr=$originParam&daddr=$destinationParam&directionsmode=driving';
 
     try {
       final Uri uri = Uri.parse(appUrl);
@@ -92,7 +103,8 @@ class NavigationUtils {
   static Future<void> openWazeNavigation(Location destination) async {
     String wazeUrl;
     if (destination.latitude != null && destination.longitude != null) {
-      wazeUrl = 'https://waze.com/ul?ll=${destination.latitude},${destination.longitude}&navigate=yes';
+      wazeUrl =
+          'https://waze.com/ul?ll=${destination.latitude},${destination.longitude}&navigate=yes';
     } else {
       final address = Uri.encodeComponent(destination.address);
       wazeUrl = 'https://waze.com/ul?q=$address&navigate=yes';
@@ -115,11 +127,11 @@ class NavigationUtils {
 
     String googleMapsUrl;
     if (location.latitude != null && location.longitude != null) {
-
-      googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}';
+      googleMapsUrl =
+          'https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}';
     } else {
-
-      googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$address';
+      googleMapsUrl =
+          'https://www.google.com/maps/search/?api=1&query=$address';
     }
 
     try {
@@ -134,7 +146,10 @@ class NavigationUtils {
     }
   }
 
-  static Future<Ride?> navigateToEditRide(BuildContext context, Ride ride) async {
+  static Future<Ride?> navigateToEditRide(
+    BuildContext context,
+    Ride ride,
+  ) async {
     return showDialog<Ride>(
       context: context,
       builder: (ctx) => _EditRideDialog(ride: ride),
@@ -145,7 +160,9 @@ class NavigationUtils {
     // Driver selection is now handled by the dispatcher dashboard's
     // tap-to-assign flow (pending_rides_panel.dart _showDriverSelectionSheet)
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Use the Dispatcher Dashboard to assign drivers')),
+      const SnackBar(
+        content: Text('Use the Dispatcher Dashboard to assign drivers'),
+      ),
     );
     return null;
   }
@@ -195,15 +212,23 @@ class _EditRideDialogState extends State<_EditRideDialog> {
   }
 
   Future<void> _save() async {
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
 
     final apiClient = context.read<AuthBloc>().apiClient;
     // Parse local time and convert to UTC ISO-8601 for the backend
     DateTime localDt;
     try {
-      localDt = DateFormat("yyyy-MM-dd'T'HH:mm").parseStrict(_dateCtrl.text.trim());
+      localDt = DateFormat(
+        "yyyy-MM-dd'T'HH:mm",
+      ).parseStrict(_dateCtrl.text.trim());
     } catch (_) {
-      setState(() { _error = 'Invalid date format. Use: yyyy-MM-ddTHH:mm'; _saving = false; });
+      setState(() {
+        _error = 'Invalid date format. Use: yyyy-MM-ddTHH:mm';
+        _saving = false;
+      });
       return;
     }
     final utcIso = localDt.toUtc().toIso8601String();
@@ -213,7 +238,8 @@ class _EditRideDialogState extends State<_EditRideDialog> {
       'to': {'address': _toCtrl.text.trim()},
       'pickupDateTime': utcIso,
       if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
-      if (_flightCtrl.text.trim().isNotEmpty) 'flightNumber': _flightCtrl.text.trim(),
+      if (_flightCtrl.text.trim().isNotEmpty)
+        'flightNumber': _flightCtrl.text.trim(),
     };
 
     try {
@@ -222,10 +248,16 @@ class _EditRideDialogState extends State<_EditRideDialog> {
         final updated = Ride.fromJson(jsonDecode(response.body));
         if (mounted) Navigator.of(context).pop(updated);
       } else {
-        setState(() { _error = 'Server error: ${response.statusCode}'; _saving = false; });
+        setState(() {
+          _error = 'Server error: ${response.statusCode}';
+          _saving = false;
+        });
       }
     } catch (e) {
-      setState(() { _error = e.toString(); _saving = false; });
+      setState(() {
+        _error = e.toString();
+        _saving = false;
+      });
     }
   }
 
@@ -241,12 +273,18 @@ class _EditRideDialogState extends State<_EditRideDialog> {
             children: [
               TextField(
                 controller: _fromCtrl,
-                decoration: const InputDecoration(labelText: 'From', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'From',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _toCtrl,
-                decoration: const InputDecoration(labelText: 'To', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'To',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -259,17 +297,26 @@ class _EditRideDialogState extends State<_EditRideDialog> {
               const SizedBox(height: 12),
               TextField(
                 controller: _flightCtrl,
-                decoration: const InputDecoration(labelText: 'Flight number (optional)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Flight number (optional)',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _notesCtrl,
-                decoration: const InputDecoration(labelText: 'Notes (optional)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                  border: OutlineInputBorder(),
+                ),
                 maxLines: 3,
               ),
               if (_error != null) ...[
                 const SizedBox(height: 8),
-                Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+                Text(
+                  _error!,
+                  style: const TextStyle(color: AppColors.error, fontSize: 13),
+                ),
               ],
             ],
           ),
@@ -283,7 +330,11 @@ class _EditRideDialogState extends State<_EditRideDialog> {
         ElevatedButton(
           onPressed: _saving ? null : _save,
           child: _saving
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Save'),
         ),
       ],

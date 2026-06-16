@@ -30,8 +30,9 @@ class _Notification {
       title: json['title'] ?? '',
       body: json['body'] ?? '',
       notificationType: json['notificationType'] ?? '',
-      createdAt:
-          DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['createdAt'] ?? DateTime.now().toIso8601String(),
+      ),
       isRead: json['isRead'] ?? false,
       data: json['data'] != null
           ? (json['data'] is String ? jsonDecode(json['data']) : json['data'])
@@ -124,10 +125,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
-      final typeParam =
-          _selectedFilter != 'all' ? '&type=$_selectedFilter' : '';
-      final resp =
-          await apiClient.get('/notifications?limit=50$typeParam');
+      final typeParam = _selectedFilter != 'all'
+          ? '&type=$_selectedFilter'
+          : '';
+      final resp = await apiClient.get('/notifications?limit=50$typeParam');
       final countResp = await apiClient.get('/notifications/unread-count');
 
       if (mounted) {
@@ -135,8 +136,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
           final List<dynamic> data = jsonDecode(resp.body);
           final countData = jsonDecode(countResp.body);
           setState(() {
-            _notifications =
-                data.map((e) => _Notification.fromJson(e)).toList();
+            _notifications = data
+                .map((e) => _Notification.fromJson(e))
+                .toList();
             _unreadCount = countData['count'] ?? 0;
             _isLoading = false;
           });
@@ -164,9 +166,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       _loadNotifications();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
     }
   }
 
@@ -177,9 +179,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       _loadNotifications();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
     }
   }
 
@@ -190,9 +192,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       _loadNotifications();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
     }
   }
 
@@ -201,12 +203,14 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Notifications'),
-        content:
-            const Text('Are you sure you want to delete all notifications?'),
+        content: const Text(
+          'Are you sure you want to delete all notifications?',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
@@ -224,9 +228,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       _loadNotifications();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
     }
   }
 
@@ -249,7 +253,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.error,
                         borderRadius: BorderRadius.circular(10),
@@ -257,9 +263,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                       child: Text(
                         _unreadCount > 99 ? '99+' : '$_unreadCount',
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -272,10 +279,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
         Expanded(
           child: TabBarView(
             controller: _tabController,
-            children: [
-              _buildNotificationsTab(),
-              _NotificationSettingsTab(),
-            ],
+            children: [_buildNotificationsTab(), _NotificationSettingsTab()],
           ),
         ),
       ],
@@ -299,9 +303,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
               child: Text(
                 'Notification Center',
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             if (_unreadCount > 0)
@@ -311,8 +316,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                 tooltip: 'Mark all as read',
               ),
             PopupMenuButton<String>(
-              icon:
-                  const Icon(Icons.more_vert, color: Colors.white, size: 22),
+              icon: const Icon(Icons.more_vert, color: Colors.white, size: 22),
               onSelected: (value) {
                 if (value == 'delete_all') _deleteAll();
               },
@@ -321,7 +325,11 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                   value: 'delete_all',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_sweep, size: 18, color: AppColors.error),
+                      Icon(
+                        Icons.delete_sweep,
+                        size: 18,
+                        color: AppColors.error,
+                      ),
                       SizedBox(width: 8),
                       Text('Clear All'),
                     ],
@@ -350,12 +358,17 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
                   selected: selected,
-                  label: Text(entry.value, style: const TextStyle(fontSize: 12)),
+                  label: Text(
+                    entry.value,
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   onSelected: (val) {
                     setState(() => _selectedFilter = entry.key);
                     _loadNotifications();
                   },
-                  selectedColor: Theme.of(context).colorScheme.primary.withAlpha(30),
+                  selectedColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withAlpha(30),
                   checkmarkColor: Theme.of(context).colorScheme.primary,
                 ),
               );
@@ -366,42 +379,50 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline,
-                              size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          ElevatedButton(
-                              onPressed: _loadNotifications,
-                              child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : _notifications.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.notifications_off,
-                                  size: 56, color: Theme.of(context).colorScheme.outlineVariant),
-                              const SizedBox(height: 12),
-                              Text(
-                                'No notifications',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadNotifications,
-                          child: _buildGroupedList(),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      ElevatedButton(
+                        onPressed: _loadNotifications,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : _notifications.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.notifications_off,
+                        size: 56,
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No notifications',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
                         ),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadNotifications,
+                  child: _buildGroupedList(),
+                ),
         ),
       ],
     );
@@ -415,7 +436,11 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     final yesterday = today.subtract(const Duration(days: 1));
 
     for (final n in _notifications) {
-      final nDate = DateTime(n.createdAt.year, n.createdAt.month, n.createdAt.day);
+      final nDate = DateTime(
+        n.createdAt.year,
+        n.createdAt.month,
+        n.createdAt.day,
+      );
       String label;
       if (nDate == today) {
         label = 'Today';
@@ -440,9 +465,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
               child: Text(
                 entry.key,
                 style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             ...entry.value.map(_buildNotificationCard),
@@ -470,14 +496,19 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
           borderRadius: BorderRadius.circular(10),
           side: n.isRead
               ? BorderSide.none
-              : BorderSide(color: Theme.of(context).colorScheme.primary.withAlpha(30)),
+              : BorderSide(
+                  color: Theme.of(context).colorScheme.primary.withAlpha(30),
+                ),
         ),
         child: ListTile(
           leading: CircleAvatar(
             radius: 18,
             backgroundColor: _typeColor(n.notificationType).withAlpha(20),
-            child: Icon(_typeIcon(n.notificationType),
-                size: 18, color: _typeColor(n.notificationType)),
+            child: Icon(
+              _typeIcon(n.notificationType),
+              size: 18,
+              color: _typeColor(n.notificationType),
+            ),
           ),
           title: Text(
             n.title,
@@ -489,14 +520,15 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(n.body,
-                  style: const TextStyle(fontSize: 12), maxLines: 2),
+              Text(n.body, style: const TextStyle(fontSize: 12), maxLines: 2),
               const SizedBox(height: 4),
               Row(
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: _typeColor(n.notificationType).withAlpha(15),
                       borderRadius: BorderRadius.circular(8),
@@ -504,16 +536,19 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                     child: Text(
                       _typeLabel(n.notificationType),
                       style: TextStyle(
-                          fontSize: 9,
-                          color: _typeColor(n.notificationType),
-                          fontWeight: FontWeight.w600),
+                        fontSize: 9,
+                        color: _typeColor(n.notificationType),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   const Spacer(),
                   Text(
                     _timeAgo(n.createdAt),
-                    style:
-                        TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.outlineVariant),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                 ],
               ),
@@ -658,15 +693,15 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
           'quietHoursEnd': _prefs!.quietHoursEnd,
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Preferences saved')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Preferences saved')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -684,73 +719,96 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Push Notifications',
-            style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary)),
-        const SizedBox(height: 8),
-        _buildSwitch('Ride Updates', 'Status changes, assignments',
-            prefs.rideUpdates, (v) => setState(() => prefs.rideUpdates = v)),
-        _buildSwitch(
-            'Chat Messages',
-            'New messages from driver/client',
-            prefs.chatMessages,
-            (v) => setState(() => prefs.chatMessages = v)),
-        _buildSwitch(
-            'Driver Approaching',
-            'When driver is near pickup',
-            prefs.driverApproaching,
-            (v) => setState(() => prefs.driverApproaching = v)),
-        _buildSwitch(
-            'Geofence Alerts',
-            'Entry/exit zone alerts',
-            prefs.geofenceAlerts,
-            (v) => setState(() => prefs.geofenceAlerts = v)),
-        _buildSwitch(
-            'Pool Updates',
-            'Ride pooling notifications',
-            prefs.poolUpdates,
-            (v) => setState(() => prefs.poolUpdates = v)),
-        const Divider(height: 32),
-        Text('Additional Channels',
-            style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary)),
+        Text(
+          'Push Notifications',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
         const SizedBox(height: 8),
         _buildSwitch(
-            'Email Notifications',
-            'Receive notifications via email',
-            prefs.emailNotifications,
-            (v) => setState(() => prefs.emailNotifications = v)),
+          'Ride Updates',
+          'Status changes, assignments',
+          prefs.rideUpdates,
+          (v) => setState(() => prefs.rideUpdates = v),
+        ),
         _buildSwitch(
-            'SMS Notifications',
-            'Receive notifications via SMS',
-            prefs.smsNotifications,
-            (v) => setState(() => prefs.smsNotifications = v)),
+          'Chat Messages',
+          'New messages from driver/client',
+          prefs.chatMessages,
+          (v) => setState(() => prefs.chatMessages = v),
+        ),
+        _buildSwitch(
+          'Driver Approaching',
+          'When driver is near pickup',
+          prefs.driverApproaching,
+          (v) => setState(() => prefs.driverApproaching = v),
+        ),
+        _buildSwitch(
+          'Geofence Alerts',
+          'Entry/exit zone alerts',
+          prefs.geofenceAlerts,
+          (v) => setState(() => prefs.geofenceAlerts = v),
+        ),
+        _buildSwitch(
+          'Pool Updates',
+          'Ride pooling notifications',
+          prefs.poolUpdates,
+          (v) => setState(() => prefs.poolUpdates = v),
+        ),
         const Divider(height: 32),
-        Text('Quiet Hours',
-            style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary)),
+        Text(
+          'Additional Channels',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildSwitch(
+          'Email Notifications',
+          'Receive notifications via email',
+          prefs.emailNotifications,
+          (v) => setState(() => prefs.emailNotifications = v),
+        ),
+        _buildSwitch(
+          'SMS Notifications',
+          'Receive notifications via SMS',
+          prefs.smsNotifications,
+          (v) => setState(() => prefs.smsNotifications = v),
+        ),
+        const Divider(height: 32),
+        Text(
+          'Quiet Hours',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
         const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
               child: ListTile(
                 title: const Text('From', style: TextStyle(fontSize: 13)),
-                subtitle: Text(prefs.quietHoursStart ?? 'Not set',
-                    style: const TextStyle(fontSize: 12)),
+                subtitle: Text(
+                  prefs.quietHoursStart ?? 'Not set',
+                  style: const TextStyle(fontSize: 12),
+                ),
                 onTap: () async {
                   final time = await showTimePicker(
                     context: context,
                     initialTime: const TimeOfDay(hour: 22, minute: 0),
                   );
                   if (time != null) {
-                    setState(() => prefs.quietHoursStart =
-                        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
+                    setState(
+                      () => prefs.quietHoursStart =
+                          '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+                    );
                   }
                 },
               ),
@@ -758,16 +816,20 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
             Expanded(
               child: ListTile(
                 title: const Text('To', style: TextStyle(fontSize: 13)),
-                subtitle: Text(prefs.quietHoursEnd ?? 'Not set',
-                    style: const TextStyle(fontSize: 12)),
+                subtitle: Text(
+                  prefs.quietHoursEnd ?? 'Not set',
+                  style: const TextStyle(fontSize: 12),
+                ),
                 onTap: () async {
                   final time = await showTimePicker(
                     context: context,
                     initialTime: const TimeOfDay(hour: 7, minute: 0),
                   );
                   if (time != null) {
-                    setState(() => prefs.quietHoursEnd =
-                        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
+                    setState(
+                      () => prefs.quietHoursEnd =
+                          '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+                    );
                   }
                 },
               ),
@@ -784,7 +846,9 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Text('Save Preferences'),
           ),
@@ -794,11 +858,20 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
   }
 
   Widget _buildSwitch(
-      String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
+    String title,
+    String subtitle,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return SwitchListTile(
       title: Text(title, style: const TextStyle(fontSize: 13)),
-      subtitle:
-          Text(subtitle, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          fontSize: 11,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
       value: value,
       onChanged: onChanged,
       contentPadding: EdgeInsets.zero,

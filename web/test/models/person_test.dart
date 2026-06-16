@@ -83,7 +83,10 @@ void main() {
     });
 
     test('isDispatcher returns true only for dispatcher role', () {
-      expect(TestFixtures.person(role: PersonRole.dispatcher).isDispatcher, isTrue);
+      expect(
+        TestFixtures.person(role: PersonRole.dispatcher).isDispatcher,
+        isTrue,
+      );
       expect(TestFixtures.person().isDispatcher, isFalse);
     });
 

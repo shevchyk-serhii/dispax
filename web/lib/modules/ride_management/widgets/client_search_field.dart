@@ -101,7 +101,10 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: AppColors.error, fontSize: 12),
+                ),
               ),
             BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
               buildWhen: (prev, curr) =>
@@ -113,15 +116,19 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                   optionsBuilder: (textEditingValue) {
                     if (textEditingValue.text.isEmpty) return _clients;
                     final query = textEditingValue.text.toLowerCase();
-                    return _clients.where((p) =>
-                        p.name.toLowerCase().contains(query) ||
-                        p.email.toLowerCase().contains(query) ||
-                        (p.phone?.toLowerCase().contains(query) ?? false));
+                    return _clients.where(
+                      (p) =>
+                          p.name.toLowerCase().contains(query) ||
+                          p.email.toLowerCase().contains(query) ||
+                          (p.phone?.toLowerCase().contains(query) ?? false),
+                    );
                   },
                   onSelected: (Person client) async {
                     String? defaultAddress;
                     try {
-                      final addresses = await _addressService.getAddresses(client.id);
+                      final addresses = await _addressService.getAddresses(
+                        client.id,
+                      );
                       if (addresses.isNotEmpty) {
                         final home = addresses.firstWhere(
                           (a) => a.label.toLowerCase().contains('home'),
@@ -132,84 +139,105 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                     } catch (_) {}
                     if (!context.mounted) return;
                     context.read<CreateRideFormBloc>().add(
-                          ClientSelected(
-                            clientId: client.id,
-                            clientName: client.name,
-                            defaultAddress: defaultAddress,
-                          ),
-                        );
-                  },
-                  fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
-                    // Sync controller if form was cleared
-                    if (formState.selectedClientId == null && controller.text.isNotEmpty && !focusNode.hasFocus) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        controller.clear();
-                      });
-                    }
-                    return ListenableBuilder(
-                      listenable: controller,
-                      builder: (context, _) => TextFormField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      decoration: InputDecoration(
-                        labelText: 'Client Name',
-                        hintText: 'Search by name, email or phone',
-                        prefixIcon:
-                            Icon(Icons.search, color: AppColors.secretaryColor),
-                        border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppDimensions.radiusSmall),
-                        ),
-                        suffixIcon: formState.selectedClientId != null
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.check_circle, color: AppColors.success),
-                                  IconButton(
-                                    icon: const Icon(Icons.close, size: 18),
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    tooltip: 'Clear',
-                                    splashRadius: 18,
-                                    onPressed: () {
-                                      controller.clear();
-                                      context
-                                          .read<CreateRideFormBloc>()
-                                          .add(const ClientCleared());
-                                    },
-                                  ),
-                                ],
-                              )
-                            : (controller.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.close, size: 18),
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    tooltip: 'Clear',
-                                    splashRadius: 18,
-                                    onPressed: () {
-                                      controller.clear();
-                                      context
-                                          .read<CreateRideFormBloc>()
-                                          .add(const ClientCleared());
-                                    },
-                                  )
-                                : null),
+                      ClientSelected(
+                        clientId: client.id,
+                        clientName: client.name,
+                        defaultAddress: defaultAddress,
                       ),
-                      validator: (_) {
-                        if (formState.selectedClientId == null) {
-                          return 'Please select a client from the list';
-                        }
-                        return null;
-                      },
-                      onFieldSubmitted: (_) => onSubmitted(),
-                    ),
                     );
                   },
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onSubmitted) {
+                        // Sync controller if form was cleared
+                        if (formState.selectedClientId == null &&
+                            controller.text.isNotEmpty &&
+                            !focusNode.hasFocus) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            controller.clear();
+                          });
+                        }
+                        return ListenableBuilder(
+                          listenable: controller,
+                          builder: (context, _) => TextFormField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              labelText: 'Client Name',
+                              hintText: 'Search by name, email or phone',
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: AppColors.secretaryColor,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.radiusSmall,
+                                ),
+                              ),
+                              suffixIcon: formState.selectedClientId != null
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: AppColors.success,
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.close,
+                                            size: 18,
+                                          ),
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                          tooltip: 'Clear',
+                                          splashRadius: 18,
+                                          onPressed: () {
+                                            controller.clear();
+                                            context
+                                                .read<CreateRideFormBloc>()
+                                                .add(const ClientCleared());
+                                          },
+                                        ),
+                                      ],
+                                    )
+                                  : (controller.text.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(
+                                              Icons.close,
+                                              size: 18,
+                                            ),
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                            tooltip: 'Clear',
+                                            splashRadius: 18,
+                                            onPressed: () {
+                                              controller.clear();
+                                              context
+                                                  .read<CreateRideFormBloc>()
+                                                  .add(const ClientCleared());
+                                            },
+                                          )
+                                        : null),
+                            ),
+                            validator: (_) {
+                              if (formState.selectedClientId == null) {
+                                return 'Please select a client from the list';
+                              }
+                              return null;
+                            },
+                            onFieldSubmitted: (_) => onSubmitted(),
+                          ),
+                        );
+                      },
                   optionsViewBuilder: (context, onSelected, options) {
                     return Align(
                       alignment: Alignment.topLeft,
                       child: Material(
                         elevation: 4,
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusSmall,
+                        ),
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxHeight: 200),
                           child: ListView.builder(
@@ -221,12 +249,16 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                                 leading: CircleAvatar(
                                   backgroundColor: AppColors.secretaryColor,
                                   child: Text(
-                                    client.name.isNotEmpty ? client.name[0].toUpperCase() : '?',
+                                    client.name.isNotEmpty
+                                        ? client.name[0].toUpperCase()
+                                        : '?',
                                     style: const TextStyle(color: Colors.white),
                                   ),
                                 ),
                                 title: Text(client.name),
-                                subtitle: client.email.isNotEmpty ? Text(client.email) : null,
+                                subtitle: client.email.isNotEmpty
+                                    ? Text(client.email)
+                                    : null,
                                 onTap: () => onSelected(client),
                               );
                             },

@@ -49,7 +49,10 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
         }
       }
     });
-    _etaTimer = Timer.periodic(const Duration(seconds: 90), (_) => _refreshEta());
+    _etaTimer = Timer.periodic(
+      const Duration(seconds: 90),
+      (_) => _refreshEta(),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _refreshEta());
   }
 
@@ -57,7 +60,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
     if (!mounted || _rideService == null) return;
     final rideState = context.read<RideBloc>().state;
     final activeRides = rideState.rides.where(
-      (r) => r.status == RideStatus.assigned || r.status == RideStatus.inProgress,
+      (r) =>
+          r.status == RideStatus.assigned || r.status == RideStatus.inProgress,
     );
     for (final ride in activeRides) {
       final data = await _rideService!.getDriverProximity(ride.id);
@@ -75,7 +79,9 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('New ride assigned'),
-        content: const Text('You have been assigned a new ride. Do you accept it?'),
+        content: const Text(
+          'You have been assigned a new ride. Do you accept it?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -132,7 +138,9 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
     _trackingStarted = started;
     if (!started) return;
 
-    _locationSubscription = LocationService.instance.positionStream.listen((position) {
+    _locationSubscription = LocationService.instance.positionStream.listen((
+      position,
+    ) {
       if (!mounted) return;
       _sendLocationUpdate(position.latitude, position.longitude);
     });
@@ -219,7 +227,9 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
           }
           // Restore tracking if the ride is already in progress (after screen reload)
           if (state.status == RideStateStatus.loaded && !_trackingStarted) {
-            final hasActiveRide = state.rides.any((r) => r.status == RideStatus.inProgress);
+            final hasActiveRide = state.rides.any(
+              (r) => r.status == RideStatus.inProgress,
+            );
             if (hasActiveRide) _startLocationTracking();
           }
         },
@@ -228,7 +238,10 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [AppColors.infoStrong, Theme.of(context).colorScheme.surface],
+              colors: [
+                AppColors.infoStrong,
+                Theme.of(context).colorScheme.surface,
+              ],
               stops: const [0.0, 0.2],
             ),
           ),
@@ -243,7 +256,6 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
   }
 
   Widget buildBody(BuildContext context, RideState rideState) {
-
     if (rideState.status == RideStateStatus.initial) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => loadTodayRides(context),
@@ -305,7 +317,11 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
   void _handleCallClient(BuildContext context, Ride ride) {
     final phone = ride.client.phone;
     if (phone == null || phone.isEmpty) {
-      NavigationHelper.showSnackBar(context, 'No phone number available', isError: true);
+      NavigationHelper.showSnackBar(
+        context,
+        'No phone number available',
+        isError: true,
+      );
       return;
     }
     _showContactOptions(context, phone);
@@ -343,10 +359,9 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
   }
 
   void _handleStartRide(BuildContext context, Ride ride) {
-    context.read<RideBloc>().add(RideStatusUpdateRequested(
-      rideId: ride.id,
-      status: RideStatus.inProgress,
-    ));
+    context.read<RideBloc>().add(
+      RideStatusUpdateRequested(rideId: ride.id, status: RideStatus.inProgress),
+    );
     _startLocationTracking();
     NavigationHelper.showSnackBar(context, 'Ride started');
   }
@@ -356,7 +371,9 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Complete Ride'),
-        content: Text('Mark ride from ${ride.from.address} to ${ride.to.address} as completed?'),
+        content: Text(
+          'Mark ride from ${ride.from.address} to ${ride.to.address} as completed?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -365,10 +382,12 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.read<RideBloc>().add(RideStatusUpdateRequested(
-                rideId: ride.id,
-                status: RideStatus.completed,
-              ));
+              context.read<RideBloc>().add(
+                RideStatusUpdateRequested(
+                  rideId: ride.id,
+                  status: RideStatus.completed,
+                ),
+              );
               _stopLocationTracking();
               NavigationHelper.showSnackBar(context, 'Ride completed');
             },
@@ -391,5 +410,4 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
           ride.status != RideStatus.cancelled;
     }).toList()..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
   }
-
 }

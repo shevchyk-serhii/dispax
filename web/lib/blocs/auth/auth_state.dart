@@ -26,7 +26,11 @@ class AuthState extends Equatable {
     return const AuthState(status: AuthStatus.loading);
   }
 
-  factory AuthState.authenticated(Person user, {bool biometricEnabled = false, bool biometricAvailable = false}) {
+  factory AuthState.authenticated(
+    Person user, {
+    bool biometricEnabled = false,
+    bool biometricAvailable = false,
+  }) {
     return AuthState(
       status: AuthStatus.authenticated,
       user: user,
@@ -35,7 +39,10 @@ class AuthState extends Equatable {
     );
   }
 
-  factory AuthState.unauthenticated({bool biometricEnabled = false, bool biometricAvailable = false}) {
+  factory AuthState.unauthenticated({
+    bool biometricEnabled = false,
+    bool biometricAvailable = false,
+  }) {
     return AuthState(
       status: AuthStatus.unauthenticated,
       biometricEnabled: biometricEnabled,
@@ -43,7 +50,11 @@ class AuthState extends Equatable {
     );
   }
 
-  factory AuthState.error(String message, {bool biometricEnabled = false, bool biometricAvailable = false}) {
+  factory AuthState.error(
+    String message, {
+    bool biometricEnabled = false,
+    bool biometricAvailable = false,
+  }) {
     return AuthState(
       status: AuthStatus.error,
       errorMessage: message,
@@ -74,5 +85,11 @@ class AuthState extends Equatable {
   bool get hasError => status == AuthStatus.error;
 
   @override
-  List<Object?> get props => [status, user, errorMessage, biometricEnabled, biometricAvailable];
+  List<Object?> get props => [
+    status,
+    user,
+    errorMessage,
+    biometricEnabled,
+    biometricAvailable,
+  ];
 }

@@ -8,10 +8,7 @@ import '../../blocs/initialization/initialization_state.dart';
 class SplashScreen extends StatelessWidget {
   final VoidCallback onInitializationComplete;
 
-  const SplashScreen({
-    super.key,
-    required this.onInitializationComplete,
-  });
+  const SplashScreen({super.key, required this.onInitializationComplete});
 
   @override
   Widget build(BuildContext context) {
@@ -50,13 +47,9 @@ class SplashScreenContentState extends State<SplashScreenContent>
       vsync: this,
     );
 
-    fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: animationController,
-      curve: Curves.easeIn,
-    ));
+    fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: animationController, curve: Curves.easeIn),
+    );
 
     animationController.forward();
   }
@@ -108,7 +101,6 @@ class SplashScreenContentState extends State<SplashScreenContent>
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-
                       Container(
                         width: 120,
                         height: 120,
@@ -157,7 +149,9 @@ class SplashScreenContentState extends State<SplashScreenContent>
                           width: 40,
                           height: 40,
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                             strokeWidth: 3,
                           ),
                         ),
@@ -182,7 +176,9 @@ class SplashScreenContentState extends State<SplashScreenContent>
                       if (showRetry)
                         ElevatedButton(
                           onPressed: () {
-                            context.read<InitializationBloc>().add(const RetryInitialization());
+                            context.read<InitializationBloc>().add(
+                              const RetryInitialization(),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -195,10 +191,7 @@ class SplashScreenContentState extends State<SplashScreenContent>
 
                       const Text(
                         'MVP Version 1.0',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
                       ),
                     ],
                   );

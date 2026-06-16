@@ -48,10 +48,7 @@ void main() {
 
     test('fromJson handles missing optional fields', () {
       final json = {
-        'RideCreated': {
-          'rideId': 'ride-1',
-          'companyId': 'company-1',
-        },
+        'RideCreated': {'rideId': 'ride-1', 'companyId': 'company-1'},
       };
 
       final event = WebSocketEvent.fromJson(json);
@@ -106,10 +103,7 @@ void main() {
 
     test('data stores payload fields', () {
       final json = {
-        'RideCreated': {
-          'companyId': 'c1',
-          'extra': 'value',
-        },
+        'RideCreated': {'companyId': 'c1', 'extra': 'value'},
       };
       final event = WebSocketEvent.fromJson(json);
       expect(event.data['extra'], 'value');
@@ -118,10 +112,7 @@ void main() {
 
     test('driverId falls back to userId field', () {
       final json = {
-        'LocationUpdated': {
-          'userId': 'driver-uuid',
-          'companyId': 'c1',
-        },
+        'LocationUpdated': {'userId': 'driver-uuid', 'companyId': 'c1'},
       };
       final event = WebSocketEvent.fromJson(json);
       expect(event.driverId, 'driver-uuid');

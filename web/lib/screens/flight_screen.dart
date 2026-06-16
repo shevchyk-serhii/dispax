@@ -89,7 +89,10 @@ class _FlightScreenState extends State<FlightScreen>
             const SizedBox(height: 16),
             Text(
               'No ${isArrival ? 'arrivals' : 'departures'} found',
-              style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

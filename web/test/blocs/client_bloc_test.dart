@@ -30,7 +30,10 @@ void main() {
     testClients = [
       testClient,
       TestFixtures.person(
-          id: 'client-2', name: 'Client B', email: 'b@test.com'),
+        id: 'client-2',
+        name: 'Client B',
+        email: 'b@test.com',
+      ),
     ];
 
     when(() => mockUserService.dispose()).thenReturn(null);
@@ -48,22 +51,21 @@ void main() {
     blocTest<ClientBloc, ClientState>(
       'ClientLoadRequested emits loading then loaded',
       build: () {
-        when(() => mockUserService.getClients())
-            .thenAnswer((_) async => testClients);
+        when(
+          () => mockUserService.getClients(),
+        ).thenAnswer((_) async => testClients);
         return buildBloc();
       },
       act: (bloc) => bloc.add(const ClientLoadRequested()),
-      expect: () => [
-        ClientState.loading(),
-        ClientState.loaded(testClients),
-      ],
+      expect: () => [ClientState.loading(), ClientState.loaded(testClients)],
     );
 
     blocTest<ClientBloc, ClientState>(
       'ClientLoadRequested emits error on failure',
       build: () {
-        when(() => mockUserService.getClients())
-            .thenThrow(ApiException('fail'));
+        when(
+          () => mockUserService.getClients(),
+        ).thenThrow(ApiException('fail'));
         return buildBloc();
       },
       act: (bloc) => bloc.add(const ClientLoadRequested()),
@@ -76,16 +78,21 @@ void main() {
     blocTest<ClientBloc, ClientState>(
       'ClientCreateRequested emits loading then loaded with new client',
       build: () {
-        final newClient =
-            TestFixtures.person(id: 'client-new', name: 'New Client');
-        when(() => mockUserService.createClient(any()))
-            .thenAnswer((_) async => newClient);
+        final newClient = TestFixtures.person(
+          id: 'client-new',
+          name: 'New Client',
+        );
+        when(
+          () => mockUserService.createClient(any()),
+        ).thenAnswer((_) async => newClient);
         return buildBloc();
       },
       seed: () => ClientState.loaded([testClient]),
-      act: (bloc) => bloc.add(const ClientCreateRequested(
-        request: CreateUserRequest(name: 'New', email: 'new@test.com'),
-      )),
+      act: (bloc) => bloc.add(
+        const ClientCreateRequested(
+          request: CreateUserRequest(name: 'New', email: 'new@test.com'),
+        ),
+      ),
       expect: () => [
         isA<ClientState>().having((s) => s.isLoading, 'isLoading', true),
         isA<ClientState>()
@@ -97,14 +104,17 @@ void main() {
     blocTest<ClientBloc, ClientState>(
       'ClientCreateRequested emits error on failure',
       build: () {
-        when(() => mockUserService.createClient(any()))
-            .thenThrow(ApiException('fail'));
+        when(
+          () => mockUserService.createClient(any()),
+        ).thenThrow(ApiException('fail'));
         return buildBloc();
       },
       seed: () => ClientState.loaded([testClient]),
-      act: (bloc) => bloc.add(const ClientCreateRequested(
-        request: CreateUserRequest(name: 'X', email: 'x@test.com'),
-      )),
+      act: (bloc) => bloc.add(
+        const ClientCreateRequested(
+          request: CreateUserRequest(name: 'X', email: 'x@test.com'),
+        ),
+      ),
       expect: () => [
         isA<ClientState>().having((s) => s.isLoading, 'isLoading', true),
         isA<ClientState>().having((s) => s.hasError, 'hasError', true),
@@ -114,17 +124,22 @@ void main() {
     blocTest<ClientBloc, ClientState>(
       'ClientUpdateRequested emits loading then loaded with updated client',
       build: () {
-        final updated =
-            TestFixtures.person(id: 'client-1', name: 'Updated Name');
-        when(() => mockUserService.updateClient(any(), any()))
-            .thenAnswer((_) async => updated);
+        final updated = TestFixtures.person(
+          id: 'client-1',
+          name: 'Updated Name',
+        );
+        when(
+          () => mockUserService.updateClient(any(), any()),
+        ).thenAnswer((_) async => updated);
         return buildBloc();
       },
       seed: () => ClientState.loaded([testClient]),
-      act: (bloc) => bloc.add(const ClientUpdateRequested(
-        clientId: 'client-1',
-        request: UpdateUserRequest(name: 'Updated Name'),
-      )),
+      act: (bloc) => bloc.add(
+        const ClientUpdateRequested(
+          clientId: 'client-1',
+          request: UpdateUserRequest(name: 'Updated Name'),
+        ),
+      ),
       expect: () => [
         isA<ClientState>().having((s) => s.isLoading, 'isLoading', true),
         isA<ClientState>()
@@ -136,8 +151,9 @@ void main() {
     blocTest<ClientBloc, ClientState>(
       'ClientDeactivateRequested emits loading then loaded with client removed',
       build: () {
-        when(() => mockUserService.deactivateClient('client-1'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockUserService.deactivateClient('client-1'),
+        ).thenAnswer((_) async {});
         return buildBloc();
       },
       seed: () => ClientState.loaded(testClients),
@@ -156,11 +172,13 @@ void main() {
       'ClientSearchRequested updates searchQuery',
       build: buildBloc,
       seed: () => ClientState.loaded(testClients),
-      act: (bloc) =>
-          bloc.add(const ClientSearchRequested(query: 'Client A')),
+      act: (bloc) => bloc.add(const ClientSearchRequested(query: 'Client A')),
       expect: () => [
-        isA<ClientState>()
-            .having((s) => s.searchQuery, 'searchQuery', 'Client A'),
+        isA<ClientState>().having(
+          (s) => s.searchQuery,
+          'searchQuery',
+          'Client A',
+        ),
       ],
     );
   });

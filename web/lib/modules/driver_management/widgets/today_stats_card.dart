@@ -5,10 +5,7 @@ import '../../../constants/app_colors.dart';
 class TodayStatsCard extends StatelessWidget {
   final List<Ride> todayRides;
 
-  const TodayStatsCard({
-    super.key,
-    required this.todayRides,
-  });
+  const TodayStatsCard({super.key, required this.todayRides});
 
   @override
   Widget build(BuildContext context) {

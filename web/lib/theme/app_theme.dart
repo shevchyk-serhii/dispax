@@ -25,24 +25,40 @@ class AppTheme {
       primary: isDark ? AppColors.textPrimaryDark : AppColors.primary,
       onPrimary: isDark ? AppColors.primary : Colors.white,
       primaryContainer: isDark ? AppColors.brand700 : AppColors.primarySurface,
-      onPrimaryContainer: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+      onPrimaryContainer: isDark
+          ? AppColors.primaryLight
+          : AppColors.primaryDark,
       secondary: AppColors.accent,
       onSecondary: Colors.white,
       secondaryContainer: isDark ? AppColors.brand700 : const Color(0xFFE0F2FE),
-      onSecondaryContainer: isDark ? AppColors.accentLight : AppColors.accentDark,
+      onSecondaryContainer: isDark
+          ? AppColors.accentLight
+          : AppColors.accentDark,
       error: AppColors.error,
       onError: Colors.white,
-      errorContainer: isDark ? const Color(0xFF2A0E0E) : const Color(0xFFFEF2F2),
-      onErrorContainer: isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B),
+      errorContainer: isDark
+          ? const Color(0xFF2A0E0E)
+          : const Color(0xFFFEF2F2),
+      onErrorContainer: isDark
+          ? const Color(0xFFF87171)
+          : const Color(0xFF991B1B),
       surface: isDark ? AppColors.surfaceDark : AppColors.surface,
       onSurface: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
-      surfaceContainerHighest: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
-      onSurfaceVariant: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+      surfaceContainerHighest: isDark
+          ? AppColors.surfaceVariantDark
+          : AppColors.surfaceVariant,
+      onSurfaceVariant: isDark
+          ? AppColors.textSecondaryDark
+          : AppColors.textSecondary,
       outline: isDark ? AppColors.borderDark : AppColors.borderPrimary,
-      outlineVariant: isDark ? AppColors.borderSecondaryDark : AppColors.borderSecondary,
+      outlineVariant: isDark
+          ? AppColors.borderSecondaryDark
+          : AppColors.borderSecondary,
       scrim: Colors.black,
       inverseSurface: isDark ? AppColors.surface : AppColors.surfaceDark,
-      onInverseSurface: isDark ? AppColors.textPrimary : AppColors.textPrimaryDark,
+      onInverseSurface: isDark
+          ? AppColors.textPrimary
+          : AppColors.textPrimaryDark,
       inversePrimary: isDark ? AppColors.primaryDark : AppColors.primaryLight,
     );
 
@@ -51,11 +67,15 @@ class AppTheme {
       brightness: brightness,
       colorScheme: colorScheme,
 
-      scaffoldBackgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      scaffoldBackgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.background,
 
       appBarTheme: AppBarTheme(
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
-        foregroundColor: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+        foregroundColor: isDark
+            ? AppColors.textPrimaryDark
+            : AppColors.textPrimary,
         elevation: 0,
         centerTitle: false,
         surfaceTintColor: Colors.transparent,
@@ -160,7 +180,9 @@ class AppTheme {
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
+        fillColor: isDark
+            ? AppColors.surfaceVariantDark
+            : AppColors.surfaceVariant,
         // In dark, borderDark == surfaceVariantDark (the fill), so the resting
         // border was invisible and fields blended into the surface. Use the
         // lighter borderSecondaryDark so the field outline reads against its
@@ -168,13 +190,17 @@ class AppTheme {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
           borderSide: BorderSide(
-            color: isDark ? AppColors.borderSecondaryDark : AppColors.borderPrimary,
+            color: isDark
+                ? AppColors.borderSecondaryDark
+                : AppColors.borderPrimary,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
           borderSide: BorderSide(
-            color: isDark ? AppColors.borderSecondaryDark : AppColors.borderPrimary,
+            color: isDark
+                ? AppColors.borderSecondaryDark
+                : AppColors.borderPrimary,
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -220,11 +246,21 @@ class AppTheme {
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surface,
         selectedItemColor: AppColors.accent,
-        unselectedItemColor: isDark ? AppColors.textLightDark : AppColors.textLight,
+        unselectedItemColor: isDark
+            ? AppColors.textLightDark
+            : AppColors.textLight,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.3),
-        unselectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, letterSpacing: 0.3),
+        selectedLabelStyle: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.3,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.3,
+        ),
       ),
 
       navigationBarTheme: NavigationBarThemeData(
@@ -240,7 +276,11 @@ class AppTheme {
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.accent);
+            return const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.accent,
+            );
           }
           return TextStyle(
             fontSize: 10,
@@ -259,8 +299,12 @@ class AppTheme {
 
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: colorScheme.primary,
-        linearTrackColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
-        circularTrackColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
+        linearTrackColor: isDark
+            ? AppColors.surfaceVariantDark
+            : AppColors.surfaceVariant,
+        circularTrackColor: isDark
+            ? AppColors.surfaceVariantDark
+            : AppColors.surfaceVariant,
       ),
 
       switchTheme: SwitchThemeData(
@@ -272,7 +316,9 @@ class AppTheme {
           if (states.contains(WidgetState.selected)) {
             return colorScheme.primary.withValues(alpha: 0.4);
           }
-          return isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant;
+          return isDark
+              ? AppColors.surfaceVariantDark
+              : AppColors.surfaceVariant;
         }),
       ),
 
@@ -298,7 +344,9 @@ class AppTheme {
       ),
 
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: isDark ? AppColors.surfaceVariantDark : AppColors.textPrimary,
+        backgroundColor: isDark
+            ? AppColors.surfaceVariantDark
+            : AppColors.textPrimary,
         contentTextStyle: AppStyles.bodyMedium.copyWith(
           color: isDark ? AppColors.textPrimaryDark : Colors.white,
         ),
@@ -331,7 +379,9 @@ class AppTheme {
       ),
 
       chipTheme: ChipThemeData(
-        backgroundColor: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
+        backgroundColor: isDark
+            ? AppColors.surfaceVariantDark
+            : AppColors.surfaceVariant,
         selectedColor: colorScheme.primary.withValues(alpha: 0.15),
         labelStyle: AppStyles.labelMedium.copyWith(
           color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
@@ -371,10 +421,7 @@ class AppTheme {
     required Widget child,
     required String role,
   }) {
-    return buildGradientContainer(
-      child: child,
-      colors: _getRoleColors(role),
-    );
+    return buildGradientContainer(child: child, colors: _getRoleColors(role));
   }
 
   static List<Color> _getRoleColors(String role) {

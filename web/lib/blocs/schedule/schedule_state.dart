@@ -33,7 +33,10 @@ class ScheduleState extends Equatable {
   }
 
   factory ScheduleState.error(String message) {
-    return ScheduleState(status: ScheduleStateStatus.error, errorMessage: message);
+    return ScheduleState(
+      status: ScheduleStateStatus.error,
+      errorMessage: message,
+    );
   }
 
   ScheduleState copyWith({
@@ -56,11 +59,14 @@ class ScheduleState extends Equatable {
   bool get isEmpty => scheduleDays.isEmpty && isLoaded;
 
   List<ScheduleDay> getScheduleForDate(DateTime date) {
-    return scheduleDays.where((day) =>
-      day.date.year == date.year &&
-      day.date.month == date.month &&
-      day.date.day == date.day
-    ).toList();
+    return scheduleDays
+        .where(
+          (day) =>
+              day.date.year == date.year &&
+              day.date.month == date.month &&
+              day.date.day == date.day,
+        )
+        .toList();
   }
 
   @override

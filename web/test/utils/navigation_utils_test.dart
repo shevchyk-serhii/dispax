@@ -88,7 +88,10 @@ void main() {
 
     test('builds a valid Google Maps URL with parameters', () async {
       final origin = TestFixtures.location(latitude: 48.1, longitude: 11.5);
-      final destination = TestFixtures.location(latitude: 48.2, longitude: 11.6);
+      final destination = TestFixtures.location(
+        latitude: 48.2,
+        longitude: 11.6,
+      );
 
       await NavigationUtils.openGoogleMapsRoute(origin, destination);
 
@@ -100,29 +103,33 @@ void main() {
       expect(url, contains('destination='));
     });
 
-    test('uses coordinates only for origin when destination has none', () async {
-      final origin = TestFixtures.location(
-        address: 'Start',
-        latitude: 48.1,
-        longitude: 11.5,
-      );
-      final destination = TestFixtures.location(
-        address: 'End Street',
-        latitude: null,
-        longitude: null,
-      );
+    test(
+      'uses coordinates only for origin when destination has none',
+      () async {
+        final origin = TestFixtures.location(
+          address: 'Start',
+          latitude: 48.1,
+          longitude: 11.5,
+        );
+        final destination = TestFixtures.location(
+          address: 'End Street',
+          latitude: null,
+          longitude: null,
+        );
 
-      await NavigationUtils.openGoogleMapsRoute(origin, destination);
+        await NavigationUtils.openGoogleMapsRoute(origin, destination);
 
-      final url = mockLauncher.lastLaunchedUrl!;
-      expect(url, contains('48.1,11.5'));
-      expect(url, contains('End%20Street'));
-    });
+        final url = mockLauncher.lastLaunchedUrl!;
+        expect(url, contains('48.1,11.5'));
+        expect(url, contains('End%20Street'));
+      },
+    );
   });
 
   group('NavigationUtils.navigateToMap', () {
-    testWidgets('opens a Google Maps route for a ride with coordinates',
-        (tester) async {
+    testWidgets('opens a Google Maps route for a ride with coordinates', (
+      tester,
+    ) async {
       final ride = TestFixtures.ride(
         from: TestFixtures.location(
           address: 'From',
@@ -145,8 +152,9 @@ void main() {
       expect(mockLauncher.lastLaunchedUrl, contains('48.3537,11.775'));
     });
 
-    testWidgets('opens Google Maps by address when coordinates are absent',
-        (tester) async {
+    testWidgets('opens Google Maps by address when coordinates are absent', (
+      tester,
+    ) async {
       final ride = TestFixtures.ride(
         from: TestFixtures.location(
           address: 'Hauptbahnhof München',
@@ -191,8 +199,14 @@ void main() {
     });
 
     test('coordinates are not double-encoded', () async {
-      final origin = TestFixtures.location(latitude: 48.1374, longitude: 11.5755);
-      final destination = TestFixtures.location(latitude: 48.3537, longitude: 11.775);
+      final origin = TestFixtures.location(
+        latitude: 48.1374,
+        longitude: 11.5755,
+      );
+      final destination = TestFixtures.location(
+        latitude: 48.3537,
+        longitude: 11.775,
+      );
 
       await NavigationUtils.openGoogleMapsRoute(origin, destination);
 

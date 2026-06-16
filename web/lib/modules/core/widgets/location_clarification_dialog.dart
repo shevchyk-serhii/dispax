@@ -8,19 +8,19 @@ import '../../../constants/app_dimensions.dart';
 class LocationClarificationDialog extends StatefulWidget {
   final Ride ride;
 
-  const LocationClarificationDialog({
-    super.key,
-    required this.ride,
-  });
+  const LocationClarificationDialog({super.key, required this.ride});
 
   @override
-  State<LocationClarificationDialog> createState() => _LocationClarificationDialogState();
+  State<LocationClarificationDialog> createState() =>
+      _LocationClarificationDialogState();
 }
 
-class _LocationClarificationDialogState extends State<LocationClarificationDialog> {
+class _LocationClarificationDialogState
+    extends State<LocationClarificationDialog> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _instructionsController = TextEditingController();
-  final LocationClarificationService _service = LocationClarificationService.instance;
+  final LocationClarificationService _service =
+      LocationClarificationService.instance;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -138,7 +138,9 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
             Wrap(
               spacing: AppDimensions.paddingSmall,
               runSpacing: AppDimensions.paddingSmall,
-              children: _quickLocations.map((location) => _buildQuickLocationChip(location)).toList(),
+              children: _quickLocations
+                  .map((location) => _buildQuickLocationChip(location))
+                  .toList(),
             ),
 
             const SizedBox(height: AppDimensions.paddingLarge),
@@ -158,9 +160,13 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
               decoration: InputDecoration(
                 hintText: 'Example: "At Terminal A entrance"',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusMedium,
+                  ),
                 ),
-                contentPadding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                contentPadding: const EdgeInsets.all(
+                  AppDimensions.paddingMedium,
+                ),
               ),
               maxLines: 2,
             ),
@@ -182,9 +188,13 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
               decoration: InputDecoration(
                 hintText: 'Example: "Standing near the coffee shop"',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusMedium,
+                  ),
                 ),
-                contentPadding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                contentPadding: const EdgeInsets.all(
+                  AppDimensions.paddingMedium,
+                ),
               ),
               maxLines: 3,
             ),
@@ -195,7 +205,9 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
                 padding: const EdgeInsets.all(AppDimensions.paddingMedium),
                 decoration: BoxDecoration(
                   color: AppColors.error.withAlpha(50),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusMedium,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -242,7 +254,9 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.onPrimary,
+                    ),
                   ),
                 )
               : const Text('Send'),
@@ -258,7 +272,9 @@ class _LocationClarificationDialogState extends State<LocationClarificationDialo
       label: Text(
         location,
         style: AppStyles.labelSmall.copyWith(
-          color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
+          color: isSelected
+              ? Theme.of(context).colorScheme.onPrimary
+              : Theme.of(context).colorScheme.onSurface,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),

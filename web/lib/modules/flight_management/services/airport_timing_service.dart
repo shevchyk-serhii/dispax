@@ -13,7 +13,7 @@ class AirportTimingService {
     if (_instance == null) {
       throw StateError(
         'AirportTimingService has not been configured. '
-        'Call AirportTimingService.configure() with an authenticated ApiClient first.'
+        'Call AirportTimingService.configure() with an authenticated ApiClient first.',
       );
     }
     return _instance!;
@@ -49,5 +49,4 @@ class AirportTimingService {
       return null;
     }
   }
-
 }

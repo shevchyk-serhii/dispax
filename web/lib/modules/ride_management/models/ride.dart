@@ -132,7 +132,9 @@ class Ride {
       status: RideStatus.fromString(json['status'] ?? 'Requested'),
       clientName: json['clientName'] ?? 'Unknown Client',
       flightNumber: json['flightNumber'],
-      flightTime: json['flightTime'] != null ? DateTime.parse(json['flightTime']) : null,
+      flightTime: json['flightTime'] != null
+          ? DateTime.parse(json['flightTime'])
+          : null,
       isAirportTransfer: json['isAirportTransfer'] ?? false,
       isArrival: json['isArrival'] ?? false,
       gate: json['gate'],
@@ -140,11 +142,11 @@ class Ride {
       flightStatus: json['flightStatus'],
       driverName: json['driverName'],
       driverLocation: json['driverLocation'] != null
-        ? Location.fromJson(json['driverLocation'])
-        : null,
+          ? Location.fromJson(json['driverLocation'])
+          : null,
       clientLocation: json['clientLocation'] != null
-        ? Location.fromJson(json['clientLocation'])
-        : null,
+          ? Location.fromJson(json['clientLocation'])
+          : null,
       driverApproaching: json['driverApproaching'] ?? false,
       driverDistanceMeters: json['driverDistanceMeters'],
       etaMinutes: json['etaMinutes'],
@@ -322,7 +324,6 @@ class Ride {
   }
 
   String get statusDisplayName {
-
     return status.displayName;
   }
 

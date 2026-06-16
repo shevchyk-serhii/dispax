@@ -48,7 +48,8 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
   }
 
   Future<void> _loadAirportTiming() async {
-    if (!widget.ride.isAirportTransfer || widget.ride.status != RideStatus.assigned) {
+    if (!widget.ride.isAirportTransfer ||
+        widget.ride.status != RideStatus.assigned) {
       return;
     }
 
@@ -172,7 +173,11 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
       ),
       child: Row(
         children: [
-          Icon(Icons.warning, color: AppColors.error, size: AppDimensions.iconSmall),
+          Icon(
+            Icons.warning,
+            color: AppColors.error,
+            size: AppDimensions.iconSmall,
+          ),
           const SizedBox(width: AppDimensions.paddingSmall),
           Expanded(
             child: Text(
@@ -199,7 +204,6 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
 
     return Column(
       children: [
-
         _buildMainTimingCard(timing),
 
         const SizedBox(height: AppDimensions.paddingMedium),
@@ -223,7 +227,6 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
       ),
       child: Column(
         children: [
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -239,8 +242,8 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
                   color: timing.shouldDepartNow
                       ? AppColors.error
                       : timing.isCritical
-                          ? AppColors.warning
-                          : AppColors.success,
+                      ? AppColors.warning
+                      : AppColors.success,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -339,9 +342,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
           Expanded(
             child: Text(
               'Flight delayed. Entry time recalculated.',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.warning,
-              ),
+              style: AppStyles.bodySmall.copyWith(color: AppColors.warning),
             ),
           ),
         ],

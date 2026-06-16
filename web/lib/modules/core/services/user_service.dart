@@ -57,7 +57,10 @@ class UserService {
 
   Future<Person> updateClient(String id, UpdateUserRequest request) async {
     try {
-      final response = await privateApiClient.put('/users/$id', request.toJson());
+      final response = await privateApiClient.put(
+        '/users/$id',
+        request.toJson(),
+      );
 
       if (response.statusCode == 200) {
         return Person.fromJson(jsonDecode(response.body));
@@ -74,7 +77,9 @@ class UserService {
       final response = await privateApiClient.delete('/users/$id');
 
       if (response.statusCode != 204 && response.statusCode != 200) {
-        throw ApiException('Failed to deactivate client: ${response.statusCode}');
+        throw ApiException(
+          'Failed to deactivate client: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw ApiException('Error deactivating client: $e');
@@ -88,7 +93,9 @@ class UserService {
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(jsonDecode(response.body));
       } else {
-        throw ApiException('Failed to fetch driver stats: ${response.statusCode}');
+        throw ApiException(
+          'Failed to fetch driver stats: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw ApiException('Error fetching driver stats: $e');

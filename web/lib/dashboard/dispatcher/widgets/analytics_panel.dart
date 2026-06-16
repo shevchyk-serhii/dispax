@@ -39,7 +39,9 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
         _stats = jsonDecode(statsResponse.body);
       }
       if (dailyResponse.statusCode == 200) {
-        _dailyStats = List<Map<String, dynamic>>.from(jsonDecode(dailyResponse.body));
+        _dailyStats = List<Map<String, dynamic>>.from(
+          jsonDecode(dailyResponse.body),
+        );
       }
 
       setState(() => _isLoading = false);
@@ -60,22 +62,26 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          const SizedBox(height: 12),
-                          ElevatedButton(onPressed: _loadStats, child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadStats,
-                      child: _buildContent(),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadStats,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _loadStats, child: _buildContent()),
         ),
       ],
     );
@@ -97,7 +103,11 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
             const Expanded(
               child: Text(
                 'Analytics',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
@@ -134,25 +144,61 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
         // KPI cards - row 1
         Row(
           children: [
-            _buildKpiCard('Total Rides', total.toString(), Icons.directions_car, colorScheme.primary, colorScheme),
+            _buildKpiCard(
+              'Total Rides',
+              total.toString(),
+              Icons.directions_car,
+              colorScheme.primary,
+              colorScheme,
+            ),
             const SizedBox(width: 12),
-            _buildKpiCard('Completed', completed.toString(), Icons.check_circle, AppColors.success, colorScheme),
+            _buildKpiCard(
+              'Completed',
+              completed.toString(),
+              Icons.check_circle,
+              AppColors.success,
+              colorScheme,
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildKpiCard('In Progress', inProgress.toString(), Icons.play_circle, AppColors.rideInProgress, colorScheme),
+            _buildKpiCard(
+              'In Progress',
+              inProgress.toString(),
+              Icons.play_circle,
+              AppColors.rideInProgress,
+              colorScheme,
+            ),
             const SizedBox(width: 12),
-            _buildKpiCard('Requested', requested.toString(), Icons.pending, AppColors.rideRequested, colorScheme),
+            _buildKpiCard(
+              'Requested',
+              requested.toString(),
+              Icons.pending,
+              AppColors.rideRequested,
+              colorScheme,
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildKpiCard('Assigned', assigned.toString(), Icons.assignment, AppColors.rideAssigned, colorScheme),
+            _buildKpiCard(
+              'Assigned',
+              assigned.toString(),
+              Icons.assignment,
+              AppColors.rideAssigned,
+              colorScheme,
+            ),
             const SizedBox(width: 12),
-            _buildKpiCard('Cancelled', cancelled.toString(), Icons.cancel, AppColors.error, colorScheme),
+            _buildKpiCard(
+              'Cancelled',
+              cancelled.toString(),
+              Icons.cancel,
+              AppColors.error,
+              colorScheme,
+            ),
           ],
         ),
 
@@ -162,7 +208,11 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
         _buildMetricRow(
           'Cancellation Rate',
           '${cancelRate.toStringAsFixed(1)}%',
-          cancelRate < 10 ? AppColors.success : cancelRate < 25 ? AppColors.warning : AppColors.error,
+          cancelRate < 10
+              ? AppColors.success
+              : cancelRate < 25
+              ? AppColors.warning
+              : AppColors.error,
           colorScheme,
         ),
         _buildMetricRow(
@@ -171,8 +221,18 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
           colorScheme.primary,
           colorScheme,
         ),
-        _buildMetricRow('Active Drivers', drivers.toString(), AppColors.driverColor, colorScheme),
-        _buildMetricRow('Total Clients', clients.toString(), AppColors.clientColor, colorScheme),
+        _buildMetricRow(
+          'Active Drivers',
+          drivers.toString(),
+          AppColors.driverColor,
+          colorScheme,
+        ),
+        _buildMetricRow(
+          'Total Clients',
+          clients.toString(),
+          AppColors.clientColor,
+          colorScheme,
+        ),
 
         const SizedBox(height: 20),
 
@@ -181,7 +241,10 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [AppColors.success.withAlpha(30), AppColors.success.withAlpha(10)],
+              colors: [
+                AppColors.success.withAlpha(30),
+                AppColors.success.withAlpha(10),
+              ],
             ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.success.withAlpha(60)),
@@ -189,14 +252,29 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Revenue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text(
+                'Revenue',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildRevenueItem('Today', '\u20AC${todayRev.toStringAsFixed(0)}', colorScheme),
-                  Container(width: 1, height: 40, color: colorScheme.outlineVariant),
-                  _buildRevenueItem('Month', '\u20AC${monthlyRev.toStringAsFixed(0)}', colorScheme),
+                  _buildRevenueItem(
+                    'Today',
+                    '\u20AC${todayRev.toStringAsFixed(0)}',
+                    colorScheme,
+                  ),
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: colorScheme.outlineVariant,
+                  ),
+                  _buildRevenueItem(
+                    'Month',
+                    '\u20AC${monthlyRev.toStringAsFixed(0)}',
+                    colorScheme,
+                  ),
                 ],
               ),
             ],
@@ -207,7 +285,8 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
 
         // Daily chart
         if (_dailyStats != null && _dailyStats!.isNotEmpty) ...[
-          const Text('Daily Overview (Last 7 Days)',
+          const Text(
+            'Daily Overview (Last 7 Days)',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
@@ -217,7 +296,13 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
     );
   }
 
-  Widget _buildKpiCard(String label, String value, IconData icon, Color color, ColorScheme colorScheme) {
+  Widget _buildKpiCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    ColorScheme colorScheme,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -233,11 +318,20 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
                 ),
-                Text(label,
-                  style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -247,21 +341,34 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
     );
   }
 
-  Widget _buildMetricRow(String label, String value, Color color, ColorScheme colorScheme) {
+  Widget _buildMetricRow(
+    String label,
+    String value,
+    Color color,
+    ColorScheme colorScheme,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: color.withAlpha(20),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(value,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -269,21 +376,35 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
     );
   }
 
-  Widget _buildRevenueItem(String label, String value, ColorScheme colorScheme) {
+  Widget _buildRevenueItem(
+    String label,
+    String value,
+    ColorScheme colorScheme,
+  ) {
     return Column(
       children: [
-        Text(value,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.success),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: AppColors.success,
+          ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+        ),
       ],
     );
   }
 
   Widget _buildDailyChart(ColorScheme colorScheme) {
     final days = _dailyStats!;
-    final maxTotal = days.map((d) => (d['total'] as num?) ?? 0).fold<num>(1, (a, b) => a > b ? a : b);
+    final maxTotal = days
+        .map((d) => (d['total'] as num?) ?? 0)
+        .fold<num>(1, (a, b) => a > b ? a : b);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -299,7 +420,9 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
           final completed = (day['completed'] as num?) ?? 0;
           final cancelled = (day['cancelled'] as num?) ?? 0;
           final fraction = maxTotal > 0 ? total / maxTotal : 0.0;
-          final shortDate = date.length >= 10 ? date.substring(5) : date; // MM-DD
+          final shortDate = date.length >= 10
+              ? date.substring(5)
+              : date; // MM-DD
 
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -307,7 +430,13 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
               children: [
                 SizedBox(
                   width: 50,
-                  child: Text(shortDate, style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant)),
+                  child: Text(
+                    shortDate,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -326,7 +455,10 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
                           height: 20,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [colorScheme.primary, AppColors.primaryLight],
+                              colors: [
+                                colorScheme.primary,
+                                AppColors.primaryLight,
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -340,7 +472,10 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
                   width: 70,
                   child: Text(
                     '$total ($completed/$cancelled)',
-                    style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],

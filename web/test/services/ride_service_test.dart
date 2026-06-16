@@ -36,8 +36,10 @@ void main() {
     group('getAllRides', () {
       test('200 returns parsed list', () async {
         when(() => mockApiClient.get('/rides')).thenAnswer(
-          (_) async =>
-              jsonResponse([TestFixtures.rideJson(), TestFixtures.rideJson(id: 'ride-2')]),
+          (_) async => jsonResponse([
+            TestFixtures.rideJson(),
+            TestFixtures.rideJson(id: 'ride-2'),
+          ]),
         );
 
         final rides = await rideService.getAllRides();
@@ -50,19 +52,16 @@ void main() {
           (_) async => jsonResponse({'error': 'fail'}, statusCode: 500),
         );
 
-        expect(
-          () => rideService.getAllRides(),
-          throwsA(isA<ApiException>()),
-        );
+        expect(() => rideService.getAllRides(), throwsA(isA<ApiException>()));
       });
     });
 
     group('getRidesForUser', () {
       test('200 returns parsed list for client', () async {
         final client = TestFixtures.person(); // role: client, id: person-1
-        when(() => mockApiClient.get('/rides/client/${client.id}')).thenAnswer(
-          (_) async => jsonResponse([TestFixtures.rideJson()]),
-        );
+        when(
+          () => mockApiClient.get('/rides/client/${client.id}'),
+        ).thenAnswer((_) async => jsonResponse([TestFixtures.rideJson()]));
 
         final rides = await rideService.getRidesForUser(client);
         expect(rides.length, 1);
@@ -70,9 +69,9 @@ void main() {
 
       test('200 returns parsed list for secretary (uses /rides)', () async {
         final secretary = TestFixtures.secretary();
-        when(() => mockApiClient.get('/rides')).thenAnswer(
-          (_) async => jsonResponse([TestFixtures.rideJson()]),
-        );
+        when(
+          () => mockApiClient.get('/rides'),
+        ).thenAnswer((_) async => jsonResponse([TestFixtures.rideJson()]));
 
         final rides = await rideService.getRidesForUser(secretary);
         expect(rides.length, 1);
@@ -81,9 +80,9 @@ void main() {
 
     group('getRideById', () {
       test('200 returns Ride', () async {
-        when(() => mockApiClient.get('/rides/ride-1')).thenAnswer(
-          (_) async => jsonResponse(TestFixtures.rideJson()),
-        );
+        when(
+          () => mockApiClient.get('/rides/ride-1'),
+        ).thenAnswer((_) async => jsonResponse(TestFixtures.rideJson()));
 
         final ride = await rideService.getRideById('ride-1');
         expect(ride, isNotNull);
@@ -91,9 +90,9 @@ void main() {
       });
 
       test('404 returns null', () async {
-        when(() => mockApiClient.get('/rides/missing')).thenAnswer(
-          (_) async => jsonResponse({}, statusCode: 404),
-        );
+        when(
+          () => mockApiClient.get('/rides/missing'),
+        ).thenAnswer((_) async => jsonResponse({}, statusCode: 404));
 
         final ride = await rideService.getRideById('missing');
         expect(ride, isNull);
@@ -103,19 +102,22 @@ void main() {
     group('createRide', () {
       test('201 returns Ride', () async {
         when(() => mockApiClient.post('/rides', any())).thenAnswer(
-          (_) async =>
-              jsonResponse(TestFixtures.rideJson(id: 'created'), statusCode: 201),
+          (_) async => jsonResponse(
+            TestFixtures.rideJson(id: 'created'),
+            statusCode: 201,
+          ),
         );
 
-        final ride =
-            await rideService.createRide(TestFixtures.createRideRequest());
+        final ride = await rideService.createRide(
+          TestFixtures.createRideRequest(),
+        );
         expect(ride.id, 'created');
       });
 
       test('non-201 throws', () async {
-        when(() => mockApiClient.post('/rides', any())).thenAnswer(
-          (_) async => jsonResponse({}, statusCode: 400),
-        );
+        when(
+          () => mockApiClient.post('/rides', any()),
+        ).thenAnswer((_) async => jsonResponse({}, statusCode: 400));
 
         expect(
           () => rideService.createRide(TestFixtures.createRideRequest()),
@@ -126,30 +128,35 @@ void main() {
 
     group('updateRide', () {
       test('200 returns Ride', () async {
-        when(() => mockApiClient.put('/rides/ride-1', any())).thenAnswer(
-          (_) async => jsonResponse(TestFixtures.rideJson()),
-        );
+        when(
+          () => mockApiClient.put('/rides/ride-1', any()),
+        ).thenAnswer((_) async => jsonResponse(TestFixtures.rideJson()));
 
-        final ride =
-            await rideService.updateRide('ride-1', TestFixtures.ride());
+        final ride = await rideService.updateRide(
+          'ride-1',
+          TestFixtures.ride(),
+        );
         expect(ride, isNotNull);
       });
 
       test('404 returns null', () async {
-        when(() => mockApiClient.put('/rides/missing', any())).thenAnswer(
-          (_) async => jsonResponse({}, statusCode: 404),
-        );
+        when(
+          () => mockApiClient.put('/rides/missing', any()),
+        ).thenAnswer((_) async => jsonResponse({}, statusCode: 404));
 
-        final ride =
-            await rideService.updateRide('missing', TestFixtures.ride());
+        final ride = await rideService.updateRide(
+          'missing',
+          TestFixtures.ride(),
+        );
         expect(ride, isNull);
       });
     });
 
     group('updateRideStatus', () {
       test('200 returns true', () async {
-        when(() => mockApiClient.put('/rides/ride-1/status', any()))
-            .thenAnswer((_) async => jsonResponse({}));
+        when(
+          () => mockApiClient.put('/rides/ride-1/status', any()),
+        ).thenAnswer((_) async => jsonResponse({}));
 
         expect(
           await rideService.updateRideStatus('ride-1', RideStatus.completed),
@@ -158,8 +165,9 @@ void main() {
       });
 
       test('404 returns false', () async {
-        when(() => mockApiClient.put('/rides/missing/status', any()))
-            .thenAnswer((_) async => jsonResponse({}, statusCode: 404));
+        when(
+          () => mockApiClient.put('/rides/missing/status', any()),
+        ).thenAnswer((_) async => jsonResponse({}, statusCode: 404));
 
         expect(
           await rideService.updateRideStatus('missing', RideStatus.completed),
@@ -170,9 +178,9 @@ void main() {
 
     group('getPendingRides', () {
       test('200 returns list', () async {
-        when(() => mockApiClient.get('/rides/pending')).thenAnswer(
-          (_) async => jsonResponse([TestFixtures.rideJson()]),
-        );
+        when(
+          () => mockApiClient.get('/rides/pending'),
+        ).thenAnswer((_) async => jsonResponse([TestFixtures.rideJson()]));
 
         final rides = await rideService.getPendingRides();
         expect(rides.length, 1);
@@ -181,11 +189,9 @@ void main() {
 
     group('assignDriver', () {
       test('200 returns Ride', () async {
-        when(() =>
-                mockApiClient.put('/rides/ride-1/assign-driver', any()))
-            .thenAnswer(
-          (_) async => jsonResponse(TestFixtures.rideJson()),
-        );
+        when(
+          () => mockApiClient.put('/rides/ride-1/assign-driver', any()),
+        ).thenAnswer((_) async => jsonResponse(TestFixtures.rideJson()));
 
         final ride = await rideService.assignDriver('ride-1', 'driver-1');
         expect(ride, isA<Ride>());
@@ -194,11 +200,9 @@ void main() {
 
     group('reassignDriver', () {
       test('200 returns Ride', () async {
-        when(() =>
-                mockApiClient.put('/rides/ride-1/reassign-driver', any()))
-            .thenAnswer(
-          (_) async => jsonResponse(TestFixtures.rideJson()),
-        );
+        when(
+          () => mockApiClient.put('/rides/ride-1/reassign-driver', any()),
+        ).thenAnswer((_) async => jsonResponse(TestFixtures.rideJson()));
 
         final ride = await rideService.reassignDriver('ride-1', 'driver-2');
         expect(ride, isA<Ride>());
@@ -207,8 +211,9 @@ void main() {
 
     group('getDriverProximity', () {
       test('200 returns map', () async {
-        when(() => mockApiClient.get('/rides/ride-1/driver-location'))
-            .thenAnswer(
+        when(
+          () => mockApiClient.get('/rides/ride-1/driver-location'),
+        ).thenAnswer(
           (_) async => jsonResponse({
             'latitude': 48.1,
             'longitude': 11.5,
@@ -222,8 +227,9 @@ void main() {
       });
 
       test('error returns null', () async {
-        when(() => mockApiClient.get('/rides/ride-1/driver-location'))
-            .thenThrow(ApiException('fail'));
+        when(
+          () => mockApiClient.get('/rides/ride-1/driver-location'),
+        ).thenThrow(ApiException('fail'));
 
         final result = await rideService.getDriverProximity('ride-1');
         expect(result, isNull);
@@ -232,8 +238,9 @@ void main() {
 
     group('updateDriverLocation', () {
       test('error fails silently', () async {
-        when(() => mockApiClient.put(any(), any()))
-            .thenThrow(ApiException('fail'));
+        when(
+          () => mockApiClient.put(any(), any()),
+        ).thenThrow(ApiException('fail'));
 
         // Should not throw
         await rideService.updateDriverLocation('driver-1', 48.1, 11.5);
@@ -242,8 +249,9 @@ void main() {
 
     group('cancelRide', () {
       test('200 completes without error', () async {
-        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
-            .thenAnswer((_) async => jsonResponse({}));
+        when(
+          () => mockApiClient.put('/rides/ride-1/cancel', any()),
+        ).thenAnswer((_) async => jsonResponse({}));
 
         await expectLater(
           rideService.cancelRide('ride-1', 'Client Request'),
@@ -253,11 +261,13 @@ void main() {
 
       test('sends reason to correct endpoint', () async {
         Map<String, dynamic>? capturedBody;
-        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
-            .thenAnswer((invocation) async {
-          capturedBody = invocation.positionalArguments[1] as Map<String, dynamic>;
-          return jsonResponse({});
-        });
+        when(() => mockApiClient.put('/rides/ride-1/cancel', any())).thenAnswer(
+          (invocation) async {
+            capturedBody =
+                invocation.positionalArguments[1] as Map<String, dynamic>;
+            return jsonResponse({});
+          },
+        );
 
         await rideService.cancelRide('ride-1', 'Client Request');
 
@@ -266,8 +276,9 @@ void main() {
       });
 
       test('non-200 throws ApiException', () async {
-        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
-            .thenAnswer((_) async => jsonResponse({}, statusCode: 400));
+        when(
+          () => mockApiClient.put('/rides/ride-1/cancel', any()),
+        ).thenAnswer((_) async => jsonResponse({}, statusCode: 400));
 
         expect(
           () => rideService.cancelRide('ride-1', 'Other'),
@@ -276,8 +287,9 @@ void main() {
       });
 
       test('network error throws ApiException', () async {
-        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
-            .thenThrow(ApiException('Network error'));
+        when(
+          () => mockApiClient.put('/rides/ride-1/cancel', any()),
+        ).thenThrow(ApiException('Network error'));
 
         expect(
           () => rideService.cancelRide('ride-1', 'Other'),
@@ -287,11 +299,13 @@ void main() {
 
       test('sends fee when provided', () async {
         Map<String, dynamic>? capturedBody;
-        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
-            .thenAnswer((invocation) async {
-          capturedBody = invocation.positionalArguments[1] as Map<String, dynamic>;
-          return jsonResponse({});
-        });
+        when(() => mockApiClient.put('/rides/ride-1/cancel', any())).thenAnswer(
+          (invocation) async {
+            capturedBody =
+                invocation.positionalArguments[1] as Map<String, dynamic>;
+            return jsonResponse({});
+          },
+        );
 
         await rideService.cancelRide('ride-1', 'No show', fee: 25.0);
 
@@ -301,11 +315,13 @@ void main() {
 
       test('does not send fee when not provided', () async {
         Map<String, dynamic>? capturedBody;
-        when(() => mockApiClient.put('/rides/ride-1/cancel', any()))
-            .thenAnswer((invocation) async {
-          capturedBody = invocation.positionalArguments[1] as Map<String, dynamic>;
-          return jsonResponse({});
-        });
+        when(() => mockApiClient.put('/rides/ride-1/cancel', any())).thenAnswer(
+          (invocation) async {
+            capturedBody =
+                invocation.positionalArguments[1] as Map<String, dynamic>;
+            return jsonResponse({});
+          },
+        );
 
         await rideService.cancelRide('ride-1', 'Client Request');
 

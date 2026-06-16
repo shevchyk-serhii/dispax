@@ -143,5 +143,20 @@
   "about": "About",
   "version": "Version",
   "privacyPolicy": "Privacy Policy",
-  "termsOfService": "Terms of Service"
+  "termsOfService": "Terms of Service",
+
+  "superAdminDashboard": "Platform Admin",
+  "companies": "Companies",
+  "companiesList": "Companies List",
+  "platformAnalytics": "Platform Analytics",
+  "platformRevenue": "Platform Revenue",
+  "activeConnections": "Active Connections",
+  "companyStatus": "Company Status",
+  "subscriptionPlan": "Subscription Plan",
+  "totalRides": "Total Rides",
+  "completedRides": "Completed Rides",
+  "cancelledRides": "Cancelled Rides",
+  "billingAnalytics": "Billing Analytics",
+  "connectionAnalytics": "Connection Analytics",
+  "superAdminSettings": "Platform Settings"
 }

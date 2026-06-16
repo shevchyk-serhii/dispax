@@ -71,7 +71,7 @@ object Location:
   def apply(address: String): Location = Location(address, None, None)
 
 enum PersonRole:
-  case Driver, Client, Secretary, Dispatcher, Admin, ClientSecretary
+  case Driver, Client, Secretary, Dispatcher, Admin, ClientSecretary, SuperAdmin
 
 object PersonRole:
 
@@ -79,6 +79,7 @@ object PersonRole:
 
   given JsonEncoder[PersonRole] = JsonEncoder[String].contramap {
     case PersonRole.ClientSecretary => "CLIENT_SECRETARY"
+    case PersonRole.SuperAdmin      => "SUPER_ADMIN"
     case other                      => other.toString
   }
 
@@ -92,6 +93,8 @@ object PersonRole:
         case "ADMIN"            => "Admin"
         case "CLIENT_SECRETARY" => "ClientSecretary"
         case "client_secretary" => "ClientSecretary"
+        case "SUPER_ADMIN"      => "SuperAdmin"
+        case "super_admin"      => "SuperAdmin"
         case other              => other
     scala.util.Try(PersonRole.valueOf(normalized)).toEither.left.map(_ => s"Invalid PersonRole: $s")
   }
@@ -154,12 +157,28 @@ object PersonDto:
     reminderMinutes = p.reminderMinutes
   )
 
+enum CompanyStatus derives JsonCodec:
+  case Active, Suspended, Trial, Inactive
+
+object CompanyStatus:
+  given Schema[CompanyStatus] = Schema.derivedEnumeration[CompanyStatus].defaultStringBased
+
+enum SubscriptionPlan derives JsonCodec:
+  case Free, Starter, Professional, Enterprise
+
+object SubscriptionPlan:
+  given Schema[SubscriptionPlan] = Schema.derivedEnumeration[SubscriptionPlan].defaultStringBased
+
 final case class Company(
     id: CompanyId,
     name: String,
     email: String,
     phone: String,
-    address: String
+    address: String,
+    status: CompanyStatus = CompanyStatus.Active,
+    subscriptionPlan: SubscriptionPlan = SubscriptionPlan.Free,
+    createdAt: java.time.Instant = java.time.Instant.EPOCH,
+    updatedAt: java.time.Instant = java.time.Instant.EPOCH
 ) derives JsonCodec
 
 final case class ClientCompany(

@@ -43,18 +43,26 @@ class AppDateUtils {
     if (isToday(dateTime)) {
       return 'Today';
     } else if (dateTime.year == yesterday.year &&
-               dateTime.month == yesterday.month &&
-               dateTime.day == yesterday.day) {
+        dateTime.month == yesterday.month &&
+        dateTime.day == yesterday.day) {
       return 'Yesterday';
     } else if (dateTime.year == now.year) {
-
       final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${months[dateTime.month - 1]} ${dateTime.day}';
     } else {
-
       return formatDate(dateTime);
     }
   }

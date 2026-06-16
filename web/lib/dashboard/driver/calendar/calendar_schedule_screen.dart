@@ -3,7 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/core/navigation_helper.dart';
 import '../../../modules/core/widgets/calendar_controls.dart';
-export '../../../modules/core/widgets/calendar_controls.dart' show CalendarViewType;
+export '../../../modules/core/widgets/calendar_controls.dart'
+    show CalendarViewType;
 import 'month_view_widget.dart';
 import 'week_view_widget.dart';
 import 'day_view_widget.dart';
@@ -179,9 +180,7 @@ class CalendarScheduleScreen extends StatelessWidget {
       case CalendarViewType.day:
         return DayViewWidget(
           selectedDay: selectedDay,
-          onRideSelected: (ride) {
-
-          },
+          onRideSelected: (ride) {},
         );
     }
   }

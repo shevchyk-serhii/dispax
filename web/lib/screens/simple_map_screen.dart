@@ -9,9 +9,7 @@ class SimpleMapScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Map View'),
-      ),
+      appBar: AppBar(title: const Text('Map View')),
       body: Center(
         child: Container(
           margin: const EdgeInsets.all(AppDimensions.paddingLarge),
@@ -54,7 +52,9 @@ class SimpleMapScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(AppDimensions.paddingMedium),
                 decoration: BoxDecoration(
                   color: AppColors.clientColor.withAlpha(50),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -83,10 +83,7 @@ class SimpleMapScreen extends StatelessWidget {
   Widget _buildFeatureItem(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Text(
-        text,
-        style: AppStyles.bodySmall,
-      ),
+      child: Text(text, style: AppStyles.bodySmall),
     );
   }
 }

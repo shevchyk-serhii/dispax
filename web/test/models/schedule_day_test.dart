@@ -68,19 +68,34 @@ void main() {
 
   group('ScheduleDayStatus.fromString', () {
     test('parses all known statuses', () {
-      expect(ScheduleDayStatus.fromString('Scheduled'), ScheduleDayStatus.scheduled);
+      expect(
+        ScheduleDayStatus.fromString('Scheduled'),
+        ScheduleDayStatus.scheduled,
+      );
       expect(ScheduleDayStatus.fromString('Active'), ScheduleDayStatus.active);
-      expect(ScheduleDayStatus.fromString('Completed'), ScheduleDayStatus.completed);
-      expect(ScheduleDayStatus.fromString('Cancelled'), ScheduleDayStatus.cancelled);
+      expect(
+        ScheduleDayStatus.fromString('Completed'),
+        ScheduleDayStatus.completed,
+      );
+      expect(
+        ScheduleDayStatus.fromString('Cancelled'),
+        ScheduleDayStatus.cancelled,
+      );
     });
 
     test('is case insensitive', () {
-      expect(ScheduleDayStatus.fromString('scheduled'), ScheduleDayStatus.scheduled);
+      expect(
+        ScheduleDayStatus.fromString('scheduled'),
+        ScheduleDayStatus.scheduled,
+      );
       expect(ScheduleDayStatus.fromString('ACTIVE'), ScheduleDayStatus.active);
     });
 
     test('returns scheduled as fallback for unknown status', () {
-      expect(ScheduleDayStatus.fromString('garbage'), ScheduleDayStatus.scheduled);
+      expect(
+        ScheduleDayStatus.fromString('garbage'),
+        ScheduleDayStatus.scheduled,
+      );
     });
   });
 }

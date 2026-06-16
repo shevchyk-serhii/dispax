@@ -9,13 +9,13 @@ import '../../core/models/location.dart';
 /// - flightNumber
 /// - isAirportTransfer
 class CreateRideRequest {
-  final String clientId;        // Required by API, but overridden by backend auth
-  final String creatorId;       // Required by API, but ignored by backend
-  final String companyId;       // Required by API, but ignored by backend
+  final String clientId; // Required by API, but overridden by backend auth
+  final String creatorId; // Required by API, but ignored by backend
+  final String companyId; // Required by API, but ignored by backend
   final DateTime pickupDateTime;
   final Location from;
   final Location to;
-  final String clientName;      // Required by API, but ignored by backend
+  final String clientName; // Required by API, but ignored by backend
   final String? flightNumber;
   final bool isAirportTransfer;
   final String? notes;
@@ -54,7 +54,8 @@ class CreateRideRequest {
       'notes': notes,
       'specialRequirements': specialRequirements?.join(', '),
       if (driverId != null) 'driverId': driverId,
-      if (newClientPhone != null && newClientPhone!.isNotEmpty) 'clientPhone': newClientPhone,
+      if (newClientPhone != null && newClientPhone!.isNotEmpty)
+        'clientPhone': newClientPhone,
     };
   }
 

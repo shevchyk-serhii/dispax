@@ -6,10 +6,7 @@ import '../create_ride_action_buttons.dart';
 class CreateRideActionsSection extends StatelessWidget {
   final GlobalKey<FormState> formKey;
 
-  const CreateRideActionsSection({
-    super.key,
-    required this.formKey,
-  });
+  const CreateRideActionsSection({super.key, required this.formKey});
 
   @override
   Widget build(BuildContext context) {

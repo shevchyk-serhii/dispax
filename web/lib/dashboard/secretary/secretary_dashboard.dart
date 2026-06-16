@@ -47,7 +47,8 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
               rideBloc: _rideBloc,
               onCreated: () {
                 final user = context.read<AuthBloc>().state.user;
-                if (user != null) context.read<RideBloc>().add(RideLoadRequested(user: user));
+                if (user != null)
+                  context.read<RideBloc>().add(RideLoadRequested(user: user));
                 setState(() => _selectedIndex = 0);
               },
             ),
@@ -111,7 +112,11 @@ class _CreateRidesTab extends StatelessWidget {
                 const Expanded(
                   child: Text(
                     'Create New Ride',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const NotificationBell(),
@@ -121,111 +126,129 @@ class _CreateRidesTab extends StatelessWidget {
         ),
         Expanded(
           child: AppTheme.buildGradientContainer(
-        colors: AppColors.secretaryGradient,
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(15),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
+            colors: AppColors.secretaryGradient,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(
+                        AppDimensions.paddingXLarge,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.add_circle_outline,
-                        size: AppDimensions.iconLogo,
-                        color: AppColors.secretaryColor,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMedium,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(15),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppDimensions.paddingLarge),
-                      Text(
-                        'Create New Ride',
-                        style: AppStyles.headlineMedium,
-                      ),
-                      const SizedBox(height: AppDimensions.paddingMedium),
-                      Text(
-                        'Book rides for your clients with flight information and airport transfer details',
-                        textAlign: TextAlign.center,
-                        style: AppStyles.bodyLarge.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      ),
-                      const SizedBox(height: AppDimensions.paddingXLarge),
-                      SizedBox(
-                        width: double.infinity,
-                        height: AppDimensions.buttonHeightMedium,
-                        child: ElevatedButton.icon(
-                          onPressed: () async {
-                            final rideBloc = context.read<RideBloc>();
-                            final authBloc = context.read<AuthBloc>();
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => CreateRideScreen(rideBloc: rideBloc),
-                              ),
-                            );
-                            final user = authBloc.state.user;
-                            if (user != null) rideBloc.add(RideLoadRequested(user: user));
-                          },
-                          icon: const Icon(Icons.add),
-                          label: const Text('Start Creating'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.secretaryColor,
-                            foregroundColor: AppColors.textOnPrimary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.add_circle_outline,
+                            size: AppDimensions.iconLogo,
+                            color: AppColors.secretaryColor,
+                          ),
+                          const SizedBox(height: AppDimensions.paddingLarge),
+                          Text(
+                            'Create New Ride',
+                            style: AppStyles.headlineMedium,
+                          ),
+                          const SizedBox(height: AppDimensions.paddingMedium),
+                          Text(
+                            'Book rides for your clients with flight information and airport transfer details',
+                            textAlign: TextAlign.center,
+                            style: AppStyles.bodyLarge.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.paddingXLarge),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildQuickStatCard(
-                        context,
-                        'Today\'s Rides',
-                        '12',
-                        Icons.today,
-                        AppColors.info,
+                          const SizedBox(height: AppDimensions.paddingXLarge),
+                          SizedBox(
+                            width: double.infinity,
+                            height: AppDimensions.buttonHeightMedium,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                final rideBloc = context.read<RideBloc>();
+                                final authBloc = context.read<AuthBloc>();
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        CreateRideScreen(rideBloc: rideBloc),
+                                  ),
+                                );
+                                final user = authBloc.state.user;
+                                if (user != null)
+                                  rideBloc.add(RideLoadRequested(user: user));
+                              },
+                              icon: const Icon(Icons.add),
+                              label: const Text('Start Creating'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.secretaryColor,
+                                foregroundColor: AppColors.textOnPrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppDimensions.radiusSmall,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: AppDimensions.paddingMedium),
-                    Expanded(
-                      child: _buildQuickStatCard(
-                        context,
-                        'This Week',
-                        '47',
-                        Icons.date_range,
-                        AppColors.success,
-                      ),
+                    const SizedBox(height: AppDimensions.paddingXLarge),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildQuickStatCard(
+                            context,
+                            'Today\'s Rides',
+                            '12',
+                            Icons.today,
+                            AppColors.info,
+                          ),
+                        ),
+                        const SizedBox(width: AppDimensions.paddingMedium),
+                        Expanded(
+                          child: _buildQuickStatCard(
+                            context,
+                            'This Week',
+                            '47',
+                            Icons.date_range,
+                            AppColors.success,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildQuickStatCard(BuildContext context, String title, String count, IconData icon, Color color) {
+  Widget _buildQuickStatCard(
+    BuildContext context,
+    String title,
+    String count,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
       decoration: BoxDecoration(
@@ -243,14 +266,13 @@ class _CreateRidesTab extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: AppDimensions.iconXLarge),
           const SizedBox(height: AppDimensions.paddingSmall),
-          Text(
-            count,
-            style: AppStyles.headlineMedium.copyWith(color: color),
-          ),
+          Text(count, style: AppStyles.headlineMedium.copyWith(color: color)),
           const SizedBox(height: AppDimensions.paddingXSmall),
           Text(
             title,
-            style: AppStyles.labelSmall.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: AppStyles.labelSmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

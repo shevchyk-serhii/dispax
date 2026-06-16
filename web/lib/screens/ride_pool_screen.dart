@@ -54,7 +54,10 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
         builder: (context, setDialogState) => AlertDialog(
           title: Row(
             children: [
-              Icon(Icons.group_add, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                Icons.group_add,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 8),
               const Text('Create Ride Pool'),
             ],
@@ -85,7 +88,10 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('Max Passengers:', style: TextStyle(fontSize: 14)),
+                      const Text(
+                        'Max Passengers:',
+                        style: TextStyle(fontSize: 14),
+                      ),
                       const Spacer(),
                       IconButton(
                         onPressed: maxPassengers > 2
@@ -93,9 +99,13 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                             : null,
                         icon: const Icon(Icons.remove_circle_outline),
                       ),
-                      Text('$maxPassengers',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(
+                        '$maxPassengers',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       IconButton(
                         onPressed: maxPassengers < 8
                             ? () => setDialogState(() => maxPassengers++)
@@ -126,9 +136,9 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                   if (dialogContext.mounted) Navigator.pop(dialogContext, true);
                 } catch (e) {
                   if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(content: Text('Error: $e')),
-                    );
+                    ScaffoldMessenger.of(
+                      dialogContext,
+                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
                   }
                 }
               },
@@ -143,9 +153,9 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
     if (result == true) {
       _loadPools();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ride pool created')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Ride pool created')));
       }
     }
   }
@@ -185,43 +195,61 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
               children: [
                 _detailRow('Status', pool['status'] ?? 'OPEN'),
                 _detailRow(
-                    'Passengers',
-                    '${pool['currentPassengers'] ?? 0}/${pool['maxPassengers'] ?? 4}'),
+                  'Passengers',
+                  '${pool['currentPassengers'] ?? 0}/${pool['maxPassengers'] ?? 4}',
+                ),
                 if (pool['routeDirection'] != null)
                   _detailRow('Route', pool['routeDirection']),
                 if (pool['driverId'] != null)
-                  _detailRow('Driver',
-                      _shortId((pool['driverId']?['value'] ?? pool['driverId']).toString())),
+                  _detailRow(
+                    'Driver',
+                    _shortId(
+                      (pool['driverId']?['value'] ?? pool['driverId'])
+                          .toString(),
+                    ),
+                  ),
                 const Divider(),
-                const Text('Members:',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const Text(
+                  'Members:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
                 const SizedBox(height: 8),
                 if (members.isEmpty)
-                  Text('No rides in this pool yet',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12))
+                  Text(
+                    'No rides in this pool yet',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  )
                 else
-                  ...members.map((m) => ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
-                          radius: 14,
-                          backgroundColor: _memberStatusColor(
-                                  m['status'] ?? 'Pending')
-                              .withAlpha(30),
-                          child: Text('${(m['pickupOrder'] ?? 0) + 1}',
-                              style: const TextStyle(fontSize: 11)),
+                  ...members.map(
+                    (m) => ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        radius: 14,
+                        backgroundColor: _memberStatusColor(
+                          m['status'] ?? 'Pending',
+                        ).withAlpha(30),
+                        child: Text(
+                          '${(m['pickupOrder'] ?? 0) + 1}',
+                          style: const TextStyle(fontSize: 11),
                         ),
-                        title: Text(
-                          'Ride: ${_shortId((m['rideId']?['value'] ?? m['rideId'] ?? '').toString())}',
-                          style: const TextStyle(fontSize: 12),
+                      ),
+                      title: Text(
+                        'Ride: ${_shortId((m['rideId']?['value'] ?? m['rideId'] ?? '').toString())}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      subtitle: Text(
+                        m['status'] ?? 'Pending',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: _memberStatusColor(m['status'] ?? 'Pending'),
                         ),
-                        subtitle: Text(m['status'] ?? 'Pending',
-                            style: TextStyle(
-                                fontSize: 11,
-                                color: _memberStatusColor(
-                                    m['status'] ?? 'Pending'))),
-                      )),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -250,16 +278,21 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
         children: [
           SizedBox(
             width: 100,
-            child: Text('$label:',
-                style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500)),
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           Expanded(
-              child: Text(value,
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600))),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );
@@ -274,48 +307,61 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline,
-                              size: 48, color: AppColors.error),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          ElevatedButton(
-                              onPressed: _loadPools,
-                              child: const Text('Retry')),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : _pools.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.group_off,
-                                  size: 64, color: Theme.of(context).colorScheme.outlineVariant),
-                              const SizedBox(height: 12),
-                              Text('No ride pools',
-                                  style: TextStyle(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                              const SizedBox(height: 8),
-                              Text('Create a pool to combine rides',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Theme.of(context).colorScheme.outlineVariant)),
-                            ],
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadPools,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(12),
-                            itemCount: _pools.length,
-                            itemBuilder: (context, index) =>
-                                _buildPoolCard(_pools[index]),
-                          ),
+                      const SizedBox(height: 12),
+                      Text(_error!),
+                      ElevatedButton(
+                        onPressed: _loadPools,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : _pools.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.group_off,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No ride pools',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Create a pool to combine rides',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadPools,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _pools.length,
+                    itemBuilder: (context, index) =>
+                        _buildPoolCard(_pools[index]),
+                  ),
+                ),
         ),
       ],
     );
@@ -338,14 +384,18 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
               child: Text(
                 'Ride Pools',
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.add_circle_outline,
-                  color: Colors.white, size: 24),
+              icon: const Icon(
+                Icons.add_circle_outline,
+                color: Colors.white,
+                size: 24,
+              ),
               onPressed: _showCreatePoolDialog,
             ),
             IconButton(
@@ -390,12 +440,16 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                     child: Text(
                       name ?? 'Pool ${_shortId(poolId.toString())}',
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 14),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: _poolStatusColor(status).withAlpha(20),
                       borderRadius: BorderRadius.circular(12),
@@ -403,9 +457,10 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                     child: Text(
                       status,
                       style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: _poolStatusColor(status)),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: _poolStatusColor(status),
+                      ),
                     ),
                   ),
                 ],
@@ -414,18 +469,28 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
               // Passenger progress bar
               Row(
                 children: [
-                  Icon(Icons.person, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  Icon(
+                    Icons.person,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 4),
-                  Text('$current/$max',
-                      style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text(
+                    '$current/$max',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
                         value: max > 0 ? current / max : 0,
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           current >= max ? AppColors.error : AppColors.success,
                         ),
@@ -439,12 +504,20 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
               if (direction != null)
                 Row(
                   children: [
-                    Icon(Icons.route, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    Icon(
+                      Icons.route,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
-                      child: Text(direction,
-                          style: TextStyle(
-                              fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      child: Text(
+                        direction,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -453,13 +526,18 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Row(
                     children: [
-                      const Icon(Icons.drive_eta,
-                          size: 14, color: AppColors.driverColor),
+                      const Icon(
+                        Icons.drive_eta,
+                        size: 14,
+                        color: AppColors.driverColor,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Driver: ${_shortId(driverId.toString())}',
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.driverColor),
+                          fontSize: 12,
+                          color: AppColors.driverColor,
+                        ),
                       ),
                     ],
                   ),
@@ -467,7 +545,10 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
               const SizedBox(height: 4),
               Text(
                 _formatDate(createdAt),
-                style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.outlineVariant),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
             ],
           ),

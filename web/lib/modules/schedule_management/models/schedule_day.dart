@@ -62,7 +62,8 @@ class ScheduleDay {
       'id': id,
       'driverId': driverId,
       'companyId': companyId,
-      'date': '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+      'date':
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
       'startTime': startTime,
       'endTime': endTime,
       'status': status.value,

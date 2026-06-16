@@ -54,10 +54,7 @@ void main() {
     });
 
     test('fromJson handles null address as empty string', () {
-      final json = <String, dynamic>{
-        'latitude': 48.0,
-        'longitude': 11.0,
-      };
+      final json = <String, dynamic>{'latitude': 48.0, 'longitude': 11.0};
 
       final location = Location.fromJson(json);
 

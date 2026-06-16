@@ -150,7 +150,9 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                       suffixIcon: state.selectedDriverId != null
                           ? IconButton(
                               icon: const Icon(Icons.close, size: 18),
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               tooltip: 'Clear',
                               splashRadius: 18,
                               onPressed: () => context

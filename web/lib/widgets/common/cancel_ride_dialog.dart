@@ -55,7 +55,9 @@ class _CancelRideDialogState extends State<CancelRideDialog> {
               const SizedBox(height: 16),
               TextField(
                 controller: _feeController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Cancellation Fee (optional)',
                   prefixText: '\u20AC ',
@@ -76,10 +78,9 @@ class _CancelRideDialogState extends State<CancelRideDialog> {
               ? null
               : () {
                   final fee = double.tryParse(_feeController.text);
-                  Navigator.of(context).pop({
-                    'reason': _selectedReason,
-                    'fee': fee,
-                  });
+                  Navigator.of(
+                    context,
+                  ).pop({'reason': _selectedReason, 'fee': fee});
                 },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.error,

@@ -27,13 +27,9 @@ class _BiometricButtonState extends State<BiometricButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
     _initBiometrics();
   }
@@ -83,7 +79,6 @@ class _BiometricButtonState extends State<BiometricButton>
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-
         if (!state.biometricAvailable || !state.biometricEnabled) {
           return const SizedBox.shrink();
         }
@@ -93,7 +88,11 @@ class _BiometricButtonState extends State<BiometricButton>
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
+                Expanded(
+                  child: Divider(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
@@ -104,7 +103,11 @@ class _BiometricButtonState extends State<BiometricButton>
                     ),
                   ),
                 ),
-                Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
+                Expanded(
+                  child: Divider(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -115,7 +118,9 @@ class _BiometricButtonState extends State<BiometricButton>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -130,9 +135,7 @@ class _BiometricButtonState extends State<BiometricButton>
                     child: Container(
                       width: 64,
                       height: 64,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: const BoxDecoration(shape: BoxShape.circle),
                       child: state.isLoading
                           ? const Padding(
                               padding: EdgeInsets.all(16.0),
@@ -170,10 +173,7 @@ class _BiometricButtonState extends State<BiometricButton>
 class BiometricSetupDialog extends StatelessWidget {
   final String? userId;
 
-  const BiometricSetupDialog({
-    super.key,
-    this.userId,
-  });
+  const BiometricSetupDialog({super.key, this.userId});
 
   @override
   Widget build(BuildContext context) {

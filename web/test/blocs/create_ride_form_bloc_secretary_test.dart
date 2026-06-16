@@ -72,15 +72,15 @@ void main() {
 
   group('CreateRideFormState.isValid — secretary rules', () {
     CreateRideFormState baseValid() => CreateRideFormState(
-          clientName: 'Anna',
-          selectedClientId: 'client-42',
-          fromAddress: 'Pickup St',
-          toAddress: 'Dropoff St',
-          flightNumber: '',
-          pickupDateTime: DateTime(2026, 6, 1),
-          isAirportTransfer: false,
-          isArrival: false,
-        );
+      clientName: 'Anna',
+      selectedClientId: 'client-42',
+      fromAddress: 'Pickup St',
+      toAddress: 'Dropoff St',
+      flightNumber: '',
+      pickupDateTime: DateTime(2026, 6, 1),
+      isAirportTransfer: false,
+      isArrival: false,
+    );
 
     test('isValid is true when client selected and addresses filled', () {
       expect(baseValid().isValid, isTrue);
@@ -159,20 +159,23 @@ void main() {
       expect(copy.selectedClientId, 'client-42');
     });
 
-    test('passing selectedClientId updates value when clearClientId is false', () {
-      final state = CreateRideFormState(
-        clientName: 'Anna',
-        selectedClientId: 'old-id',
-        fromAddress: '',
-        toAddress: '',
-        flightNumber: '',
-        pickupDateTime: DateTime(2026, 6, 1),
-        isAirportTransfer: false,
-        isArrival: false,
-      );
-      final copy = state.copyWith(selectedClientId: 'new-id');
-      expect(copy.selectedClientId, 'new-id');
-    });
+    test(
+      'passing selectedClientId updates value when clearClientId is false',
+      () {
+        final state = CreateRideFormState(
+          clientName: 'Anna',
+          selectedClientId: 'old-id',
+          fromAddress: '',
+          toAddress: '',
+          flightNumber: '',
+          pickupDateTime: DateTime(2026, 6, 1),
+          isAirportTransfer: false,
+          isArrival: false,
+        );
+        final copy = state.copyWith(selectedClientId: 'new-id');
+        expect(copy.selectedClientId, 'new-id');
+      },
+    );
   });
 
   group('FormSubmitted — requires selectedClientId', () {
@@ -208,8 +211,11 @@ void main() {
       ),
       act: (bloc) => bloc.add(const FormSubmitted()),
       expect: () => [
-        isA<CreateRideFormState>()
-            .having((s) => s.status, 'status', CreateRideFormStatus.submitting),
+        isA<CreateRideFormState>().having(
+          (s) => s.status,
+          'status',
+          CreateRideFormStatus.submitting,
+        ),
       ],
     );
   });

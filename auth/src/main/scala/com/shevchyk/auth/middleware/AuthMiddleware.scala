@@ -90,3 +90,12 @@ object AuthMiddleware:
       ZIO.unit
     else
       ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Access denied"}""")))
+
+  /**
+   * Returns true if the user is a platform SuperAdmin (role = SUPER_ADMIN). Pure Boolean helper for non-Tapir code
+   * paths (WebSocket, DevRoutes) that may need this check.
+   *
+   * Compares case-insensitively and ignores underscores so that both the Scala enum `.toString` form ("SuperAdmin") and
+   * the JSON-encoder form ("SUPER_ADMIN") are recognised as valid.
+   */
+  def isSuperAdmin(user: AuthenticatedUser): Boolean = user.role.toUpperCase.replace("_", "") == "SUPERADMIN"

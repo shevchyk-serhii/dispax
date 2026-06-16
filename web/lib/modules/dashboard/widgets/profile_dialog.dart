@@ -41,10 +41,7 @@ class ProfileDialog extends StatelessWidget {
                 const SizedBox(height: 8),
                 const Text(
                   'Security Settings',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -72,8 +69,8 @@ class ProfileDialog extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   authState.biometricEnabled
-                    ? 'Quick login with Face ID/Touch ID enabled'
-                    : 'Use biometrics for quick login',
+                      ? 'Quick login with Face ID/Touch ID enabled'
+                      : 'Use biometrics for quick login',
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -124,6 +121,8 @@ class ProfileDialog extends StatelessWidget {
         return 'Dispatcher';
       case PersonRole.admin:
         return 'Admin';
+      case PersonRole.superAdmin:
+        return 'Platform Admin';
     }
   }
 }

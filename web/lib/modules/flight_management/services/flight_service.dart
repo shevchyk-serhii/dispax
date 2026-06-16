@@ -40,7 +40,10 @@ class FlightService {
 
   FlightService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
 
-  Future<List<FlightData>> getArrivals({String airport = 'default', int? hours}) async {
+  Future<List<FlightData>> getArrivals({
+    String airport = 'default',
+    int? hours,
+  }) async {
     try {
       final response = await _apiClient.get('/flights/$airport/arrivals');
       if (response.statusCode == 200) {
@@ -53,7 +56,10 @@ class FlightService {
     }
   }
 
-  Future<List<FlightData>> getDepartures({String airport = 'default', int? hours}) async {
+  Future<List<FlightData>> getDepartures({
+    String airport = 'default',
+    int? hours,
+  }) async {
     try {
       final response = await _apiClient.get('/flights/$airport/departures');
       if (response.statusCode == 200) {

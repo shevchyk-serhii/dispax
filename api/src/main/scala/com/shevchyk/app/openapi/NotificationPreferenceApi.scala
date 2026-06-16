@@ -22,36 +22,34 @@ object NotificationPreferenceApi:
 
   private val preferenceTag = "NotificationPreference"
 
-  given Schema[NotificationPreferenceId]              = Schema.derived
-  given Schema[NotificationPreference]                = Schema.derived
-  given Schema[UpdateNotificationPreferenceRequest]   = Schema.derived
+  given Schema[NotificationPreferenceId]            = Schema.derived
+  given Schema[NotificationPreference]              = Schema.derived
+  given Schema[UpdateNotificationPreferenceRequest] = Schema.derived
 
   type NotificationPreferenceEnv = JwtService & NotificationPreferenceRepository
 
   // -- Endpoint descriptions ------------------------------------------------
 
-  val getEndpoint =
-    secureEndpoint.get
-      .in("api" / "notification-preferences")
-      .out(jsonBody[NotificationPreference])
-      .tag(preferenceTag)
-      .summary("Get the user's notification preferences")
+  val getEndpoint = secureEndpoint.get
+    .in("api" / "notification-preferences")
+    .out(jsonBody[NotificationPreference])
+    .tag(preferenceTag)
+    .summary("Get the user's notification preferences")
 
-  val updateEndpoint =
-    secureEndpoint.put
-      .in("api" / "notification-preferences")
-      .in(jsonBody[UpdateNotificationPreferenceRequest])
-      .out(jsonBody[NotificationPreference])
-      .tag(preferenceTag)
-      .summary("Update the user's notification preferences")
+  val updateEndpoint = secureEndpoint.put
+    .in("api" / "notification-preferences")
+    .in(jsonBody[UpdateNotificationPreferenceRequest])
+    .out(jsonBody[NotificationPreference])
+    .tag(preferenceTag)
+    .summary("Update the user's notification preferences")
 
   val endpoints = List(getEndpoint, updateEndpoint)
 
   // -- Server logic ---------------------------------------------------------
 
-  private val getServer: ZServerEndpoint[NotificationPreferenceEnv, Any] =
-    getEndpoint.serverLogic[NotificationPreferenceEnv] { user => _ =>
-      (for {
+  private val getServer: ZServerEndpoint[NotificationPreferenceEnv, Any] = getEndpoint
+    .serverLogic[NotificationPreferenceEnv] { user => _ =>
+      for {
         repo    <- ZIO.service[NotificationPreferenceRepository]
         prefOpt <- repo.findByPersonId(PersonId(user.userId)).mapError(internal)
         pref     = prefOpt.getOrElse(
@@ -60,12 +58,12 @@ object NotificationPreferenceApi:
                        personId = PersonId(user.userId)
                      )
                    )
-      } yield pref)
+      } yield pref
     }
 
-  private val updateServer: ZServerEndpoint[NotificationPreferenceEnv, Any] =
-    updateEndpoint.serverLogic[NotificationPreferenceEnv] { user => req =>
-      (for {
+  private val updateServer: ZServerEndpoint[NotificationPreferenceEnv, Any] = updateEndpoint
+    .serverLogic[NotificationPreferenceEnv] { user => req =>
+      for {
         repo     <- ZIO.service[NotificationPreferenceRepository]
         existing <- repo.findByPersonId(PersonId(user.userId)).mapError(internal)
         current   = existing.getOrElse(
@@ -87,7 +85,7 @@ object NotificationPreferenceApi:
                       updatedAt = Instant.now()
                     )
         saved    <- repo.upsert(updated).mapError(internal)
-      } yield saved)
+      } yield saved
     }
 
   val serverEndpoints: List[ZServerEndpoint[NotificationPreferenceEnv, Any]] = List(

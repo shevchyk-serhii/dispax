@@ -4,15 +4,17 @@ class AppColors {
   AppColors._();
 
   // ─── Brand / Primary — Graphite ───
-  static const Color primary = Color(0xFF18181B);       // Zinc 900 (graphite)
-  static const Color primaryLight = Color(0xFF3F3F46);  // Zinc 700
-  static const Color primaryDark = Color(0xFF09090B);   // Zinc 950
-  static const Color primarySurface = Color(0xFFF4F4F5); // Zinc 100 (light bg tint)
+  static const Color primary = Color(0xFF18181B); // Zinc 900 (graphite)
+  static const Color primaryLight = Color(0xFF3F3F46); // Zinc 700
+  static const Color primaryDark = Color(0xFF09090B); // Zinc 950
+  static const Color primarySurface = Color(
+    0xFFF4F4F5,
+  ); // Zinc 100 (light bg tint)
 
   // ─── Accent (single corporate accent) ───
-  static const Color accent = Color(0xFF0EA5E9);        // Sky 500 (cyan)
-  static const Color accentLight = Color(0xFF38BDF8);   // Sky 400
-  static const Color accentDark = Color(0xFF0284C7);    // Sky 600
+  static const Color accent = Color(0xFF0EA5E9); // Sky 500 (cyan)
+  static const Color accentLight = Color(0xFF38BDF8); // Sky 400
+  static const Color accentDark = Color(0xFF0284C7); // Sky 600
 
   // ─── Brand Core (Graphite ramp) ───
   static const Color brand900 = Color(0xFF09090B);
@@ -26,6 +28,7 @@ class AppColors {
   static const Color driverColor = primary;
   static const Color secretaryColor = primary;
   static const Color clientColor = primary;
+  static const Color superAdminColor = primary;
 
   // Role Light Backgrounds — unified neutral tint
   static const Color dispatcherLightBg = primarySurface;

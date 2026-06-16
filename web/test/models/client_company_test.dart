@@ -7,15 +7,14 @@ void main() {
       String? email,
       String? phone,
       String? address,
-    }) =>
-        {
-          'id': 'cc-1',
-          'name': 'Acme GmbH',
-          'taxiCompanyId': 'tc-1',
-          if (email != null) 'email': email,
-          if (phone != null) 'phone': phone,
-          if (address != null) 'address': address,
-        };
+    }) => {
+      'id': 'cc-1',
+      'name': 'Acme GmbH',
+      'taxiCompanyId': 'tc-1',
+      if (email != null) 'email': email,
+      if (phone != null) 'phone': phone,
+      if (address != null) 'address': address,
+    };
 
     test('parses required fields', () {
       final cc = ClientCompany.fromJson(_json());
@@ -32,11 +31,13 @@ void main() {
     });
 
     test('parses all optional fields when present', () {
-      final cc = ClientCompany.fromJson(_json(
-        email: 'acme@example.com',
-        phone: '+4989123456',
-        address: 'Hauptstraße 1, München',
-      ));
+      final cc = ClientCompany.fromJson(
+        _json(
+          email: 'acme@example.com',
+          phone: '+4989123456',
+          address: 'Hauptstraße 1, München',
+        ),
+      );
       expect(cc.email, 'acme@example.com');
       expect(cc.phone, '+4989123456');
       expect(cc.address, 'Hauptstraße 1, München');
