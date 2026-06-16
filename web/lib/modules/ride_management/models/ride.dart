@@ -75,7 +75,8 @@ class Ride {
   final bool isVipRide;
   final bool preferredDriverUsed;
   final String? poolId;
-  final String? airportCheckpoint; // "landed" | "arrivals_hall" | "terminal_exit" | null
+  final String?
+  airportCheckpoint; // "landed" | "arrivals_hall" | "terminal_exit" | null
 
   const Ride({
     required this.id,

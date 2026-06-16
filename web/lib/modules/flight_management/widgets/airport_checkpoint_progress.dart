@@ -4,12 +4,10 @@ import '../muc_checkpoints.dart';
 /// Horizontal step indicator showing the client's current checkpoint in the terminal chain.
 /// Completed steps are green, the current/active step is amber, future steps are grey.
 class AirportCheckpointProgress extends StatelessWidget {
-  final String? currentCheckpoint; // "landed" | "arrivals_hall" | "terminal_exit" | null
+  final String?
+  currentCheckpoint; // "landed" | "arrivals_hall" | "terminal_exit" | null
 
-  const AirportCheckpointProgress({
-    super.key,
-    required this.currentCheckpoint,
-  });
+  const AirportCheckpointProgress({super.key, required this.currentCheckpoint});
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +23,9 @@ class AirportCheckpointProgress extends StatelessWidget {
             Text(
               'Terminal Progress',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
@@ -69,12 +67,11 @@ class AirportCheckpointProgress extends StatelessWidget {
         Container(
           width: 28,
           height: 28,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           child: Icon(
-            index <= currentOrdinal ? Icons.check : Icons.radio_button_unchecked,
+            index <= currentOrdinal
+                ? Icons.check
+                : Icons.radio_button_unchecked,
             size: 16,
             color: Colors.white,
           ),
@@ -82,10 +79,9 @@ class AirportCheckpointProgress extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: color,
-                fontSize: 9,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: color, fontSize: 9),
           textAlign: TextAlign.center,
         ),
       ],

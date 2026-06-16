@@ -2,8 +2,9 @@
 /// T1 coordinates are used as the default chain.
 /// The server knows the actual terminal from rides.flight_terminal.
 class MucCheckpoint {
-  final String key;       // matches backend: "landed" | "arrivals_hall" | "terminal_exit"
-  final String labelKey;  // l10n key
+  final String
+  key; // matches backend: "landed" | "arrivals_hall" | "terminal_exit"
+  final String labelKey; // l10n key
   final double lat;
   final double lon;
 

@@ -300,7 +300,9 @@ class RideService {
 
   Future<Map<String, dynamic>?> getAirportCheckpoint(String rideId) async {
     try {
-      final response = await privateApiClient.get('/rides/$rideId/airport-checkpoint');
+      final response = await privateApiClient.get(
+        '/rides/$rideId/airport-checkpoint',
+      );
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }

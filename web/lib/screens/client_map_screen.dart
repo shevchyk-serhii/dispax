@@ -658,12 +658,19 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             return isPassed
                 ? OutlinedButton.icon(
                     onPressed: null,
-                    icon: const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 16),
+                    icon: const Icon(
+                      Icons.check_circle,
+                      color: Color(0xFF4CAF50),
+                      size: 16,
+                    ),
                     label: Text(label),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF4CAF50),
                       side: const BorderSide(color: Color(0xFF4CAF50)),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                     ),
                   )
                 : ElevatedButton(
@@ -671,17 +678,25 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                         ? null
                         : () async {
                             try {
-                              await _rideService?.markAirportCheckpoint(_activeRide!.id, key);
+                              await _rideService?.markAirportCheckpoint(
+                                _activeRide!.id,
+                                key,
+                              );
                               setState(() {
                                 _airportCheckpointSent.add(key);
-                                _activeRide = _activeRide!.copyWith(airportCheckpoint: key);
+                                _activeRide = _activeRide!.copyWith(
+                                  airportCheckpoint: key,
+                                );
                               });
                             } catch (_) {
                               // best-effort; silently ignore errors
                             }
                           },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
                     child: Text(label),

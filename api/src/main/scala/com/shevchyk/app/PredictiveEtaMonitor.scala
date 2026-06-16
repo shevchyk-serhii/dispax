@@ -13,18 +13,17 @@ import java.time.{Duration, Instant}
 /**
  * Predictive ETA monitor — the "punctuality guarantee" background job.
  *
- * Periodically scans assigned rides whose pickup is approaching, computes the
- * driver's live ETA, and — when the driver is at risk of missing the pickup on
- * time — emits a `WebSocketEvent.EtaAtRisk` so dispatchers are alerted *before*
- * the client notices. Mirrors the structure of [[ReminderScheduler]].
+ * Periodically scans assigned rides whose pickup is approaching, computes the driver's live ETA, and — when the driver
+ * is at risk of missing the pickup on time — emits a `WebSocketEvent.EtaAtRisk` so dispatchers are alerted *before* the
+ * client notices. Mirrors the structure of [[ReminderScheduler]].
  *
- * Alerts are deduplicated per (ride, driver) via [[EtaAlertRepository]], so a
- * sustained at-risk situation produces a single alert rather than one per tick.
+ * Alerts are deduplicated per (ride, driver) via [[EtaAlertRepository]], so a sustained at-risk situation produces a
+ * single alert rather than one per tick.
  */
 object PredictiveEtaMonitor:
 
   // How far ahead to look for pickups worth monitoring.
-  private val LookAheadMinutes = 45L
+  private val LookAheadMinutes     = 45L
   // Alert when the slack (minutes spare before pickup) drops below this.
   private val RiskThresholdMinutes = 5L
 
@@ -35,7 +34,9 @@ object PredictiveEtaMonitor:
     ZIO.logInfo("PredictiveEtaMonitor started") *>
       safeTick.repeat(Schedule.fixed(1.minute)).forkDaemon.unit
 
-  /** A single monitoring pass. Exposed for deterministic tests. */
+  /**
+   * A single monitoring pass. Exposed for deterministic tests.
+   */
   private[app] def tick: ZIO[Env, Throwable, Unit] =
     for
       rideRepo  <- ZIO.service[RideRepository]
