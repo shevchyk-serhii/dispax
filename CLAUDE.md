@@ -174,8 +174,17 @@ PORT=8080
 
 ---
 
+## Development Workflow
+
+- **Every feature is developed in a separate git worktree** — never commit feature work directly to `main`. Create a dedicated worktree + branch per feature (`git worktree add ../dispax-<feature> -b <branch>`), implement and test there, then merge back into `main`.
+- Branch naming: `feat/<name>` for features, `chore/<name>` for maintenance, `agent/<name>` for agent-driven work.
+- Run formatting (`make fmt` / `make fmtAll`) and tests (`make test`) inside the worktree before merging.
+
+---
+
 ## What NOT to Do
 
+- Do not develop features directly on `main` — always use a separate git worktree
 - Do not mock the DB in integration tests — use Testcontainers
 - Do not break company isolation (`CompanyId`) in any request
 - Do not use `Future` or `throw` — only ZIO effects
