@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../blocs/auth/auth_bloc.dart';
 import '../modules/core/services/api_client.dart';
 
 // ---------------------------------------------------------------------------
@@ -131,7 +132,9 @@ class SuperAdminCompaniesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => SuperAdminCompanyBloc(ApiClient())..add(LoadCompanies()),
+      create: (context) =>
+          SuperAdminCompanyBloc(context.read<AuthBloc>().apiClient)
+            ..add(LoadCompanies()),
       child: const _CompaniesView(),
     );
   }

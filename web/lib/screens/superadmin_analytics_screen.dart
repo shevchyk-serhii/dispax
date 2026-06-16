@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../blocs/auth/auth_bloc.dart';
 import '../modules/core/services/api_client.dart';
 
 // ---------------------------------------------------------------------------
@@ -178,8 +179,8 @@ class SuperAdminAnalyticsScreen extends StatelessWidget {
     final from = DateTime(now.year, now.month, 1);
 
     return BlocProvider(
-      create: (_) =>
-          SuperAdminAnalyticsBloc(ApiClient())
+      create: (context) =>
+          SuperAdminAnalyticsBloc(context.read<AuthBloc>().apiClient)
             ..add(LoadAnalytics(from: from, to: now)),
       child: const _AnalyticsView(),
     );
