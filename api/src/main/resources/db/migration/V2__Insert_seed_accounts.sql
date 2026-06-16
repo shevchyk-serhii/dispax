@@ -149,3 +149,27 @@ FROM (VALUES
 ) AS d(driver_id)
 CROSS JOIN (VALUES (0), (1), (2)) AS days(offset_days)
 ON CONFLICT (driver_id, date) DO NOTHING;
+
+-- Billing profile for the demo company (Dispax München), rendered into invoice PDFs.
+INSERT INTO company_billing_profile
+    (company_id, business_type, legal_name, address_line1, address_line2,
+     phone, email, tax_number, vat_id,
+     bank_name, bank_account_no, bank_code, iban, bic, payment_terms_days, invoice_intro)
+VALUES
+    ('10101010-1010-1010-1010-101010101010',
+     'Mietwagenunternehmen / Transfer<>Service',
+     'Dispax München',
+     'Leopoldstraße 1',
+     '80802 München',
+     '+49 89 12345678',
+     'info@dispax-muenchen.de',
+     '146/116/61550',
+     'DE123456789',
+     'Deutsche Bank',
+     '3939543',
+     '70070024',
+     'DE24 7007 0024 0393 9543 00',
+     'DEUTDEDBMUC',
+     7,
+     'Ich gestatte mir, die Auftragsfahrtkosten wie folgt in Rechnung zu stellen.')
+ON CONFLICT (company_id) DO NOTHING;
