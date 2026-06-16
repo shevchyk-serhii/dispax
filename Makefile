@@ -38,7 +38,9 @@ setup-hooks:
 
 # ─── Backend ────────────────────────────────────────────────────────────────
 
-# Start backend locally with dev profile (reads .env.dev)
+# Start backend locally with the development profile.
+# Reads .env.dev (APP_ENV=development); the app selects application-development.conf
+# from APP_ENV itself, so plain `sbt run` is enough — no -Dconfig.resource needed.
 dev:
 	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run
 

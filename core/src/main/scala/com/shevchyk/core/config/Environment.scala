@@ -23,5 +23,21 @@ object Environment {
   def isProduction: Boolean  = current == Production
   def isTest: Boolean        = current == Test
 
+  /** Name of the HOCON override (`application-<env>.conf`) that matches the current environment. */
+  def configResourceName: String = s"application-${current.name}.conf"
+
+  /**
+   * Make `APP_ENV` the single source of truth for HOCON selection: point Typesafe Config (which
+   * `ConfigProvider.fromResourcePath()` reads) at `application-<env>.conf` unless an explicit
+   * `-Dconfig.resource=...` was already supplied. Idempotent; safe to call before any config layer
+   * is built. Returns whether the property was set by this call.
+   */
+  def ensureConfigResource(): Boolean =
+    if sys.props.contains("config.resource") then false
+    else {
+      java.lang.System.setProperty("config.resource", configResourceName)
+      true
+    }
+
   val layer: ZLayer[Any, Nothing, Environment] = ZLayer.succeed(current)
 }

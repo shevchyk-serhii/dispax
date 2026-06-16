@@ -43,13 +43,15 @@ addCommandAlias("fmtWatch", "~fmtAll")
 addCommandAlias("cucumber", "testOnly *CucumberRunner")
 addCommandAlias("cucumberWithServer", "; testServer & ; cucumber ; Test / runMain com.shevchyk.TestApplication")
 addCommandAlias("testServer", "Test / runMain com.shevchyk.TestApplication")
+// `app.env` mirrors the APP_ENV env var (Environment.current reads both). The app derives the
+// HOCON profile (application-<env>.conf) from it, so these aliases only set the single selector.
 addCommandAlias(
   "runDev",
-  "; set Compile / run / javaOptions += \"-Dconfig.resource=application-development.conf\"; run"
+  "; set Compile / run / javaOptions += \"-Dapp.env=development\"; run"
 )
 addCommandAlias(
   "runProd",
-  "; set Compile / run / javaOptions += \"-Dconfig.resource=application-production.conf\"; run"
+  "; set Compile / run / javaOptions += \"-Dapp.env=production\"; run"
 )
 
 lazy val commonDependencies = Seq(
@@ -72,17 +74,19 @@ lazy val jsonDependencies = Seq(
 // Tapir: declarative endpoint descriptions used to generate OpenAPI + Swagger UI
 // and to interpret the same endpoints on the zio-http server. Version 1.11.x is
 // compatible with Scala 3.3.x, ZIO 2.1.x and zio-http 3.0.x.
-lazy val tapirVersion = "1.11.10"
-lazy val tapirDependencies = Seq(
-  "com.softwaremill.sttp.tapir" %% "tapir-core"            % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-zio"             % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-json-zio"        % tapirVersion
+lazy val tapirVersion            = "1.11.10"
+
+lazy val tapirDependencies       = Seq(
+  "com.softwaremill.sttp.tapir" %% "tapir-core"     % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-zio"      % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-json-zio" % tapirVersion
 )
+
 // Server interpreter + bundled Swagger UI. Only the api (root) module that mounts
 // the HTTP server needs these.
 lazy val tapirServerDependencies = Seq(
-  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"    % tapirVersion,
-  "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle"  % tapirVersion
+  "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server"   % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
 )
 
 lazy val circeDependencies = Seq(
@@ -99,7 +103,8 @@ lazy val monocleDependencies = Seq(
 // iron: zero-cost compile-time refinement types. Domain invariants ("non-empty",
 // "in range") become part of the type rather than runtime checks scattered across
 // services. The zio-json module gives codecs for refined types out of the box.
-lazy val ironVersion = "2.6.0"
+lazy val ironVersion      = "2.6.0"
+
 lazy val ironDependencies = Seq(
   "io.github.iltotore" %% "iron"          % ironVersion,
   "io.github.iltotore" %% "iron-zio-json" % ironVersion
