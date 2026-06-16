@@ -54,11 +54,13 @@ class DriverLocationServiceImpl(
    * Rejects out-of-range coordinates before they reach the DB / Haversine math.
    */
   private def validateCoordinates(latitude: Double, longitude: Double): Task[Unit] =
-    if latitude < -90.0 || latitude > 90.0 then
-      ZIO.fail(new IllegalArgumentException(s"Latitude out of range [-90, 90]: $latitude"))
-    else if longitude < -180.0 || longitude > 180.0 then
-      ZIO.fail(new IllegalArgumentException(s"Longitude out of range [-180, 180]: $longitude"))
-    else ZIO.unit
+    ZIO
+      .fail(new IllegalArgumentException(s"Latitude out of range [-90, 90]: $latitude"))
+      .when(latitude < -90.0 || latitude > 90.0) *>
+      ZIO
+        .fail(new IllegalArgumentException(s"Longitude out of range [-180, 180]: $longitude"))
+        .when(longitude < -180.0 || longitude > 180.0)
+        .unit
 
   private def checkGeofences(driverId: PersonId, latitude: Double, longitude: Double): UIO[Unit] =
     val effect: Task[Unit] =

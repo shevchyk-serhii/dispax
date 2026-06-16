@@ -24,64 +24,63 @@ object AppSecure:
   type Err = (StatusCode, ApiError)
 
   // -- Authenticated base endpoint (mirrors AuthMiddleware.authenticateRequest) --
-  val secureEndpoint =
-    endpoint
-      .securityIn(auth.bearer[String]())
-      .errorOut(statusCode.and(jsonBody[ApiError]))
-      .zServerSecurityLogic[JwtService, AuthenticatedUser] { token =>
-        ZIO
-          .serviceWithZIO[JwtService](_.validateToken(token))
-          .mapBoth(
-            {
-              case _: InvalidTokenError | _: ExpiredTokenError =>
-                (StatusCode.Unauthorized, ApiError("Invalid or expired token"))
-              case _: JwtError                                 =>
-                (StatusCode.Unauthorized, ApiError("Authentication failed"))
-              case _                                           =>
-                (StatusCode.InternalServerError, ApiError("Internal server error"))
-            },
-            payload =>
-              AuthenticatedUser(
-                userId = payload.userId,
-                email = payload.email,
-                role = payload.role.toString,
-                companyId = payload.companyId,
-                clientCompanyId = payload.clientCompanyId
-              )
-          )
-      }
+  val secureEndpoint = endpoint
+    .securityIn(auth.bearer[String]())
+    .errorOut(statusCode.and(jsonBody[ApiError]))
+    .zServerSecurityLogic[JwtService, AuthenticatedUser] { token =>
+      ZIO
+        .serviceWithZIO[JwtService](_.validateToken(token))
+        .mapBoth(
+          {
+            case _: InvalidTokenError | _: ExpiredTokenError =>
+              (StatusCode.Unauthorized, ApiError("Invalid or expired token"))
+            case _: JwtError                                 => (StatusCode.Unauthorized, ApiError("Authentication failed"))
+            case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
+          },
+          payload =>
+            AuthenticatedUser(
+              userId = payload.userId,
+              email = payload.email,
+              role = payload.role.toString,
+              companyId = payload.companyId,
+              clientCompanyId = payload.clientCompanyId
+            )
+        )
+    }
 
   // -- Role checks (mirror AuthMiddleware.checkRole / checkRoleOrOwner) -----
 
   def checkRole(user: AuthenticatedUser, roles: String*): ZIO[Any, Err, Unit] =
     val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) then ZIO.unit
-    else ZIO.fail((StatusCode.Forbidden, ApiError("Insufficient permissions")))
+    ZIO
+      .fail((StatusCode.Forbidden, ApiError("Insufficient permissions")))
+      .unless(roles.exists(_.toUpperCase == userRoleUpper))
+      .unit
 
   def checkRoleOrOwner(user: AuthenticatedUser, resourceOwnerId: UUID, roles: String*): ZIO[Any, Err, Unit] =
     val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) || user.userId == resourceOwnerId then ZIO.unit
-    else ZIO.fail((StatusCode.Forbidden, ApiError("Access denied")))
+    ZIO
+      .fail((StatusCode.Forbidden, ApiError("Access denied")))
+      .unless(roles.exists(_.toUpperCase == userRoleUpper) || user.userId == resourceOwnerId)
+      .unit
 
   // -- UUID parsing (mirrors UuidParser, which fails with 400) -------------
 
-  def parseUuid(value: String): ZIO[Any, Err, UUID] =
-    ZIO.attempt(UUID.fromString(value)).orElseFail((StatusCode.BadRequest, ApiError("Invalid UUID format")))
+  def parseUuid(value: String): ZIO[Any, Err, UUID] = ZIO
+    .attempt(UUID.fromString(value))
+    .orElseFail((StatusCode.BadRequest, ApiError("Invalid UUID format")))
 
   def parsePersonId(value: String): ZIO[Any, Err, PersonId] = parseUuid(value).map(PersonId(_))
 
   def parseRideId(value: String): ZIO[Any, Err, RideId] = parseUuid(value).map(RideId(_))
 
-  def requireCompanyId(companyIdOpt: Option[UUID]): ZIO[Any, Err, CompanyId] =
-    ZIO
-      .fromOption(companyIdOpt)
-      .map(CompanyId(_))
-      .orElseFail((StatusCode.BadRequest, ApiError("User must belong to a company")))
+  def requireCompanyId(companyIdOpt: Option[UUID]): ZIO[Any, Err, CompanyId] = ZIO
+    .fromOption(companyIdOpt)
+    .mapBoth(_ => (StatusCode.BadRequest, ApiError("User must belong to a company")), CompanyId(_))
 
   /**
    * Generic mapping of any throwable to a 500 ("Internal server error"). The hand-written api-module handlers funnel
    * every non-`Response` failure (missing query params, JSON parse errors, "not found", RuntimeExceptions, etc.)
    * through `RouteErrorHandler.handleError`, which always produces a 500 with this body. Preserve that behaviour.
    */
-  def internal(t: Throwable): Err =
-    (StatusCode.InternalServerError, ApiError("Internal server error"))
+  def internal(t: Throwable): Err = (StatusCode.InternalServerError, ApiError("Internal server error"))

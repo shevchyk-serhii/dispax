@@ -11,7 +11,6 @@ import com.shevchyk.notification.domain.RegisterFcmTokenRequest
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.RideStatus
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -24,6 +23,8 @@ import java.util.UUID
  * checks and company isolation. The same `ServerEndpoint`s drive both the OpenAPI document and the running server.
  */
 object UserApi:
+
+  import ApiSchemas.given
 
   private val usersTag = "Users"
   private val statsTag = "Statistics"
@@ -44,18 +45,12 @@ object UserApi:
       avgAssignmentMinutes: Double
   ) derives JsonCodec
 
-  object RideStatsResponse:
-    given Schema[RideStatsResponse] = Schema.derived
-
   final case class DailyStatsEntry(
       date: String,
       completed: Int,
       cancelled: Int,
       total: Int
   ) derives JsonCodec
-
-  object DailyStatsEntry:
-    given Schema[DailyStatsEntry] = Schema.derived
 
   final case class DriverStatsEntry(
       driverId: String,
@@ -66,31 +61,16 @@ object UserApi:
       earnings: BigDecimal
   ) derives JsonCodec
 
-  object DriverStatsEntry:
-    given Schema[DriverStatsEntry] = Schema.derived
-
   final case class UserStatsResponse(
       total: Int,
       byRole: Map[String, Int]
   ) derives JsonCodec
 
-  object UserStatsResponse:
-    given Schema[UserStatsResponse] = Schema.derived
-
   final case class ReminderMinutesRequest(minutes: Int) derives JsonCodec
-
-  object ReminderMinutesRequest:
-    given Schema[ReminderMinutesRequest] = Schema.derived
 
   final case class SuccessResponse(success: Boolean) derives JsonCodec
 
-  object SuccessResponse:
-    given Schema[SuccessResponse] = Schema.derived
-
   final case class AvatarUploadResponse(success: Boolean, avatarUrl: String) derives JsonCodec
-
-  object AvatarUploadResponse:
-    given Schema[AvatarUploadResponse] = Schema.derived
 
   // -- Error helpers --------------------------------------------------------
   //
@@ -98,46 +78,59 @@ object UserApi:
   // server logic can fail with the exact status the original handler produced.
   private type Err = (StatusCode, ApiError)
 
-  private val multiErrorOut =
-    statusCode.and(jsonBody[ApiError])
+  private val multiErrorOut = statusCode.and(jsonBody[ApiError])
 
-  private val forbidden: Err          = (StatusCode.Forbidden, ApiError("Insufficient permissions"))
-  private val accessDenied: Err       = (StatusCode.Forbidden, ApiError("Access denied"))
-  private val noCompany: Err          = (StatusCode.BadRequest, ApiError("User must belong to a company"))
-  private val notFound: Err           = (StatusCode.NotFound, ApiError("User not found"))
-  private val badUuid: Err            = (StatusCode.BadRequest, ApiError("Invalid UUID format"))
+  private val forbidden: Err    = (StatusCode.Forbidden, ApiError("Insufficient permissions"))
+  private val accessDenied: Err = (StatusCode.Forbidden, ApiError("Access denied"))
+  private val noCompany: Err    = (StatusCode.BadRequest, ApiError("User must belong to a company"))
+  private val notFound: Err     = (StatusCode.NotFound, ApiError("User not found"))
+  private val badUuid: Err      = (StatusCode.BadRequest, ApiError("Invalid UUID format"))
 
-  /** Reproduce `AuthMiddleware.checkRole`: fail 403 unless the user has one of the roles. */
+  /**
+   * Reproduce `AuthMiddleware.checkRole`: fail 403 unless the user has one of the roles.
+   */
   private def checkRole(user: AuthenticatedUser, roles: String*): ZIO[Any, Err, Unit] =
     val userRoleUpper = user.role.toUpperCase
     if roles.exists(_.toUpperCase == userRoleUpper) then ZIO.unit
     else ZIO.fail(forbidden)
 
-  /** Reproduce `AuthMiddleware.checkRoleOrOwner`: 403 ("Access denied") unless role or owner. */
+  /**
+   * Reproduce `AuthMiddleware.checkRoleOrOwner`: 403 ("Access denied") unless role or owner.
+   */
   private def checkRoleOrOwner(user: AuthenticatedUser, ownerId: UUID, roles: String*): ZIO[Any, Err, Unit] =
     val userRoleUpper = user.role.toUpperCase
     if roles.exists(_.toUpperCase == userRoleUpper) || user.userId == ownerId then ZIO.unit
     else ZIO.fail(accessDenied)
 
-  /** Reproduce `UuidParser.requireCompanyId`. */
-  private def requireCompanyId(user: AuthenticatedUser): ZIO[Any, Err, com.shevchyk.core.domain.CompanyId] =
-    ZIO.fromOption(user.companyId).map(com.shevchyk.core.domain.CompanyId(_)).orElseFail(noCompany)
+  /**
+   * Reproduce `UuidParser.requireCompanyId`.
+   */
+  private def requireCompanyId(user: AuthenticatedUser): ZIO[Any, Err, com.shevchyk.core.domain.CompanyId] = ZIO
+    .fromOption(user.companyId)
+    .map(com.shevchyk.core.domain.CompanyId(_))
+    .orElseFail(noCompany)
 
-  /** Reproduce `UuidParser.parse`. */
-  private def parseUuid(value: String): ZIO[Any, Err, UUID] =
-    ZIO.attempt(UUID.fromString(value)).orElseFail(badUuid)
+  /**
+   * Reproduce `UuidParser.parse`.
+   */
+  private def parseUuid(value: String): ZIO[Any, Err, UUID] = ZIO.attempt(UUID.fromString(value)).orElseFail(badUuid)
 
-  /** Reproduce `UserRoutes.checkRateLimit`: 429 if the per-IP rate limit is exceeded. */
+  /**
+   * Reproduce `UserRoutes.checkRateLimit`: 429 if the per-IP rate limit is exceeded.
+   */
   private def checkRateLimit(ip: Option[String]): ZIO[RateLimiter, Err, Unit] =
     val ipKey = ip.getOrElse("unknown")
     for {
       allowed <- ZIO.serviceWithZIO[RateLimiter](_.checkRate(ipKey))
-      _       <- ZIO.unless(allowed)(
-                   ZIO.fail((StatusCode.TooManyRequests, ApiError("Too many requests. Please try again later.")))
-                 )
+      _       <-
+        ZIO.unless(allowed)(
+          ZIO.fail((StatusCode.TooManyRequests, ApiError("Too many requests. Please try again later.")))
+        )
     } yield ()
 
-  /** Map an `AuthError` to the same status/body `handleAuthError` produced. */
+  /**
+   * Map an `AuthError` to the same status/body `handleAuthError` produced.
+   */
   private def mapAuthError(ex: AuthError): Err =
     ex match
       case UserNotFound(_)           => (StatusCode.NotFound, ApiError("User not found"))
@@ -151,7 +144,7 @@ object UserApi:
   //
   // All server endpoints share one environment (incl. JwtService from the secure
   // security logic) so they can be interpreted together.
-  type UserEnv = JwtService & AuthService & PersonRepositoryDep & FcmService & RideService & RateLimiter
+  type UserEnv                     = JwtService & AuthService & PersonRepositoryDep & FcmService & RideService & RateLimiter
   // PersonRepository lives in core; alias keeps the type readable.
   private type PersonRepositoryDep = com.shevchyk.core.repository.PersonRepository
 
@@ -159,198 +152,175 @@ object UserApi:
   //
   // Like `secureBase`, but the error output is `(StatusCode, ApiError)`
   // so each endpoint's logic can fail with the exact status the original handler produced.
-  private def validateBearer(token: String): ZIO[JwtService, Err, AuthenticatedUser] =
-    ZIO
-      .serviceWithZIO[JwtService](_.validateToken(token))
-      .mapBoth(
-        {
-          case _: InvalidTokenError | _: ExpiredTokenError =>
-            (StatusCode.Unauthorized, ApiError("Invalid or expired token"))
-          case _: JwtError =>
-            (StatusCode.Unauthorized, ApiError("Authentication failed"))
-          case _ =>
-            (StatusCode.InternalServerError, ApiError("Internal server error"))
-        },
-        payload =>
-          AuthenticatedUser(
-            userId = payload.userId,
-            email = payload.email,
-            role = payload.role.toString,
-            companyId = payload.companyId,
-            clientCompanyId = payload.clientCompanyId
-          )
-      )
+  private def validateBearer(token: String): ZIO[JwtService, Err, AuthenticatedUser] = ZIO
+    .serviceWithZIO[JwtService](_.validateToken(token))
+    .mapBoth(
+      {
+        case _: InvalidTokenError | _: ExpiredTokenError =>
+          (StatusCode.Unauthorized, ApiError("Invalid or expired token"))
+        case _: JwtError                                 => (StatusCode.Unauthorized, ApiError("Authentication failed"))
+        case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
+      },
+      payload =>
+        AuthenticatedUser(
+          userId = payload.userId,
+          email = payload.email,
+          role = payload.role.toString,
+          companyId = payload.companyId,
+          clientCompanyId = payload.clientCompanyId
+        )
+    )
 
-  private val secureBase =
-    endpoint
-      .securityIn(auth.bearer[String]())
-      .errorOut(multiErrorOut)
-      .zServerSecurityLogic[JwtService, AuthenticatedUser](validateBearer)
+  private val secureBase = endpoint
+    .securityIn(auth.bearer[String]())
+    .errorOut(multiErrorOut)
+    .zServerSecurityLogic[JwtService, AuthenticatedUser](validateBearer)
 
   // -- Endpoint descriptions (schema only) ---------------------------------
 
   // Public stubs (no auth) -------------------------------------------------
-  val passwordChangeStubEndpoint =
-    endpoint.post
-      .in("api" / "users" / "password" / "change")
-      .out(jsonBody[SuccessResponse])
-      .tag(usersTag)
-      .summary("Change password (stub)")
+  val passwordChangeStubEndpoint = endpoint.post
+    .in("api" / "users" / "password" / "change")
+    .out(jsonBody[SuccessResponse])
+    .tag(usersTag)
+    .summary("Change password (stub)")
 
-  val avatarStubEndpoint =
-    endpoint.post
-      .in("api" / "users" / "avatar")
-      .out(jsonBody[AvatarUploadResponse])
-      .tag(usersTag)
-      .summary("Upload avatar (stub)")
+  val avatarStubEndpoint = endpoint.post
+    .in("api" / "users" / "avatar")
+    .out(jsonBody[AvatarUploadResponse])
+    .tag(usersTag)
+    .summary("Upload avatar (stub)")
 
   // Authenticated stats ----------------------------------------------------
-  val statsRidesEndpoint =
-    secureBase.get
-      .in("api" / "stats" / "rides")
-      .out(jsonBody[RideStatsResponse])
-      .tag(statsTag)
-      .summary("Ride statistics (dispatcher, admin, secretary)")
+  val statsRidesEndpoint = secureBase.get
+    .in("api" / "stats" / "rides")
+    .out(jsonBody[RideStatsResponse])
+    .tag(statsTag)
+    .summary("Ride statistics (dispatcher, admin, secretary)")
 
-  val statsRidesDailyEndpoint =
-    secureBase.get
-      .in("api" / "stats" / "rides" / "daily")
-      .in(query[Option[Int]]("days"))
-      .out(jsonBody[List[DailyStatsEntry]])
-      .tag(statsTag)
-      .summary("Daily ride counts for charts (dispatcher, admin)")
+  val statsRidesDailyEndpoint = secureBase.get
+    .in("api" / "stats" / "rides" / "daily")
+    .in(query[Option[Int]]("days"))
+    .out(jsonBody[List[DailyStatsEntry]])
+    .tag(statsTag)
+    .summary("Daily ride counts for charts (dispatcher, admin)")
 
-  val statsDriversEndpoint =
-    secureBase.get
-      .in("api" / "stats" / "drivers")
-      .out(jsonBody[List[DriverStatsEntry]])
-      .tag(statsTag)
-      .summary("Per-driver earnings and ride stats (dispatcher, admin)")
+  val statsDriversEndpoint = secureBase.get
+    .in("api" / "stats" / "drivers")
+    .out(jsonBody[List[DriverStatsEntry]])
+    .tag(statsTag)
+    .summary("Per-driver earnings and ride stats (dispatcher, admin)")
 
   // Authenticated users ----------------------------------------------------
-  val changePasswordEndpoint =
-    secureBase.put
-      .in("api" / "users" / "change-password")
-      .in(jsonBody[ChangePasswordRequest])
-      .in(clientIp)
-      .out(statusCode(StatusCode.NoContent))
-      .tag(usersTag)
-      .summary("Change own password")
+  val changePasswordEndpoint = secureBase.put
+    .in("api" / "users" / "change-password")
+    .in(jsonBody[ChangePasswordRequest])
+    .in(clientIp)
+    .out(statusCode(StatusCode.NoContent))
+    .tag(usersTag)
+    .summary("Change own password")
 
-  val getProfileEndpoint =
-    secureBase.get
-      .in("api" / "users" / "profile")
-      .out(jsonBody[PersonDto])
-      .tag(usersTag)
-      .summary("Get own profile")
+  val getProfileEndpoint = secureBase.get
+    .in("api" / "users" / "profile")
+    .out(jsonBody[PersonDto])
+    .tag(usersTag)
+    .summary("Get own profile")
 
-  val updateProfileEndpoint =
-    secureBase.put
-      .in("api" / "users" / "profile")
-      .in(jsonBody[UpdateUserRequest])
-      .out(jsonBody[UserDto])
-      .tag(usersTag)
-      .summary("Update own profile")
+  val updateProfileEndpoint = secureBase.put
+    .in("api" / "users" / "profile")
+    .in(jsonBody[UpdateUserRequest])
+    .out(jsonBody[UserDto])
+    .tag(usersTag)
+    .summary("Update own profile")
 
-  val listDriversEndpoint =
-    secureBase.get
-      .in("api" / "users" / "drivers")
-      .out(jsonBody[List[PersonDto]])
-      .tag(usersTag)
-      .summary("List drivers (dispatcher, admin, driver)")
+  val listDriversEndpoint = secureBase.get
+    .in("api" / "users" / "drivers")
+    .out(jsonBody[List[PersonDto]])
+    .tag(usersTag)
+    .summary("List drivers (dispatcher, admin, driver)")
 
-  val listClientsEndpoint =
-    secureBase.get
-      .in("api" / "users" / "clients")
-      .out(jsonBody[List[PersonDto]])
-      .tag(usersTag)
-      .summary("List clients (dispatcher, admin, secretary, driver)")
+  val listClientsEndpoint = secureBase.get
+    .in("api" / "users" / "clients")
+    .out(jsonBody[List[PersonDto]])
+    .tag(usersTag)
+    .summary("List clients (dispatcher, admin, secretary, driver)")
 
-  val userStatsEndpoint =
-    secureBase.get
-      .in("api" / "users" / "stats")
-      .out(jsonBody[UserStatsResponse])
-      .tag(usersTag)
-      .summary("User counts by role (dispatcher, admin)")
+  val userStatsEndpoint = secureBase.get
+    .in("api" / "users" / "stats")
+    .out(jsonBody[UserStatsResponse])
+    .tag(usersTag)
+    .summary("User counts by role (dispatcher, admin)")
 
-  val reminderMinutesEndpoint =
-    secureBase.put
-      .in("api" / "users" / "reminder-minutes")
-      .in(jsonBody[ReminderMinutesRequest])
-      .out(statusCode(StatusCode.NoContent))
-      .tag(usersTag)
-      .summary("Save driver's ride reminder setting")
+  val reminderMinutesEndpoint = secureBase.put
+    .in("api" / "users" / "reminder-minutes")
+    .in(jsonBody[ReminderMinutesRequest])
+    .out(statusCode(StatusCode.NoContent))
+    .tag(usersTag)
+    .summary("Save driver's ride reminder setting")
 
-  val registerFcmTokenEndpoint =
-    secureBase.post
-      .in("api" / "users" / "fcm-token")
-      .in(jsonBody[RegisterFcmTokenRequest])
-      .out(statusCode(StatusCode.Created))
-      .tag(usersTag)
-      .summary("Register an FCM token")
+  val registerFcmTokenEndpoint = secureBase.post
+    .in("api" / "users" / "fcm-token")
+    .in(jsonBody[RegisterFcmTokenRequest])
+    .out(statusCode(StatusCode.Created))
+    .tag(usersTag)
+    .summary("Register an FCM token")
 
-  val unregisterFcmTokenEndpoint =
-    secureBase.delete
-      .in("api" / "users" / "fcm-token" / path[String]("token"))
-      .out(statusCode(StatusCode.NoContent))
-      .tag(usersTag)
-      .summary("Unregister an FCM token")
+  val unregisterFcmTokenEndpoint = secureBase.delete
+    .in("api" / "users" / "fcm-token" / path[String]("token"))
+    .out(statusCode(StatusCode.NoContent))
+    .tag(usersTag)
+    .summary("Unregister an FCM token")
 
-  val listUsersEndpoint =
-    secureBase.get
-      .in("api" / "users")
-      .out(jsonBody[List[PersonDto]])
-      .tag(usersTag)
-      .summary("List all users (dispatcher, admin)")
+  val listUsersEndpoint = secureBase.get
+    .in("api" / "users")
+    .out(jsonBody[List[PersonDto]])
+    .tag(usersTag)
+    .summary("List all users (dispatcher, admin)")
 
-  val createUserEndpoint =
-    secureBase.post
-      .in("api" / "users")
-      .in(jsonBody[CreateUserRequest])
-      .in(clientIp)
-      .out(statusCode(StatusCode.Created).and(jsonBody[UserDto]))
-      .tag(usersTag)
-      .summary("Create a user (dispatcher, admin)")
+  val createUserEndpoint = secureBase.post
+    .in("api" / "users")
+    .in(jsonBody[CreateUserRequest])
+    .in(clientIp)
+    .out(statusCode(StatusCode.Created).and(jsonBody[UserDto]))
+    .tag(usersTag)
+    .summary("Create a user (dispatcher, admin)")
 
-  val getUserEndpoint =
-    secureBase.get
-      .in("api" / "users" / path[String]("id"))
-      .out(jsonBody[PersonDto])
-      .tag(usersTag)
-      .summary("Get a user by id (dispatcher, admin, or self)")
+  val getUserEndpoint = secureBase.get
+    .in("api" / "users" / path[String]("id"))
+    .out(jsonBody[PersonDto])
+    .tag(usersTag)
+    .summary("Get a user by id (dispatcher, admin, or self)")
 
-  val updateUserEndpoint =
-    secureBase.put
-      .in("api" / "users" / path[String]("id"))
-      .in(jsonBody[UpdateUserRequest])
-      .out(jsonBody[UserDto])
-      .tag(usersTag)
-      .summary("Update a user (dispatcher, admin, or self)")
+  val updateUserEndpoint = secureBase.put
+    .in("api" / "users" / path[String]("id"))
+    .in(jsonBody[UpdateUserRequest])
+    .out(jsonBody[UserDto])
+    .tag(usersTag)
+    .summary("Update a user (dispatcher, admin, or self)")
 
-  val deleteUserEndpoint =
-    secureBase.delete
-      .in("api" / "users" / path[String]("id"))
-      .out(statusCode(StatusCode.NoContent))
-      .tag(usersTag)
-      .summary("Deactivate a user (dispatcher, admin)")
+  val deleteUserEndpoint = secureBase.delete
+    .in("api" / "users" / path[String]("id"))
+    .out(statusCode(StatusCode.NoContent))
+    .tag(usersTag)
+    .summary("Deactivate a user (dispatcher, admin)")
 
-  val updateUserRoleEndpoint =
-    secureBase.put
-      .in("api" / "users" / path[String]("id") / "role")
-      .in(jsonBody[UpdateUserRequest])
-      .out(jsonBody[UserDto])
-      .tag(usersTag)
-      .summary("Change a user's role (dispatcher only)")
+  val updateUserRoleEndpoint = secureBase.put
+    .in("api" / "users" / path[String]("id") / "role")
+    .in(jsonBody[UpdateUserRequest])
+    .out(jsonBody[UserDto])
+    .tag(usersTag)
+    .summary("Change a user's role (dispatcher only)")
 
-  val updateUserStatusEndpoint =
-    secureBase.put
-      .in("api" / "users" / path[String]("id") / "status")
-      .in(jsonBody[UpdateUserRequest])
-      .out(jsonBody[UserDto])
-      .tag(usersTag)
-      .summary("Activate/suspend/deactivate a user (dispatcher only)")
+  val updateUserStatusEndpoint = secureBase.put
+    .in("api" / "users" / path[String]("id") / "status")
+    .in(jsonBody[UpdateUserRequest])
+    .out(jsonBody[UserDto])
+    .tag(usersTag)
+    .summary("Activate/suspend/deactivate a user (dispatcher only)")
 
-  /** All endpoint descriptions, used to generate the OpenAPI document. */
+  /**
+   * All endpoint descriptions, used to generate the OpenAPI document.
+   */
   val endpoints = List(
     passwordChangeStubEndpoint,
     avatarStubEndpoint,
@@ -377,51 +347,50 @@ object UserApi:
 
   // -- Server logic --------------------------------------------------------
 
-  private val passwordChangeStubServer =
-    passwordChangeStubEndpoint.zServerLogic[UserEnv](_ => ZIO.succeed(SuccessResponse(success = true)))
+  private val passwordChangeStubServer = passwordChangeStubEndpoint.zServerLogic[UserEnv](_ =>
+    ZIO.succeed(SuccessResponse(success = true))
+  )
 
-  private val avatarStubServer =
-    avatarStubEndpoint.zServerLogic[UserEnv](_ =>
-      ZIO.succeed(AvatarUploadResponse(success = true, avatarUrl = "https://storage.example.com/avatars/user.jpg"))
+  private val avatarStubServer = avatarStubEndpoint.zServerLogic[UserEnv](_ =>
+    ZIO.succeed(AvatarUploadResponse(success = true, avatarUrl = "https://storage.example.com/avatars/user.jpg"))
+  )
+
+  private val statsRidesServer: ZServerEndpoint[UserEnv, Any] = statsRidesEndpoint.serverLogic[UserEnv] { user => _ =>
+    for {
+      _                    <- checkRole(user, "DISPATCHER", "ADMIN", "SECRETARY")
+      rideService          <- ZIO.service[RideService]
+      personRepo           <- ZIO.service[PersonRepositoryDep]
+      companyId            <- requireCompanyId(user)
+      statusCounts         <- rideService.getRideCountsByStatus(companyId).mapError(internal)
+      drivers              <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId).mapError(internal)
+      clients              <- personRepo.findByRoleAndCompany(PersonRole.Client, companyId).mapError(internal)
+      revenue              <- rideService.getTotalRevenue(companyId).mapError(internal)
+      todayRevenue         <- rideService.getTodayRevenue(companyId).mapError(internal)
+      avgAssignmentMinutes <- rideService.getAvgAssignmentMinutes(companyId).mapError(internal)
+      requestedCount        = statusCounts.getOrElse("Requested", 0)
+      assignedCount         = statusCounts.getOrElse("Assigned", 0)
+      inProgressCount       = statusCounts.getOrElse("InProgress", 0)
+      completedCount        = statusCounts.getOrElse("Completed", 0)
+      cancelledCount        = statusCounts.getOrElse("Cancelled", 0)
+      totalRides            = statusCounts.values.sum
+    } yield RideStatsResponse(
+      totalRides = totalRides,
+      completedRides = completedCount,
+      inProgressRides = inProgressCount,
+      requestedRides = requestedCount,
+      assignedRides = assignedCount,
+      cancelledRides = cancelledCount,
+      activeDrivers = drivers.length,
+      totalClients = clients.length,
+      todayRevenue = todayRevenue,
+      monthlyRevenue = revenue,
+      avgAssignmentMinutes = math.round(avgAssignmentMinutes * 10.0) / 10.0
     )
+  }
 
-  private val statsRidesServer: ZServerEndpoint[UserEnv, Any] =
-    statsRidesEndpoint.serverLogic[UserEnv] { user => _ =>
-      (for {
-        _                    <- checkRole(user, "DISPATCHER", "ADMIN", "SECRETARY")
-        rideService          <- ZIO.service[RideService]
-        personRepo           <- ZIO.service[PersonRepositoryDep]
-        companyId            <- requireCompanyId(user)
-        statusCounts         <- rideService.getRideCountsByStatus(companyId).mapError(internal)
-        drivers              <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId).mapError(internal)
-        clients              <- personRepo.findByRoleAndCompany(PersonRole.Client, companyId).mapError(internal)
-        revenue              <- rideService.getTotalRevenue(companyId).mapError(internal)
-        todayRevenue         <- rideService.getTodayRevenue(companyId).mapError(internal)
-        avgAssignmentMinutes <- rideService.getAvgAssignmentMinutes(companyId).mapError(internal)
-        requestedCount        = statusCounts.getOrElse("Requested", 0)
-        assignedCount         = statusCounts.getOrElse("Assigned", 0)
-        inProgressCount       = statusCounts.getOrElse("InProgress", 0)
-        completedCount        = statusCounts.getOrElse("Completed", 0)
-        cancelledCount        = statusCounts.getOrElse("Cancelled", 0)
-        totalRides            = statusCounts.values.sum
-      } yield RideStatsResponse(
-        totalRides = totalRides,
-        completedRides = completedCount,
-        inProgressRides = inProgressCount,
-        requestedRides = requestedCount,
-        assignedRides = assignedCount,
-        cancelledRides = cancelledCount,
-        activeDrivers = drivers.length,
-        totalClients = clients.length,
-        todayRevenue = todayRevenue,
-        monthlyRevenue = revenue,
-        avgAssignmentMinutes = math.round(avgAssignmentMinutes * 10.0) / 10.0
-      ))
-    }
-
-  private val statsRidesDailyServer: ZServerEndpoint[UserEnv, Any] =
-    statsRidesDailyEndpoint.serverLogic[UserEnv] { user => daysOpt =>
-      (for {
+  private val statsRidesDailyServer: ZServerEndpoint[UserEnv, Any] = statsRidesDailyEndpoint.serverLogic[UserEnv] {
+    user => daysOpt =>
+      for {
         _           <- checkRole(user, "DISPATCHER", "ADMIN")
         rideService <- ZIO.service[RideService]
         days         = daysOpt.getOrElse(7).min(365).max(1)
@@ -429,12 +398,12 @@ object UserApi:
         rawStats    <- rideService.getDailyStats(companyId, days).mapError(internal)
       } yield rawStats.map { case (date, completed, cancelled, total) =>
         DailyStatsEntry(date, completed, cancelled, total)
-      })
-    }
+      }
+  }
 
-  private val statsDriversServer: ZServerEndpoint[UserEnv, Any] =
-    statsDriversEndpoint.serverLogic[UserEnv] { user => _ =>
-      (for {
+  private val statsDriversServer: ZServerEndpoint[UserEnv, Any] = statsDriversEndpoint.serverLogic[UserEnv] {
+    user => _ =>
+      for {
         _           <- checkRole(user, "DISPATCHER", "ADMIN")
         rideService <- ZIO.service[RideService]
         personRepo  <- ZIO.service[PersonRepositoryDep]
@@ -459,67 +428,63 @@ object UserApi:
           cancelledRides = cancelledCount,
           earnings = earnings
         )
-      })
-    }
+      }
+  }
 
-  private val changePasswordServer: ZServerEndpoint[UserEnv, Any] =
-    changePasswordEndpoint.serverLogic[UserEnv] { user =>
+  private val changePasswordServer: ZServerEndpoint[UserEnv, Any] = changePasswordEndpoint.serverLogic[UserEnv] {
+    user =>
       { case (changeReq, ip) =>
         (for {
           _ <- checkRateLimit(ip)
           _ <- ZIO.serviceWithZIO[AuthService](_.changePassword(user.userId, changeReq)).mapError(mapAuthError)
         } yield ()).unit
       }
-    }
+  }
 
-  private val getProfileServer: ZServerEndpoint[UserEnv, Any] =
-    getProfileEndpoint.serverLogic[UserEnv] { user => _ =>
-      (for {
-        personRepo <- ZIO.service[PersonRepositoryDep]
-        person     <- personRepo.findById(PersonId(user.userId)).mapError(internal).someOrFail(notFound)
-      } yield PersonDto.fromPerson(person))
-    }
+  private val getProfileServer: ZServerEndpoint[UserEnv, Any] = getProfileEndpoint.serverLogic[UserEnv] { user => _ =>
+    for {
+      personRepo <- ZIO.service[PersonRepositoryDep]
+      person     <- personRepo.findById(PersonId(user.userId)).mapError(internal).someOrFail(notFound)
+    } yield PersonDto.fromPerson(person)
+  }
 
-  private val updateProfileServer: ZServerEndpoint[UserEnv, Any] =
-    updateProfileEndpoint.serverLogic[UserEnv] { user => updateReq =>
+  private val updateProfileServer: ZServerEndpoint[UserEnv, Any] = updateProfileEndpoint.serverLogic[UserEnv] {
+    user => updateReq =>
       ZIO
         .serviceWithZIO[AuthService](_.updateUser(user.userId, updateReq))
         .mapError(mapAuthError)
-    }
+  }
 
-  private val listDriversServer: ZServerEndpoint[UserEnv, Any] =
-    listDriversEndpoint.serverLogic[UserEnv] { user => _ =>
-      (for {
-        _          <- checkRole(user, "DISPATCHER", "ADMIN", "DRIVER")
-        personRepo <- ZIO.service[PersonRepositoryDep]
-        companyId  <- requireCompanyId(user)
-        drivers    <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId).mapError(internal)
-      } yield drivers.map(PersonDto.fromPerson))
-    }
+  private val listDriversServer: ZServerEndpoint[UserEnv, Any] = listDriversEndpoint.serverLogic[UserEnv] { user => _ =>
+    for {
+      _          <- checkRole(user, "DISPATCHER", "ADMIN", "DRIVER")
+      personRepo <- ZIO.service[PersonRepositoryDep]
+      companyId  <- requireCompanyId(user)
+      drivers    <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId).mapError(internal)
+    } yield drivers.map(PersonDto.fromPerson)
+  }
 
-  private val listClientsServer: ZServerEndpoint[UserEnv, Any] =
-    listClientsEndpoint.serverLogic[UserEnv] { user => _ =>
-      (for {
-        _          <- checkRole(user, "DISPATCHER", "ADMIN", "SECRETARY", "DRIVER")
-        personRepo <- ZIO.service[PersonRepositoryDep]
-        companyId  <- requireCompanyId(user)
-        clients    <- personRepo.findByRoleAndCompany(PersonRole.Client, companyId).mapError(internal)
-      } yield clients.map(PersonDto.fromPerson))
-    }
+  private val listClientsServer: ZServerEndpoint[UserEnv, Any] = listClientsEndpoint.serverLogic[UserEnv] { user => _ =>
+    for {
+      _          <- checkRole(user, "DISPATCHER", "ADMIN", "SECRETARY", "DRIVER")
+      personRepo <- ZIO.service[PersonRepositoryDep]
+      companyId  <- requireCompanyId(user)
+      clients    <- personRepo.findByRoleAndCompany(PersonRole.Client, companyId).mapError(internal)
+    } yield clients.map(PersonDto.fromPerson)
+  }
 
-  private val userStatsServer: ZServerEndpoint[UserEnv, Any] =
-    userStatsEndpoint.serverLogic[UserEnv] { user => _ =>
-      (for {
-        _          <- checkRole(user, "DISPATCHER", "ADMIN")
-        personRepo <- ZIO.service[PersonRepositoryDep]
-        companyId  <- requireCompanyId(user)
-        all        <- personRepo.findByCompanyId(companyId).mapError(internal)
-        byRole      = all.groupBy(_.role).map((role, persons) => role.toString -> persons.size)
-      } yield UserStatsResponse(total = all.size, byRole = byRole))
-    }
+  private val userStatsServer: ZServerEndpoint[UserEnv, Any] = userStatsEndpoint.serverLogic[UserEnv] { user => _ =>
+    for {
+      _          <- checkRole(user, "DISPATCHER", "ADMIN")
+      personRepo <- ZIO.service[PersonRepositoryDep]
+      companyId  <- requireCompanyId(user)
+      all        <- personRepo.findByCompanyId(companyId).mapError(internal)
+      byRole      = all.groupBy(_.role).map((role, persons) => role.toString -> persons.size)
+    } yield UserStatsResponse(total = all.size, byRole = byRole)
+  }
 
-  private val reminderMinutesServer: ZServerEndpoint[UserEnv, Any] =
-    reminderMinutesEndpoint.serverLogic[UserEnv] { user => req =>
+  private val reminderMinutesServer: ZServerEndpoint[UserEnv, Any] = reminderMinutesEndpoint.serverLogic[UserEnv] {
+    user => req =>
       (for {
         _          <- checkRole(user, "DRIVER")
         _          <- ZIO
@@ -532,78 +497,74 @@ object UserApi:
                         .someOrFail(internal(new RuntimeException("User not found")))
         _          <- personRepo.update(person.copy(reminderMinutes = req.minutes)).mapError(internal)
       } yield ()).unit
-    }
+  }
 
-  private val registerFcmTokenServer: ZServerEndpoint[UserEnv, Any] =
-    registerFcmTokenEndpoint.serverLogic[UserEnv] { user => tokenReq =>
+  private val registerFcmTokenServer: ZServerEndpoint[UserEnv, Any] = registerFcmTokenEndpoint.serverLogic[UserEnv] {
+    user => tokenReq =>
       ZIO
         .serviceWithZIO[FcmService](_.registerToken(PersonId(user.userId), tokenReq.token, tokenReq.platform))
         .mapError(internal)
         .unit
-    }
+  }
 
-  private val unregisterFcmTokenServer: ZServerEndpoint[UserEnv, Any] =
-    unregisterFcmTokenEndpoint.serverLogic[UserEnv] { _ => token =>
+  private val unregisterFcmTokenServer: ZServerEndpoint[UserEnv, Any] = unregisterFcmTokenEndpoint
+    .serverLogic[UserEnv] { _ => token =>
       ZIO
         .serviceWithZIO[FcmService](_.unregisterToken(token))
         .mapError(internal)
         .unit
     }
 
-  private val listUsersServer: ZServerEndpoint[UserEnv, Any] =
-    listUsersEndpoint.serverLogic[UserEnv] { user => _ =>
-      (for {
-        _          <- checkRole(user, "DISPATCHER", "ADMIN")
-        personRepo <- ZIO.service[PersonRepositoryDep]
-        companyId  <- requireCompanyId(user)
-        users      <- personRepo.findByCompanyId(companyId).mapError(internal)
-      } yield users.map(PersonDto.fromPerson))
-    }
+  private val listUsersServer: ZServerEndpoint[UserEnv, Any] = listUsersEndpoint.serverLogic[UserEnv] { user => _ =>
+    for {
+      _          <- checkRole(user, "DISPATCHER", "ADMIN")
+      personRepo <- ZIO.service[PersonRepositoryDep]
+      companyId  <- requireCompanyId(user)
+      users      <- personRepo.findByCompanyId(companyId).mapError(internal)
+    } yield users.map(PersonDto.fromPerson)
+  }
 
-  private val createUserServer: ZServerEndpoint[UserEnv, Any] =
-    createUserEndpoint.serverLogic[UserEnv] { user =>
-      { case (createReq, ip) =>
-        (for {
-          _       <- checkRateLimit(ip)
-          _       <- checkRole(user, "DISPATCHER", "ADMIN")
-          userDto <- ZIO.serviceWithZIO[AuthService](_.createUser(createReq)).mapError(mapAuthError)
-        } yield userDto)
-      }
+  private val createUserServer: ZServerEndpoint[UserEnv, Any] = createUserEndpoint.serverLogic[UserEnv] { user =>
+    { case (createReq, ip) =>
+      for {
+        _       <- checkRateLimit(ip)
+        _       <- checkRole(user, "DISPATCHER", "ADMIN")
+        userDto <- ZIO.serviceWithZIO[AuthService](_.createUser(createReq)).mapError(mapAuthError)
+      } yield userDto
     }
+  }
 
-  private val getUserServer: ZServerEndpoint[UserEnv, Any] =
-    getUserEndpoint.serverLogic[UserEnv] { user => userId =>
-      (for {
-        uid        <- parseUuid(userId)
-        _          <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
-        companyId  <- requireCompanyId(user)
-        personRepo <- ZIO.service[PersonRepositoryDep]
-        // Enforce tenant isolation: a user from another company must not be
-        // readable even by a dispatcher/admin. Return NotFound (not Forbidden)
-        // to avoid leaking the existence of cross-tenant resources. Owner
-        // self-access keeps working because the own record carries the caller's
-        // own companyId.
-        person     <- personRepo
-                        .findById(PersonId(uid))
-                        .mapError(internal)
-                        .map(_.filter(_.companyId.contains(companyId)))
-                        .someOrFail(notFound)
-      } yield PersonDto.fromPerson(person))
+  private val getUserServer: ZServerEndpoint[UserEnv, Any] = getUserEndpoint.serverLogic[UserEnv] { user => userId =>
+    for {
+      uid        <- parseUuid(userId)
+      _          <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+      companyId  <- requireCompanyId(user)
+      personRepo <- ZIO.service[PersonRepositoryDep]
+      // Enforce tenant isolation: a user from another company must not be
+      // readable even by a dispatcher/admin. Return NotFound (not Forbidden)
+      // to avoid leaking the existence of cross-tenant resources. Owner
+      // self-access keeps working because the own record carries the caller's
+      // own companyId.
+      person     <- personRepo
+                      .findById(PersonId(uid))
+                      .mapError(internal)
+                      .map(_.filter(_.companyId.contains(companyId)))
+                      .someOrFail(notFound)
+    } yield PersonDto.fromPerson(person)
+  }
+
+  private val updateUserServer: ZServerEndpoint[UserEnv, Any] = updateUserEndpoint.serverLogic[UserEnv] { user =>
+    { case (userId, updateReq) =>
+      for {
+        uid     <- parseUuid(userId)
+        _       <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+        userDto <- ZIO.serviceWithZIO[AuthService](_.updateUser(uid, updateReq)).mapError(mapAuthError)
+      } yield userDto
     }
+  }
 
-  private val updateUserServer: ZServerEndpoint[UserEnv, Any] =
-    updateUserEndpoint.serverLogic[UserEnv] { user =>
-      { case (userId, updateReq) =>
-        (for {
-          uid     <- parseUuid(userId)
-          _       <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
-          userDto <- ZIO.serviceWithZIO[AuthService](_.updateUser(uid, updateReq)).mapError(mapAuthError)
-        } yield userDto)
-      }
-    }
-
-  private val deleteUserServer: ZServerEndpoint[UserEnv, Any] =
-    deleteUserEndpoint.serverLogic[UserEnv] { user => userId =>
+  private val deleteUserServer: ZServerEndpoint[UserEnv, Any] = deleteUserEndpoint.serverLogic[UserEnv] {
+    user => userId =>
       (for {
         _   <- checkRole(user, "DISPATCHER", "ADMIN")
         uid <- parseUuid(userId)
@@ -611,12 +572,12 @@ object UserApi:
                  .serviceWithZIO[AuthService](_.updateUser(uid, UpdateUserRequest(status = Some("INACTIVE"))))
                  .mapError(mapAuthError)
       } yield ()).unit
-    }
+  }
 
-  private val updateUserRoleServer: ZServerEndpoint[UserEnv, Any] =
-    updateUserRoleEndpoint.serverLogic[UserEnv] { user =>
+  private val updateUserRoleServer: ZServerEndpoint[UserEnv, Any] = updateUserRoleEndpoint.serverLogic[UserEnv] {
+    user =>
       { case (userId, roleReq) =>
-        (for {
+        for {
           _       <- checkRole(user, "DISPATCHER")
           uid     <- parseUuid(userId)
           _       <- ZIO
@@ -625,32 +586,33 @@ object UserApi:
           userDto <- ZIO
                        .serviceWithZIO[AuthService](_.updateUser(uid, UpdateUserRequest(role = roleReq.role)))
                        .mapError(mapAuthError)
-        } yield userDto)
+        } yield userDto
       }
-    }
+  }
 
-  private val updateUserStatusServer: ZServerEndpoint[UserEnv, Any] =
-    updateUserStatusEndpoint.serverLogic[UserEnv] { user =>
+  private val updateUserStatusServer: ZServerEndpoint[UserEnv, Any] = updateUserStatusEndpoint.serverLogic[UserEnv] {
+    user =>
       { case (userId, statusReq) =>
-        (for {
+        for {
           uid     <- parseUuid(userId)
           _       <- checkRole(user, "DISPATCHER")
           userDto <- ZIO
                        .serviceWithZIO[AuthService](_.updateUser(uid, UpdateUserRequest(status = statusReq.status)))
                        .mapError(mapAuthError)
-        } yield userDto)
+        } yield userDto
       }
-    }
+  }
 
-  /** Generic mapping of any throwable to a 500 (matches the `other` branch of `handleAuthError`). */
-  private def internal(t: Throwable): Err =
-    (StatusCode.InternalServerError, ApiError("Internal server error"))
+  /**
+   * Generic mapping of any throwable to a 500 (matches the `other` branch of `handleAuthError`).
+   */
+  private def internal(t: Throwable): Err = (StatusCode.InternalServerError, ApiError("Internal server error"))
 
   /**
    * All server endpoints, interpreted into zio-http Routes by the api module.
    *
-   * Order matters: Tapir tries them in sequence, so the literal `users/...` paths must precede the
-   * `users/{id}` path matcher, otherwise e.g. `/api/users/profile` would be captured as id="profile".
+   * Order matters: Tapir tries them in sequence, so the literal `users/...` paths must precede the `users/{id}` path
+   * matcher, otherwise e.g. `/api/users/profile` would be captured as id="profile".
    */
   val serverEndpoints: List[ZServerEndpoint[UserEnv, Any]] = List(
     // public stubs

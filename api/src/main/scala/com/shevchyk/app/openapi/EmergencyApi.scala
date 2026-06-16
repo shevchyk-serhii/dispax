@@ -7,7 +7,6 @@ import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.{BlacklistRepository, EmergencyReassignmentRepository, PersonRepository}
 import com.shevchyk.ride.application.service.RideService
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -20,51 +19,42 @@ import zio.ZIO
 object EmergencyApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val emergencyTag = "Emergency"
 
-  given Schema[RideId]                   = Schema.derived
-  given Schema[EmergencyReason]          = Schema.derivedEnumeration[EmergencyReason].defaultStringBased
-  given Schema[ReassignmentStatus]       = Schema.derivedEnumeration[ReassignmentStatus].defaultStringBased
-  given Schema[EmergencyReassignmentId]  = Schema.derived
-  given Schema[EmergencyReassignment]    = Schema.derived
-  given Schema[EmergencyReassignRequest] = Schema.derived
-
   type EmergencyEnv =
-    JwtService & EmergencyReassignmentRepository & BlacklistRepository & RideService & PersonRepository &
-      AuditService & EventHub
+    JwtService & EmergencyReassignmentRepository & BlacklistRepository & RideService & PersonRepository & AuditService &
+      EventHub
 
   // -- Endpoint descriptions ------------------------------------------------
 
-  val reassignEndpoint =
-    secureEndpoint.post
-      .in("api" / "emergency" / "reassign")
-      .in(jsonBody[EmergencyReassignRequest])
-      .out(statusCode(StatusCode.Created).and(jsonBody[EmergencyReassignment]))
-      .tag(emergencyTag)
-      .summary("Initiate an emergency reassignment (dispatcher)")
+  val reassignEndpoint = secureEndpoint.post
+    .in("api" / "emergency" / "reassign")
+    .in(jsonBody[EmergencyReassignRequest])
+    .out(statusCode(StatusCode.Created).and(jsonBody[EmergencyReassignment]))
+    .tag(emergencyTag)
+    .summary("Initiate an emergency reassignment (dispatcher)")
 
-  val listReassignmentsEndpoint =
-    secureEndpoint.get
-      .in("api" / "emergency" / "reassignments")
-      .out(jsonBody[List[EmergencyReassignment]])
-      .tag(emergencyTag)
-      .summary("List emergency reassignments for the company (dispatcher)")
+  val listReassignmentsEndpoint = secureEndpoint.get
+    .in("api" / "emergency" / "reassignments")
+    .out(jsonBody[List[EmergencyReassignment]])
+    .tag(emergencyTag)
+    .summary("List emergency reassignments for the company (dispatcher)")
 
-  val suggestDriversEndpoint =
-    secureEndpoint.get
-      .in("api" / "emergency" / "suggest-drivers" / path[String]("rideId"))
-      .out(jsonBody[List[Map[String, String]]])
-      .tag(emergencyTag)
-      .summary("Suggest available drivers for reassignment (dispatcher)")
+  val suggestDriversEndpoint = secureEndpoint.get
+    .in("api" / "emergency" / "suggest-drivers" / path[String]("rideId"))
+    .out(jsonBody[List[Map[String, String]]])
+    .tag(emergencyTag)
+    .summary("Suggest available drivers for reassignment (dispatcher)")
 
   val endpoints = List(reassignEndpoint, listReassignmentsEndpoint, suggestDriversEndpoint)
 
   // -- Server logic ---------------------------------------------------------
 
-  private val reassignServer: ZServerEndpoint[EmergencyEnv, Any] =
-    reassignEndpoint.serverLogic[EmergencyEnv] { user => req =>
-      (for {
+  private val reassignServer: ZServerEndpoint[EmergencyEnv, Any] = reassignEndpoint.serverLogic[EmergencyEnv] {
+    user => req =>
+      for {
         _                <- checkRole(user, "DISPATCHER")
         rideService      <- ZIO.service[RideService]
         rideId           <- parseRideId(req.rideId)
@@ -94,66 +84,69 @@ object EmergencyApi:
                               reassignedBy = PersonId(user.userId)
                             )
         created          <- emergRepo.create(reassignment).mapError(internal)
-        _                <- req.newDriverId match
-                              case Some(newId) =>
-                                for {
-                                  newDriverPid <- parsePersonId(newId)
-                                  blRepo       <- ZIO.service[BlacklistRepository]
-                                  blocked      <- blRepo.isBlacklisted(ride.clientId, newDriverPid).mapError(internal)
-                                  _            <- ZIO
-                                                    .fail(internal(new RuntimeException("New driver is blacklisted for this client")))
-                                                    .when(blocked)
-                                  _            <- rideService
-                                                    .reassignDriver(ride.id, newDriverPid)
-                                                    .mapError(e => internal(new RuntimeException(e.toString)))
-                                  _            <- emergRepo
-                                                    .updateStatus(created.id, ReassignmentStatus.REASSIGNED, Some(newDriverPid))
-                                                    .mapError(internal)
-                                } yield ()
-                              case None        => ZIO.unit
+        _                <-
+          req.newDriverId match
+            case Some(newId) =>
+              for {
+                newDriverPid <- parsePersonId(newId)
+                blRepo       <- ZIO.service[BlacklistRepository]
+                blocked      <- blRepo.isBlacklisted(ride.clientId, newDriverPid).mapError(internal)
+                _            <- ZIO
+                                  .fail(internal(new RuntimeException("New driver is blacklisted for this client")))
+                                  .when(blocked)
+                _            <- rideService
+                                  .reassignDriver(ride.id, newDriverPid)
+                                  .mapError(e => internal(new RuntimeException(e.toString)))
+                _            <- emergRepo
+                                  .updateStatus(created.id, ReassignmentStatus.REASSIGNED, Some(newDriverPid))
+                                  .mapError(internal)
+              } yield ()
+            case None        => ZIO.unit
         audit            <- ZIO.service[AuditService]
-        _                <- audit
-                              .log(
-                                AuditLogEntry(
-                                  id = AuditLogId.generate(),
-                                  companyId = ride.companyId,
-                                  actorId = PersonId(user.userId),
-                                  action = AuditAction.RideReassigned,
-                                  entityType = "emergency_reassignment",
-                                  entityId = created.id.value,
-                                  oldValue = Some(s"driver=${originalDriverId.value}"),
-                                  newValue = req.newDriverId.map(d => s"driver=$d")
-                                )
-                              )
-                              .ignore
+        _                <-
+          audit
+            .log(
+              AuditLogEntry(
+                id = AuditLogId.generate(),
+                companyId = ride.companyId,
+                actorId = PersonId(user.userId),
+                action = AuditAction.RideReassigned,
+                entityType = "emergency_reassignment",
+                entityId = created.id.value,
+                oldValue = Some(s"driver=${originalDriverId.value}"),
+                newValue = req.newDriverId.map(d => s"driver=$d")
+              )
+            )
+            .ignore
         eventHub         <- ZIO.service[EventHub]
-        _                <- eventHub
-                              .publish(
-                                WebSocketEvent.RideStatusChanged(
-                                  rideId = ride.id.value,
-                                  newStatus = "EmergencyReassignment",
-                                  driverId = Some(originalDriverId.value),
-                                  clientId = ride.clientId.value,
-                                  companyId = ride.companyId.value
-                                )
-                              )
-                              .ignore
-      } yield created)
-    }
+        _                <-
+          eventHub
+            .publish(
+              WebSocketEvent.RideStatusChanged(
+                rideId = ride.id.value,
+                newStatus = "EmergencyReassignment",
+                driverId = Some(originalDriverId.value),
+                clientId = ride.clientId.value,
+                companyId = ride.companyId.value
+              )
+            )
+            .ignore
+      } yield created
+  }
 
-  private val listReassignmentsServer: ZServerEndpoint[EmergencyEnv, Any] =
-    listReassignmentsEndpoint.serverLogic[EmergencyEnv] { user => _ =>
-      (for {
+  private val listReassignmentsServer: ZServerEndpoint[EmergencyEnv, Any] = listReassignmentsEndpoint
+    .serverLogic[EmergencyEnv] { user => _ =>
+      for {
         _             <- checkRole(user, "DISPATCHER")
         repo          <- ZIO.service[EmergencyReassignmentRepository]
         companyId     <- requireCompanyId(user.companyId)
         reassignments <- repo.findByCompanyId(companyId).mapError(internal)
-      } yield reassignments)
+      } yield reassignments
     }
 
-  private val suggestDriversServer: ZServerEndpoint[EmergencyEnv, Any] =
-    suggestDriversEndpoint.serverLogic[EmergencyEnv] { user => rideId =>
-      (for {
+  private val suggestDriversServer: ZServerEndpoint[EmergencyEnv, Any] = suggestDriversEndpoint
+    .serverLogic[EmergencyEnv] { user => rideId =>
+      for {
         _            <- checkRole(user, "DISPATCHER")
         companyId    <- requireCompanyId(user.companyId)
         rideService  <- ZIO.service[RideService]
@@ -168,10 +161,11 @@ object EmergencyApi:
         personRepo   <- ZIO.service[PersonRepository]
         drivers      <- personRepo.findByCompanyId(ride.companyId).mapError(internal)
         blackRepo    <- ZIO.service[BlacklistRepository]
-        candidates   <- ZIO
-                          .filter(drivers.filter(d => d.role == PersonRole.Driver && !ride.driverId.contains(d.id)))(d =>
-                            blackRepo.isBlacklisted(ride.clientId, d.id).map(!_).mapError(internal)
-                          )
+        candidates   <-
+          ZIO
+            .filter(drivers.filter(d => d.role == PersonRole.Driver && !ride.driverId.contains(d.id)))(d =>
+              blackRepo.isBlacklisted(ride.clientId, d.id).map(!_).mapError(internal)
+            )
         clientRepo   <- personRepo.findById(ride.clientId).mapError(internal)
         preferredId   = clientRepo.flatMap(_.preferredDriverId)
         sorted        = candidates.sortBy(d => if preferredId.contains(d.id) then 0 else 1)
@@ -183,7 +177,7 @@ object EmergencyApi:
                             "isPreferred" -> preferredId.contains(d.id).toString
                           )
                         )
-      } yield result)
+      } yield result
     }
 
   val serverEndpoints: List[ZServerEndpoint[EmergencyEnv, Any]] = List(

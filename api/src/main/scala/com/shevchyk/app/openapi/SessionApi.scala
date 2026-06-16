@@ -6,7 +6,6 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.SessionRepository
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -22,10 +21,9 @@ import java.time.Instant
 object SessionApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val sessionTag = "Session"
-
-  given Schema[SessionDto] = Schema.derived
 
   type SessionEnv = JwtService & SessionRepository & TokenRepository
 
@@ -33,42 +31,37 @@ object SessionApi:
   // detect the current session token exactly like the original handler did.
   private val authHeader = header[Option[String]]("Authorization")
 
-  private def currentTokenOf(h: Option[String]): Option[String] =
-    h.map(_.stripPrefix("Bearer "))
+  private def currentTokenOf(h: Option[String]): Option[String] = h.map(_.stripPrefix("Bearer "))
 
   // -- Endpoint descriptions ------------------------------------------------
 
-  val listSessionsEndpoint =
-    secureEndpoint.get
-      .in("api" / "sessions")
-      .in(authHeader)
-      .out(jsonBody[List[SessionDto]])
-      .tag(sessionTag)
-      .summary("List active sessions for the current user")
+  val listSessionsEndpoint = secureEndpoint.get
+    .in("api" / "sessions")
+    .in(authHeader)
+    .out(jsonBody[List[SessionDto]])
+    .tag(sessionTag)
+    .summary("List active sessions for the current user")
 
-  val revokeSessionEndpoint =
-    secureEndpoint.delete
-      .in("api" / "sessions" / path[String]("id"))
-      .out(statusCode(StatusCode.NoContent))
-      .tag(sessionTag)
-      .summary("Revoke a specific session")
+  val revokeSessionEndpoint = secureEndpoint.delete
+    .in("api" / "sessions" / path[String]("id"))
+    .out(statusCode(StatusCode.NoContent))
+    .tag(sessionTag)
+    .summary("Revoke a specific session")
 
-  val revokeAllSessionsEndpoint =
-    secureEndpoint.delete
-      .in("api" / "sessions")
-      .in(authHeader)
-      .out(stringBody.map(s => s)(s => s))
-      .tag(sessionTag)
-      .summary("Revoke all sessions except the current one")
+  val revokeAllSessionsEndpoint = secureEndpoint.delete
+    .in("api" / "sessions")
+    .in(authHeader)
+    .out(stringBody.map(s => s)(s => s))
+    .tag(sessionTag)
+    .summary("Revoke all sessions except the current one")
 
-  val createSessionEndpoint =
-    secureEndpoint.post
-      .in("api" / "sessions")
-      .in(authHeader)
-      .in(stringBody)
-      .out(statusCode(StatusCode.Created).and(jsonBody[SessionDto]))
-      .tag(sessionTag)
-      .summary("Register a new session (called on login)")
+  val createSessionEndpoint = secureEndpoint.post
+    .in("api" / "sessions")
+    .in(authHeader)
+    .in(stringBody)
+    .out(statusCode(StatusCode.Created).and(jsonBody[SessionDto]))
+    .tag(sessionTag)
+    .summary("Register a new session (called on login)")
 
   val endpoints = List(
     listSessionsEndpoint,
@@ -79,9 +72,9 @@ object SessionApi:
 
   // -- Server logic ---------------------------------------------------------
 
-  private val listSessionsServer: ZServerEndpoint[SessionEnv, Any] =
-    listSessionsEndpoint.serverLogic[SessionEnv] { user => authHdr =>
-      (for {
+  private val listSessionsServer: ZServerEndpoint[SessionEnv, Any] = listSessionsEndpoint.serverLogic[SessionEnv] {
+    user => authHdr =>
+      for {
         repo        <- ZIO.service[SessionRepository]
         sessions    <- repo.findByUserId(PersonId(user.userId)).mapError(internal)
         currentToken = currentTokenOf(authHdr)
@@ -96,11 +89,11 @@ object SessionApi:
                            isCurrent = currentToken.contains(s.token)
                          )
                        }
-      } yield dtos)
-    }
+      } yield dtos
+  }
 
-  private val revokeSessionServer: ZServerEndpoint[SessionEnv, Any] =
-    revokeSessionEndpoint.serverLogic[SessionEnv] { user => id =>
+  private val revokeSessionServer: ZServerEndpoint[SessionEnv, Any] = revokeSessionEndpoint.serverLogic[SessionEnv] {
+    user => id =>
       (for {
         repo      <- ZIO.service[SessionRepository]
         sessionId <- parseUuid(id).map(SessionId(_))
@@ -112,26 +105,28 @@ object SessionApi:
         _         <- tokenRepo.deleteByToken(session.token).mapError(internal)
         _         <- repo.deactivate(sessionId).mapError(internal)
       } yield ()).unit
-    }
+  }
 
-  private val revokeAllSessionsServer: ZServerEndpoint[SessionEnv, Any] =
-    revokeAllSessionsEndpoint.serverLogic[SessionEnv] { user => authHdr =>
-      (for {
+  private val revokeAllSessionsServer: ZServerEndpoint[SessionEnv, Any] = revokeAllSessionsEndpoint
+    .serverLogic[SessionEnv] { user => authHdr =>
+      for {
         repo        <- ZIO.service[SessionRepository]
         currentToken = currentTokenOf(authHdr)
-        currentSess <- currentToken match
-                         case Some(t) => repo.findByToken(t).mapError(internal)
-                         case None    => ZIO.succeed(None)
-        count       <- currentSess match
-                         case Some(s) => repo.deactivateAllExcept(PersonId(user.userId), s.id).mapError(internal)
-                         case None    => repo.deactivateAllForUser(PersonId(user.userId)).mapError(internal)
-      } yield s"""{"revokedCount":$count}""")
+        currentSess <-
+          currentToken match
+            case Some(t) => repo.findByToken(t).mapError(internal)
+            case None    => ZIO.succeed(None)
+        count       <-
+          currentSess match
+            case Some(s) => repo.deactivateAllExcept(PersonId(user.userId), s.id).mapError(internal)
+            case None    => repo.deactivateAllForUser(PersonId(user.userId)).mapError(internal)
+      } yield s"""{"revokedCount":$count}"""
     }
 
-  private val createSessionServer: ZServerEndpoint[SessionEnv, Any] =
-    createSessionEndpoint.serverLogic[SessionEnv] { user =>
+  private val createSessionServer: ZServerEndpoint[SessionEnv, Any] = createSessionEndpoint.serverLogic[SessionEnv] {
+    user =>
       { case (authHdr, bodyStr) =>
-        (for {
+        for {
           info    <- ZIO.succeed(bodyStr.fromJson[Map[String, String]].getOrElse(Map.empty))
           repo    <- ZIO.service[SessionRepository]
           token    = currentTokenOf(authHdr).getOrElse("")
@@ -153,9 +148,9 @@ object SessionApi:
           lastActiveAt = created.lastActiveAt.toString,
           isActive = created.isActive,
           isCurrent = true
-        ))
+        )
       }
-    }
+  }
 
   val serverEndpoints: List[ZServerEndpoint[SessionEnv, Any]] = List(
     listSessionsServer,
