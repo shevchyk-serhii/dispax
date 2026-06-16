@@ -6,10 +6,27 @@ on:
   pull_request:
     branches: [master]
 
+# Least-privilege default. The deploy job widens this to id-token: write for WIF.
+permissions:
+  contents: read
+
+# Cancel superseded runs on PRs (a new push obsoletes the previous run). On main we
+# keep runs alive (cancel-in-progress: false) so an in-flight deploy is never aborted.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PROJECT_ID: project-6efcac64-991b-49f4-946
+  REGION: europe-west1
+  REGISTRY: europe-west1-docker.pkg.dev
+  IMAGE: europe-west1-docker.pkg.dev/project-6efcac64-991b-49f4-946/dispax-docker/dispax-server
+
 jobs:
   test:
     name: Test + Coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,6 +46,9 @@ jobs:
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', '**/plugins.sbt') }}
           restore-keys: ${{ runner.os }}-sbt-
+
+      - name: Check formatting (scalafmt)
+        run: sbt -batch scalafmtCheckAll scalafmtSbtCheck
 
       # Integration tests use Testcontainers, which needs a Docker daemon. It is
       # available on ubuntu-latest runners out of the box.
@@ -58,3 +78,139 @@ jobs:
             target/scala-3.3.7/scoverage-report/**
             '**/target/scala-3.3.7/scoverage-report/**'
           if-no-files-found: ignore
+
+  bdd:
+    name: BDD (Cucumber)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The Cucumber suite runs entirely on in-memory repositories (TestApplication),
+    # so it needs no Postgres/Testcontainers. Kept non-blocking for now: failures are
+    # visible in the run but do not gate merge/deploy while the suite stabilizes.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache sbt
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.coursier
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', '**/plugins.sbt') }}
+          restore-keys: ${{ runner.os }}-sbt-
+
+      - name: Run Cucumber scenarios
+        run: sbt -batch cucumber
+
+      - name: Upload Cucumber report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-report
+          path: target/cucumber-reports/**
+          if-no-files-found: ignore
+
+  flutter:
+    name: Flutter (analyze + test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check formatting (dart format)
+        run: dart format --output=none --set-exit-if-changed lib/
+
+      - name: Analyze
+        run: flutter analyze
+
+      # Unit / bloc tests only (web/test). The e2e suite in web/integration_test
+      # needs a running backend and is run locally, not in CI.
+      - name: Run unit tests
+        run: flutter test
+
+  deploy:
+    name: Build, Push, Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Gate: deploy only after tests pass, and only on a push to main (never on PRs).
+    needs: [test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache sbt
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.coursier
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', '**/plugins.sbt') }}
+          restore-keys: ${{ runner.os }}-sbt-
+
+      - name: Build fat JAR
+        run: sbt assembly
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: dispax
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}

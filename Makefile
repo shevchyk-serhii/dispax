@@ -54,9 +54,10 @@ run-test:
 test-bdd:
 	sbt cucumber
 
-# Run all unit + integration tests (excludes Cucumber)
+# Run all unit + integration tests (excludes Cucumber). Aggregates every module
+# (incl. billing/api) so this matches exactly what CI runs (root `sbt test`).
 test:
-	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test"
+	sbt test
 
 # Run Flutter integration tests against local TestApplication.
 # Backend runs on TEST_PORT (default 8090) so it doesn't collide with a dev
