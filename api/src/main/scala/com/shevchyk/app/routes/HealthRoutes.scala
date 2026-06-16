@@ -21,7 +21,7 @@ object HealthRoutes {
   private val pingDb: ConnectionIO[Int] = sql"SELECT 1".query[Int].unique
 
   val routes: Routes[Transactor[Task], Response] = Routes(
-    Method.GET / "health" -> handler { (_: Request) =>
+    Method.GET / "health"           -> handler { (_: Request) =>
       ZIO.succeed(Response.text("Dispax Modular API - OK"))
     },
     Method.GET / "health" / "ready" -> handler { (_: Request) =>

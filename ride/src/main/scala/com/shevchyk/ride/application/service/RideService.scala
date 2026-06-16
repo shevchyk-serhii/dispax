@@ -689,9 +689,9 @@ class RideServiceImpl(
       case PersonRole.Dispatcher | PersonRole.Secretary | PersonRole.Admin | PersonRole.ClientSecretary |
           PersonRole.SuperAdmin =>
         ZIO.unit
-      case PersonRole.Client                                                                            =>
+      case PersonRole.Client =>
         ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(ride.clientId != userId).unit
-      case PersonRole.Driver                                                                            =>
+      case PersonRole.Driver =>
         ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(!ride.driverId.contains(userId)).unit
 
   // -- Schedule conflict detection ----------------------------------------
