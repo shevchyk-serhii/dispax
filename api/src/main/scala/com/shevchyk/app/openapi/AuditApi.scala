@@ -5,7 +5,6 @@ import com.shevchyk.core.application.AuditService
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.openapi.ApiError
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -17,13 +16,9 @@ import zio.ZIO
 object AuditApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val auditTag = "Audit"
-
-  // -- Schemas for domain DTOs (lifted into scope for jsonBody) -------------
-  given Schema[AuditAction]   = Schema.derivedEnumeration[AuditAction].defaultStringBased
-  given Schema[AuditLogId]    = Schema.derived
-  given Schema[AuditLogEntry] = Schema.derived
 
   type AuditEnv = JwtService & AuditService
 

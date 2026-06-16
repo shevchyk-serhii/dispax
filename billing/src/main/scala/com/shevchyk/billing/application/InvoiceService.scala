@@ -83,7 +83,7 @@ class InvoiceServiceImpl(
       _      <- clientCompanyRepo
                   .findById(com.shevchyk.core.domain.ClientCompanyId(req.clientCompanyId))
                   .mapError(InvoiceError.DatabaseError(_))
-                  .flatMap(ZIO.fromOption(_).mapError(_ => InvoiceError.ClientCompanyNotFound(req.clientCompanyId)))
+                  .flatMap(ZIO.fromOption(_).orElseFail(InvoiceError.ClientCompanyNotFound(req.clientCompanyId)))
       invoice = Invoice(
                   id = InvoiceId.generate(),
                   number = number,
@@ -107,7 +107,7 @@ class InvoiceServiceImpl(
     invoiceRepo
       .findById(id)
       .mapError(InvoiceError.DatabaseError(_))
-      .flatMap(ZIO.fromOption(_).mapError(_ => InvoiceError.NotFound(id)))
+      .flatMap(ZIO.fromOption(_).orElseFail(InvoiceError.NotFound(id)))
       // Company isolation: treat cross-tenant access as not found to avoid leaking existence.
       .filterOrFail(_.taxiCompanyId == taxiCompanyId)(InvoiceError.NotFound(id))
 
@@ -199,13 +199,15 @@ class InvoiceServiceImpl(
                    .findById(invoice.clientCompanyId)
                    .mapError(InvoiceError.DatabaseError(_))
                    .flatMap(
-                     ZIO.fromOption(_).mapError(_ => InvoiceError.ClientCompanyNotFound(invoice.clientCompanyId.value))
+                     ZIO.fromOption(_).orElseFail(InvoiceError.ClientCompanyNotFound(invoice.clientCompanyId.value))
                    )
       // Issuer details come from the company's billing profile; fall back to the plain name.
       profile <- billingProfileRepo
                    .findByCompany(taxiCompanyId)
-                   .mapError(InvoiceError.DatabaseError(_))
-                   .map(_.getOrElse(CompanyBillingProfile(taxiCompanyId, legalName = Some(companyName))))
+                   .mapBoth(
+                     InvoiceError.DatabaseError(_),
+                     _.getOrElse(CompanyBillingProfile(taxiCompanyId, legalName = Some(companyName)))
+                   )
       bytes   <- PdfGenerator
                    .generateBytes(invoice, cc, profile)
                    .mapError(InvoiceError.PdfGenerationError(_))
@@ -230,15 +232,17 @@ class InvoiceServiceImpl(
       ride         <- invoiceRepo
                         .findRideForReceipt(taxiCompanyId, rideId)
                         .mapError(InvoiceError.DatabaseError(_))
-                        .flatMap(ZIO.fromOption(_).mapError(_ => InvoiceError.RideNotBillable(rideId)))
+                        .flatMap(ZIO.fromOption(_).orElseFail(InvoiceError.RideNotBillable(rideId)))
       cc           <- clientCompanyRepo
                         .findById(com.shevchyk.core.domain.ClientCompanyId(ride.clientCompanyId))
                         .mapError(InvoiceError.DatabaseError(_))
-                        .flatMap(ZIO.fromOption(_).mapError(_ => InvoiceError.ClientCompanyNotFound(ride.clientCompanyId)))
+                        .flatMap(ZIO.fromOption(_).orElseFail(InvoiceError.ClientCompanyNotFound(ride.clientCompanyId)))
       profile      <- billingProfileRepo
                         .findByCompany(taxiCompanyId)
-                        .mapError(InvoiceError.DatabaseError(_))
-                        .map(_.getOrElse(CompanyBillingProfile(taxiCompanyId, legalName = Some(companyName))))
+                        .mapBoth(
+                          InvoiceError.DatabaseError(_),
+                          _.getOrElse(CompanyBillingProfile(taxiCompanyId, legalName = Some(companyName)))
+                        )
       // Stable, idempotent receipt number derived from the ride (no shared counter).
       receiptNumber = s"Q-${ride.rideId.toString.take(8).toUpperCase}"
       bytes        <- PdfGenerator
@@ -271,7 +275,7 @@ class InvoiceServiceImpl(
                  .findById(invoice.clientCompanyId)
                  .mapError(InvoiceError.DatabaseError(_))
                  .flatMap(
-                   ZIO.fromOption(_).mapError(_ => InvoiceError.ClientCompanyNotFound(invoice.clientCompanyId.value))
+                   ZIO.fromOption(_).orElseFail(InvoiceError.ClientCompanyNotFound(invoice.clientCompanyId.value))
                  )
       email <- ZIO.fromOption(cc.email).orElseFail(InvoiceError.NoRecipientEmail(invoice.id))
       _     <- emailService

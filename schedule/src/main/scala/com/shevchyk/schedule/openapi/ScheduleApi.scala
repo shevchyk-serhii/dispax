@@ -4,7 +4,7 @@ import com.shevchyk.auth.domain.{ExpiredTokenError, InvalidTokenError, JwtError}
 import com.shevchyk.auth.middleware.AuthenticatedUser
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{CompanyId, PersonId, ScheduleDayId}
-import com.shevchyk.core.openapi.ApiError
+import com.shevchyk.core.openapi.{ApiError, ErrorMapper}
 import com.shevchyk.schedule.application.ScheduleService
 import com.shevchyk.schedule.domain.*
 import com.shevchyk.schedule.infrastructure.http.dto.{*, given}
@@ -32,20 +32,9 @@ object ScheduleApi:
 
   // -- Error mapping (mirrors ScheduleRoutes.handleScheduleError) -----------
 
-  private def toError(ex: Throwable): (StatusCode, ApiError) =
-    ex match
-      case ScheduleError.ValidationError(message)             => (StatusCode.BadRequest, ApiError(message))
-      case ScheduleError.ScheduleDayNotFound(id)              =>
-        (StatusCode.NotFound, ApiError(s"Schedule day not found: ${id.value}"))
-      case ScheduleError.DriverNotFound(id)                   => (StatusCode.NotFound, ApiError(s"Driver not found: ${id.value}"))
-      case ScheduleError.DuplicateScheduleDay(driverId, date) =>
-        (StatusCode.Conflict, ApiError(s"Driver ${driverId.value} already has a schedule for $date"))
-      case ScheduleError.InvalidStatusTransition(from, to)    =>
-        (StatusCode.Conflict, ApiError(s"Cannot transition from $from to $to"))
-      case ScheduleError.CompanyMismatch(_, _)                =>
-        (StatusCode.Forbidden, ApiError("Schedule day belongs to a different company"))
-      case ScheduleError.DatabaseError(_)                     => (StatusCode.InternalServerError, ApiError("Internal server error"))
-      case _                                                  => (StatusCode.InternalServerError, ApiError("Internal server error"))
+  // Delegates to the `ErrorMapper[ScheduleError]` defined alongside the domain;
+  // unexpected throwables collapse to a generic 500.
+  private def toError(ex: Throwable): (StatusCode, ApiError) = ErrorMapper.fromThrowable[ScheduleError](ex)
 
   // -- Authenticated base endpoint -----------------------------------------
   //

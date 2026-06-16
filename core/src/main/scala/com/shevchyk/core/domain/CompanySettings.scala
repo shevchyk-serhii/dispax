@@ -1,8 +1,7 @@
 package com.shevchyk.core.domain
 
 import zio.json.*
-import java.time.{Instant, LocalTime}
-import java.util.UUID
+import java.time.Instant
 
 final case class CompanySettings(
     companyId: CompanyId,
@@ -24,4 +23,18 @@ final case class UpdateCompanySettingsRequest(
     cancellationFeeDefault: Option[BigDecimal] = None,
     noShowFee: Option[BigDecimal] = None,
     autoAssignEnabled: Option[Boolean] = None
-) derives JsonCodec
+) derives JsonCodec:
+
+  /**
+   * Apply the patch onto an existing settings object. Unset fields keep their current value; `updatedAt` is refreshed.
+   */
+  def applyTo(current: CompanySettings): CompanySettings = current.copy(
+    commissionRate = commissionRate.getOrElse(current.commissionRate),
+    workingHoursStart = workingHoursStart.getOrElse(current.workingHoursStart),
+    workingHoursEnd = workingHoursEnd.getOrElse(current.workingHoursEnd),
+    defaultCurrency = defaultCurrency.getOrElse(current.defaultCurrency),
+    cancellationFeeDefault = cancellationFeeDefault.getOrElse(current.cancellationFeeDefault),
+    noShowFee = noShowFee.getOrElse(current.noShowFee),
+    autoAssignEnabled = autoAssignEnabled.getOrElse(current.autoAssignEnabled),
+    updatedAt = Instant.now()
+  )

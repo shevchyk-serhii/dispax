@@ -4,7 +4,6 @@ import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.NotificationPreferenceRepository
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -19,12 +18,9 @@ import java.time.Instant
 object NotificationPreferenceApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val preferenceTag = "NotificationPreference"
-
-  given Schema[NotificationPreferenceId]            = Schema.derived
-  given Schema[NotificationPreference]              = Schema.derived
-  given Schema[UpdateNotificationPreferenceRequest] = Schema.derived
 
   type NotificationPreferenceEnv = JwtService & NotificationPreferenceRepository
 

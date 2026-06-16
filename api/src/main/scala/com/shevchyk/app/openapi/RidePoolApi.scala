@@ -7,7 +7,6 @@ import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.RidePoolRepository
 import com.shevchyk.ride.application.service.RideService
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -27,26 +26,14 @@ import java.time.Instant
 object RidePoolApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val ridePoolTag = "RidePool"
-
-  given Schema[RideId]            = Schema.derived
-  given Schema[RidePoolId]        = Schema.derived
-  given Schema[RidePoolMemberId]  = Schema.derived
-  given Schema[PoolStatus]        = Schema.derivedEnumeration[PoolStatus].defaultStringBased
-  given Schema[PoolMemberStatus]  = Schema.derivedEnumeration[PoolMemberStatus].defaultStringBased
-  given Schema[RidePool]          = Schema.derived
-  given Schema[RidePoolMember]    = Schema.derived
-  given Schema[CreatePoolRequest] = Schema.derived
-  given Schema[AddToPoolRequest]  = Schema.derived
 
   /**
    * Mirrors the inline `{"pool":..,"members":..}` JSON body produced by the original GET /api/pools/{id}.
    */
   final case class PoolDetailResponse(pool: RidePool, members: List[RidePoolMember]) derives JsonCodec
-
-  object PoolDetailResponse:
-    given Schema[PoolDetailResponse] = Schema.derived
 
   type RidePoolEnv = JwtService & RidePoolRepository & RideService & AuditService & EventHub
 
@@ -162,8 +149,7 @@ object RidePoolApi:
       _         <-
         audit
           .log(
-            AuditLogEntry(
-              id = AuditLogId.generate(),
+            AuditLogEntry.record(
               companyId = pool.companyId,
               actorId = PersonId(user.userId),
               action = AuditAction.UserUpdated,

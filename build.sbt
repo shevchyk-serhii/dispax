@@ -12,6 +12,20 @@ ThisBuild / coverageExcludedPackages := Seq(
   ".*\\.infrastructure\\.http\\.dto\\..*"
 ).mkString(";")
 
+// Strict compiler flags. In a ZIO codebase the most valuable are -Wvalue-discard
+// and -Wnonunit-statement: they catch effects that are constructed but never
+// chained into the program (a silently-dropped ZIO that never runs). We keep
+// warnings non-fatal for now so the build still succeeds while the existing
+// findings are cleaned up incrementally.
+ThisBuild / scalacOptions ++= Seq(
+  "-deprecation",
+  "-feature",
+  "-unchecked",
+  "-Wunused:all",
+  "-Wvalue-discard",
+  "-Wnonunit-statement"
+)
+
 ThisBuild / assembly / assemblyMergeStrategy := {
   case x if x.endsWith("module-info.class")            => MergeStrategy.discard
   case x if x.contains("io.netty.versions.properties") => MergeStrategy.first
@@ -29,13 +43,15 @@ addCommandAlias("fmtWatch", "~fmtAll")
 addCommandAlias("cucumber", "testOnly *CucumberRunner")
 addCommandAlias("cucumberWithServer", "; testServer & ; cucumber ; Test / runMain com.shevchyk.TestApplication")
 addCommandAlias("testServer", "Test / runMain com.shevchyk.TestApplication")
+// `app.env` mirrors the APP_ENV env var (Environment.current reads both). The app derives the
+// HOCON profile (application-<env>.conf) from it, so these aliases only set the single selector.
 addCommandAlias(
   "runDev",
-  "; set Compile / run / javaOptions += \"-Dconfig.resource=application-development.conf\"; run"
+  "; set Compile / run / javaOptions += \"-Dapp.env=development\"; run"
 )
 addCommandAlias(
   "runProd",
-  "; set Compile / run / javaOptions += \"-Dconfig.resource=application-production.conf\"; run"
+  "; set Compile / run / javaOptions += \"-Dapp.env=production\"; run"
 )
 
 lazy val commonDependencies = Seq(
@@ -84,6 +100,16 @@ lazy val monocleDependencies = Seq(
   "dev.optics" %% "monocle-macro" % "3.3.0"
 )
 
+// iron: zero-cost compile-time refinement types. Domain invariants ("non-empty",
+// "in range") become part of the type rather than runtime checks scattered across
+// services. The zio-json module gives codecs for refined types out of the box.
+lazy val ironVersion = "2.6.0"
+
+lazy val ironDependencies = Seq(
+  "io.github.iltotore" %% "iron"          % ironVersion,
+  "io.github.iltotore" %% "iron-zio-json" % ironVersion
+)
+
 lazy val dbDependencies = Seq(
   "org.tpolecat"  %% "doobie-core"                % "1.0.0-RC5",
   "org.tpolecat"  %% "doobie-postgres"            % "1.0.0-RC5",
@@ -130,7 +156,7 @@ lazy val testDependencies = Seq(
 lazy val core = (project in file("core"))
   .settings(
     name := "dispax-core",
-    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ httpDependencies ++ dbDependencies ++ uuidDependencies ++ tapirDependencies ++ testcontainersDependencies,
+    libraryDependencies ++= commonDependencies ++ configDependencies ++ jsonDependencies ++ httpDependencies ++ dbDependencies ++ uuidDependencies ++ tapirDependencies ++ ironDependencies ++ testcontainersDependencies,
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
 

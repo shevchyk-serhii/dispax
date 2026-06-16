@@ -6,7 +6,6 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.GeofenceRepository
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -20,14 +19,9 @@ import zio.ZIO
 object GeofenceApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val geofenceTag = "Geofence"
-
-  given Schema[GeofenceType]          = Schema.derivedEnumeration[GeofenceType].defaultStringBased
-  given Schema[GeofenceId]            = Schema.derived
-  given Schema[Geofence]              = Schema.derived
-  given Schema[GeofenceAlert]         = Schema.derived
-  given Schema[CreateGeofenceRequest] = Schema.derived
 
   type GeofenceEnv = JwtService & GeofenceRepository & GeofenceService
 

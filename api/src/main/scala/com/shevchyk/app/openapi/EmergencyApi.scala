@@ -7,7 +7,6 @@ import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.{BlacklistRepository, EmergencyReassignmentRepository, PersonRepository}
 import com.shevchyk.ride.application.service.RideService
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -20,15 +19,9 @@ import zio.ZIO
 object EmergencyApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val emergencyTag = "Emergency"
-
-  given Schema[RideId]                   = Schema.derived
-  given Schema[EmergencyReason]          = Schema.derivedEnumeration[EmergencyReason].defaultStringBased
-  given Schema[ReassignmentStatus]       = Schema.derivedEnumeration[ReassignmentStatus].defaultStringBased
-  given Schema[EmergencyReassignmentId]  = Schema.derived
-  given Schema[EmergencyReassignment]    = Schema.derived
-  given Schema[EmergencyReassignRequest] = Schema.derived
 
   type EmergencyEnv =
     JwtService & EmergencyReassignmentRepository & BlacklistRepository & RideService & PersonRepository & AuditService &
@@ -113,8 +106,7 @@ object EmergencyApi:
         _                <-
           audit
             .log(
-              AuditLogEntry(
-                id = AuditLogId.generate(),
+              AuditLogEntry.record(
                 companyId = ride.companyId,
                 actorId = PersonId(user.userId),
                 action = AuditAction.RideReassigned,

@@ -1,5 +1,6 @@
 package com.shevchyk.core.database
 
+import com.shevchyk.core.config.Environment
 import zio.*
 import zio.config.*
 import zio.config.magnolia.*
@@ -93,8 +94,9 @@ object DatabaseConfig {
       transactorWithMigrations
     )
 
-  // Switches between production (schema only) and development (with seed data) based on APP_ENV env var
+  // Switches between production (schema only) and development (with seed data) based on the single
+  // environment selector (APP_ENV via Environment.current).
   val liveTransactorWithMigrations: ZLayer[Any, Throwable, Transactor[Task]] =
-    if sys.env.getOrElse("APP_ENV", "development") == "production" then productionTransactorWithMigrations
+    if Environment.isProduction then productionTransactorWithMigrations
     else developmentTransactorWithMigrations
 }

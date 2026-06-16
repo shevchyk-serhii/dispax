@@ -4,7 +4,6 @@ import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.CompanySettingsRepository
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -20,11 +19,9 @@ import java.time.Instant
 object CompanySettingsApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val settingsTag = "CompanySettings"
-
-  given Schema[CompanySettings]              = Schema.derived
-  given Schema[UpdateCompanySettingsRequest] = Schema.derived
 
   /**
    * Tariff projection returned by GET/PUT /api/company/tariff.
@@ -35,9 +32,6 @@ object CompanySettingsApi:
       cancellationFeeDefault: BigDecimal,
       noShowFee: BigDecimal
   ) derives JsonCodec
-
-  object TariffDto:
-    given Schema[TariffDto] = Schema.derived
 
   type CompanySettingsEnv = JwtService & CompanySettingsRepository
 

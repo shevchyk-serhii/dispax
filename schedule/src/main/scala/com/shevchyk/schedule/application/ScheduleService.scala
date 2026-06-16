@@ -107,13 +107,7 @@ class ScheduleServiceImpl(
       newStatus = req.status.getOrElse(existing.status)
       _        <- validateStatusTransition(existing.status, newStatus)
 
-      updated = existing.copy(
-                  startTime = newStartTime,
-                  endTime = newEndTime,
-                  status = newStatus,
-                  notes = req.notes.orElse(existing.notes),
-                  updatedAt = Instant.now()
-                )
+      updated = req.applyTo(existing, newStartTime, newEndTime, newStatus)
 
       persisted <- scheduleDayRepository.update(updated).mapDatabaseError
     } yield persisted

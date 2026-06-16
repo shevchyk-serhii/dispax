@@ -11,15 +11,26 @@ import scala.util.Try
 given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
   type Error = RideError
 
-  def validate(request: CreateRideApiRequest): IO[RideError, CreateRideApiRequest] =
-    for {
-      _ <- validateLocation(request.from, "Pickup location")
-      _ <- validateLocation(request.to, "Dropoff location")
-      _ <- validateDateTime(request.pickupDateTime)
-      _ <- validateClientId(request.clientId)
-      _ <- validateAirportTransfer(request)
-      _ <- validatePrice(request.price)
-    } yield request
+  // Accumulating validation: every field problem is reported at once (better form
+  // UX) instead of failing on the first one. The individual checks are unchanged;
+  // `Validator.accumulate` runs them and gathers all failures, then we collapse the
+  // collected messages into a single RideError.ValidationError to keep the
+  // `Validator[A] { type Error = RideError }` contract.
+  def validate(request: CreateRideApiRequest): IO[RideError, CreateRideApiRequest] = Validator
+    .accumulate(request)(
+      validateLocation(request.from, "Pickup location"),
+      validateLocation(request.to, "Dropoff location"),
+      validateDateTime(request.pickupDateTime),
+      validateClientId(request.clientId),
+      validateAirportTransfer(request),
+      validatePrice(request.price)
+    )
+    .mapError(errors => RideError.ValidationError(errors.toChunk.map(messageOf).mkString("; ")))
+
+  private def messageOf(error: RideError): String =
+    error match
+      case RideError.ValidationError(message) => message
+      case other                              => other.toString
 
   private def validateLocation(location: LocationDto, fieldName: String): IO[RideError, Unit] =
     ZIO

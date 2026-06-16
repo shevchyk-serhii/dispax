@@ -6,7 +6,6 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.BlacklistRepository
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -19,12 +18,9 @@ import zio.ZIO
 object BlacklistApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val blacklistTag = "Blacklist"
-
-  given Schema[BlacklistEntryId]       = Schema.derived
-  given Schema[BlacklistEntry]         = Schema.derived
-  given Schema[CreateBlacklistRequest] = Schema.derived
 
   type BlacklistEnv = JwtService & BlacklistRepository & AuditService
 
@@ -91,8 +87,7 @@ object BlacklistApi:
         _         <-
           audit
             .log(
-              AuditLogEntry(
-                id = AuditLogId.generate(),
+              AuditLogEntry.record(
                 companyId = entry.companyId,
                 actorId = PersonId(user.userId),
                 action = AuditAction.UserUpdated,

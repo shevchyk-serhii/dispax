@@ -80,14 +80,20 @@ import com.shevchyk.notification.repository.{
 }
 import com.shevchyk.core.application.EmailSmsService
 import com.shevchyk.core.database.DatabaseConfig
-import com.shevchyk.core.config.ServerConfig
+import com.shevchyk.core.config.{Environment, ServerConfig}
 import zio.*
 import zio.http.*
 import zio.logging.backend.SLF4J
 
 object Application extends ZIOAppDefault:
 
-  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
+  // `APP_ENV` is the single source of truth for environment selection. Before any config layer is
+  // built, point Typesafe Config at the matching `application-<env>.conf` (unless an explicit
+  // `-Dconfig.resource=...` was passed). This makes `make dev`, IntelliJ and Cloud Run all behave
+  // the same — driven by APP_ENV alone, no `-Dconfig.resource` flag required.
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
+    ZLayer(ZIO.succeed(Environment.ensureConfigResource())).unit >>>
+      (Runtime.removeDefaultLoggers >>> SLF4J.slf4j)
 
   // Ensure every response declares UTF-8 in its Content-Type. Without an explicit
   // charset, HTTP clients (e.g. Dart's `http` package via `response.body`) decode

@@ -14,5 +14,5 @@ object TestLayers {
   )
 
   val authServiceWithInMemory: ZLayer[Any, Nothing, AuthService] =
-    (inMemoryPersonRepository ++ inMemoryTokenRepository ++ (JwtConfig.live >>> JwtService.live)) >>> AuthService.live
+    (inMemoryPersonRepository ++ inMemoryTokenRepository ++ (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
 }

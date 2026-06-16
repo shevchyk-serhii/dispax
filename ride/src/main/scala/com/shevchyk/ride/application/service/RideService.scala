@@ -140,8 +140,7 @@ class RideServiceImpl(
       _               <-
         auditService
           .log(
-            AuditLogEntry(
-              id = AuditLogId.generate(),
+            AuditLogEntry.record(
               companyId = persistedRide.companyId,
               actorId = persistedRide.clientId,
               action = AuditAction.RideCreated,
@@ -264,8 +263,7 @@ class RideServiceImpl(
       _             <-
         auditService
           .log(
-            AuditLogEntry(
-              id = AuditLogId.generate(),
+            AuditLogEntry.record(
               companyId = persistedRide.companyId,
               actorId = userId,
               action = AuditAction.RideCancelled,
@@ -352,8 +350,7 @@ class RideServiceImpl(
       _             <-
         auditService
           .log(
-            AuditLogEntry(
-              id = AuditLogId.generate(),
+            AuditLogEntry.record(
               companyId = persistedRide.companyId,
               actorId = userId,
               action = AuditAction.RideStatusChanged,
@@ -493,8 +490,7 @@ class RideServiceImpl(
       _             <-
         auditService
           .log(
-            AuditLogEntry(
-              id = AuditLogId.generate(),
+            AuditLogEntry.record(
               companyId = persistedRide.companyId,
               actorId = driverId,
               action = AuditAction.RideAssigned,
@@ -557,8 +553,7 @@ class RideServiceImpl(
       _             <-
         auditService
           .log(
-            AuditLogEntry(
-              id = AuditLogId.generate(),
+            AuditLogEntry.record(
               companyId = persistedRide.companyId,
               actorId = newDriverId,
               action = AuditAction.RideReassigned,

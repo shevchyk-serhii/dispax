@@ -5,7 +5,6 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.{ClientCompanyRepository, PersonRepository}
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -22,11 +21,9 @@ import zio.ZIO
 object ClientCompanyApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val clientCompanyTag = "ClientCompany"
-
-  given Schema[ClientCompany]              = Schema.derived
-  given Schema[CreateClientCompanyRequest] = Schema.derived
 
   type ClientCompanyEnv = JwtService & ClientCompanyRepository & PersonRepository
 

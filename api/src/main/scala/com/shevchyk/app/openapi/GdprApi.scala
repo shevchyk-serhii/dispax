@@ -6,7 +6,6 @@ import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.{GdprRepository, PersonRepository}
 import com.shevchyk.ride.repository.{ExpenseRepository, RideRepository}
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -22,19 +21,9 @@ import java.time.Instant
 object GdprApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val gdprTag = "GDPR"
-
-  // -- Schemas for domain DTOs ---------------------------------------------
-  given Schema[ConsentType]          = Schema.derivedEnumeration[ConsentType].defaultStringBased
-  given Schema[GdprRequestType]      = Schema.derivedEnumeration[GdprRequestType].defaultStringBased
-  given Schema[GdprRequestStatus]    = Schema.derivedEnumeration[GdprRequestStatus].defaultStringBased
-  given Schema[GdprConsentId]        = Schema.derived
-  given Schema[GdprRequestId]        = Schema.derived
-  given Schema[GdprConsent]          = Schema.derived
-  given Schema[GdprRequest]          = Schema.derived
-  given Schema[GdprDataExport]       = Schema.derived
-  given Schema[UpdateConsentRequest] = Schema.derived
 
   type GdprEnv = JwtService & GdprRepository & PersonRepository & RideRepository & ExpenseRepository
 

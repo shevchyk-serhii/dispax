@@ -15,19 +15,29 @@ final case class JwtConfig(
 
 object JwtConfig:
 
-  val live: ZLayer[Any, Nothing, JwtConfig] = ZLayer.succeed {
-    val secret =
-      sys.env.get("JWT_SECRET") match
-        case Some(s)                          => s
+  // Default secret for development/test only — never used in production.
+  private val DevSecret = "dev-jwt-secret-change-in-production-must-be-at-least-256-bits"
+
+  /**
+   * Resolves JWT_SECRET via the ZIO config/env channel instead of throwing. In production a missing JWT_SECRET fails
+   * the layer (and therefore startup) rather than silently falling back to the dev default.
+   */
+  val live: ZLayer[Any, Config.Error, JwtConfig] = ZLayer.fromZIO {
+    System
+      .env("JWT_SECRET")
+      .orDie
+      .flatMap {
+        case Some(s)                          => ZIO.succeed(s)
         case None if Environment.isProduction =>
-          throw new RuntimeException("JWT_SECRET environment variable must be set in production")
-        case None                             =>
-          // Use a default secret for development/test only
-          "dev-jwt-secret-change-in-production-must-be-at-least-256-bits"
-    JwtConfig(
-      secret = secret,
-      issuer = if Environment.isProduction then "dispax" else "dispax-dev",
-      audience = "dispax-api",
-      expirationTime = Duration.fromNanos(24 * 60 * 60 * 1_000_000_000L) // 24 hours
-    )
+          ZIO.fail(Config.Error.MissingData(message = "JWT_SECRET environment variable must be set in production"))
+        case None                             => ZIO.succeed(DevSecret)
+      }
+      .map { secret =>
+        JwtConfig(
+          secret = secret,
+          issuer = if Environment.isProduction then "dispax" else "dispax-dev",
+          audience = "dispax-api",
+          expirationTime = Duration.fromNanos(24 * 60 * 60 * 1_000_000_000L) // 24 hours
+        )
+      }
   }

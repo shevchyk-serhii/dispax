@@ -6,7 +6,6 @@ import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId, UnreadCountResponse}
 import com.shevchyk.notification.repository.NotificationRepository
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -19,12 +18,9 @@ import zio.ZIO
 object NotificationApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val notificationTag = "Notification"
-
-  given Schema[AppNotificationId]   = Schema.derived
-  given Schema[AppNotification]     = Schema.derived
-  given Schema[UnreadCountResponse] = Schema.derived
 
   type NotificationEnv = JwtService & NotificationRepository
 

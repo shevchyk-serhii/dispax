@@ -11,7 +11,6 @@ import com.shevchyk.notification.domain.RegisterFcmTokenRequest
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.RideStatus
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -24,6 +23,8 @@ import java.util.UUID
  * checks and company isolation. The same `ServerEndpoint`s drive both the OpenAPI document and the running server.
  */
 object UserApi:
+
+  import ApiSchemas.given
 
   private val usersTag = "Users"
   private val statsTag = "Statistics"
@@ -44,18 +45,12 @@ object UserApi:
       avgAssignmentMinutes: Double
   ) derives JsonCodec
 
-  object RideStatsResponse:
-    given Schema[RideStatsResponse] = Schema.derived
-
   final case class DailyStatsEntry(
       date: String,
       completed: Int,
       cancelled: Int,
       total: Int
   ) derives JsonCodec
-
-  object DailyStatsEntry:
-    given Schema[DailyStatsEntry] = Schema.derived
 
   final case class DriverStatsEntry(
       driverId: String,
@@ -66,31 +61,16 @@ object UserApi:
       earnings: BigDecimal
   ) derives JsonCodec
 
-  object DriverStatsEntry:
-    given Schema[DriverStatsEntry] = Schema.derived
-
   final case class UserStatsResponse(
       total: Int,
       byRole: Map[String, Int]
   ) derives JsonCodec
 
-  object UserStatsResponse:
-    given Schema[UserStatsResponse] = Schema.derived
-
   final case class ReminderMinutesRequest(minutes: Int) derives JsonCodec
-
-  object ReminderMinutesRequest:
-    given Schema[ReminderMinutesRequest] = Schema.derived
 
   final case class SuccessResponse(success: Boolean) derives JsonCodec
 
-  object SuccessResponse:
-    given Schema[SuccessResponse] = Schema.derived
-
   final case class AvatarUploadResponse(success: Boolean, avatarUrl: String) derives JsonCodec
-
-  object AvatarUploadResponse:
-    given Schema[AvatarUploadResponse] = Schema.derived
 
   // -- Error helpers --------------------------------------------------------
   //

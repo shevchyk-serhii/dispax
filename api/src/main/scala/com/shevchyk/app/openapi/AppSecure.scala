@@ -52,13 +52,17 @@ object AppSecure:
 
   def checkRole(user: AuthenticatedUser, roles: String*): ZIO[Any, Err, Unit] =
     val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) then ZIO.unit
-    else ZIO.fail((StatusCode.Forbidden, ApiError("Insufficient permissions")))
+    ZIO
+      .fail((StatusCode.Forbidden, ApiError("Insufficient permissions")))
+      .unless(roles.exists(_.toUpperCase == userRoleUpper))
+      .unit
 
   def checkRoleOrOwner(user: AuthenticatedUser, resourceOwnerId: UUID, roles: String*): ZIO[Any, Err, Unit] =
     val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) || user.userId == resourceOwnerId then ZIO.unit
-    else ZIO.fail((StatusCode.Forbidden, ApiError("Access denied")))
+    ZIO
+      .fail((StatusCode.Forbidden, ApiError("Access denied")))
+      .unless(roles.exists(_.toUpperCase == userRoleUpper) || user.userId == resourceOwnerId)
+      .unit
 
   // -- UUID parsing (mirrors UuidParser, which fails with 400) -------------
 
@@ -72,8 +76,7 @@ object AppSecure:
 
   def requireCompanyId(companyIdOpt: Option[UUID]): ZIO[Any, Err, CompanyId] = ZIO
     .fromOption(companyIdOpt)
-    .map(CompanyId(_))
-    .orElseFail((StatusCode.BadRequest, ApiError("User must belong to a company")))
+    .mapBoth(_ => (StatusCode.BadRequest, ApiError("User must belong to a company")), CompanyId(_))
 
   // -- SuperAdmin escape-hatch (used ONLY in SuperAdminApi) -----------------
   // These helpers are intentionally narrow: requireSuperAdmin is the ONLY

@@ -6,7 +6,6 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.SessionRepository
 import sttp.model.StatusCode
-import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -22,10 +21,9 @@ import java.time.Instant
 object SessionApi:
 
   import AppSecure.*
+  import ApiSchemas.given
 
   private val sessionTag = "Session"
-
-  given Schema[SessionDto] = Schema.derived
 
   type SessionEnv = JwtService & SessionRepository & TokenRepository
 

@@ -21,7 +21,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
   def layers: ZLayer[Any, Nothing, AuthService] =
     (ZLayer.succeed(InMemoryPersonRepositoryWithUsers()) ++
       ZLayer.succeed(InMemoryTokenRepository()) ++
-      (JwtConfig.live >>> JwtService.live)) >>> AuthService.live
+      (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
 
   def spec =
     suite("AuthService")(
