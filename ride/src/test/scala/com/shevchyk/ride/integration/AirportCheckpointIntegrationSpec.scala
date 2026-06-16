@@ -5,7 +5,7 @@ import com.shevchyk.core.database.PostgresTestContainer
 import com.shevchyk.core.domain.*
 import com.shevchyk.ride.application.service.*
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.repository.{InMemoryRideRepository, PostgresRideRepository, RideRepository}
+import com.shevchyk.ride.repository.{InMemoryAirportConfigRepository, InMemoryRideRepository, PostgresRideRepository, RideRepository}
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
@@ -51,10 +51,33 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
     airportCheckpoint = checkpoint
   )
 
+  // MUC airport seeded into the in-memory config repo so that checkGeofenceForLanded
+  // (which now reads coords from AirportConfigService) works with the existing test coords.
+  private val mucAirport = Airport(
+    code = "MUC",
+    name = "München Franz Josef Strauß",
+    country = "DE",
+    landingLat = 48.3537,
+    landingLon = 11.7860,
+    landingRadius = 2000,
+    isActive = true,
+    zones = Nil,
+    createdAt = java.time.Instant.EPOCH,
+    updatedAt = java.time.Instant.EPOCH
+  )
+
+  private val airportConfigServiceLayer: ZLayer[Any, Nothing, AirportConfigService] =
+    ZLayer.fromZIO(
+      for {
+        repo <- ZIO.succeed(new InMemoryAirportConfigRepository)
+        _    <- repo.create(mucAirport)
+      } yield (repo: com.shevchyk.ride.repository.AirportConfigRepository)
+    ).orDie >>> AirportConfigService.layer
+
   // Shared layers: one InMemoryRideRepository instance is visible both as RideRepository
   // and as the inner dependency of AirportCheckpointService.
   private val baseEnv =
-    (InMemoryRideRepository.layer ++ EventHub.layer) >+> AirportCheckpointService.layer
+    (InMemoryRideRepository.layer ++ EventHub.layer ++ airportConfigServiceLayer) >+> AirportCheckpointService.layer
 
   // ======================================================================
   // Section A — service-level tests (in-memory repos)
