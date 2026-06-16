@@ -117,6 +117,8 @@ class ProfileDialog extends StatelessWidget {
         return 'Client';
       case PersonRole.secretary:
         return 'Secretary';
+      case PersonRole.clientSecretary:
+        return 'Client Secretary';
       case PersonRole.dispatcher:
         return 'Dispatcher';
       case PersonRole.admin:

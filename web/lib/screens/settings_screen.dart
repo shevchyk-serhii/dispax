@@ -619,6 +619,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case PersonRole.client:
         return AppColors.clientGradient;
       case PersonRole.secretary:
+      case PersonRole.clientSecretary:
         return AppColors.secretaryGradient;
       case PersonRole.dispatcher:
         return AppColors.dispatcherGradient;

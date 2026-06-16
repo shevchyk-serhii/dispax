@@ -18,13 +18,15 @@ object RidePropertySpec extends ZIOSpecDefault {
 
   // Generators ---------------------------------------------------------------
 
-  private val genRideId: Gen[Any, RideId]     = Gen.uuid.map(RideId(_))
-  private val genPersonId: Gen[Any, PersonId] = Gen.uuid.map(PersonId(_))
+  private val genRideId: Gen[Any, RideId]       = Gen.uuid.map(RideId(_))
+  private val genPersonId: Gen[Any, PersonId]   = Gen.uuid.map(PersonId(_))
   private val genCompanyId: Gen[Any, CompanyId] = Gen.uuid.map(CompanyId(_))
 
   private val genStatus: Gen[Any, RideStatus] = Gen.fromIterable(RideStatus.values)
 
-  /** A ride with a generated status; a driver is attached whenever the status logically requires one. */
+  /**
+   * A ride with a generated status; a driver is attached whenever the status logically requires one.
+   */
   private val genRide: Gen[Any, Ride] =
     for
       id        <- genRideId
@@ -53,7 +55,7 @@ object RidePropertySpec extends ZIOSpecDefault {
             val json    = id.toJson
             val decoded = json.fromJson[RideId]
             assertTrue(
-              !json.contains("\"value\""),     // flat string, not an object wrapper
+              !json.contains("\"value\""), // flat string, not an object wrapper
               decoded == Right(id)
             )
           }

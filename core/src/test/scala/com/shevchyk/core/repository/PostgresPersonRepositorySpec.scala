@@ -123,6 +123,28 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           found.get.isVip
         )
       },
+      test("update modifies a person with a null company_id (SuperAdmin)") {
+        // SuperAdmin is cross-tenant: company_id IS NULL. The WHERE clause must use
+        // `IS NOT DISTINCT FROM` so that NULL matches NULL — `company_id = NULL` would
+        // never match and the update would silently no-op.
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedCompany(xa)
+          _      <- cleanPersons(xa)
+          repo    = PostgresPersonRepository(xa)
+          person  = makePerson(role = PersonRole.SuperAdmin, name = "Before", email = "superadmin@test.com")
+                      .copy(companyId = None)
+          _      <- repo.create(person)
+          updated = person.copy(name = "After", isVip = true)
+          _      <- repo.update(updated)
+          found  <- repo.findById(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.companyId.isEmpty,
+          found.get.name == "After",
+          found.get.isVip
+        )
+      },
       test("delete removes person") {
         for {
           xa    <- ZIO.service[Transactor[Task]]

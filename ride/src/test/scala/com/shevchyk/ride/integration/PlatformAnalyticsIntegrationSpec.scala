@@ -18,18 +18,17 @@ import java.util.UUID
 /**
  * Integration test: cross-tenant (SuperAdmin) platform analytics.
  *
- * Seeds rides for TWO separate companies using the PostgresRideRepository and
- * CompanyRepository, then asserts that the platform-level aggregates
- * (`countAllRidesByStatus`, `sumAllRevenue`, `countRidesByCompany`,
+ * Seeds rides for TWO separate companies using the PostgresRideRepository and CompanyRepository, then asserts that the
+ * platform-level aggregates (`countAllRidesByStatus`, `sumAllRevenue`, `countRidesByCompany`,
  * `sumRevenueByCompanyPlatform`) see data across both tenants.
  *
- * Also verifies that `CompanyRepository.findAll` returns all seeded companies,
- * which is the data source for the SuperAdmin companies list.
+ * Also verifies that `CompanyRepository.findAll` returns all seeded companies, which is the data source for the
+ * SuperAdmin companies list.
  *
  * Rules:
- * - Real PostgreSQL via Testcontainers — the DB is never mocked (dev-flow.md invariant #4).
- * - No company_id filter in the platform-level repository calls (by design).
- * - Tests are sequential to avoid concurrency issues on shared test data.
+ *   - Real PostgreSQL via Testcontainers — the DB is never mocked (dev-flow.md invariant #4).
+ *   - No company_id filter in the platform-level repository calls (by design).
+ *   - Tests are sequential to avoid concurrency issues on shared test data.
  */
 object PlatformAnalyticsIntegrationSpec extends ZIOSpecDefault:
 
@@ -43,31 +42,34 @@ object PlatformAnalyticsIntegrationSpec extends ZIOSpecDefault:
       // Two isolated tenant companies — provide non-null phone/address because
       // Company.phone and Company.address are non-Option String and Doobie
       // throws NonNullableColumnRead on NULL columns mapped to String.
-      _ <- sql"""INSERT INTO companies (id, name, email, phone, address)
+      _ <-
+        sql"""INSERT INTO companies (id, name, email, phone, address)
                    VALUES (${company1Id.value}, 'Platform Test GmbH 1', 'pt1@platform-test.de',
                            '+49 89 111111', 'Teststraße 1, 80000 München')
                    ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO companies (id, name, email, phone, address)
+      _ <-
+        sql"""INSERT INTO companies (id, name, email, phone, address)
                    VALUES (${company2Id.value}, 'Platform Test GmbH 2', 'pt2@platform-test.de',
                            '+49 89 222222', 'Teststraße 2, 80000 München')
                    ON CONFLICT DO NOTHING""".update.run
       // One client per company
-      _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+      _ <-
+        sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
                    VALUES (${client1.value}, 'Test Client 1', 'c1@platform-test.de',
                            'client'::person_role, ${company1Id.value}, 'placeholder')
                    ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+      _ <-
+        sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
                    VALUES (${client2.value}, 'Test Client 2', 'c2@platform-test.de',
                            'client'::person_role, ${company2Id.value}, 'placeholder')
                    ON CONFLICT DO NOTHING""".update.run
     } yield ()).transact(xa)
 
   private def cleanRides(xa: Transactor[Task]): Task[Unit] =
-    sql"DELETE FROM rides WHERE company_id IN (${company1Id.value}, ${company2Id.value})"
-      .update.run.transact(xa).unit
+    sql"DELETE FROM rides WHERE company_id IN (${company1Id.value}, ${company2Id.value})".update.run.transact(xa).unit
 
   private val now  = Instant.now()
-  private val from = now.minusSeconds(3600L * 24 * 30)  // 30 days ago
+  private val from = now.minusSeconds(3600L * 24 * 30) // 30 days ago
   private val to   = now.plusSeconds(3600L)
 
   private def ride(
@@ -92,35 +94,33 @@ object PlatformAnalyticsIntegrationSpec extends ZIOSpecDefault:
 
   def spec =
     suite("PlatformAnalytics — cross-tenant integration (Testcontainers)")(
-
       test("CompanyRepository.findAll returns both seeded companies") {
         for {
-          xa     <- ZIO.service[Transactor[Task]]
-          _      <- seedBaseData(xa)
-          repo    = PostgresCompanyRepository(xa)
-          all    <- repo.findAll()
-          ids     = all.map(_.id)
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedBaseData(xa)
+          repo = PostgresCompanyRepository(xa)
+          all <- repo.findAll()
+          ids  = all.map(_.id)
         } yield assertTrue(
           ids.contains(company1Id),
           ids.contains(company2Id),
           all.size >= 2
         )
       },
-
       test("countAllRidesByStatus aggregates across both companies") {
         for {
-          xa       <- ZIO.service[Transactor[Task]]
-          _        <- seedBaseData(xa)
-          _        <- cleanRides(xa)
-          repo      = PostgresRideRepository(xa)
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedBaseData(xa)
+          _      <- cleanRides(xa)
+          repo    = PostgresRideRepository(xa)
           // Company 1: 2 Completed + 1 Requested
-          _        <- repo.create(ride(company1Id, client1, RideStatus.Completed))
-          _        <- repo.create(ride(company1Id, client1, RideStatus.Completed))
-          _        <- repo.create(ride(company1Id, client1, RideStatus.Requested))
+          _      <- repo.create(ride(company1Id, client1, RideStatus.Completed))
+          _      <- repo.create(ride(company1Id, client1, RideStatus.Completed))
+          _      <- repo.create(ride(company1Id, client1, RideStatus.Requested))
           // Company 2: 1 Completed + 1 Cancelled
-          _        <- repo.create(ride(company2Id, client2, RideStatus.Completed))
-          _        <- repo.create(ride(company2Id, client2, RideStatus.Cancelled))
-          counts   <- repo.countAllRidesByStatus()
+          _      <- repo.create(ride(company2Id, client2, RideStatus.Completed))
+          _      <- repo.create(ride(company2Id, client2, RideStatus.Cancelled))
+          counts <- repo.countAllRidesByStatus()
         } yield assertTrue(
           // 3 completed across both companies
           counts.getOrElse("Completed", 0) >= 3,
@@ -130,7 +130,6 @@ object PlatformAnalyticsIntegrationSpec extends ZIOSpecDefault:
           counts.getOrElse("Cancelled", 0) >= 1
         )
       },
-
       test("sumAllRevenue sums completed rides across both companies") {
         for {
           xa      <- ZIO.service[Transactor[Task]]
@@ -149,24 +148,22 @@ object PlatformAnalyticsIntegrationSpec extends ZIOSpecDefault:
           revenue >= BigDecimal("300.00")
         )
       },
-
       test("countRidesByCompany groups ride counts by tenant") {
         for {
-          xa       <- ZIO.service[Transactor[Task]]
-          _        <- seedBaseData(xa)
-          _        <- cleanRides(xa)
-          repo      = PostgresRideRepository(xa)
-          reqTime   = now.minusSeconds(3600)
-          _        <- repo.create(ride(company1Id, client1, RideStatus.Requested).copy(requestTime = reqTime))
-          _        <- repo.create(ride(company1Id, client1, RideStatus.Completed).copy(requestTime = reqTime))
-          _        <- repo.create(ride(company2Id, client2, RideStatus.Requested).copy(requestTime = reqTime))
-          counts   <- repo.countRidesByCompany(from, to)
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedBaseData(xa)
+          _      <- cleanRides(xa)
+          repo    = PostgresRideRepository(xa)
+          reqTime = now.minusSeconds(3600)
+          _      <- repo.create(ride(company1Id, client1, RideStatus.Requested).copy(requestTime = reqTime))
+          _      <- repo.create(ride(company1Id, client1, RideStatus.Completed).copy(requestTime = reqTime))
+          _      <- repo.create(ride(company2Id, client2, RideStatus.Requested).copy(requestTime = reqTime))
+          counts <- repo.countRidesByCompany(from, to)
         } yield assertTrue(
           counts.getOrElse(company1Id.value, 0) >= 2,
           counts.getOrElse(company2Id.value, 0) >= 1
         )
       },
-
       test("sumRevenueByCompanyPlatform splits revenue per tenant") {
         for {
           xa      <- ZIO.service[Transactor[Task]]
@@ -182,5 +179,4 @@ object PlatformAnalyticsIntegrationSpec extends ZIOSpecDefault:
           revenue.getOrElse(company2Id.value, BigDecimal("0")) >= BigDecimal("250.00")
         )
       }
-
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock

@@ -77,11 +77,18 @@ object PersonRole:
 
   given Schema[PersonRole] = Schema.derivedEnumeration[PersonRole].defaultStringBased
 
-  given JsonEncoder[PersonRole] = JsonEncoder[String].contramap {
-    case PersonRole.ClientSecretary => "CLIENT_SECRETARY"
-    case PersonRole.SuperAdmin      => "SUPER_ADMIN"
-    case other                      => other.toString
-  }
+  /**
+   * Canonical wire representation of a role (SCREAMING_SNAKE_CASE). Single source of truth shared by the JSON encoder
+   * and any place that needs the role as a plain `String` (e.g. DTO fields typed as `String`). Do NOT use
+   * `role.toString.toUpperCase` — for multi-word roles it drops the underscore (`SuperAdmin` -> `SUPERADMIN`).
+   */
+  def toWire(role: PersonRole): String =
+    role match
+      case PersonRole.ClientSecretary => "CLIENT_SECRETARY"
+      case PersonRole.SuperAdmin      => "SUPER_ADMIN"
+      case other                      => other.toString.toUpperCase
+
+  given JsonEncoder[PersonRole] = JsonEncoder[String].contramap(toWire)
 
   given JsonDecoder[PersonRole] = JsonDecoder[String].mapOrFail { s =>
     val normalized =

@@ -48,13 +48,13 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
           ZIO.scoped {
             for {
               hub   <- ZIO.service[EventHub]
-              sub   <- hub.subscribe               // subscribe before the action
+              sub   <- hub.subscribe // subscribe before the action
               repo  <- ZIO.service[RideRepository]
               svc   <- ZIO.service[AirportCheckpointService]
               ride  <- repo.create(makeInProgressArrivalRide(checkpoint = None))
               _     <- svc.markCheckpoint(ride, AirportCheckpoint.Landed, clientId)
               saved <- repo.findById(ride.id)
-              event <- sub.take                   // exactly one event
+              event <- sub.take      // exactly one event
             } yield assertTrue(
               saved.exists(_.airportCheckpoint.contains(AirportCheckpoint.Landed)),
               event.isInstanceOf[WebSocketEvent.AirportCheckpointReached],
@@ -62,7 +62,6 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             )
           }
         }.provide(layersWithHub),
-
         test("forward advance Landed → ArrivalsHall succeeds") {
           ZIO.scoped {
             for {
@@ -80,7 +79,6 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             )
           }
         }.provide(layersWithHub),
-
         test("skip-ahead None → TerminalExit allowed, emits EXACTLY ONE event for terminal_exit only") {
           ZIO.scoped {
             for {
@@ -97,11 +95,10 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             } yield assertTrue(
               saved.exists(_.airportCheckpoint.contains(AirportCheckpoint.TerminalExit)),
               event.asInstanceOf[WebSocketEvent.AirportCheckpointReached].checkpointType == "terminal_exit",
-              noMore.isEmpty  // exactly one event: no second
+              noMore.isEmpty // exactly one event: no second
             )
           }
         }.provide(layersWithHub),
-
         test("skip-ahead Landed → TerminalExit allowed, emits exactly one event, ArrivalsHall NOT in repo") {
           ZIO.scoped {
             for {
@@ -119,11 +116,10 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
               // Only TerminalExit stored; ArrivalsHall not back-filled
               saved.exists(_.airportCheckpoint.contains(AirportCheckpoint.TerminalExit)),
               event.asInstanceOf[WebSocketEvent.AirportCheckpointReached].checkpointType == "terminal_exit",
-              noMore.isEmpty  // exactly one event: ArrivalsHall not emitted
+              noMore.isEmpty // exactly one event: ArrivalsHall not emitted
             )
           }
         }.provide(layersWithHub),
-
         test("same checkpoint repeated (Landed → Landed) returns InvalidOperation") {
           for {
             repo   <- ZIO.service[RideRepository]
@@ -135,7 +131,6 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(layersWithHub),
-
         test("backward (ArrivalsHall → Landed) rejected with InvalidOperation") {
           for {
             repo   <- ZIO.service[RideRepository]
@@ -147,7 +142,6 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(layersWithHub),
-
         test("ride not InProgress rejected with InvalidOperation") {
           for {
             repo   <- ZIO.service[RideRepository]
@@ -160,7 +154,6 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(layersWithHub),
-
         test("ride not an arrival airport transfer rejected with InvalidOperation") {
           for {
             repo   <- ZIO.service[RideRepository]
@@ -184,7 +177,6 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(layersWithHub),
-
         test("airport transfer with isArrival=false in specifics rejected with InvalidOperation") {
           for {
             repo   <- ZIO.service[RideRepository]
@@ -201,16 +193,15 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
           })
         }.provide(layersWithHub)
       ),
-
       suite("checkGeofenceForLanded")(
         test("triggers Landed when client is inside terminal perimeter (< 2000 m)") {
           ZIO.scoped {
             for {
-              hub   <- ZIO.service[EventHub]
-              sub   <- hub.subscribe
-              repo  <- ZIO.service[RideRepository]
-              svc   <- ZIO.service[AirportCheckpointService]
-              ride  <- repo.create(makeInProgressArrivalRide(checkpoint = None))
+              hub    <- ZIO.service[EventHub]
+              sub    <- hub.subscribe
+              repo   <- ZIO.service[RideRepository]
+              svc    <- ZIO.service[AirportCheckpointService]
+              ride   <- repo.create(makeInProgressArrivalRide(checkpoint = None))
               // Exactly the terminal perimeter center — distance == 0
               result <- svc.checkGeofenceForLanded(ride, 48.3537, 11.7860)
               saved  <- repo.findById(ride.id)
@@ -222,7 +213,6 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             )
           }
         }.provide(layersWithHub),
-
         test("no-op when client is outside terminal perimeter (> 2000 m)") {
           for {
             repo   <- ZIO.service[RideRepository]
@@ -236,7 +226,6 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             saved.exists(_.airportCheckpoint.isEmpty)
           )
         }.provide(layersWithHub),
-
         test("no-op when Landed already set (idempotent)") {
           for {
             repo   <- ZIO.service[RideRepository]
@@ -246,7 +235,6 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             result <- svc.checkGeofenceForLanded(ride, 48.3537, 11.7860)
           } yield assertTrue(result.isEmpty)
         }.provide(layersWithHub),
-
         test("no-op when ride is not InProgress") {
           for {
             repo   <- ZIO.service[RideRepository]
@@ -256,7 +244,6 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             result <- svc.checkGeofenceForLanded(ride, 48.3537, 11.7860)
           } yield assertTrue(result.isEmpty)
         }.provide(layersWithHub),
-
         test("no-op when ride is not an arrival airport transfer") {
           for {
             repo   <- ZIO.service[RideRepository]

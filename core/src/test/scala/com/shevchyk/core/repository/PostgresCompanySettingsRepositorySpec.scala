@@ -32,17 +32,16 @@ object PostgresCompanySettingsRepositorySpec extends ZIOSpecDefault {
   private def cleanSettings(xa: Transactor[Task]): Task[Unit] =
     sql"DELETE FROM company_settings".update.run.transact(xa).unit
 
-  private def makeSettings(company: CompanyId = companyId): CompanySettings =
-    CompanySettings(
-      companyId = company,
-      commissionRate = BigDecimal("12.50"),
-      workingHoursStart = "07:00",
-      workingHoursEnd = "21:00",
-      defaultCurrency = "EUR",
-      cancellationFeeDefault = BigDecimal("5.00"),
-      noShowFee = BigDecimal("10.00"),
-      autoAssignEnabled = true
-    )
+  private def makeSettings(company: CompanyId = companyId): CompanySettings = CompanySettings(
+    companyId = company,
+    commissionRate = BigDecimal("12.50"),
+    workingHoursStart = "07:00",
+    workingHoursEnd = "21:00",
+    defaultCurrency = "EUR",
+    cancellationFeeDefault = BigDecimal("5.00"),
+    noShowFee = BigDecimal("10.00"),
+    autoAssignEnabled = true
+  )
 
   def spec =
     suite("PostgresCompanySettingsRepository")(
@@ -83,11 +82,17 @@ object PostgresCompanySettingsRepositorySpec extends ZIOSpecDefault {
           _      <- cleanSettings(xa)
           repo    = PostgresCompanySettingsRepository(xa)
           _      <- repo.upsert(makeSettings())
-          updated = makeSettings().copy(commissionRate = BigDecimal("20.00"), autoAssignEnabled = false, defaultCurrency = "USD")
+          updated = makeSettings().copy(
+                      commissionRate = BigDecimal("20.00"),
+                      autoAssignEnabled = false,
+                      defaultCurrency = "USD"
+                    )
           _      <- repo.upsert(updated)
           found  <- repo.findByCompanyId(companyId)
           rows   <- sql"SELECT COUNT(*)::int FROM company_settings WHERE company_id = ${companyId.value}"
-                      .query[Int].unique.transact(xa)
+                      .query[Int]
+                      .unique
+                      .transact(xa)
         } yield assertTrue(
           rows == 1,
           found.isDefined,

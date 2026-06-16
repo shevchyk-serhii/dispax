@@ -19,57 +19,53 @@ object EtaServiceSpec extends ZIOSpecDefault:
 
   // Munich centre → Munich Airport, ~30 km apart (well-separated for the
   // Haversine fallback to yield a deterministic, large ETA).
-  private val munichLat = 48.137
-  private val munichLng = 11.575
+  private val munichLat  = 48.137
+  private val munichLng  = 11.575
   private val airportLat = 48.353
   private val airportLng = 11.786
 
-  private def ride(pickupHasCoords: Boolean, withDriver: Boolean = true): Ride =
-    Ride(
-      id = RideId(UUID.randomUUID()),
-      clientId = client,
-      creatorId = client,
-      companyId = companyId,
-      driverId = if withDriver then Some(driver) else None,
-      status = RideStatus.Assigned,
-      pickupLocation =
-        if pickupHasCoords then Location("Munich Airport", Some(airportLat), Some(airportLng))
-        else Location("Munich Airport"),
-      dropoffLocation = Location("Somewhere"),
-      pickupDateTime = Instant.now().plusSeconds(1800)
-    )
+  private def ride(pickupHasCoords: Boolean, withDriver: Boolean = true): Ride = Ride(
+    id = RideId(UUID.randomUUID()),
+    clientId = client,
+    creatorId = client,
+    companyId = companyId,
+    driverId = if withDriver then Some(driver) else None,
+    status = RideStatus.Assigned,
+    pickupLocation =
+      if pickupHasCoords then Location("Munich Airport", Some(airportLat), Some(airportLng))
+      else Location("Munich Airport"),
+    dropoffLocation = Location("Somewhere"),
+    pickupDateTime = Instant.now().plusSeconds(1800)
+  )
 
   // DriverLocationService stub: returns the driver at Munich centre (or nothing).
-  private def driverLocLayer(loc: Option[DriverLocation]): ZLayer[Any, Nothing, DriverLocationService] =
-    ZLayer.succeed(
-      new DriverLocationService:
-        def getLocation(driverId: PersonId): Task[Option[DriverLocation]]                = ZIO.succeed(loc)
-        def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO.unit
-        def updateAvailability(driverId: PersonId, status: String): Task[Unit]           = ZIO.unit
-        def getAvailability(driverId: PersonId): Task[Option[String]]                    = ZIO.succeed(None)
-        def getAvailableDrivers(
-            companyId: CompanyId
-        ): Task[List[com.shevchyk.driver.infrastructure.http.AvailableDriverDto]] = ZIO.succeed(Nil)
-    )
+  private def driverLocLayer(loc: Option[DriverLocation]): ZLayer[Any, Nothing, DriverLocationService] = ZLayer.succeed(
+    new DriverLocationService:
+      def getLocation(driverId: PersonId): Task[Option[DriverLocation]]                       = ZIO.succeed(loc)
+      def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO.unit
+      def updateAvailability(driverId: PersonId, status: String): Task[Unit]                  = ZIO.unit
+      def getAvailability(driverId: PersonId): Task[Option[String]]                           = ZIO.succeed(None)
+      def getAvailableDrivers(
+          companyId: CompanyId
+      ): Task[List[com.shevchyk.driver.infrastructure.http.AvailableDriverDto]] = ZIO.succeed(Nil)
+  )
 
   private val driverAtMunich = driverLocLayer(Some(DriverLocation(driver, munichLat, munichLng)))
   private val driverMissing  = driverLocLayer(None)
 
   // HERE stub: either returns a fixed ETA or None (forcing the fallback).
-  private def hereLayer(eta: Option[Int]): ZLayer[Any, Nothing, HereRoutingService] =
-    ZLayer.succeed(
-      new HereRoutingService:
-        def getEtaMinutes(oLat: Double, oLng: Double, dLat: Double, dLng: Double): Task[Option[Int]] =
-          ZIO.succeed(eta)
-    )
+  private def hereLayer(eta: Option[Int]): ZLayer[Any, Nothing, HereRoutingService] = ZLayer.succeed(
+    new HereRoutingService:
+      def getEtaMinutes(oLat: Double, oLng: Double, dLat: Double, dLng: Double): Task[Option[Int]] = ZIO.succeed(eta)
+  )
 
   // ClientLocationRepository stub: optional live client location.
-  private def clientLocLayer(loc: Option[ClientLocation]): ZLayer[Any, Nothing, ClientLocationRepository] =
-    ZLayer.succeed(
+  private def clientLocLayer(loc: Option[ClientLocation]): ZLayer[Any, Nothing, ClientLocationRepository] = ZLayer
+    .succeed(
       new ClientLocationRepository:
         def updateLocation(rideId: RideId, clientId: PersonId, latitude: Double, longitude: Double): Task[Unit] =
           ZIO.unit
-        def getLocation(rideId: RideId): Task[Option[ClientLocation]] = ZIO.succeed(loc)
+        def getLocation(rideId: RideId): Task[Option[ClientLocation]]                                           = ZIO.succeed(loc)
     )
 
   private val noClientLoc = clientLocLayer(None)
@@ -78,8 +74,7 @@ object EtaServiceSpec extends ZIOSpecDefault:
       driverLoc: ZLayer[Any, Nothing, DriverLocationService],
       here: ZLayer[Any, Nothing, HereRoutingService],
       clientLoc: ZLayer[Any, Nothing, ClientLocationRepository] = noClientLoc
-  ): ZLayer[Any, Nothing, EtaService] =
-    (driverLoc ++ here ++ GeocodingService.noop ++ clientLoc) >>> EtaService.layer
+  ): ZLayer[Any, Nothing, EtaService] = (driverLoc ++ here ++ GeocodingService.noop ++ clientLoc) >>> EtaService.layer
 
   def spec =
     suite("EtaService.etaForRide")(

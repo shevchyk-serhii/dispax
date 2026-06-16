@@ -17,14 +17,14 @@ import java.util.UUID
  */
 object PostgresEmergencyReassignmentRepositorySpec extends ZIOSpecDefault {
 
-  val testCompanyId   = CompanyId(UUID.fromString("0d000001-0000-0000-0000-000000000001"))
-  val otherCompanyId  = CompanyId(UUID.fromString("0d000001-0000-0000-0000-000000000002"))
-  val clientId        = PersonId(UUID.fromString("0d000002-0000-0000-0000-000000000001"))
-  val origDriverId    = PersonId(UUID.fromString("0d000002-0000-0000-0000-000000000002"))
-  val newDriverId     = PersonId(UUID.fromString("0d000002-0000-0000-0000-000000000003"))
-  val dispatcherId    = PersonId(UUID.fromString("0d000002-0000-0000-0000-000000000004"))
-  val rideId1         = RideId(UUID.fromString("0d000003-0000-0000-0000-000000000001"))
-  val rideId2         = RideId(UUID.fromString("0d000003-0000-0000-0000-000000000002"))
+  val testCompanyId    = CompanyId(UUID.fromString("0d000001-0000-0000-0000-000000000001"))
+  val otherCompanyId   = CompanyId(UUID.fromString("0d000001-0000-0000-0000-000000000002"))
+  val clientId         = PersonId(UUID.fromString("0d000002-0000-0000-0000-000000000001"))
+  val origDriverId     = PersonId(UUID.fromString("0d000002-0000-0000-0000-000000000002"))
+  val newDriverId      = PersonId(UUID.fromString("0d000002-0000-0000-0000-000000000003"))
+  val dispatcherId     = PersonId(UUID.fromString("0d000002-0000-0000-0000-000000000004"))
+  val rideId1          = RideId(UUID.fromString("0d000003-0000-0000-0000-000000000001"))
+  val rideId2          = RideId(UUID.fromString("0d000003-0000-0000-0000-000000000002"))
   val otherCompanyRide = RideId(UUID.fromString("0d000003-0000-0000-0000-000000000003"))
 
   private def insertPerson(id: PersonId, email: String, role: String, company: CompanyId): ConnectionIO[Int] =
@@ -39,9 +39,11 @@ object PostgresEmergencyReassignmentRepositorySpec extends ZIOSpecDefault {
 
   private def seed(xa: Transactor[Task]): Task[Unit] =
     (for {
-      _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'emg-test@example.com')
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'emg-test@example.com')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${otherCompanyId.value}, 'Other GmbH', 'emg-other@example.com')
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES (${otherCompanyId.value}, 'Other GmbH', 'emg-other@example.com')
                  ON CONFLICT DO NOTHING""".update.run
       _ <- insertPerson(clientId, "emg-client@test.com", "client", testCompanyId)
       _ <- insertPerson(origDriverId, "emg-orig@test.com", "driver", testCompanyId)

@@ -63,14 +63,17 @@ object PostgresClientLocationRepositorySpec extends ZIOSpecDefault {
       },
       test("updateLocation upserts on conflict (ride_id PK)") {
         for {
-          xa     <- ZIO.service[Transactor[Task]]
-          _      <- seedTestData(xa)
-          _      <- cleanLocations(xa)
-          repo    = PostgresClientLocationRepository(xa)
-          _      <- repo.updateLocation(rideId1, clientId, 48.0, 11.0)
-          _      <- repo.updateLocation(rideId1, clientId, 49.5, 12.5)
-          found  <- repo.getLocation(rideId1)
-          all    <- sql"SELECT COUNT(*) FROM client_locations WHERE ride_id = ${rideId1.value}".query[Int].unique.transact(xa)
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanLocations(xa)
+          repo   = PostgresClientLocationRepository(xa)
+          _     <- repo.updateLocation(rideId1, clientId, 48.0, 11.0)
+          _     <- repo.updateLocation(rideId1, clientId, 49.5, 12.5)
+          found <- repo.getLocation(rideId1)
+          all   <- sql"SELECT COUNT(*) FROM client_locations WHERE ride_id = ${rideId1.value}"
+                     .query[Int]
+                     .unique
+                     .transact(xa)
         } yield assertTrue(
           all == 1,
           found.get.latitude == 49.5,

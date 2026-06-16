@@ -139,9 +139,13 @@ object InvoiceReminderSchedulerSpec extends ZIOSpecDefault:
         "findRideForReceipt"
       )
       // Platform-level stubs (SuperAdmin only — not used in this scheduler test)
-      def findAllPlatform(status: Option[InvoiceStatus], limit: Int, offset: Int): Task[List[Invoice]]       = nope("findAllPlatform")
-      def sumRevenueByCompany(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, BigDecimal]]   = nope("sumRevenueByCompany")
-      def countOverdueByCompany(): Task[Map[UUID, Int]]                                                       = nope("countOverdueByCompany")
+      def findAllPlatform(status: Option[InvoiceStatus], limit: Int, offset: Int): Task[List[Invoice]]       = nope(
+        "findAllPlatform"
+      )
+      def sumRevenueByCompany(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, BigDecimal]]   = nope(
+        "sumRevenueByCompany"
+      )
+      def countOverdueByCompany(): Task[Map[UUID, Int]]                                                      = nope("countOverdueByCompany")
 
   private def paymentStub(paid: Boolean): PaymentChecker =
     new PaymentChecker:

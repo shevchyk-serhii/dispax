@@ -38,9 +38,11 @@ object PostgresRidePoolRepositorySpec extends ZIOSpecDefault {
 
   private def seed(xa: Transactor[Task]): Task[Unit] =
     (for {
-      _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'pool-test@example.com')
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'pool-test@example.com')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${otherCompanyId.value}, 'Other GmbH', 'pool-other@example.com')
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES (${otherCompanyId.value}, 'Other GmbH', 'pool-other@example.com')
                  ON CONFLICT DO NOTHING""".update.run
       _ <- insertPerson(creatorId, "pool-creator@test.com", "dispatcher", testCompanyId)
       _ <- insertPerson(driverId, "pool-driver@test.com", "driver", testCompanyId)

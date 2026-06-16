@@ -7,16 +7,21 @@ import java.util.UUID
 /**
  * Unit tests for AuthMiddleware.isSuperAdmin.
  *
- * isSuperAdmin must return true only for the SUPER_ADMIN role (case-insensitive) and
- * false for every other role, including Admin — the closest non-SuperAdmin role.
+ * isSuperAdmin must return true only for the SUPER_ADMIN role (case-insensitive) and false for every other role,
+ * including Admin — the closest non-SuperAdmin role.
  */
 object AuthMiddlewareSuperAdminSpec extends ZIOSpecDefault:
 
   private val userId    = UUID.fromString("00000000-0000-0000-0000-000000000001")
   private val companyId = UUID.fromString("00000000-0000-0000-0000-000000000010")
 
-  private def user(role: String, cid: Option[UUID] = Some(companyId)): AuthenticatedUser =
-    AuthenticatedUser(userId, "test@example.com", role, cid, None)
+  private def user(role: String, cid: Option[UUID] = Some(companyId)): AuthenticatedUser = AuthenticatedUser(
+    userId,
+    "test@example.com",
+    role,
+    cid,
+    None
+  )
 
   def spec =
     suite("AuthMiddleware.isSuperAdmin")(

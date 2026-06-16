@@ -11,11 +11,11 @@ object PersonRoleCodecSpec extends ZIOSpecDefault:
   def spec =
     suite("PersonRole JSON codec")(
       suite("encode")(
-        test("Driver encodes to 'Driver'") {
-          assertTrue(PersonRole.Driver.toJson == "\"Driver\"")
+        test("Driver encodes to 'DRIVER'") {
+          assertTrue(PersonRole.Driver.toJson == "\"DRIVER\"")
         },
-        test("Admin encodes to 'Admin'") {
-          assertTrue(PersonRole.Admin.toJson == "\"Admin\"")
+        test("Admin encodes to 'ADMIN'") {
+          assertTrue(PersonRole.Admin.toJson == "\"ADMIN\"")
         },
         test("ClientSecretary encodes to 'CLIENT_SECRETARY'") {
           assertTrue(PersonRole.ClientSecretary.toJson == "\"CLIENT_SECRETARY\"")
@@ -53,7 +53,7 @@ object PersonRoleCodecSpec extends ZIOSpecDefault:
           assertTrue(decoded == Right(PersonRole.SuperAdmin))
         },
         test("All roles roundtrip without loss") {
-          val roles = List(
+          val roles   = List(
             PersonRole.Driver,
             PersonRole.Client,
             PersonRole.Secretary,

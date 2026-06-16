@@ -16,8 +16,8 @@ import java.util.UUID
  */
 object PostgresClientCompanyRepositorySpec extends ZIOSpecDefault {
 
-  val taxiCompanyId  = CompanyId(UUID.fromString("0000000C-0000-0000-0000-000000000001"))
-  val otherTaxiId    = CompanyId(UUID.fromString("0000000C-0000-0000-0000-000000000002"))
+  val taxiCompanyId = CompanyId(UUID.fromString("0000000C-0000-0000-0000-000000000001"))
+  val otherTaxiId   = CompanyId(UUID.fromString("0000000C-0000-0000-0000-000000000002"))
 
   private def seedTestData(xa: Transactor[Task]): Task[Unit] =
     (for {
@@ -35,15 +35,14 @@ object PostgresClientCompanyRepositorySpec extends ZIOSpecDefault {
   private def makeClientCompany(
       taxi: CompanyId = taxiCompanyId,
       name: String = "Acme Corp"
-  ): ClientCompany =
-    ClientCompany(
-      id = ClientCompanyId(UUID.randomUUID()),
-      name = name,
-      taxiCompanyId = taxi,
-      email = Some("acme@example.com"),
-      phone = Some("+49 89 12345"),
-      address = Some("Marienplatz 1, Munich")
-    )
+  ): ClientCompany = ClientCompany(
+    id = ClientCompanyId(UUID.randomUUID()),
+    name = name,
+    taxiCompanyId = taxi,
+    email = Some("acme@example.com"),
+    phone = Some("+49 89 12345"),
+    address = Some("Marienplatz 1, Munich")
+  )
 
   def spec =
     suite("PostgresClientCompanyRepository")(
@@ -104,7 +103,12 @@ object PostgresClientCompanyRepositorySpec extends ZIOSpecDefault {
           repo    = PostgresClientCompanyRepository(xa)
           cc      = makeClientCompany()
           _      <- repo.create(cc)
-          updated = cc.copy(name = "Acme Renamed", email = Some("new@example.com"), phone = None, address = Some("New Addr"))
+          updated = cc.copy(
+                      name = "Acme Renamed",
+                      email = Some("new@example.com"),
+                      phone = None,
+                      address = Some("New Addr")
+                    )
           _      <- repo.update(updated)
           found  <- repo.findById(cc.id)
         } yield assertTrue(

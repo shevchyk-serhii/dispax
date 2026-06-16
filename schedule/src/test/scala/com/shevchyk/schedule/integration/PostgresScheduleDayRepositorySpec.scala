@@ -123,16 +123,16 @@ object PostgresScheduleDayRepositorySpec extends ZIOSpecDefault {
       },
       test("findByDriverAndDate returns the matching day") {
         for {
-          xa    <- ZIO.service[Transactor[Task]]
-          _     <- seedTestData(xa)
-          _     <- cleanScheduleDays(xa)
-          repo   = PostgresScheduleDayRepository(xa)
-          d1     = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 15))
-          d2     = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 16))
-          _     <- repo.create(d1)
-          _     <- repo.create(d2)
-          hit   <- repo.findByDriverAndDate(driverId, LocalDate.of(2026, 6, 15))
-          miss  <- repo.findByDriverAndDate(driverId, LocalDate.of(2026, 6, 20))
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- seedTestData(xa)
+          _    <- cleanScheduleDays(xa)
+          repo  = PostgresScheduleDayRepository(xa)
+          d1    = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 15))
+          d2    = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 16))
+          _    <- repo.create(d1)
+          _    <- repo.create(d2)
+          hit  <- repo.findByDriverAndDate(driverId, LocalDate.of(2026, 6, 15))
+          miss <- repo.findByDriverAndDate(driverId, LocalDate.of(2026, 6, 20))
         } yield assertTrue(
           hit.isDefined,
           hit.get.id == d1.id,
@@ -161,20 +161,20 @@ object PostgresScheduleDayRepositorySpec extends ZIOSpecDefault {
       },
       test("findByCompanyAndDateRange respects the inclusive range bounds") {
         for {
-          xa     <- ZIO.service[Transactor[Task]]
-          _      <- seedTestData(xa)
-          _      <- cleanScheduleDays(xa)
-          repo    = PostgresScheduleDayRepository(xa)
-          before  = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 10))
-          fromDay = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 15))
-          midDay  = makeDay(driver = otherDriverId, date = LocalDate.of(2026, 6, 17))
-          toDay   = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 20))
-          after   = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 25))
-          _      <- repo.create(before)
-          _      <- repo.create(fromDay)
-          _      <- repo.create(midDay)
-          _      <- repo.create(toDay)
-          _      <- repo.create(after)
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanScheduleDays(xa)
+          repo     = PostgresScheduleDayRepository(xa)
+          before   = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 10))
+          fromDay  = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 15))
+          midDay   = makeDay(driver = otherDriverId, date = LocalDate.of(2026, 6, 17))
+          toDay    = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 20))
+          after    = makeDay(driver = driverId, date = LocalDate.of(2026, 6, 25))
+          _       <- repo.create(before)
+          _       <- repo.create(fromDay)
+          _       <- repo.create(midDay)
+          _       <- repo.create(toDay)
+          _       <- repo.create(after)
           inRange <- repo.findByCompanyAndDateRange(
                        testCompanyId,
                        LocalDate.of(2026, 6, 15),
@@ -191,12 +191,12 @@ object PostgresScheduleDayRepositorySpec extends ZIOSpecDefault {
       },
       test("findByCompanyAndDate excludes other companies' days") {
         for {
-          xa   <- ZIO.service[Transactor[Task]]
-          _    <- seedTestData(xa)
-          _    <- cleanScheduleDays(xa)
-          repo  = PostgresScheduleDayRepository(xa)
-          mine  = makeDay(company = testCompanyId, driver = driverId, date = LocalDate.of(2026, 6, 15))
-          _    <- repo.create(mine)
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanScheduleDays(xa)
+          repo   = PostgresScheduleDayRepository(xa)
+          mine   = makeDay(company = testCompanyId, driver = driverId, date = LocalDate.of(2026, 6, 15))
+          _     <- repo.create(mine)
           other <- repo.findByCompanyAndDate(otherCompanyId, LocalDate.of(2026, 6, 15))
         } yield assertTrue(other.isEmpty)
       },

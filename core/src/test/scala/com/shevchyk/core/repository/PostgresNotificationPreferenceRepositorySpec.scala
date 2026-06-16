@@ -14,10 +14,10 @@ import java.util.UUID
 /**
  * Integration tests for PostgresNotificationPreferenceRepository against a real PostgreSQL database via Testcontainers.
  *
- * These also guard a fixed bug: `upsert` used to bind `quiet_hours_start` / `quiet_hours_end`
- * (Scala `Option[String]`) into the TIME columns without a `::time` cast, so every write failed with
- * "column ... is of type time without time zone but expression is of type character varying". The repo now
- * casts both with `::time`; the upsert round-trip test below exercises that path.
+ * These also guard a fixed bug: `upsert` used to bind `quiet_hours_start` / `quiet_hours_end` (Scala `Option[String]`)
+ * into the TIME columns without a `::time` cast, so every write failed with "column ... is of type time without time
+ * zone but expression is of type character varying". The repo now casts both with `::time`; the upsert round-trip test
+ * below exercises that path.
  */
 object PostgresNotificationPreferenceRepositorySpec extends ZIOSpecDefault {
 
@@ -43,7 +43,9 @@ object PostgresNotificationPreferenceRepositorySpec extends ZIOSpecDefault {
   private def cleanPrefs(xa: Transactor[Task]): Task[Unit] =
     sql"DELETE FROM notification_preferences".update.run.transact(xa).unit
 
-  /** Seed a preference row directly with correct TIME casts (bypassing the broken upsert). */
+  /**
+   * Seed a preference row directly with correct TIME casts (bypassing the broken upsert).
+   */
   private def seedPref(
       xa: Transactor[Task],
       id: NotificationPreferenceId,

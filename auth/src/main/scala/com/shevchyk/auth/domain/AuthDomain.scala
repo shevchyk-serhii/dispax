@@ -136,7 +136,7 @@ object UserDto:
     id = person.id.value,
     email = person.email,
     name = person.name,
-    role = person.role.toString.toUpperCase,
+    role = PersonRole.toWire(person.role),
     phone = person.phone,
     status = Some(person.status.toString),
     companyId = person.companyId.map(_.value)

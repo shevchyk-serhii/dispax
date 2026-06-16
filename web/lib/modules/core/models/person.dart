@@ -1,4 +1,41 @@
-enum PersonRole { driver, client, secretary, dispatcher, admin, superAdmin }
+enum PersonRole {
+  driver,
+  client,
+  secretary,
+  dispatcher,
+  admin,
+  clientSecretary,
+  superAdmin,
+}
+
+extension PersonRoleWire on PersonRole {
+  /// Canonical wire representation (SCREAMING_SNAKE_CASE) matching the backend
+  /// `PersonRole.toWire` (see core/.../CoreDomain.scala). Used when sending the
+  /// role back to the server.
+  String get wire {
+    switch (this) {
+      case PersonRole.clientSecretary:
+        return 'CLIENT_SECRETARY';
+      case PersonRole.superAdmin:
+        return 'SUPER_ADMIN';
+      default:
+        return name.toUpperCase();
+    }
+  }
+}
+
+/// Parses a role string from the API. Tolerant to case and to the presence or
+/// absence of underscores, so both `SUPER_ADMIN` and `SUPERADMIN` resolve to
+/// [PersonRole.superAdmin]. Returns `null` on an unknown value so callers can
+/// decide how to handle it instead of silently collapsing to `client`.
+PersonRole? personRoleFromString(String? raw) {
+  if (raw == null) return null;
+  final normalized = raw.toLowerCase().replaceAll('_', '');
+  for (final role in PersonRole.values) {
+    if (role.name.toLowerCase() == normalized) return role;
+  }
+  return null;
+}
 
 class Person {
   final String id;
@@ -40,12 +77,7 @@ class Person {
       id: _extractId(json['id']),
       name: json['name']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
-      role: PersonRole.values.firstWhere(
-        (e) =>
-            e.toString().split('.').last.toLowerCase() ==
-            json['role'].toString().toLowerCase(),
-        orElse: () => PersonRole.client,
-      ),
+      role: personRoleFromString(json['role']?.toString()) ?? PersonRole.client,
       companyId: json['companyId'] != null
           ? _extractId(json['companyId'])
           : null,
@@ -66,7 +98,7 @@ class Person {
       'id': id,
       'name': name,
       'email': email,
-      'role': role.toString().split('.').last,
+      'role': role.wire,
       'companyId': companyId,
       'licenseNumber': licenseNumber,
       'phone': phone,

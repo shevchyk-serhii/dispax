@@ -23,7 +23,7 @@ void main() {
       expect(json['id'], 'person-1');
       expect(json['name'], 'John Doe');
       expect(json['email'], 'john@example.com');
-      expect(json['role'], 'client');
+      expect(json['role'], 'CLIENT');
       expect(json['companyId'], 'company-1');
       expect(json['phone'], '+491234567890');
     });
@@ -65,6 +65,33 @@ void main() {
       final person = Person.fromJson(json);
 
       expect(person.role, PersonRole.client);
+    });
+
+    test('fromJson parses canonical SUPER_ADMIN', () {
+      final json = TestFixtures.personJson()..['role'] = 'SUPER_ADMIN';
+      expect(Person.fromJson(json).role, PersonRole.superAdmin);
+    });
+
+    test('fromJson parses canonical CLIENT_SECRETARY', () {
+      final json = TestFixtures.personJson()..['role'] = 'CLIENT_SECRETARY';
+      expect(Person.fromJson(json).role, PersonRole.clientSecretary);
+    });
+
+    test('fromJson is tolerant to underscores and case for super admin', () {
+      for (final raw in ['super_admin', 'SUPERADMIN', 'SuperAdmin']) {
+        final json = TestFixtures.personJson()..['role'] = raw;
+        expect(
+          Person.fromJson(json).role,
+          PersonRole.superAdmin,
+          reason: 'failed for "$raw"',
+        );
+      }
+    });
+
+    test('role.wire produces canonical SCREAMING_SNAKE_CASE', () {
+      expect(PersonRole.superAdmin.wire, 'SUPER_ADMIN');
+      expect(PersonRole.clientSecretary.wire, 'CLIENT_SECRETARY');
+      expect(PersonRole.driver.wire, 'DRIVER');
     });
 
     test('isDriver returns true only for driver role', () {

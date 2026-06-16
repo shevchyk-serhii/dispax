@@ -29,9 +29,11 @@ object PostgresGdprRepositorySpec extends ZIOSpecDefault {
 
   private def seed(xa: Transactor[Task]): Task[Unit] =
     (for {
-      _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'gdpr-test@example.com')
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'gdpr-test@example.com')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${otherCompanyId.value}, 'Other GmbH', 'gdpr-other@example.com')
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES (${otherCompanyId.value}, 'Other GmbH', 'gdpr-other@example.com')
                  ON CONFLICT DO NOTHING""".update.run
       _ <- insertPerson(userId, "gdpr-user@test.com", testCompanyId)
       _ <- insertPerson(otherUserId, "gdpr-user2@test.com", otherCompanyId)

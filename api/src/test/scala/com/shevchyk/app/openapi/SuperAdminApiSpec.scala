@@ -19,16 +19,15 @@ import java.util.UUID
 /**
  * CRITICAL — Negative tenant-isolation HTTP tests for the SuperAdmin escape hatch.
  *
- * Every handler in SuperAdminApi starts with `requireSuperAdmin(user)`. These tests
- * verify the isolation invariant:
+ * Every handler in SuperAdminApi starts with `requireSuperAdmin(user)`. These tests verify the isolation invariant:
  *   - SuperAdmin JWT → 200 (escape hatch grants access)
- *   - Admin JWT      → 403 (most privileged normal role must still be denied)
+ *   - Admin JWT → 403 (most privileged normal role must still be denied)
  *   - Dispatcher JWT → 403 (another normal role, denied)
- *   - no token       → 401 (unauthenticated)
+ *   - no token → 401 (unauthenticated)
  *   - Admin with companyId=None (crafted edge-case) → 403 (role check is primary)
  *
- * Routes are exercised via ZioHttpInterpreter against in-memory stubs —
- * no network I/O, no Testcontainers needed for these HTTP-level checks.
+ * Routes are exercised via ZioHttpInterpreter against in-memory stubs — no network I/O, no Testcontainers needed for
+ * these HTTP-level checks.
  */
 object SuperAdminApiSpec extends ZIOSpecDefault:
 
@@ -39,7 +38,7 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
   private val testJwtConfig: ZLayer[Any, Nothing, JwtConfig] = ZLayer.succeed(
     JwtConfig(
       secret = "test-secret-key-for-testing-only-not-for-production-must-be-at-least-256-bits",
-      issuer  = "test-issuer",
+      issuer = "test-issuer",
       audience = "test-audience",
       expirationTime = scala.concurrent.duration.Duration.fromNanos(24L * 60 * 60 * 1_000_000_000L)
     )
@@ -47,8 +46,8 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
 
   private val testJwtService: ZLayer[Any, Nothing, JwtService] = testJwtConfig >>> JwtService.live
 
-  private def generateToken(role: PersonRole, cid: Option[UUID]): ZIO[JwtService, Throwable, String] =
-    ZIO.serviceWithZIO[JwtService](
+  private def generateToken(role: PersonRole, cid: Option[UUID]): ZIO[JwtService, Throwable, String] = ZIO
+    .serviceWithZIO[JwtService](
       _.generateToken(
         Person(
           id = PersonId(UUID.randomUUID()),
@@ -79,77 +78,120 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
 
   private val stubInvoiceRepo: ZLayer[Any, Nothing, InvoiceRepository] = ZLayer.succeed(
     new InvoiceRepository:
-      def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String]                                              = ZIO.succeed("INV-0001")
-      def create(invoice: com.shevchyk.billing.domain.Invoice): Task[com.shevchyk.billing.domain.Invoice]                  = ZIO.succeed(invoice)
-      def findById(id: com.shevchyk.billing.domain.InvoiceId): Task[Option[com.shevchyk.billing.domain.Invoice]]           = ZIO.succeed(None)
-      def findByCompany(taxiCompanyId: CompanyId, status: Option[InvoiceStatus], limit: Int, offset: Int)
-          : Task[List[com.shevchyk.billing.domain.Invoice]]                                                                 = ZIO.succeed(Nil)
-      def update(invoice: com.shevchyk.billing.domain.Invoice): Task[com.shevchyk.billing.domain.Invoice]                  = ZIO.succeed(invoice)
-      def findOverdueUnpaid(now: java.time.Instant): Task[List[com.shevchyk.billing.domain.Invoice]]                       = ZIO.succeed(Nil)
-      def delete(id: com.shevchyk.billing.domain.InvoiceId): Task[Boolean]                                                 = ZIO.succeed(false)
-      def addItems(items: List[com.shevchyk.billing.domain.InvoiceItem]): Task[Unit]                                       = ZIO.unit
-      def deleteItems(invoiceId: com.shevchyk.billing.domain.InvoiceId): Task[Unit]                                        = ZIO.unit
-      def replaceItems(invoiceId: com.shevchyk.billing.domain.InvoiceId, taxiCompanyId: CompanyId,
-                       items: List[com.shevchyk.billing.domain.InvoiceItem]): Task[Unit]                                   = ZIO.unit
-      def unlinkRides(invoiceId: com.shevchyk.billing.domain.InvoiceId, taxiCompanyId: CompanyId): Task[Unit]              = ZIO.unit
-      def findUnbilledRides(clientCompanyId: ClientCompanyId, from: java.time.LocalDate, to: java.time.LocalDate)
-          : Task[List[com.shevchyk.billing.repository.UnbilledRide]]                                                       = ZIO.succeed(Nil)
-      def findBillableRides(taxiCompanyId: CompanyId, clientCompanyId: ClientCompanyId,
-                            from: Option[java.time.LocalDate], to: Option[java.time.LocalDate])
-          : Task[List[com.shevchyk.billing.repository.UnbilledRide]]                                                       = ZIO.succeed(Nil)
-      def findRidesByIds(taxiCompanyId: CompanyId, rideIds: List[UUID])
-          : Task[List[com.shevchyk.billing.repository.UnbilledRide]]                                                       = ZIO.succeed(Nil)
-      def findRideForReceipt(taxiCompanyId: CompanyId, rideId: UUID)
-          : Task[Option[com.shevchyk.billing.repository.UnbilledRide]]                                                     = ZIO.succeed(None)
-      def findAllPlatform(status: Option[InvoiceStatus], limit: Int, offset: Int)
-          : Task[List[com.shevchyk.billing.domain.Invoice]]                                                                = ZIO.succeed(Nil)
-      def sumRevenueByCompany(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, BigDecimal]]                 = ZIO.succeed(Map.empty)
-      def countOverdueByCompany(): Task[Map[UUID, Int]]                                                                    = ZIO.succeed(Map.empty)
+      def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String]                                   = ZIO.succeed("INV-0001")
+      def create(invoice: com.shevchyk.billing.domain.Invoice): Task[com.shevchyk.billing.domain.Invoice]        = ZIO.succeed(
+        invoice
+      )
+      def findById(id: com.shevchyk.billing.domain.InvoiceId): Task[Option[com.shevchyk.billing.domain.Invoice]] = ZIO
+        .succeed(None)
+      def findByCompany(
+          taxiCompanyId: CompanyId,
+          status: Option[InvoiceStatus],
+          limit: Int,
+          offset: Int
+      ): Task[List[com.shevchyk.billing.domain.Invoice]] = ZIO.succeed(Nil)
+      def update(invoice: com.shevchyk.billing.domain.Invoice): Task[com.shevchyk.billing.domain.Invoice]        = ZIO.succeed(
+        invoice
+      )
+      def findOverdueUnpaid(now: java.time.Instant): Task[List[com.shevchyk.billing.domain.Invoice]]             = ZIO.succeed(Nil)
+      def delete(id: com.shevchyk.billing.domain.InvoiceId): Task[Boolean]                                       = ZIO.succeed(false)
+      def addItems(items: List[com.shevchyk.billing.domain.InvoiceItem]): Task[Unit]                             = ZIO.unit
+      def deleteItems(invoiceId: com.shevchyk.billing.domain.InvoiceId): Task[Unit]                              = ZIO.unit
+      def replaceItems(
+          invoiceId: com.shevchyk.billing.domain.InvoiceId,
+          taxiCompanyId: CompanyId,
+          items: List[com.shevchyk.billing.domain.InvoiceItem]
+      ): Task[Unit] = ZIO.unit
+      def unlinkRides(invoiceId: com.shevchyk.billing.domain.InvoiceId, taxiCompanyId: CompanyId): Task[Unit]    = ZIO.unit
+      def findUnbilledRides(
+          clientCompanyId: ClientCompanyId,
+          from: java.time.LocalDate,
+          to: java.time.LocalDate
+      ): Task[List[com.shevchyk.billing.repository.UnbilledRide]] = ZIO.succeed(Nil)
+      def findBillableRides(
+          taxiCompanyId: CompanyId,
+          clientCompanyId: ClientCompanyId,
+          from: Option[java.time.LocalDate],
+          to: Option[java.time.LocalDate]
+      ): Task[List[com.shevchyk.billing.repository.UnbilledRide]] = ZIO.succeed(Nil)
+      def findRidesByIds(
+          taxiCompanyId: CompanyId,
+          rideIds: List[UUID]
+      ): Task[List[com.shevchyk.billing.repository.UnbilledRide]] = ZIO.succeed(Nil)
+      def findRideForReceipt(
+          taxiCompanyId: CompanyId,
+          rideId: UUID
+      ): Task[Option[com.shevchyk.billing.repository.UnbilledRide]] = ZIO.succeed(None)
+      def findAllPlatform(
+          status: Option[InvoiceStatus],
+          limit: Int,
+          offset: Int
+      ): Task[List[com.shevchyk.billing.domain.Invoice]] = ZIO.succeed(Nil)
+      def sumRevenueByCompany(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, BigDecimal]]       = ZIO
+        .succeed(Map.empty)
+      def countOverdueByCompany(): Task[Map[UUID, Int]]                                                          = ZIO.succeed(Map.empty)
   )
 
   private val stubRideRepo: ZLayer[Any, Nothing, RideRepository] = ZLayer.succeed(
     new RideRepository:
       import com.shevchyk.ride.domain.{Ride, RideStatus, DriverEarnings}
       import com.shevchyk.ride.repository.TimeBucket
-      def create(ride: Ride): Task[Ride]                                                                          = ZIO.succeed(ride)
-      def findById(id: RideId): Task[Option[Ride]]                                                               = ZIO.succeed(None)
-      def findByStatus(status: RideStatus): Task[List[Ride]]                                                     = ZIO.succeed(Nil)
-      def findAll(): Task[List[Ride]]                                                                            = ZIO.succeed(Nil)
-      def findByClientId(clientId: PersonId): Task[List[Ride]]                                                   = ZIO.succeed(Nil)
-      def findByDriverId(driverId: PersonId): Task[List[Ride]]                                                   = ZIO.succeed(Nil)
-      def findByCompanyId(companyId: CompanyId): Task[List[Ride]]                                                = ZIO.succeed(Nil)
-      def update(ride: Ride): Task[Ride]                                                                         = ZIO.succeed(ride)
-      def delete(id: RideId): Task[Unit]                                                                         = ZIO.unit
-      def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]                            = ZIO.succeed(Map.empty)
-      def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                                            = ZIO.succeed(BigDecimal(0))
-      def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                                       = ZIO.succeed(BigDecimal(0))
-      def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double]                                      = ZIO.succeed(0.0)
-      def countDailyStatsByCompany(companyId: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]]         = ZIO.succeed(Nil)
-      def earningsByDriver(d: PersonId, c: CompanyId, f: java.time.Instant, t: java.time.Instant): Task[DriverEarnings] =
-        ZIO.succeed(DriverEarnings(BigDecimal(0), 0, 0))
-      def earningsBucketsByDriver(d: PersonId, c: CompanyId, f: java.time.Instant, t: java.time.Instant,
-                                   bucket: TimeBucket): Task[List[(java.time.Instant, BigDecimal)]]              = ZIO.succeed(Nil)
-      def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]            = ZIO.succeed(Nil)
-      def clearReminders(rideId: RideId): Task[Unit]                                                             = ZIO.unit
-      def countAllRidesByStatus(): Task[Map[String, Int]]                                                        = ZIO.succeed(Map.empty)
-      def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]                        = ZIO.succeed(BigDecimal(0))
-      def countRidesByCompany(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, Int]]              = ZIO.succeed(Map.empty)
-      def sumRevenueByCompanyPlatform(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, BigDecimal]] = ZIO.succeed(Map.empty)
-      def updateCheckpoint(rideId: RideId, checkpoint: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean] = ZIO.succeed(false)
+      def create(ride: Ride): Task[Ride]                                                                           = ZIO.succeed(ride)
+      def findById(id: RideId): Task[Option[Ride]]                                                                 = ZIO.succeed(None)
+      def findByStatus(status: RideStatus): Task[List[Ride]]                                                       = ZIO.succeed(Nil)
+      def findAll(): Task[List[Ride]]                                                                              = ZIO.succeed(Nil)
+      def findByClientId(clientId: PersonId): Task[List[Ride]]                                                     = ZIO.succeed(Nil)
+      def findByDriverId(driverId: PersonId): Task[List[Ride]]                                                     = ZIO.succeed(Nil)
+      def findByCompanyId(companyId: CompanyId): Task[List[Ride]]                                                  = ZIO.succeed(Nil)
+      def update(ride: Ride): Task[Ride]                                                                           = ZIO.succeed(ride)
+      def delete(id: RideId): Task[Unit]                                                                           = ZIO.unit
+      def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]                              = ZIO.succeed(Map.empty)
+      def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                                              = ZIO.succeed(BigDecimal(0))
+      def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                                         = ZIO.succeed(BigDecimal(0))
+      def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double]                                        = ZIO.succeed(0.0)
+      def countDailyStatsByCompany(companyId: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]]           = ZIO.succeed(
+        Nil
+      )
+      def earningsByDriver(
+          d: PersonId,
+          c: CompanyId,
+          f: java.time.Instant,
+          t: java.time.Instant
+      ): Task[DriverEarnings] = ZIO.succeed(DriverEarnings(BigDecimal(0), 0, 0))
+      def earningsBucketsByDriver(
+          d: PersonId,
+          c: CompanyId,
+          f: java.time.Instant,
+          t: java.time.Instant,
+          bucket: TimeBucket
+      ): Task[List[(java.time.Instant, BigDecimal)]] = ZIO.succeed(Nil)
+      def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]              = ZIO.succeed(Nil)
+      def clearReminders(rideId: RideId): Task[Unit]                                                               = ZIO.unit
+      def countAllRidesByStatus(): Task[Map[String, Int]]                                                          = ZIO.succeed(Map.empty)
+      def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]                          = ZIO.succeed(BigDecimal(0))
+      def countRidesByCompany(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, Int]]                = ZIO.succeed(
+        Map.empty
+      )
+      def sumRevenueByCompanyPlatform(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, BigDecimal]] = ZIO
+        .succeed(Map.empty)
+      def updateCheckpoint(rideId: RideId, checkpoint: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean]  = ZIO
+        .succeed(false)
   )
 
-  private val stubSessionRepo: ZLayer[Any, Nothing, SessionRepository] =
-    SessionRepository.inMemory
+  private val stubSessionRepo: ZLayer[Any, Nothing, SessionRepository] = SessionRepository.inMemory
 
   // ---------------------------------------------------------------------------
   // Route under test
   // ---------------------------------------------------------------------------
 
-  private val superAdminRoutes: Routes[SuperAdminApi.SuperAdminEnv, Response] =
-    ZioHttpInterpreter().toHttp(SuperAdminApi.serverEndpoints)
+  private val superAdminRoutes: Routes[SuperAdminApi.SuperAdminEnv, Response] = ZioHttpInterpreter().toHttp(
+    SuperAdminApi.serverEndpoints
+  )
 
-  private def run(req: Request): ZIO[SuperAdminApi.SuperAdminEnv, Nothing, Response] =
-    superAdminRoutes.run(req).either.map {
+  private def run(req: Request): ZIO[SuperAdminApi.SuperAdminEnv, Nothing, Response] = superAdminRoutes
+    .run(req)
+    .either
+    .map {
       case Left(r)  => r.merge
       case Right(r) => r
     }
