@@ -120,18 +120,18 @@ object PostgresClientAddressRepositorySpec extends ZIOSpecDefault {
       },
       test("updateLabelAndAliases updates only provided fields, COALESCE keeps others") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanAddresses(xa)
-          repo     = PostgresClientAddressRepository(xa)
-          addr     = makeAddress(label = "Old", aliases = List("a"))
-          _       <- repo.save(addr)
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanAddresses(xa)
+          repo   = PostgresClientAddressRepository(xa)
+          addr   = makeAddress(label = "Old", aliases = List("a"))
+          _     <- repo.save(addr)
           // update label only -> aliases preserved
-          upd1    <- repo.updateLabelAndAliases(addr.id, clientId, Some("New Label"), None)
+          upd1  <- repo.updateLabelAndAliases(addr.id, clientId, Some("New Label"), None)
           // update aliases only -> label preserved
-          upd2    <- repo.updateLabelAndAliases(addr.id, clientId, None, Some(List("x", "y")))
+          upd2  <- repo.updateLabelAndAliases(addr.id, clientId, None, Some(List("x", "y")))
           // wrong client -> no row updated
-          wrong   <- repo.updateLabelAndAliases(addr.id, otherClientId, Some("Hacked"), None)
+          wrong <- repo.updateLabelAndAliases(addr.id, otherClientId, Some("Hacked"), None)
         } yield assertTrue(
           upd1.isDefined,
           upd1.get.label == "New Label",
@@ -162,15 +162,15 @@ object PostgresClientAddressRepositorySpec extends ZIOSpecDefault {
       },
       test("delete removes only the matching client's address") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanAddresses(xa)
-          repo     = PostgresClientAddressRepository(xa)
-          addr     = makeAddress()
-          _       <- repo.save(addr)
-          wrong   <- repo.delete(addr.id, otherClientId)
-          ok      <- repo.delete(addr.id, clientId)
-          left    <- repo.findByClient(clientId)
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanAddresses(xa)
+          repo   = PostgresClientAddressRepository(xa)
+          addr   = makeAddress()
+          _     <- repo.save(addr)
+          wrong <- repo.delete(addr.id, otherClientId)
+          ok    <- repo.delete(addr.id, clientId)
+          left  <- repo.findByClient(clientId)
         } yield assertTrue(!wrong, ok, left.isEmpty)
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock

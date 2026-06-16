@@ -686,7 +686,9 @@ class RideServiceImpl(
 
   private def validateCancelPermission(ride: Ride, userId: PersonId, userRole: PersonRole): IO[RideError, Unit] =
     userRole match
-      case PersonRole.Dispatcher | PersonRole.Secretary | PersonRole.Admin | PersonRole.ClientSecretary => ZIO.unit
+      case PersonRole.Dispatcher | PersonRole.Secretary | PersonRole.Admin | PersonRole.ClientSecretary |
+          PersonRole.SuperAdmin =>
+        ZIO.unit
       case PersonRole.Client                                                                            =>
         ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(ride.clientId != userId).unit
       case PersonRole.Driver                                                                            =>

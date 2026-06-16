@@ -12,8 +12,8 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Integration tests for [[PostgresCompanyRepository]] against a real PostgreSQL database
- * via Testcontainers. DB is never mocked — see dev-flow.md invariant #4.
+ * Integration tests for [[PostgresCompanyRepository]] against a real PostgreSQL database via Testcontainers. DB is
+ * never mocked — see dev-flow.md invariant #4.
  */
 object PostgresCompanyRepositorySpec extends ZIOSpecDefault:
 
@@ -59,15 +59,15 @@ object PostgresCompanyRepositorySpec extends ZIOSpecDefault:
       },
       test("findAll returns all created companies (cross-tenant)") {
         for {
-          xa    <- ZIO.service[Transactor[Task]]
-          _     <- clean(xa)
-          repo   = PostgresCompanyRepository(xa)
-          c1     = makeCompany(name = "Alpha Taxi", email = "alpha@superadmin-test.de")
-          c2     = makeCompany(name = "Beta Taxi", email = "beta@superadmin-test.de")
-          _     <- repo.create(c1)
-          _     <- repo.create(c2)
-          all   <- repo.findAll()
-          names  = all.map(_.name)
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- clean(xa)
+          repo  = PostgresCompanyRepository(xa)
+          c1    = makeCompany(name = "Alpha Taxi", email = "alpha@superadmin-test.de")
+          c2    = makeCompany(name = "Beta Taxi", email = "beta@superadmin-test.de")
+          _    <- repo.create(c1)
+          _    <- repo.create(c2)
+          all  <- repo.findAll()
+          names = all.map(_.name)
         } yield assertTrue(
           names.contains("Alpha Taxi"),
           names.contains("Beta Taxi")
@@ -78,8 +78,12 @@ object PostgresCompanyRepositorySpec extends ZIOSpecDefault:
           xa      <- ZIO.service[Transactor[Task]]
           _       <- clean(xa)
           repo     = PostgresCompanyRepository(xa)
-          company  = makeCompany(name = "Update GmbH", email = "update@superadmin-test.de",
-                                 status = CompanyStatus.Active, plan = SubscriptionPlan.Free)
+          company  = makeCompany(
+                       name = "Update GmbH",
+                       email = "update@superadmin-test.de",
+                       status = CompanyStatus.Active,
+                       plan = SubscriptionPlan.Free
+                     )
           created <- repo.create(company)
           updated  = created.copy(status = CompanyStatus.Suspended, subscriptionPlan = SubscriptionPlan.Professional)
           _       <- repo.update(updated)

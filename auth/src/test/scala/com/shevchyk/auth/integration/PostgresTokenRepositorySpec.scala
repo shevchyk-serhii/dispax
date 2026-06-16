@@ -35,8 +35,7 @@ object PostgresTokenRepositorySpec extends ZIOSpecDefault {
                  ON CONFLICT DO NOTHING""".update.run
     } yield ()).transact(xa)
 
-  private def cleanTokens(xa: Transactor[Task]): Task[Unit] =
-    sql"DELETE FROM tokens".update.run.transact(xa).unit
+  private def cleanTokens(xa: Transactor[Task]): Task[Unit] = sql"DELETE FROM tokens".update.run.transact(xa).unit
 
   def spec =
     suite("PostgresTokenRepository")(
@@ -74,15 +73,15 @@ object PostgresTokenRepositorySpec extends ZIOSpecDefault {
       },
       test("deleteByToken removes only the targeted token") {
         for {
-          xa     <- ZIO.service[Transactor[Task]]
-          _      <- seedTestData(xa)
-          _      <- cleanTokens(xa)
-          repo    = PostgresTokenRepository(xa)
-          _      <- repo.create("token-1", userId)
-          _      <- repo.create("token-2", userId)
-          _      <- repo.deleteByToken("token-1")
-          gone   <- repo.findUserIdByToken("token-1")
-          kept   <- repo.findUserIdByToken("token-2")
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- seedTestData(xa)
+          _    <- cleanTokens(xa)
+          repo  = PostgresTokenRepository(xa)
+          _    <- repo.create("token-1", userId)
+          _    <- repo.create("token-2", userId)
+          _    <- repo.deleteByToken("token-1")
+          gone <- repo.findUserIdByToken("token-1")
+          kept <- repo.findUserIdByToken("token-2")
         } yield assertTrue(
           gone.isEmpty,
           kept.contains(userId)
@@ -90,17 +89,17 @@ object PostgresTokenRepositorySpec extends ZIOSpecDefault {
       },
       test("deleteByUserId removes only that user's tokens") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanTokens(xa)
-          repo     = PostgresTokenRepository(xa)
-          _       <- repo.create("token-user-a", userId)
-          _       <- repo.create("token-user-a2", userId)
-          _       <- repo.create("token-user-b", otherUserId)
-          _       <- repo.deleteByUserId(userId)
-          aGone1  <- repo.findUserIdByToken("token-user-a")
-          aGone2  <- repo.findUserIdByToken("token-user-a2")
-          bKept   <- repo.findUserIdByToken("token-user-b")
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanTokens(xa)
+          repo    = PostgresTokenRepository(xa)
+          _      <- repo.create("token-user-a", userId)
+          _      <- repo.create("token-user-a2", userId)
+          _      <- repo.create("token-user-b", otherUserId)
+          _      <- repo.deleteByUserId(userId)
+          aGone1 <- repo.findUserIdByToken("token-user-a")
+          aGone2 <- repo.findUserIdByToken("token-user-a2")
+          bKept  <- repo.findUserIdByToken("token-user-b")
         } yield assertTrue(
           aGone1.isEmpty,
           aGone2.isEmpty,

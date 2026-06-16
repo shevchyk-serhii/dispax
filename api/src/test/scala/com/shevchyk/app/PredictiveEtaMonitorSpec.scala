@@ -20,18 +20,17 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
   private val client   = PersonId(UUID.randomUUID())
 
   // A ride assigned to `driver`, picking up `pickupInMinutes` from now.
-  private def assignedRide(pickupInMinutes: Long, company: CompanyId = companyA): Ride =
-    Ride(
-      id = RideId(UUID.randomUUID()),
-      clientId = client,
-      creatorId = client,
-      companyId = company,
-      driverId = Some(driver),
-      status = RideStatus.Assigned,
-      pickupLocation = Location("Marienplatz, München"),
-      dropoffLocation = Location("Munich Airport"),
-      pickupDateTime = Instant.now().plusSeconds(pickupInMinutes * 60L)
-    )
+  private def assignedRide(pickupInMinutes: Long, company: CompanyId = companyA): Ride = Ride(
+    id = RideId(UUID.randomUUID()),
+    clientId = client,
+    creatorId = client,
+    companyId = company,
+    driverId = Some(driver),
+    status = RideStatus.Assigned,
+    pickupLocation = Location("Marienplatz, München"),
+    dropoffLocation = Location("Munich Airport"),
+    pickupDateTime = Instant.now().plusSeconds(pickupInMinutes * 60L)
+  )
 
   // RideRepository stub: only the window query is exercised.
   private def rideRepoStub(rides: List[Ride]): RideRepository =
@@ -40,23 +39,23 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
 
       def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = ZIO.succeed(rides)
 
-      def create(ride: Ride): Task[Ride]                                = nope("create")
-      def findById(id: RideId): Task[Option[Ride]]                      = nope("findById")
-      def findByStatus(status: RideStatus): Task[List[Ride]]            = nope("findByStatus")
-      def findAll(): Task[List[Ride]]                                   = nope("findAll")
-      def findByClientId(clientId: PersonId): Task[List[Ride]]          = nope("findByClientId")
-      def findByDriverId(driverId: PersonId): Task[List[Ride]]          = nope("findByDriverId")
-      def findByCompanyId(companyId: CompanyId): Task[List[Ride]]       = nope("findByCompanyId")
-      def update(ride: Ride): Task[Ride]                                = nope("update")
-      def delete(id: RideId): Task[Unit]                                = nope("delete")
-      def countByCompanyGroupedByStatus(c: CompanyId): Task[Map[String, Int]] = nope("countByCompanyGroupedByStatus")
-      def sumRevenueByCompany(c: CompanyId): Task[BigDecimal]           = nope("sumRevenueByCompany")
-      def sumTodayRevenueByCompany(c: CompanyId): Task[BigDecimal]      = nope("sumTodayRevenueByCompany")
-      def avgAssignmentMinutesByCompany(c: CompanyId): Task[Double]     = nope("avgAssignmentMinutesByCompany")
-      def countDailyStatsByCompany(c: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]] = nope(
+      def create(ride: Ride): Task[Ride]                                                                          = nope("create")
+      def findById(id: RideId): Task[Option[Ride]]                                                                = nope("findById")
+      def findByStatus(status: RideStatus): Task[List[Ride]]                                                      = nope("findByStatus")
+      def findAll(): Task[List[Ride]]                                                                             = nope("findAll")
+      def findByClientId(clientId: PersonId): Task[List[Ride]]                                                    = nope("findByClientId")
+      def findByDriverId(driverId: PersonId): Task[List[Ride]]                                                    = nope("findByDriverId")
+      def findByCompanyId(companyId: CompanyId): Task[List[Ride]]                                                 = nope("findByCompanyId")
+      def update(ride: Ride): Task[Ride]                                                                          = nope("update")
+      def delete(id: RideId): Task[Unit]                                                                          = nope("delete")
+      def countByCompanyGroupedByStatus(c: CompanyId): Task[Map[String, Int]]                                     = nope("countByCompanyGroupedByStatus")
+      def sumRevenueByCompany(c: CompanyId): Task[BigDecimal]                                                     = nope("sumRevenueByCompany")
+      def sumTodayRevenueByCompany(c: CompanyId): Task[BigDecimal]                                                = nope("sumTodayRevenueByCompany")
+      def avgAssignmentMinutesByCompany(c: CompanyId): Task[Double]                                               = nope("avgAssignmentMinutesByCompany")
+      def countDailyStatsByCompany(c: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]]                  = nope(
         "countDailyStatsByCompany"
       )
-      def earningsByDriver(d: PersonId, c: CompanyId, from: Instant, to: Instant): Task[DriverEarnings] = nope(
+      def earningsByDriver(d: PersonId, c: CompanyId, from: Instant, to: Instant): Task[DriverEarnings]           = nope(
         "earningsByDriver"
       )
       def earningsBucketsByDriver(
@@ -66,18 +65,19 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
           to: Instant,
           bucket: TimeBucket
       ): Task[List[(Instant, BigDecimal)]] = nope("earningsBucketsByDriver")
-      def clearReminders(rideId: RideId): Task[Unit]                                               = nope("clearReminders")
-      def countAllRidesByStatus(): Task[Map[String, Int]]                                          = nope("countAllRidesByStatus")
-      def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                              = nope("sumAllRevenue")
-      def countRidesByCompany(from: Instant, to: Instant): Task[Map[java.util.UUID, Int]]          = nope(
+      def clearReminders(rideId: RideId): Task[Unit]                                                              = nope("clearReminders")
+      def countAllRidesByStatus(): Task[Map[String, Int]]                                                         = nope("countAllRidesByStatus")
+      def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                                             = nope("sumAllRevenue")
+      def countRidesByCompany(from: Instant, to: Instant): Task[Map[java.util.UUID, Int]]                         = nope(
         "countRidesByCompany"
       )
-      def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[java.util.UUID, BigDecimal]] = nope(
+      def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[java.util.UUID, BigDecimal]]          = nope(
         "sumRevenueByCompanyPlatform"
       )
-      def updateCheckpoint(rideId: RideId, checkpoint: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean] = nope(
-        "updateCheckpoint"
-      )
+      def updateCheckpoint(rideId: RideId, checkpoint: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean] =
+        nope(
+          "updateCheckpoint"
+        )
 
   // EtaService stub returning a fixed ETA.
   private def etaServiceStub(eta: Option[Int]): EtaService =
@@ -87,18 +87,17 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
   // In-memory EtaAlertRepository tracking the (ride, driver) pairs already alerted.
   private def alertRepoStub(ref: Ref[Set[(RideId, PersonId)]]): EtaAlertRepository =
     new EtaAlertRepository:
-      def isAlreadyAlerted(rideId: RideId, driverId: PersonId): Task[Boolean] =
-        ref.get.map(_.contains((rideId, driverId)))
-      def markAlerted(rideId: RideId, driverId: PersonId): Task[Unit]         =
-        ref.update(_ + ((rideId, driverId)))
-      def clear(rideId: RideId): Task[Unit]                                   =
-        ref.update(_.filterNot(_._1 == rideId))
+      def isAlreadyAlerted(rideId: RideId, driverId: PersonId): Task[Boolean] = ref.get.map(
+        _.contains((rideId, driverId))
+      )
+      def markAlerted(rideId: RideId, driverId: PersonId): Task[Unit]         = ref.update(_ + ((rideId, driverId)))
+      def clear(rideId: RideId): Task[Unit]                                   = ref.update(_.filterNot(_._1 == rideId))
 
   // EventHub stub recording published events.
   private def eventHubStub(ref: Ref[List[WebSocketEvent]]): EventHub =
     new EventHub:
-      def publish(event: WebSocketEvent): UIO[Boolean]              = ref.update(_ :+ event).as(true)
-      def subscribe: ZIO[Scope, Nothing, Dequeue[WebSocketEvent]]   =
+      def publish(event: WebSocketEvent): UIO[Boolean]            = ref.update(_ :+ event).as(true)
+      def subscribe: ZIO[Scope, Nothing, Dequeue[WebSocketEvent]] =
         throw new NotImplementedError("unexpected EventHub.subscribe")
 
   private def runTick(
@@ -106,13 +105,12 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
       eta: Option[Int],
       events: Ref[List[WebSocketEvent]],
       alerts: Ref[Set[(RideId, PersonId)]]
-  ): Task[Unit] =
-    PredictiveEtaMonitor.tick.provide(
-      ZLayer.succeed(rideRepoStub(rides)),
-      ZLayer.succeed(etaServiceStub(eta)),
-      ZLayer.succeed(alertRepoStub(alerts)),
-      ZLayer.succeed(eventHubStub(events))
-    )
+  ): Task[Unit] = PredictiveEtaMonitor.tick.provide(
+    ZLayer.succeed(rideRepoStub(rides)),
+    ZLayer.succeed(etaServiceStub(eta)),
+    ZLayer.succeed(alertRepoStub(alerts)),
+    ZLayer.succeed(eventHubStub(events))
+  )
 
   def spec =
     suite("PredictiveEtaMonitor.tick")(
@@ -130,7 +128,7 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
             case WebSocketEvent.EtaAtRisk(rid, _, _, e, until, slack, cid) =>
               // Pickup ~10 min out, ETA 20 → slack is negative (driver late).
               rid == ride.id.value && e == 20 && slack < 0 && until <= 10 && cid == companyA.value
-            case _ => false
+            case _                                                         => false
         )
       },
       test("does not publish when there is comfortable slack") {

@@ -36,8 +36,7 @@ object PostgresSessionRepositorySpec extends ZIOSpecDefault {
                  ON CONFLICT DO NOTHING""".update.run
     } yield ()).transact(xa)
 
-  private def cleanSessions(xa: Transactor[Task]): Task[Unit] =
-    sql"DELETE FROM sessions".update.run.transact(xa).unit
+  private def cleanSessions(xa: Transactor[Task]): Task[Unit] = sql"DELETE FROM sessions".update.run.transact(xa).unit
 
   private def isActive(xa: Transactor[Task], id: SessionId): Task[Option[Boolean]] =
     sql"SELECT is_active FROM sessions WHERE id = ${id.value}".query[Boolean].option.transact(xa)
@@ -116,15 +115,15 @@ object PostgresSessionRepositorySpec extends ZIOSpecDefault {
       },
       test("updateLastActive bumps last_active_at") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanSessions(xa)
-          repo     = PostgresSessionRepository(xa)
-          old      = Instant.now().minusSeconds(3600)
-          session  = makeSession().copy(lastActiveAt = old)
-          _       <- repo.create(session)
-          _       <- repo.updateLastActive(session.id)
-          found   <- repo.findByToken(session.token)
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanSessions(xa)
+          repo    = PostgresSessionRepository(xa)
+          old     = Instant.now().minusSeconds(3600)
+          session = makeSession().copy(lastActiveAt = old)
+          _      <- repo.create(session)
+          _      <- repo.updateLastActive(session.id)
+          found  <- repo.findByToken(session.token)
         } yield assertTrue(
           found.isDefined,
           found.get.lastActiveAt.isAfter(old)
@@ -170,18 +169,18 @@ object PostgresSessionRepositorySpec extends ZIOSpecDefault {
       },
       test("deactivateAllExcept keeps current session active") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanSessions(xa)
-          repo     = PostgresSessionRepository(xa)
-          current  = makeSession(user = userId)
-          other1   = makeSession(user = userId)
-          other2   = makeSession(user = userId)
-          _       <- repo.create(current)
-          _       <- repo.create(other1)
-          _       <- repo.create(other2)
-          count   <- repo.deactivateAllExcept(userId, current.id)
-          active  <- repo.findByUserId(userId)
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanSessions(xa)
+          repo    = PostgresSessionRepository(xa)
+          current = makeSession(user = userId)
+          other1  = makeSession(user = userId)
+          other2  = makeSession(user = userId)
+          _      <- repo.create(current)
+          _      <- repo.create(other1)
+          _      <- repo.create(other2)
+          count  <- repo.deactivateAllExcept(userId, current.id)
+          active <- repo.findByUserId(userId)
         } yield assertTrue(
           count == 2,
           active.length == 1,

@@ -19,10 +19,10 @@ import java.util.UUID
 
 object PushNotificationListenerSpec extends ZIOSpecDefault {
 
-  private val companyId   = UUID.fromString("00000001-0000-0000-0000-000000000001")
-  private val driverId    = UUID.fromString("00000002-0000-0000-0000-000000000002")
-  private val rideId      = UUID.fromString("00000003-0000-0000-0000-000000000003")
-  private val clientId    = UUID.fromString("00000004-0000-0000-0000-000000000004")
+  private val companyId    = UUID.fromString("00000001-0000-0000-0000-000000000001")
+  private val driverId     = UUID.fromString("00000002-0000-0000-0000-000000000002")
+  private val rideId       = UUID.fromString("00000003-0000-0000-0000-000000000003")
+  private val clientId     = UUID.fromString("00000004-0000-0000-0000-000000000004")
   private val dispatcherId = UUID.fromString("00000005-0000-0000-0000-000000000005")
 
   private val testFcmLayer: ZLayer[Any, Nothing, FcmService] =
@@ -40,23 +40,22 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
 
   private val personRepoStub: PersonRepository =
     new PersonRepository:
-      def findByRoleAndCompany(role: PersonRole, company: CompanyId): Task[List[Person]] =
-        ZIO.succeed(
-          if role == PersonRole.Dispatcher && company == CompanyId(companyId) then List(dispatcher) else Nil
-        )
-      private def nope(m: String): Nothing = throw new NotImplementedError(s"unexpected PersonRepository.$m")
-      def create(person: Person): Task[Person]                           = nope("create")
-      def findById(id: PersonId): Task[Option[Person]]                   = nope("findById")
-      def findByEmail(email: String): Task[Option[Person]]               = nope("findByEmail")
-      def findByRole(role: PersonRole): Task[List[Person]]               = nope("findByRole")
-      def findByCompanyId(company: CompanyId): Task[List[Person]]        = nope("findByCompanyId")
-      def findAll(): Task[List[Person]]                                  = nope("findAll")
-      def update(person: Person): Task[Person]                           = nope("update")
-      def delete(id: PersonId): Task[Unit]                               = nope("delete")
-      def findByStatus(status: UserStatus): Task[List[Person]]           = nope("findByStatus")
-      def searchByQuery(query: String): Task[List[Person]]               = nope("searchByQuery")
-      def updateLastLogin(id: PersonId): Task[Unit]                      = nope("updateLastLogin")
-      def findByClientCompany(c: ClientCompanyId): Task[List[Person]]    = nope("findByClientCompany")
+      def findByRoleAndCompany(role: PersonRole, company: CompanyId): Task[List[Person]] = ZIO.succeed(
+        if role == PersonRole.Dispatcher && company == CompanyId(companyId) then List(dispatcher) else Nil
+      )
+      private def nope(m: String): Nothing                                               = throw new NotImplementedError(s"unexpected PersonRepository.$m")
+      def create(person: Person): Task[Person]                                           = nope("create")
+      def findById(id: PersonId): Task[Option[Person]]                                   = nope("findById")
+      def findByEmail(email: String): Task[Option[Person]]                               = nope("findByEmail")
+      def findByRole(role: PersonRole): Task[List[Person]]                               = nope("findByRole")
+      def findByCompanyId(company: CompanyId): Task[List[Person]]                        = nope("findByCompanyId")
+      def findAll(): Task[List[Person]]                                                  = nope("findAll")
+      def update(person: Person): Task[Person]                                           = nope("update")
+      def delete(id: PersonId): Task[Unit]                                               = nope("delete")
+      def findByStatus(status: UserStatus): Task[List[Person]]                           = nope("findByStatus")
+      def searchByQuery(query: String): Task[List[Person]]                               = nope("searchByQuery")
+      def updateLastLogin(id: PersonId): Task[Unit]                                      = nope("updateLastLogin")
+      def findByClientCompany(c: ClientCompanyId): Task[List[Person]]                    = nope("findByClientCompany")
 
   private val baseLayers =
     EventHub.layer ++
@@ -69,7 +68,11 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
   private def publishAndCollect(
       event: WebSocketEvent,
       forPerson: PersonId
-  ): ZIO[EventHub & FcmService & NotificationRepository & PersonRepository & CheckpointNotificationRepository & Scope, Throwable, List[com.shevchyk.notification.domain.AppNotification]] =
+  ): ZIO[
+    EventHub & FcmService & NotificationRepository & PersonRepository & CheckpointNotificationRepository & Scope,
+    Throwable,
+    List[com.shevchyk.notification.domain.AppNotification]
+  ] =
     for {
       _         <- PushNotificationListener.start
       eventHub  <- ZIO.service[EventHub]
@@ -275,7 +278,6 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
           }
         }
       }.provide(baseLayers),
-
       test("AirportCheckpointReached does NOT send duplicate push when same checkpointType sent twice") {
         ZIO.scoped {
           for {
@@ -294,36 +296,36 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
           )
         }
       }.provide(baseLayers),
-
       test("AirportCheckpointReached sends separate push for different checkpointType") {
         ZIO.scoped {
           for {
-            _        <- PushNotificationListener.start
-            eventHub <- ZIO.service[EventHub]
+            _         <- PushNotificationListener.start
+            eventHub  <- ZIO.service[EventHub]
             notifRepo <- ZIO.service[com.shevchyk.notification.repository.NotificationRepository]
-            _        <- eventHub.publish(
-                          WebSocketEvent.AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId)
-                        )
-            _        <- TestClock.adjust(200.millis)
-            _        <- eventHub.publish(
-                          WebSocketEvent.AirportCheckpointReached(
-                            rideId,
-                            driverId,
-                            clientId,
-                            "terminal_exit",
-                            "Terminal Exit",
-                            companyId
-                          )
-                        )
-            _        <- TestClock.adjust(200.millis)
-            notifs   <- notifRepo.findByPersonId(PersonId(driverId), limit = 10, offset = 0)
+            _         <- eventHub.publish(
+                           WebSocketEvent.AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId)
+                         )
+            _         <- TestClock.adjust(200.millis)
+            _         <- eventHub.publish(
+                           WebSocketEvent.AirportCheckpointReached(
+                             rideId,
+                             driverId,
+                             clientId,
+                             "terminal_exit",
+                             "Terminal Exit",
+                             companyId
+                           )
+                         )
+            _         <- TestClock.adjust(200.millis)
+            notifs    <- notifRepo.findByPersonId(PersonId(driverId), limit = 10, offset = 0)
           } yield assertTrue(
             notifs.count(_.notificationType == "airport_checkpoint") == 2
           )
         }
       }.provide(baseLayers),
-
-      test("skip-ahead: single AirportCheckpointReached(terminal_exit) produces exactly one push for terminal_exit only") {
+      test(
+        "skip-ahead: single AirportCheckpointReached(terminal_exit) produces exactly one push for terminal_exit only"
+      ) {
         ZIO.scoped {
           publishAndCollect(
             // This is what AirportCheckpointService emits on a None → TerminalExit skip-ahead call:

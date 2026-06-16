@@ -32,9 +32,11 @@ object PostgresBlacklistRepositorySpec extends ZIOSpecDefault {
 
   private def seed(xa: Transactor[Task]): Task[Unit] =
     (for {
-      _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'bl-test@example.com')
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'bl-test@example.com')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${otherCompanyId.value}, 'Other GmbH', 'bl-other@example.com')
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES (${otherCompanyId.value}, 'Other GmbH', 'bl-other@example.com')
                  ON CONFLICT DO NOTHING""".update.run
       _ <- insertPerson(clientId, "bl-client@test.com", "client", testCompanyId)
       _ <- insertPerson(client2Id, "bl-client2@test.com", "client", testCompanyId)
@@ -43,8 +45,7 @@ object PostgresBlacklistRepositorySpec extends ZIOSpecDefault {
       _ <- insertPerson(createdById, "bl-creator@test.com", "dispatcher", testCompanyId)
     } yield ()).transact(xa)
 
-  private def clean(xa: Transactor[Task]): Task[Unit] =
-    sql"DELETE FROM blacklist_entries".update.run.transact(xa).unit
+  private def clean(xa: Transactor[Task]): Task[Unit] = sql"DELETE FROM blacklist_entries".update.run.transact(xa).unit
 
   private def makeEntry(
       id: BlacklistEntryId = BlacklistEntryId(UUID.randomUUID()),

@@ -55,6 +55,7 @@ class DashboardScreen extends StatelessWidget {
       case PersonRole.client:
         return const ClientDashboard();
       case PersonRole.secretary:
+      case PersonRole.clientSecretary:
         return const SecretaryDashboard();
       case PersonRole.dispatcher:
         return const DispatcherDashboard();

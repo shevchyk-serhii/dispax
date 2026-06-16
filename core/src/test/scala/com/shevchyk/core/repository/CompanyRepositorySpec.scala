@@ -7,8 +7,8 @@ import zio.test.*
 import java.util.UUID
 
 /**
- * Unit tests for CompanyRepository using the in-memory double.
- * These tests do NOT touch PostgreSQL — for Postgres integration see PostgresCompanyRepositorySpec.
+ * Unit tests for CompanyRepository using the in-memory double. These tests do NOT touch PostgreSQL — for Postgres
+ * integration see PostgresCompanyRepositorySpec.
  */
 object CompanyRepositorySpec extends ZIOSpecDefault:
 
@@ -45,10 +45,10 @@ object CompanyRepositorySpec extends ZIOSpecDefault:
       },
       test("findById returns the company when it exists") {
         for {
-          repo    <- ZIO.service[CompanyRepository]
-          company  = makeCompany(name = "Delta GmbH")
-          _       <- repo.create(company)
-          found   <- repo.findById(company.id)
+          repo   <- ZIO.service[CompanyRepository]
+          company = makeCompany(name = "Delta GmbH")
+          _      <- repo.create(company)
+          found  <- repo.findById(company.id)
         } yield assertTrue(
           found.isDefined,
           found.get.name == "Delta GmbH"
@@ -62,12 +62,12 @@ object CompanyRepositorySpec extends ZIOSpecDefault:
       },
       test("update persists new status and plan") {
         for {
-          repo    <- ZIO.service[CompanyRepository]
-          company  = makeCompany(name = "Gamma GmbH", status = CompanyStatus.Active)
-          _       <- repo.create(company)
-          updated  = company.copy(status = CompanyStatus.Suspended, subscriptionPlan = SubscriptionPlan.Professional)
-          _       <- repo.update(updated)
-          found   <- repo.findById(company.id)
+          repo   <- ZIO.service[CompanyRepository]
+          company = makeCompany(name = "Gamma GmbH", status = CompanyStatus.Active)
+          _      <- repo.create(company)
+          updated = company.copy(status = CompanyStatus.Suspended, subscriptionPlan = SubscriptionPlan.Professional)
+          _      <- repo.update(updated)
+          found  <- repo.findById(company.id)
         } yield assertTrue(
           found.isDefined,
           found.get.status == CompanyStatus.Suspended,

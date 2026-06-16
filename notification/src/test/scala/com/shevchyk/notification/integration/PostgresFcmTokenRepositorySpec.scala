@@ -120,16 +120,16 @@ object PostgresFcmTokenRepositorySpec extends ZIOSpecDefault {
       },
       test("deleteByPersonId removes only that person's tokens") {
         for {
-          xa    <- ZIO.service[Transactor[Task]]
-          _     <- seedTestData(xa)
-          _     <- cleanFcmTokens(xa)
-          repo   = PostgresFcmTokenRepository(xa)
-          _     <- repo.save(makeToken(person = personId, token = "fcm-p1-a"))
-          _     <- repo.save(makeToken(person = personId, token = "fcm-p1-b"))
-          _     <- repo.save(makeToken(person = otherPersonId, token = "fcm-p2"))
-          _     <- repo.deleteByPersonId(personId)
-          gone  <- repo.findByPersonId(personId)
-          kept  <- repo.findByPersonId(otherPersonId)
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- seedTestData(xa)
+          _    <- cleanFcmTokens(xa)
+          repo  = PostgresFcmTokenRepository(xa)
+          _    <- repo.save(makeToken(person = personId, token = "fcm-p1-a"))
+          _    <- repo.save(makeToken(person = personId, token = "fcm-p1-b"))
+          _    <- repo.save(makeToken(person = otherPersonId, token = "fcm-p2"))
+          _    <- repo.deleteByPersonId(personId)
+          gone <- repo.findByPersonId(personId)
+          kept <- repo.findByPersonId(otherPersonId)
         } yield assertTrue(
           gone.isEmpty,
           kept.length == 1,

@@ -9,11 +9,11 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Unit tests for the platform-level (cross-tenant, SuperAdmin-only) analytics methods
- * of [[RideRepository]], exercised against the [[InMemoryRideRepository]].
+ * Unit tests for the platform-level (cross-tenant, SuperAdmin-only) analytics methods of [[RideRepository]], exercised
+ * against the [[InMemoryRideRepository]].
  *
- * These methods carry `All` or `Platform` in their names to make the absence of a
- * company_id filter explicit and grep-auditable (plan invariant #7 / dev-flow #67).
+ * These methods carry `All` or `Platform` in their names to make the absence of a company_id filter explicit and
+ * grep-auditable (plan invariant #7 / dev-flow #67).
  */
 object RideRepositoryPlatformSpec extends ZIOSpecDefault:
 
@@ -22,9 +22,9 @@ object RideRepositoryPlatformSpec extends ZIOSpecDefault:
   private val client1  = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001"))
   private val creator1 = PersonId(UUID.fromString("bbbbbbbb-0000-0000-0000-000000000001"))
 
-  private val now   = Instant.parse("2026-06-15T12:00:00Z")
-  private val from  = now.minusSeconds(3600 * 24 * 30)  // 30 days ago
-  private val to    = now.plusSeconds(3600)
+  private val now  = Instant.parse("2026-06-15T12:00:00Z")
+  private val from = now.minusSeconds(3600 * 24 * 30) // 30 days ago
+  private val to   = now.plusSeconds(3600)
 
   private def ride(
       companyId: CompanyId,

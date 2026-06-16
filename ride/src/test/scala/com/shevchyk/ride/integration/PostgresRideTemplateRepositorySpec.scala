@@ -175,15 +175,15 @@ object PostgresRideTemplateRepositorySpec extends ZIOSpecDefault {
       },
       test("deactivate sets is_active false") {
         for {
-          xa     <- ZIO.service[Transactor[Task]]
-          _      <- seedTestData(xa)
-          _      <- cleanTemplates(xa)
-          repo    = PostgresRideTemplateRepository(xa)
-          tpl     = makeTemplate(isActive = true, preferredDriver = None)
-          _      <- repo.create(tpl)
-          ok     <- repo.deactivate(tpl.id)
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanTemplates(xa)
+          repo     = PostgresRideTemplateRepository(xa)
+          tpl      = makeTemplate(isActive = true, preferredDriver = None)
+          _       <- repo.create(tpl)
+          ok      <- repo.deactivate(tpl.id)
           missing <- repo.deactivate(RideTemplateId.generate())
-          found  <- repo.findById(tpl.id)
+          found   <- repo.findById(tpl.id)
         } yield assertTrue(
           ok,
           !missing,

@@ -12,12 +12,12 @@ import zio.test.*
 import java.util.UUID
 
 /**
- * Integration test: insert a Person with role super_admin and company_id = NULL,
- * read back, assert role == PersonRole.SuperAdmin and companyId == None.
+ * Integration test: insert a Person with role super_admin and company_id = NULL, read back, assert role ==
+ * PersonRole.SuperAdmin and companyId == None.
  *
  * This validates that:
- * 1. The Doobie pgEnumString mapping handles "super_admin" ↔ PersonRole.SuperAdmin.
- * 2. The PostgreSQL column allows NULL for company_id (SuperAdmin sits outside tenants).
+ *   1. The Doobie pgEnumString mapping handles "super_admin" ↔ PersonRole.SuperAdmin. 2. The PostgreSQL column allows
+ *      NULL for company_id (SuperAdmin sits outside tenants).
  */
 object PostgresPersonSuperAdminSpec extends ZIOSpecDefault:
 
@@ -39,7 +39,7 @@ object PostgresPersonSuperAdminSpec extends ZIOSpecDefault:
                      name = "Platform SuperAdmin",
                      email = "superadmin-test@dispax-integration.de",
                      role = PersonRole.SuperAdmin,
-                     companyId = None,    // ← this is the critical assertion target
+                     companyId = None, // ← this is the critical assertion target
                      passwordHash = "bcrypt-placeholder"
                    )
           _     <- repo.create(person)
@@ -53,19 +53,19 @@ object PostgresPersonSuperAdminSpec extends ZIOSpecDefault:
       },
       test("findByRole returns SuperAdmin persons") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- cleanSuperAdminPerson(xa)
-          repo     = PostgresPersonRepository(xa)
-          person   = Person(
-                       id = superAdminId,
-                       name = "Platform SuperAdmin",
-                       email = "superadmin-test2@dispax-integration.de",
-                       role = PersonRole.SuperAdmin,
-                       companyId = None,
-                       passwordHash = "bcrypt-placeholder"
-                     )
-          _       <- repo.create(person)
-          supers  <- repo.findByRole(PersonRole.SuperAdmin)
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- cleanSuperAdminPerson(xa)
+          repo    = PostgresPersonRepository(xa)
+          person  = Person(
+                      id = superAdminId,
+                      name = "Platform SuperAdmin",
+                      email = "superadmin-test2@dispax-integration.de",
+                      role = PersonRole.SuperAdmin,
+                      companyId = None,
+                      passwordHash = "bcrypt-placeholder"
+                    )
+          _      <- repo.create(person)
+          supers <- repo.findByRole(PersonRole.SuperAdmin)
         } yield assertTrue(
           supers.exists(_.id == superAdminId),
           supers.forall(_.role == PersonRole.SuperAdmin)

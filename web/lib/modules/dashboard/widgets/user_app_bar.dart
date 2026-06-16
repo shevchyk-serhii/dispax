@@ -87,6 +87,7 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
       case PersonRole.client:
         return 'My Rides';
       case PersonRole.secretary:
+      case PersonRole.clientSecretary:
         return 'Secretary Dashboard';
       case PersonRole.dispatcher:
         return 'Dispatcher Dashboard';

@@ -55,8 +55,7 @@ object PostgresExpenseRepositorySpec extends ZIOSpecDefault {
                  ON CONFLICT DO NOTHING""".update.run
     } yield ()).transact(xa)
 
-  private def cleanExpenses(xa: Transactor[Task]): Task[Unit] =
-    sql"DELETE FROM expenses".update.run.transact(xa).unit
+  private def cleanExpenses(xa: Transactor[Task]): Task[Unit] = sql"DELETE FROM expenses".update.run.transact(xa).unit
 
   private def makeExpense(
       id: ExpenseId = ExpenseId.generate(),
@@ -121,14 +120,14 @@ object PostgresExpenseRepositorySpec extends ZIOSpecDefault {
       },
       test("findByDriverId filters by driver") {
         for {
-          xa    <- ZIO.service[Transactor[Task]]
-          _     <- seedTestData(xa)
-          _     <- cleanExpenses(xa)
-          repo   = PostgresExpenseRepository(xa)
-          _     <- repo.create(makeExpense(driver = driverId))
-          _     <- repo.create(makeExpense(driver = driverId))
-          _     <- repo.create(makeExpense(driver = otherDriverId))
-          mine  <- repo.findByDriverId(driverId)
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- seedTestData(xa)
+          _    <- cleanExpenses(xa)
+          repo  = PostgresExpenseRepository(xa)
+          _    <- repo.create(makeExpense(driver = driverId))
+          _    <- repo.create(makeExpense(driver = driverId))
+          _    <- repo.create(makeExpense(driver = otherDriverId))
+          mine <- repo.findByDriverId(driverId)
         } yield assertTrue(
           mine.length == 2,
           mine.forall(_.driverId == driverId)
@@ -136,12 +135,12 @@ object PostgresExpenseRepositorySpec extends ZIOSpecDefault {
       },
       test("findByRideId filters by ride") {
         for {
-          xa    <- ZIO.service[Transactor[Task]]
-          _     <- seedTestData(xa)
-          _     <- cleanExpenses(xa)
-          repo   = PostgresExpenseRepository(xa)
-          _     <- repo.create(makeExpense(ride = Some(rideId)))
-          _     <- repo.create(makeExpense(ride = None))
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanExpenses(xa)
+          repo    = PostgresExpenseRepository(xa)
+          _      <- repo.create(makeExpense(ride = Some(rideId)))
+          _      <- repo.create(makeExpense(ride = None))
           byRide <- repo.findByRideId(rideId)
         } yield assertTrue(
           byRide.length == 1,
@@ -179,24 +178,35 @@ object PostgresExpenseRepositorySpec extends ZIOSpecDefault {
       },
       test("sumByDriver sums amounts within date range and isolates driver/company") {
         for {
-          xa   <- ZIO.service[Transactor[Task]]
-          _    <- seedTestData(xa)
-          _    <- cleanExpenses(xa)
-          repo  = PostgresExpenseRepository(xa)
-          base  = Instant.parse("2026-03-15T12:00:00Z")
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanExpenses(xa)
+          repo   = PostgresExpenseRepository(xa)
+          base   = Instant.parse("2026-03-15T12:00:00Z")
           // in-range for driver+company
-          _    <- repo.create(makeExpense(ride = None, amount = BigDecimal("10.00"), createdAt = base))
-          _    <- repo.create(makeExpense(ride = None, amount = BigDecimal("5.50"), createdAt = base.plusSeconds(3600)))
+          _     <- repo.create(makeExpense(ride = None, amount = BigDecimal("10.00"), createdAt = base))
+          _     <- repo.create(makeExpense(ride = None, amount = BigDecimal("5.50"), createdAt = base.plusSeconds(3600)))
           // out of range (before)
-          _    <- repo.create(makeExpense(ride = None, amount = BigDecimal("99.00"), createdAt = base.minus(40, ChronoUnit.DAYS)))
+          _     <- repo.create(
+                     makeExpense(ride = None, amount = BigDecimal("99.00"), createdAt = base.minus(40, ChronoUnit.DAYS))
+                   )
           // different driver, same company, in range -> excluded
-          _    <- repo.create(makeExpense(ride = None, driver = otherDriverId, amount = BigDecimal("77.00"), createdAt = base))
+          _     <- repo.create(
+                     makeExpense(ride = None, driver = otherDriverId, amount = BigDecimal("77.00"), createdAt = base)
+                   )
           // same driver, different company, in range -> excluded
-          _    <- repo.create(makeExpense(ride = None, company = otherCompanyId, amount = BigDecimal("33.00"), createdAt = base))
-          from  = Instant.parse("2026-03-01T00:00:00Z")
-          to    = Instant.parse("2026-04-01T00:00:00Z")
-          sum  <- repo.sumByDriver(driverId, testCompanyId, from, to)
-          empty <- repo.sumByDriver(driverId, testCompanyId, Instant.parse("2030-01-01T00:00:00Z"), Instant.parse("2030-02-01T00:00:00Z"))
+          _     <- repo.create(
+                     makeExpense(ride = None, company = otherCompanyId, amount = BigDecimal("33.00"), createdAt = base)
+                   )
+          from   = Instant.parse("2026-03-01T00:00:00Z")
+          to     = Instant.parse("2026-04-01T00:00:00Z")
+          sum   <- repo.sumByDriver(driverId, testCompanyId, from, to)
+          empty <- repo.sumByDriver(
+                     driverId,
+                     testCompanyId,
+                     Instant.parse("2030-01-01T00:00:00Z"),
+                     Instant.parse("2030-02-01T00:00:00Z")
+                   )
         } yield assertTrue(
           sum == BigDecimal("15.50"),
           empty == BigDecimal(0)

@@ -14,16 +14,15 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Integration tests for PostgresEtaAlertRepository against a real PostgreSQL via
- * Testcontainers. Covers the dedup round-trip (markAlerted / isAlreadyAlerted /
- * clear) and per-driver granularity that the SQL layer enforces.
+ * Integration tests for PostgresEtaAlertRepository against a real PostgreSQL via Testcontainers. Covers the dedup
+ * round-trip (markAlerted / isAlreadyAlerted / clear) and per-driver granularity that the SQL layer enforces.
  */
 object PostgresEtaAlertRepositorySpec extends ZIOSpecDefault:
 
-  private val company  = CompanyId(UUID.fromString("00000001-0000-0000-0000-0000000000c1"))
-  private val client   = PersonId(UUID.fromString("00000002-0000-0000-0000-0000000000c1"))
-  private val driver1  = PersonId(UUID.fromString("00000002-0000-0000-0000-0000000000d1"))
-  private val driver2  = PersonId(UUID.fromString("00000002-0000-0000-0000-0000000000d2"))
+  private val company = CompanyId(UUID.fromString("00000001-0000-0000-0000-0000000000c1"))
+  private val client  = PersonId(UUID.fromString("00000002-0000-0000-0000-0000000000c1"))
+  private val driver1 = PersonId(UUID.fromString("00000002-0000-0000-0000-0000000000d1"))
+  private val driver2 = PersonId(UUID.fromString("00000002-0000-0000-0000-0000000000d2"))
 
   private def seed(xa: Transactor[Task]): Task[Unit] =
     (for {
@@ -48,11 +47,9 @@ object PostgresEtaAlertRepositorySpec extends ZIOSpecDefault:
     val rideId = RideId(UUID.randomUUID())
     sql"""INSERT INTO rides (id, client_id, creator_id, company_id, from_address, to_address, pickup_datetime)
           VALUES (${rideId.value}, ${client.value}, ${client.value}, ${company.value},
-                  'Marienplatz', 'Airport', ${Instant.now()})"""
-      .update.run.transact(xa).as(rideId)
+                  'Marienplatz', 'Airport', ${Instant.now()})""".update.run.transact(xa).as(rideId)
 
-  private def clean(xa: Transactor[Task]): Task[Unit] =
-    sql"DELETE FROM eta_alerts".update.run.transact(xa).unit
+  private def clean(xa: Transactor[Task]): Task[Unit] = sql"DELETE FROM eta_alerts".update.run.transact(xa).unit
 
   def spec =
     suite("PostgresEtaAlertRepository")(
@@ -82,26 +79,26 @@ object PostgresEtaAlertRepositorySpec extends ZIOSpecDefault:
       },
       test("dedup is per (ride, driver): another driver is not yet alerted") {
         for {
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- seed(xa)
+          _    <- clean(xa)
+          ride <- seedRide(xa)
+          repo  = PostgresEtaAlertRepository(xa)
+          _    <- repo.markAlerted(ride, driver1)
+          d1   <- repo.isAlreadyAlerted(ride, driver1)
+          d2   <- repo.isAlreadyAlerted(ride, driver2)
+        } yield assertTrue(d1, !d2)
+      },
+      test("clear removes the alert so a fresh one can be sent") {
+        for {
           xa    <- ZIO.service[Transactor[Task]]
           _     <- seed(xa)
           _     <- clean(xa)
           ride  <- seedRide(xa)
           repo   = PostgresEtaAlertRepository(xa)
           _     <- repo.markAlerted(ride, driver1)
-          d1    <- repo.isAlreadyAlerted(ride, driver1)
-          d2    <- repo.isAlreadyAlerted(ride, driver2)
-        } yield assertTrue(d1, !d2)
-      },
-      test("clear removes the alert so a fresh one can be sent") {
-        for {
-          xa     <- ZIO.service[Transactor[Task]]
-          _      <- seed(xa)
-          _      <- clean(xa)
-          ride   <- seedRide(xa)
-          repo    = PostgresEtaAlertRepository(xa)
-          _      <- repo.markAlerted(ride, driver1)
-          _      <- repo.clear(ride)
-          after  <- repo.isAlreadyAlerted(ride, driver1)
+          _     <- repo.clear(ride)
+          after <- repo.isAlreadyAlerted(ride, driver1)
         } yield assertTrue(!after)
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock

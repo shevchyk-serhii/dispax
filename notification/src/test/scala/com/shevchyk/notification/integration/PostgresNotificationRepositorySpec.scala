@@ -19,9 +19,9 @@ import java.util.UUID
  */
 object PostgresNotificationRepositorySpec extends ZIOSpecDefault {
 
-  val companyId      = CompanyId(UUID.fromString("0000000E-0000-0000-0000-000000000001"))
-  val personId       = PersonId(UUID.fromString("0000000E-0000-0000-0000-000000000002"))
-  val otherPersonId  = PersonId(UUID.fromString("0000000E-0000-0000-0000-000000000003"))
+  val companyId     = CompanyId(UUID.fromString("0000000E-0000-0000-0000-000000000001"))
+  val personId      = PersonId(UUID.fromString("0000000E-0000-0000-0000-000000000002"))
+  val otherPersonId = PersonId(UUID.fromString("0000000E-0000-0000-0000-000000000003"))
 
   private def seedTestData(xa: Transactor[Task]): Task[Unit] =
     (for {
@@ -47,18 +47,17 @@ object PostgresNotificationRepositorySpec extends ZIOSpecDefault {
       isRead: Boolean = false,
       createdAt: Instant = Instant.now(),
       data: Option[String] = Some("""{"rideId":"abc"}""")
-  ): AppNotification =
-    AppNotification(
-      id = AppNotificationId.generate(),
-      personId = person,
-      companyId = companyId,
-      title = title,
-      body = "Your ride has been assigned to a driver",
-      notificationType = "ride_update",
-      data = data,
-      isRead = isRead,
-      createdAt = createdAt
-    )
+  ): AppNotification = AppNotification(
+    id = AppNotificationId.generate(),
+    personId = person,
+    companyId = companyId,
+    title = title,
+    body = "Your ride has been assigned to a driver",
+    notificationType = "ride_update",
+    data = data,
+    isRead = isRead,
+    createdAt = createdAt
+  )
 
   def spec =
     suite("PostgresNotificationRepository")(
@@ -136,15 +135,15 @@ object PostgresNotificationRepositorySpec extends ZIOSpecDefault {
       },
       test("markAsRead flips is_read with person isolation") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanNotifications(xa)
-          repo     = PostgresNotificationRepository(xa)
-          n        = makeNotification()
-          _       <- repo.save(n)
-          wrong   <- repo.markAsRead(n.id, otherPersonId)
-          right   <- repo.markAsRead(n.id, personId)
-          found   <- repo.findByPersonId(personId, 10, 0)
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanNotifications(xa)
+          repo   = PostgresNotificationRepository(xa)
+          n      = makeNotification()
+          _     <- repo.save(n)
+          wrong <- repo.markAsRead(n.id, otherPersonId)
+          right <- repo.markAsRead(n.id, personId)
+          found <- repo.findByPersonId(personId, 10, 0)
         } yield assertTrue(
           !wrong,
           right,
@@ -183,15 +182,15 @@ object PostgresNotificationRepositorySpec extends ZIOSpecDefault {
       },
       test("delete removes only the matching person's notification") {
         for {
-          xa     <- ZIO.service[Transactor[Task]]
-          _      <- seedTestData(xa)
-          _      <- cleanNotifications(xa)
-          repo    = PostgresNotificationRepository(xa)
-          n       = makeNotification()
-          _      <- repo.save(n)
-          wrong  <- repo.delete(n.id, otherPersonId)
-          right  <- repo.delete(n.id, personId)
-          found  <- repo.findByPersonId(personId, 10, 0)
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanNotifications(xa)
+          repo   = PostgresNotificationRepository(xa)
+          n      = makeNotification()
+          _     <- repo.save(n)
+          wrong <- repo.delete(n.id, otherPersonId)
+          right <- repo.delete(n.id, personId)
+          found <- repo.findByPersonId(personId, 10, 0)
         } yield assertTrue(
           !wrong,
           right,

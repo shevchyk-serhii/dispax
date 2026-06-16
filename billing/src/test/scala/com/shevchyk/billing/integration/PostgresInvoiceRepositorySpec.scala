@@ -249,28 +249,33 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
       // filter) and that per-company breakdowns split correctly.
       // -------------------------------------------------------------------------
       test("findAllPlatform returns invoices from both companies (cross-tenant)") {
-        val company2Id        = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
-        val clientCompany2Id  = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-000000000002"))
+        val company2Id       = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+        val clientCompany2Id = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-000000000002"))
         for {
-          xa   <- ZIO.service[Transactor[Task]]
-          _    <- seedTestData(xa)
-          _    <- (for {
-                    _ <- sql"""INSERT INTO companies (id, name, email)
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedTestData(xa)
+          _   <-
+            (for {
+              _ <-
+                sql"""INSERT INTO companies (id, name, email)
                                  VALUES (${company2Id.value}, 'Company 2 GmbH', 'c2@test.com')
                                  ON CONFLICT DO NOTHING""".update.run
-                    _ <- sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
+              _ <-
+                sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
                                  VALUES (${clientCompany2Id.value}, 'Client 2 GmbH', ${company2Id.value}, 'client2@test.com')
                                  ON CONFLICT DO NOTHING""".update.run
-                  } yield ()).transact(xa)
-          _    <- cleanInvoices(xa)
-          repo  = PostgresInvoiceRepository(xa)
+            } yield ()).transact(xa)
+          _   <- cleanInvoices(xa)
+          repo = PostgresInvoiceRepository(xa)
           // Company 1: 1 Draft invoice
-          _    <- repo.create(makeInvoice(number = "INV-2026-C1-001", status = InvoiceStatus.Draft))
+          _   <- repo.create(makeInvoice(number = "INV-2026-C1-001", status = InvoiceStatus.Draft))
           // Company 2: 1 Sent invoice
-          _    <- repo.create(makeInvoice(number = "INV-2026-C2-001", status = InvoiceStatus.Sent)
-                    .copy(clientCompanyId = clientCompany2Id, taxiCompanyId = company2Id))
-          all  <- repo.findAllPlatform(None, 100, 0)
-          nums  = all.map(_.number)
+          _   <- repo.create(
+                   makeInvoice(number = "INV-2026-C2-001", status = InvoiceStatus.Sent)
+                     .copy(clientCompanyId = clientCompany2Id, taxiCompanyId = company2Id)
+                 )
+          all <- repo.findAllPlatform(None, 100, 0)
+          nums = all.map(_.number)
         } yield assertTrue(
           // Both companies' invoices are returned — no company_id filter applied
           nums.contains("INV-2026-C1-001"),
@@ -279,24 +284,29 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
         )
       },
       test("findAllPlatform filters by status across all companies") {
-        val company2Id        = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
-        val clientCompany2Id  = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-000000000002"))
+        val company2Id       = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+        val clientCompany2Id = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-000000000002"))
         for {
           xa   <- ZIO.service[Transactor[Task]]
           _    <- seedTestData(xa)
-          _    <- (for {
-                    _ <- sql"""INSERT INTO companies (id, name, email)
+          _    <-
+            (for {
+              _ <-
+                sql"""INSERT INTO companies (id, name, email)
                                  VALUES (${company2Id.value}, 'Company 2 GmbH', 'c2@test.com')
                                  ON CONFLICT DO NOTHING""".update.run
-                    _ <- sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
+              _ <-
+                sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
                                  VALUES (${clientCompany2Id.value}, 'Client 2 GmbH', ${company2Id.value}, 'client2@test.com')
                                  ON CONFLICT DO NOTHING""".update.run
-                  } yield ()).transact(xa)
+            } yield ()).transact(xa)
           _    <- cleanInvoices(xa)
           repo  = PostgresInvoiceRepository(xa)
           _    <- repo.create(makeInvoice(number = "INV-DRAFT-C1", status = InvoiceStatus.Draft))
-          _    <- repo.create(makeInvoice(number = "INV-SENT-C2", status = InvoiceStatus.Sent)
-                    .copy(clientCompanyId = clientCompany2Id, taxiCompanyId = company2Id))
+          _    <- repo.create(
+                    makeInvoice(number = "INV-SENT-C2", status = InvoiceStatus.Sent)
+                      .copy(clientCompanyId = clientCompany2Id, taxiCompanyId = company2Id)
+                  )
           // Filter for Sent only — should return only company2's invoice
           sent <- repo.findAllPlatform(Some(InvoiceStatus.Sent), 100, 0)
         } yield assertTrue(
@@ -306,37 +316,46 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
         )
       },
       test("sumRevenueByCompany splits Paid invoice totals by company") {
-        val company2Id        = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
-        val clientCompany2Id  = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-000000000002"))
+        val company2Id       = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+        val clientCompany2Id = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-000000000002"))
         for {
           xa      <- ZIO.service[Transactor[Task]]
           _       <- seedTestData(xa)
-          _       <- (for {
-                       _ <- sql"""INSERT INTO companies (id, name, email)
+          _       <-
+            (for {
+              _ <-
+                sql"""INSERT INTO companies (id, name, email)
                                     VALUES (${company2Id.value}, 'Company 2 GmbH', 'c2@test.com')
                                     ON CONFLICT DO NOTHING""".update.run
-                       _ <- sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
+              _ <-
+                sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
                                     VALUES (${clientCompany2Id.value}, 'Client 2 GmbH', ${company2Id.value}, 'client2@test.com')
                                     ON CONFLICT DO NOTHING""".update.run
-                     } yield ()).transact(xa)
+            } yield ()).transact(xa)
           _       <- cleanInvoices(xa)
           repo     = PostgresInvoiceRepository(xa)
           now      = Instant.now()
           from     = now.minusSeconds(3600 * 24 * 7)
           to       = now.plusSeconds(3600)
           // Company 1: Paid invoice worth 300
-          _       <- repo.create(makeInvoice(number = "INV-PAID-C1", status = InvoiceStatus.Paid)
-                       .copy(totalAmount = BigDecimal("300.00")))
+          _       <- repo.create(
+                       makeInvoice(number = "INV-PAID-C1", status = InvoiceStatus.Paid)
+                         .copy(totalAmount = BigDecimal("300.00"))
+                     )
           // Company 2: Paid invoice worth 500
-          _       <- repo.create(makeInvoice(number = "INV-PAID-C2", status = InvoiceStatus.Paid)
-                       .copy(
-                         clientCompanyId = clientCompany2Id,
-                         taxiCompanyId = company2Id,
-                         totalAmount = BigDecimal("500.00")
-                       ))
+          _       <- repo.create(
+                       makeInvoice(number = "INV-PAID-C2", status = InvoiceStatus.Paid)
+                         .copy(
+                           clientCompanyId = clientCompany2Id,
+                           taxiCompanyId = company2Id,
+                           totalAmount = BigDecimal("500.00")
+                         )
+                     )
           // Draft invoice must NOT count towards revenue
-          _       <- repo.create(makeInvoice(number = "INV-DRAFT-C1", status = InvoiceStatus.Draft)
-                       .copy(totalAmount = BigDecimal("999.00")))
+          _       <- repo.create(
+                       makeInvoice(number = "INV-DRAFT-C1", status = InvoiceStatus.Draft)
+                         .copy(totalAmount = BigDecimal("999.00"))
+                     )
           revenue <- repo.sumRevenueByCompany(from, to)
         } yield assertTrue(
           // Company 1 and Company 2 appear separately; draft invoice excluded
@@ -345,42 +364,55 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
         )
       },
       test("countOverdueByCompany counts sent invoices past due date by company") {
-        val company2Id        = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
-        val clientCompany2Id  = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-000000000002"))
+        val company2Id       = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+        val clientCompany2Id = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-000000000002"))
         for {
-          xa     <- ZIO.service[Transactor[Task]]
-          _      <- seedTestData(xa)
-          _      <- (for {
-                      _ <- sql"""INSERT INTO companies (id, name, email)
+          xa       <- ZIO.service[Transactor[Task]]
+          _        <- seedTestData(xa)
+          _        <-
+            (for {
+              _ <-
+                sql"""INSERT INTO companies (id, name, email)
                                    VALUES (${company2Id.value}, 'Company 2 GmbH', 'c2@test.com')
                                    ON CONFLICT DO NOTHING""".update.run
-                      _ <- sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
+              _ <-
+                sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
                                    VALUES (${clientCompany2Id.value}, 'Client 2 GmbH', ${company2Id.value}, 'client2@test.com')
                                    ON CONFLICT DO NOTHING""".update.run
-                    } yield ()).transact(xa)
-          _      <- cleanInvoices(xa)
-          repo    = PostgresInvoiceRepository(xa)
-          pastDue = LocalDate.of(2020, 1, 1) // safely in the past
+            } yield ()).transact(xa)
+          _        <- cleanInvoices(xa)
+          repo      = PostgresInvoiceRepository(xa)
+          pastDue   = LocalDate.of(2020, 1, 1)   // safely in the past
           futureDue = LocalDate.of(2099, 12, 31) // safely in the future
           // Company 1: 2 overdue (sent + past due date)
-          _      <- repo.create(makeInvoice(number = "INV-OVD-C1-1", status = InvoiceStatus.Sent)
-                     .copy(dueDate = Some(pastDue)))
-          _      <- repo.create(makeInvoice(number = "INV-OVD-C1-2", status = InvoiceStatus.Sent)
-                     .copy(dueDate = Some(pastDue)))
+          _        <- repo.create(
+                        makeInvoice(number = "INV-OVD-C1-1", status = InvoiceStatus.Sent)
+                          .copy(dueDate = Some(pastDue))
+                      )
+          _        <- repo.create(
+                        makeInvoice(number = "INV-OVD-C1-2", status = InvoiceStatus.Sent)
+                          .copy(dueDate = Some(pastDue))
+                      )
           // Company 1: 1 sent but NOT overdue (future due date) — must NOT count
-          _      <- repo.create(makeInvoice(number = "INV-NOT-OVD-C1", status = InvoiceStatus.Sent)
-                     .copy(dueDate = Some(futureDue)))
+          _        <- repo.create(
+                        makeInvoice(number = "INV-NOT-OVD-C1", status = InvoiceStatus.Sent)
+                          .copy(dueDate = Some(futureDue))
+                      )
           // Company 2: 1 overdue
-          _      <- repo.create(makeInvoice(number = "INV-OVD-C2", status = InvoiceStatus.Sent)
-                     .copy(
-                       clientCompanyId = clientCompany2Id,
-                       taxiCompanyId = company2Id,
-                       dueDate = Some(pastDue)
-                     ))
+          _        <- repo.create(
+                        makeInvoice(number = "INV-OVD-C2", status = InvoiceStatus.Sent)
+                          .copy(
+                            clientCompanyId = clientCompany2Id,
+                            taxiCompanyId = company2Id,
+                            dueDate = Some(pastDue)
+                          )
+                      )
           // Draft invoice with past due date — must NOT count (wrong status)
-          _      <- repo.create(makeInvoice(number = "INV-DRAFT-C1", status = InvoiceStatus.Draft)
-                     .copy(dueDate = Some(pastDue)))
-          counts <- repo.countOverdueByCompany()
+          _        <- repo.create(
+                        makeInvoice(number = "INV-DRAFT-C1", status = InvoiceStatus.Draft)
+                          .copy(dueDate = Some(pastDue))
+                      )
+          counts   <- repo.countOverdueByCompany()
         } yield assertTrue(
           // Company 1 has 2 overdue; company 2 has 1; both appear in the map
           counts.getOrElse(testCompanyId.value, 0) == 2,

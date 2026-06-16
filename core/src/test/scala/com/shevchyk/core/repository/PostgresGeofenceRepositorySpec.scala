@@ -29,9 +29,11 @@ object PostgresGeofenceRepositorySpec extends ZIOSpecDefault {
 
   private def seed(xa: Transactor[Task]): Task[Unit] =
     (for {
-      _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'geo-test@example.com')
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES (${testCompanyId.value}, 'Test GmbH', 'geo-test@example.com')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO companies (id, name, email) VALUES (${otherCompanyId.value}, 'Other GmbH', 'geo-other@example.com')
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES (${otherCompanyId.value}, 'Other GmbH', 'geo-other@example.com')
                  ON CONFLICT DO NOTHING""".update.run
       _ <- insertPerson(driverId, "geo-driver@test.com", testCompanyId)
       _ <- insertPerson(otherDriverId, "geo-driver2@test.com", testCompanyId)
