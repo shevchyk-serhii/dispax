@@ -1,6 +1,8 @@
 package com.shevchyk.schedule.domain
 
 import com.shevchyk.core.domain.*
+import com.shevchyk.core.openapi.{ApiError, ErrorMapper}
+import sttp.model.StatusCode
 import java.time.{Instant, LocalDate, LocalTime}
 
 enum ScheduleDayStatus:
@@ -57,4 +59,21 @@ enum ScheduleError extends Throwable:
   case CompanyMismatch(expected: CompanyId, actual: CompanyId)
   case DatabaseError(cause: Throwable)
 
-object ScheduleError
+object ScheduleError:
+  // HTTP status mapping lives next to the error definition; the Tapir endpoints
+  // delegate to this via `ErrorMapper.fromThrowable` instead of repeating the match.
+  given ErrorMapper[ScheduleError] = ErrorMapper.instance {
+    case ValidationError(message)             => (StatusCode.BadRequest, ApiError(message))
+    case ScheduleDayNotFound(id)              =>
+      (StatusCode.NotFound, ApiError(s"Schedule day not found: ${id.value}"))
+    case DriverNotFound(id)                   =>
+      (StatusCode.NotFound, ApiError(s"Driver not found: ${id.value}"))
+    case DuplicateScheduleDay(driverId, date) =>
+      (StatusCode.Conflict, ApiError(s"Driver ${driverId.value} already has a schedule for $date"))
+    case InvalidStatusTransition(from, to)    =>
+      (StatusCode.Conflict, ApiError(s"Cannot transition from $from to $to"))
+    case CompanyMismatch(_, _)                =>
+      (StatusCode.Forbidden, ApiError("Schedule day belongs to a different company"))
+    case DatabaseError(_)                     =>
+      (StatusCode.InternalServerError, ApiError("Internal server error"))
+  }
