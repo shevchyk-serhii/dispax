@@ -63,18 +63,34 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
 
   private val testCompanyId = UUID.fromString("10101010-1010-1010-1010-101010101010")
 
+  // A company pre-seeded in the stub so softDelete can return Some(...)
+  private val knownCompany = Company(
+    id = CompanyId(testCompanyId),
+    name = "Test GmbH",
+    email = "test@company.de",
+    phone = "+491234567890",
+    address = "Leopoldstraße 1, München",
+    status = CompanyStatus.Active,
+    subscriptionPlan = SubscriptionPlan.Free
+  )
+
   // ---------------------------------------------------------------------------
   // In-memory repository stubs (minimal — just enough for the route to respond)
   // ---------------------------------------------------------------------------
 
   private val stubCompanyRepo: ZLayer[Any, Nothing, CompanyRepository] = ZLayer.succeed(
     new CompanyRepository:
-      def findAll()                  = ZIO.succeed(Nil)
-      def findById(id: CompanyId)    = ZIO.succeed(None)
-      def create(c: Company)         = ZIO.succeed(c)
-      def update(c: Company)         = ZIO.succeed(c)
-      def countByStatus()            = ZIO.succeed(Map.empty)
-      def softDelete(id: CompanyId)  = ZIO.succeed(None)
+      def findAll()                 = ZIO.succeed(Nil)
+      def findById(id: CompanyId)   = ZIO.succeed(None)
+      def create(c: Company)        = ZIO.succeed(c)
+      def update(c: Company)        = ZIO.succeed(c)
+      def countByStatus()           = ZIO.succeed(Map.empty)
+      // Returns the known company (Inactive) when the known testCompanyId is requested;
+      // returns None (→ 404) for any other id — exercises both the 200 and 404 branches.
+      def softDelete(id: CompanyId) =
+        if id == CompanyId(testCompanyId)
+        then ZIO.succeed(Some(knownCompany.copy(status = CompanyStatus.Inactive)))
+        else ZIO.succeed(None)
   )
 
   private val stubInvoiceRepo: ZLayer[Any, Nothing, InvoiceRepository] = ZLayer.succeed(
@@ -371,6 +387,47 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
                        .addHeader(Header.ContentType(MediaType.application.json))
             resp  <- run(req)
           } yield assertTrue(resp.status == Status.Forbidden)
+        }
+      ),
+      // -----------------------------------------------------------------------
+      // DELETE /api/superadmin/companies/{id}  (soft-delete)
+      // -----------------------------------------------------------------------
+      suite("DELETE /api/superadmin/companies/{id}")(
+        test("SuperAdmin JWT + existing company → 200 with Inactive status in body") {
+          for {
+            token   <- generateToken(PersonRole.SuperAdmin, cid = None)
+            req      = Request
+                         .delete(URL.decode(s"/api/superadmin/companies/$testCompanyId").toOption.get)
+                         .addHeader(Header.Authorization.Bearer(token))
+            resp    <- run(req)
+            bodyStr <- resp.body.asString
+          } yield assertTrue(
+            resp.status == Status.Ok,
+            bodyStr.contains("Inactive")
+          )
+        },
+        test("Admin JWT → 403 on delete (escape-hatch negative test [CRITICAL])") {
+          for {
+            token <- generateToken(PersonRole.Admin, cid = Some(testCompanyId))
+            req    = Request
+                       .delete(URL.decode(s"/api/superadmin/companies/$testCompanyId").toOption.get)
+                       .addHeader(Header.Authorization.Bearer(token))
+            resp  <- run(req)
+          } yield assertTrue(resp.status == Status.Forbidden)
+        },
+        test("SuperAdmin JWT + unknown company id → 404") {
+          val unknownId = UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff")
+          for {
+            token <- generateToken(PersonRole.SuperAdmin, cid = None)
+            req    = Request
+                       .delete(URL.decode(s"/api/superadmin/companies/$unknownId").toOption.get)
+                       .addHeader(Header.Authorization.Bearer(token))
+            resp  <- run(req)
+          } yield assertTrue(resp.status == Status.NotFound)
+        },
+        test("no token → 401 on delete") {
+          val req = Request.delete(URL.decode(s"/api/superadmin/companies/$testCompanyId").toOption.get)
+          run(req).map(resp => assertTrue(resp.status == Status.Unauthorized))
         }
       )
     ).provide(testLayers) @@ TestAspect.sequential

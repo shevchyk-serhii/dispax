@@ -27,14 +27,13 @@ class InMemoryCompanyRepository extends CompanyRepository:
       .map((k, v) => k -> v.size)
   )
 
-  override def softDelete(id: CompanyId): Task[Option[Company]] =
-    store.modifyZIO { m =>
-      m.get(id) match
-        case None          => ZIO.succeed((None, m))
-        case Some(company) =>
-          val updated = company.copy(status = CompanyStatus.Inactive)
-          ZIO.succeed((Some(updated), m.updated(id, updated)))
-    }
+  override def softDelete(id: CompanyId): Task[Option[Company]] = store.modifyZIO { m =>
+    m.get(id) match
+      case None          => ZIO.succeed((None, m))
+      case Some(company) =>
+        val updated = company.copy(status = CompanyStatus.Inactive)
+        ZIO.succeed((Some(updated), m.updated(id, updated)))
+  }
 
 object InMemoryCompanyRepository:
   val layer: ZLayer[Any, Nothing, CompanyRepository] = ZLayer.succeed(new InMemoryCompanyRepository)
