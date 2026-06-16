@@ -55,3 +55,18 @@ Feature: SuperAdmin Company Management
       {"name":"Hacker Corp","email":"hack@evil.de","phone":"+491111","address":"Hacker Str."}
       """
     Then the response status should be 403
+
+  # ── Soft-delete (deactivate) scenarios ───────────────────────────────────
+
+  Scenario: SuperAdmin deactivates a company — endpoint is accessible (escape-hatch allows)
+    # The in-memory stub returns 404 because no real company is seeded, but the
+    # 404 proves the SuperAdmin passed the role-gate. A 200 with Inactive body
+    # is verified at the HTTP unit-test level (SuperAdminApiSpec).
+    Given I am authenticated as a superadmin
+    When I send a DELETE request to "/api/superadmin/companies/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    Then the response status should be 404
+
+  Scenario: Admin cannot deactivate a company via superadmin endpoint (escape-hatch negative test)
+    Given I am authenticated as an admin
+    When I send a DELETE request to "/api/superadmin/companies/10101010-1010-1010-1010-101010101010"
+    Then the response status should be 403

@@ -356,6 +356,64 @@ class AppLocalizationsDe extends AppLocalizations {
   String get termsOfService => 'Nutzungsbedingungen';
 
   @override
+  String get superAdminDashboard => 'Plattform-Admin';
+
+  @override
+  String get companies => 'Unternehmen';
+
+  @override
+  String get companiesList => 'Unternehmensliste';
+
+  @override
+  String get platformAnalytics => 'Plattform-Analyse';
+
+  @override
+  String get platformRevenue => 'Plattformumsatz';
+
+  @override
+  String get activeConnections => 'Aktive Verbindungen';
+
+  @override
+  String get companyStatus => 'Unternehmensstatus';
+
+  @override
+  String get subscriptionPlan => 'Abonnementplan';
+
+  @override
+  String get billingAnalytics => 'Abrechnungsanalyse';
+
+  @override
+  String get connectionAnalytics => 'Verbindungsanalyse';
+
+  @override
+  String get superAdminSettings => 'Plattform-Einstellungen';
+
+  @override
+  String get addCompany => 'Unternehmen hinzufügen';
+
+  @override
+  String get editCompany => 'Unternehmen bearbeiten';
+
+  @override
+  String get deleteCompany => 'Unternehmen deaktivieren';
+
+  @override
+  String get deactivateCompanyConfirm =>
+      'Möchten Sie dieses Unternehmen wirklich deaktivieren? Das Unternehmen wird als Inaktiv markiert, aber alle Daten bleiben erhalten.';
+
+  @override
+  String get companyName => 'Unternehmensname';
+
+  @override
+  String get companyEmail => 'Unternehmens-E-Mail';
+
+  @override
+  String get companyPhone => 'Unternehmenstelefon';
+
+  @override
+  String get companyAddress => 'Unternehmensadresse';
+
+  @override
   String get checkpointLanded => 'Gelandet';
 
   @override

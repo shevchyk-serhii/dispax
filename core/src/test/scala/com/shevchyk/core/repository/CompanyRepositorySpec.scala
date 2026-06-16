@@ -97,5 +97,27 @@ object CompanyRepositorySpec extends ZIOSpecDefault:
           repo   <- ZIO.service[CompanyRepository]
           counts <- repo.countByStatus()
         } yield assertTrue(counts.isEmpty)
+      },
+      test("softDelete marks an existing company Inactive and returns Some(company)") {
+        for {
+          repo   <- ZIO.service[CompanyRepository]
+          company = makeCompany(name = "Soft GmbH", status = CompanyStatus.Active)
+          _      <- repo.create(company)
+          result <- repo.softDelete(company.id)
+          found  <- repo.findById(company.id)
+        } yield assertTrue(
+          result.isDefined,
+          result.get.id == company.id,
+          result.get.status == CompanyStatus.Inactive,
+          // The in-memory store must reflect the change
+          found.isDefined,
+          found.get.status == CompanyStatus.Inactive
+        )
+      },
+      test("softDelete of a non-existent company returns None") {
+        for {
+          repo   <- ZIO.service[CompanyRepository]
+          result <- repo.softDelete(CompanyId(UUID.randomUUID()))
+        } yield assertTrue(result.isEmpty)
       }
     ).provide(InMemoryCompanyRepository.layer) @@ TestAspect.sequential

@@ -1208,11 +1208,12 @@ object TestApplication extends ZIOAppDefault:
       ZLayer.succeed[CompanyRepository] {
         import com.shevchyk.core.domain.{Company, CompanyId, CompanyStatus, SubscriptionPlan}
         new CompanyRepository:
-          def findAll(): Task[List[Company]]                 = ZIO.succeed(Nil)
-          def findById(id: CompanyId): Task[Option[Company]] = ZIO.succeed(None)
-          def create(company: Company): Task[Company]        = ZIO.succeed(company)
-          def update(company: Company): Task[Company]        = ZIO.succeed(company)
-          def countByStatus(): Task[Map[CompanyStatus, Int]] = ZIO.succeed(Map.empty)
+          def findAll(): Task[List[Company]]                   = ZIO.succeed(Nil)
+          def findById(id: CompanyId): Task[Option[Company]]   = ZIO.succeed(None)
+          def create(company: Company): Task[Company]          = ZIO.succeed(company)
+          def update(company: Company): Task[Company]          = ZIO.succeed(company)
+          def countByStatus(): Task[Map[CompanyStatus, Int]]   = ZIO.succeed(Map.empty)
+          def softDelete(id: CompanyId): Task[Option[Company]] = ZIO.succeed(None)
       },
       // Core ClientCompanyRepository (used by ClientCompanyRoutes in api/) — seeded with test data
       ZLayer.succeed[ClientCompanyRepository] {

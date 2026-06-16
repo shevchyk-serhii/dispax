@@ -39,6 +39,12 @@ trait CompanyRepository:
    */
   def countByStatus(): Task[Map[CompanyStatus, Int]]
 
+  /**
+   * Soft-delete a company by marking its status as [[CompanyStatus.Inactive]]. Returns the updated company if found, or
+   * [[None]] if no row with the given id exists. Cross-tenant — no companyId filter by design (SuperAdmin only).
+   */
+  def softDelete(id: CompanyId): Task[Option[Company]]
+
 object CompanyRepository:
 
   val postgresLayer: ZLayer[doobie.Transactor[Task], Nothing, CompanyRepository] = ZLayer.fromFunction(

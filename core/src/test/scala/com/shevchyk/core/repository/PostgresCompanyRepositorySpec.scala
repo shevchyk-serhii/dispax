@@ -114,5 +114,34 @@ object PostgresCompanyRepositorySpec extends ZIOSpecDefault:
           repo   = PostgresCompanyRepository(xa)
           found <- repo.findById(CompanyId(UUID.randomUUID()))
         } yield assertTrue(found.isEmpty)
+      },
+      test("softDelete sets status to Inactive in the database") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- clean(xa)
+          repo     = PostgresCompanyRepository(xa)
+          company  = makeCompany(
+                       name = "Delete GmbH",
+                       email = "delete@superadmin-test.de",
+                       status = CompanyStatus.Active
+                     )
+          created <- repo.create(company)
+          result  <- repo.softDelete(created.id)
+          found   <- repo.findById(created.id)
+        } yield assertTrue(
+          result.isDefined,
+          result.get.id == created.id,
+          result.get.status == CompanyStatus.Inactive,
+          // Row persists — soft delete, not hard delete
+          found.isDefined,
+          found.get.status == CompanyStatus.Inactive
+        )
+      },
+      test("softDelete of a non-existent id returns None") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          repo    = PostgresCompanyRepository(xa)
+          result <- repo.softDelete(CompanyId(UUID.randomUUID()))
+        } yield assertTrue(result.isEmpty)
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
