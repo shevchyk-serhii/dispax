@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev run-test prod test test-bdd test-all clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-integration test-bdd test-all clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -54,9 +54,19 @@ run-test:
 test-bdd:
 	sbt cucumber
 
-# Run all unit + integration tests (excludes Cucumber)
+# Run all unit + integration tests (excludes Cucumber).
+# Integration specs share one reusable Postgres container (see PostgresTestContainer):
+# the first spec starts it, the rest attach, so the whole suite pays a single
+# container start + Flyway migration instead of one per spec.
 test:
-	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test"
+	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test; billing/test"
+
+# Integration specs only: the DB-backed specs that need a real Postgres
+# (shared via the reusable container). Matches the *Postgres* repository specs
+# plus the ride module's named integration specs.
+INTEGRATION_SPECS := *Postgres* *IntegrationSpec DriverEarningsSpec
+test-integration:
+	sbt "core/testOnly $(INTEGRATION_SPECS); auth/testOnly $(INTEGRATION_SPECS); ride/testOnly $(INTEGRATION_SPECS); driver/testOnly $(INTEGRATION_SPECS); notification/testOnly $(INTEGRATION_SPECS); schedule/testOnly $(INTEGRATION_SPECS); billing/testOnly $(INTEGRATION_SPECS)"
 
 # Run Flutter integration tests against local TestApplication.
 # Backend runs on TEST_PORT (default 8090) so it doesn't collide with a dev
