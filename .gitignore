@@ -114,3 +114,7 @@ web/android/app/src/flutter_*.log
 
 ### dev-flow agent artifacts ###
 docs/agent/
+
+### Flutter env configs — machine-specific (committed: staging.json, prod.json) ###
+web/config/dev.json
+web/config/lan.json
