@@ -14,6 +14,10 @@ class InMemoryPersonRepository extends PersonRepository:
 
   override def findById(id: PersonId): Task[Option[Person]] = people.get.map(_.get(id))
 
+  override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]] = people.get.map(
+    _.get(id).filter(_.companyId.contains(companyId))
+  )
+
   override def findByEmail(email: String): Task[Option[Person]] = people.get.map(_.values.find(_.email == email))
 
   override def findByRole(role: PersonRole): Task[List[Person]] = people.get.map(_.values.filter(_.role == role).toList)

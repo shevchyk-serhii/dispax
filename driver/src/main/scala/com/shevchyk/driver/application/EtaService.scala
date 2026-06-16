@@ -64,12 +64,14 @@ object EtaService:
                 geocoding.enrichLocation(ride.pickupLocation).orElse(ZIO.succeed(ride.pickupLocation))
               else ZIO.succeed(ride.pickupLocation)
             eta       <-
+              // Resolve a real destination: client's live position first, else the pickup
+              // coordinates. If neither is known we have no destination — return no ETA
+              // rather than computing one against (0,0) ("Null Island").
               (for {
-                dLat   <- driverLoc.map(_.latitude)
-                dLng   <- driverLoc.map(_.longitude)
-                destLat = clientLoc.map(_.latitude).getOrElse(pickup.latitude.getOrElse(0.0))
-                destLng = clientLoc.map(_.longitude).getOrElse(pickup.longitude.getOrElse(0.0))
-                if destLat != 0.0 || destLng != 0.0
+                dLat    <- driverLoc.map(_.latitude)
+                dLng    <- driverLoc.map(_.longitude)
+                destLat <- clientLoc.map(_.latitude).orElse(pickup.latitude)
+                destLng <- clientLoc.map(_.longitude).orElse(pickup.longitude)
               } yield (dLat, dLng, destLat, destLng)) match
                 case Some((dLat, dLng, destLat, destLng)) =>
                   hereRouting

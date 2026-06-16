@@ -71,4 +71,6 @@ object PostgresPersonSuperAdminSpec extends ZIOSpecDefault:
           supers.forall(_.role == PersonRole.SuperAdmin)
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )

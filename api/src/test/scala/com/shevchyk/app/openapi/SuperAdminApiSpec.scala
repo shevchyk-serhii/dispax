@@ -161,6 +161,7 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
       def findByDriverId(driverId: PersonId): Task[List[Ride]]                                                     = ZIO.succeed(Nil)
       def findByCompanyId(companyId: CompanyId): Task[List[Ride]]                                                  = ZIO.succeed(Nil)
       def update(ride: Ride): Task[Ride]                                                                           = ZIO.succeed(ride)
+      def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]                             = ZIO.succeed(true)
       def delete(id: RideId): Task[Unit]                                                                           = ZIO.unit
       def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]                              = ZIO.succeed(Map.empty)
       def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                                              = ZIO.succeed(BigDecimal(0))

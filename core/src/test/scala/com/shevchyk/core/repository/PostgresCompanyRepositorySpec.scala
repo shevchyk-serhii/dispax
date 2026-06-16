@@ -144,4 +144,6 @@ object PostgresCompanyRepositorySpec extends ZIOSpecDefault:
           result <- repo.softDelete(CompanyId(UUID.randomUUID()))
         } yield assertTrue(result.isEmpty)
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )

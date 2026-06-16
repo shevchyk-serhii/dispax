@@ -11,6 +11,7 @@ import com.shevchyk.ride.domain.{
   PaymentStatus,
   PaymentMethod
 }
+import cats.data.NonEmptyList
 import cats.syntax.apply.*
 import doobie.*
 import doobie.implicits.*
@@ -242,6 +243,26 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
     updateSql
       .transact(xa)
       .as(ride)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
+  override def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean] = {
+    val statusList  = expectedStatuses.toList
+    val whereStatus =
+      statusList match {
+        case Nil          => fr"TRUE"
+        case head :: tail => Fragments.in(fr"status", NonEmptyList(head, tail))
+      }
+    (sql"""
+      UPDATE rides SET
+        driver_id = ${ride.driverId.map(_.value)},
+        status = ${ride.status},
+        is_vip_ride = ${ride.isVipRide},
+        preferred_driver_used = ${ride.preferredDriverUsed},
+        updated_at = NOW()
+      WHERE id = ${ride.id.value} AND """ ++ whereStatus).update.run
+      .transact(xa)
+      .map(_ > 0)
       .mapError(ex => RideError.DatabaseError(ex))
   }
 

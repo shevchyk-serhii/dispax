@@ -56,7 +56,9 @@ object FcmService:
                 .build()
               messaging.send(message)
             }
-            .tapError(e => ZIO.logWarning(s"FCM send failed for token $token: ${e.getMessage}"))
+            // Log only a short token prefix: a full FCM device token is sensitive and
+            // could be replayed to push fake notifications to the user's device.
+            .tapError(e => ZIO.logWarning(s"FCM send failed for token ${token.take(8)}…: ${e.getMessage}"))
             .ignore
         case None            => ZIO.logInfo(s"FCM not configured, skipping push: ${notification.title}")
 

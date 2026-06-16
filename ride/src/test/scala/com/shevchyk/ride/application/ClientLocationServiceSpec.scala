@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
  * No-op stub for AirportCheckpointService used in ClientLocationService tests.
  */
 class NoOpAirportCheckpointService extends AirportCheckpointService:
-  def checkGeofenceForLanded(ride: Ride, lat: Double, lon: Double): UIO[Option[AirportCheckpoint]]                = ZIO.succeed(None)
+  def checkGeofenceForLanded(ride: Ride, lat: Double, lon: Double): UIO[Option[AirportCheckpoint]] = ZIO.succeed(None)
 
   def markCheckpoint(ride: Ride, requestedCheckpoint: AirportCheckpoint, markedBy: PersonId): IO[RideError, Unit] =
     ZIO.unit
