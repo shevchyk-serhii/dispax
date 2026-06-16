@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
@@ -231,9 +233,8 @@ class SuperAdminAirportBloc
     try {
       final response = await _api.get('/superadmin/airports');
       if (response.statusCode == 200) {
-        final List<dynamic> body = (response.body as dynamic) is List
-            ? response.body as List
-            : [];
+        final decoded = jsonDecode(response.body);
+        final List<dynamic> body = decoded is List ? decoded : [];
         emit(
           AirportsLoaded(
             body
