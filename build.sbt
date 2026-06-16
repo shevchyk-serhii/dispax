@@ -67,6 +67,14 @@ lazy val httpDependencies = Seq(
   "dev.zio" %% "zio-http" % "3.0.1"
 )
 
+// Sentry error tracking. sentry-logback pulls in the sentry core SDK and wires a
+// logback appender, so ERROR/WARN logs (every ZIO.logError) are reported. Only the
+// root (api) module needs it — that's the entry point that owns logback.xml and the
+// global HTTP error handler. Inert unless SENTRY_DSN is set.
+lazy val sentryDependencies = Seq(
+  "io.sentry" % "sentry-logback" % "8.41.0"
+)
+
 lazy val jsonDependencies = Seq(
   "dev.zio" %% "zio-json" % "0.7.3"
 )
@@ -240,7 +248,7 @@ lazy val root = (project in file("."))
     Compile / resourceDirectory := baseDirectory.value / "api" / "src" / "main" / "resources",
     Test / scalaSource          := baseDirectory.value / "api" / "src" / "test" / "scala",
     Test / resourceDirectory    := baseDirectory.value / "api" / "src" / "test" / "resources",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies ++ bcryptDependencies ++ tapirDependencies ++ tapirServerDependencies ++ testDependencies,
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ configDependencies ++ bcryptDependencies ++ tapirDependencies ++ tapirServerDependencies ++ sentryDependencies ++ testDependencies,
     testFrameworks ++= Seq(
       new TestFramework("zio.test.sbt.ZTestFramework"),
       new TestFramework("com.novocode.junit.JUnitFramework")

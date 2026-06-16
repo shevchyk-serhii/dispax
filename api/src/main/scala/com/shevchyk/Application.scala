@@ -34,7 +34,7 @@ import com.shevchyk.billing.repository.{
   ClientCompanyRepository => BillingClientCompanyRepository,
   CompanyBillingProfileRepository
 }
-import com.shevchyk.app.routes.{WebSocketRoutes, DevRoutes}
+import com.shevchyk.app.routes.{WebSocketRoutes, DevRoutes, HealthRoutes}
 import com.shevchyk.core.repository.{
   PersonRepository,
   CompanyRepository,
@@ -66,7 +66,7 @@ import com.shevchyk.core.repository.{
   PostgresNotificationPreferenceRepository
 }
 import com.shevchyk.notification.application.{FcmService, PushNotificationListener, LoggingEmailSmsService}
-import com.shevchyk.app.{ReminderScheduler, InvoiceReminderScheduler, PredictiveEtaMonitor}
+import com.shevchyk.app.{ReminderScheduler, InvoiceReminderScheduler, PredictiveEtaMonitor, SentryInit}
 import com.shevchyk.notification.repository.{
   CheckpointNotificationRepository,
   InMemoryFcmTokenRepository,
@@ -93,6 +93,7 @@ object Application extends ZIOAppDefault:
   // the same — driven by APP_ENV alone, no `-Dconfig.resource` flag required.
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     ZLayer(ZIO.succeed(Environment.ensureConfigResource())).unit >>>
+      ZLayer(ZIO.succeed(SentryInit.init())).unit >>>
       (Runtime.removeDefaultLoggers >>> SLF4J.slf4j)
 
   // Ensure every response declares UTF-8 in its Content-Type. Without an explicit
@@ -122,9 +123,9 @@ object Application extends ZIOAppDefault:
   // origin-reflection is safe here.
   private val corsMiddleware: Middleware[Any] = Middleware.cors
 
-  private val healthRoutes = Routes(
-    Method.GET / "health" -> handler((_: Request) => ZIO.succeed(Response.text("Dispax Modular API - OK")))
-  )
+  // Liveness (GET /health) + readiness (GET /health/ready, checks the DB). Defined
+  // in HealthRoutes; readiness needs the Transactor[Task] already in the environment.
+  private val healthRoutes = HealthRoutes.routes
 
   // Development-only test-support endpoint (POST /api/dev/reset). Guarded by
   // Environment.isDevelopment inside the handler, so it is inert in production.
@@ -150,7 +151,8 @@ object Application extends ZIOAppDefault:
         PredictiveEtaMonitor.start *>
         ZIO.logInfo("Starting Dispax API Server (PostgreSQL)...") *>
         ZIO.logInfo("📋 Available APIs:") *>
-        ZIO.logInfo("  🔍 /health - Health check") *>
+        ZIO.logInfo("  🔍 /health - Liveness check") *>
+        ZIO.logInfo("  🩺 /health/ready - Readiness check (DB)") *>
         ZIO.logInfo("  🔐 /api/auth/login - Simple login endpoint") *>
         ZIO.logInfo("  👥 /api/users - User management endpoints") *>
         ZIO.logInfo("  🚗 /api/rides - Rich ride data (PostgreSQL)") *>
@@ -173,6 +175,12 @@ object Application extends ZIOAppDefault:
             .handleErrorCauseZIO { cause =>
               ZIO
                 .logErrorCause("Unhandled server error", cause)
+                // Report the underlying defect explicitly so Sentry groups by the real
+                // stack trace, not just the log message. The error channel here is a
+                // Response (handled failures), so only unexpected defects carry a
+                // Throwable — those are exactly what we want in Sentry. No-op when
+                // SENTRY_DSN is unset; logErrorCause above still covers breadcrumbs.
+                .zipLeft(ZIO.foreachDiscard(cause.dieOption)(t => ZIO.succeed(SentryInit.capture(t))))
                 .as(
                   Response(Status.InternalServerError, body = Body.fromString("Internal server error"))
                 )
