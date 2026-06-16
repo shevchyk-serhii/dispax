@@ -69,6 +69,21 @@ object PostgresTestContainer {
   }
 
   /**
+   * Serialises spec access to the shared database. zio-test runs a module's spec
+   * classes concurrently within one forked JVM (sbt's `parallelExecution := false`
+   * only serialises tasks, not specs), so two specs would otherwise overlap on the
+   * single `public` schema: one spec's [[resetDatabase]] TRUNCATE wiped a
+   * neighbour's just-inserted fixtures, surfacing as random FK violations and
+   * "database gone" errors. Holding this permit for a spec's whole lifetime (from
+   * Transactor acquire to release) gives each spec exclusive use of the DB while
+   * still sharing the long-lived container. One permit shared via this object is
+   * visible to every spec in the JVM. The Unsafe init is fine: it runs once at
+   * class-load, before any layer is built.
+   */
+  private val dbPermit: Semaphore =
+    Unsafe.unsafe(implicit u => Runtime.default.unsafe.run(Semaphore.make(1)).getOrThrow())
+
+  /**
    * Provides a Transactor backed by the shared container, running Flyway
    * migrations (production schema only) to ensure the schema is present. The
    * Hikari pool is closed when the layer is released so per-spec pools don't pile
@@ -76,6 +91,9 @@ object PostgresTestContainer {
    */
   val layer: ZLayer[Any, Throwable, Transactor[Task]] = ZLayer.scoped {
     for {
+      // Hold exclusive DB access for this spec's whole lifetime (released with the
+      // scope), so concurrently-scheduled specs can't race on the shared schema.
+      _         <- dbPermit.withPermitScoped
       container <- ZIO.attempt(sharedContainer)
 
       dbConfig = DatabaseConfig(
