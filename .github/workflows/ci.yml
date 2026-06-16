@@ -10,8 +10,8 @@ on:
 permissions:
   contents: read
 
-# Cancel superseded runs on PRs (a new push obsoletes the previous run). On main we
-# keep runs alive (cancel-in-progress: false) so an in-flight deploy is never aborted.
+# Cancel superseded runs on PRs (a new push obsoletes the previous run). On master
+# we keep runs alive (cancel-in-progress: false) so an in-flight deploy is never aborted.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -153,9 +153,9 @@ jobs:
     name: Build, Push, Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    # Gate: deploy only after tests pass, and only on a push to main (never on PRs).
+    # Gate: deploy only after tests pass, and only on a push to master (never on PRs).
     needs: [test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     permissions:
       contents: read
       id-token: write
