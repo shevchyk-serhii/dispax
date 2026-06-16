@@ -777,6 +777,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Terms of Service'**
   String get termsOfService;
+
+  /// No description provided for @checkpointLanded.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed'**
+  String get checkpointLanded;
+
+  /// No description provided for @checkpointArrivalsHall.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrivals Hall'**
+  String get checkpointArrivalsHall;
+
+  /// No description provided for @checkpointTerminalExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal Exit'**
+  String get checkpointTerminalExit;
+
+  /// No description provided for @markCheckpointButton.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m here'**
+  String get markCheckpointButton;
+
+  /// No description provided for @airportCheckpointPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My location in terminal'**
+  String get airportCheckpointPanelTitle;
+
+  /// No description provided for @checkpointNotifTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Client reached {checkpoint}'**
+  String checkpointNotifTitle(String checkpoint);
+
+  /// No description provided for @checkpointNotifBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your client is at {checkpointName}.'**
+  String checkpointNotifBody(String checkpointName);
 }
 
 class _AppLocalizationsDelegate

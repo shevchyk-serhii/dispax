@@ -352,4 +352,29 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get termsOfService => 'Умови використання';
+
+  @override
+  String get checkpointLanded => 'Приземлився';
+
+  @override
+  String get checkpointArrivalsHall => 'Зал прильотів';
+
+  @override
+  String get checkpointTerminalExit => 'Вихід з терміналу';
+
+  @override
+  String get markCheckpointButton => 'Я тут';
+
+  @override
+  String get airportCheckpointPanelTitle => 'Моє місце в терміналі';
+
+  @override
+  String checkpointNotifTitle(String checkpoint) {
+    return 'Клієнт досяг $checkpoint';
+  }
+
+  @override
+  String checkpointNotifBody(String checkpointName) {
+    return 'Ваш клієнт знаходиться біля $checkpointName.';
+  }
 }

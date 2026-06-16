@@ -28,7 +28,8 @@ class ClientLocationServiceImpl(
     clientLocationRepository: ClientLocationRepository,
     rideRepository: RideRepository,
     driverLocationProvider: DriverLocationProvider,
-    eventHub: EventHub
+    eventHub: EventHub,
+    airportCheckpointService: AirportCheckpointService
 ) extends ClientLocationService:
 
   override def updateClientLocation(
@@ -62,6 +63,8 @@ class ClientLocationServiceImpl(
             )
           )
           .ignore
+      // Best-effort: check if client just entered the terminal perimeter (auto-Landed trigger)
+      _    <- airportCheckpointService.checkGeofenceForLanded(ride, latitude, longitude).ignore
     } yield ()
 
   /**
@@ -96,5 +99,5 @@ class ClientLocationServiceImpl(
 object ClientLocationService:
 
   val layer
-      : ZLayer[ClientLocationRepository & RideRepository & DriverLocationProvider & EventHub, Nothing, ClientLocationService] =
+      : ZLayer[ClientLocationRepository & RideRepository & DriverLocationProvider & EventHub & AirportCheckpointService, Nothing, ClientLocationService] =
     ZLayer.fromFunction(ClientLocationServiceImpl.apply)

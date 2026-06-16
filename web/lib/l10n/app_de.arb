@@ -138,10 +138,25 @@
   "activeConnections": "Aktive Verbindungen",
   "companyStatus": "Unternehmensstatus",
   "subscriptionPlan": "Abonnementplan",
-  "totalRides": "Fahrten gesamt",
-  "completedRides": "Abgeschlossene Fahrten",
-  "cancelledRides": "Stornierte Fahrten",
   "billingAnalytics": "Abrechnungsanalyse",
   "connectionAnalytics": "Verbindungsanalyse",
-  "superAdminSettings": "Plattform-Einstellungen"
+  "superAdminSettings": "Plattform-Einstellungen",
+
+  "checkpointLanded": "Gelandet",
+  "checkpointArrivalsHall": "Ankunftshalle",
+  "checkpointTerminalExit": "Terminalausgang",
+  "markCheckpointButton": "Ich bin hier",
+  "airportCheckpointPanelTitle": "Mein Standort im Terminal",
+  "checkpointNotifTitle": "Fahrgast hat {checkpoint} erreicht",
+  "@checkpointNotifTitle": {
+    "placeholders": {
+      "checkpoint": {"type": "String"}
+    }
+  },
+  "checkpointNotifBody": "Ihr Fahrgast befindet sich bei {checkpointName}.",
+  "@checkpointNotifBody": {
+    "placeholders": {
+      "checkpointName": {"type": "String"}
+    }
+  }
 }

@@ -100,5 +100,6 @@ object RideSecure:
         (StatusCode.Conflict, ApiError(s"Cannot transition from $from to $to"))
       case RideError.RideAlreadyAssigned(_, _)         => (StatusCode.Conflict, ApiError("Ride already assigned"))
       case RideError.BusinessRuleViolation(_, msg)     => (StatusCode.BadRequest, ApiError(msg))
+      case RideError.InvalidOperation(msg)             => (StatusCode.UnprocessableEntity, ApiError(msg))
       case RideError.DatabaseError(_)                  => (StatusCode.InternalServerError, ApiError("Internal server error"))
       case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))

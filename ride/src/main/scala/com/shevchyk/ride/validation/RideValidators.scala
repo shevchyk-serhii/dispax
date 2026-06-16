@@ -88,7 +88,7 @@ given createRideRequestValidator: Validator[CreateRideRequest] with
 
   private def validateDomainAirportTransfer(request: CreateRideRequest): IO[RideError, Unit] =
     request.specifics match {
-      case Some(RideSpecifics.AirportTransfer(airportCode, flightNumber)) =>
+      case Some(RideSpecifics.AirportTransfer(airportCode, flightNumber, _)) =>
         ZIO
           .when(airportCode.trim.isEmpty || flightNumber.trim.isEmpty)(
             ZIO.fail(
@@ -96,7 +96,7 @@ given createRideRequestValidator: Validator[CreateRideRequest] with
             )
           )
           .unit
-      case None                                                           => ZIO.unit
+      case None                                                              => ZIO.unit
     }
 
 given assignDriverRequestValidator: Validator[AssignDriverRequest] with
@@ -174,3 +174,18 @@ given updateRideApiRequestValidator: Validator[UpdateRideApiRequest] with
         ZIO.fail(RideError.ValidationError("Passenger count must be between 1 and 8"))
       )
       .unit
+
+given markCheckpointRequestValidator: Validator[MarkCheckpointRequest] with
+  type Error = RideError
+
+  private val validCheckpoints = Set("landed", "arrivals_hall", "terminal_exit")
+
+  def validate(request: MarkCheckpointRequest): IO[RideError, MarkCheckpointRequest] = ZIO
+    .when(!validCheckpoints.contains(request.checkpoint.toLowerCase))(
+      ZIO.fail(
+        RideError.ValidationError(
+          s"Invalid checkpoint: '${request.checkpoint}'. Valid values: ${validCheckpoints.mkString(", ")}"
+        )
+      )
+    )
+    .as(request)

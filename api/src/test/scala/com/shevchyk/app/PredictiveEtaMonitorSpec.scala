@@ -66,7 +66,18 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
           to: Instant,
           bucket: TimeBucket
       ): Task[List[(Instant, BigDecimal)]] = nope("earningsBucketsByDriver")
-      def clearReminders(rideId: RideId): Task[Unit] = nope("clearReminders")
+      def clearReminders(rideId: RideId): Task[Unit]                                               = nope("clearReminders")
+      def countAllRidesByStatus(): Task[Map[String, Int]]                                          = nope("countAllRidesByStatus")
+      def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                              = nope("sumAllRevenue")
+      def countRidesByCompany(from: Instant, to: Instant): Task[Map[java.util.UUID, Int]]          = nope(
+        "countRidesByCompany"
+      )
+      def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[java.util.UUID, BigDecimal]] = nope(
+        "sumRevenueByCompanyPlatform"
+      )
+      def updateCheckpoint(rideId: RideId, checkpoint: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean] = nope(
+        "updateCheckpoint"
+      )
 
   // EtaService stub returning a fixed ETA.
   private def etaServiceStub(eta: Option[Int]): EtaService =

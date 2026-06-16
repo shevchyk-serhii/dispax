@@ -2,6 +2,7 @@ package com.shevchyk.ride.domain
 
 import com.shevchyk.core.domain.*
 import java.time.Instant
+import zio.json.*
 
 /**
  * Shared ride scheduling policy, so the DTO validators and RideService agree.
@@ -20,6 +21,31 @@ object RidePolicy:
     now.minusSeconds(ClockSkewToleranceSeconds)
   )
 
+enum AirportCheckpoint:
+  case Landed, ArrivalsHall, TerminalExit
+
+  def isAfter(other: AirportCheckpoint): Boolean = ordinal > other.ordinal
+
+object AirportCheckpoint:
+
+  def fromString(s: String): Option[AirportCheckpoint] =
+    s.toLowerCase match
+      case "landed"        => Some(Landed)
+      case "arrivals_hall" => Some(ArrivalsHall)
+      case "terminal_exit" => Some(TerminalExit)
+      case _               => None
+
+  def toDbString(c: AirportCheckpoint): String =
+    c match
+      case Landed       => "landed"
+      case ArrivalsHall => "arrivals_hall"
+      case TerminalExit => "terminal_exit"
+
+  given JsonCodec[AirportCheckpoint] = JsonCodec.string.transformOrFail(
+    s => fromString(s).toRight(s"Unknown airport checkpoint: $s"),
+    toDbString
+  )
+
 enum RideStatus:
   case Requested, Assigned, InProgress, Completed, Cancelled
 
@@ -33,9 +59,18 @@ sealed trait RideSpecifics
 
 object RideSpecifics:
 
+  /**
+   * Specifics for airport transfer rides.
+   *
+   * `isArrival` encodes the direction of the flight: true = arrival (passenger disembarking), false = departure. Stored
+   * in the `specifics` JSONB column so it survives round-trips without a separate SQL column. Legacy rows lacking the
+   * field decode with Circe's default-param handling: Circe's `deriveDecoder` does NOT honour Scala default parameters,
+   * so we use a custom decoder that falls back to `false` for the missing key.
+   */
   final case class AirportTransfer(
       airportCode: String,
-      flightNumber: String
+      flightNumber: String,
+      isArrival: Boolean = false
   ) extends RideSpecifics
 
   // Circe JSON codecs for PostgreSQL JSONB
@@ -43,7 +78,16 @@ object RideSpecifics:
   import io.circe.generic.semiauto.*
   import io.circe.syntax.*
 
-  implicit val airportTransferCodec: Codec[AirportTransfer] = deriveCodec[AirportTransfer]
+  // Custom decoder: tolerates missing `isArrival` key (legacy rows) by defaulting to false.
+  implicit val airportTransferDecoder: Decoder[AirportTransfer] = Decoder.instance { c =>
+    for {
+      airportCode  <- c.downField("airportCode").as[String]
+      flightNumber <- c.downField("flightNumber").as[String]
+      isArrival    <- c.downField("isArrival").as[Option[Boolean]]
+    } yield AirportTransfer(airportCode, flightNumber, isArrival.getOrElse(false))
+  }
+
+  implicit val airportTransferEncoder: Encoder[AirportTransfer] = deriveEncoder[AirportTransfer]
 
   implicit val rideSpecificsEncoder: Encoder[RideSpecifics] = Encoder.instance { case at: AirportTransfer =>
     at.asJson.mapObject(_.add("type", "AirportTransfer".asJson))
@@ -100,7 +144,9 @@ final case class Ride(
     preferredDriverUsed: Boolean = false,
     poolId: Option[RidePoolId] = None,
     scheduleDayId: Option[java.util.UUID] = None,
-    invoiceId: Option[java.util.UUID] = None
+    invoiceId: Option[java.util.UUID] = None,
+    flightIsArrival: Option[Boolean] = None,
+    airportCheckpoint: Option[AirportCheckpoint] = None
 ):
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
@@ -111,6 +157,12 @@ final case class Ride(
   def canBeEdited: Boolean     = status == RideStatus.Requested || status == RideStatus.Assigned
 
   def isAirportTransfer: Boolean = specifics.exists(_.isInstanceOf[RideSpecifics.AirportTransfer])
+
+  /**
+   * True when the ride is an arrival airport transfer (direction encoded in the AirportTransfer specifics).
+   */
+  def isArrivalAirportTransfer: Boolean =
+    specifics.collectFirst { case at: RideSpecifics.AirportTransfer if at.isArrival => at }.isDefined
 
 final case class CreateRideRequest(
     clientId: PersonId,
@@ -156,5 +208,6 @@ enum RideError extends Throwable:
   case ExternalServiceError(service: String, cause: Throwable)
   case BusinessRuleViolation(rule: String, message: String)
   case TariffNotFound(id: TariffId)
+  case InvalidOperation(message: String)
 
 object RideError

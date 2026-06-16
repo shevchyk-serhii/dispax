@@ -1,7 +1,7 @@
 package com.shevchyk.ride.repository
 
 import com.shevchyk.core.domain.{RideId, PersonId, CompanyId}
-import com.shevchyk.ride.domain.{DriverEarnings, Ride, RideStatus}
+import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, Ride, RideStatus}
 import zio.*
 import java.time.{Instant, ZoneOffset}
 
@@ -194,6 +194,18 @@ class InMemoryRideRepository extends RideRepository:
         .groupBy(_.companyId.value)
         .map((k, v) => k -> v.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).sum)
     )
+
+  override def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Boolean] =
+    rides.modify { m =>
+      m.get(rideId) match
+        case None       => (false, m)
+        case Some(ride) =>
+          val currentOrdinal = ride.airportCheckpoint.map(_.ordinal).getOrElse(-1)
+          if checkpoint.ordinal > currentOrdinal then
+            (true, m.updated(rideId, ride.copy(airportCheckpoint = Some(checkpoint))))
+          else
+            (false, m)
+    }
 
 object InMemoryRideRepository:
   val layer: ZLayer[Any, Nothing, RideRepository] = ZLayer.succeed(new InMemoryRideRepository)

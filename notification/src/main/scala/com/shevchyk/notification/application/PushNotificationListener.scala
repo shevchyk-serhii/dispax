@@ -1,21 +1,23 @@
 package com.shevchyk.notification.application
 
 import com.shevchyk.core.application.EventHub
-import com.shevchyk.core.domain.{CompanyId, PersonId, PersonRole, WebSocketEvent}
+import com.shevchyk.core.domain.{CompanyId, PersonId, PersonRole, RideId, WebSocketEvent}
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId, PushNotification}
-import com.shevchyk.notification.repository.NotificationRepository
+import com.shevchyk.notification.repository.{CheckpointNotificationRepository, NotificationRepository}
 import zio.*
 import zio.json.*
 
 object PushNotificationListener:
 
-  def start: ZIO[EventHub & FcmService & NotificationRepository & PersonRepository, Nothing, Unit] =
+  def start
+      : ZIO[EventHub & FcmService & NotificationRepository & PersonRepository & CheckpointNotificationRepository, Nothing, Unit] =
     for
-      eventHub   <- ZIO.service[EventHub]
-      fcmService <- ZIO.service[FcmService]
-      notifRepo  <- ZIO.service[NotificationRepository]
-      personRepo <- ZIO.service[PersonRepository]
+      eventHub       <- ZIO.service[EventHub]
+      fcmService     <- ZIO.service[FcmService]
+      notifRepo      <- ZIO.service[NotificationRepository]
+      personRepo     <- ZIO.service[PersonRepository]
+      checkpointRepo <- ZIO.service[CheckpointNotificationRepository]
       // The Hub subscription is a scoped resource: it stays open only while its
       // Scope is open. We keep the Scope open for the whole lifetime of the
       // daemon fiber (ZIO.scoped wraps the forever-loop) instead of closing it
@@ -26,21 +28,21 @@ object PushNotificationListener:
       // `start` waits on it before returning. This guarantees that any event
       // published after `start` completes will be delivered to this listener
       // (a Hub only fans out to subscribers present at publish time).
-      subscribed <- Promise.make[Nothing, Unit]
-      _          <-
+      subscribed     <- Promise.make[Nothing, Unit]
+      _              <-
         ZIO
           .scoped(
             eventHub.subscribe.flatMap { dequeue =>
               subscribed.succeed(()) *>
                 dequeue.take.flatMap { event =>
-                  handleEvent(fcmService, notifRepo, personRepo, event).catchAll(e =>
+                  handleEvent(fcmService, notifRepo, personRepo, checkpointRepo, event).catchAll(e =>
                     ZIO.logWarning(s"Push notification error: ${Option(e.getMessage).getOrElse(e.toString)}")
                   )
                 }.forever
             }
           )
           .forkDaemon
-      _          <- subscribed.await
+      _              <- subscribed.await
     yield ()
 
   private def saveNotification(
@@ -92,6 +94,7 @@ object PushNotificationListener:
       fcmService: FcmService,
       notifRepo: NotificationRepository,
       personRepo: PersonRepository,
+      checkpointRepo: CheckpointNotificationRepository,
       event: WebSocketEvent
   ): Task[Unit] =
     event match
@@ -235,7 +238,8 @@ object PushNotificationListener:
       case WebSocketEvent.EtaAtRisk(rideId, _, _, etaMinutes, minutesUntilPickup, slackMinutes, companyId) =>
         val lateBy       = -slackMinutes
         val body         =
-          if slackMinutes < 0 then s"Driver is ~$lateBy min late (ETA ${etaMinutes}m, pickup in ${minutesUntilPickup}m)."
+          if slackMinutes < 0 then
+            s"Driver is ~$lateBy min late (ETA ${etaMinutes}m, pickup in ${minutesUntilPickup}m)."
           else s"Tight pickup: ETA ${etaMinutes}m vs pickup in ${minutesUntilPickup}m."
         val notification = PushNotification(
           title = "Ride at risk of delay",
@@ -255,3 +259,37 @@ object PushNotificationListener:
             notifyUser(fcmService, notifRepo, dispatcher.id, CompanyId(companyId), notification, "eta_at_risk")
           }
         }
+
+      case WebSocketEvent.AirportCheckpointReached(
+            rideId,
+            driverId,
+            clientId,
+            checkpointType,
+            checkpointName,
+            companyId
+          ) =>
+        for
+          alreadySent <- checkpointRepo.isAlreadySent(RideId(rideId), PersonId(driverId), checkpointType)
+          _           <-
+            ZIO.unless(alreadySent) {
+              val notification = PushNotification(
+                title = s"Client at $checkpointName",
+                body = s"Your client has reached $checkpointName.",
+                data = Map(
+                  "type"           -> "airport_checkpoint",
+                  "rideId"         -> rideId.toString,
+                  "checkpointType" -> checkpointType,
+                  "checkpointName" -> checkpointName
+                )
+              )
+              notifyUser(
+                fcmService,
+                notifRepo,
+                PersonId(driverId),
+                CompanyId(companyId),
+                notification,
+                "airport_checkpoint"
+              ) *>
+                checkpointRepo.markSent(RideId(rideId), PersonId(driverId), checkpointType)
+            }
+        yield ()

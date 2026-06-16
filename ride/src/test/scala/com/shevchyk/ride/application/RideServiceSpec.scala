@@ -187,7 +187,7 @@ object RideServiceSpec extends ZIOSpecDefault {
             ride    <- service.createRide(request)
           } yield assertTrue(
             ride.isAirportTransfer &&
-              ride.specifics.exists { case RideSpecifics.AirportTransfer(code, flight) =>
+              ride.specifics.exists { case RideSpecifics.AirportTransfer(code, flight, _) =>
                 code == "KBP" && flight == "PS123"
               }
           )

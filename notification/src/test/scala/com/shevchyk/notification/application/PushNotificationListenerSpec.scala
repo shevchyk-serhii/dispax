@@ -4,6 +4,8 @@ import com.shevchyk.core.application.EventHub
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.notification.repository.{
+  CheckpointNotificationRepository,
+  InMemoryCheckpointNotificationRepository,
   InMemoryFcmTokenRepository,
   InMemoryNotificationRepository,
   NotificationRepository
@@ -60,13 +62,14 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
     EventHub.layer ++
       InMemoryNotificationRepository.layer ++
       testFcmLayer ++
-      ZLayer.succeed(personRepoStub)
+      ZLayer.succeed(personRepoStub) ++
+      InMemoryCheckpointNotificationRepository.layer
 
   // Publish event, advance clock by 200ms, read notifications for one person.
   private def publishAndCollect(
       event: WebSocketEvent,
       forPerson: PersonId
-  ): ZIO[EventHub & FcmService & NotificationRepository & PersonRepository & Scope, Throwable, List[com.shevchyk.notification.domain.AppNotification]] =
+  ): ZIO[EventHub & FcmService & NotificationRepository & PersonRepository & CheckpointNotificationRepository & Scope, Throwable, List[com.shevchyk.notification.domain.AppNotification]] =
     for {
       _         <- PushNotificationListener.start
       eventHub  <- ZIO.service[EventHub]
@@ -253,6 +256,94 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
             WebSocketEvent.EtaAtRisk(rideId, driverId, clientId, 20, 10, -10, companyId),
             PersonId(clientId)
           ).map(notifs => assertTrue(notifs.isEmpty))
+        }
+      }.provide(baseLayers),
+
+      // -- AirportCheckpointReached tests ------------------------------------
+
+      test("AirportCheckpointReached notifies driver with correct notificationType and checkpointName in data") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.notificationType == "airport_checkpoint"),
+              notifs.exists(_.title == "Client at Landed"),
+              notifs.exists(n => n.data.exists(_.contains("checkpointName")))
+            )
+          }
+        }
+      }.provide(baseLayers),
+
+      test("AirportCheckpointReached does NOT send duplicate push when same checkpointType sent twice") {
+        ZIO.scoped {
+          for {
+            _              <- PushNotificationListener.start
+            eventHub       <- ZIO.service[EventHub]
+            notifRepo      <- ZIO.service[com.shevchyk.notification.repository.NotificationRepository]
+            checkpointRepo <- ZIO.service[com.shevchyk.notification.repository.CheckpointNotificationRepository]
+            event           = WebSocketEvent.AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId)
+            _              <- eventHub.publish(event)
+            _              <- TestClock.adjust(200.millis)
+            _              <- eventHub.publish(event)
+            _              <- TestClock.adjust(200.millis)
+            notifs         <- notifRepo.findByPersonId(PersonId(driverId), limit = 10, offset = 0)
+          } yield assertTrue(
+            notifs.count(_.notificationType == "airport_checkpoint") == 1
+          )
+        }
+      }.provide(baseLayers),
+
+      test("AirportCheckpointReached sends separate push for different checkpointType") {
+        ZIO.scoped {
+          for {
+            _        <- PushNotificationListener.start
+            eventHub <- ZIO.service[EventHub]
+            notifRepo <- ZIO.service[com.shevchyk.notification.repository.NotificationRepository]
+            _        <- eventHub.publish(
+                          WebSocketEvent.AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId)
+                        )
+            _        <- TestClock.adjust(200.millis)
+            _        <- eventHub.publish(
+                          WebSocketEvent.AirportCheckpointReached(
+                            rideId,
+                            driverId,
+                            clientId,
+                            "terminal_exit",
+                            "Terminal Exit",
+                            companyId
+                          )
+                        )
+            _        <- TestClock.adjust(200.millis)
+            notifs   <- notifRepo.findByPersonId(PersonId(driverId), limit = 10, offset = 0)
+          } yield assertTrue(
+            notifs.count(_.notificationType == "airport_checkpoint") == 2
+          )
+        }
+      }.provide(baseLayers),
+
+      test("skip-ahead: single AirportCheckpointReached(terminal_exit) produces exactly one push for terminal_exit only") {
+        ZIO.scoped {
+          publishAndCollect(
+            // This is what AirportCheckpointService emits on a None → TerminalExit skip-ahead call:
+            // exactly one event for the final checkpoint only.
+            WebSocketEvent.AirportCheckpointReached(
+              rideId,
+              driverId,
+              clientId,
+              "terminal_exit",
+              "Terminal Exit",
+              companyId
+            ),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.count(_.notificationType == "airport_checkpoint") == 1,
+              notifs.exists(n => n.data.exists(_.contains("terminal_exit"))),
+              !notifs.exists(n => n.data.exists(d => d.contains("\"landed\"") || d.contains("\"arrivals_hall\"")))
+            )
+          }
         }
       }.provide(baseLayers)
     )

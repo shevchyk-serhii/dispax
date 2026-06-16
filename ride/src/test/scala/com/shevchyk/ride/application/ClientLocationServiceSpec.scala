@@ -3,13 +3,23 @@ package com.shevchyk.ride.application
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.application.EventHub
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.application.service.{ClientLocationService, ClientLocationServiceImpl}
+import com.shevchyk.ride.application.service.{AirportCheckpointService, ClientLocationService, ClientLocationServiceImpl}
 import com.shevchyk.ride.repository.{InMemoryRideRepository, ClientLocationRepository}
 import zio.*
 import zio.test.*
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+
+/** No-op stub for AirportCheckpointService used in ClientLocationService tests. */
+class NoOpAirportCheckpointService extends AirportCheckpointService:
+  def checkGeofenceForLanded(ride: Ride, lat: Double, lon: Double): UIO[Option[AirportCheckpoint]] =
+    ZIO.succeed(None)
+  def markCheckpoint(ride: Ride, requestedCheckpoint: AirportCheckpoint, markedBy: PersonId): IO[RideError, Unit] =
+    ZIO.unit
+
+object NoOpAirportCheckpointService:
+  val layer: ULayer[AirportCheckpointService] = ZLayer.succeed(new NoOpAirportCheckpointService)
 
 class InMemoryClientLocationRepository extends ClientLocationRepository:
   private val store = new ConcurrentHashMap[RideId, ClientLocation]()
@@ -58,7 +68,8 @@ object ClientLocationServiceSpec extends ZIOSpecDefault {
     InMemoryRideRepository.layer ++
       InMemoryClientLocationRepository.layer ++
       InMemoryDriverLocationProvider.layer ++
-      EventHub.layer >>>
+      EventHub.layer ++
+      NoOpAirportCheckpointService.layer >>>
       (ZLayer.fromFunction(ClientLocationServiceImpl.apply) ++
         InMemoryRideRepository.layer ++
         InMemoryClientLocationRepository.layer ++

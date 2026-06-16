@@ -1,6 +1,6 @@
 package com.shevchyk.ride.repository
 
-import com.shevchyk.ride.domain.{DriverEarnings, Ride, RideStatus}
+import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, Ride, RideStatus}
 import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId}
 import zio.*
 import java.time.Instant
@@ -68,6 +68,12 @@ trait RideRepository {
    * Sum of revenue per company in [from, to), keyed by raw UUID.
    */
   def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[java.util.UUID, BigDecimal]]
+
+  // Update the airport checkpoint column for an arrival-transfer ride.
+  // Returns true if the checkpoint was advanced (row was updated), false if it was already at the same
+  // or a higher level (concurrent race lost). The SQL guard is authoritative; the in-memory pre-check
+  // in AirportCheckpointService is a fast-fail optimisation only.
+  def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Boolean]
 }
 
 object RideRepository {

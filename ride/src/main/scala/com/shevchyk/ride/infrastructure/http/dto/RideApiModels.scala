@@ -186,6 +186,17 @@ case class ValidationFieldError(
     message: String
 ) derives JsonCodec
 
+// -- Airport checkpoint DTOs ---------------------------------------------------
+
+case class MarkCheckpointRequest(
+    checkpoint: String // "landed" | "arrivals_hall" | "terminal_exit"
+) derives JsonCodec
+
+case class CheckpointStateResponse(
+    checkpoint: Option[String],
+    checkpointName: Option[String]
+) derives JsonCodec
+
 // -- Tapir schemas (alongside the zio-json codecs above) so these DTOs can be
 //    used directly as Tapir request/response bodies and appear in the OpenAPI doc.
 given sttp.tapir.Schema[PaymentStatus]               = sttp.tapir.Schema.string
@@ -199,6 +210,8 @@ given sttp.tapir.Schema[CancelRideApiRequest]        = sttp.tapir.Schema.derived
 given sttp.tapir.Schema[UpdateRideDetailsApiRequest] = sttp.tapir.Schema.derived[UpdateRideDetailsApiRequest]
 given sttp.tapir.Schema[UpdateClientLocationRequest] = sttp.tapir.Schema.derived[UpdateClientLocationRequest]
 given sttp.tapir.Schema[SendChatMessageRequest]      = sttp.tapir.Schema.derived[SendChatMessageRequest]
+given sttp.tapir.Schema[MarkCheckpointRequest]       = sttp.tapir.Schema.derived[MarkCheckpointRequest]
+given sttp.tapir.Schema[CheckpointStateResponse]     = sttp.tapir.Schema.derived[CheckpointStateResponse]
 
 object LocationDto:
 
@@ -230,8 +243,8 @@ object RideDto:
   ): RideDto =
     val (flightNumber, isAirportTransfer) =
       ride.specifics match {
-        case Some(RideSpecifics.AirportTransfer(_, flight)) => (Some(flight), true)
-        case None                                           => (None, false)
+        case Some(RideSpecifics.AirportTransfer(_, flight, _)) => (Some(flight), true)
+        case None                                              => (None, false)
       }
 
     val driverLoc =

@@ -135,6 +135,7 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
       def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]                        = ZIO.succeed(BigDecimal(0))
       def countRidesByCompany(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, Int]]              = ZIO.succeed(Map.empty)
       def sumRevenueByCompanyPlatform(from: java.time.Instant, to: java.time.Instant): Task[Map[UUID, BigDecimal]] = ZIO.succeed(Map.empty)
+      def updateCheckpoint(rideId: RideId, checkpoint: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean] = ZIO.succeed(false)
   )
 
   private val stubSessionRepo: ZLayer[Any, Nothing, SessionRepository] =

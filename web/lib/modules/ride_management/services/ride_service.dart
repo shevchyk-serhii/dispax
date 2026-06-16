@@ -284,6 +284,32 @@ class RideService {
     }
   }
 
+  Future<void> markAirportCheckpoint(String rideId, String checkpoint) async {
+    try {
+      final response = await privateApiClient.post(
+        '/rides/$rideId/airport-checkpoint',
+        {'checkpoint': checkpoint},
+      );
+      if (response.statusCode != 204) {
+        throw ApiException('Failed to mark checkpoint: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw ApiException('Error marking airport checkpoint: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getAirportCheckpoint(String rideId) async {
+    try {
+      final response = await privateApiClient.get('/rides/$rideId/airport-checkpoint');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   void dispose() {
     if (_ownsClient) privateApiClient.dispose();
   }

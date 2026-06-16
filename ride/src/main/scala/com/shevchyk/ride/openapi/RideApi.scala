@@ -4,7 +4,13 @@ import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.PersonId
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.ride.application.service.{ChatService, ClientAddressService, ClientLocationService, RideService}
+import com.shevchyk.ride.application.service.{
+  AirportCheckpointService,
+  ChatService,
+  ClientAddressService,
+  ClientLocationService,
+  RideService
+}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.infrastructure.http.dto.{*, given}
 import com.shevchyk.ride.openapi.RideSchemas.given
@@ -28,8 +34,8 @@ object RideApi:
 
   // -- Environment ---------------------------------------------------------
   type RideEnv =
-    RideService & ClientAddressService & ClientLocationService & ChatService & RideRatingRepository & PersonRepository &
-      JwtService
+    RideService & ClientAddressService & ClientLocationService & AirportCheckpointService & ChatService &
+      RideRatingRepository & PersonRepository & JwtService
 
   private object AirportTimingConfig:
     val travelTimeMinutes: Int        = 45
@@ -179,6 +185,21 @@ object RideApi:
     .tag(rideTag)
     .summary("Get a ride's rating")
 
+  // -- airport-checkpoint routes -------------------------------------------
+
+  val markAirportCheckpointEndpoint = secureEndpoint.post
+    .in("api" / "rides" / path[String]("rideId") / "airport-checkpoint")
+    .in(jsonBody[MarkCheckpointRequest])
+    .out(statusCode(StatusCode.NoContent))
+    .tag(rideTag)
+    .summary("Mark the client's current airport checkpoint (CLIENT only)")
+
+  val getAirportCheckpointEndpoint = secureEndpoint.get
+    .in("api" / "rides" / path[String]("rideId") / "airport-checkpoint")
+    .out(jsonBody[CheckpointStateResponse])
+    .tag(rideTag)
+    .summary("Get the current airport checkpoint state for a ride")
+
   /**
    * All endpoint descriptions, used to generate the OpenAPI document.
    */
@@ -202,7 +223,9 @@ object RideApi:
     sendChatMessageEndpoint,
     getChatMessagesEndpoint,
     rateRideEndpoint,
-    getRatingEndpoint
+    getRatingEndpoint,
+    markAirportCheckpointEndpoint,
+    getAirportCheckpointEndpoint
   )
 
   // ======================================================================
@@ -618,6 +641,43 @@ object RideApi:
     } yield rating
   }
 
+  // -- airport-checkpoint servers ------------------------------------------
+
+  private val markAirportCheckpointServer: ZServerEndpoint[RideEnv, Any] = markAirportCheckpointEndpoint.serverLogic {
+    user => (rideId, checkpointReq) =>
+      for {
+        _             <- checkRole(user, "CLIENT")
+        parsedRideId  <- parseRideId(rideId)
+        companyId     <- requireCompanyId(user.companyId)
+        validReq      <- checkpointReq.validate.mapError(fromRideError)
+        rideService   <- ZIO.service[RideService]
+        ride          <- rideService.getRideById(parsedRideId).mapError(fromRideError)
+        // Company isolation: hide cross-tenant rides as not found.
+        _             <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId).mapError(fromRideError)
+        checkpoint    <- ZIO
+                           .fromOption(AirportCheckpoint.fromString(validReq.checkpoint))
+                           .orElseFail((StatusCode.BadRequest, ApiError(s"Invalid checkpoint: ${validReq.checkpoint}")))
+        checkpointSvc <- ZIO.service[AirportCheckpointService]
+        _             <- checkpointSvc.markCheckpoint(ride, checkpoint, PersonId(user.userId)).mapError(fromRideError)
+      } yield ()
+  }
+
+  private val getAirportCheckpointServer: ZServerEndpoint[RideEnv, Any] = getAirportCheckpointEndpoint.serverLogic {
+    user => rideId =>
+      for {
+        _            <- checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
+        parsedRideId <- parseRideId(rideId)
+        companyId    <- requireCompanyId(user.companyId)
+        rideService  <- ZIO.service[RideService]
+        ride         <- rideService.getRideById(parsedRideId).mapError(fromRideError)
+        // Company isolation: hide cross-tenant rides as not found.
+        _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId).mapError(fromRideError)
+      } yield CheckpointStateResponse(
+        checkpoint = ride.airportCheckpoint.map(AirportCheckpoint.toDbString),
+        checkpointName = ride.airportCheckpoint.map(MucCheckpoints.displayName)
+      )
+  }
+
   /**
    * All server endpoints, interpreted into zio-http Routes by the api module.
    */
@@ -641,5 +701,7 @@ object RideApi:
     sendChatMessageServer,
     getChatMessagesServer,
     rateRideServer,
-    getRatingServer
+    getRatingServer,
+    markAirportCheckpointServer,
+    getAirportCheckpointServer
   )

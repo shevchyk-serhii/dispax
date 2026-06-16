@@ -2,6 +2,7 @@ package com.shevchyk.ride.repository
 
 import com.shevchyk.core.domain.*
 import com.shevchyk.ride.domain.{
+  AirportCheckpoint,
   DriverEarnings,
   Ride,
   RideError,
@@ -92,6 +93,15 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       java.time.OffsetDateTime.ofInstant(instant, java.time.ZoneOffset.UTC)
     )
 
+  implicit val airportCheckpointMeta: Meta[AirportCheckpoint] =
+    Meta[String].imap { s =>
+      AirportCheckpoint
+        .fromString(s)
+        .getOrElse(
+          throw new RuntimeException(s"Unknown airport_checkpoint value: $s")
+        )
+    }(AirportCheckpoint.toDbString)
+
   override def create(ride: Ride): Task[Ride] = {
     sql"""
       INSERT INTO rides (
@@ -141,7 +151,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         cancellation_reason, cancellation_fee, cancelled_by,
         is_vip_ride, preferred_driver_used,
         special_requirements, pool_id,
-        schedule_day_id, invoice_id"""
+        schedule_day_id, invoice_id,
+        flight_is_arrival, airport_checkpoint"""
   // NOTE: columns are listed explicitly (not SELECT *) to guarantee order matches rideReadBase/rideReadExtra
 
   override def findById(id: RideId): Task[Option[Ride]] = {
@@ -428,16 +439,18 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
     (
         Option[PaymentStatus],
         Option[PaymentMethod],
-        Option[Instant], // payment_status, payment_method, paid_at
+        Option[Instant],          // payment_status, payment_method, paid_at
         Option[String],
         Option[BigDecimal],
-        Option[UUID],    // cancellation_reason, cancellation_fee, cancelled_by
+        Option[UUID],             // cancellation_reason, cancellation_fee, cancelled_by
         Boolean,
-        Boolean,         // is_vip_ride, preferred_driver_used
+        Boolean,                  // is_vip_ride, preferred_driver_used
         Option[String],
-        Option[UUID],    // special_requirements, pool_id
+        Option[UUID],             // special_requirements, pool_id
         Option[UUID],
-        Option[UUID]     // schedule_day_id, invoice_id
+        Option[UUID],             // schedule_day_id, invoice_id
+        Option[Boolean],
+        Option[AirportCheckpoint] // flight_is_arrival, airport_checkpoint
     )
   ] =
     Read[
@@ -453,7 +466,9 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
           Option[String],
           Option[UUID],
           Option[UUID],
-          Option[UUID]
+          Option[UUID],
+          Option[Boolean],
+          Option[AirportCheckpoint]
       )
     ]
 
@@ -495,7 +510,9 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
             specialRequirements,
             poolId,
             scheduleDayId,
-            invoiceId
+            invoiceId,
+            flightIsArrival,
+            airportCheckpoint
           )
         ) =>
       Ride(
@@ -528,7 +545,9 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         preferredDriverUsed = preferredDriverUsed,
         poolId = poolId.map(RidePoolId.apply),
         scheduleDayId = scheduleDayId,
-        invoiceId = invoiceId
+        invoiceId = invoiceId,
+        flightIsArrival = flightIsArrival,
+        airportCheckpoint = airportCheckpoint
       )
   }
 
@@ -537,6 +556,30 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .transact(xa)
       .unit
       .mapError(ex => RideError.DatabaseError(ex))
+
+  override def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Boolean] = {
+    // Atomic forward-only guard: only advance if the new checkpoint's ordinal is strictly greater
+    // than the current one.  We map the varchar names to integer ordinals via a CASE expression
+    // because lexical order ('arrivals_hall' < 'landed' < 'terminal_exit') does not match ordinal
+    // order (landed=0, arrivals_hall=1, terminal_exit=2).
+    val newStr = AirportCheckpoint.toDbString(checkpoint)
+    val newOrd = checkpoint.ordinal
+    sql"""UPDATE rides
+          SET airport_checkpoint = $newStr
+          WHERE id = ${rideId.value}
+            AND (
+              airport_checkpoint IS NULL
+              OR CASE airport_checkpoint
+                   WHEN 'landed'        THEN 0
+                   WHEN 'arrivals_hall' THEN 1
+                   WHEN 'terminal_exit' THEN 2
+                   ELSE -1
+                 END < $newOrd
+            )""".update.run
+      .transact(xa)
+      .map(_ > 0)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
 
   override def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++

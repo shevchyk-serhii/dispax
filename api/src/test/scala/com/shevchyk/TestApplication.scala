@@ -52,6 +52,8 @@ import com.shevchyk.core.repository.{
 import com.shevchyk.notification.application.{FcmService, LoggingEmailSmsService}
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId}
 import com.shevchyk.notification.repository.{
+  CheckpointNotificationRepository,
+  InMemoryCheckpointNotificationRepository,
   InMemoryFcmTokenRepository,
   InMemoryNotificationRepository,
   NotificationRepository
@@ -59,8 +61,15 @@ import com.shevchyk.notification.repository.{
 import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.repository.DriverLocationRepository
-import com.shevchyk.ride.application.service.{ChatService, ClientAddressService, ClientLocationService, RideService}
+import com.shevchyk.ride.application.service.{
+  AirportCheckpointService,
+  ChatService,
+  ClientAddressService,
+  ClientLocationService,
+  RideService
+}
 import com.shevchyk.ride.domain.{
+  AirportCheckpoint,
   ClientAddress,
   ClientAddressId,
   ClientLocation,
@@ -68,8 +77,11 @@ import com.shevchyk.ride.domain.{
   Expense,
   ExpenseCategory,
   ExpenseId,
+  MucCheckpoints,
   RecurrencePattern,
   Ride,
+  RideError,
+  RideSpecifics,
   RideStatus,
   RideTemplate,
   RideTemplateId
@@ -92,6 +104,7 @@ import com.shevchyk.schedule.repository.ScheduleDayRepository
 import org.mindrot.jbcrypt.BCrypt
 import zio.*
 import zio.http.*
+import zio.json.*
 import zio.logging.backend.SLF4J
 
 import java.time.{Instant, LocalDate, ZoneOffset}
@@ -409,18 +422,36 @@ object TestApplication extends ZIOAppDefault:
     scheduledTime = Some(Instant.now().plusSeconds(432000))
   )
 
+  // Dedicated ride for 34_airport_checkpoints — InProgress + ArrivalAirportTransfer
+  // isArrival is encoded in AirportTransfer.isArrival, not the flightIsArrival column.
+  private val testRideAirportCheckpoint = Ride(
+    id = RideId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")),
+    clientId = testPersonId1,
+    creatorId = testPersonId33,
+    companyId = testCompanyId1,
+    driverId = Some(testPersonId10),
+    status = RideStatus.InProgress,
+    pickupLocation = Location("MUC Terminal 1"),
+    dropoffLocation = Location("München Hauptbahnhof"),
+    pickupDateTime = Instant.now().minusSeconds(1200),
+    scheduledTime = Some(Instant.now().minusSeconds(1200)),
+    startTime = Some(Instant.now().minusSeconds(1200)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH456", isArrival = true))
+  )
+
   private val inMemoryRideRepositoryLayer: ZLayer[Any, Nothing, RideRepository] = ZLayer.fromZIO(
     Ref.Synchronized
       .make(
         Map[RideId, Ride](
-          testRideId            -> testRideAssigned,
-          testRideRequested.id  -> testRideRequested,
-          testRideInProgress.id -> testRideInProgress,
-          testRideCompleted.id  -> testRideCompleted,
-          testRideAssigned2.id  -> testRideAssigned2,
-          testRideRequested2.id -> testRideRequested2,
-          testRideRequested3.id -> testRideRequested3,
-          testRideRequested4.id -> testRideRequested4
+          testRideId                        -> testRideAssigned,
+          testRideRequested.id              -> testRideRequested,
+          testRideInProgress.id             -> testRideInProgress,
+          testRideCompleted.id              -> testRideCompleted,
+          testRideAssigned2.id              -> testRideAssigned2,
+          testRideRequested2.id             -> testRideRequested2,
+          testRideRequested3.id             -> testRideRequested3,
+          testRideRequested4.id             -> testRideRequested4,
+          testRideAirportCheckpoint.id      -> testRideAirportCheckpoint
         )
       )
       .map { ridesRef =>
@@ -540,6 +571,17 @@ object TestApplication extends ZIOAppDefault:
               .groupBy(_.companyId.value)
               .map((k, v) => k -> v.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).sum)
           )
+          def updateCheckpoint(id: RideId, checkpoint: AirportCheckpoint): Task[Boolean] =
+            ridesRef.modify { m =>
+              m.get(id) match
+                case None       => (false, m)
+                case Some(ride) =>
+                  val currentOrdinal = ride.airportCheckpoint.map(_.ordinal).getOrElse(-1)
+                  if checkpoint.ordinal > currentOrdinal then
+                    (true, m.updated(id, ride.copy(airportCheckpoint = Some(checkpoint))))
+                  else
+                    (false, m)
+            }
           private def periodTime(r: Ride): Instant                                                              = r.endTime.getOrElse(r.pickupDateTime)
       }
   )
@@ -1143,6 +1185,7 @@ object TestApplication extends ZIOAppDefault:
       NotificationPreferenceRepository.inMemory,
       noopFcmServiceLayer,
       LoggingEmailSmsService.layer,
+      InMemoryCheckpointNotificationRepository.layer,
       // Core infra
       EventHub.layer,
       AuditService.inMemory,
@@ -1202,6 +1245,7 @@ object TestApplication extends ZIOAppDefault:
       DriverLocationService.layer,
       DriverLocationService.providerLayer,
       inMemoryClientLocationRepositoryLayer,
+      AirportCheckpointService.layer,
       ClientLocationService.layer,
       EtaService.layer,
       // Chat + templates
