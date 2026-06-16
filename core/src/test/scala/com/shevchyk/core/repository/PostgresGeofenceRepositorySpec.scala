@@ -199,5 +199,5 @@ object PostgresGeofenceRepositorySpec extends ZIOSpecDefault {
           capped <- repo.findAlertsByDriver(driverId, 1)
         } yield assertTrue(mine.length == 2, mine.forall(_.driverId == driverId), capped.length == 1)
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
 }

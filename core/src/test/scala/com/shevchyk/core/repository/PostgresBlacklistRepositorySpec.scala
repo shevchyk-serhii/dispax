@@ -165,5 +165,5 @@ object PostgresBlacklistRepositorySpec extends ZIOSpecDefault {
           active  <- repo.isBlacklisted(clientId, driverId)
         } yield assertTrue(ok, !missing, !active)
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
 }

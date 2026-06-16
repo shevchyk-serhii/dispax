@@ -153,5 +153,5 @@ object PostgresNotificationPreferenceRepositorySpec extends ZIOSpecDefault {
           allForPid.isDefined
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
 }

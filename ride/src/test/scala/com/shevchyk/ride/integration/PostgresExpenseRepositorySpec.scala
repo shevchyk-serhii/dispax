@@ -212,5 +212,5 @@ object PostgresExpenseRepositorySpec extends ZIOSpecDefault {
           empty == BigDecimal(0)
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
 }

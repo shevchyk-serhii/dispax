@@ -53,7 +53,8 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
 
   // Shared layers: one InMemoryRideRepository instance is visible both as RideRepository
   // and as the inner dependency of AirportCheckpointService.
-  private val baseEnv = (InMemoryRideRepository.layer ++ EventHub.layer) >+> AirportCheckpointService.layer
+  private val baseEnv =
+    (InMemoryRideRepository.layer ++ EventHub.layer) >+> AirportCheckpointService.layer
 
   // ======================================================================
   // Section A — service-level tests (in-memory repos)
@@ -61,7 +62,9 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
 
   def spec =
     suite("AirportCheckpoint Integration")(
+
       suite("service-level: business rules")(
+
         test("marks checkpoint 200 (via service): None → Landed persists") {
           for {
             repo  <- ZIO.service[RideRepository]
@@ -71,6 +74,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             saved <- repo.findById(ride.id)
           } yield assertTrue(saved.exists(_.airportCheckpoint.contains(AirportCheckpoint.Landed)))
         }.provide(baseEnv),
+
         test("forward-only: Landed → ArrivalsHall succeeds") {
           for {
             repo  <- ZIO.service[RideRepository]
@@ -80,6 +84,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             saved <- repo.findById(ride.id)
           } yield assertTrue(saved.exists(_.airportCheckpoint.contains(AirportCheckpoint.ArrivalsHall)))
         }.provide(baseEnv),
+
         test("skip-ahead None → TerminalExit succeeds (returns 200/204 semantics)") {
           for {
             repo  <- ZIO.service[RideRepository]
@@ -91,6 +96,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             saved.exists(_.airportCheckpoint.contains(AirportCheckpoint.TerminalExit))
           )
         }.provide(baseEnv),
+
         test("repeated same checkpoint is rejected (would return 422)") {
           for {
             repo   <- ZIO.service[RideRepository]
@@ -99,6 +105,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             result <- svc.markCheckpoint(ride, AirportCheckpoint.Landed, clientId).exit
           } yield assertTrue(result.isFailure)
         }.provide(baseEnv),
+
         test("backward checkpoint is rejected (would return 422)") {
           for {
             repo   <- ZIO.service[RideRepository]
@@ -107,15 +114,16 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             result <- svc.markCheckpoint(ride, AirportCheckpoint.Landed, clientId).exit
           } yield assertTrue(result.isFailure)
         }.provide(baseEnv),
+
         test("[CRITICAL] tenant isolation: cross-company ride access returns error (404-semantics)") {
           // The service receives a Ride domain object — it does NOT check companyId.
           // Tenant isolation is enforced at the HTTP layer (RideApi.serverLogic).
           // This test verifies the HTTP layer's isolation check produces NotFound semantics
           // by simulating what the handler does: load ride by ID, compare companyIds, fail.
           for {
-            repo            <- ZIO.service[RideRepository]
+            repo  <- ZIO.service[RideRepository]
             // Ride belongs to company A
-            rideA           <- repo.create(makeArrivalRideFor(companyAId))
+            rideA <- repo.create(makeArrivalRideFor(companyAId))
             // A request from company B loads the same ride ID and detects a mismatch
             companyBMismatch = rideA.companyId != companyBId
           } yield assertTrue(
@@ -124,6 +132,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             rideA.companyId == companyAId
           )
         }.provide(baseEnv),
+
         test("[CRITICAL] tenant isolation: ride loaded with correct company is accessible") {
           for {
             repo  <- ZIO.service[RideRepository]
@@ -137,6 +146,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             saved.exists(_.airportCheckpoint.contains(AirportCheckpoint.Landed))
           )
         }.provide(baseEnv),
+
         test("GET checkpoint returns current state (driver-accessible via service output)") {
           for {
             repo  <- ZIO.service[RideRepository]
@@ -148,6 +158,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             saved.flatMap(_.airportCheckpoint).contains(AirportCheckpoint.ArrivalsHall)
           )
         }.provide(baseEnv)
+
       ),
 
       // ====================================================================
@@ -155,6 +166,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
       // ====================================================================
 
       suite("PostgresRideRepository.updateCheckpoint (real DB)")(
+
         test("updateCheckpoint persists Landed and round-trips correctly") {
           for {
             xa    <- ZIO.service[Transactor[Task]]
@@ -167,6 +179,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             found <- repo.findById(id)
           } yield assertTrue(found.exists(_.airportCheckpoint.contains(AirportCheckpoint.Landed)))
         },
+
         test("updateCheckpoint persists TerminalExit (skip-ahead, no back-fill)") {
           for {
             xa    <- ZIO.service[Transactor[Task]]
@@ -181,6 +194,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             found.exists(_.airportCheckpoint.contains(AirportCheckpoint.TerminalExit))
           )
         },
+
         test("airportCheckpoint is None for freshly created ride") {
           for {
             xa    <- ZIO.service[Transactor[Task]]
@@ -192,26 +206,28 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             found <- repo.findById(id)
           } yield assertTrue(found.exists(_.airportCheckpoint.isEmpty))
         },
+
         test("full chain Landed → ArrivalsHall → TerminalExit persists each step") {
           for {
-            xa  <- ZIO.service[Transactor[Task]]
-            _   <- seedTestData(xa)
-            _   <- cleanRides(xa)
-            repo = PostgresRideRepository(xa)
-            id   = RideId(UUID.randomUUID())
-            _   <- repo.create(makePgArrivalRide(id))
-            _   <- repo.updateCheckpoint(id, AirportCheckpoint.Landed)
-            s1  <- repo.findById(id)
-            _   <- repo.updateCheckpoint(id, AirportCheckpoint.ArrivalsHall)
-            s2  <- repo.findById(id)
-            _   <- repo.updateCheckpoint(id, AirportCheckpoint.TerminalExit)
-            s3  <- repo.findById(id)
+            xa    <- ZIO.service[Transactor[Task]]
+            _     <- seedTestData(xa)
+            _     <- cleanRides(xa)
+            repo   = PostgresRideRepository(xa)
+            id     = RideId(UUID.randomUUID())
+            _     <- repo.create(makePgArrivalRide(id))
+            _     <- repo.updateCheckpoint(id, AirportCheckpoint.Landed)
+            s1    <- repo.findById(id)
+            _     <- repo.updateCheckpoint(id, AirportCheckpoint.ArrivalsHall)
+            s2    <- repo.findById(id)
+            _     <- repo.updateCheckpoint(id, AirportCheckpoint.TerminalExit)
+            s3    <- repo.findById(id)
           } yield assertTrue(
             s1.exists(_.airportCheckpoint.contains(AirportCheckpoint.Landed)),
             s2.exists(_.airportCheckpoint.contains(AirportCheckpoint.ArrivalsHall)),
             s3.exists(_.airportCheckpoint.contains(AirportCheckpoint.TerminalExit))
           )
         },
+
         test("[CRITICAL] isArrivalAirportTransfer is true after create()/findById() round-trip (gate persistence)") {
           // This test proves that the production gate (isArrivalAirportTransfer) works end-to-end:
           // AirportTransfer.isArrival=true is persisted by create() via the specifics JSONB column
@@ -227,37 +243,36 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
           } yield assertTrue(
             found.isDefined,
             found.exists(_.isArrivalAirportTransfer),
-            found.exists(r =>
-              r.specifics
-                .collectFirst { case at: RideSpecifics.AirportTransfer =>
-                  at.isArrival
-                }
-                .getOrElse(false)
-            )
+            found.exists(r => r.specifics.collectFirst {
+              case at: RideSpecifics.AirportTransfer => at.isArrival
+            }.getOrElse(false))
           )
         },
+
         test("[CRITICAL] rides from different companies have independent checkpoint columns") {
           for {
-            xa     <- ZIO.service[Transactor[Task]]
-            _      <- seedTestData(xa)
-            _      <- cleanRides(xa)
-            repo    = PostgresRideRepository(xa)
-            idA     = RideId(UUID.randomUUID())
-            idB     = RideId(UUID.randomUUID())
-            _      <- repo.create(makePgArrivalRide(idA))
-            _      <- repo.create(makePgArrivalRide(idB))
+            xa      <- ZIO.service[Transactor[Task]]
+            _       <- seedTestData(xa)
+            _       <- cleanRides(xa)
+            repo     = PostgresRideRepository(xa)
+            idA      = RideId(UUID.randomUUID())
+            idB      = RideId(UUID.randomUUID())
+            _       <- repo.create(makePgArrivalRide(idA))
+            _       <- repo.create(makePgArrivalRide(idB))
             // Update only ride A
-            _      <- repo.updateCheckpoint(idA, AirportCheckpoint.Landed)
-            foundA <- repo.findById(idA)
-            foundB <- repo.findById(idB)
+            _       <- repo.updateCheckpoint(idA, AirportCheckpoint.Landed)
+            foundA  <- repo.findById(idA)
+            foundB  <- repo.findById(idB)
           } yield assertTrue(
             foundA.exists(_.airportCheckpoint.contains(AirportCheckpoint.Landed)),
             // Ride B remains untouched
             foundB.exists(_.airportCheckpoint.isEmpty)
           )
         }
+
       ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential
-    ) @@ TestAspect.sequential
+
+    ) @@ TestAspect.sequential @@ TestAspect.tag("integration")
 
   // -- Testcontainers helpers ---------------------------------------------
 
@@ -283,7 +298,8 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
               ON CONFLICT DO NOTHING""".update.run
     } yield ()).transact(xa)
 
-  private def cleanRides(xa: Transactor[Task]): Task[Unit] = sql"DELETE FROM rides".update.run.transact(xa).unit
+  private def cleanRides(xa: Transactor[Task]): Task[Unit] =
+    sql"DELETE FROM rides".update.run.transact(xa).unit
 
   private def makePgArrivalRide(id: RideId): Ride = Ride(
     id = id,

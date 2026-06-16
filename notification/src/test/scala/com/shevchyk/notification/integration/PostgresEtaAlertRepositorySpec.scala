@@ -101,4 +101,4 @@ object PostgresEtaAlertRepositorySpec extends ZIOSpecDefault:
           after <- repo.isAlreadyAlerted(ride, driver1)
         } yield assertTrue(!after)
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")

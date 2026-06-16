@@ -105,5 +105,5 @@ object PostgresCompanyBillingProfileRepositorySpec extends ZIOSpecDefault {
           saved <- repo.upsert(testCompanyId, UpdateCompanyBillingProfileRequest(legalName = Some("Minimal")))
         } yield assertTrue(saved.paymentTermsDays == 7)
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
 }

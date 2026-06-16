@@ -118,5 +118,5 @@ object PostgresCompanySettingsRepositorySpec extends ZIOSpecDefault {
           theirs.get.commissionRate == BigDecimal("99.00")
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
 }

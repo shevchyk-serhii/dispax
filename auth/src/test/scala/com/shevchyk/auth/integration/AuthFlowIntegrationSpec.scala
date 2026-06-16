@@ -96,5 +96,5 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
             result.isFailure
         )
       }.provide(layers)
-    )
+    ) @@ TestAspect.tag("integration")
 }

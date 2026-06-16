@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev run-test prod test test-bdd test-all clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-unit test-integration test-bdd test-all clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -54,10 +54,30 @@ run-test:
 test-bdd:
 	sbt cucumber
 
-# Run all unit + integration tests (excludes Cucumber). Aggregates every module
-# (incl. billing/api) so this matches exactly what CI runs (root `sbt test`).
+# Run all unit + integration tests (excludes Cucumber)
 test:
-	sbt test
+	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test"
+
+# Run ONLY fast unit tests (in-memory repos, no Testcontainers / no Postgres).
+# Integration specs carry `@@ TestAspect.tag("integration")`; -ignore-tags drops
+# them. Fast inner-loop command — no Docker required.
+test-unit:
+	sbt "core/testOnly * -- -ignore-tags integration; \
+	     auth/testOnly * -- -ignore-tags integration; \
+	     ride/testOnly * -- -ignore-tags integration; \
+	     driver/testOnly * -- -ignore-tags integration; \
+	     notification/testOnly * -- -ignore-tags integration; \
+	     schedule/testOnly * -- -ignore-tags integration"
+
+# Run ONLY the integration tests (Testcontainers + real Postgres). Requires Docker.
+# Selects specs tagged `integration` via -tags.
+test-integration:
+	sbt "core/testOnly * -- -tags integration; \
+	     auth/testOnly * -- -tags integration; \
+	     ride/testOnly * -- -tags integration; \
+	     driver/testOnly * -- -tags integration; \
+	     notification/testOnly * -- -tags integration; \
+	     schedule/testOnly * -- -tags integration"
 
 # Run Flutter integration tests against local TestApplication.
 # Backend runs on TEST_PORT (default 8090) so it doesn't collide with a dev

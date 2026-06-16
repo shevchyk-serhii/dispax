@@ -193,5 +193,5 @@ object DriverEarningsSpec extends ZIOSpecDefault {
           buckets.map(_._2).sum == BigDecimal(45)
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
 }

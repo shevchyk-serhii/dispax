@@ -202,5 +202,5 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
             reassigned.status == RideStatus.Assigned
         )
       }.provide(standardLayers)
-    )
+    ) @@ TestAspect.tag("integration")
 }

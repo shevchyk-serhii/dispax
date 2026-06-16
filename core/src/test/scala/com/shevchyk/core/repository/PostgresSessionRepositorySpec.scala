@@ -187,5 +187,5 @@ object PostgresSessionRepositorySpec extends ZIOSpecDefault {
           active.head.id == current.id
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
 }
