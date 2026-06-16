@@ -243,8 +243,8 @@ object RideDto:
   ): RideDto =
     val (flightNumber, isAirportTransfer) =
       ride.specifics match {
-        case Some(RideSpecifics.AirportTransfer(_, flight)) => (Some(flight), true)
-        case None                                           => (None, false)
+        case Some(RideSpecifics.AirportTransfer(_, flight, _)) => (Some(flight), true)
+        case None                                              => (None, false)
       }
 
     val driverLoc =

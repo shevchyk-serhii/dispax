@@ -557,12 +557,29 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .unit
       .mapError(ex => RideError.DatabaseError(ex))
 
-  override def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Unit] =
-    sql"""UPDATE rides SET airport_checkpoint = ${AirportCheckpoint.toDbString(checkpoint)}
-          WHERE id = ${rideId.value}""".update.run
+  override def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Boolean] = {
+    // Atomic forward-only guard: only advance if the new checkpoint's ordinal is strictly greater
+    // than the current one.  We map the varchar names to integer ordinals via a CASE expression
+    // because lexical order ('arrivals_hall' < 'landed' < 'terminal_exit') does not match ordinal
+    // order (landed=0, arrivals_hall=1, terminal_exit=2).
+    val newStr = AirportCheckpoint.toDbString(checkpoint)
+    val newOrd = checkpoint.ordinal
+    sql"""UPDATE rides
+          SET airport_checkpoint = $newStr
+          WHERE id = ${rideId.value}
+            AND (
+              airport_checkpoint IS NULL
+              OR CASE airport_checkpoint
+                   WHEN 'landed'        THEN 0
+                   WHEN 'arrivals_hall' THEN 1
+                   WHEN 'terminal_exit' THEN 2
+                   ELSE -1
+                 END < $newOrd
+            )""".update.run
       .transact(xa)
-      .unit
+      .map(_ > 0)
       .mapError(ex => RideError.DatabaseError(ex))
+  }
 
   override def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++

@@ -35,6 +35,8 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
   private val driverId   = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000002"))
 
   // -- Ride factory --------------------------------------------------------
+  // isArrival is encoded in AirportTransfer.isArrival (persisted via the specifics JSONB column).
+  // This is the production gate path — flightIsArrival column is never written.
   private def makeArrivalRideFor(company: CompanyId, checkpoint: Option[AirportCheckpoint] = None): Ride = Ride(
     id = RideId.generate(),
     clientId = clientId,
@@ -45,8 +47,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
     pickupLocation = Location("MUC Airport"),
     dropoffLocation = Location("Munich City"),
     pickupDateTime = Instant.now().plusSeconds(3600),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123")),
-    flightIsArrival = Some(true),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true)),
     airportCheckpoint = checkpoint
   )
 
@@ -227,6 +228,27 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
           )
         },
 
+        test("[CRITICAL] isArrivalAirportTransfer is true after create()/findById() round-trip (gate persistence)") {
+          // This test proves that the production gate (isArrivalAirportTransfer) works end-to-end:
+          // AirportTransfer.isArrival=true is persisted by create() via the specifics JSONB column
+          // and correctly decoded by findById().  Without this, every markCheckpoint returns 422 in prod.
+          for {
+            xa    <- ZIO.service[Transactor[Task]]
+            _     <- seedTestData(xa)
+            _     <- cleanRides(xa)
+            repo   = PostgresRideRepository(xa)
+            id     = RideId(UUID.randomUUID())
+            _     <- repo.create(makePgArrivalRide(id))
+            found <- repo.findById(id)
+          } yield assertTrue(
+            found.isDefined,
+            found.exists(_.isArrivalAirportTransfer),
+            found.exists(r => r.specifics.collectFirst {
+              case at: RideSpecifics.AirportTransfer => at.isArrival
+            }.getOrElse(false))
+          )
+        },
+
         test("[CRITICAL] rides from different companies have independent checkpoint columns") {
           for {
             xa      <- ZIO.service[Transactor[Task]]
@@ -289,7 +311,8 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
     pickupLocation = Location("MUC Airport", Some(48.3537), Some(11.7860)),
     dropoffLocation = Location("Munich City", Some(48.1374), Some(11.5755)),
     pickupDateTime = Instant.now().plusSeconds(3600),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123")),
-    flightIsArrival = Some(true)
+    // isArrival encoded in AirportTransfer.isArrival — persisted via the specifics JSONB column.
+    // After round-trip through create()/findById(), isArrivalAirportTransfer must be true.
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true))
   )
 }

@@ -88,7 +88,7 @@ given createRideRequestValidator: Validator[CreateRideRequest] with
 
   private def validateDomainAirportTransfer(request: CreateRideRequest): IO[RideError, Unit] =
     request.specifics match {
-      case Some(RideSpecifics.AirportTransfer(airportCode, flightNumber)) =>
+      case Some(RideSpecifics.AirportTransfer(airportCode, flightNumber, _)) =>
         ZIO
           .when(airportCode.trim.isEmpty || flightNumber.trim.isEmpty)(
             ZIO.fail(
@@ -96,7 +96,7 @@ given createRideRequestValidator: Validator[CreateRideRequest] with
             )
           )
           .unit
-      case None                                                           => ZIO.unit
+      case None                                                              => ZIO.unit
     }
 
 given assignDriverRequestValidator: Validator[AssignDriverRequest] with

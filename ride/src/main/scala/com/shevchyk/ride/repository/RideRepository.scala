@@ -41,8 +41,11 @@ trait RideRepository {
   def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]
   // Reset sent reminders for a ride (when pickupDateTime changes)
   def clearReminders(rideId: RideId): Task[Unit]
-  // Update the airport checkpoint column for an arrival-transfer ride
-  def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Unit]
+  // Update the airport checkpoint column for an arrival-transfer ride.
+  // Returns true if the checkpoint was advanced (row was updated), false if it was already at the same
+  // or a higher level (concurrent race lost). The SQL guard is authoritative; the in-memory pre-check
+  // in AirportCheckpointService is a fast-fail optimisation only.
+  def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Boolean]
 }
 
 object RideRepository {

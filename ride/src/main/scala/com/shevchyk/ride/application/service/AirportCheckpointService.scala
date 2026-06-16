@@ -72,28 +72,34 @@ class AirportCheckpointServiceImpl(
       _               <- ZIO
                            .fail(RideError.InvalidOperation("Checkpoints only apply to in-progress arrival airport transfers"))
                            .when(!ride.isArrivalAirportTransfer || ride.status != RideStatus.InProgress)
-      // Forward-only guard (skip-ahead allowed; backward and same-level rejected)
+      // Fast-fail in-memory pre-check (snapshot ordinal; cheap optimistic guard)
       currentOrdinal   = ride.airportCheckpoint.map(_.ordinal).getOrElse(-1)
       requestedOrdinal = requestedCheckpoint.ordinal
       _               <- ZIO
                            .fail(RideError.InvalidOperation("Checkpoint already passed or at the same level"))
                            .when(requestedOrdinal <= currentOrdinal)
-      // Persist
-      _               <- rideRepository.updateCheckpoint(ride.id, requestedCheckpoint).mapError(RideError.DatabaseError.apply)
-      // Publish event (fire-and-forget; skip-ahead emits exactly one event for the requested checkpoint)
+      // Authoritative atomic forward-only guard in the DB (returns false if a concurrent writer already advanced)
+      advanced        <- rideRepository.updateCheckpoint(ride.id, requestedCheckpoint).mapError(RideError.DatabaseError.apply)
+      _               <- ZIO
+                           .fail(RideError.InvalidOperation("Checkpoint already passed or at the same level (concurrent update)"))
+                           .when(!advanced)
+      // Publish event only when a driverId is present; skip when None to avoid phantom dedup entries
+      // and silently-failing FCM pushes to a non-existent recipient.
       _               <-
-        eventHub
-          .publish(
-            WebSocketEvent.AirportCheckpointReached(
-              rideId = ride.id.value,
-              driverId = ride.driverId.map(_.value).getOrElse(java.util.UUID.randomUUID()),
-              clientId = ride.clientId.value,
-              checkpointType = AirportCheckpoint.toDbString(requestedCheckpoint),
-              checkpointName = MucCheckpoints.displayName(requestedCheckpoint),
-              companyId = ride.companyId.value
+        ZIO.foreachDiscard(ride.driverId) { did =>
+          eventHub
+            .publish(
+              WebSocketEvent.AirportCheckpointReached(
+                rideId = ride.id.value,
+                driverId = did.value,
+                clientId = ride.clientId.value,
+                checkpointType = AirportCheckpoint.toDbString(requestedCheckpoint),
+                checkpointName = MucCheckpoints.displayName(requestedCheckpoint),
+                companyId = ride.companyId.value
+              )
             )
-          )
-          .ignore
+            .ignore
+        }
     yield ()
 
 object AirportCheckpointService:

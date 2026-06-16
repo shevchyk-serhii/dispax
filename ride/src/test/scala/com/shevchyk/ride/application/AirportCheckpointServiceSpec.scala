@@ -19,6 +19,8 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
   val driverId  = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000002"))
 
   // -- Ride factory --------------------------------------------------------
+  // isArrival is encoded in AirportTransfer.isArrival (persisted via the specifics JSONB column),
+  // NOT in the flightIsArrival column which is never written by create()/update().
   def makeInProgressArrivalRide(checkpoint: Option[AirportCheckpoint] = None): Ride = Ride(
     id = RideId.generate(),
     clientId = clientId,
@@ -29,8 +31,7 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
     pickupLocation = Location("MUC Airport"),
     dropoffLocation = Location("Munich City"),
     pickupDateTime = Instant.now().plusSeconds(3600),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123")),
-    flightIsArrival = Some(true),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true)),
     airportCheckpoint = checkpoint
   )
 
@@ -184,11 +185,14 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
           })
         }.provide(layersWithHub),
 
-        test("airport transfer with flightIsArrival=false rejected with InvalidOperation") {
+        test("airport transfer with isArrival=false in specifics rejected with InvalidOperation") {
           for {
             repo   <- ZIO.service[RideRepository]
             svc    <- ZIO.service[AirportCheckpointService]
-            ride    = makeInProgressArrivalRide().copy(flightIsArrival = Some(false))
+            // isArrival=false in specifics → isArrivalAirportTransfer=false → InvalidOperation
+            ride    = makeInProgressArrivalRide().copy(
+                        specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = false))
+                      )
             _      <- repo.create(ride)
             result <- svc.markCheckpoint(ride, AirportCheckpoint.Landed, clientId).exit
           } yield assertTrue(result match {

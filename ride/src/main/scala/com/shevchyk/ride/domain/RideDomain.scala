@@ -59,9 +59,18 @@ sealed trait RideSpecifics
 
 object RideSpecifics:
 
+  /**
+   * Specifics for airport transfer rides.
+   *
+   * `isArrival` encodes the direction of the flight: true = arrival (passenger disembarking), false = departure. Stored
+   * in the `specifics` JSONB column so it survives round-trips without a separate SQL column. Legacy rows lacking the
+   * field decode with Circe's default-param handling: Circe's `deriveDecoder` does NOT honour Scala default parameters,
+   * so we use a custom decoder that falls back to `false` for the missing key.
+   */
   final case class AirportTransfer(
       airportCode: String,
-      flightNumber: String
+      flightNumber: String,
+      isArrival: Boolean = false
   ) extends RideSpecifics
 
   // Circe JSON codecs for PostgreSQL JSONB
@@ -69,7 +78,16 @@ object RideSpecifics:
   import io.circe.generic.semiauto.*
   import io.circe.syntax.*
 
-  implicit val airportTransferCodec: Codec[AirportTransfer] = deriveCodec[AirportTransfer]
+  // Custom decoder: tolerates missing `isArrival` key (legacy rows) by defaulting to false.
+  implicit val airportTransferDecoder: Decoder[AirportTransfer] = Decoder.instance { c =>
+    for {
+      airportCode  <- c.downField("airportCode").as[String]
+      flightNumber <- c.downField("flightNumber").as[String]
+      isArrival    <- c.downField("isArrival").as[Option[Boolean]]
+    } yield AirportTransfer(airportCode, flightNumber, isArrival.getOrElse(false))
+  }
+
+  implicit val airportTransferEncoder: Encoder[AirportTransfer] = deriveEncoder[AirportTransfer]
 
   implicit val rideSpecificsEncoder: Encoder[RideSpecifics] = Encoder.instance { case at: AirportTransfer =>
     at.asJson.mapObject(_.add("type", "AirportTransfer".asJson))
@@ -140,7 +158,11 @@ final case class Ride(
 
   def isAirportTransfer: Boolean = specifics.exists(_.isInstanceOf[RideSpecifics.AirportTransfer])
 
-  def isArrivalAirportTransfer: Boolean = isAirportTransfer && flightIsArrival.getOrElse(false)
+  /**
+   * True when the ride is an arrival airport transfer (direction encoded in the AirportTransfer specifics).
+   */
+  def isArrivalAirportTransfer: Boolean =
+    specifics.collectFirst { case at: RideSpecifics.AirportTransfer if at.isArrival => at }.isDefined
 
 final case class CreateRideRequest(
     clientId: PersonId,

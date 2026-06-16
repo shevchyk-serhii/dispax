@@ -273,8 +273,8 @@ object AppRoutesSpec extends ZIOSpecDefault {
       ): Task[List[(java.time.Instant, BigDecimal)]] = ZIO.succeed(Nil)
       def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]    = ZIO.succeed(Nil)
       def clearReminders(rideId: RideId): Task[Unit]                                                     = ZIO.unit
-      def updateCheckpoint(rideId: RideId, checkpoint: com.shevchyk.ride.domain.AirportCheckpoint): Task[Unit] =
-        ZIO.unit
+      def updateCheckpoint(rideId: RideId, checkpoint: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean] =
+        ZIO.succeed(true)
     }
   }
 

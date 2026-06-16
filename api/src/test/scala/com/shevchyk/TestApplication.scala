@@ -450,6 +450,7 @@ object TestApplication extends ZIOAppDefault:
   )
 
   // Dedicated ride for 34_airport_checkpoints — InProgress + ArrivalAirportTransfer
+  // isArrival is encoded in AirportTransfer.isArrival, not the flightIsArrival column.
   private val testRideAirportCheckpoint = Ride(
     id = RideId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")),
     clientId = testPersonId1,
@@ -462,8 +463,7 @@ object TestApplication extends ZIOAppDefault:
     pickupDateTime = Instant.now().minusSeconds(1200),
     scheduledTime = Some(Instant.now().minusSeconds(1200)),
     startTime = Some(Instant.now().minusSeconds(1200)),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH456")),
-    flightIsArrival = Some(true)
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH456", isArrival = true))
   )
 
   private val inMemoryRideRepositoryLayer: ZLayer[Any, Nothing, RideRepository] = ZLayer.fromZIO(
@@ -577,8 +577,17 @@ object TestApplication extends ZIOAppDefault:
               .toList
           )
           def clearReminders(id: RideId): Task[Unit]                                                            = ZIO.unit
-          def updateCheckpoint(id: RideId, checkpoint: AirportCheckpoint): Task[Unit] =
-            ridesRef.update(m => m.get(id).fold(m)(r => m.updated(id, r.copy(airportCheckpoint = Some(checkpoint))))).unit
+          def updateCheckpoint(id: RideId, checkpoint: AirportCheckpoint): Task[Boolean] =
+            ridesRef.modify { m =>
+              m.get(id) match
+                case None       => (false, m)
+                case Some(ride) =>
+                  val currentOrdinal = ride.airportCheckpoint.map(_.ordinal).getOrElse(-1)
+                  if checkpoint.ordinal > currentOrdinal then
+                    (true, m.updated(id, ride.copy(airportCheckpoint = Some(checkpoint))))
+                  else
+                    (false, m)
+            }
           private def periodTime(r: Ride): Instant                                                              = r.endTime.getOrElse(r.pickupDateTime)
       }
   )
