@@ -6,11 +6,8 @@ import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.core.domain.{Person, PersonId, PersonRole, UserStatus}
 import zio.*
-import zio.json.*
-import java.time.Instant
 import java.util.UUID
 import org.mindrot.jbcrypt.BCrypt
-import com.github.f4b6a3.uuid.UuidCreator
 
 trait AuthService:
   def login(email: String, password: String): ZIO[Any, AuthError, LoginResponse]
@@ -123,13 +120,7 @@ class AuthServiceImpl(
         request.status.fold(ZIO.succeed(existing.status))(s =>
           ZIO.attempt(UserStatus.valueOf(s)).orElseFail(ValidationError("status", "Invalid status"))
         )
-      updated      = existing.copy(
-                       email = request.email.getOrElse(existing.email),
-                       name = request.name.getOrElse(existing.name),
-                       role = role,
-                       phone = request.phone.orElse(existing.phone),
-                       status = status
-                     )
+      updated      = request.applyTo(existing, role, status)
       saved       <- personRepository.update(updated).orElseFail(ValidationError("user", "Failed to update user"))
     yield UserDto.fromPerson(saved)
 

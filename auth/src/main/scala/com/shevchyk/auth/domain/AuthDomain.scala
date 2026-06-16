@@ -1,6 +1,6 @@
 package com.shevchyk.auth.domain
 
-import com.shevchyk.core.domain.{Person, PersonRole}
+import com.shevchyk.core.domain.{Person, PersonRole, UserStatus}
 import sttp.tapir.Schema
 import zio.json.*
 import java.util.UUID
@@ -49,7 +49,20 @@ case class UpdateUserRequest(
     role: Option[String] = None,
     phone: Option[String] = None,
     status: Option[String] = None
-) derives JsonCodec
+) derives JsonCodec:
+
+  /** Apply the patch onto an existing person. The `role` and `status` fields are
+    * passed in already parsed/validated by the caller (they require effectful
+    * validation); the remaining fields are merged from this request.
+    */
+  def applyTo(current: Person, role: PersonRole, status: UserStatus): Person =
+    current.copy(
+      email = email.getOrElse(current.email),
+      name = name.getOrElse(current.name),
+      role = role,
+      phone = phone.orElse(current.phone),
+      status = status
+    )
 
 object UpdateUserRequest:
   given Schema[UpdateUserRequest] = Schema.derived

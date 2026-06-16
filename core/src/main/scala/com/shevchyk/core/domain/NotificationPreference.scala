@@ -35,4 +35,22 @@ final case class UpdateNotificationPreferenceRequest(
     smsNotifications: Option[Boolean] = None,
     quietHoursStart: Option[String] = None,
     quietHoursEnd: Option[String] = None
-) derives JsonCodec
+) derives JsonCodec:
+
+  /** Apply the patch onto existing preferences. Toggles default to their
+    * current value; the optional quiet-hours fields keep the current value when
+    * unset (never cleared); `updatedAt` is refreshed.
+    */
+  def applyTo(current: NotificationPreference): NotificationPreference =
+    current.copy(
+      rideUpdates = rideUpdates.getOrElse(current.rideUpdates),
+      chatMessages = chatMessages.getOrElse(current.chatMessages),
+      driverApproaching = driverApproaching.getOrElse(current.driverApproaching),
+      geofenceAlerts = geofenceAlerts.getOrElse(current.geofenceAlerts),
+      poolUpdates = poolUpdates.getOrElse(current.poolUpdates),
+      emailNotifications = emailNotifications.getOrElse(current.emailNotifications),
+      smsNotifications = smsNotifications.getOrElse(current.smsNotifications),
+      quietHoursStart = quietHoursStart.orElse(current.quietHoursStart),
+      quietHoursEnd = quietHoursEnd.orElse(current.quietHoursEnd),
+      updatedAt = Instant.now()
+    )
