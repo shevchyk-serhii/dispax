@@ -106,5 +106,7 @@ object PostgresTokenRepositorySpec extends ZIOSpecDefault {
           bKept.contains(otherUserId)
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 }

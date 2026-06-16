@@ -14,15 +14,14 @@ class LoggingEmailSmsService extends EmailSmsService:
     val message = MessageTemplates.driverAssignmentText(data)
     ZIO.logInfo(s"[EMAIL/SMS PLACEHOLDER] Driver Assignment: $message")
 
-  // Mock transport: logs the composed email and attachment size. A real SMTP
-  // implementation replaces this class without touching the call sites.
-  override def sendInvoiceEmail(data: InvoiceEmailData): Task[Unit] =
-    val subject = MessageTemplates.invoiceEmailSubject(data)
-    val body    = MessageTemplates.invoiceEmailBody(data)
-    ZIO.logInfo(
-      s"[EMAIL/SMS PLACEHOLDER] Invoice email to ${data.toEmail} | subject: $subject | " +
-        s"attachment: ${data.pdfFilename} (${data.pdfAttachment.length} bytes)\n$body"
-    )
+  // Mock transport for invoices. We deliberately do NOT log the recipient email,
+  // the rendered body or the amounts: those are PII / financial data that must not
+  // leak into centralised logs. A real SMTP implementation replaces this class
+  // without touching the call sites.
+  override def sendInvoiceEmail(data: InvoiceEmailData): Task[Unit] = ZIO.logInfo(
+    s"[EMAIL/SMS PLACEHOLDER] Invoice email queued | invoice: ${data.invoiceNumber} | " +
+      s"attachment: ${data.pdfFilename} (${data.pdfAttachment.length} bytes)"
+  )
 
 object LoggingEmailSmsService:
   val layer: ZLayer[Any, Nothing, EmailSmsService] = ZLayer.succeed(new LoggingEmailSmsService)

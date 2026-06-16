@@ -33,6 +33,18 @@ object ExportApi:
 
   // --- DATEV helpers (copied verbatim from ExportRoutes) ---
 
+  /**
+   * Sanitise a free-text value before it is placed into a `;`-delimited DATEV CSV field. Prevents:
+   *   - CSV structure breakage from embedded `;`, quotes, CR/LF (the field is quoted and inner quotes doubled);
+   *   - CSV formula injection in spreadsheet software (a leading `= + - @ TAB CR` is neutralised with a `'` prefix).
+   * Applied to attacker-influenced values such as client names and expense descriptions.
+   */
+  private def escapeCsvField(raw: String): String =
+    val deFormulated = if raw.nonEmpty && "=+-@\t\r".contains(raw.head) then s"'$raw" else raw
+    if deFormulated.exists(c => c == ';' || c == '"' || c == '\n' || c == '\r') then
+      "\"" + deFormulated.replace("\"", "\"\"") + "\""
+    else deFormulated
+
   private def datevDate(instant: Instant): String =
     val ld = instant.atZone(ZoneOffset.UTC).toLocalDate
     f"${ld.getDayOfMonth}%02d${ld.getMonthValue}%02d"
@@ -66,7 +78,8 @@ object ExportApi:
       val date    = datevDate(ride.endTime.getOrElse(ride.requestTime))
       val rideId  = ride.id.value.toString.take(12)
       val client  = clientNames.getOrElse(ride.clientId, "Unbekannt")
-      f"$amount%.2f;S;EUR;8400;$counter;;$date;$rideId;Fahrdienstleistung $client"
+      val text    = escapeCsvField(s"Fahrdienstleistung $client")
+      f"$amount%.2f;S;EUR;8400;$counter;;$date;$rideId;$text"
     }
     (revenueCsvHeader +: rows).mkString("\n")
 
@@ -76,7 +89,8 @@ object ExportApi:
       val date    = datevDate(exp.createdAt)
       val expId   = exp.id.value.toString.take(12)
       val desc    = exp.description.getOrElse("")
-      f"${exp.amount.doubleValue}%.2f;S;EUR;$account;70000;;$date;$expId;${exp.category} $desc"
+      val text    = escapeCsvField(s"${exp.category} $desc")
+      f"${exp.amount.doubleValue}%.2f;S;EUR;$account;70000;;$date;$expId;$text"
     }
     (expenseCsvHeader +: rows).mkString("\n")
 

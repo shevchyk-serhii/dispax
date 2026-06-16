@@ -661,7 +661,9 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           !found.map(_.id).contains(future.id)
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 
   private val storageDir = "/tmp/dispax-test-invoices"
 

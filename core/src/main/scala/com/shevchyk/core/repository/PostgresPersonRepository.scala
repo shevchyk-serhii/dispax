@@ -75,6 +75,13 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       .transact(xa)
   }
 
+  override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]] = {
+    (fr"SELECT" ++ selectColumns ++ fr"FROM persons WHERE id = ${id.value} AND company_id = ${companyId.value}")
+      .query[Person]
+      .option
+      .transact(xa)
+  }
+
   override def findByEmail(email: String): Task[Option[Person]] = {
     (fr"SELECT" ++ selectColumns ++ fr"FROM persons WHERE email = $email")
       .query[Person]
@@ -147,8 +154,14 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
   }
 
   override def searchByQuery(query: String): Task[List[Person]] = {
-    val searchPattern = s"%${query.toLowerCase}%"
-    (fr"SELECT" ++ selectColumns ++ fr"FROM persons WHERE LOWER(name) LIKE $searchPattern OR LOWER(email) LIKE $searchPattern")
+    // Escape LIKE wildcards (\ % _) so user input is matched literally and can't widen
+    // the search (e.g. "%" matching every row). Backslash first to avoid double-escaping.
+    val escaped       = query.toLowerCase
+      .replace("\\", "\\\\")
+      .replace("%", "\\%")
+      .replace("_", "\\_")
+    val searchPattern = s"%$escaped%"
+    (fr"SELECT" ++ selectColumns ++ fr"FROM persons WHERE LOWER(name) LIKE $searchPattern ESCAPE '\' OR LOWER(email) LIKE $searchPattern ESCAPE '\'")
       .query[Person]
       .to[List]
       .transact(xa)

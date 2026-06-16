@@ -20,6 +20,11 @@ trait RideRepository {
   def findByDriverId(driverId: PersonId): Task[List[Ride]]
   def findByCompanyId(companyId: CompanyId): Task[List[Ride]]
   def update(ride: Ride): Task[Ride]
+  // Atomic compare-and-set on the ride status: persists `ride` only if the row's current
+  // status is still one of `expectedStatuses`. Returns true on success, false if another
+  // concurrent transaction already moved the ride out of those statuses. Used to make
+  // driver (re)assignment safe against the read-modify-write race between two dispatchers.
+  def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]
   def delete(id: RideId): Task[Unit]
   def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]
   def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]

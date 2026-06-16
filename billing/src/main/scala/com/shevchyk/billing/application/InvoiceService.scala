@@ -211,7 +211,11 @@ class InvoiceServiceImpl(
       bytes   <- PdfGenerator
                    .generateBytes(invoice, cc, profile)
                    .mapError(InvoiceError.PdfGenerationError(_))
-      path     = s"$storageDir/${invoice.number.replace('/', '-')}.pdf"
+      // Sanitise the invoice number into a safe filename: whitelist alphanumerics, dot,
+      // dash and underscore. `replace('/', '-')` alone left `..` path-traversal sequences
+      // intact, which could write the PDF outside `storageDir`.
+      safeName = invoice.number.replaceAll("[^A-Za-z0-9._-]", "_").replace("..", "__")
+      path     = s"$storageDir/$safeName.pdf"
       _       <- PdfGenerator
                    .generateToFile(invoice, cc, profile, path)
                    .mapError(InvoiceError.PdfGenerationError(_))

@@ -131,5 +131,7 @@ object PostgresRideRatingRepositorySpec extends ZIOSpecDefault {
           noData.isEmpty
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 }

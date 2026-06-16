@@ -156,5 +156,7 @@ object PostgresEmergencyReassignmentRepositorySpec extends ZIOSpecDefault {
           found.head.newDriverId.contains(newDriverId)
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 }

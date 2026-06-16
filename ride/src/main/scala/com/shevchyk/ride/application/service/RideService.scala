@@ -449,18 +449,27 @@ class RideServiceImpl(
       isVip             = clientOpt.exists(_.isVip)
       isPreferredDriver = clientOpt.flatMap(_.preferredDriverId).contains(driverId)
 
-      updatedRide = ride
-                      .focus(_.status)
-                      .replace(RideStatus.Assigned)
-                      .focus(_.driverId)
-                      .replace(Some(driverId))
-                      .focus(_.isVipRide)
-                      .replace(isVip)
-                      .focus(_.preferredDriverUsed)
-                      .replace(isPreferredDriver)
+      updatedRide   = ride
+                        .focus(_.status)
+                        .replace(RideStatus.Assigned)
+                        .focus(_.driverId)
+                        .replace(Some(driverId))
+                        .focus(_.isVipRide)
+                        .replace(isVip)
+                        .focus(_.preferredDriverUsed)
+                        .replace(isPreferredDriver)
 
-      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
-      _             <-
+      // Atomic compare-and-set: only assign if the ride is still `Requested`. Guards against
+      // two dispatchers assigning different drivers to the same ride concurrently — the loser
+      // gets an InvalidStatusTransition instead of silently overwriting the winner.
+      applied      <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Requested)).mapDatabaseError
+      _            <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(RideStatus.Assigned, RideStatus.Assigned))
+          .when(!applied)
+          .unit
+      persistedRide = updatedRide
+      _            <-
         eventHub
           .publish(
             WebSocketEvent.RideAssigned(
@@ -471,7 +480,7 @@ class RideServiceImpl(
             )
           )
           .ignore
-      _             <-
+      _            <-
         emailSmsService
           .sendDriverAssignment(
             RideConfirmationData(
@@ -487,7 +496,7 @@ class RideServiceImpl(
             ZIO.logError(s"Failed to send driver assignment notification for ride ${persistedRide.id.value}: $e")
           )
           .ignore
-      _             <-
+      _            <-
         auditService
           .log(
             AuditLogEntry.record(
@@ -534,12 +543,19 @@ class RideServiceImpl(
       // Check scheduling conflicts (exclude current ride from conflict check)
       _       <- checkScheduleConflict(newDriverId, ride)
 
-      updatedRide = ride
-                      .focus(_.driverId)
-                      .replace(Some(newDriverId))
+      updatedRide   = ride
+                        .focus(_.driverId)
+                        .replace(Some(newDriverId))
 
-      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
-      _             <-
+      // Atomic compare-and-set: only reassign while the ride is still `Assigned`.
+      applied      <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Assigned)).mapDatabaseError
+      _            <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Assigned))
+          .when(!applied)
+          .unit
+      persistedRide = updatedRide
+      _            <-
         eventHub
           .publish(
             WebSocketEvent.RideAssigned(
@@ -550,7 +566,7 @@ class RideServiceImpl(
             )
           )
           .ignore
-      _             <-
+      _            <-
         auditService
           .log(
             AuditLogEntry.record(

@@ -8,6 +8,9 @@ import zio.*
 trait PersonRepository {
   def create(person: Person): Task[Person]
   def findById(id: PersonId): Task[Option[Person]]
+  // Tenant-scoped lookup: returns the person only if it belongs to the given company.
+  // Used to enforce company isolation on update/delete-by-id operations.
+  def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]
   def findByEmail(email: String): Task[Option[Person]]
   def findByRole(role: PersonRole): Task[List[Person]]
   def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]
