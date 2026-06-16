@@ -26,6 +26,15 @@ ThisBuild / scalacOptions ++= Seq(
   "-Wnonunit-statement"
 )
 
+// Integration specs share a single reusable Postgres container
+// (see PostgresTestContainer) and isolate themselves by TRUNCATE-ing + re-seeding
+// their tables on each test. That isolation only holds if specs run one at a time
+// against the shared DB — otherwise one spec's TRUNCATE wipes another's data
+// mid-run. Disabling parallel test execution serialises specs within each module
+// so the shared DB stays consistent. The big speed win comes from container reuse,
+// not from cross-spec parallelism (which would be unsafe on a shared DB).
+ThisBuild / Test / parallelExecution := false
+
 ThisBuild / assembly / assemblyMergeStrategy := {
   case x if x.endsWith("module-info.class")            => MergeStrategy.discard
   case x if x.contains("io.netty.versions.properties") => MergeStrategy.first

@@ -56,7 +56,7 @@ test-bdd:
 
 # Run all unit + integration tests (excludes Cucumber)
 test:
-	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test"
+	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test; billing/test"
 
 # Run ONLY fast unit tests (in-memory repos, no Testcontainers / no Postgres).
 # Integration specs carry `@@ TestAspect.tag("integration")`; -ignore-tags drops
@@ -309,7 +309,7 @@ e2e-red: emulator-up e2e-backend-up
 # Run all tests: unit + integration + Cucumber BDD
 test-all:
 	@echo "▶ Running unit + integration tests..."
-	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test"
+	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test; billing/test"
 	@echo "▶ Running Cucumber BDD tests..."
 	sbt cucumber
 
