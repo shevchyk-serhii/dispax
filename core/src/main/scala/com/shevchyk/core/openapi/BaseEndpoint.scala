@@ -17,5 +17,4 @@ object BaseEndpoint:
    * Base for public (unauthenticated) endpoints. Declares the common `application/json` error body so failures are
    * documented uniformly as `{ "error": "..." }`.
    */
-  val publicEndpoint: PublicEndpoint[Unit, ApiError, Unit, Any] =
-    endpoint.errorOut(jsonBody[ApiError])
+  val publicEndpoint: PublicEndpoint[Unit, ApiError, Unit, Any] = endpoint.errorOut(jsonBody[ApiError])

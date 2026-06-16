@@ -106,8 +106,7 @@ object EmergencyApi:
         _                <-
           audit
             .log(
-              AuditLogEntry(
-                id = AuditLogId.generate(),
+              AuditLogEntry.record(
                 companyId = ride.companyId,
                 actorId = PersonId(user.userId),
                 action = AuditAction.RideReassigned,

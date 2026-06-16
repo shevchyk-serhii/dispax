@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev prod test test-bdd test-all clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-bdd test-all clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -43,6 +43,12 @@ setup-hooks:
 # from APP_ENV itself, so plain `sbt run` is enough — no -Dconfig.resource needed.
 dev:
 	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run
+
+# Start backend locally with the test profile against the isolated postgres-test
+# DB (5433/dispax_test). Reads .env.test (APP_ENV=test → application-test.conf).
+# Bring the DB up first: docker compose up -d postgres-test
+run-test:
+	@export $$(cat .env.test | grep -v '^#' | xargs) && sbt run
 
 # Run BDD Cucumber scenarios
 test-bdd:

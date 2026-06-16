@@ -64,9 +64,9 @@ object WebSocketEvent:
       companyId: UUID
   ) extends WebSocketEvent
 
-  /** The assigned driver is at risk of missing the pickup on time.
-   *  Emitted by the predictive ETA monitor to alert the company's dispatchers.
-   *  `slackMinutes` = minutesUntilPickup - etaMinutes (negative = already late).
+  /**
+   * The assigned driver is at risk of missing the pickup on time. Emitted by the predictive ETA monitor to alert the
+   * company's dispatchers. `slackMinutes` = minutesUntilPickup - etaMinutes (negative = already late).
    */
   final case class EtaAtRisk(
       rideId: UUID,

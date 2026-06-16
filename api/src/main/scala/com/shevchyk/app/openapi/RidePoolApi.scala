@@ -149,8 +149,7 @@ object RidePoolApi:
       _         <-
         audit
           .log(
-            AuditLogEntry(
-              id = AuditLogId.generate(),
+            AuditLogEntry.record(
               companyId = pool.companyId,
               actorId = PersonId(user.userId),
               action = AuditAction.UserUpdated,

@@ -235,7 +235,8 @@ object PushNotificationListener:
       case WebSocketEvent.EtaAtRisk(rideId, _, _, etaMinutes, minutesUntilPickup, slackMinutes, companyId) =>
         val lateBy       = -slackMinutes
         val body         =
-          if slackMinutes < 0 then s"Driver is ~$lateBy min late (ETA ${etaMinutes}m, pickup in ${minutesUntilPickup}m)."
+          if slackMinutes < 0 then
+            s"Driver is ~$lateBy min late (ETA ${etaMinutes}m, pickup in ${minutesUntilPickup}m)."
           else s"Tight pickup: ETA ${etaMinutes}m vs pickup in ${minutesUntilPickup}m."
         val notification = PushNotification(
           title = "Ride at risk of delay",

@@ -26,11 +26,10 @@ object Validator:
    * every error that occurred. Use this in place of a fail-fast `for`-comprehension when better UX is worth collecting
    * all errors.
    */
-  def accumulate[E, A](value: A)(checks: IO[E, Unit]*): IO[NonEmptyChunk[E], A] =
-    ZIO
-      .validatePar(checks)(identity)
-      .mapError(NonEmptyChunk.fromCons)
-      .as(value)
+  def accumulate[E, A](value: A)(checks: IO[E, Unit]*): IO[NonEmptyChunk[E], A] = ZIO
+    .validatePar(checks)(identity)
+    .mapError(NonEmptyChunk.fromCons)
+    .as(value)
 
   def compose[A, B](validatorA: Validator[A], validatorB: Validator[B]): Validator[(A, B)] =
     new Validator[(A, B)]:

@@ -22,7 +22,9 @@ import zio.json.{JsonDecoder, JsonEncoder}
  */
 object RefinedTypes:
 
-  /** Builds a refined-type codec pair from the base codec plus the type's smart constructor — no recursion. */
+  /**
+   * Builds a refined-type codec pair from the base codec plus the type's smart constructor — no recursion.
+   */
   private def refinedJson[Base, T](
       ops: RefinedTypeOps[Base, ?, T]
   )(using baseEnc: JsonEncoder[Base], baseDec: JsonDecoder[Base]): (JsonEncoder[T], JsonDecoder[T]) =
@@ -35,6 +37,7 @@ object RefinedTypes:
   // attempted (it's not worth the false negatives for a business app).
   private type EmailConstraint = Match["^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"]
   opaque type Email            = String :| EmailConstraint
+
   object Email extends RefinedTypeOps[String, EmailConstraint, Email]:
     private val (e, d)       = refinedJson(this)
     given JsonEncoder[Email] = e
@@ -45,6 +48,7 @@ object RefinedTypes:
   // E.164-ish: optional leading +, then 6–15 digits.
   private type PhoneConstraint = Match["^\\+?[0-9]{6,15}$"]
   opaque type PhoneNumber      = String :| PhoneConstraint
+
   object PhoneNumber extends RefinedTypeOps[String, PhoneConstraint, PhoneNumber]:
     private val (e, d)             = refinedJson(this)
     given JsonEncoder[PhoneNumber] = e
@@ -54,6 +58,7 @@ object RefinedTypes:
   // -- NonEmptyName ----------------------------------------------------------
   private type NameConstraint = MinLength[1] & MaxLength[200]
   opaque type NonEmptyName    = String :| NameConstraint
+
   object NonEmptyName extends RefinedTypeOps[String, NameConstraint, NonEmptyName]:
     private val (e, d)              = refinedJson(this)
     given JsonEncoder[NonEmptyName] = e
@@ -63,15 +68,17 @@ object RefinedTypes:
   // -- Geographic coordinates ------------------------------------------------
   private type LatConstraint = GreaterEqual[-90.0] & LessEqual[90.0]
   opaque type Latitude       = Double :| LatConstraint
+
   object Latitude extends RefinedTypeOps[Double, LatConstraint, Latitude]:
     private val (e, d)          = refinedJson(this)
     given JsonEncoder[Latitude] = e
     given JsonDecoder[Latitude] = d
     // Schema is invariant; the refined type shares Double's wire form, so reuse it.
-    given Schema[Latitude] = Schema.schemaForDouble.as[Latitude]
+    given Schema[Latitude]      = Schema.schemaForDouble.as[Latitude]
 
   private type LonConstraint = GreaterEqual[-180.0] & LessEqual[180.0]
   opaque type Longitude      = Double :| LonConstraint
+
   object Longitude extends RefinedTypeOps[Double, LonConstraint, Longitude]:
     private val (e, d)           = refinedJson(this)
     given JsonEncoder[Longitude] = e
@@ -82,6 +89,7 @@ object RefinedTypes:
   // Non-negative monetary amount (prices, fees never go below zero).
   private type AmountConstraint = GreaterEqual[0.0]
   opaque type NonNegativeAmount = BigDecimal :| AmountConstraint
+
   object NonNegativeAmount extends RefinedTypeOps[BigDecimal, AmountConstraint, NonNegativeAmount]:
     private val (e, d)                   = refinedJson(this)
     given JsonEncoder[NonNegativeAmount] = e

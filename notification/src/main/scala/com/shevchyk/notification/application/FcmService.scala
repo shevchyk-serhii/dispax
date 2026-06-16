@@ -70,13 +70,14 @@ object FcmService:
                            .builder()
                            .setCredentials(GoogleCredentials.getApplicationDefault())
                            .build()
-                         FirebaseApp.initializeApp(options)
+                         val _       = FirebaseApp.initializeApp(options)
                        }
                        Some(FirebaseMessaging.getInstance())
                      }
                      .catchAll { e =>
-                       ZIO.logWarning(s"Firebase not configured: ${e.getMessage}. Push notifications disabled.") *>
-                         ZIO.succeed(None)
+                       ZIO
+                         .logWarning(s"Firebase not configured: ${e.getMessage}. Push notifications disabled.")
+                         .as(None)
                      }
     yield FcmServiceImpl(tokenRepo, messaging)
   }

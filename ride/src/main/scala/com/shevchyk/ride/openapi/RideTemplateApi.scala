@@ -31,43 +31,39 @@ object RideTemplateApi:
 
   // -- Endpoint descriptions -----------------------------------------------
 
-  val createTemplateEndpoint =
-    secureEndpoint.post
-      .in("api" / "ride-templates")
-      .in(jsonBody[CreateRideTemplateRequest])
-      .out(statusCode(StatusCode.Created).and(jsonBody[RideTemplate]))
-      .tag(templateTag)
-      .summary("Create a ride template")
+  val createTemplateEndpoint = secureEndpoint.post
+    .in("api" / "ride-templates")
+    .in(jsonBody[CreateRideTemplateRequest])
+    .out(statusCode(StatusCode.Created).and(jsonBody[RideTemplate]))
+    .tag(templateTag)
+    .summary("Create a ride template")
 
-  val listTemplatesEndpoint =
-    secureEndpoint.get
-      .in("api" / "ride-templates")
-      .out(jsonBody[List[RideTemplate]])
-      .tag(templateTag)
-      .summary("List active ride templates for the company")
+  val listTemplatesEndpoint = secureEndpoint.get
+    .in("api" / "ride-templates")
+    .out(jsonBody[List[RideTemplate]])
+    .tag(templateTag)
+    .summary("List active ride templates for the company")
 
-  val deleteTemplateEndpoint =
-    secureEndpoint.delete
-      .in("api" / "ride-templates" / path[String]("id"))
-      .out(statusCode(StatusCode.NoContent))
-      .tag(templateTag)
-      .summary("Deactivate a ride template")
+  val deleteTemplateEndpoint = secureEndpoint.delete
+    .in("api" / "ride-templates" / path[String]("id"))
+    .out(statusCode(StatusCode.NoContent))
+    .tag(templateTag)
+    .summary("Deactivate a ride template")
 
-  val generateRidesEndpoint =
-    secureEndpoint.post
-      .in("api" / "ride-templates" / path[String]("id") / "generate")
-      .in(jsonBody[GenerateRidesRequest])
-      .out(statusCode(StatusCode.Created).and(jsonBody[List[RideDto]]))
-      .tag(templateTag)
-      .summary("Generate rides from a template for a date range")
+  val generateRidesEndpoint = secureEndpoint.post
+    .in("api" / "ride-templates" / path[String]("id") / "generate")
+    .in(jsonBody[GenerateRidesRequest])
+    .out(statusCode(StatusCode.Created).and(jsonBody[List[RideDto]]))
+    .tag(templateTag)
+    .summary("Generate rides from a template for a date range")
 
   val endpoints = List(createTemplateEndpoint, listTemplatesEndpoint, deleteTemplateEndpoint, generateRidesEndpoint)
 
   // -- Server logic --------------------------------------------------------
 
-  private val createTemplateServer: ZServerEndpoint[RideTemplateEnv, Any] =
-    createTemplateEndpoint.serverLogic { user => req =>
-      (for {
+  private val createTemplateServer: ZServerEndpoint[RideTemplateEnv, Any] = createTemplateEndpoint.serverLogic {
+    user => req =>
+      for {
         _                  <- checkRole(user, "DISPATCHER", "SECRETARY")
         companyId          <- requireCompanyId(user.companyId)
         clientPid          <- parsePersonId(req.clientId)
@@ -99,22 +95,22 @@ object RideTemplateApi:
                                 .mapError(_ => internalError)
         repo               <- ZIO.service[RideTemplateRepository]
         created            <- repo.create(template).mapError(_ => internalError)
-      } yield created)
-    }
+      } yield created
+  }
 
-  private val listTemplatesServer: ZServerEndpoint[RideTemplateEnv, Any] =
-    listTemplatesEndpoint.serverLogic { user => _ =>
-      (for {
+  private val listTemplatesServer: ZServerEndpoint[RideTemplateEnv, Any] = listTemplatesEndpoint.serverLogic {
+    user => _ =>
+      for {
         _         <- checkRole(user, "DISPATCHER", "SECRETARY")
         companyId <- requireCompanyId(user.companyId)
         repo      <- ZIO.service[RideTemplateRepository]
         templates <- repo.findActiveByCompanyId(companyId).mapError(_ => internalError)
-      } yield templates)
-    }
+      } yield templates
+  }
 
-  private val deleteTemplateServer: ZServerEndpoint[RideTemplateEnv, Any] =
-    deleteTemplateEndpoint.serverLogic { user => id =>
-      (for {
+  private val deleteTemplateServer: ZServerEndpoint[RideTemplateEnv, Any] = deleteTemplateEndpoint.serverLogic {
+    user => id =>
+      for {
         _           <- checkRole(user, "DISPATCHER", "SECRETARY")
         companyId   <- requireCompanyId(user.companyId)
         repo        <- ZIO.service[RideTemplateRepository]
@@ -122,53 +118,55 @@ object RideTemplateApi:
         // Enforce tenant isolation: findById/deactivate are not company-scoped,
         // so verify ownership before deactivating; cross-tenant id → NotFound.
         tmplOpt     <- repo.findById(tmplId).mapError(_ => internalError)
-        deactivated <- tmplOpt.filter(_.companyId == companyId) match
-                         case Some(_) => repo.deactivate(tmplId).mapError(_ => internalError)
-                         case None    => ZIO.succeed(false)
+        deactivated <-
+          tmplOpt.filter(_.companyId == companyId) match
+            case Some(_) => repo.deactivate(tmplId).mapError(_ => internalError)
+            case None    => ZIO.succeed(false)
         _           <- ZIO.fail((StatusCode.NotFound, ApiError("Not found"))).when(!deactivated)
-      } yield ())
-    }
+      } yield ()
+  }
 
-  private val generateRidesServer: ZServerEndpoint[RideTemplateEnv, Any] =
-    generateRidesEndpoint.serverLogic { user => (id, genReq) =>
-      (for {
+  private val generateRidesServer: ZServerEndpoint[RideTemplateEnv, Any] = generateRidesEndpoint.serverLogic {
+    user => (id, genReq) =>
+      for {
         _         <- checkRole(user, "DISPATCHER", "SECRETARY")
         companyId <- requireCompanyId(user.companyId)
-        repo    <- ZIO.service[RideTemplateRepository]
-        tmplId  <- parseUuid(id).map(RideTemplateId(_))
-        tmplOpt <- repo.findById(tmplId).mapError(_ => internalError)
+        repo      <- ZIO.service[RideTemplateRepository]
+        tmplId    <- parseUuid(id).map(RideTemplateId(_))
+        tmplOpt   <- repo.findById(tmplId).mapError(_ => internalError)
         // Enforce tenant isolation: only generate rides from a template that
         // belongs to the caller's company; cross-tenant id → NotFound.
-        tmpl    <- ZIO
-                     .fromOption(tmplOpt.filter(_.companyId == companyId))
-                     .orElseFail((StatusCode.NotFound, ApiError("Not found")))
-        range   <- ZIO
-                     .attempt((LocalDate.parse(genReq.fromDate), LocalDate.parse(genReq.toDate)))
-                     .mapError(_ => internalError)
+        tmpl      <- ZIO
+                       .fromOption(tmplOpt.filter(_.companyId == companyId))
+                       .orElseFail((StatusCode.NotFound, ApiError("Not found")))
+        range     <- ZIO
+                       .attempt((LocalDate.parse(genReq.fromDate), LocalDate.parse(genReq.toDate)))
+                       .mapError(_ => internalError)
         (from, to) = range
-        dates    = generateDates(tmpl, from, to)
-        service <- ZIO.service[RideService]
-        rides   <- ZIO
-                     .foreach(dates) { date =>
-                       val scheduledInstant = date.atTime(tmpl.pickupTime).toInstant(java.time.ZoneOffset.UTC)
-                       val specifics        =
-                         if (tmpl.isAirportTransfer)
-                           Some(RideSpecifics.AirportTransfer("UNKNOWN", tmpl.flightNumber.getOrElse("")))
-                         else None
-                       val createReq        = CreateRideRequest(
-                         clientId = tmpl.clientId,
-                         companyId = tmpl.companyId,
-                         pickupLocation = Location(tmpl.fromAddress, tmpl.fromLat, tmpl.fromLng),
-                         dropoffLocation = Location(tmpl.toAddress, tmpl.toLat, tmpl.toLng),
-                         scheduledTime = Some(scheduledInstant),
-                         notes = tmpl.notes,
-                         specifics = specifics
-                       )
-                       service.createRide(createReq)
-                     }
-                     .mapError(_ => internalError)
-      } yield rides.map(r => RideDto.fromDomain(r)))
-    }
+        dates      = generateDates(tmpl, from, to)
+        service   <- ZIO.service[RideService]
+        rides     <- ZIO
+                       .foreach(dates) { date =>
+                         val scheduledInstant = date.atTime(tmpl.pickupTime).toInstant(java.time.ZoneOffset.UTC)
+                         val specifics        =
+                           if (tmpl.isAirportTransfer)
+                             Some(RideSpecifics.AirportTransfer("UNKNOWN", tmpl.flightNumber.getOrElse("")))
+                           else
+                             None
+                         val createReq        = CreateRideRequest(
+                           clientId = tmpl.clientId,
+                           companyId = tmpl.companyId,
+                           pickupLocation = Location(tmpl.fromAddress, tmpl.fromLat, tmpl.fromLng),
+                           dropoffLocation = Location(tmpl.toAddress, tmpl.toLat, tmpl.toLng),
+                           scheduledTime = Some(scheduledInstant),
+                           notes = tmpl.notes,
+                           specifics = specifics
+                         )
+                         service.createRide(createReq)
+                       }
+                       .mapError(_ => internalError)
+      } yield rides.map(r => RideDto.fromDomain(r))
+  }
 
   private def generateDates(template: RideTemplate, from: LocalDate, to: LocalDate): List[LocalDate] =
     val allDates = Iterator.iterate(from)(_.plusDays(1)).takeWhile(!_.isAfter(to)).toList
@@ -189,5 +187,9 @@ object RideTemplateApi:
           .getOrElse(Set.empty)
         allDates.filter(d => days.contains(d.getDayOfWeek.getValue))
 
-  val serverEndpoints: List[ZServerEndpoint[RideTemplateEnv, Any]] =
-    List(createTemplateServer, listTemplatesServer, deleteTemplateServer, generateRidesServer)
+  val serverEndpoints: List[ZServerEndpoint[RideTemplateEnv, Any]] = List(
+    createTemplateServer,
+    listTemplatesServer,
+    deleteTemplateServer,
+    generateRidesServer
+  )

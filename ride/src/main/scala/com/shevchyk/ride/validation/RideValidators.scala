@@ -16,17 +16,16 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
   // `Validator.accumulate` runs them and gathers all failures, then we collapse the
   // collected messages into a single RideError.ValidationError to keep the
   // `Validator[A] { type Error = RideError }` contract.
-  def validate(request: CreateRideApiRequest): IO[RideError, CreateRideApiRequest] =
-    Validator
-      .accumulate(request)(
-        validateLocation(request.from, "Pickup location"),
-        validateLocation(request.to, "Dropoff location"),
-        validateDateTime(request.pickupDateTime),
-        validateClientId(request.clientId),
-        validateAirportTransfer(request),
-        validatePrice(request.price)
-      )
-      .mapError(errors => RideError.ValidationError(errors.toChunk.map(messageOf).mkString("; ")))
+  def validate(request: CreateRideApiRequest): IO[RideError, CreateRideApiRequest] = Validator
+    .accumulate(request)(
+      validateLocation(request.from, "Pickup location"),
+      validateLocation(request.to, "Dropoff location"),
+      validateDateTime(request.pickupDateTime),
+      validateClientId(request.clientId),
+      validateAirportTransfer(request),
+      validatePrice(request.price)
+    )
+    .mapError(errors => RideError.ValidationError(errors.toChunk.map(messageOf).mkString("; ")))
 
   private def messageOf(error: RideError): String =
     error match

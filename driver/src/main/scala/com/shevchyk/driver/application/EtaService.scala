@@ -8,20 +8,18 @@ import zio.*
 /**
  * Computes a driver's ETA to a ride's destination.
  *
- * Single source of truth for ETA assembly, shared by the proximity HTTP endpoint
- * and the predictive ETA monitor. Origin is the driver's live location; the
- * destination is the client's real-time location if known, otherwise the ride's
+ * Single source of truth for ETA assembly, shared by the proximity HTTP endpoint and the predictive ETA monitor. Origin
+ * is the driver's live location; the destination is the client's real-time location if known, otherwise the ride's
  * pickup coordinates (lazily geocoded from the address when missing).
  *
- * Uses the HERE Routing API when configured, falling back to a Haversine
- * straight-line estimate (~50 km/h urban speed) otherwise.
+ * Uses the HERE Routing API when configured, falling back to a Haversine straight-line estimate (~50 km/h urban speed)
+ * otherwise.
  */
 trait EtaService:
 
   /**
-   * ETA in minutes from the assigned driver's live location to the ride's
-   * destination. Returns `None` when there is no driver location or no usable
-   * destination coordinates.
+   * ETA in minutes from the assigned driver's live location to the ride's destination. Returns `None` when there is no
+   * driver location or no usable destination coordinates.
    */
   def etaForRide(ride: Ride): Task[Option[Int]]
 

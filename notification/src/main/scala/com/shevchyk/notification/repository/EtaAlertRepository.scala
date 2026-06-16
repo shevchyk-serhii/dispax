@@ -9,9 +9,8 @@ import zio.*
 import zio.interop.catz.*
 
 /**
- * Deduplicates delay-risk alerts from the predictive ETA monitor: at most one
- * alert per (ride, driver) until the ride changes. Mirrors
- * [[SentReminderRepository]].
+ * Deduplicates delay-risk alerts from the predictive ETA monitor: at most one alert per (ride, driver) until the ride
+ * changes. Mirrors [[SentReminderRepository]].
  */
 trait EtaAlertRepository:
   def isAlreadyAlerted(rideId: RideId, driverId: PersonId): Task[Boolean]
@@ -24,8 +23,7 @@ object EtaAlertRepository:
     PostgresEtaAlertRepository.apply
   )
 
-  val layer: ZLayer[Any, Throwable, EtaAlertRepository] =
-    DatabaseConfig.liveTransactorWithMigrations >>> postgresLayer
+  val layer: ZLayer[Any, Throwable, EtaAlertRepository] = DatabaseConfig.liveTransactorWithMigrations >>> postgresLayer
 
 final class PostgresEtaAlertRepository(xa: Transactor[Task]) extends EtaAlertRepository:
 
