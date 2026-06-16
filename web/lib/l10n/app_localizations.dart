@@ -778,6 +778,120 @@ abstract class AppLocalizations {
   /// **'Terms of Service'**
   String get termsOfService;
 
+  /// No description provided for @superAdminDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform Admin'**
+  String get superAdminDashboard;
+
+  /// No description provided for @companies.
+  ///
+  /// In en, this message translates to:
+  /// **'Companies'**
+  String get companies;
+
+  /// No description provided for @companiesList.
+  ///
+  /// In en, this message translates to:
+  /// **'Companies List'**
+  String get companiesList;
+
+  /// No description provided for @platformAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform Analytics'**
+  String get platformAnalytics;
+
+  /// No description provided for @platformRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform Revenue'**
+  String get platformRevenue;
+
+  /// No description provided for @activeConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Connections'**
+  String get activeConnections;
+
+  /// No description provided for @companyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Status'**
+  String get companyStatus;
+
+  /// No description provided for @subscriptionPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription Plan'**
+  String get subscriptionPlan;
+
+  /// No description provided for @billingAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing Analytics'**
+  String get billingAnalytics;
+
+  /// No description provided for @connectionAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection Analytics'**
+  String get connectionAnalytics;
+
+  /// No description provided for @superAdminSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform Settings'**
+  String get superAdminSettings;
+
+  /// No description provided for @addCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Company'**
+  String get addCompany;
+
+  /// No description provided for @editCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Company'**
+  String get editCompany;
+
+  /// No description provided for @deleteCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate Company'**
+  String get deleteCompany;
+
+  /// No description provided for @deactivateCompanyConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to deactivate this company? The company will be marked as Inactive but all data will be preserved.'**
+  String get deactivateCompanyConfirm;
+
+  /// No description provided for @companyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Name'**
+  String get companyName;
+
+  /// No description provided for @companyEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Email'**
+  String get companyEmail;
+
+  /// No description provided for @companyPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Phone'**
+  String get companyPhone;
+
+  /// No description provided for @companyAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Address'**
+  String get companyAddress;
+
   /// No description provided for @checkpointLanded.
   ///
   /// In en, this message translates to:

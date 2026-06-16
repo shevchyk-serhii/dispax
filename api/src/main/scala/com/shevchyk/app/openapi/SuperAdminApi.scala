@@ -158,6 +158,12 @@ object SuperAdminApi:
     .tag(superAdminTag)
     .summary("Update company status / subscription plan [SuperAdmin only]")
 
+  val deleteCompanyEndpoint = secureEndpoint.delete
+    .in("api" / "superadmin" / "companies" / path[String]("id"))
+    .out(jsonBody[CompanyResponse])
+    .tag(superAdminTag)
+    .summary("Soft-delete (deactivate) a tenant company [SuperAdmin only]")
+
   // --------------------------------------------------------------------------
   // Endpoint descriptions (Work Stream C — analytics)
   // --------------------------------------------------------------------------
@@ -282,6 +288,24 @@ object SuperAdminApi:
       }
     }
 
+  private val deleteCompanyServer: ZServerEndpoint[SuperAdminEnv, Any] = deleteCompanyEndpoint
+    .serverLogic[SuperAdminEnv] { user =>
+      { idStr =>
+        for {
+          _       <- requireSuperAdmin(user)
+          id      <- parseUuid(idStr).map(CompanyId(_))
+          repo    <- ZIO.service[CompanyRepository]
+          result  <- repo.softDelete(id).mapError(internal)
+          company <- ZIO
+                       .fromOption(result)
+                       .mapBoth(
+                         _ => (StatusCode.NotFound, ApiError("Company not found")),
+                         CompanyResponse.from
+                       )
+        } yield company
+      }
+    }
+
   // --------------------------------------------------------------------------
   // Server logic — Work Stream C (analytics)
   // --------------------------------------------------------------------------
@@ -353,6 +377,7 @@ object SuperAdminApi:
     getCompanyServer,
     createCompanyServer,
     updateCompanyServer,
+    deleteCompanyServer,
     rideAnalyticsServer,
     billingAnalyticsServer,
     connectionAnalyticsServer

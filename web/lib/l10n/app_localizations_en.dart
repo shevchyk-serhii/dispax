@@ -355,6 +355,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get termsOfService => 'Terms of Service';
 
   @override
+  String get superAdminDashboard => 'Platform Admin';
+
+  @override
+  String get companies => 'Companies';
+
+  @override
+  String get companiesList => 'Companies List';
+
+  @override
+  String get platformAnalytics => 'Platform Analytics';
+
+  @override
+  String get platformRevenue => 'Platform Revenue';
+
+  @override
+  String get activeConnections => 'Active Connections';
+
+  @override
+  String get companyStatus => 'Company Status';
+
+  @override
+  String get subscriptionPlan => 'Subscription Plan';
+
+  @override
+  String get billingAnalytics => 'Billing Analytics';
+
+  @override
+  String get connectionAnalytics => 'Connection Analytics';
+
+  @override
+  String get superAdminSettings => 'Platform Settings';
+
+  @override
+  String get addCompany => 'Add Company';
+
+  @override
+  String get editCompany => 'Edit Company';
+
+  @override
+  String get deleteCompany => 'Deactivate Company';
+
+  @override
+  String get deactivateCompanyConfirm =>
+      'Are you sure you want to deactivate this company? The company will be marked as Inactive but all data will be preserved.';
+
+  @override
+  String get companyName => 'Company Name';
+
+  @override
+  String get companyEmail => 'Company Email';
+
+  @override
+  String get companyPhone => 'Company Phone';
+
+  @override
+  String get companyAddress => 'Company Address';
+
+  @override
   String get checkpointLanded => 'Landed';
 
   @override

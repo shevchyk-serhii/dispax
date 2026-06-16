@@ -69,11 +69,12 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
 
   private val stubCompanyRepo: ZLayer[Any, Nothing, CompanyRepository] = ZLayer.succeed(
     new CompanyRepository:
-      def findAll()               = ZIO.succeed(Nil)
-      def findById(id: CompanyId) = ZIO.succeed(None)
-      def create(c: Company)      = ZIO.succeed(c)
-      def update(c: Company)      = ZIO.succeed(c)
-      def countByStatus()         = ZIO.succeed(Map.empty)
+      def findAll()                  = ZIO.succeed(Nil)
+      def findById(id: CompanyId)    = ZIO.succeed(None)
+      def create(c: Company)         = ZIO.succeed(c)
+      def update(c: Company)         = ZIO.succeed(c)
+      def countByStatus()            = ZIO.succeed(Map.empty)
+      def softDelete(id: CompanyId)  = ZIO.succeed(None)
   )
 
   private val stubInvoiceRepo: ZLayer[Any, Nothing, InvoiceRepository] = ZLayer.succeed(

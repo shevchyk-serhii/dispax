@@ -134,3 +134,9 @@ final class PostgresCompanyRepository(xa: Transactor[Task]) extends CompanyRepos
       .to[List]
       .transact(xa)
       .map(_.toMap)
+
+  override def softDelete(id: CompanyId): Task[Option[Company]] =
+    (fr"UPDATE companies SET status = 'Inactive', updated_at = NOW() WHERE id = ${id.value} RETURNING" ++ selectColumns)
+      .query[Company]
+      .option
+      .transact(xa)

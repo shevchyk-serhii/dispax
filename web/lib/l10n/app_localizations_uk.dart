@@ -354,6 +354,64 @@ class AppLocalizationsUk extends AppLocalizations {
   String get termsOfService => 'Умови використання';
 
   @override
+  String get superAdminDashboard => 'Адміністратор платформи';
+
+  @override
+  String get companies => 'Компанії';
+
+  @override
+  String get companiesList => 'Список компаній';
+
+  @override
+  String get platformAnalytics => 'Аналітика платформи';
+
+  @override
+  String get platformRevenue => 'Дохід платформи';
+
+  @override
+  String get activeConnections => 'Активні з\'єднання';
+
+  @override
+  String get companyStatus => 'Статус компанії';
+
+  @override
+  String get subscriptionPlan => 'План підписки';
+
+  @override
+  String get billingAnalytics => 'Аналітика рахунків';
+
+  @override
+  String get connectionAnalytics => 'Аналітика підключень';
+
+  @override
+  String get superAdminSettings => 'Налаштування платформи';
+
+  @override
+  String get addCompany => 'Додати компанію';
+
+  @override
+  String get editCompany => 'Редагувати компанію';
+
+  @override
+  String get deleteCompany => 'Деактивувати компанію';
+
+  @override
+  String get deactivateCompanyConfirm =>
+      'Ви впевнені, що хочете деактивувати цю компанію? Компанію буде позначено як Неактивну, але всі дані будуть збережені.';
+
+  @override
+  String get companyName => 'Назва компанії';
+
+  @override
+  String get companyEmail => 'Email компанії';
+
+  @override
+  String get companyPhone => 'Телефон компанії';
+
+  @override
+  String get companyAddress => 'Адреса компанії';
+
+  @override
   String get checkpointLanded => 'Приземлився';
 
   @override
