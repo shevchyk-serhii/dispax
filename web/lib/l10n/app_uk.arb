@@ -166,5 +166,23 @@
     "placeholders": {
       "checkpointName": {"type": "String"}
     }
-  }
+  },
+
+  "airportExits": "Виходи з аеропорту",
+  "addAirport": "Додати аеропорт",
+  "editAirport": "Редагувати аеропорт",
+  "deleteAirport": "Деактивувати аеропорт",
+  "airportCode": "Код аеропорту (напр. MUC)",
+  "airportName": "Назва аеропорту",
+  "addZone": "Додати зону",
+  "editZone": "Редагувати зону",
+  "deleteZone": "Видалити зону",
+  "terminalCode": "Термінал (T1, T2, …)",
+  "checkpointType": "Тип контрольної точки",
+  "displayName": "Назва для відображення",
+  "latitude": "Широта",
+  "longitude": "Довгота",
+  "radiusMeters": "Радіус (метри)",
+  "landingGeofence": "Геозона посадки",
+  "pickOnMap": "Вибрати на карті"
 }
