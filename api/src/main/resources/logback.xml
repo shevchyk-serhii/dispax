@@ -5,11 +5,21 @@
     </encoder>
   </appender>
 
+  <!-- Forward WARN+ logs to Sentry. The SDK is configured via env (SENTRY_DSN,
+       SENTRY_ENVIRONMENT, SENTRY_RELEASE) and is a no-op when SENTRY_DSN is unset,
+       so this is inert in local/dev without any extra guards. minimumEventLevel
+       controls what becomes a Sentry issue; breadcrumbs capture surrounding INFO. -->
+  <appender name="SENTRY" class="io.sentry.logback.SentryAppender">
+    <minimumEventLevel>WARN</minimumEventLevel>
+    <minimumBreadcrumbLevel>INFO</minimumBreadcrumbLevel>
+  </appender>
+
   <logger name="sun.rmi" level="ERROR" />
   <logger name="java.rmi" level="ERROR" />
   <logger name="sun.rmi.transport.tcp" level="ERROR" />
-  
+
   <root level="DEBUG">
     <appender-ref ref="STDOUT" />
+    <appender-ref ref="SENTRY" />
   </root>
 </configuration>
