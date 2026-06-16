@@ -55,35 +55,25 @@ void main() {
                 'landingRadius': 2000,
                 'isActive': true,
                 'zones': <dynamic>[],
-              }
+              },
             ]),
           );
           return SuperAdminAirportBloc(mockApiClient);
         },
         act: (bloc) => bloc.add(LoadAirports()),
-        expect: () => [
-          isA<AirportsLoading>(),
-          isA<AirportsLoaded>(),
-        ],
+        expect: () => [isA<AirportsLoading>(), isA<AirportsLoaded>()],
         verify: (_) {
           // Verify the API was called exactly once.
           verify(() => mockApiClient.get('/superadmin/airports')).called(1);
         },
       );
 
-      // NOTE: The current BLoC implementation checks
-      // `(response.body as dynamic) is List` — but `http.Response.body` is
-      // always a String, so this cast always evaluates to false and the list
-      // of parsed airports is always empty. This is a PRODUCTION BUG in
-      // superadmin_airport_exits_screen.dart:
-      //   `(response.body as dynamic) is List` should be
-      //   `jsonDecode(response.body) is List` (or similar).
-      // The test below asserts the *actual* runtime behaviour (AirportsLoaded
-      // with empty list) so the suite remains green; the underlying parsing
-      // bug is documented here for the coder to fix.
+      // Regression guard: the BLoC must `jsonDecode(response.body)` before
+      // parsing, since `http.Response.body` is always a String. A previous
+      // version checked `(response.body as dynamic) is List`, which always
+      // evaluated to false and produced an empty list.
       test(
-        'AirportsLoaded.airports is empty due to body-parsing bug '
-        '(response.body is String, not List) — document production bug',
+        'AirportsLoaded parses the airports list from the JSON body',
         () async {
           when(() => mockApiClient.get('/superadmin/airports')).thenAnswer(
             (_) async => fakeResponse(200, [
@@ -96,7 +86,7 @@ void main() {
                 'landingRadius': 2000,
                 'isActive': true,
                 'zones': <dynamic>[],
-              }
+              },
             ]),
           );
 
@@ -109,53 +99,46 @@ void main() {
           expect(states[0], isA<AirportsLoading>());
           final loaded = states[1];
           expect(loaded, isA<AirportsLoaded>());
-          // BUG: airports list is empty because body is a String not a List.
-          // Expected: (loaded as AirportsLoaded).airports.length == 1
-          // Actual:   (loaded as AirportsLoaded).airports.isEmpty  ← bug
-          expect((loaded as AirportsLoaded).airports, isEmpty);
+          final airports = (loaded as AirportsLoaded).airports;
+          expect(airports, hasLength(1));
+          expect(airports.first.code, 'MUC');
         },
       );
 
       blocTest<SuperAdminAirportBloc, SuperAdminAirportState>(
         'emits [AirportsLoading, AirportsError] on 403',
         build: () {
-          when(() => mockApiClient.get('/superadmin/airports'))
-              .thenAnswer((_) async => fakeResponse(403));
+          when(
+            () => mockApiClient.get('/superadmin/airports'),
+          ).thenAnswer((_) async => fakeResponse(403));
           return SuperAdminAirportBloc(mockApiClient);
         },
         act: (bloc) => bloc.add(LoadAirports()),
-        expect: () => [
-          isA<AirportsLoading>(),
-          isA<AirportsError>(),
-        ],
+        expect: () => [isA<AirportsLoading>(), isA<AirportsError>()],
       );
 
       blocTest<SuperAdminAirportBloc, SuperAdminAirportState>(
         'emits [AirportsLoading, AirportsError] on non-200 status (500)',
         build: () {
-          when(() => mockApiClient.get('/superadmin/airports'))
-              .thenAnswer((_) async => fakeResponse(500));
+          when(
+            () => mockApiClient.get('/superadmin/airports'),
+          ).thenAnswer((_) async => fakeResponse(500));
           return SuperAdminAirportBloc(mockApiClient);
         },
         act: (bloc) => bloc.add(LoadAirports()),
-        expect: () => [
-          isA<AirportsLoading>(),
-          isA<AirportsError>(),
-        ],
+        expect: () => [isA<AirportsLoading>(), isA<AirportsError>()],
       );
 
       blocTest<SuperAdminAirportBloc, SuperAdminAirportState>(
         'emits [AirportsLoading, AirportsError] when API throws exception',
         build: () {
-          when(() => mockApiClient.get('/superadmin/airports'))
-              .thenThrow(ApiException('network error'));
+          when(
+            () => mockApiClient.get('/superadmin/airports'),
+          ).thenThrow(ApiException('network error'));
           return SuperAdminAirportBloc(mockApiClient);
         },
         act: (bloc) => bloc.add(LoadAirports()),
-        expect: () => [
-          isA<AirportsLoading>(),
-          isA<AirportsError>(),
-        ],
+        expect: () => [isA<AirportsLoading>(), isA<AirportsError>()],
       );
     });
 
@@ -169,10 +152,7 @@ void main() {
         build: () {
           // POST responds 201
           when(
-            () => mockApiClient.post(
-              '/superadmin/airports',
-              any(),
-            ),
+            () => mockApiClient.post('/superadmin/airports', any()),
           ).thenAnswer(
             (_) async => fakeResponse(201, {
               'code': 'BER',
@@ -188,8 +168,9 @@ void main() {
             }),
           );
           // Subsequent GET for reload
-          when(() => mockApiClient.get('/superadmin/airports'))
-              .thenAnswer((_) async => fakeResponse(200, <dynamic>[]));
+          when(
+            () => mockApiClient.get('/superadmin/airports'),
+          ).thenAnswer((_) async => fakeResponse(200, <dynamic>[]));
           return SuperAdminAirportBloc(mockApiClient);
         },
         act: (bloc) => bloc.add(
@@ -204,10 +185,7 @@ void main() {
         ),
         // CreateAirport calls POST → on success adds LoadAirports
         // LoadAirports emits Loading then Loaded
-        expect: () => [
-          isA<AirportsLoading>(),
-          isA<AirportsLoaded>(),
-        ],
+        expect: () => [isA<AirportsLoading>(), isA<AirportsLoaded>()],
         verify: (_) {
           verify(
             () => mockApiClient.post('/superadmin/airports', any()),
@@ -246,40 +224,42 @@ void main() {
       blocTest<SuperAdminAirportBloc, SuperAdminAirportState>(
         'calls DELETE then triggers reload on 200',
         build: () {
-          when(() => mockApiClient.delete('/superadmin/airports/MUC'))
-              .thenAnswer(
-                (_) async => fakeResponse(200, {
-                  'code': 'MUC',
-                  'name': 'MUC',
-                  'country': 'DE',
-                  'landingLat': 48.0,
-                  'landingLon': 11.0,
-                  'landingRadius': 2000,
-                  'isActive': false,
-                  'zones': <dynamic>[],
-                  'createdAt': '2026-01-01T00:00:00Z',
-                  'updatedAt': '2026-01-01T00:00:00Z',
-                }),
-              );
-          when(() => mockApiClient.get('/superadmin/airports'))
-              .thenAnswer((_) async => fakeResponse(200, <dynamic>[]));
+          when(
+            () => mockApiClient.delete('/superadmin/airports/MUC'),
+          ).thenAnswer(
+            (_) async => fakeResponse(200, {
+              'code': 'MUC',
+              'name': 'MUC',
+              'country': 'DE',
+              'landingLat': 48.0,
+              'landingLon': 11.0,
+              'landingRadius': 2000,
+              'isActive': false,
+              'zones': <dynamic>[],
+              'createdAt': '2026-01-01T00:00:00Z',
+              'updatedAt': '2026-01-01T00:00:00Z',
+            }),
+          );
+          when(
+            () => mockApiClient.get('/superadmin/airports'),
+          ).thenAnswer((_) async => fakeResponse(200, <dynamic>[]));
           return SuperAdminAirportBloc(mockApiClient);
         },
         act: (bloc) => bloc.add(DeleteAirport('MUC')),
-        expect: () => [
-          isA<AirportsLoading>(),
-          isA<AirportsLoaded>(),
-        ],
+        expect: () => [isA<AirportsLoading>(), isA<AirportsLoaded>()],
         verify: (_) {
-          verify(() => mockApiClient.delete('/superadmin/airports/MUC')).called(1);
+          verify(
+            () => mockApiClient.delete('/superadmin/airports/MUC'),
+          ).called(1);
         },
       );
 
       blocTest<SuperAdminAirportBloc, SuperAdminAirportState>(
         'emits AirportsError when DELETE returns non-200',
         build: () {
-          when(() => mockApiClient.delete('/superadmin/airports/MUC'))
-              .thenAnswer((_) async => fakeResponse(404));
+          when(
+            () => mockApiClient.delete('/superadmin/airports/MUC'),
+          ).thenAnswer((_) async => fakeResponse(404));
           return SuperAdminAirportBloc(mockApiClient);
         },
         act: (bloc) => bloc.add(DeleteAirport('MUC')),
