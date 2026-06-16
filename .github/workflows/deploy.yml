@@ -2,7 +2,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 env:
   PROJECT_ID: project-6efcac64-991b-49f4-946
