@@ -52,12 +52,9 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
     final myId = authState.user!.id;
 
     try {
-      // Check own visibility flag from the company list endpoint.
-      final visibilityList = await _scheduleService.getCompanyVisibility();
-      final myEntry = visibilityList.firstWhere(
-        (v) => v['driverId']?.toString() == myId,
-        orElse: () => {},
-      );
+      // Check own visibility flag using the dedicated /me endpoint
+      // (accessible to any authenticated user, including drivers).
+      final myEntry = await _scheduleService.getMyVisibility();
       final canView =
           (myEntry['canViewOtherSchedules'] as bool?) ?? false;
 

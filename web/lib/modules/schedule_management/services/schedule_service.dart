@@ -169,6 +169,7 @@ class ScheduleService {
   // -- Driver schedule visibility (Dispatcher/Admin) -------------------------
 
   /// Returns the list of per-driver visibility settings for the caller's company.
+  /// Requires Dispatcher or Admin role.
   Future<List<Map<String, dynamic>>> getCompanyVisibility() async {
     try {
       final response = await _apiClient.get('/schedules/visibility');
@@ -183,6 +184,25 @@ class ScheduleService {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException('Error fetching visibility settings: $e');
+    }
+  }
+
+  /// Returns the caller's own visibility record from GET /schedules/visibility/me.
+  /// Accessible to any authenticated user (driver, dispatcher, admin, etc.).
+  /// Returns a map with at least {"canViewOtherSchedules": false} on any error.
+  Future<Map<String, dynamic>> getMyVisibility() async {
+    try {
+      final response = await _apiClient.get('/schedules/visibility/me');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw ApiException(
+          'Failed to fetch own visibility: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Error fetching own visibility: $e');
     }
   }
 

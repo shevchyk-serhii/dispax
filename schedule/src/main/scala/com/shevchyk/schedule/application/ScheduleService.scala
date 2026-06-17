@@ -44,6 +44,12 @@ trait ScheduleService:
   def canDriverViewOthers(driverId: PersonId, companyId: CompanyId): IO[ScheduleError, Boolean]
   def getCompanyVisibility(companyId: CompanyId): IO[ScheduleError, List[DriverScheduleVisibility]]
 
+  /**
+   * Returns the visibility record for the given driver in the given company, or a default with
+   * canViewOtherSchedules=false if no record exists. Accessible to any authenticated user.
+   */
+  def getMyVisibility(driverId: PersonId, companyId: CompanyId): IO[ScheduleError, DriverScheduleVisibility]
+
   def setDriverVisibility(
       driverId: PersonId,
       companyId: CompanyId,
@@ -188,6 +194,22 @@ class ScheduleServiceImpl(
     visibilityRepository
       .findByCompany(companyId)
       .mapDatabaseError
+
+  def getMyVisibility(driverId: PersonId, companyId: CompanyId): IO[ScheduleError, DriverScheduleVisibility] =
+    visibilityRepository
+      .findByDriver(driverId)
+      .mapDatabaseError
+      .map {
+        case Some(v) if v.companyId == companyId => v
+        // Row absent or belongs to a different company — return safe default
+        case _                                   =>
+          DriverScheduleVisibility(
+            driverId = driverId,
+            companyId = companyId,
+            canViewOtherSchedules = false,
+            updatedAt = java.time.Instant.EPOCH
+          )
+      }
 
   def setDriverVisibility(
       driverId: PersonId,

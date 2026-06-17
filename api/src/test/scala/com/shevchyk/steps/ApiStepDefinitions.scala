@@ -1077,6 +1077,10 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       // ── Schedule visibility ──
       case (Method.GET, "/api/schedules/visibility")                                             =>
         """[{"driverId":"10101010-1010-1010-1010-101010101010","companyId":"10101010-1010-1010-1010-101010101010","canViewOtherSchedules":false,"updatedAt":"2026-01-01T00:00:00Z"}]"""
+      case (Method.GET, "/api/schedules/visibility/me")                                         =>
+        val driverId  = currentUserId.map(_.value.toString).getOrElse("10101010-1010-1010-1010-101010101010")
+        val companyId = "10101010-1010-1010-1010-101010101010"
+        s"""{"driverId":"$driverId","companyId":"$companyId","canViewOtherSchedules":false,"updatedAt":"2026-01-01T00:00:00Z"}"""
       case (Method.PUT, p) if p.startsWith("/api/schedules/visibility/")                         =>
         """{"driverId":"10101010-1010-1010-1010-101010101010","companyId":"10101010-1010-1010-1010-101010101010","canViewOtherSchedules":true,"updatedAt":"2026-01-01T00:00:00Z"}"""
 

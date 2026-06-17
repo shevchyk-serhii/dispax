@@ -139,6 +139,12 @@ object ScheduleApi:
     .tag(scheduleTag)
     .summary("List per-driver schedule-visibility settings for the company (dispatcher, admin)")
 
+  val getMyVisibilityEndpoint = secureEndpoint.get
+    .in("api" / "schedules" / "visibility" / "me")
+    .out(jsonBody[DriverScheduleVisibilityDto])
+    .tag(scheduleTag)
+    .summary("Get the caller's own schedule-visibility flag (any authenticated user)")
+
   val setDriverVisibilityEndpoint = secureEndpoint.put
     .in("api" / "schedules" / "visibility" / path[String]("driverId"))
     .in(jsonBody[SetDriverVisibilityRequest])
@@ -158,6 +164,7 @@ object ScheduleApi:
     updateScheduleDayEndpoint,
     deleteScheduleDayEndpoint,
     getCompanyVisibilityEndpoint,
+    getMyVisibilityEndpoint,
     setDriverVisibilityEndpoint
   )
 
@@ -278,6 +285,20 @@ object ScheduleApi:
       } yield list.map(DriverScheduleVisibilityDto.fromDomain)
   }
 
+  /**
+   * GET /api/schedules/visibility/me — accessible to any authenticated user. Returns the caller's own visibility record
+   * (defaults to canViewOtherSchedules=false when no record exists).
+   */
+  private val getMyVisibilityServer: ZServerEndpoint[ScheduleEnv, Any] = getMyVisibilityEndpoint.serverLogic {
+    user => _ =>
+      (for {
+        companyId <- requireCompanyId(user)
+        callerId   = PersonId(user.userId)
+        service   <- ZIO.service[ScheduleService]
+        result    <- service.getMyVisibility(callerId, companyId)
+      } yield DriverScheduleVisibilityDto.fromDomain(result)).mapError(toError)
+  }
+
   private val setDriverVisibilityServer: ZServerEndpoint[ScheduleEnv, Any] = setDriverVisibilityEndpoint.serverLogic {
     user => (driverIdStr, req) =>
       for {
@@ -293,6 +314,9 @@ object ScheduleApi:
 
   /**
    * All server endpoints, interpreted into zio-http Routes by the api module.
+   *
+   * NOTE: `getMyVisibilityServer` must appear before `setDriverVisibilityServer` so that Tapir routes `GET
+   * /visibility/me` before attempting to match `PUT /visibility/:driverId`.
    */
   val serverEndpoints: List[ZServerEndpoint[ScheduleEnv, Any]] = List(
     createScheduleDayServer,
@@ -303,5 +327,6 @@ object ScheduleApi:
     updateScheduleDayServer,
     deleteScheduleDayServer,
     getCompanyVisibilityServer,
+    getMyVisibilityServer,
     setDriverVisibilityServer
   )
