@@ -47,8 +47,9 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
               rideBloc: _rideBloc,
               onCreated: () {
                 final user = context.read<AuthBloc>().state.user;
-                if (user != null)
+                if (user != null) {
                   context.read<RideBloc>().add(RideLoadRequested(user: user));
+                }
                 setState(() => _selectedIndex = 0);
               },
             ),
@@ -189,8 +190,9 @@ class _CreateRidesTab extends StatelessWidget {
                                   ),
                                 );
                                 final user = authBloc.state.user;
-                                if (user != null)
+                                if (user != null) {
                                   rideBloc.add(RideLoadRequested(user: user));
+                                }
                               },
                               icon: const Icon(Icons.add),
                               label: const Text('Start Creating'),

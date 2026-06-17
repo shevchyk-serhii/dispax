@@ -52,18 +52,20 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
   Future<void> _loadDrivers() async {
     try {
       final drivers = await _userService.getDrivers();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _drivers = drivers;
           _loading = false;
           _errorMessage = null;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _loading = false;
           _errorMessage = 'Could not load drivers';
         });
+      }
     }
   }
 

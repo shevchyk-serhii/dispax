@@ -310,12 +310,14 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
 
   IconData _deviceIcon(String deviceInfo) {
     final lower = deviceInfo.toLowerCase();
-    if (lower.contains('iphone') || lower.contains('ios'))
+    if (lower.contains('iphone') || lower.contains('ios')) {
       return Icons.phone_iphone;
+    }
     if (lower.contains('android')) return Icons.phone_android;
     if (lower.contains('ipad') || lower.contains('tablet')) return Icons.tablet;
-    if (lower.contains('web') || lower.contains('browser'))
+    if (lower.contains('web') || lower.contains('browser')) {
       return Icons.language;
+    }
     if (lower.contains('mac') ||
         lower.contains('windows') ||
         lower.contains('linux')) {

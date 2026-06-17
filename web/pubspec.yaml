@@ -43,6 +43,10 @@ dev_dependencies:
   bloc_test: ^9.1.7
   mocktail: ^1.0.4
 
+  test_api: any
+  url_launcher_platform_interface: any
+  plugin_platform_interface: any
+
 patrol:
   app_name: Dispax
   test_directory: integration_test

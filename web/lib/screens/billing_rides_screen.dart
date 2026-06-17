@@ -54,17 +54,19 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     });
     try {
       final companies = await _companyService.getCompanies();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _companies = companies;
           _loadingCompanies = false;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _loadingCompanies = false;
           _error = e.toString();
         });
+      }
     }
   }
 
@@ -79,17 +81,19 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     setState(() => _loadingRides = true);
     try {
       final rides = await _invoiceService.getBillableRides(company.id);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _rides = rides;
           _loadingRides = false;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _loadingRides = false;
           _error = e.toString();
         });
+      }
     }
   }
 

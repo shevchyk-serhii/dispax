@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:dispax/modules/core/navigation_utils.dart';
-import 'package:dispax/modules/core/models/location.dart';
 import '../helpers/test_fixtures.dart';
 
 class MockUrlLauncher extends Fake

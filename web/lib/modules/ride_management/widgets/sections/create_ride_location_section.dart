@@ -118,8 +118,9 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                   initialValue: state.fromAddress,
                   suggestions: _savedAddresses,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty)
+                    if (value == null || value.trim().isEmpty) {
                       return 'Pick-up location is required';
+                    }
                     return null;
                   },
                   onChanged: (value) {
@@ -149,8 +150,9 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                   initialValue: state.toAddress,
                   suggestions: _savedAddresses,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty)
+                    if (value == null || value.trim().isEmpty) {
                       return 'Drop-off location is required';
+                    }
                     return null;
                   },
                   onChanged: (value) {

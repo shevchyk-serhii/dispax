@@ -87,8 +87,9 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     final lower = action.toLowerCase();
     if (lower.contains('create')) return Icons.add_circle;
     if (lower.contains('update') || lower.contains('edit')) return Icons.edit;
-    if (lower.contains('delete') || lower.contains('remove'))
+    if (lower.contains('delete') || lower.contains('remove')) {
       return Icons.delete;
+    }
     if (lower.contains('assign')) return Icons.assignment;
     if (lower.contains('cancel')) return Icons.cancel;
     if (lower.contains('complete')) return Icons.check_circle;
@@ -99,10 +100,12 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   Color _getActionColor(String action) {
     final lower = action.toLowerCase();
     if (lower.contains('create')) return AppColors.success;
-    if (lower.contains('delete') || lower.contains('cancel'))
+    if (lower.contains('delete') || lower.contains('cancel')) {
       return AppColors.error;
-    if (lower.contains('update') || lower.contains('edit'))
+    }
+    if (lower.contains('update') || lower.contains('edit')) {
       return AppColors.info;
+    }
     if (lower.contains('assign')) return Theme.of(context).colorScheme.primary;
     if (lower.contains('complete')) return AppColors.success;
     return Theme.of(context).colorScheme.onSurfaceVariant;

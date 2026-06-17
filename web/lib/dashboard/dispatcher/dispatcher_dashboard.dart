@@ -108,8 +108,9 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       formBloc: _createRideFormBloc,
       onCreated: () {
         final user = context.read<AuthBloc>().state.user;
-        if (user != null)
+        if (user != null) {
           context.read<RideBloc>().add(RideLoadRequested(user: user));
+        }
         setState(() => _mobileTabIndex = 0);
       },
     ),

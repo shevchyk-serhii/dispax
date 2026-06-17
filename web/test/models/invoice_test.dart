@@ -34,7 +34,7 @@ void main() {
   // ─── InvoiceItem ──────────────────────────────────────────────────────────
 
   group('InvoiceItem.fromJson', () {
-    Map<String, dynamic> _itemJson({String? rideId}) => {
+    Map<String, dynamic> itemJson0({String? rideId}) => {
       'id': 'item-1',
       'invoiceId': 'inv-1',
       if (rideId != null) 'rideId': rideId,
@@ -46,7 +46,7 @@ void main() {
     };
 
     test('parses all fields correctly', () {
-      final item = InvoiceItem.fromJson(_itemJson(rideId: 'ride-99'));
+      final item = InvoiceItem.fromJson(itemJson0(rideId: 'ride-99'));
       expect(item.id, 'item-1');
       expect(item.invoiceId, 'inv-1');
       expect(item.rideId, 'ride-99');
@@ -58,12 +58,12 @@ void main() {
     });
 
     test('rideId is null when absent', () {
-      final item = InvoiceItem.fromJson(_itemJson());
+      final item = InvoiceItem.fromJson(itemJson0());
       expect(item.rideId, isNull);
     });
 
     test('numeric fields parsed from int JSON values', () {
-      final json = _itemJson()
+      final json = itemJson0()
         ..['quantity'] = 2
         ..['unitPrice'] = 50
         ..['total'] = 100;
@@ -77,7 +77,7 @@ void main() {
   // ─── Invoice ──────────────────────────────────────────────────────────────
 
   group('Invoice.fromJson', () {
-    Map<String, dynamic> _invoiceJson({
+    Map<String, dynamic> invoiceJson({
       String status = 'Draft',
       List<dynamic> items = const [],
       String? notes,
@@ -111,7 +111,7 @@ void main() {
     };
 
     test('parses required fields correctly', () {
-      final inv = Invoice.fromJson(_invoiceJson());
+      final inv = Invoice.fromJson(invoiceJson());
       expect(inv.id, 'inv-1');
       expect(inv.number, 'INV-2026-0001');
       expect(inv.clientCompanyId, 'cc-1');
@@ -127,7 +127,7 @@ void main() {
     });
 
     test('optional fields are null when absent', () {
-      final inv = Invoice.fromJson(_invoiceJson());
+      final inv = Invoice.fromJson(invoiceJson());
       expect(inv.notes, isNull);
       expect(inv.dueDate, isNull);
       expect(inv.sentAt, isNull);
@@ -139,7 +139,7 @@ void main() {
 
     test('parses optional fields when present', () {
       final inv = Invoice.fromJson(
-        _invoiceJson(
+        invoiceJson(
           notes: 'Bitte bis 28.02 zahlen',
           dueDate: '2026-02-28',
           sentAt: '2026-01-10T09:00:00.000Z',
@@ -166,7 +166,7 @@ void main() {
         'total': 50.0,
         'createdAt': '2026-01-15T10:00:00.000Z',
       };
-      final inv = Invoice.fromJson(_invoiceJson(items: [itemJson]));
+      final inv = Invoice.fromJson(invoiceJson(items: [itemJson]));
       expect(inv.items.length, 1);
       expect(inv.items.first.description, 'Ride A');
       expect(inv.items.first.total, 50.0);
@@ -179,7 +179,7 @@ void main() {
         'Paid': InvoiceStatus.paid,
         'Cancelled': InvoiceStatus.cancelled,
       }.entries) {
-        final inv = Invoice.fromJson(_invoiceJson(status: entry.key));
+        final inv = Invoice.fromJson(invoiceJson(status: entry.key));
         expect(
           inv.status,
           entry.value,

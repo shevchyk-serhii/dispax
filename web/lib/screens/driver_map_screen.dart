@@ -10,7 +10,6 @@ import '../../modules/ride_management/services/ride_service.dart';
 import '../modules/core/models/location.dart' as loc;
 import '../modules/core/services/location_service.dart';
 import '../modules/core/services/mapbox_service.dart';
-import '../modules/core/models/websocket_event.dart';
 import '../modules/core/services/websocket_service.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';

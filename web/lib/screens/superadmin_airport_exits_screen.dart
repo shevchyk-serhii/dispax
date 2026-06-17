@@ -1068,7 +1068,7 @@ class _ZoneFormDialogState extends State<_ZoneFormDialog> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _checkpointType,
+                  initialValue: _checkpointType,
                   decoration: InputDecoration(labelText: l10n.checkpointType),
                   items: _kCheckpointTypes
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))

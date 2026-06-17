@@ -61,9 +61,7 @@ void main() {
 
     group('dispose', () {
       test('dispose closes the http client', () async {
-        bool clientClosed = false;
         final client = MockClient((request) async {
-          if (clientClosed) throw StateError('Client is closed');
           return http.Response('[]', 200);
         });
 

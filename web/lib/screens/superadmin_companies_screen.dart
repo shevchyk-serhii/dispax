@@ -580,7 +580,7 @@ class _CompanyFormDialogState extends State<_CompanyFormDialog> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _status,
+                  initialValue: _status,
                   decoration: const InputDecoration(labelText: 'Status'),
                   items: _statusOptions
                       .map((s) => DropdownMenuItem(value: s, child: Text(s)))
@@ -589,7 +589,7 @@ class _CompanyFormDialogState extends State<_CompanyFormDialog> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _plan,
+                  initialValue: _plan,
                   decoration: const InputDecoration(
                     labelText: 'Subscription Plan',
                   ),

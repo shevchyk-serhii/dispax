@@ -425,8 +425,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty)
+                          if (v == null || v.trim().isEmpty) {
                             return 'Email is required';
+                          }
                           if (!v.contains('@')) return 'Invalid email';
                           return null;
                         },

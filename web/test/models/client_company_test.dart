@@ -3,7 +3,7 @@ import 'package:dispax/modules/billing/models/client_company.dart';
 
 void main() {
   group('ClientCompany.fromJson', () {
-    Map<String, dynamic> _json({
+    Map<String, dynamic> json0({
       String? email,
       String? phone,
       String? address,
@@ -17,14 +17,14 @@ void main() {
     };
 
     test('parses required fields', () {
-      final cc = ClientCompany.fromJson(_json());
+      final cc = ClientCompany.fromJson(json0());
       expect(cc.id, 'cc-1');
       expect(cc.name, 'Acme GmbH');
       expect(cc.taxiCompanyId, 'tc-1');
     });
 
     test('optional fields are null when absent', () {
-      final cc = ClientCompany.fromJson(_json());
+      final cc = ClientCompany.fromJson(json0());
       expect(cc.email, isNull);
       expect(cc.phone, isNull);
       expect(cc.address, isNull);
@@ -32,7 +32,7 @@ void main() {
 
     test('parses all optional fields when present', () {
       final cc = ClientCompany.fromJson(
-        _json(
+        json0(
           email: 'acme@example.com',
           phone: '+4989123456',
           address: 'Hauptstraße 1, München',

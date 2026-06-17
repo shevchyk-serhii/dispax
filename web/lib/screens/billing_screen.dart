@@ -52,17 +52,19 @@ class _BillingScreenState extends State<BillingScreen>
     });
     try {
       final invoices = await _invoiceService.getInvoices(status: _statusFilter);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _invoices = invoices;
           _loadingInvoices = false;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _loadingInvoices = false;
           _invoiceError = e.toString();
         });
+      }
     }
   }
 
@@ -73,17 +75,19 @@ class _BillingScreenState extends State<BillingScreen>
     });
     try {
       final companies = await _companyService.getCompanies();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _companies = companies;
           _loadingCompanies = false;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _loadingCompanies = false;
           _companyError = e.toString();
         });
+      }
     }
   }
 

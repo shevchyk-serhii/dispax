@@ -16,7 +16,6 @@ import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/date_utils.dart';
-import '../modules/flight_management/muc_checkpoints.dart';
 
 class ClientMapScreen extends StatefulWidget {
   const ClientMapScreen({super.key});
