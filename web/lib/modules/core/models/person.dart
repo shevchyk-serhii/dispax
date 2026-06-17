@@ -41,6 +41,9 @@ class Person {
   final String id;
   final String name;
   final String email;
+
+  /// Primary role — used for dashboard routing and display. Unchanged by the
+  /// multi-role feature; changing it would require a new login.
   final PersonRole role;
   final String? companyId;
   final String? licenseNumber;
@@ -50,6 +53,11 @@ class Person {
   final String? preferredDriverId;
   final String status;
   final int reminderMinutes;
+
+  /// Full set of roles the person carries. Always includes [role].
+  /// Defaults to {role} when the server does not send the `roles` field
+  /// (e.g. for very old cached responses — back-compat fallback).
+  final Set<PersonRole> roles;
 
   Person({
     required this.id,
@@ -64,7 +72,14 @@ class Person {
     this.preferredDriverId,
     this.status = 'ACTIVE',
     this.reminderMinutes = 60,
-  });
+    Set<PersonRole>? roles,
+  }) : roles = roles != null ? {...roles, role} : {role};
+
+  /// Returns true when the person carries [r] as one of their roles.
+  bool hasRole(PersonRole r) => roles.contains(r);
+
+  /// True when the person can act as a driver (has the driver role).
+  bool get canDrive => hasRole(PersonRole.driver);
 
   static String _extractId(dynamic raw) {
     if (raw == null) return '';
@@ -73,11 +88,22 @@ class Person {
   }
 
   factory Person.fromJson(Map<String, dynamic> json) {
+    final primaryRole =
+        personRoleFromString(json['role']?.toString()) ?? PersonRole.client;
+    // Parse the roles array; fall back to {primaryRole} if absent or empty.
+    Set<PersonRole>? parsedRoles;
+    final rawRoles = json['roles'];
+    if (rawRoles is List && rawRoles.isNotEmpty) {
+      parsedRoles = rawRoles
+          .map((r) => personRoleFromString(r?.toString()))
+          .whereType<PersonRole>()
+          .toSet();
+    }
     return Person(
       id: _extractId(json['id']),
       name: json['name']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
-      role: personRoleFromString(json['role']?.toString()) ?? PersonRole.client,
+      role: primaryRole,
       companyId: json['companyId'] != null
           ? _extractId(json['companyId'])
           : null,
@@ -90,6 +116,7 @@ class Person {
       preferredDriverId: json['preferredDriverId']?.toString(),
       status: json['status']?.toString() ?? 'ACTIVE',
       reminderMinutes: (json['reminderMinutes'] as int?) ?? 60,
+      roles: parsedRoles,
     );
   }
 
@@ -99,6 +126,7 @@ class Person {
       'name': name,
       'email': email,
       'role': role.wire,
+      'roles': roles.map((r) => r.wire).toList(),
       'companyId': companyId,
       'licenseNumber': licenseNumber,
       'phone': phone,

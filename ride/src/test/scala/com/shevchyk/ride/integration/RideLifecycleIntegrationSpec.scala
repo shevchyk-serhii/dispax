@@ -86,6 +86,8 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
     override def findByClientCompany(clientCompanyId: com.shevchyk.core.domain.ClientCompanyId): Task[List[Person]] =
       ZIO.succeed(Nil)
 
+    override def upsertDriverRow(personId: PersonId): Task[Unit] = ZIO.unit
+
   private val noopEmailSms: ZLayer[Any, Nothing, EmailSmsService] = ZLayer.succeed(new EmailSmsService:
     def sendRideConfirmation(data: RideConfirmationData): Task[Unit]                       = ZIO.unit
     def sendDriverAssignment(data: RideConfirmationData): Task[Unit]                       = ZIO.unit

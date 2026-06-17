@@ -36,6 +36,36 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
     }
   )
 
+  // Meta for the roles array column (person_role[]).
+  // We read it as Array[String] and map each element to PersonRole via an Option-based
+  // lookup that does not throw. Unknown labels (impossible while Postgres enforces the
+  // enum constraint) are silently dropped — this matches the behaviour of
+  // doobie's own pgEnumStringOpt helper while keeping user code throw-free.
+  // On write we need an explicit ::person_role[] cast; see the sql"..." fragments below.
+  private def roleFromLabelOpt(s: String): Option[PersonRole] =
+    s match
+      case "driver"           => Some(PersonRole.Driver)
+      case "client"           => Some(PersonRole.Client)
+      case "secretary"        => Some(PersonRole.Secretary)
+      case "dispatcher"       => Some(PersonRole.Dispatcher)
+      case "admin"            => Some(PersonRole.Admin)
+      case "client_secretary" => Some(PersonRole.ClientSecretary)
+      case "super_admin"      => Some(PersonRole.SuperAdmin)
+      case _                  => None
+
+  private def roleToLabel(r: PersonRole): String =
+    r match
+      case PersonRole.Driver          => "driver"
+      case PersonRole.Client          => "client"
+      case PersonRole.Secretary       => "secretary"
+      case PersonRole.Dispatcher      => "dispatcher"
+      case PersonRole.Admin           => "admin"
+      case PersonRole.ClientSecretary => "client_secretary"
+      case PersonRole.SuperAdmin      => "super_admin"
+
+  implicit val personRoleListMeta: Meta[List[PersonRole]] =
+    Meta[Array[String]].timap(arr => arr.toList.flatMap(roleFromLabelOpt))(list => list.map(roleToLabel).toArray)
+
   implicit val userStatusMeta: Meta[UserStatus] =
     Meta[String].imap {
       case "ACTIVE"    => UserStatus.ACTIVE
@@ -53,16 +83,17 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
     )
 
   private val selectColumns =
-    fr"id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, last_login_at, client_company_id, reminder_minutes"
+    fr"id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, last_login_at, client_company_id, reminder_minutes, roles::text[]"
 
   override def create(person: Person): Task[Person] = {
+    val rolesArray = person.effectiveRoles.toList
     sql"""
-      INSERT INTO persons (id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, client_company_id, reminder_minutes)
+      INSERT INTO persons (id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, client_company_id, reminder_minutes, roles)
       VALUES (${person.id.value}, ${person.name}, ${person.email}, ${person.role}, ${person.companyId},
               ${person.passwordHash}, ${person.licenseNumber}, ${person.phone}, ${person.isVip},
               ${person.preferredDriverId.map(_.value)}, ${person.status}, ${person.clientCompanyId.map(
         _.value
-      )}, ${person.reminderMinutes})
+      )}, ${person.reminderMinutes}, ${rolesArray}::person_role[])
     """.update.run
       .transact(xa)
       .as(person)
@@ -90,14 +121,19 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
   }
 
   override def findByRole(role: PersonRole): Task[List[Person]] = {
-    (fr"SELECT" ++ selectColumns ++ fr"FROM persons WHERE role = $role")
+    // Use ANY(roles) so a person with multiple roles (e.g. dispatcher+driver)
+    // is returned when searching for either of their roles.
+    val roleLabel = roleToLabel(role)
+    (fr"SELECT" ++ selectColumns ++ fr"FROM persons WHERE ${roleLabel}::person_role = ANY(roles)")
       .query[Person]
       .to[List]
       .transact(xa)
   }
 
   override def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = {
-    (fr"SELECT" ++ selectColumns ++ fr"FROM persons WHERE role = $role AND company_id = ${companyId.value}")
+    // Use ANY(roles) so a dispatcher-driver is returned for both roles.
+    val roleLabel = roleToLabel(role)
+    (fr"SELECT" ++ selectColumns ++ fr"FROM persons WHERE ${roleLabel}::person_role = ANY(roles) AND company_id = ${companyId.value}")
       .query[Person]
       .to[List]
       .transact(xa)
@@ -118,6 +154,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
   }
 
   override def update(person: Person): Task[Person] = {
+    val rolesArray = person.effectiveRoles.toList
     sql"""
       UPDATE persons
       SET name = ${person.name},
@@ -131,7 +168,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           preferred_driver_id = ${person.preferredDriverId.map(_.value)},
           status = ${person.status},
           client_company_id = ${person.clientCompanyId.map(_.value)},
-          reminder_minutes = ${person.reminderMinutes}
+          reminder_minutes = ${person.reminderMinutes},
+          roles = ${rolesArray}::person_role[]
       WHERE id = ${person.id.value} AND company_id IS NOT DISTINCT FROM ${person.companyId}
     """.update.run
       .transact(xa)
@@ -182,6 +220,19 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       .transact(xa)
   }
 
+  override def upsertDriverRow(personId: PersonId): Task[Unit] =
+    // Mirror the pattern used by PostgresDriverLocationRepository.updateLocation:
+    // insert a drivers row with the company_id drawn from the persons table.
+    // Safe to call multiple times — ON CONFLICT DO NOTHING makes it idempotent.
+    sql"""
+      INSERT INTO drivers (id, status, company_id)
+      SELECT ${personId.value}, 'Available', p.company_id
+      FROM persons p WHERE p.id = ${personId.value}
+      ON CONFLICT (id) DO NOTHING
+    """.update.run
+      .transact(xa)
+      .unit
+
   implicit val personRead: Read[Person] =
     Read[
       (
@@ -198,7 +249,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           UserStatus,
           Option[Instant],
           Option[UUID],
-          Int
+          Int,
+          List[PersonRole]
       )
     ].map {
       case (
@@ -215,7 +267,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
             status,
             lastLoginAt,
             clientCompanyId,
-            reminderMinutes
+            reminderMinutes,
+            rolesList
           ) =>
         Person(
           id = PersonId(id),
@@ -231,7 +284,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           status = status,
           lastLoginAt = lastLoginAt,
           clientCompanyId = clientCompanyId.map(ClientCompanyId.apply),
-          reminderMinutes = reminderMinutes
+          reminderMinutes = reminderMinutes,
+          roles = rolesList.toSet
         )
     }
 }

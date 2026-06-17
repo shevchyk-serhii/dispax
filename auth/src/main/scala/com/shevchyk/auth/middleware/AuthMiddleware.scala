@@ -2,6 +2,7 @@ package com.shevchyk.auth.middleware
 
 import com.shevchyk.auth.service.{JwtService, JwtPayload}
 import com.shevchyk.auth.domain.{JwtError, InvalidTokenError, ExpiredTokenError}
+import com.shevchyk.core.domain.PersonRole
 import zio.*
 import zio.http.*
 import zio.json.*
@@ -10,10 +11,20 @@ import java.util.UUID
 case class AuthenticatedUser(
     userId: UUID,
     email: String,
+    // primaryRole: the single role used for dashboard routing and display.
+    // `role` is kept as the field name for backward compatibility with existing call sites
+    // that read `user.role` for display purposes.
     role: String,
     companyId: Option[UUID] = None,
-    clientCompanyId: Option[UUID] = None
-)
+    clientCompanyId: Option[UUID] = None,
+    // roles: the full set of wire-format role strings; always non-empty.
+    // Legacy tokens that lack the `roles` payload field fall back to Set(role).
+    roles: Set[String] = Set.empty
+):
+  /**
+   * The canonical primary-role string (same as `role`).
+   */
+  def primaryRole: String = role
 
 object AuthenticatedUser:
   implicit val encoder: JsonEncoder[AuthenticatedUser] = DeriveJsonEncoder.gen[AuthenticatedUser]
@@ -38,12 +49,16 @@ object AuthMiddleware:
                 Response(Status.InternalServerError, body = Body.fromString("""{"error":"Internal server error"}"""))
             },
             { payload =>
+              val wireRoles = payload.roles
+                .map(_.map(PersonRole.toWire).toSet)
+                .getOrElse(Set(PersonRole.toWire(payload.role)))
               AuthenticatedUser(
                 userId = payload.userId,
                 email = payload.email,
-                role = payload.role.toString,
+                role = PersonRole.toWire(payload.role),
                 companyId = payload.companyId,
-                clientCompanyId = payload.clientCompanyId
+                clientCompanyId = payload.clientCompanyId,
+                roles = wireRoles
               )
             }
           )
@@ -57,10 +72,12 @@ object AuthMiddleware:
   def getAuthenticatedUser: ZIO[AuthenticatedUser, Nothing, AuthenticatedUser] = ZIO.service[AuthenticatedUser]
 
   def requireRole(role: String): ZIO[AuthenticatedUser, Response, Unit] = getAuthenticatedUser.flatMap { user =>
-    if (user.role.toUpperCase != role.toUpperCase)
-      ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Insufficient permissions"}""")))
-    else
+    // A user may carry multiple roles; the check passes when any role matches.
+    val effectiveRoles = if user.roles.nonEmpty then user.roles else Set(user.role)
+    if (effectiveRoles.exists(_.toUpperCase == role.toUpperCase))
       ZIO.unit
+    else
+      ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Insufficient permissions"}""")))
   }
 
   def requireOwnership(resourceUserId: UUID): ZIO[AuthenticatedUser, Response, Unit] = getAuthenticatedUser.flatMap {
@@ -72,30 +89,35 @@ object AuthMiddleware:
   }
 
   /**
-   * Check that the user has one of the allowed roles
+   * Check that the user has one of the allowed roles (intersection of user.roles and the provided set).
    */
-  def checkRole(user: AuthenticatedUser, roles: String*): IO[Response, Unit] =
-    val userRoleUpper = user.role.toUpperCase
-    if (roles.exists(_.toUpperCase == userRoleUpper))
+  def checkRole(user: AuthenticatedUser, allowedRoles: String*): IO[Response, Unit] =
+    val effectiveRoles = if user.roles.nonEmpty then user.roles else Set(user.role)
+    if (allowedRoles.exists(r => effectiveRoles.exists(_.toUpperCase == r.toUpperCase)))
       ZIO.unit
     else
       ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Insufficient permissions"}""")))
 
   /**
-   * Check that the user has one of the allowed roles OR is the resource owner
+   * Check that the user has one of the allowed roles OR is the resource owner.
    */
-  def checkRoleOrOwner(user: AuthenticatedUser, resourceOwnerId: UUID, roles: String*): IO[Response, Unit] =
-    val userRoleUpper = user.role.toUpperCase
-    if (roles.exists(_.toUpperCase == userRoleUpper) || user.userId == resourceOwnerId)
+  def checkRoleOrOwner(user: AuthenticatedUser, resourceOwnerId: UUID, allowedRoles: String*): IO[Response, Unit] =
+    val effectiveRoles = if user.roles.nonEmpty then user.roles else Set(user.role)
+    if (
+        allowedRoles
+          .exists(r => effectiveRoles.exists(_.toUpperCase == r.toUpperCase)) || user.userId == resourceOwnerId
+    )
       ZIO.unit
     else
       ZIO.fail(Response(Status.Forbidden, body = Body.fromString("""{"error":"Access denied"}""")))
 
   /**
-   * Returns true if the user is a platform SuperAdmin (role = SUPER_ADMIN). Pure Boolean helper for non-Tapir code
-   * paths (WebSocket, DevRoutes) that may need this check.
+   * Returns true if the user is a platform SuperAdmin (any role in the set = SUPER_ADMIN). Pure Boolean helper for
+   * non-Tapir code paths (WebSocket, DevRoutes) that may need this check.
    *
    * Compares case-insensitively and ignores underscores so that both the Scala enum `.toString` form ("SuperAdmin") and
    * the JSON-encoder form ("SUPER_ADMIN") are recognised as valid.
    */
-  def isSuperAdmin(user: AuthenticatedUser): Boolean = user.role.toUpperCase.replace("_", "") == "SUPERADMIN"
+  def isSuperAdmin(user: AuthenticatedUser): Boolean =
+    val effectiveRoles = if user.roles.nonEmpty then user.roles else Set(user.role)
+    effectiveRoles.exists(_.toUpperCase.replace("_", "") == "SUPERADMIN")

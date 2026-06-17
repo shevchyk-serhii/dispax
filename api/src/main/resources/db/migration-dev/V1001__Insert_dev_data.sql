@@ -19,28 +19,33 @@ INSERT INTO company_settings (company_id, commission_rate, working_hours_start, 
 VALUES ('10101010-1010-1010-1010-101010101010', 15.00, '06:00', '22:00', 'EUR')
 ON CONFLICT (company_id) DO NOTHING;
 
--- Dispatcher (owner)
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
+-- Dispatcher (owner) — also a driver so dispatcher@dispax.de can be assigned to rides
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
 VALUES ('11111111-1111-1111-1111-111111111111', 'Max Müller', 'dispatcher@dispax.de', 'dispatcher',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 170 1111111', 'ACTIVE')
+        '+49 170 1111111', 'ACTIVE', ARRAY['dispatcher','driver']::person_role[])
+ON CONFLICT (id) DO NOTHING;
+
+-- Driver row for the dispatcher-driver so they appear in location/status queries
+INSERT INTO drivers (id, status, company_id)
+VALUES ('11111111-1111-1111-1111-111111111111', 'Available', '10101010-1010-1010-1010-101010101010')
 ON CONFLICT (id) DO NOTHING;
 
 -- Secretary
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
 VALUES ('22222222-2222-2222-2222-222222222222', 'Anna Schmidt', 'secretary@dispax.de', 'secretary',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 170 2222222', 'ACTIVE')
+        '+49 170 2222222', 'ACTIVE', ARRAY['secretary']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 -- Driver 1
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status, roles)
 VALUES ('33333333-3333-3333-3333-333333333333', 'Hans Weber', 'driver1@dispax.de', 'driver',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 170 3333333', 'MÜN-HW-001', 'ACTIVE')
+        '+49 170 3333333', 'MÜN-HW-001', 'ACTIVE', ARRAY['driver']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO drivers (id, status, company_id, current_location_address, current_location_lat, current_location_lng)
@@ -49,11 +54,11 @@ VALUES ('33333333-3333-3333-3333-333333333333', 'Available', '10101010-1010-1010
 ON CONFLICT (id) DO NOTHING;
 
 -- Driver 2
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status, roles)
 VALUES ('44444444-4444-4444-4444-444444444444', 'Klaus Fischer', 'driver2@dispax.de', 'driver',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 170 4444444', 'MÜN-KF-002', 'ACTIVE')
+        '+49 170 4444444', 'MÜN-KF-002', 'ACTIVE', ARRAY['driver']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO drivers (id, status, company_id, current_location_address, current_location_lat, current_location_lng)
@@ -62,11 +67,11 @@ VALUES ('44444444-4444-4444-4444-444444444444', 'Available', '10101010-1010-1010
 ON CONFLICT (id) DO NOTHING;
 
 -- Driver 3
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status, roles)
 VALUES ('55555555-5555-5555-5555-555555555555', 'Peter Braun', 'driver3@dispax.de', 'driver',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 170 5555555', 'MÜN-PB-003', 'ACTIVE')
+        '+49 170 5555555', 'MÜN-PB-003', 'ACTIVE', ARRAY['driver']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO drivers (id, status, company_id, current_location_address, current_location_lat, current_location_lng)
@@ -75,45 +80,45 @@ VALUES ('55555555-5555-5555-5555-555555555555', 'Available', '10101010-1010-1010
 ON CONFLICT (id) DO NOTHING;
 
 -- Client 1 (VIP, corporate)
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, is_vip, preferred_driver_id, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, is_vip, preferred_driver_id, status, roles)
 VALUES ('66666666-6666-6666-6666-666666666666', 'BMW AG - Herr Schneider', 'client1@bmw.de', 'client',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 89 9999001', true, '33333333-3333-3333-3333-333333333333', 'ACTIVE')
+        '+49 89 9999001', true, '33333333-3333-3333-3333-333333333333', 'ACTIVE', ARRAY['client']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 -- Client 2
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
 VALUES ('77777777-7777-7777-7777-777777777777', 'Siemens - Frau Meier', 'client2@siemens.de', 'client',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 89 9999002', 'ACTIVE')
+        '+49 89 9999002', 'ACTIVE', ARRAY['client']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 -- Client 3
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
 VALUES ('88888888-8888-8888-8888-888888888888', 'Allianz - Herr Klein', 'client3@allianz.de', 'client',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 89 9999003', 'ACTIVE')
+        '+49 89 9999003', 'ACTIVE', ARRAY['client']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 -- Admin
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
 VALUES ('99999999-9999-9999-9999-999999999999', 'Admin', 'admin@dispax.de', 'admin',
         '10101010-1010-1010-1010-101010101010',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 170 9999999', 'ACTIVE')
+        '+49 170 9999999', 'ACTIVE', ARRAY['admin']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 -- SuperAdmin (platform administrator, no company)
 -- UUID: a0a0a0a0-a0a0-a0a0-a0a0-a0a0a0a0a0a0
 -- company_id is NULL: SuperAdmin is not scoped to any tenant
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
 VALUES ('a0a0a0a0-a0a0-a0a0-a0a0-a0a0a0a0a0a0', 'SuperAdmin', 'superadmin@dispax.de', 'super_admin',
         NULL,
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        NULL, 'ACTIVE')
+        NULL, 'ACTIVE', ARRAY['super_admin']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
@@ -148,19 +153,19 @@ VALUES ('20202020-2020-2020-2020-202020202020', 'Taxi- und Mietwagenunternehmen'
 ON CONFLICT (company_id) DO NOTHING;
 
 -- Dispatcher for Taxi Schwabing
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
 VALUES ('b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1', 'Thomas Bauer', 'dispatcher@taxi-schwabing.de', 'dispatcher',
         '20202020-2020-2020-2020-202020202020',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 170 7777777', 'ACTIVE')
+        '+49 170 7777777', 'ACTIVE', ARRAY['dispatcher']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 -- Driver for Taxi Schwabing
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, license_number, status, roles)
 VALUES ('c2c2c2c2-c2c2-c2c2-c2c2-c2c2c2c2c2c2', 'Maria Hoffmann', 'driver1@taxi-schwabing.de', 'driver',
         '20202020-2020-2020-2020-202020202020',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 170 8888888', 'SBG-MH-001', 'ACTIVE')
+        '+49 170 8888888', 'SBG-MH-001', 'ACTIVE', ARRAY['driver']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO drivers (id, status, company_id, current_location_address, current_location_lat, current_location_lng)
@@ -169,11 +174,11 @@ VALUES ('c2c2c2c2-c2c2-c2c2-c2c2-c2c2c2c2c2c2', 'Available', '20202020-2020-2020
 ON CONFLICT (id) DO NOTHING;
 
 -- Client for Taxi Schwabing
-INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
 VALUES ('d3d3d3d3-d3d3-d3d3-d3d3-d3d3d3d3d3d3', 'Audi AG - Herr Wagner', 'client1@audi-schwabing.de', 'client',
         '20202020-2020-2020-2020-202020202020',
         '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
-        '+49 89 7777001', 'ACTIVE')
+        '+49 89 7777001', 'ACTIVE', ARRAY['client']::person_role[])
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================

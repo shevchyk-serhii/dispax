@@ -74,6 +74,73 @@ object CoreDomainSpec extends ZIOSpecDefault {
               driver.role == PersonRole.Driver &&
               dispatcher.role == PersonRole.Dispatcher
           )
+        },
+        // ── multi-role helpers (dispatcher-can-drive) ─────────────────────
+        test("single-role person: effectiveRoles returns Set(role)") {
+          val driver = Person(
+            PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001")),
+            "Driver",
+            "d@x.com",
+            PersonRole.Driver
+          )
+          assertTrue(
+            driver.effectiveRoles == Set(PersonRole.Driver) &&
+              driver.canDrive &&
+              driver.primaryRole == PersonRole.Driver
+          )
+        },
+        test("dispatcher-driver: effectiveRoles always includes primary role") {
+          val dispDriver = Person(
+            id = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000002")),
+            name = "Disp Driver",
+            email = "dd@x.com",
+            role = PersonRole.Dispatcher,
+            roles = Set(PersonRole.Dispatcher, PersonRole.Driver)
+          )
+          assertTrue(
+            dispDriver.effectiveRoles == Set(PersonRole.Dispatcher, PersonRole.Driver) &&
+              dispDriver.hasRole(PersonRole.Driver) &&
+              dispDriver.hasRole(PersonRole.Dispatcher) &&
+              dispDriver.canDrive &&
+              dispDriver.primaryRole == PersonRole.Dispatcher
+          )
+        },
+        test("roles=Set.empty falls back to Set(role) via effectiveRoles") {
+          val person = Person(
+            id = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000003")),
+            name = "Test",
+            email = "t@x.com",
+            role = PersonRole.Client,
+            roles = Set.empty
+          )
+          assertTrue(
+            person.effectiveRoles == Set(PersonRole.Client) &&
+              !person.canDrive
+          )
+        },
+        test("roles provided without primary: effectiveRoles adds primary automatically") {
+          // Even if roles was created without the primary, effectiveRoles forces it in.
+          val person = Person(
+            id = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000004")),
+            name = "Test",
+            email = "t2@x.com",
+            role = PersonRole.Dispatcher,
+            roles = Set(PersonRole.Driver) // primary missing — effectiveRoles must add it
+          )
+          assertTrue(
+            person.effectiveRoles.contains(PersonRole.Dispatcher) &&
+              person.effectiveRoles.contains(PersonRole.Driver)
+          )
+        },
+        test("canDrive is false for non-driver roles") {
+          val dispatcher = Person(
+            id = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000005")),
+            name = "Disp",
+            email = "disp@x.com",
+            role = PersonRole.Dispatcher,
+            roles = Set(PersonRole.Dispatcher)
+          )
+          assertTrue(!dispatcher.canDrive)
         }
       ),
       suite("Company")(

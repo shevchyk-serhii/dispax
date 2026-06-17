@@ -29,7 +29,8 @@ case class UserDto(
     phone: Option[String] = None,
     status: Option[String] = None,
     companyId: Option[UUID] = None,
-    createdAt: Option[String] = None
+    createdAt: Option[String] = None,
+    roles: List[String] = Nil
 ) derives JsonCodec
 
 case class CreateUserRequest(
@@ -37,7 +38,8 @@ case class CreateUserRequest(
     name: String,
     role: String,
     password: String,
-    phone: Option[String] = None
+    phone: Option[String] = None,
+    roles: Option[List[String]] = None
 ) derives JsonCodec
 
 object CreateUserRequest:
@@ -48,19 +50,22 @@ case class UpdateUserRequest(
     name: Option[String] = None,
     role: Option[String] = None,
     phone: Option[String] = None,
-    status: Option[String] = None
+    status: Option[String] = None,
+    roles: Option[List[String]] = None
 ) derives JsonCodec:
 
   /**
-   * Apply the patch onto an existing person. The `role` and `status` fields are passed in already parsed/validated by
-   * the caller (they require effectful validation); the remaining fields are merged from this request.
+   * Apply the patch onto an existing person. The `role`, `status` and `roles` fields are passed in already
+   * parsed/validated by the caller (they require effectful validation); the remaining fields are merged from this
+   * request.
    */
-  def applyTo(current: Person, role: PersonRole, status: UserStatus): Person = current.copy(
+  def applyTo(current: Person, role: PersonRole, status: UserStatus, rolesSet: Set[PersonRole]): Person = current.copy(
     email = email.getOrElse(current.email),
     name = name.getOrElse(current.name),
     role = role,
     phone = phone.orElse(current.phone),
-    status = status
+    status = status,
+    roles = rolesSet
   )
 
 object UpdateUserRequest:
@@ -139,5 +144,6 @@ object UserDto:
     role = PersonRole.toWire(person.role),
     phone = person.phone,
     status = Some(person.status.toString),
-    companyId = person.companyId.map(_.value)
+    companyId = person.companyId.map(_.value),
+    roles = person.effectiveRoles.map(PersonRole.toWire).toList
   )

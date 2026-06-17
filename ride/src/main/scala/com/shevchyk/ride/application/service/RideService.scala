@@ -427,7 +427,7 @@ class RideServiceImpl(
       _       <-
         ZIO
           .fail(RideError.BusinessRuleViolation("driver_role", "Person is not a driver"))
-          .when(driver.role != PersonRole.Driver)
+          .when(!driver.canDrive)
           .unit
       _       <-
         ZIO
@@ -526,7 +526,7 @@ class RideServiceImpl(
       _       <-
         ZIO
           .fail(RideError.BusinessRuleViolation("driver_role", "Person is not a driver"))
-          .when(driver.role != PersonRole.Driver)
+          .when(!driver.canDrive)
           .unit
       _       <-
         ZIO

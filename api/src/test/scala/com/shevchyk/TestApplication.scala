@@ -101,18 +101,20 @@ object TestApplication extends ZIOAppDefault:
 
   private def hashPassword(password: String): String = BCrypt.hashpw(password, BCrypt.gensalt(12))
 
-  private val testPersonId1  = PersonId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
-  private val testPersonId50 = PersonId(UUID.fromString("50505050-5050-5050-5050-505050505050"))
-  private val testPersonId10 = PersonId(UUID.fromString("10101010-1010-1010-1010-101010101010"))
-  private val testPersonId99 = PersonId(UUID.fromString("99999999-9999-9999-9999-999999999999"))
-  private val testPersonId33 = PersonId(UUID.fromString("33333333-3333-3333-3333-333333333333"))
-  private val testPersonId44 = PersonId(UUID.fromString("44444444-4444-4444-4444-444444444444"))
-  private val testCompanyId1 = CompanyId(UUID.fromString("10101010-1010-1010-1010-101010101010"))
+  private val testPersonId1       = PersonId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
+  private val testPersonId50      = PersonId(UUID.fromString("50505050-5050-5050-5050-505050505050"))
+  private val testPersonId10      = PersonId(UUID.fromString("10101010-1010-1010-1010-101010101010"))
+  private val testPersonId99      = PersonId(UUID.fromString("99999999-9999-9999-9999-999999999999"))
+  private val testPersonId33      = PersonId(UUID.fromString("33333333-3333-3333-3333-333333333333"))
+  private val testPersonId44      = PersonId(UUID.fromString("44444444-4444-4444-4444-444444444444"))
+  // Dispatcher who also has the Driver role — used in 37_dispatcher_can_drive BDD
+  private val testPersonIdDispDrv = PersonId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"))
+  private val testCompanyId1      = CompanyId(UUID.fromString("10101010-1010-1010-1010-101010101010"))
 
   private val mockPersonRepository: PersonRepository =
     new PersonRepository {
       private val people = Map[PersonId, Person](
-        testPersonId1  -> Person(
+        testPersonId1       -> Person(
           testPersonId1,
           "Test User",
           "test@example.com",
@@ -121,7 +123,7 @@ object TestApplication extends ZIOAppDefault:
           phone = Some("+1234567890"),
           companyId = Some(testCompanyId1)
         ),
-        testPersonId50 -> Person(
+        testPersonId50      -> Person(
           testPersonId50,
           "Client User",
           "client@example.com",
@@ -130,7 +132,7 @@ object TestApplication extends ZIOAppDefault:
           phone = Some("+1111111111"),
           companyId = Some(testCompanyId1)
         ),
-        testPersonId10 -> Person(
+        testPersonId10      -> Person(
           testPersonId10,
           "Driver User",
           "driver@example.com",
@@ -139,7 +141,7 @@ object TestApplication extends ZIOAppDefault:
           phone = Some("+2222222222"),
           companyId = Some(testCompanyId1)
         ),
-        testPersonId99 -> Person(
+        testPersonId99      -> Person(
           testPersonId99,
           "Admin User",
           "admin@example.com",
@@ -148,7 +150,7 @@ object TestApplication extends ZIOAppDefault:
           phone = Some("+3333333333"),
           companyId = Some(testCompanyId1)
         ),
-        testPersonId33 -> Person(
+        testPersonId33      -> Person(
           testPersonId33,
           "Dispatcher User",
           "dispatcher@example.com",
@@ -157,7 +159,7 @@ object TestApplication extends ZIOAppDefault:
           phone = Some("+4444444444"),
           companyId = Some(testCompanyId1)
         ),
-        testPersonId44 -> Person(
+        testPersonId44      -> Person(
           testPersonId44,
           "Secretary User",
           "secretary@example.com",
@@ -165,6 +167,17 @@ object TestApplication extends ZIOAppDefault:
           passwordHash = hashPassword("Password123"),
           phone = Some("+5555555555"),
           companyId = Some(testCompanyId1)
+        ),
+        // Dispatcher who also holds the Driver role (used in 37_dispatcher_can_drive)
+        testPersonIdDispDrv -> Person(
+          testPersonIdDispDrv,
+          "Disp Driver",
+          "disp.driver@example.com",
+          PersonRole.Dispatcher,
+          passwordHash = hashPassword("Password123"),
+          phone = Some("+6666666666"),
+          companyId = Some(testCompanyId1),
+          roles = Set(PersonRole.Dispatcher, PersonRole.Driver)
         )
       )
 
@@ -196,6 +209,7 @@ object TestApplication extends ZIOAppDefault:
       )
       def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]        = ZIO.succeed(Nil)
+      def upsertDriverRow(personId: PersonId): Task[Unit]                                  = ZIO.unit
     }
 
   private val mockTokenRepository: TokenRepository =
@@ -206,7 +220,8 @@ object TestApplication extends ZIOAppDefault:
         "valid-token-10" -> testPersonId10.value,
         "valid-token-99" -> testPersonId99.value,
         "valid-token-33" -> testPersonId33.value,
-        "valid-token-44" -> testPersonId44.value
+        "valid-token-44" -> testPersonId44.value,
+        "valid-token-dd" -> testPersonIdDispDrv.value
       )
 
       def create(token: String, userId: UUID): Task[Unit]      = ZIO.unit
@@ -273,6 +288,17 @@ object TestApplication extends ZIOAppDefault:
         None,
         iat,
         exp
+      ),
+      // Dispatcher-driver token for 37_dispatcher_can_drive BDD scenarios
+      "valid-token-dd" -> JwtPayload(
+        testPersonIdDispDrv.value,
+        "disp.driver@example.com",
+        PersonRole.Dispatcher,
+        Some(testCompanyId1.value),
+        None,
+        iat,
+        exp,
+        roles = Some(List(PersonRole.Dispatcher, PersonRole.Driver))
       )
     )
   }
@@ -395,6 +421,32 @@ object TestApplication extends ZIOAppDefault:
     scheduledTime = Some(Instant.now().plusSeconds(345600))
   )
 
+  // Dedicated rides for 37_dispatcher_can_drive — each scenario uses its own ride
+  // so that one assignment does not affect the other.
+  private val testRideForDispDrvAssign = Ride(
+    id = RideId(UUID.fromString("d5d5d5d5-d5d5-d5d5-d5d5-d5d5d5d5d5d5")),
+    clientId = testPersonId1,
+    creatorId = testPersonId33,
+    companyId = testCompanyId1,
+    status = RideStatus.Requested,
+    pickupLocation = Location("Stachus München"),
+    dropoffLocation = Location("Maxvorstadt München"),
+    pickupDateTime = Instant.now().plusSeconds(604800),
+    scheduledTime = Some(Instant.now().plusSeconds(604800))
+  )
+
+  private val testRideForPureDispAssign = Ride(
+    id = RideId(UUID.fromString("d6d6d6d6-d6d6-d6d6-d6d6-d6d6d6d6d6d6")),
+    clientId = testPersonId1,
+    creatorId = testPersonId33,
+    companyId = testCompanyId1,
+    status = RideStatus.Requested,
+    pickupLocation = Location("Schwabing München"),
+    dropoffLocation = Location("Bogenhausen München"),
+    pickupDateTime = Instant.now().plusSeconds(604800),
+    scheduledTime = Some(Instant.now().plusSeconds(604800))
+  )
+
   // Dedicated ride for 33_security — stays Requested throughout all tests
   private val testRideRequested4 = Ride(
     id = RideId(UUID.fromString("88888888-8888-8888-8888-888888888888")),
@@ -437,7 +489,9 @@ object TestApplication extends ZIOAppDefault:
           testRideRequested2.id        -> testRideRequested2,
           testRideRequested3.id        -> testRideRequested3,
           testRideRequested4.id        -> testRideRequested4,
-          testRideAirportCheckpoint.id -> testRideAirportCheckpoint
+          testRideAirportCheckpoint.id -> testRideAirportCheckpoint,
+          testRideForDispDrvAssign.id  -> testRideForDispDrvAssign,
+          testRideForPureDispAssign.id -> testRideForPureDispAssign
         )
       )
       .map { ridesRef =>

@@ -49,7 +49,7 @@ object AuthMiddlewareSpec extends ZIOSpecDefault {
           for {
             token <- makeToken(PersonRole.Dispatcher)
             user  <- AuthMiddleware.authenticateRequest(requestWithBearer(token))
-          } yield assertTrue(user.role == "Dispatcher" && user.userId == userId)
+          } yield assertTrue(user.role == "DISPATCHER" && user.userId == userId)
         }.provide(jwtLayer),
         test("fails with 401 when Authorization header is missing") {
           val req = Request.get(URL.decode("/test").toOption.get)
@@ -124,6 +124,77 @@ object AuthMiddlewareSpec extends ZIOSpecDefault {
           AuthMiddleware.checkRoleOrOwner(user, otherId, "DISPATCHER").flip.map { resp =>
             assertTrue(resp.status == Status.Forbidden)
           }
+        }
+      ),
+      // ── multi-role (dispatcher-can-drive) ──────────────────────────────
+      suite("multi-role: checkRole")(
+        test("dispatcher-driver passes checkRole for DRIVER") {
+          val user = AuthenticatedUser(
+            userId,
+            "e@e.com",
+            "DISPATCHER",
+            roles = Set("DISPATCHER", "DRIVER")
+          )
+          AuthMiddleware.checkRole(user, "DRIVER").map(_ => assertCompletes)
+        },
+        test("dispatcher-driver passes checkRole for DISPATCHER") {
+          val user = AuthenticatedUser(
+            userId,
+            "e@e.com",
+            "DISPATCHER",
+            roles = Set("DISPATCHER", "DRIVER")
+          )
+          AuthMiddleware.checkRole(user, "DISPATCHER").map(_ => assertCompletes)
+        },
+        test("pure dispatcher fails checkRole for DRIVER") {
+          val user = AuthenticatedUser(userId, "e@e.com", "DISPATCHER", roles = Set("DISPATCHER"))
+          AuthMiddleware.checkRole(user, "DRIVER").flip.map { resp =>
+            assertTrue(resp.status == Status.Forbidden)
+          }
+        },
+        test("empty intersection fails with 403") {
+          val user = AuthenticatedUser(
+            userId,
+            "e@e.com",
+            "CLIENT",
+            roles = Set("CLIENT")
+          )
+          AuthMiddleware.checkRole(user, "DISPATCHER", "ADMIN").flip.map { resp =>
+            assertTrue(resp.status == Status.Forbidden)
+          }
+        },
+        test("multi-role user: requireRole passes when any role matches") {
+          val user = AuthenticatedUser(
+            userId,
+            "e@e.com",
+            "DISPATCHER",
+            roles = Set("DISPATCHER", "DRIVER")
+          )
+          AuthMiddleware.requireRole("DRIVER").provideEnvironment(ZEnvironment(user)).map(_ => assertCompletes)
+        }
+      ),
+      suite("multi-role: isSuperAdmin")(
+        test("isSuperAdmin true when SUPER_ADMIN is in roles set") {
+          val user = AuthenticatedUser(
+            userId,
+            "e@e.com",
+            "DISPATCHER",
+            roles = Set("DISPATCHER", "SUPER_ADMIN")
+          )
+          assertTrue(AuthMiddleware.isSuperAdmin(user))
+        },
+        test("isSuperAdmin false when SUPER_ADMIN not in roles set") {
+          val user = AuthenticatedUser(
+            userId,
+            "e@e.com",
+            "DISPATCHER",
+            roles = Set("DISPATCHER", "DRIVER")
+          )
+          assertTrue(!AuthMiddleware.isSuperAdmin(user))
+        },
+        test("isSuperAdmin falls back to primary role when roles set is empty") {
+          val user = AuthenticatedUser(userId, "e@e.com", "SUPER_ADMIN", roles = Set.empty)
+          assertTrue(AuthMiddleware.isSuperAdmin(user))
         }
       )
     )
