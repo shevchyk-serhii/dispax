@@ -5,6 +5,16 @@ import com.shevchyk.core.openapi.{ApiError, ErrorMapper}
 import sttp.model.StatusCode
 import java.time.{Instant, LocalDate, LocalTime}
 
+/**
+ * Per-driver permission to view other drivers' full schedules. Absence of a row means `false`.
+ */
+final case class DriverScheduleVisibility(
+    driverId: PersonId,
+    companyId: CompanyId,
+    canViewOtherSchedules: Boolean,
+    updatedAt: Instant
+)
+
 enum ScheduleDayStatus:
   case Scheduled, Active, Completed, Cancelled
 
@@ -75,6 +85,7 @@ enum ScheduleError extends Throwable:
   case DuplicateScheduleDay(driverId: PersonId, date: LocalDate)
   case InvalidStatusTransition(from: ScheduleDayStatus, to: ScheduleDayStatus)
   case CompanyMismatch(expected: CompanyId, actual: CompanyId)
+  case AccessDenied(message: String)
   case DatabaseError(cause: Throwable)
 
 object ScheduleError:
@@ -89,5 +100,6 @@ object ScheduleError:
       (StatusCode.Conflict, ApiError(s"Driver ${driverId.value} already has a schedule for $date"))
     case InvalidStatusTransition(from, to)    => (StatusCode.Conflict, ApiError(s"Cannot transition from $from to $to"))
     case CompanyMismatch(_, _)                => (StatusCode.Forbidden, ApiError("Schedule day belongs to a different company"))
+    case AccessDenied(message)                => (StatusCode.Forbidden, ApiError(message))
     case DatabaseError(_)                     => (StatusCode.InternalServerError, ApiError("Internal server error"))
   }

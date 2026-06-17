@@ -70,6 +70,18 @@ object ScheduleApi:
     .map(CompanyId(_))
     .orElseFail(ScheduleError.ValidationError("User must belong to a company"))
 
+  /**
+   * Reject roles that are neither Dispatcher nor Admin. Maps to a 403 Forbidden.
+   */
+  private def requireDispatcherOrAdmin(
+      user: AuthenticatedUser
+  ): ZIO[Any, (StatusCode, ApiError), Unit] =
+    val role = user.role.toUpperCase
+    ZIO
+      .fail((StatusCode.Forbidden, ApiError("Insufficient permissions")))
+      .unless(role == "DISPATCHER" || role == "ADMIN")
+      .unit
+
   // -- Endpoint descriptions -----------------------------------------------
 
   val createScheduleDayEndpoint = secureEndpoint.post
@@ -90,7 +102,7 @@ object ScheduleApi:
     .in("api" / "schedules" / "driver" / path[String]("driverId"))
     .out(jsonBody[List[ScheduleDayDto]])
     .tag(scheduleTag)
-    .summary("Get a driver's schedule")
+    .summary("Get a driver's schedule (access-controlled for drivers)")
 
   val getScheduleForDateEndpoint = secureEndpoint.get
     .in("api" / "schedules" / "day" / path[String]("date"))
@@ -119,6 +131,27 @@ object ScheduleApi:
     .tag(scheduleTag)
     .summary("Cancel a schedule day")
 
+  // -- Visibility endpoints (Dispatcher/Admin only) ------------------------
+
+  val getCompanyVisibilityEndpoint = secureEndpoint.get
+    .in("api" / "schedules" / "visibility")
+    .out(jsonBody[List[DriverScheduleVisibilityDto]])
+    .tag(scheduleTag)
+    .summary("List per-driver schedule-visibility settings for the company (dispatcher, admin)")
+
+  val getMyVisibilityEndpoint = secureEndpoint.get
+    .in("api" / "schedules" / "visibility" / "me")
+    .out(jsonBody[DriverScheduleVisibilityDto])
+    .tag(scheduleTag)
+    .summary("Get the caller's own schedule-visibility flag (any authenticated user)")
+
+  val setDriverVisibilityEndpoint = secureEndpoint.put
+    .in("api" / "schedules" / "visibility" / path[String]("driverId"))
+    .in(jsonBody[SetDriverVisibilityRequest])
+    .out(jsonBody[DriverScheduleVisibilityDto])
+    .tag(scheduleTag)
+    .summary("Set whether a driver may view other drivers' full schedules (dispatcher, admin)")
+
   /**
    * All endpoint descriptions, used to generate the OpenAPI document.
    */
@@ -129,7 +162,10 @@ object ScheduleApi:
     getScheduleForDateEndpoint,
     getScheduleRangeEndpoint,
     updateScheduleDayEndpoint,
-    deleteScheduleDayEndpoint
+    deleteScheduleDayEndpoint,
+    getCompanyVisibilityEndpoint,
+    getMyVisibilityEndpoint,
+    setDriverVisibilityEndpoint
   )
 
   // -- Server logic --------------------------------------------------------
@@ -156,15 +192,25 @@ object ScheduleApi:
       } yield days.map(ScheduleDayDto.fromDomain)).mapError(toError)
   }
 
+  /**
+   * GET /api/schedules/driver/:driverId
+   *
+   * Access control (closes the pre-existing security hole):
+   *   - requester == target driver → always OK
+   *   - Dispatcher / Admin / Secretary → always OK
+   *   - Driver requesting a different driver's schedule → only if the requesting driver has `canViewOtherSchedules =
+   *     true`; otherwise 403.
+   */
   private val getDriverScheduleServer: ZServerEndpoint[ScheduleEnv, Any] = getDriverScheduleEndpoint.serverLogic {
     user => driverId =>
       (for {
-        companyId <- requireCompanyId(user)
-        driverPid <- ZIO
-                       .attempt(PersonId(UUID.fromString(driverId)))
-                       .orElseFail(ScheduleError.ValidationError("Invalid UUID format"))
-        service   <- ZIO.service[ScheduleService]
-        days      <- service.getDriverSchedule(driverPid, companyId)
+        companyId  <- requireCompanyId(user)
+        driverPid  <- ZIO
+                        .attempt(PersonId(UUID.fromString(driverId)))
+                        .orElseFail(ScheduleError.ValidationError("Invalid UUID format"))
+        requesterId = PersonId(user.userId)
+        service    <- ZIO.service[ScheduleService]
+        days       <- service.getDriverScheduleAs(requesterId, user.role, driverPid, companyId)
       } yield days.map(ScheduleDayDto.fromDomain)).mapError(toError)
   }
 
@@ -227,8 +273,50 @@ object ScheduleApi:
       } yield ScheduleDayDto.fromDomain(updated)).mapError(toError)
   }
 
+  // -- Visibility server logic -------------------------------------------
+
+  private val getCompanyVisibilityServer: ZServerEndpoint[ScheduleEnv, Any] = getCompanyVisibilityEndpoint.serverLogic {
+    user => _ =>
+      for {
+        _         <- requireDispatcherOrAdmin(user)
+        companyId <- requireCompanyId(user).mapError(toError)
+        service   <- ZIO.service[ScheduleService]
+        list      <- service.getCompanyVisibility(companyId).mapError(toError)
+      } yield list.map(DriverScheduleVisibilityDto.fromDomain)
+  }
+
+  /**
+   * GET /api/schedules/visibility/me — accessible to any authenticated user. Returns the caller's own visibility record
+   * (defaults to canViewOtherSchedules=false when no record exists).
+   */
+  private val getMyVisibilityServer: ZServerEndpoint[ScheduleEnv, Any] = getMyVisibilityEndpoint.serverLogic {
+    user => _ =>
+      (for {
+        companyId <- requireCompanyId(user)
+        callerId   = PersonId(user.userId)
+        service   <- ZIO.service[ScheduleService]
+        result    <- service.getMyVisibility(callerId, companyId)
+      } yield DriverScheduleVisibilityDto.fromDomain(result)).mapError(toError)
+  }
+
+  private val setDriverVisibilityServer: ZServerEndpoint[ScheduleEnv, Any] = setDriverVisibilityEndpoint.serverLogic {
+    user => (driverIdStr, req) =>
+      for {
+        _         <- requireDispatcherOrAdmin(user)
+        companyId <- requireCompanyId(user).mapError(toError)
+        driverId  <- ZIO
+                       .attempt(PersonId(UUID.fromString(driverIdStr)))
+                       .orElseFail((StatusCode.BadRequest, ApiError("Invalid driver UUID format")))
+        service   <- ZIO.service[ScheduleService]
+        result    <- service.setDriverVisibility(driverId, companyId, req.canViewOtherSchedules).mapError(toError)
+      } yield DriverScheduleVisibilityDto.fromDomain(result)
+  }
+
   /**
    * All server endpoints, interpreted into zio-http Routes by the api module.
+   *
+   * NOTE: `getMyVisibilityServer` must appear before `setDriverVisibilityServer` so that Tapir routes `GET
+   * /visibility/me` before attempting to match `PUT /visibility/:driverId`.
    */
   val serverEndpoints: List[ZServerEndpoint[ScheduleEnv, Any]] = List(
     createScheduleDayServer,
@@ -237,5 +325,8 @@ object ScheduleApi:
     getScheduleForDateServer,
     getScheduleRangeServer,
     updateScheduleDayServer,
-    deleteScheduleDayServer
+    deleteScheduleDayServer,
+    getCompanyVisibilityServer,
+    getMyVisibilityServer,
+    setDriverVisibilityServer
   )

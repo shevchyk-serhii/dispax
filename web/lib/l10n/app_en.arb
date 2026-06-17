@@ -199,5 +199,14 @@
   "longitude": "Longitude",
   "radiusMeters": "Radius (meters)",
   "landingGeofence": "Landing Geofence",
-  "pickOnMap": "Pick on map"
+  "pickOnMap": "Pick on map",
+
+  "scheduleVisibility": "Schedule Visibility",
+  "allowViewOtherSchedules": "Allow viewing colleagues' schedules",
+  "viewingDriverSchedule": "Viewing: {driverName}",
+  "@viewingDriverSchedule": {
+    "placeholders": {
+      "driverName": {"type": "String"}
+    }
+  }
 }

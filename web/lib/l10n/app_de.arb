@@ -184,5 +184,14 @@
   "longitude": "Längengrad",
   "radiusMeters": "Radius (Meter)",
   "landingGeofence": "Lande-Geofence",
-  "pickOnMap": "Auf Karte wählen"
+  "pickOnMap": "Auf Karte wählen",
+
+  "scheduleVisibility": "Zeitplan-Sichtbarkeit",
+  "allowViewOtherSchedules": "Zeitpläne der Kollegen anzeigen erlauben",
+  "viewingDriverSchedule": "Ansicht: {driverName}",
+  "@viewingDriverSchedule": {
+    "placeholders": {
+      "driverName": {"type": "String"}
+    }
+  }
 }

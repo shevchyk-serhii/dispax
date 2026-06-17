@@ -1064,16 +1064,25 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         """[{"driverId":"22222222-2222-2222-2222-222222222222","completedRides":80,"rating":4.8}]"""
 
       // ── Schedules ──
-      case (Method.GET, "/api/schedules")                            =>
+      case (Method.GET, "/api/schedules")                                                        =>
         """[{"id":"11111111-1111-1111-1111-111111111111","driverId":"22222222-2222-2222-2222-222222222222","date":"2026-06-02"}]"""
-      case (Method.POST, "/api/schedules")                           =>
+      case (Method.POST, "/api/schedules")                                                       =>
         """{"id":"11111111-1111-1111-1111-111111111111","driverId":"22222222-2222-2222-2222-222222222222"}"""
-      case (Method.POST, "/api/schedules/batch")                     =>
+      case (Method.POST, "/api/schedules/batch")                                                 =>
         """[{"id":"11111111-1111-1111-1111-111111111111"},{"id":"22222222-2222-2222-2222-222222222222"}]"""
-      case (Method.GET, p) if p.startsWith("/api/schedules/driver/") =>
+      case (Method.GET, p) if p.startsWith("/api/schedules/driver/")                             =>
         """[{"id":"11111111-1111-1111-1111-111111111111","date":"2026-06-02"}]"""
-      case (Method.GET, p) if p.startsWith("/api/schedules/day/")    =>
+      case (Method.GET, p) if p.startsWith("/api/schedules/day/")                                =>
         """[{"id":"11111111-1111-1111-1111-111111111111","shiftStart":"08:00"}]"""
+      // ── Schedule visibility ──
+      case (Method.GET, "/api/schedules/visibility")                                             =>
+        """[{"driverId":"10101010-1010-1010-1010-101010101010","companyId":"10101010-1010-1010-1010-101010101010","canViewOtherSchedules":false,"updatedAt":"2026-01-01T00:00:00Z"}]"""
+      case (Method.GET, "/api/schedules/visibility/me")                                         =>
+        val driverId  = currentUserId.map(_.value.toString).getOrElse("10101010-1010-1010-1010-101010101010")
+        val companyId = "10101010-1010-1010-1010-101010101010"
+        s"""{"driverId":"$driverId","companyId":"$companyId","canViewOtherSchedules":false,"updatedAt":"2026-01-01T00:00:00Z"}"""
+      case (Method.PUT, p) if p.startsWith("/api/schedules/visibility/")                         =>
+        """{"driverId":"10101010-1010-1010-1010-101010101010","companyId":"10101010-1010-1010-1010-101010101010","canViewOtherSchedules":true,"updatedAt":"2026-01-01T00:00:00Z"}"""
 
       // ── WebSocket ──
       case (Method.POST, "/api/ws/ticket") => """{"ticket":"ws-ticket-abc123","expiresIn":60}"""

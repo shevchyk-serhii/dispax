@@ -101,8 +101,8 @@ import com.shevchyk.ride.repository.{
   TimeBucket
 }
 import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
-import com.shevchyk.schedule.domain.{ScheduleDay, ScheduleError}
-import com.shevchyk.schedule.repository.ScheduleDayRepository
+import com.shevchyk.schedule.domain.{DriverScheduleVisibility, ScheduleDay, ScheduleError}
+import com.shevchyk.schedule.repository.{DriverScheduleVisibilityRepository, ScheduleDayRepository}
 import org.mindrot.jbcrypt.BCrypt
 import zio.*
 import zio.http.*
@@ -1224,6 +1224,17 @@ object TestApplication extends ZIOAppDefault:
       RideService.layer,
       // Schedule
       inMemoryScheduleDayRepositoryLayer,
+      ZLayer.fromZIO(
+        Ref.Synchronized.make(Map.empty[PersonId, DriverScheduleVisibility]).map { store =>
+          new DriverScheduleVisibilityRepository:
+            def findByDriver(driverId: PersonId): Task[Option[DriverScheduleVisibility]] =
+              store.get.map(_.get(driverId))
+            def upsert(visibility: DriverScheduleVisibility): Task[DriverScheduleVisibility] =
+              store.update(_.updated(visibility.driverId, visibility)).as(visibility)
+            def findByCompany(companyId: CompanyId): Task[List[DriverScheduleVisibility]] =
+              store.get.map(_.values.filter(_.companyId == companyId).toList)
+        }
+      ),
       ScheduleSvc.layer,
       // Notification
       inMemoryNotificationRepositoryLayer,
