@@ -81,8 +81,31 @@ Feature: Configurable driver schedule visibility
     When I send a GET request to "/api/schedules/driver/33333333-3333-3333-3333-333333333333"
     Then the response status should be 403
 
+  # ── Driver can read OWN visibility flag via /me ───────────────────────────────
+  # GET /api/schedules/visibility/me is accessible to any authenticated role.
+  # A driver who has no explicit record receives a safe default (canViewOtherSchedules=false).
+
+  Scenario: Driver reads own visibility flag via /me endpoint — returns 200
+    Given I am authenticated as a driver with ID 10
+    When I send a GET request to "/api/schedules/visibility/me"
+    Then the response status should be 200
+    And the response should contain "canViewOtherSchedules"
+
+  # ── Driver is STILL FORBIDDEN on the company-wide list ───────────────────────
+  # Even though a driver can read /me, the general GET /api/schedules/visibility
+  # (which returns all drivers' settings) remains restricted to Dispatcher / Admin.
+
+  Scenario: Driver who can read /me is still forbidden on company visibility list
+    Given I am authenticated as a driver with ID 10
+    When I send a GET request to "/api/schedules/visibility"
+    Then the response status should be 403
+
   # ── Unauthenticated access is blocked ────────────────────────────────────────
 
   Scenario: Unauthenticated request to visibility endpoint is rejected
     When I send a GET request to "/api/schedules/visibility" without authentication
+    Then the response status should be 401
+
+  Scenario: Unauthenticated request to /me visibility endpoint is rejected
+    When I send a GET request to "/api/schedules/visibility/me" without authentication
     Then the response status should be 401

@@ -19,6 +19,7 @@ import java.util.UUID
  *   - canDriverViewOthers
  *   - setDriverVisibility (including company-ownership check)
  *   - getCompanyVisibility
+ *   - getMyVisibility (own flag read, absent-record default, tenant isolation)
  *
  * All tests use in-memory repository doubles — no real database.
  */
@@ -353,6 +354,62 @@ object ScheduleServiceVisibilitySpec extends ZIOSpecDefault {
           case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.CompanyMismatch])
           case _                   => false
         })
+      }.provide(layers)
+
+    ),
+
+    // ─── getMyVisibility ──────────────────────────────────────────────────────
+
+    suite("getMyVisibility")(
+
+      test("returns record with canViewOtherSchedules=true when flag was set to true") {
+        for {
+          service <- ZIO.service[ScheduleService]
+          _       <- service.setDriverVisibility(driverAId, companyA, canView = true)
+          result  <- service.getMyVisibility(driverAId, companyA)
+        } yield assertTrue(
+          result.driverId == driverAId &&
+            result.companyId == companyA &&
+            result.canViewOtherSchedules
+        )
+      }.provide(layers),
+
+      test("returns safe default (canViewOtherSchedules=false) when no record exists") {
+        for {
+          service <- ZIO.service[ScheduleService]
+          // No visibility record is created — row is absent
+          result  <- service.getMyVisibility(driverAId, companyA)
+        } yield assertTrue(
+          result.driverId == driverAId &&
+            result.companyId == companyA &&
+            !result.canViewOtherSchedules
+        )
+      }.provide(layers),
+
+      test("tenant isolation: row belonging to another company returns safe default") {
+        for {
+          service <- ZIO.service[ScheduleService]
+          // driverC belongs to companyB; her visibility row is stored under companyB
+          _       <- service.setDriverVisibility(driverCId, companyB, canView = true)
+          // Request the same driverId but with companyA's context — must not leak cross-tenant data
+          result  <- service.getMyVisibility(driverCId, companyA)
+        } yield assertTrue(
+          result.driverId == driverCId &&
+            result.companyId == companyA &&
+            !result.canViewOtherSchedules
+        )
+      }.provide(layers),
+
+      test("returns record with canViewOtherSchedules=false when flag was explicitly set to false") {
+        for {
+          service <- ZIO.service[ScheduleService]
+          _       <- service.setDriverVisibility(driverAId, companyA, canView = false)
+          result  <- service.getMyVisibility(driverAId, companyA)
+        } yield assertTrue(
+          result.driverId == driverAId &&
+            result.companyId == companyA &&
+            !result.canViewOtherSchedules
+        )
       }.provide(layers)
 
     ),
