@@ -3,7 +3,7 @@ package com.shevchyk.schedule.application
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.{PersonRepository, InMemoryPersonRepository}
 import com.shevchyk.schedule.domain.*
-import com.shevchyk.schedule.repository.InMemoryScheduleDayRepository
+import com.shevchyk.schedule.repository.{InMemoryScheduleDayRepository, InMemoryDriverScheduleVisibilityRepository}
 import zio.test.*
 import zio.*
 import java.time.{Instant, LocalDate, LocalTime}
@@ -29,7 +29,11 @@ object ScheduleServiceStatusSpec extends ZIOSpecDefault {
     } yield repo
   }
 
-  val standardLayers = InMemoryScheduleDayRepository.layer ++ testPersonRepoLayer >>> ScheduleService.layer
+  val standardLayers =
+    InMemoryScheduleDayRepository.layer ++
+      InMemoryDriverScheduleVisibilityRepository.layer ++
+      testPersonRepoLayer >>>
+      ScheduleService.layer
 
   val futureDate = LocalDate.now().plusDays(5)
 
