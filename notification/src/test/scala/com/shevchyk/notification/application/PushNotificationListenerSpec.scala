@@ -57,6 +57,7 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       def searchByQuery(query: String): Task[List[Person]]                               = nope("searchByQuery")
       def updateLastLogin(id: PersonId): Task[Unit]                                      = nope("updateLastLogin")
       def findByClientCompany(c: ClientCompanyId): Task[List[Person]]                    = nope("findByClientCompany")
+      def upsertDriverRow(personId: PersonId): Task[Unit]                                = ZIO.unit
 
   private val baseLayers =
     EventHub.layer ++

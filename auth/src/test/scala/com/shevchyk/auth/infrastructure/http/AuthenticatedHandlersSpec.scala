@@ -58,7 +58,7 @@ object AuthenticatedHandlersSpec extends ZIOSpecDefault {
             token    <- makeToken
             response <- h.runZIO(requestWithToken(token))
             body     <- response.body.asString
-          } yield assertTrue(response.status == Status.Ok && body == "Dispatcher")
+          } yield assertTrue(response.status == Status.Ok && body == "DISPATCHER")
         }.provide(jwtLayer),
         test("returns 401 when token is missing") {
           val h: Handler[JwtService, Response, Request, Response] = AuthenticatedHandlers.authenticatedHandler {
@@ -127,7 +127,7 @@ object AuthenticatedHandlersSpec extends ZIOSpecDefault {
             request   = requestWithToken(token)
             response <- h.runZIO(("my-param", request))
             body     <- response.body.asString
-          } yield assertTrue(response.status == Status.Ok && body == "Dispatcher:my-param")
+          } yield assertTrue(response.status == Status.Ok && body == "DISPATCHER:my-param")
         }.provide(jwtLayer),
         test("returns 401 when token is missing") {
           val h: Handler[JwtService, Response, (String, Request), Response] = AuthenticatedHandlers

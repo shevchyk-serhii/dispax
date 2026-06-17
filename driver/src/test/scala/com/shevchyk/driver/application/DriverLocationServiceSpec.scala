@@ -72,6 +72,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
       def searchByQuery(query: String): Task[List[Person]]                                 = ZIO.succeed(Nil)
       def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]        = ZIO.succeed(Nil)
+      def upsertDriverRow(personId: PersonId): Task[Unit]                                  = ZIO.unit
   )
 
   // Noop GeofenceService
