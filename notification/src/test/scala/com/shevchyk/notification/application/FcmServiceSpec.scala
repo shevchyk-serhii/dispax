@@ -82,18 +82,31 @@ object FcmServiceSpec extends ZIOSpecDefault {
         }.provide(sharedLayers)
       ),
       suite("sendToUser")(
-        test("succeeds without Firebase (logs instead)") {
+        test("succeeds without Firebase and emits FCM-skipped log for the registered token") {
+          // messagingOpt = None → sendToToken falls into the None branch and calls
+          // ZIO.logInfo("FCM not configured, skipping push: <title>") for every token.
+          // ZTestLogger captures that log so we can assert the code path was taken.
           for {
             service <- ZIO.service[FcmService]
             _       <- service.registerToken(personId1, "test-token", "android")
             _       <- service.sendToUser(personId1, PushNotification("Title", "Body"))
-          } yield assertTrue(true)
+            logs    <- ZTestLogger.logOutput
+          } yield assertTrue(
+            logs.exists(e =>
+              e.logLevel == zio.LogLevel.Info && e.message().contains("FCM not configured, skipping push")
+            )
+          )
         }.provide(sharedLayers),
-        test("succeeds when user has no tokens") {
+        test("sendToUser with no tokens is a no-op (no FCM log emitted)") {
+          // personId2 has no registered tokens → foreachDiscard over Nil → nothing happens.
+          // No "FCM not configured" log should appear — the token-iteration body is never entered.
           for {
             service <- ZIO.service[FcmService]
             _       <- service.sendToUser(personId2, PushNotification("Title", "Body"))
-          } yield assertTrue(true)
+            logs    <- ZTestLogger.logOutput
+          } yield assertTrue(
+            !logs.exists(_.message().contains("FCM not configured, skipping push"))
+          )
         }.provide(sharedLayers)
       )
     )
