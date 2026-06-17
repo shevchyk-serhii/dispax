@@ -52,7 +52,7 @@ ThisBuild / assembly / assemblyMergeStrategy := {
   case x                                                     => MergeStrategy.first
 }
 
-addCommandAlias("fmt", "; scalafmt ; scalafmtSbt")
+addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtDart", "! dart format web/lib --set-exit-if-changed")
 addCommandAlias("fmtAll", "; fmt ; fmtDart")
 addCommandAlias("fmtWatch", "~fmtAll")
