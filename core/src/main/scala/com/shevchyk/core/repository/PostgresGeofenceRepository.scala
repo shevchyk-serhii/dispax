@@ -73,9 +73,10 @@ final class PostgresGeofenceRepository(xa: Transactor[Task]) extends GeofenceRep
       .transact(xa)
       .as(geofence)
 
-  override def delete(id: GeofenceId): Task[Boolean] = sql"""DELETE FROM geofences WHERE id = ${id.value}""".update.run
-    .transact(xa)
-    .map(_ > 0)
+  override def delete(id: GeofenceId, companyId: CompanyId): Task[Boolean] =
+    sql"""DELETE FROM geofences WHERE id = ${id.value} AND company_id = ${companyId.value}""".update.run
+      .transact(xa)
+      .map(_ > 0)
 
   override def saveAlert(alert: GeofenceAlert): Task[GeofenceAlert] =
     sql"""

@@ -48,7 +48,14 @@ class InMemoryScheduleDayRepository extends ScheduleDayRepository:
     .update(_.updated(scheduleDay.id, scheduleDay))
     .as(scheduleDay)
 
-  override def delete(id: ScheduleDayId): Task[Unit] = store.update(_.removed(id)).unit
+  override def delete(id: ScheduleDayId, companyId: CompanyId): Task[Unit] =
+    store
+      .update(m =>
+        m.get(id) match
+          case Some(d) if d.companyId == companyId => m.removed(id)
+          case _                                   => m
+      )
+      .unit
 
 object InMemoryScheduleDayRepository:
   val layer: ZLayer[Any, Nothing, ScheduleDayRepository] = ZLayer.succeed(new InMemoryScheduleDayRepository)

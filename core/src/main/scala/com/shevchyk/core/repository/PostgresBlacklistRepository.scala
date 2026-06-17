@@ -64,8 +64,9 @@ final class PostgresBlacklistRepository(xa: Transactor[Task]) extends BlacklistR
       .unique
       .transact(xa)
 
-  override def deactivate(id: BlacklistEntryId): Task[Boolean] =
-    sql"""UPDATE blacklist_entries SET is_active = false WHERE id = ${id.value}""".update.run
+  override def deactivate(id: BlacklistEntryId, companyId: CompanyId): Task[Boolean] =
+    sql"""UPDATE blacklist_entries SET is_active = false
+          WHERE id = ${id.value} AND company_id = ${companyId.value}""".update.run
       .transact(xa)
       .map(_ > 0)
 

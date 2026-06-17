@@ -411,9 +411,9 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
-  override def delete(id: RideId): Task[Unit] = {
+  override def delete(id: RideId, companyId: CompanyId): Task[Unit] = {
     sql"""
-      DELETE FROM rides WHERE id = ${id.value}
+      DELETE FROM rides WHERE id = ${id.value} AND company_id = ${companyId.value}
     """.update.run
       .transact(xa)
       .unit

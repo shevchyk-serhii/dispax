@@ -231,9 +231,11 @@ object PostgresScheduleDayRepositorySpec extends ZIOSpecDefault {
           repo   = PostgresScheduleDayRepository(xa)
           day    = makeDay()
           _     <- repo.create(day)
-          _     <- repo.delete(day.id)
+          _     <- repo.delete(day.id, CompanyId(UUID.randomUUID())) // cross-tenant: no-op
+          still <- repo.findById(day.id)
+          _     <- repo.delete(day.id, testCompanyId)
           found <- repo.findById(day.id)
-        } yield assertTrue(found.isEmpty)
+        } yield assertTrue(still.isDefined, found.isEmpty)
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"

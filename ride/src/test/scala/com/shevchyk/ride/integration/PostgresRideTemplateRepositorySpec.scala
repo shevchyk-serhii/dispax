@@ -181,10 +181,12 @@ object PostgresRideTemplateRepositorySpec extends ZIOSpecDefault {
           repo     = PostgresRideTemplateRepository(xa)
           tpl      = makeTemplate(isActive = true, preferredDriver = None)
           _       <- repo.create(tpl)
-          ok      <- repo.deactivate(tpl.id)
-          missing <- repo.deactivate(RideTemplateId.generate())
+          cross   <- repo.deactivate(tpl.id, CompanyId(UUID.randomUUID()))
+          ok      <- repo.deactivate(tpl.id, testCompanyId)
+          missing <- repo.deactivate(RideTemplateId.generate(), testCompanyId)
           found   <- repo.findById(tpl.id)
         } yield assertTrue(
+          !cross,
           ok,
           !missing,
           found.isDefined,
@@ -199,10 +201,12 @@ object PostgresRideTemplateRepositorySpec extends ZIOSpecDefault {
           repo     = PostgresRideTemplateRepository(xa)
           tpl      = makeTemplate(preferredDriver = None)
           _       <- repo.create(tpl)
-          deleted <- repo.delete(tpl.id)
-          missing <- repo.delete(RideTemplateId.generate())
+          cross   <- repo.delete(tpl.id, CompanyId(UUID.randomUUID()))
+          still   <- repo.findById(tpl.id)
+          deleted <- repo.delete(tpl.id, testCompanyId)
+          missing <- repo.delete(RideTemplateId.generate(), testCompanyId)
           found   <- repo.findById(tpl.id)
-        } yield assertTrue(deleted, !missing, found.isEmpty)
+        } yield assertTrue(!cross, still.isDefined, deleted, !missing, found.isEmpty)
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"

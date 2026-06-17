@@ -155,10 +155,12 @@ object PostgresGeofenceRepositorySpec extends ZIOSpecDefault {
           repo     = PostgresGeofenceRepository(xa)
           fence    = makeGeofence()
           _       <- repo.create(fence)
-          deleted <- repo.delete(fence.id)
-          missing <- repo.delete(GeofenceId(UUID.randomUUID()))
+          cross   <- repo.delete(fence.id, otherCompanyId)
+          still   <- repo.findById(fence.id)
+          deleted <- repo.delete(fence.id, testCompanyId)
+          missing <- repo.delete(GeofenceId(UUID.randomUUID()), testCompanyId)
           found   <- repo.findById(fence.id)
-        } yield assertTrue(deleted, !missing, found.isEmpty)
+        } yield assertTrue(!cross, still.isDefined, deleted, !missing, found.isEmpty)
       },
       test("saveAlert and findAlertsByCompany with limit and ordering") {
         for {

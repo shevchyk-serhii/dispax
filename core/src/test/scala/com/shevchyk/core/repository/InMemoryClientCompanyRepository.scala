@@ -22,7 +22,11 @@ class InMemoryClientCompanyRepository extends ClientCompanyRepository:
     store.put(company.id, company); company
   }
 
-  override def delete(id: ClientCompanyId): Task[Boolean] = ZIO.succeed(Option(store.remove(id)).isDefined)
+  override def delete(id: ClientCompanyId, taxiCompanyId: CompanyId): Task[Boolean] = ZIO.succeed {
+    Option(store.get(id)) match
+      case Some(c) if c.taxiCompanyId == taxiCompanyId => store.remove(id) != null
+      case _                                           => false
+  }
 
 object InMemoryClientCompanyRepository:
   val layer: ULayer[ClientCompanyRepository] = ZLayer.succeed(new InMemoryClientCompanyRepository)

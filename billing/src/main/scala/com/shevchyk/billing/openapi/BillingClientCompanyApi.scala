@@ -104,7 +104,7 @@ object BillingClientCompanyApi:
         result    <-
           existing.filter(_.taxiCompanyId == companyId) match
             case None    => ZIO.none
-            case Some(_) => repo.update(ccId, req).mapError(_ => internalError)
+            case Some(_) => repo.update(ccId, companyId, req).mapError(_ => internalError)
         company   <- ZIO
                        .fromOption(result)
                        .orElseFail((StatusCode.NotFound, ApiError("Not found")))
@@ -124,7 +124,7 @@ object BillingClientCompanyApi:
         deleted   <-
           existing.filter(_.taxiCompanyId == companyId) match
             case None    => ZIO.succeed(false)
-            case Some(_) => repo.delete(ccId).mapError(_ => internalError)
+            case Some(_) => repo.delete(ccId, companyId).mapError(_ => internalError)
         _         <- ZIO
                        .fail((StatusCode.NotFound, ApiError("Not found")))
                        .when(!deleted)

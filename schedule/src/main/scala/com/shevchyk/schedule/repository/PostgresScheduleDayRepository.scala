@@ -148,14 +148,14 @@ final class PostgresScheduleDayRepository(xa: Transactor[Task]) extends Schedule
         status = ${scheduleDay.status},
         notes = ${scheduleDay.notes},
         updated_at = NOW()
-      WHERE id = ${scheduleDay.id.value}
+      WHERE id = ${scheduleDay.id.value} AND company_id = ${scheduleDay.companyId.value}
     """.update.run
       .transact(xa)
       .as(scheduleDay)
       .mapError(ex => ScheduleError.DatabaseError(ex))
 
-  override def delete(id: ScheduleDayId): Task[Unit] =
-    sql"""DELETE FROM schedule_days WHERE id = ${id.value}""".update.run
+  override def delete(id: ScheduleDayId, companyId: CompanyId): Task[Unit] =
+    sql"""DELETE FROM schedule_days WHERE id = ${id.value} AND company_id = ${companyId.value}""".update.run
       .transact(xa)
       .unit
       .mapError(ex => ScheduleError.DatabaseError(ex))

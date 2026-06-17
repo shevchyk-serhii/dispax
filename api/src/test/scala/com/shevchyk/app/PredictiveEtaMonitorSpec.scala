@@ -54,7 +54,7 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
       )
       def update(ride: Ride): Task[Ride]                                                                          = nope("update")
       def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]                            = nope("updateIfStatus")
-      def delete(id: RideId): Task[Unit]                                                                          = nope("delete")
+      def delete(id: RideId, companyId: CompanyId): Task[Unit]                                                    = nope("delete")
       def countByCompanyGroupedByStatus(c: CompanyId): Task[Map[String, Int]]                                     = nope("countByCompanyGroupedByStatus")
       def sumRevenueByCompany(c: CompanyId): Task[BigDecimal]                                                     = nope("sumRevenueByCompany")
       def sumTodayRevenueByCompany(c: CompanyId): Task[BigDecimal]                                                = nope("sumTodayRevenueByCompany")
@@ -98,6 +98,10 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
         _.contains((rideId, driverId))
       )
       def markAlerted(rideId: RideId, driverId: PersonId): Task[Unit]         = ref.update(_ + ((rideId, driverId)))
+      def markAlertedIfNew(rideId: RideId, driverId: PersonId): Task[Boolean] = ref.modify { seen =>
+        if seen.contains((rideId, driverId)) then (false, seen)
+        else (true, seen + ((rideId, driverId)))
+      }
       def clear(rideId: RideId): Task[Unit]                                   = ref.update(_.filterNot(_._1 == rideId))
 
   // EventHub stub recording published events.

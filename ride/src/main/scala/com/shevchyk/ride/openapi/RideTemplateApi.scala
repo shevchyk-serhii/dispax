@@ -120,7 +120,7 @@ object RideTemplateApi:
         tmplOpt     <- repo.findById(tmplId).mapError(_ => internalError)
         deactivated <-
           tmplOpt.filter(_.companyId == companyId) match
-            case Some(_) => repo.deactivate(tmplId).mapError(_ => internalError)
+            case Some(_) => repo.deactivate(tmplId, companyId).mapError(_ => internalError)
             case None    => ZIO.succeed(false)
         _           <- ZIO.fail((StatusCode.NotFound, ApiError("Not found"))).when(!deactivated)
       } yield ()

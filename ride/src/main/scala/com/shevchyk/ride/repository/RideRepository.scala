@@ -29,7 +29,8 @@ trait RideRepository {
   // concurrent transaction already moved the ride out of those statuses. Used to make
   // driver (re)assignment safe against the read-modify-write race between two dispatchers.
   def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]
-  def delete(id: RideId): Task[Unit]
+  // Tenant-scoped delete: only removes the ride when it belongs to `companyId`.
+  def delete(id: RideId, companyId: CompanyId): Task[Unit]
   def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]
   def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]
   def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]

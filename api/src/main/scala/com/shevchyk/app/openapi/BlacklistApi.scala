@@ -125,7 +125,7 @@ object BlacklistApi:
         // the entry belongs to the caller's company before deactivating it.
         entries   <- repo.findByCompanyId(companyId).mapError(internal)
         deleted   <-
-          if entries.exists(_.id == entryId) then repo.deactivate(entryId).mapError(internal)
+          if entries.exists(_.id == entryId) then repo.deactivate(entryId, companyId).mapError(internal)
           else ZIO.succeed(false)
       } yield if deleted then StatusCode.NoContent else StatusCode.NotFound
   }

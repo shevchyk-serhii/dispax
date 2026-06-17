@@ -54,13 +54,14 @@ final class PostgresClientCompanyRepository(xa: Transactor[Task]) extends Client
           phone = ${company.phone},
           address = ${company.address},
           updated_at = NOW()
-      WHERE id = ${company.id.value}
+      WHERE id = ${company.id.value} AND taxi_company_id = ${company.taxiCompanyId.value}
     """.update.run
       .transact(xa)
       .as(company)
 
-  override def delete(id: ClientCompanyId): Task[Boolean] =
-    sql"""DELETE FROM client_companies WHERE id = ${id.value}""".update.run
+  override def delete(id: ClientCompanyId, taxiCompanyId: CompanyId): Task[Boolean] =
+    sql"""DELETE FROM client_companies
+          WHERE id = ${id.value} AND taxi_company_id = ${taxiCompanyId.value}""".update.run
       .transact(xa)
       .map(_ > 0)
 

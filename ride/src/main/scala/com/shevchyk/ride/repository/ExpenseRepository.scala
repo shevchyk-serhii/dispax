@@ -13,7 +13,9 @@ trait ExpenseRepository:
   def findByDriverId(driverId: PersonId): Task[List[Expense]]
   def findByRideId(rideId: RideId): Task[List[Expense]]
   def findByCompanyId(companyId: CompanyId): Task[List[Expense]]
-  def delete(id: ExpenseId): Task[Boolean]
+  // Tenant-scoped delete: only removes the expense when it belongs to `companyId`.
+  // Returns true if a row was deleted, false otherwise (e.g. cross-tenant id).
+  def delete(id: ExpenseId, companyId: CompanyId): Task[Boolean]
   // Sum of driver expenses for the period [from, to) with company isolation
   def sumByDriver(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant): Task[BigDecimal]
 
@@ -41,8 +43,10 @@ class InMemoryExpenseRepository extends ExpenseRepository:
     store.values().asScala.filter(_.companyId == companyId).toList.sortBy(_.createdAt)
   }
 
-  def delete(id: ExpenseId): Task[Boolean] = ZIO.succeed {
-    store.remove(id) != null
+  def delete(id: ExpenseId, companyId: CompanyId): Task[Boolean] = ZIO.succeed {
+    Option(store.get(id)) match
+      case Some(e) if e.companyId == companyId => store.remove(id) != null
+      case _                                   => false
   }
 
   def sumByDriver(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant): Task[BigDecimal] = ZIO

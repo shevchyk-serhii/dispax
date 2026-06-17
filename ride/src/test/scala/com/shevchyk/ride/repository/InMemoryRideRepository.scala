@@ -52,7 +52,14 @@ class InMemoryRideRepository extends RideRepository:
 
   override def findAll(): Task[List[Ride]] = rides.get.map(_.values.toList)
 
-  override def delete(id: RideId): Task[Unit] = rides.update(_.removed(id)).unit
+  override def delete(id: RideId, companyId: CompanyId): Task[Unit] =
+    rides
+      .update(m =>
+        m.get(id) match
+          case Some(r) if r.companyId == companyId => m.removed(id)
+          case _                                   => m
+      )
+      .unit
 
   override def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]] = rides.get.map(
     _.values.filter(_.companyId == companyId).groupBy(_.status.toString).map((k, v) => k -> v.size)

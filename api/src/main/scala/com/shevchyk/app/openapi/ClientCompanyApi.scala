@@ -165,7 +165,7 @@ object ClientCompanyApi:
                                ): Err
                              )
                              .when(members.nonEmpty)
-        deleted         <- repo.delete(clientCompanyId).mapError(internal)
+        deleted         <- repo.delete(clientCompanyId, taxiCompanyId).mapError(internal)
       } yield if deleted then StatusCode.NoContent else StatusCode.NotFound
   }
 

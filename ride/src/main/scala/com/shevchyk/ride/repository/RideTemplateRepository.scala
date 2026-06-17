@@ -12,8 +12,9 @@ trait RideTemplateRepository:
   def findByCompanyId(companyId: CompanyId): Task[List[RideTemplate]]
   def findActiveByCompanyId(companyId: CompanyId): Task[List[RideTemplate]]
   def update(template: RideTemplate): Task[RideTemplate]
-  def delete(id: RideTemplateId): Task[Boolean]
-  def deactivate(id: RideTemplateId): Task[Boolean]
+  // Tenant-scoped: only affect the template when it belongs to `companyId`.
+  def delete(id: RideTemplateId, companyId: CompanyId): Task[Boolean]
+  def deactivate(id: RideTemplateId, companyId: CompanyId): Task[Boolean]
 
 class InMemoryRideTemplateRepository extends RideTemplateRepository:
   private val store = new ConcurrentHashMap[RideTemplateId, RideTemplate]()
@@ -40,16 +41,18 @@ class InMemoryRideTemplateRepository extends RideTemplateRepository:
     template
   }
 
-  def delete(id: RideTemplateId): Task[Boolean] = ZIO.succeed {
-    store.remove(id) != null
+  def delete(id: RideTemplateId, companyId: CompanyId): Task[Boolean] = ZIO.succeed {
+    Option(store.get(id)) match
+      case Some(t) if t.companyId == companyId => store.remove(id) != null
+      case _                                   => false
   }
 
-  def deactivate(id: RideTemplateId): Task[Boolean] = ZIO.succeed {
+  def deactivate(id: RideTemplateId, companyId: CompanyId): Task[Boolean] = ZIO.succeed {
     Option(store.get(id)) match
-      case Some(template) =>
+      case Some(template) if template.companyId == companyId =>
         store.put(id, template.copy(isActive = false, updatedAt = java.time.Instant.now()))
         true
-      case None           => false
+      case _                                                 => false
   }
 
 object RideTemplateRepository:

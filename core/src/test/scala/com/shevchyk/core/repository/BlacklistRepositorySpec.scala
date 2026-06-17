@@ -83,7 +83,7 @@ object BlacklistRepositorySpec extends ZIOSpecDefault {
             repo   <- ZIO.service[BlacklistRepository]
             _      <- repo.create(entry)
             before <- repo.isBlacklisted(clientId1, driverId1)
-            _      <- repo.deactivate(entry.id)
+            _      <- repo.deactivate(entry.id, testCompanyId)
             after  <- repo.isBlacklisted(clientId1, driverId1)
           } yield assertTrue(before && !after)
         }.provide(layers)
@@ -94,14 +94,15 @@ object BlacklistRepositorySpec extends ZIOSpecDefault {
           for {
             repo   <- ZIO.service[BlacklistRepository]
             _      <- repo.create(entry)
-            result <- repo.deactivate(entry.id)
+            cross  <- repo.deactivate(entry.id, otherCompanyId) // cross-tenant: no-op
+            result <- repo.deactivate(entry.id, testCompanyId)
             found  <- repo.findByCompanyId(testCompanyId)
-          } yield assertTrue(result && found.isEmpty)
+          } yield assertTrue(!cross && result && found.isEmpty)
         }.provide(layers),
         test("returns false for unknown id") {
           for {
             repo   <- ZIO.service[BlacklistRepository]
-            result <- repo.deactivate(BlacklistEntryId.generate())
+            result <- repo.deactivate(BlacklistEntryId.generate(), testCompanyId)
           } yield assertTrue(!result)
         }.provide(layers)
       ),

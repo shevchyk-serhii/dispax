@@ -10,7 +10,9 @@ trait BlacklistRepository:
   def findByClientId(clientId: PersonId): Task[List[BlacklistEntry]]
   def findByDriverId(driverId: PersonId): Task[List[BlacklistEntry]]
   def isBlacklisted(clientId: PersonId, driverId: PersonId): Task[Boolean]
-  def deactivate(id: BlacklistEntryId): Task[Boolean]
+  // Tenant-scoped: only deactivates the entry when it belongs to `companyId`.
+  def deactivate(id: BlacklistEntryId, companyId: CompanyId): Task[Boolean]
+  // NOTE: not tenant-scoped — hard delete by id alone. No production caller; tests only.
   def delete(id: BlacklistEntryId): Task[Boolean]
 
 object BlacklistRepository:
@@ -43,8 +45,8 @@ class InMemoryBlacklistRepository extends BlacklistRepository:
     entries.exists(e => e.clientId == clientId && e.driverId == driverId && e.isActive)
   }
 
-  override def deactivate(id: BlacklistEntryId): Task[Boolean] = ZIO.succeed {
-    val idx = entries.indexWhere(_.id == id)
+  override def deactivate(id: BlacklistEntryId, companyId: CompanyId): Task[Boolean] = ZIO.succeed {
+    val idx = entries.indexWhere(e => e.id == id && e.companyId == companyId)
     if idx >= 0 then
       entries = entries.updated(idx, entries(idx).copy(isActive = false))
       true

@@ -111,7 +111,9 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
         invoice
       )
       def findOverdueUnpaid(now: java.time.Instant): Task[List[com.shevchyk.billing.domain.Invoice]]             = ZIO.succeed(Nil)
-      def delete(id: com.shevchyk.billing.domain.InvoiceId): Task[Boolean]                                       = ZIO.succeed(false)
+      def delete(id: com.shevchyk.billing.domain.InvoiceId, taxiCompanyId: CompanyId): Task[Boolean]             = ZIO.succeed(
+        false
+      )
       def addItems(items: List[com.shevchyk.billing.domain.InvoiceItem]): Task[Unit]                             = ZIO.unit
       def deleteItems(invoiceId: com.shevchyk.billing.domain.InvoiceId): Task[Unit]                              = ZIO.unit
       def replaceItems(
@@ -164,7 +166,7 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
       def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]]                   = ZIO.succeed(Nil)
       def update(ride: Ride): Task[Ride]                                                                           = ZIO.succeed(ride)
       def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]                             = ZIO.succeed(true)
-      def delete(id: RideId): Task[Unit]                                                                           = ZIO.unit
+      def delete(id: RideId, companyId: CompanyId): Task[Unit]                                                     = ZIO.unit
       def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]                              = ZIO.succeed(Map.empty)
       def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                                              = ZIO.succeed(BigDecimal(0))
       def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                                         = ZIO.succeed(BigDecimal(0))

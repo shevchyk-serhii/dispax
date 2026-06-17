@@ -103,14 +103,16 @@ object ClientCompanyRepositorySpec extends ZIOSpecDefault {
           for {
             repo    <- ZIO.service[ClientCompanyRepository]
             _       <- repo.create(company)
-            deleted <- repo.delete(company.id)
+            cross   <- repo.delete(company.id, otherCompanyId)
+            still   <- repo.findById(company.id)
+            deleted <- repo.delete(company.id, companyId)
             found   <- repo.findById(company.id)
-          } yield assertTrue(deleted && found.isEmpty)
+          } yield assertTrue(!cross && still.isDefined && deleted && found.isEmpty)
         }.provide(layers),
         test("returns false when deleting unknown id") {
           for {
             repo    <- ZIO.service[ClientCompanyRepository]
-            deleted <- repo.delete(ClientCompanyId.generate())
+            deleted <- repo.delete(ClientCompanyId.generate(), companyId)
           } yield assertTrue(!deleted)
         }.provide(layers)
       )

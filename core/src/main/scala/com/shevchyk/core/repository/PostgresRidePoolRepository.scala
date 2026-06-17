@@ -96,7 +96,7 @@ final class PostgresRidePoolRepository(xa: Transactor[Task]) extends RidePoolRep
         name = ${pool.name}, status = ${pool.status}, driver_id = ${pool.driverId.map(_.value)},
         max_passengers = ${pool.maxPassengers}, current_passengers = ${pool.currentPassengers},
         route_direction = ${pool.routeDirection}, scheduled_time = ${pool.scheduledTime}
-      WHERE id = ${pool.id.value}
+      WHERE id = ${pool.id.value} AND company_id = ${pool.companyId.value}
     """.update.run
       .transact(xa)
       .as(pool)

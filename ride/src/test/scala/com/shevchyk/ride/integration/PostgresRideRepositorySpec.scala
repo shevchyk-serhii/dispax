@@ -217,9 +217,11 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           repo   = PostgresRideRepository(xa)
           ride   = makeRide()
           _     <- repo.create(ride)
-          _     <- repo.delete(ride.id)
+          _     <- repo.delete(ride.id, CompanyId(UUID.randomUUID())) // cross-tenant: no-op
+          still <- repo.findById(ride.id)
+          _     <- repo.delete(ride.id, testCompanyId)
           found <- repo.findById(ride.id)
-        } yield assertTrue(found.isEmpty)
+        } yield assertTrue(still.isDefined, found.isEmpty)
       },
       test("countByCompanyGroupedByStatus aggregates correctly") {
         for {

@@ -67,9 +67,10 @@ final class PostgresExpenseRepository(xa: Transactor[Task]) extends ExpenseRepos
       .to[List]
       .transact(xa)
 
-  override def delete(id: ExpenseId): Task[Boolean] = sql"""DELETE FROM expenses WHERE id = ${id.value}""".update.run
-    .transact(xa)
-    .map(_ > 0)
+  override def delete(id: ExpenseId, companyId: CompanyId): Task[Boolean] =
+    sql"""DELETE FROM expenses WHERE id = ${id.value} AND company_id = ${companyId.value}""".update.run
+      .transact(xa)
+      .map(_ > 0)
 
   override def sumByDriver(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant): Task[BigDecimal] =
     sql"""

@@ -204,7 +204,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
         reminder_sent_at = ${invoice.reminderSentAt},
         pdf_path = ${invoice.pdfPath},
         updated_at = NOW()
-      WHERE id = ${invoice.id.value}
+      WHERE id = ${invoice.id.value} AND taxi_company_id = ${invoice.taxiCompanyId.value}
     """.update.run.transact(xa).as(invoice)
 
   override def findOverdueUnpaid(now: Instant): Task[List[Invoice]] =
@@ -224,8 +224,11 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
       .transact(xa)
       .map(_.map(toInvoice.tupled))
 
-  override def delete(id: InvoiceId): Task[Boolean] =
-    sql"DELETE FROM invoices WHERE id = ${id.value} AND status = 'draft'".update.run.transact(xa).map(_ > 0)
+  override def delete(id: InvoiceId, taxiCompanyId: CompanyId): Task[Boolean] =
+    sql"""DELETE FROM invoices
+          WHERE id = ${id.value} AND taxi_company_id = ${taxiCompanyId.value} AND status = 'draft'""".update.run
+      .transact(xa)
+      .map(_ > 0)
 
   override def addItems(items: List[InvoiceItem]): Task[Unit] =
     val inserts = items.map { item =>
