@@ -1035,6 +1035,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pick on map'**
   String get pickOnMap;
+
+  /// No description provided for @scheduleVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule Visibility'**
+  String get scheduleVisibility;
+
+  /// No description provided for @allowViewOtherSchedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow viewing colleagues\' schedules'**
+  String get allowViewOtherSchedules;
+
+  /// No description provided for @viewingDriverSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing: {driverName}'**
+  String viewingDriverSchedule(String driverName);
 }
 
 class _AppLocalizationsDelegate

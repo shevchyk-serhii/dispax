@@ -12,15 +12,18 @@ class InMemoryDriverScheduleVisibilityRepository extends DriverScheduleVisibilit
       .getOrThrowFiberFailure()
   }
 
-  override def findByDriver(driverId: PersonId): Task[Option[DriverScheduleVisibility]] =
-    store.get.map(_.get(driverId))
+  override def findByDriver(driverId: PersonId): Task[Option[DriverScheduleVisibility]] = store.get.map(_.get(driverId))
 
-  override def upsert(visibility: DriverScheduleVisibility): Task[DriverScheduleVisibility] =
-    store.update(_.updated(visibility.driverId, visibility)).as(visibility)
+  override def upsert(visibility: DriverScheduleVisibility): Task[DriverScheduleVisibility] = store
+    .update(_.updated(visibility.driverId, visibility))
+    .as(visibility)
 
-  override def findByCompany(companyId: CompanyId): Task[List[DriverScheduleVisibility]] =
-    store.get.map(_.values.filter(_.companyId == companyId).toList)
+  override def findByCompany(companyId: CompanyId): Task[List[DriverScheduleVisibility]] = store.get.map(
+    _.values.filter(_.companyId == companyId).toList
+  )
 
 object InMemoryDriverScheduleVisibilityRepository:
-  val layer: ZLayer[Any, Nothing, DriverScheduleVisibilityRepository] =
-    ZLayer.succeed(new InMemoryDriverScheduleVisibilityRepository)
+
+  val layer: ZLayer[Any, Nothing, DriverScheduleVisibilityRepository] = ZLayer.succeed(
+    new InMemoryDriverScheduleVisibilityRepository
+  )

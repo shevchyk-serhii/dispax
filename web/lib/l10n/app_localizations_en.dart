@@ -487,4 +487,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pickOnMap => 'Pick on map';
+
+  @override
+  String get scheduleVisibility => 'Schedule Visibility';
+
+  @override
+  String get allowViewOtherSchedules => 'Allow viewing colleagues\' schedules';
+
+  @override
+  String viewingDriverSchedule(String driverName) {
+    return 'Viewing: $driverName';
+  }
 }

@@ -32,7 +32,6 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
   List<Person> _colleagues = [];
   String? _selectedDriverId; // null = own schedule
   String? _selectedDriverName;
-  bool _visibilityLoaded = false;
 
   late final ApiClient _apiClient;
   late final ScheduleService _scheduleService;
@@ -55,8 +54,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       // Check own visibility flag using the dedicated /me endpoint
       // (accessible to any authenticated user, including drivers).
       final myEntry = await _scheduleService.getMyVisibility();
-      final canView =
-          (myEntry['canViewOtherSchedules'] as bool?) ?? false;
+      final canView = (myEntry['canViewOtherSchedules'] as bool?) ?? false;
 
       if (canView) {
         // Fetch the list of colleagues from the company driver endpoint.
@@ -65,30 +63,27 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         if (driversResponse.statusCode == 200) {
           final List<dynamic> raw =
               jsonDecode(driversResponse.body) as List<dynamic>;
-          colleagues =
-              raw
-                  .map((j) => Person.fromJson(j as Map<String, dynamic>))
-                  .where((p) => p.id != myId) // exclude self
-                  .toList();
+          colleagues = raw
+              .map((j) => Person.fromJson(j as Map<String, dynamic>))
+              .where((p) => p.id != myId) // exclude self
+              .toList();
         }
         if (mounted) {
           setState(() {
             _canViewOtherSchedules = true;
             _colleagues = colleagues;
-            _visibilityLoaded = true;
           });
         }
       } else {
         if (mounted) {
           setState(() {
             _canViewOtherSchedules = false;
-            _visibilityLoaded = true;
           });
         }
       }
     } catch (_) {
       // If the visibility check fails, gracefully fall back to own schedule only.
-      if (mounted) setState(() => _visibilityLoaded = true);
+      if (mounted) setState(() => _canViewOtherSchedules = false);
     }
 
     // Load own schedule initially.
@@ -134,17 +129,15 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
     final authState = context.read<AuthBloc>().state;
     final myId = authState.user?.id;
 
-    final String titleText =
-        _selectedDriverName != null
-            ? _selectedDriverName!
-            : 'My Schedule';
+    final String titleText = _selectedDriverName != null
+        ? _selectedDriverName!
+        : 'My Schedule';
 
     return Scaffold(
       appBar: AppBar(
-        title:
-            _canViewOtherSchedules && _colleagues.isNotEmpty
-                ? _buildDriverDropdown(myId, titleText)
-                : Text(titleText),
+        title: _canViewOtherSchedules && _colleagues.isNotEmpty
+            ? _buildDriverDropdown(myId, titleText)
+            : Text(titleText),
         backgroundColor: AppColors.infoStrong,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -157,34 +150,33 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
                 onSelected: (CalendarViewType result) {
                   viewTypeNotifier.value = result;
                 },
-                itemBuilder:
-                    (BuildContext context) =>
-                        <PopupMenuEntry<CalendarViewType>>[
-                          const PopupMenuItem<CalendarViewType>(
-                            value: CalendarViewType.month,
-                            child: ListTile(
-                              leading: Icon(Icons.calendar_month),
-                              title: Text('Month View'),
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                          const PopupMenuItem<CalendarViewType>(
-                            value: CalendarViewType.week,
-                            child: ListTile(
-                              leading: Icon(Icons.view_week),
-                              title: Text('Week View'),
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                          const PopupMenuItem<CalendarViewType>(
-                            value: CalendarViewType.day,
-                            child: ListTile(
-                              leading: Icon(Icons.view_day),
-                              title: Text('Day View'),
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ],
+                itemBuilder: (BuildContext context) =>
+                    <PopupMenuEntry<CalendarViewType>>[
+                      const PopupMenuItem<CalendarViewType>(
+                        value: CalendarViewType.month,
+                        child: ListTile(
+                          leading: Icon(Icons.calendar_month),
+                          title: Text('Month View'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                      const PopupMenuItem<CalendarViewType>(
+                        value: CalendarViewType.week,
+                        child: ListTile(
+                          leading: Icon(Icons.view_week),
+                          title: Text('Week View'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                      const PopupMenuItem<CalendarViewType>(
+                        value: CalendarViewType.day,
+                        child: ListTile(
+                          leading: Icon(Icons.view_day),
+                          title: Text('Day View'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ],
               );
             },
           ),

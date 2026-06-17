@@ -51,10 +51,9 @@ class _DriverScheduleVisibilityScreenState
       if (driversResponse.statusCode == 200) {
         final List<dynamic> raw =
             jsonDecode(driversResponse.body) as List<dynamic>;
-        drivers =
-            raw
-                .map((j) => Person.fromJson(j as Map<String, dynamic>))
-                .toList();
+        drivers = raw
+            .map((j) => Person.fromJson(j as Map<String, dynamic>))
+            .toList();
       } else {
         drivers = [];
       }
@@ -138,10 +137,7 @@ class _DriverScheduleVisibilityScreenState
             const SizedBox(height: 16),
             Text(_error!, style: TextStyle(color: AppColors.error)),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadData,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
           ],
         ),
       );
@@ -175,17 +171,16 @@ class _DriverScheduleVisibilityScreenState
                 title: Text(driver.name),
                 subtitle: Text(driver.email),
                 secondary: CircleAvatar(
-                  backgroundColor:
-                      canView
-                          ? AppColors.accent.withAlpha(30)
-                          : Colors.grey.withAlpha(30),
+                  backgroundColor: canView
+                      ? AppColors.accent.withAlpha(30)
+                      : Colors.grey.withAlpha(30),
                   child: Icon(
                     Icons.person,
                     color: canView ? AppColors.accent : Colors.grey,
                   ),
                 ),
                 value: canView,
-                activeColor: AppColors.accent,
+                activeThumbColor: AppColors.accent,
                 onChanged: (value) => _setVisibility(driver.id, value),
               );
             },

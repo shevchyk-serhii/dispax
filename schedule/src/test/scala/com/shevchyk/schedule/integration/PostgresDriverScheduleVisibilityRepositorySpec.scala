@@ -42,51 +42,55 @@ object PostgresDriverScheduleVisibilityRepositorySpec extends ZIOSpecDefault {
 
   private def seedCompaniesAndDrivers(xa: Transactor[Task]): Task[Unit] =
     (for {
-      _ <- sql"""INSERT INTO companies (id, name, email)
+      _ <-
+        sql"""INSERT INTO companies (id, name, email)
                  VALUES (${companyA.value}, 'Vis Test Co A', 'vis-a@test.com')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO companies (id, name, email)
+      _ <-
+        sql"""INSERT INTO companies (id, name, email)
                  VALUES (${companyB.value}, 'Vis Test Co B', 'vis-b@test.com')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+      _ <-
+        sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
                  VALUES (${driverAId.value}, 'Vis Driver A', 'vis-driverA@test.com',
                          'driver'::person_role, ${companyA.value}, 'x')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+      _ <-
+        sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
                  VALUES (${driverBId.value}, 'Vis Driver B', 'vis-driverB@test.com',
                          'driver'::person_role, ${companyA.value}, 'x')
                  ON CONFLICT DO NOTHING""".update.run
-      _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+      _ <-
+        sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
                  VALUES (${driverCId.value}, 'Vis Driver C', 'vis-driverC@test.com',
                          'driver'::person_role, ${companyB.value}, 'x')
                  ON CONFLICT DO NOTHING""".update.run
     } yield ()).transact(xa)
 
   private def cleanVisibility(xa: Transactor[Task]): Task[Unit] =
-    sql"DELETE FROM driver_schedule_visibility WHERE company_id IN (${companyA.value}, ${companyB.value})"
-      .update.run.transact(xa).unit
+    sql"DELETE FROM driver_schedule_visibility WHERE company_id IN (${companyA.value}, ${companyB.value})".update.run
+      .transact(xa)
+      .unit
 
-  private def makeVis(driverId: PersonId, companyId: CompanyId, canView: Boolean) =
-    DriverScheduleVisibility(
-      driverId = driverId,
-      companyId = companyId,
-      canViewOtherSchedules = canView,
-      updatedAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
-    )
+  private def makeVis(driverId: PersonId, companyId: CompanyId, canView: Boolean) = DriverScheduleVisibility(
+    driverId = driverId,
+    companyId = companyId,
+    canViewOtherSchedules = canView,
+    updatedAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
+  )
 
   // ── Spec ─────────────────────────────────────────────────────────────────────
 
   def spec =
     suite("PostgresDriverScheduleVisibilityRepository (integration)")(
-
       test("upsert inserts a new row; findByDriver returns it") {
         for {
-          xa   <- ZIO.service[Transactor[Task]]
-          _    <- seedCompaniesAndDrivers(xa)
-          _    <- cleanVisibility(xa)
-          repo  = PostgresDriverScheduleVisibilityRepository(xa)
-          vis   = makeVis(driverAId, companyA, canView = true)
-          _    <- repo.upsert(vis)
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompaniesAndDrivers(xa)
+          _     <- cleanVisibility(xa)
+          repo   = PostgresDriverScheduleVisibilityRepository(xa)
+          vis    = makeVis(driverAId, companyA, canView = true)
+          _     <- repo.upsert(vis)
           found <- repo.findByDriver(driverAId)
         } yield assertTrue(
           found.isDefined,
@@ -95,32 +99,29 @@ object PostgresDriverScheduleVisibilityRepositorySpec extends ZIOSpecDefault {
           found.get.canViewOtherSchedules
         )
       },
-
       test("upsert with same driver_id updates the row (ON CONFLICT behaviour)") {
         for {
-          xa   <- ZIO.service[Transactor[Task]]
-          _    <- seedCompaniesAndDrivers(xa)
-          _    <- cleanVisibility(xa)
-          repo  = PostgresDriverScheduleVisibilityRepository(xa)
-          _    <- repo.upsert(makeVis(driverAId, companyA, canView = true))
-          _    <- repo.upsert(makeVis(driverAId, companyA, canView = false))
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompaniesAndDrivers(xa)
+          _     <- cleanVisibility(xa)
+          repo   = PostgresDriverScheduleVisibilityRepository(xa)
+          _     <- repo.upsert(makeVis(driverAId, companyA, canView = true))
+          _     <- repo.upsert(makeVis(driverAId, companyA, canView = false))
           found <- repo.findByDriver(driverAId)
         } yield assertTrue(
           found.isDefined,
           !found.get.canViewOtherSchedules
         )
       },
-
       test("findByDriver returns None when no row exists") {
         for {
-          xa   <- ZIO.service[Transactor[Task]]
-          _    <- seedCompaniesAndDrivers(xa)
-          _    <- cleanVisibility(xa)
-          repo  = PostgresDriverScheduleVisibilityRepository(xa)
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompaniesAndDrivers(xa)
+          _     <- cleanVisibility(xa)
+          repo   = PostgresDriverScheduleVisibilityRepository(xa)
           found <- repo.findByDriver(driverBId)
         } yield assertTrue(found.isEmpty)
       },
-
       test("findByCompany returns all rows for the company") {
         for {
           xa   <- ZIO.service[Transactor[Task]]
@@ -166,19 +167,20 @@ object PostgresDriverScheduleVisibilityRepositorySpec extends ZIOSpecDefault {
 
       test("schedule_days for companyA are invisible to a companyB query (getDriverSchedule isolation)") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedCompaniesAndDrivers(xa)
-          _       <- cleanVisibility(xa)
-          _       <- sql"DELETE FROM schedule_days WHERE company_id IN (${companyA.value}, ${companyB.value})"
-                       .update.run.transact(xa)
-          dayId    = UUID.randomUUID()
-          _       <- sql"""INSERT INTO schedule_days
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- seedCompaniesAndDrivers(xa)
+          _    <- cleanVisibility(xa)
+          _    <- sql"DELETE FROM schedule_days WHERE company_id IN (${companyA.value}, ${companyB.value})".update.run
+                    .transact(xa)
+          dayId = UUID.randomUUID()
+          _    <-
+            sql"""INSERT INTO schedule_days
                            (id, driver_id, company_id, date, start_time, end_time, status)
                            VALUES ($dayId, ${driverAId.value}, ${companyA.value},
-                                   '2027-01-10', '08:00', '16:00', 'Scheduled'::schedule_day_status)"""
-                       .update.run.transact(xa)
+                                   '2027-01-10', '08:00', '16:00', 'Scheduled'::schedule_day_status)""".update.run
+              .transact(xa)
           // companyB should see zero rows
-          rows    <-
+          rows <-
             sql"""SELECT id FROM schedule_days
                   WHERE company_id = ${companyB.value}"""
               .query[UUID]
@@ -186,7 +188,6 @@ object PostgresDriverScheduleVisibilityRepositorySpec extends ZIOSpecDefault {
               .transact(xa)
         } yield assertTrue(rows.isEmpty)
       }
-
     ).provide(PostgresTestContainer.layer) @@
       TestAspect.sequential @@
       TestAspect.withLiveClock @@

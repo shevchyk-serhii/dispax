@@ -488,4 +488,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get pickOnMap => 'Auf Karte wählen';
+
+  @override
+  String get scheduleVisibility => 'Zeitplan-Sichtbarkeit';
+
+  @override
+  String get allowViewOtherSchedules =>
+      'Zeitpläne der Kollegen anzeigen erlauben';
+
+  @override
+  String viewingDriverSchedule(String driverName) {
+    return 'Ansicht: $driverName';
+  }
 }

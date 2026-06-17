@@ -486,4 +486,15 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get pickOnMap => 'Вибрати на карті';
+
+  @override
+  String get scheduleVisibility => 'Видимість розкладу';
+
+  @override
+  String get allowViewOtherSchedules => 'Дозволити перегляд розкладів колег';
+
+  @override
+  String viewingDriverSchedule(String driverName) {
+    return 'Перегляд: $driverName';
+  }
 }

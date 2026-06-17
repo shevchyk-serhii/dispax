@@ -1227,12 +1227,13 @@ object TestApplication extends ZIOAppDefault:
       ZLayer.fromZIO(
         Ref.Synchronized.make(Map.empty[PersonId, DriverScheduleVisibility]).map { store =>
           new DriverScheduleVisibilityRepository:
-            def findByDriver(driverId: PersonId): Task[Option[DriverScheduleVisibility]] =
-              store.get.map(_.get(driverId))
-            def upsert(visibility: DriverScheduleVisibility): Task[DriverScheduleVisibility] =
-              store.update(_.updated(visibility.driverId, visibility)).as(visibility)
-            def findByCompany(companyId: CompanyId): Task[List[DriverScheduleVisibility]] =
-              store.get.map(_.values.filter(_.companyId == companyId).toList)
+            def findByDriver(driverId: PersonId): Task[Option[DriverScheduleVisibility]]     = store.get
+              .map(_.get(driverId))
+            def upsert(visibility: DriverScheduleVisibility): Task[DriverScheduleVisibility] = store
+              .update(_.updated(visibility.driverId, visibility))
+              .as(visibility)
+            def findByCompany(companyId: CompanyId): Task[List[DriverScheduleVisibility]]    = store.get
+              .map(_.values.filter(_.companyId == companyId).toList)
         }
       ),
       ScheduleSvc.layer,

@@ -212,10 +212,9 @@ class ScheduleService {
     required bool canView,
   }) async {
     try {
-      final response = await _apiClient.put(
-        '/schedules/visibility/$driverId',
-        {'canViewOtherSchedules': canView},
-      );
+      final response = await _apiClient.put('/schedules/visibility/$driverId', {
+        'canViewOtherSchedules': canView,
+      });
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
