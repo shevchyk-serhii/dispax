@@ -47,7 +47,15 @@ object NotificationOrchestratorSpec extends ZIOSpecDefault {
             orchestrator <- ZIO.service[NotificationOrchestrator]
             result       <- orchestrator.sendNotification("")
           } yield assertTrue(result == ())
-        }.provide(testLayers)
+        }.provide(testLayers),
+        test("sendNotification does not invoke FCM (pure log, zero FCM calls)") {
+          val fcm = new RecordingFcmService(fail = false)
+          for {
+            orchestrator <- ZIO.service[NotificationOrchestrator].provide(orchestratorWith(fcm))
+            _            <- orchestrator.sendNotification("No FCM needed")
+            calls        <- fcm.calls.get
+          } yield assertTrue(calls == 0)
+        }
       ),
       suite("sendPushToUser")(
         test("delegates to FcmService when it succeeds") {
@@ -66,6 +74,27 @@ object NotificationOrchestratorSpec extends ZIOSpecDefault {
             exit         <- orchestrator.sendPushToUser(testPerson, notification).exit
             calls        <- fcm.calls.get
           } yield assertTrue(exit.isSuccess, calls == 1)
+        },
+        test("sendPushToUser logs a warning when FcmService fails") {
+          val fcm = new RecordingFcmService(fail = true)
+          for {
+            orchestrator <- ZIO.service[NotificationOrchestrator].provide(orchestratorWith(fcm))
+            _            <- orchestrator.sendPushToUser(testPerson, notification)
+            logs         <- ZTestLogger.logOutput
+          } yield assertTrue(
+            logs.exists(e => e.logLevel == zio.LogLevel.Warning && e.message().contains("Push notification failed"))
+          )
+        },
+        test("sendPushToUser delegates FCM call regardless of whether data map is empty or populated") {
+          val fcm         = new RecordingFcmService(fail = false)
+          val withData    = PushNotification(title = "T", body = "B", data = Map("k" -> "v"))
+          val withoutData = PushNotification(title = "T", body = "B")
+          for {
+            orchestrator <- ZIO.service[NotificationOrchestrator].provide(orchestratorWith(fcm))
+            _            <- orchestrator.sendPushToUser(testPerson, withoutData)
+            _            <- orchestrator.sendPushToUser(testPerson, withData)
+            calls        <- fcm.calls.get
+          } yield assertTrue(calls == 2)
         }
       )
     )

@@ -61,6 +61,24 @@ object FcmServiceSpec extends ZIOSpecDefault {
             tokenRepo <- ZIO.service[FcmTokenRepository]
             tokens    <- tokenRepo.findByPersonId(personId1)
           } yield assertTrue(tokens.isEmpty)
+        }.provide(sharedLayers),
+        test("unregisterToken for nonexistent token is a no-op and does not fail") {
+          for {
+            service <- ZIO.service[FcmService]
+            exit    <- service.unregisterToken("does-not-exist").exit
+          } yield assertTrue(exit.isSuccess)
+        }.provide(sharedLayers),
+        test("re-registering same token string with a different platform overwrites (key-on-token, exactly 1 record)") {
+          // InMemoryFcmTokenRepository keys on token string (ConcurrentHashMap key = token).
+          // Saving the same token twice with different platforms must result in exactly 1 record
+          // with the last platform — confirming the upsert-by-token semantic.
+          for {
+            service   <- ZIO.service[FcmService]
+            _         <- service.registerToken(personId1, "shared-token", "android")
+            _         <- service.registerToken(personId1, "shared-token", "ios")
+            tokenRepo <- ZIO.service[FcmTokenRepository]
+            tokens    <- tokenRepo.findByPersonId(personId1)
+          } yield assertTrue(tokens.size == 1 && tokens.head.platform == "ios")
         }.provide(sharedLayers)
       ),
       suite("sendToUser")(
