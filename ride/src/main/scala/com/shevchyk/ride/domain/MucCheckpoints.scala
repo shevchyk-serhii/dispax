@@ -1,9 +1,14 @@
 package com.shevchyk.ride.domain
 
 /**
- * Hardcoded MUC airport checkpoint coordinates for MVP. No external config needed; a future migration to DB config only
- * requires wiring a repository to this module without touching the service logic.
+ * Hardcoded MUC airport checkpoint coordinates for MVP.
+ *
+ * @deprecated
+ *   Use [[com.shevchyk.ride.application.service.AirportConfigService]] instead. Retained temporarily while
+ *   [[com.shevchyk.ride.application.service.AirportCheckpointService]] is being migrated. Will be deleted in a
+ *   follow-up PR once all callers are removed.
  */
+@deprecated("Use AirportConfigService instead", "v3")
 object MucCheckpoints:
 
   final case class CheckpointZone(

@@ -32,6 +32,7 @@ import com.shevchyk.notification.application.FcmService
 import com.shevchyk.notification.repository.NotificationRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
+  AirportConfigService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
@@ -76,8 +77,8 @@ object OpenApiServer:
       AuditService & SessionRepository & TokenRepository & NotificationPreferenceRepository & BlacklistRepository &
       CompanySettingsRepository & GeofenceRepository & GeofenceService & RidePoolRepository & EventHub &
       EmergencyReassignmentRepository & RideRatingRepository & ClientAddressService & ClientLocationService &
-      AirportCheckpointService & ChatService & RideTemplateRepository & DriverLocationService & HereRoutingService &
-      GeocodingService & ClientLocationRepository & CompanyRepository
+      AirportCheckpointService & AirportConfigService & ChatService & RideTemplateRepository & DriverLocationService &
+      HereRoutingService & GeocodingService & ClientLocationRepository & CompanyRepository
 
   // `ZServerEndpoint`'s environment is invariant, so module lists cannot be merged
   // into one typed list. But `zio.http.Routes` is contravariant in its environment, so
@@ -113,7 +114,8 @@ object OpenApiServer:
       NotificationPreferenceApi.serverEndpoints.map(_.endpoint) :::
       RidePoolApi.serverEndpoints.map(_.endpoint) :::
       ClientCompanyApi.serverEndpoints.map(_.endpoint) :::
-      SuperAdminApi.serverEndpoints.map(_.endpoint)
+      SuperAdminApi.serverEndpoints.map(_.endpoint) :::
+      SuperAdminAirportApi.serverEndpoints.map(_.endpoint)
 
   /**
    * Swagger UI + the generated OpenAPI document, served under `/docs`.
@@ -150,4 +152,5 @@ object OpenApiServer:
       http(RidePoolApi.serverEndpoints) ++
       http(ClientCompanyApi.serverEndpoints) ++
       http(SuperAdminApi.serverEndpoints) ++
+      http(SuperAdminAirportApi.serverEndpoints) ++
       http(swaggerEndpoints)

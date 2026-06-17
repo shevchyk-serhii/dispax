@@ -63,6 +63,7 @@ import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
+  AirportConfigService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
@@ -88,6 +89,7 @@ import com.shevchyk.ride.domain.{
 }
 import com.shevchyk.ride.domain.{RideRating, RideRatingId}
 import com.shevchyk.ride.repository.{
+  AirportConfigRepository,
   ChatMessageRepository,
   ClientAddressRepository,
   ClientLocationRepository,
@@ -1254,6 +1256,62 @@ object TestApplication extends ZIOAppDefault:
       inMemoryInvoiceRepositoryLayer,
       inMemoryCompanyBillingProfileRepositoryLayer,
       InvoiceService.layer,
+      // Airport configuration (global; no company_id) — minimal in-memory stub.
+      // Pre-seeded with MUC so that AirportCheckpointService geofence checks work in BDD tests.
+      ZLayer.fromZIO {
+        val mucAirport = com.shevchyk.ride.domain.Airport(
+          code = "MUC",
+          name = "München Franz Josef Strauß",
+          country = "DE",
+          landingLat = 48.3537,
+          landingLon = 11.7860,
+          landingRadius = 2000,
+          isActive = true,
+          zones = Nil,
+          createdAt = java.time.Instant.EPOCH,
+          updatedAt = java.time.Instant.EPOCH
+        )
+        Ref.Synchronized.make(Map("MUC" -> mucAirport)).map { stateRef =>
+          new AirportConfigRepository:
+            import com.shevchyk.ride.domain.{Airport, AirportCheckpointZone}
+            def findAll(): Task[List[Airport]]                                                         = stateRef.get.map(_.values.toList)
+            def findByCode(code: String): Task[Option[Airport]]                                        = stateRef.get.map(_.get(code))
+            def create(airport: Airport): Task[Airport]                                                = stateRef.update(_.updated(airport.code, airport)).as(airport)
+            def update(code: String, airport: Airport): Task[Option[Airport]]                          = stateRef.get.flatMap { m =>
+              if m.contains(code) then
+                stateRef.update(_.updated(code, airport.copy(code = code))).as(Some(airport.copy(code = code)))
+              else ZIO.succeed(None)
+            }
+            def delete(code: String): Task[Boolean]                                                    = stateRef.get.flatMap { m =>
+              m.get(code).filter(_.isActive) match
+                case None    => ZIO.succeed(false)
+                case Some(a) => stateRef.update(_.updated(code, a.copy(isActive = false))).as(true)
+            }
+            def createZone(zone: AirportCheckpointZone): Task[AirportCheckpointZone]                   = stateRef.get.flatMap { m =>
+              m.get(zone.airportCode) match
+                case None    => ZIO.fail(new RuntimeException(s"Airport not found: ${zone.airportCode}"))
+                case Some(a) =>
+                  val z = zone.copy(id = UUID.randomUUID())
+                  stateRef.update(_.updated(a.code, a.copy(zones = a.zones :+ z))).as(z)
+            }
+            def updateZone(id: UUID, zone: AirportCheckpointZone): Task[Option[AirportCheckpointZone]] = stateRef.get
+              .flatMap { m =>
+                m.values.find(_.zones.exists(_.id == id)) match
+                  case None    => ZIO.succeed(None)
+                  case Some(a) =>
+                    val updated = zone.copy(id = id, airportCode = a.code)
+                    stateRef
+                      .update(_.updated(a.code, a.copy(zones = a.zones.map(z => if z.id == id then updated else z))))
+                      .as(Some(updated))
+              }
+            def deleteZone(id: UUID): Task[Boolean]                                                    = stateRef.get.flatMap { m =>
+              m.values.find(_.zones.exists(_.id == id)) match
+                case None    => ZIO.succeed(false)
+                case Some(a) =>
+                  stateRef.update(_.updated(a.code, a.copy(zones = a.zones.filterNot(_.id == id)))).as(true)
+            }
+        }
+      } >>> AirportConfigService.layer,
       // Driver + location
       inMemoryDriverLocationRepositoryLayer,
       noopHereRoutingServiceLayer,

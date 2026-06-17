@@ -2,9 +2,13 @@ package com.shevchyk.ride.application
 
 import com.shevchyk.core.application.EventHub
 import com.shevchyk.core.domain.{CompanyId, Location, PersonId, RideId, WebSocketEvent}
-import com.shevchyk.ride.application.service.{AirportCheckpointService, AirportCheckpointServiceImpl}
+import com.shevchyk.ride.application.service.{
+  AirportCheckpointService,
+  AirportCheckpointServiceImpl,
+  AirportConfigService
+}
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.repository.{InMemoryRideRepository, RideRepository}
+import com.shevchyk.ride.repository.{InMemoryAirportConfigRepository, InMemoryRideRepository, RideRepository}
 import zio.*
 import zio.test.*
 
@@ -35,9 +39,39 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
     airportCheckpoint = checkpoint
   )
 
+  // InMemoryAirportConfigRepository seeded with the MUC airport so that geofence checks
+  // that rely on the real MUC coordinates (lat 48.3537, lon 11.7860, radius 2000 m) work.
+  private val mucAirport = Airport(
+    code = "MUC",
+    name = "München Franz Josef Strauß",
+    country = "DE",
+    landingLat = 48.3537,
+    landingLon = 11.7860,
+    landingRadius = 2000,
+    isActive = true,
+    zones = Nil,
+    createdAt = Instant.EPOCH,
+    updatedAt = Instant.EPOCH
+  )
+
+  // A ZLayer backed by InMemoryAirportConfigRepository, pre-seeded with MUC.
+  // .orDie converts the Throwable channel to Nothing (create on in-memory repo can't fail).
+  private val airportConfigRepoLayer: ZLayer[Any, Nothing, com.shevchyk.ride.repository.AirportConfigRepository] =
+    ZLayer
+      .fromZIO(
+        for {
+          repo <- ZIO.succeed(new InMemoryAirportConfigRepository)
+          _    <- repo.create(mucAirport)
+        } yield repo: com.shevchyk.ride.repository.AirportConfigRepository
+      )
+      .orDie
+
+  private val airportConfigServiceLayer: ZLayer[Any, Nothing, AirportConfigService] =
+    airportConfigRepoLayer >>> AirportConfigService.layer
+
   // Returns the service plus a way to drain published events.
   def layersWithHub =
-    (InMemoryRideRepository.layer ++ EventHub.layer) >>>
+    (InMemoryRideRepository.layer ++ EventHub.layer ++ airportConfigServiceLayer) >>>
       (AirportCheckpointService.layer ++ ZLayer.environment[RideRepository] ++ EventHub.layer)
 
   // -- spec ----------------------------------------------------------------

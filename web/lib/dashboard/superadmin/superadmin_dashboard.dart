@@ -4,6 +4,7 @@ import '../../blocs/blocs.dart';
 import '../../modules/core/models/person.dart';
 import '../../screens/superadmin_companies_screen.dart';
 import '../../screens/superadmin_analytics_screen.dart';
+import '../../screens/superadmin_airport_exits_screen.dart';
 
 /// Platform SuperAdmin dashboard.
 ///
@@ -22,6 +23,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   static const List<_Tab> _tabs = [
     _Tab(icon: Icons.business, label: 'Companies'),
     _Tab(icon: Icons.analytics, label: 'Analytics'),
+    _Tab(icon: Icons.flight_land, label: 'Airport Exits'),
     _Tab(icon: Icons.settings, label: 'Settings'),
   ];
 
@@ -42,6 +44,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
             children: const [
               SuperAdminCompaniesScreen(),
               SuperAdminAnalyticsScreen(),
+              SuperAdminAirportExitsScreen(),
               _SuperAdminSettingsPlaceholder(),
             ],
           ),
