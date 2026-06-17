@@ -184,5 +184,14 @@
   "longitude": "Довгота",
   "radiusMeters": "Радіус (метри)",
   "landingGeofence": "Геозона посадки",
-  "pickOnMap": "Вибрати на карті"
+  "pickOnMap": "Вибрати на карті",
+
+  "scheduleVisibility": "Видимість розкладу",
+  "allowViewOtherSchedules": "Дозволити перегляд розкладів колег",
+  "viewingDriverSchedule": "Перегляд: {driverName}",
+  "@viewingDriverSchedule": {
+    "placeholders": {
+      "driverName": {"type": "String"}
+    }
+  }
 }

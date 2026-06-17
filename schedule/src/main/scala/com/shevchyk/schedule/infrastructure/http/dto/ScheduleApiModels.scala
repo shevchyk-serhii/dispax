@@ -5,6 +5,7 @@ import com.shevchyk.schedule.domain.{
   CreateScheduleBatchDay,
   CreateScheduleBatchRequest,
   CreateScheduleDayRequest,
+  DriverScheduleVisibility,
   ScheduleDay,
   ScheduleDayStatus,
   ScheduleError
@@ -132,3 +133,34 @@ object UpdateScheduleDayApiRequest:
       status = request.status.map(ScheduleDayStatus.valueOf),
       notes = request.notes
     )
+
+// -- Driver schedule visibility DTOs ----------------------------------------
+
+/**
+ * Response DTO for a single driver's schedule-visibility setting.
+ */
+case class DriverScheduleVisibilityDto(
+    driverId: String,
+    companyId: String,
+    canViewOtherSchedules: Boolean,
+    updatedAt: String
+) derives JsonCodec
+
+object DriverScheduleVisibilityDto:
+
+  given Schema[DriverScheduleVisibilityDto] = Schema.derived[DriverScheduleVisibilityDto]
+
+  def fromDomain(v: DriverScheduleVisibility): DriverScheduleVisibilityDto = DriverScheduleVisibilityDto(
+    driverId = v.driverId.value.toString,
+    companyId = v.companyId.value.toString,
+    canViewOtherSchedules = v.canViewOtherSchedules,
+    updatedAt = v.updatedAt.toString
+  )
+
+/**
+ * Request DTO to update a driver's visibility flag (PUT body).
+ */
+case class SetDriverVisibilityRequest(canViewOtherSchedules: Boolean) derives JsonCodec
+
+object SetDriverVisibilityRequest:
+  given Schema[SetDriverVisibilityRequest] = Schema.derived[SetDriverVisibilityRequest]

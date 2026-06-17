@@ -20,6 +20,7 @@ import '../../screens/ride_pool_screen.dart';
 import '../../screens/notification_center_screen.dart';
 import '../../screens/gdpr_screen.dart';
 import '../../screens/session_management_screen.dart';
+import '../../screens/driver_schedule_visibility_screen.dart';
 import 'widgets/payroll_screen.dart';
 import 'widgets/pending_rides_panel.dart';
 import 'widgets/driver_schedule_panel.dart';
@@ -138,6 +139,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     const NotificationCenterScreen(), // 25
     const GdprScreen(), // 26
     const SessionManagementScreen(), // 27
+    const DriverScheduleVisibilityScreen(), // 28
   ];
 
   @override
@@ -406,6 +408,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         Icons.devices,
         'Sessions',
         27,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.visibility,
+        'Sched. Visibility',
+        28,
         Theme.of(context).colorScheme.primary,
       ),
     ];

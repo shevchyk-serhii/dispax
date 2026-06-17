@@ -3,7 +3,7 @@ package com.shevchyk.schedule.application
 import com.shevchyk.core.domain.*
 import com.shevchyk.schedule.domain.*
 import com.shevchyk.schedule.domain.RepositoryExtensions.*
-import com.shevchyk.schedule.repository.ScheduleDayRepository
+import com.shevchyk.schedule.repository.{DriverScheduleVisibilityRepository, ScheduleDayRepository}
 import com.shevchyk.core.repository.PersonRepository
 import zio.*
 import java.time.{Instant, LocalDate}
@@ -13,6 +13,17 @@ trait ScheduleService:
   def createBatch(req: CreateScheduleBatchRequest): IO[ScheduleError, List[ScheduleDay]]
   def getScheduleDay(id: ScheduleDayId): IO[ScheduleError, ScheduleDay]
   def getDriverSchedule(driverId: PersonId, companyId: CompanyId): IO[ScheduleError, List[ScheduleDay]]
+
+  /**
+   * Access-controlled variant: enforces per-driver visibility rules when the requester is a Driver.
+   */
+  def getDriverScheduleAs(
+      requesterId: PersonId,
+      requesterRole: String,
+      targetDriverId: PersonId,
+      companyId: CompanyId
+  ): IO[ScheduleError, List[ScheduleDay]]
+
   def getScheduleForDate(companyId: CompanyId, date: LocalDate): IO[ScheduleError, List[ScheduleDay]]
 
   def getScheduleForDateRange(
@@ -28,8 +39,20 @@ trait ScheduleService:
   ): IO[ScheduleError, ScheduleDay]
   def cancelScheduleDay(id: ScheduleDayId, companyId: CompanyId): IO[ScheduleError, ScheduleDay]
 
+  // -- Visibility management (Dispatcher/Admin) --------------------------------
+
+  def canDriverViewOthers(driverId: PersonId, companyId: CompanyId): IO[ScheduleError, Boolean]
+  def getCompanyVisibility(companyId: CompanyId): IO[ScheduleError, List[DriverScheduleVisibility]]
+
+  def setDriverVisibility(
+      driverId: PersonId,
+      companyId: CompanyId,
+      canView: Boolean
+  ): IO[ScheduleError, DriverScheduleVisibility]
+
 class ScheduleServiceImpl(
     scheduleDayRepository: ScheduleDayRepository,
+    visibilityRepository: DriverScheduleVisibilityRepository,
     personRepository: PersonRepository
 ) extends ScheduleService:
 
@@ -76,6 +99,30 @@ class ScheduleServiceImpl(
       .findByDriverId(driverId)
       .mapDatabaseError
       .map(_.filter(_.companyId == companyId))
+
+  def getDriverScheduleAs(
+      requesterId: PersonId,
+      requesterRole: String,
+      targetDriverId: PersonId,
+      companyId: CompanyId
+  ): IO[ScheduleError, List[ScheduleDay]] =
+    val roleUpper = requesterRole.toUpperCase
+    if requesterId == targetDriverId then
+      // Viewing own schedule — always allowed
+      getDriverSchedule(targetDriverId, companyId)
+    else if roleUpper == "DRIVER" then
+      // Another driver's schedule — only if visibility is granted
+      for {
+        allowed <- canDriverViewOthers(requesterId, companyId)
+        _       <-
+          ZIO.unless(allowed)(
+            ZIO.fail(ScheduleError.AccessDenied("You are not allowed to view other drivers' schedules"))
+          )
+        days    <- getDriverSchedule(targetDriverId, companyId)
+      } yield days
+    else
+      // Dispatcher / Admin / Secretary — always allowed
+      getDriverSchedule(targetDriverId, companyId)
 
   def getScheduleForDate(companyId: CompanyId, date: LocalDate): IO[ScheduleError, List[ScheduleDay]] =
     scheduleDayRepository
@@ -125,6 +172,40 @@ class ScheduleServiceImpl(
 
       persisted <- scheduleDayRepository.update(updated).mapDatabaseError
     } yield persisted
+
+  // -- Visibility ----------------------------------------------------------
+
+  def canDriverViewOthers(driverId: PersonId, companyId: CompanyId): IO[ScheduleError, Boolean] = visibilityRepository
+    .findByDriver(driverId)
+    .mapDatabaseError
+    .map {
+      // Row absence = false; row with wrong company also treated as false (tenant safety)
+      case Some(v) if v.companyId == companyId => v.canViewOtherSchedules
+      case _                                   => false
+    }
+
+  def getCompanyVisibility(companyId: CompanyId): IO[ScheduleError, List[DriverScheduleVisibility]] =
+    visibilityRepository
+      .findByCompany(companyId)
+      .mapDatabaseError
+
+  def setDriverVisibility(
+      driverId: PersonId,
+      companyId: CompanyId,
+      canView: Boolean
+  ): IO[ScheduleError, DriverScheduleVisibility] =
+    for {
+      _         <- validateDriverBelongsToCompany(driverId, companyId)
+      visibility = DriverScheduleVisibility(
+                     driverId = driverId,
+                     companyId = companyId,
+                     canViewOtherSchedules = canView,
+                     updatedAt = Instant.now()
+                   )
+      persisted <- visibilityRepository.upsert(visibility).mapDatabaseError
+    } yield persisted
+
+  // -- Private helpers -----------------------------------------------------
 
   private def validateTimeRange(start: java.time.LocalTime, end: java.time.LocalTime): IO[ScheduleError, Unit] =
     ZIO
@@ -177,6 +258,6 @@ class ScheduleServiceImpl(
 
 object ScheduleService:
 
-  val layer: ZLayer[ScheduleDayRepository & PersonRepository, Nothing, ScheduleService] = ZLayer.fromFunction(
-    ScheduleServiceImpl.apply
-  )
+  val layer
+      : ZLayer[ScheduleDayRepository & DriverScheduleVisibilityRepository & PersonRepository, Nothing, ScheduleService] =
+    ZLayer.fromFunction(ScheduleServiceImpl.apply)

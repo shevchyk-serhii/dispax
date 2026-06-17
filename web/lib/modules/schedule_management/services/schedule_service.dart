@@ -166,6 +166,49 @@ class ScheduleService {
     }
   }
 
+  // -- Driver schedule visibility (Dispatcher/Admin) -------------------------
+
+  /// Returns the list of per-driver visibility settings for the caller's company.
+  Future<List<Map<String, dynamic>>> getCompanyVisibility() async {
+    try {
+      final response = await _apiClient.get('/schedules/visibility');
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList.cast<Map<String, dynamic>>();
+      } else {
+        throw ApiException(
+          'Failed to fetch visibility settings: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Error fetching visibility settings: $e');
+    }
+  }
+
+  /// Sets the `canViewOtherSchedules` flag for a specific driver.
+  Future<Map<String, dynamic>> setDriverVisibility(
+    String driverId, {
+    required bool canView,
+  }) async {
+    try {
+      final response = await _apiClient.put(
+        '/schedules/visibility/$driverId',
+        {'canViewOtherSchedules': canView},
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw ApiException(
+          'Failed to update visibility: ${response.statusCode} ${response.body}',
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Error updating visibility: $e');
+    }
+  }
+
   void dispose() {
     if (_ownsClient) _apiClient.dispose();
   }
