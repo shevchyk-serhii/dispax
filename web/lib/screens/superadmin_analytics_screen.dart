@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
@@ -137,24 +139,31 @@ class SuperAdminAnalyticsBloc
       );
       final connectionsFuture = _api.get('/superadmin/analytics/connections');
 
-      await Future.wait([ridesFuture, billingFuture, connectionsFuture]);
+      final responses = await Future.wait([
+        ridesFuture,
+        billingFuture,
+        connectionsFuture,
+      ]);
+      final ridesResp = responses[0];
+      final billingResp = responses[1];
+      final connectionsResp = responses[2];
 
-      // In a real implementation we would parse JSON with dart:convert.
-      // The responses are typed http.Response; use a simple null-safe fallback.
+      if (ridesResp.statusCode != 200 ||
+          billingResp.statusCode != 200 ||
+          connectionsResp.statusCode != 200) {
+        emit(AnalyticsError('Failed to load analytics'));
+        return;
+      }
+
       final bundle = AnalyticsBundle(
-        rides: PlatformRideStats(
-          byStatus: const {},
-          totalRevenue: 0.0,
-          ridesByCompany: const {},
-          revenueByCompany: const {},
+        rides: PlatformRideStats.fromJson(
+          jsonDecode(ridesResp.body) as Map<String, dynamic>,
         ),
-        billing: PlatformBillingStats(
-          revenueByCompany: const {},
-          overdueByCompany: const {},
+        billing: PlatformBillingStats.fromJson(
+          jsonDecode(billingResp.body) as Map<String, dynamic>,
         ),
-        connections: PlatformConnectionStats(
-          activeSessions: 0,
-          activeSessionsByCompany: const {},
+        connections: PlatformConnectionStats.fromJson(
+          jsonDecode(connectionsResp.body) as Map<String, dynamic>,
         ),
       );
       emit(AnalyticsLoaded(bundle));
