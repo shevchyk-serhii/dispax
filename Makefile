@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev run-test prod test test-unit test-fast test-integration test-bdd test-all clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-integration test-bdd test-all clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -64,6 +64,11 @@ test:
 # them. This is the command to run while developing — no Docker, seconds not
 # minutes, no advisory-lock serialisation. Run `make test` (unit + integration)
 # before merging. `test-fast` is an alias.
+# `make test-unit` runs Scala unit tests only; `make test-unit-all` also runs
+# the Flutter (web) unit/widget suite. The api module lives in the `root`
+# project (api/src/test); the `*Spec` glob picks up its ZIO specs (in-memory,
+# no Postgres) while skipping the JUnit-based CucumberRunner (a `class`, run
+# only via the `cucumber` alias).
 test-fast: test-unit
 test-unit:
 	sbt "core/testOnly * -- -ignore-tags integration; \
@@ -72,7 +77,15 @@ test-unit:
 	     driver/testOnly * -- -ignore-tags integration; \
 	     notification/testOnly * -- -ignore-tags integration; \
 	     schedule/testOnly * -- -ignore-tags integration; \
-	     billing/testOnly * -- -ignore-tags integration"
+	     billing/testOnly * -- -ignore-tags integration; \
+	     root/testOnly *Spec -- -ignore-tags integration"
+
+# Scala unit tests + Flutter (web) unit/widget tests. The Flutter suite lives in
+# web/test (no IntegrationTestWidgetsFlutterBinding, no network) — distinct from
+# the live-backend e2e in web/integration_test, which `flutter test test/` skips.
+test-unit-all: test-unit flutter-test-unit
+flutter-test-unit:
+	cd $(FLUTTER_DIR) && flutter test test/
 
 # Run ONLY the integration tests (Testcontainers + real Postgres). Requires Docker.
 # Selects specs tagged `integration` via -tags.
