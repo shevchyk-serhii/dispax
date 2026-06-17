@@ -296,7 +296,7 @@ class InvoiceServiceImpl(
                      pdfFilename = s"${invoice.number.replace('/', '-')}.pdf"
                    )
                  )
-                 .mapError(InvoiceError.DatabaseError(_))
+                 .mapError(InvoiceError.EmailDeliveryError(_))
     } yield ()
 
   override def sendInvoice(

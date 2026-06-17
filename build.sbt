@@ -48,6 +48,11 @@ ThisBuild / assembly / assemblyMergeStrategy := {
   // are missing". Keep them.
   case PathList("META-INF", "resources", xs @ _*)            => MergeStrategy.first
   case PathList("META-INF", "maven", "org.webjars", xs @ _*) => MergeStrategy.first
+  // Jakarta Mail brings META-INF/mailcap and META-INF/javamail.* files that
+  // define MIME type mappings; keep the first occurrence (content is identical
+  // across jakarta.mail and com.sun.mail jars).
+  case PathList("META-INF", "mailcap")                       => MergeStrategy.first
+  case x if x.startsWith("META-INF/javamail.")               => MergeStrategy.first
   case PathList("META-INF", xs @ _*)                         => MergeStrategy.discard
   case x                                                     => MergeStrategy.first
 }
@@ -230,11 +235,21 @@ lazy val firebaseDependencies = Seq(
   "com.google.firebase" % "firebase-admin" % "9.3.0"
 )
 
+lazy val mailDependencies = Seq(
+  "com.sun.mail" % "jakarta.mail"     % "2.0.1",
+  "jakarta.mail" % "jakarta.mail-api" % "2.0.1"
+)
+
+lazy val greenMailDependencies = Seq(
+  "com.icegreen" % "greenmail"        % "2.1.3" % Test,
+  "com.icegreen" % "greenmail-junit5" % "2.1.3" % Test
+)
+
 lazy val notification = (project in file("notification"))
   .dependsOn(core % "compile->compile;test->test")
   .settings(
     name := "dispax-notification",
-    libraryDependencies ++= commonDependencies ++ jsonDependencies ++ dbDependencies ++ firebaseDependencies ++ testcontainersDependencies,
+    libraryDependencies ++= commonDependencies ++ jsonDependencies ++ dbDependencies ++ firebaseDependencies ++ mailDependencies ++ testcontainersDependencies ++ greenMailDependencies,
     // Integration tests load Flyway migrations from the api resources.
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )

@@ -86,6 +86,8 @@ object BillingSecure:
       case InvoiceError.NoRecipientEmail(_)      => (StatusCode.BadRequest, ApiError("Client company has no email address"))
       case InvoiceError.DatabaseError(_)         => (StatusCode.InternalServerError, ApiError("Internal server error"))
       case InvoiceError.PdfGenerationError(_)    => (StatusCode.InternalServerError, ApiError("PDF generation failed"))
+      case InvoiceError.EmailDeliveryError(_)    =>
+        (StatusCode.BadGateway, ApiError("Email delivery failed; invoice not sent"))
 
   /**
    * Generic throwable mapping (mirrors the `Throwable` catch-all → 500).

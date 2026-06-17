@@ -67,7 +67,12 @@ import com.shevchyk.core.repository.{
   PostgresRidePoolRepository,
   PostgresNotificationPreferenceRepository
 }
-import com.shevchyk.notification.application.{FcmService, PushNotificationListener, LoggingEmailSmsService}
+import com.shevchyk.notification.application.{
+  FcmService,
+  LoggingEmailSmsService,
+  PushNotificationListener,
+  SmtpEmailService
+}
 import com.shevchyk.app.{ReminderScheduler, InvoiceReminderScheduler, PredictiveEtaMonitor, SentryInit}
 import com.shevchyk.notification.repository.{
   CheckpointNotificationRepository,
@@ -222,7 +227,7 @@ object Application extends ZIOAppDefault:
       EtaAlertRepository.layer,
       CheckpointNotificationRepository.layer,
       NotificationRepository.layer,
-      LoggingEmailSmsService.layer,
+      if Environment.isProduction then SmtpEmailService.liveLayer else LoggingEmailSmsService.layer,
       RideTemplateRepository.layer,
       RideRatingRepository.layer,
       AuditService.layer,

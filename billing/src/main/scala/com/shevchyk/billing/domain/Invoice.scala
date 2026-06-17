@@ -122,3 +122,4 @@ enum InvoiceError extends Throwable:
   case NoRecipientEmail(id: InvoiceId)
   case DatabaseError(cause: Throwable)
   case PdfGenerationError(cause: Throwable)
+  case EmailDeliveryError(cause: Throwable)
