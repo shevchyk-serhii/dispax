@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
+import '../l10n/app_localizations.dart';
 import '../modules/core/services/api_client.dart';
 import '../modules/flight_management/widgets/map_picker_widget.dart';
 
@@ -496,7 +497,7 @@ class _AirportsTable extends StatelessWidget {
           child: FloatingActionButton.extended(
             onPressed: () => _showAddDialog(context),
             icon: const Icon(Icons.add),
-            label: const Text('Add Airport'),
+            label: Text(AppLocalizations.of(context)!.addAirport),
           ),
         ),
       ],
@@ -523,8 +524,8 @@ class _AirportCardState extends State<_AirportCard> {
   void _confirmDelete(BuildContext context) {
     showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Deactivate Airport'),
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.of(ctx)!.deleteAirport),
         content: Text(
           'Deactivate ${widget.airport.code} – ${widget.airport.name}?',
         ),
@@ -617,8 +618,8 @@ class _ZonesTable extends StatelessWidget {
   void _confirmDelete(BuildContext context, AirportZoneInfo zone) {
     showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete Zone'),
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.of(ctx)!.deleteZone),
         content: Text(
           'Delete "${zone.displayName}" from ${zone.terminalCode}?',
         ),
@@ -656,7 +657,7 @@ class _ZonesTable extends StatelessWidget {
             ),
             TextButton.icon(
               icon: const Icon(Icons.add, size: 16),
-              label: const Text('Add Zone'),
+              label: Text(AppLocalizations.of(context)!.addZone),
               onPressed: () => showDialog<void>(
                 context: context,
                 builder: (_) =>
@@ -824,8 +825,9 @@ class _AirportFormDialogState extends State<_AirportFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(_isEdit ? 'Edit Airport' : 'Add Airport'),
+      title: Text(_isEdit ? l10n.editAirport : l10n.addAirport),
       content: SizedBox(
         width: 560,
         child: SingleChildScrollView(
@@ -838,9 +840,7 @@ class _AirportFormDialogState extends State<_AirportFormDialog> {
                 if (!_isEdit)
                   TextFormField(
                     controller: _codeCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Airport Code (e.g. MUC)',
-                    ),
+                    decoration: InputDecoration(labelText: l10n.airportCode),
                     textCapitalization: TextCapitalization.characters,
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? 'Required' : null,
@@ -848,7 +848,7 @@ class _AirportFormDialogState extends State<_AirportFormDialog> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Airport Name'),
+                  decoration: InputDecoration(labelText: l10n.airportName),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Required' : null,
                 ),
@@ -861,7 +861,7 @@ class _AirportFormDialogState extends State<_AirportFormDialog> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Landing Geofence',
+                  l10n.landingGeofence,
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
@@ -870,9 +870,7 @@ class _AirportFormDialogState extends State<_AirportFormDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _latCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Latitude',
-                        ),
+                        decoration: InputDecoration(labelText: l10n.latitude),
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                           signed: true,
@@ -889,9 +887,7 @@ class _AirportFormDialogState extends State<_AirportFormDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _lonCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Longitude',
-                        ),
+                        decoration: InputDecoration(labelText: l10n.longitude),
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                           signed: true,
@@ -909,9 +905,7 @@ class _AirportFormDialogState extends State<_AirportFormDialog> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _radiusCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Radius (meters)',
-                  ),
+                  decoration: InputDecoration(labelText: l10n.radiusMeters),
                   keyboardType: TextInputType.number,
                   validator: (v) {
                     final n = int.tryParse(v ?? '');
@@ -921,7 +915,7 @@ class _AirportFormDialogState extends State<_AirportFormDialog> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Pick on map (tap to move marker)',
+                  '${l10n.pickOnMap} (tap to move marker)',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 8),
@@ -1054,8 +1048,9 @@ class _ZoneFormDialogState extends State<_ZoneFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(_isEdit ? 'Edit Zone' : 'Add Zone'),
+      title: Text(_isEdit ? l10n.editZone : l10n.addZone),
       content: SizedBox(
         width: 560,
         child: SingleChildScrollView(
@@ -1067,18 +1062,14 @@ class _ZoneFormDialogState extends State<_ZoneFormDialog> {
               children: [
                 TextFormField(
                   controller: _terminalCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Terminal (T1, T2, …)',
-                  ),
+                  decoration: InputDecoration(labelText: l10n.terminalCode),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Required' : null,
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _checkpointType,
-                  decoration: const InputDecoration(
-                    labelText: 'Checkpoint Type',
-                  ),
+                  decoration: InputDecoration(labelText: l10n.checkpointType),
                   items: _kCheckpointTypes
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                       .toList(),
@@ -1089,7 +1080,7 @@ class _ZoneFormDialogState extends State<_ZoneFormDialog> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Display Name'),
+                  decoration: InputDecoration(labelText: l10n.displayName),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Required' : null,
                 ),
@@ -1099,9 +1090,7 @@ class _ZoneFormDialogState extends State<_ZoneFormDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _latCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Latitude',
-                        ),
+                        decoration: InputDecoration(labelText: l10n.latitude),
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                           signed: true,
@@ -1118,9 +1107,7 @@ class _ZoneFormDialogState extends State<_ZoneFormDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _lonCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Longitude',
-                        ),
+                        decoration: InputDecoration(labelText: l10n.longitude),
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                           signed: true,
@@ -1141,8 +1128,8 @@ class _ZoneFormDialogState extends State<_ZoneFormDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _radiusCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Radius (meters)',
+                        decoration: InputDecoration(
+                          labelText: l10n.radiusMeters,
                         ),
                         keyboardType: TextInputType.number,
                         validator: (v) {
@@ -1172,7 +1159,7 @@ class _ZoneFormDialogState extends State<_ZoneFormDialog> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Pick on map (tap to move marker)',
+                  '${l10n.pickOnMap} (tap to move marker)',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 8),

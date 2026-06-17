@@ -177,5 +177,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           found.get.preferredDriverId.contains(driver.id)
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 }

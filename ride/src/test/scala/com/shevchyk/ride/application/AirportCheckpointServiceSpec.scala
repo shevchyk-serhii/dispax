@@ -2,7 +2,11 @@ package com.shevchyk.ride.application
 
 import com.shevchyk.core.application.EventHub
 import com.shevchyk.core.domain.{CompanyId, Location, PersonId, RideId, WebSocketEvent}
-import com.shevchyk.ride.application.service.{AirportCheckpointService, AirportCheckpointServiceImpl, AirportConfigService}
+import com.shevchyk.ride.application.service.{
+  AirportCheckpointService,
+  AirportCheckpointServiceImpl,
+  AirportConfigService
+}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.repository.{InMemoryAirportConfigRepository, InMemoryRideRepository, RideRepository}
 import zio.*
@@ -53,12 +57,14 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
   // A ZLayer backed by InMemoryAirportConfigRepository, pre-seeded with MUC.
   // .orDie converts the Throwable channel to Nothing (create on in-memory repo can't fail).
   private val airportConfigRepoLayer: ZLayer[Any, Nothing, com.shevchyk.ride.repository.AirportConfigRepository] =
-    ZLayer.fromZIO(
-      for {
-        repo <- ZIO.succeed(new InMemoryAirportConfigRepository)
-        _    <- repo.create(mucAirport)
-      } yield (repo: com.shevchyk.ride.repository.AirportConfigRepository)
-    ).orDie
+    ZLayer
+      .fromZIO(
+        for {
+          repo <- ZIO.succeed(new InMemoryAirportConfigRepository)
+          _    <- repo.create(mucAirport)
+        } yield repo: com.shevchyk.ride.repository.AirportConfigRepository
+      )
+      .orDie
 
   private val airportConfigServiceLayer: ZLayer[Any, Nothing, AirportConfigService] =
     airportConfigRepoLayer >>> AirportConfigService.layer

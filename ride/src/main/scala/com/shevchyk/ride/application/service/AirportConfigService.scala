@@ -1,6 +1,6 @@
 package com.shevchyk.ride.application.service
 
-import com.shevchyk.ride.domain.{Airport, AirportCheckpoint, AirportCheckpointZone}
+import com.shevchyk.ride.domain.{Airport, AirportCheckpoint, AirportCheckpointZone, RideError}
 import com.shevchyk.ride.repository.AirportConfigRepository
 import zio.*
 
@@ -67,25 +67,69 @@ final private class AirportConfigServiceImpl(
 
   private def invalidate(): UIO[Unit] = cache.set(Map.empty)
 
+  // ─── Shared coordinate / type validation (application layer) ──────────────
+  // Fails with RideError.ValidationError so the HTTP layer can map it to 400.
+  // De-duplicated: used by both create and update paths for airports and zones.
+
+  private val validCheckpointTypes: Set[String] = Set("landed", "arrivals_hall", "terminal_exit")
+
+  private def validateLat(lat: Double): IO[RideError, Unit] =
+    ZIO
+      .fail(RideError.ValidationError("Latitude must be between -90 and 90"))
+      .when(lat < -90.0 || lat > 90.0)
+      .unit
+
+  private def validateLon(lon: Double): IO[RideError, Unit] =
+    ZIO
+      .fail(RideError.ValidationError("Longitude must be between -180 and 180"))
+      .when(lon < -180.0 || lon > 180.0)
+      .unit
+
+  private def validateRadius(radius: Int, fieldName: String = "Radius"): IO[RideError, Unit] =
+    ZIO
+      .fail(RideError.ValidationError(s"$fieldName must be positive"))
+      .when(radius <= 0)
+      .unit
+
+  private def validateCheckpointType(checkpointType: String): IO[RideError, Unit] =
+    ZIO
+      .fail(
+        RideError.ValidationError(
+          s"Invalid checkpoint type: $checkpointType. Valid: ${validCheckpointTypes.mkString(", ")}"
+        )
+      )
+      .when(!validCheckpointTypes.contains(checkpointType))
+      .unit
+
+  private def validateAirportCoords(lat: Double, lon: Double, radius: Int): IO[RideError, Unit] =
+    validateLat(lat) *> validateLon(lon) *> validateRadius(radius, "Landing radius")
+
+  private def validateZoneCoords(lat: Double, lon: Double, radius: Int): IO[RideError, Unit] =
+    validateLat(lat) *> validateLon(lon) *> validateRadius(radius)
+
   override def listAirports(): Task[List[Airport]] = repo.findAll()
 
   override def getAirport(code: String): Task[Option[Airport]] = repo.findByCode(code)
 
-  override def createAirport(airport: Airport): Task[Airport] = repo.create(airport).tap(_ => invalidate())
+  override def createAirport(airport: Airport): Task[Airport] =
+    validateAirportCoords(airport.landingLat, airport.landingLon, airport.landingRadius) *>
+      repo.create(airport).tap(_ => invalidate())
 
-  override def updateAirport(code: String, airport: Airport): Task[Option[Airport]] = repo
-    .update(code, airport)
-    .tap(_ => invalidate())
+  override def updateAirport(code: String, airport: Airport): Task[Option[Airport]] =
+    validateAirportCoords(airport.landingLat, airport.landingLon, airport.landingRadius) *>
+      repo.update(code, airport).tap(_ => invalidate())
 
   override def deleteAirport(code: String): Task[Boolean] = repo.delete(code).tap(_ => invalidate())
 
-  override def createZone(zone: AirportCheckpointZone): Task[AirportCheckpointZone] = repo
-    .createZone(zone)
-    .tap(_ => invalidate())
+  override def createZone(zone: AirportCheckpointZone): Task[AirportCheckpointZone] =
+    validateZoneCoords(zone.lat, zone.lon, zone.radiusMeters) *>
+      validateCheckpointType(zone.checkpointType) *>
+      repo.createZone(zone).tap(_ => invalidate())
 
-  override def updateZone(id: UUID, zone: AirportCheckpointZone): Task[Option[AirportCheckpointZone]] = repo
-    .updateZone(id, zone)
-    .tap(_ => invalidate())
+  override def updateZone(id: UUID, zone: AirportCheckpointZone): Task[Option[AirportCheckpointZone]] =
+    validateZoneCoords(zone.lat, zone.lon, zone.radiusMeters) *>
+      validateCheckpointType(zone.checkpointType) *>
+      repo.updateZone(id, zone).tap(_ => invalidate())
 
   override def deleteZone(id: UUID): Task[Boolean] = repo.deleteZone(id).tap(_ => invalidate())
 

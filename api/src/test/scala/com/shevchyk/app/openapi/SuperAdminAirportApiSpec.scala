@@ -24,8 +24,8 @@ import java.util.UUID
  *   - No token → 401 (unauthenticated)
  *   - Basic CRUD round-trip via the in-memory AirportConfigService
  *
- * Routes are exercised via ZioHttpInterpreter against in-memory stubs — no network I/O.
- * This follows the identical pattern as [[SuperAdminApiSpec]].
+ * Routes are exercised via ZioHttpInterpreter against in-memory stubs — no network I/O. This follows the identical
+ * pattern as [[SuperAdminApiSpec]].
  *
  * Testcontainers / real PostgreSQL coverage for the underlying repository is in
  * [[com.shevchyk.ride.integration.PostgresAirportConfigRepositorySpec]].
@@ -49,8 +49,8 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
 
   private val testCompanyId = UUID.fromString("10101010-1010-1010-1010-101010101010")
 
-  private def generateToken(role: PersonRole, cid: Option[UUID]): ZIO[JwtService, Throwable, String] =
-    ZIO.serviceWithZIO[JwtService](
+  private def generateToken(role: PersonRole, cid: Option[UUID]): ZIO[JwtService, Throwable, String] = ZIO
+    .serviceWithZIO[JwtService](
       _.generateToken(
         Person(
           id = PersonId(UUID.randomUUID()),
@@ -68,47 +68,46 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
   // In-memory AirportConfigRepository stub
   // ---------------------------------------------------------------------------
 
-  private def makeInMemoryAirportRepo(): Task[AirportConfigRepository] =
-    Ref.Synchronized.make(Map.empty[String, Airport]).map { stateRef =>
+  private def makeInMemoryAirportRepo(): Task[AirportConfigRepository] = Ref.Synchronized
+    .make(Map.empty[String, Airport])
+    .map { stateRef =>
       new AirportConfigRepository:
-        def findAll(): Task[List[Airport]] = stateRef.get.map(_.values.toList)
-        def findByCode(code: String): Task[Option[Airport]] = stateRef.get.map(_.get(code))
-        def create(airport: Airport): Task[Airport] = stateRef.update(_.updated(airport.code, airport)).as(airport)
-        def update(code: String, airport: Airport): Task[Option[Airport]] =
-          stateRef.get.flatMap { m =>
-            if m.contains(code) then
-              val u = airport.copy(code = code)
-              stateRef.update(_.updated(code, u)).as(Some(u))
-            else ZIO.succeed(None)
-          }
-        def delete(code: String): Task[Boolean] =
-          stateRef.get.flatMap { m =>
-            m.get(code).filter(_.isActive) match
-              case None    => ZIO.succeed(false)
-              case Some(a) => stateRef.update(_.updated(code, a.copy(isActive = false))).as(true)
-          }
-        def createZone(zone: AirportCheckpointZone): Task[AirportCheckpointZone] =
-          stateRef.get.flatMap { m =>
-            m.get(zone.airportCode) match
-              case None    => ZIO.fail(new RuntimeException(s"Airport not found: ${zone.airportCode}"))
-              case Some(a) =>
-                val z = zone.copy(id = UUID.randomUUID())
-                stateRef.update(_.updated(a.code, a.copy(zones = a.zones :+ z))).as(z)
-          }
-        def updateZone(id: UUID, zone: AirportCheckpointZone): Task[Option[AirportCheckpointZone]] =
-          stateRef.get.flatMap { m =>
+        def findAll(): Task[List[Airport]]                                                         = stateRef.get.map(_.values.toList)
+        def findByCode(code: String): Task[Option[Airport]]                                        = stateRef.get.map(_.get(code))
+        def create(airport: Airport): Task[Airport]                                                = stateRef.update(_.updated(airport.code, airport)).as(airport)
+        def update(code: String, airport: Airport): Task[Option[Airport]]                          = stateRef.get.flatMap { m =>
+          if m.contains(code) then
+            val u = airport.copy(code = code)
+            stateRef.update(_.updated(code, u)).as(Some(u))
+          else ZIO.succeed(None)
+        }
+        def delete(code: String): Task[Boolean]                                                    = stateRef.get.flatMap { m =>
+          m.get(code).filter(_.isActive) match
+            case None    => ZIO.succeed(false)
+            case Some(a) => stateRef.update(_.updated(code, a.copy(isActive = false))).as(true)
+        }
+        def createZone(zone: AirportCheckpointZone): Task[AirportCheckpointZone]                   = stateRef.get.flatMap { m =>
+          m.get(zone.airportCode) match
+            case None    => ZIO.fail(new RuntimeException(s"Airport not found: ${zone.airportCode}"))
+            case Some(a) =>
+              val z = zone.copy(id = UUID.randomUUID())
+              stateRef.update(_.updated(a.code, a.copy(zones = a.zones :+ z))).as(z)
+        }
+        def updateZone(id: UUID, zone: AirportCheckpointZone): Task[Option[AirportCheckpointZone]] = stateRef.get
+          .flatMap { m =>
             m.values.find(_.zones.exists(_.id == id)) match
               case None    => ZIO.succeed(None)
               case Some(a) =>
                 val u = zone.copy(id = id, airportCode = a.code)
-                stateRef.update(_.updated(a.code, a.copy(zones = a.zones.map(z => if z.id == id then u else z)))).as(Some(u))
+                stateRef
+                  .update(_.updated(a.code, a.copy(zones = a.zones.map(z => if z.id == id then u else z))))
+                  .as(Some(u))
           }
-        def deleteZone(id: UUID): Task[Boolean] =
-          stateRef.get.flatMap { m =>
-            m.values.find(_.zones.exists(_.id == id)) match
-              case None    => ZIO.succeed(false)
-              case Some(a) => stateRef.update(_.updated(a.code, a.copy(zones = a.zones.filterNot(_.id == id)))).as(true)
-          }
+        def deleteZone(id: UUID): Task[Boolean]                                                    = stateRef.get.flatMap { m =>
+          m.values.find(_.zones.exists(_.id == id)) match
+            case None    => ZIO.succeed(false)
+            case Some(a) => stateRef.update(_.updated(a.code, a.copy(zones = a.zones.filterNot(_.id == id)))).as(true)
+        }
     }
 
   // ---------------------------------------------------------------------------
@@ -120,18 +119,20 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
 
   private type TestEnv = SuperAdminAirportApi.SuperAdminAirportEnv
 
-  private val testLayers: ZLayer[Any, Throwable, TestEnv] =
-    testJwtService ++ stubAirportConfigServiceLayer
+  private val testLayers: ZLayer[Any, Throwable, TestEnv] = testJwtService ++ stubAirportConfigServiceLayer
 
   // ---------------------------------------------------------------------------
   // Route runner helper
   // ---------------------------------------------------------------------------
 
-  private val airportRoutes: Routes[SuperAdminAirportApi.SuperAdminAirportEnv, Response] =
-    ZioHttpInterpreter().toHttp(SuperAdminAirportApi.serverEndpoints)
+  private val airportRoutes: Routes[SuperAdminAirportApi.SuperAdminAirportEnv, Response] = ZioHttpInterpreter().toHttp(
+    SuperAdminAirportApi.serverEndpoints
+  )
 
-  private def run(req: Request): ZIO[SuperAdminAirportApi.SuperAdminAirportEnv, Nothing, Response] =
-    airportRoutes.run(req).either.map {
+  private def run(req: Request): ZIO[SuperAdminAirportApi.SuperAdminAirportEnv, Nothing, Response] = airportRoutes
+    .run(req)
+    .either
+    .map {
       case Left(r)  => r.merge
       case Right(r) => r
     }
@@ -156,7 +157,6 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
 
   def spec =
     suite("SuperAdminAirportApi [CRITICAL security]")(
-
       // -----------------------------------------------------------------------
       // GET /api/superadmin/airports  — list
       // -----------------------------------------------------------------------
@@ -247,16 +247,16 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
       suite("GET /api/superadmin/airports/{code}")(
         test("SuperAdmin JWT + existing airport → 200 with correct code in body") {
           for {
-            token   <- generateToken(PersonRole.SuperAdmin, cid = None)
+            token    <- generateToken(PersonRole.SuperAdmin, cid = None)
             // First create the airport
             createReq = jsonReq(Method.POST, "/api/superadmin/airports", Some(createMucBody))
                           .addHeader(Header.Authorization.Bearer(token))
-            _       <- run(createReq)
+            _        <- run(createReq)
             // Then GET it
-            getReq   = jsonReq(Method.GET, "/api/superadmin/airports/MUC")
-                         .addHeader(Header.Authorization.Bearer(token))
-            resp    <- run(getReq)
-            bodyStr <- resp.body.asString
+            getReq    = jsonReq(Method.GET, "/api/superadmin/airports/MUC")
+                          .addHeader(Header.Authorization.Bearer(token))
+            resp     <- run(getReq)
+            bodyStr  <- resp.body.asString
           } yield assertTrue(
             resp.status == Status.Ok,
             bodyStr.contains("\"code\":\"MUC\"")
@@ -327,14 +327,14 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
       suite("DELETE /api/superadmin/airports/{code}")(
         test("SuperAdmin JWT + existing airport → 200 with isActive=false in body") {
           for {
-            token     <- generateToken(PersonRole.SuperAdmin, cid = None)
-            createReq  = jsonReq(Method.POST, "/api/superadmin/airports", Some(createMucBody))
-                           .addHeader(Header.Authorization.Bearer(token))
-            _         <- run(createReq)
-            deleteReq  = jsonReq(Method.DELETE, "/api/superadmin/airports/MUC")
-                           .addHeader(Header.Authorization.Bearer(token))
-            resp      <- run(deleteReq)
-            bodyStr   <- resp.body.asString
+            token    <- generateToken(PersonRole.SuperAdmin, cid = None)
+            createReq = jsonReq(Method.POST, "/api/superadmin/airports", Some(createMucBody))
+                          .addHeader(Header.Authorization.Bearer(token))
+            _        <- run(createReq)
+            deleteReq = jsonReq(Method.DELETE, "/api/superadmin/airports/MUC")
+                          .addHeader(Header.Authorization.Bearer(token))
+            resp     <- run(deleteReq)
+            bodyStr  <- resp.body.asString
           } yield assertTrue(
             resp.status == Status.Ok,
             bodyStr.contains("\"isActive\":false")
@@ -368,16 +368,16 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
       suite("POST /api/superadmin/airports/{code}/zones")(
         test("SuperAdmin JWT → 201 Created") {
           for {
-            token      <- generateToken(PersonRole.SuperAdmin, cid = None)
-            createReq   = jsonReq(Method.POST, "/api/superadmin/airports", Some(createMucBody))
-                            .addHeader(Header.Authorization.Bearer(token))
-            _          <- run(createReq)
-            zoneBody    =
+            token    <- generateToken(PersonRole.SuperAdmin, cid = None)
+            createReq = jsonReq(Method.POST, "/api/superadmin/airports", Some(createMucBody))
+                          .addHeader(Header.Authorization.Bearer(token))
+            _        <- run(createReq)
+            zoneBody  =
               """{"airportCode":"MUC","terminalCode":"T1","checkpointType":"arrivals_hall","displayName":"T1 Arrivals Hall","lat":48.3526,"lon":11.7798,"radiusMeters":200,"sortOrder":1}"""
-            zoneReq     = jsonReq(Method.POST, "/api/superadmin/airports/MUC/zones", Some(zoneBody))
-                            .addHeader(Header.Authorization.Bearer(token))
-            resp       <- run(zoneReq)
-            bodyStr    <- resp.body.asString
+            zoneReq   = jsonReq(Method.POST, "/api/superadmin/airports/MUC/zones", Some(zoneBody))
+                          .addHeader(Header.Authorization.Bearer(token))
+            resp     <- run(zoneReq)
+            bodyStr  <- resp.body.asString
           } yield assertTrue(
             resp.status == Status.Created,
             bodyStr.contains("T1 Arrivals Hall")
@@ -395,15 +395,15 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
         },
         test("invalid checkpoint type → 400 Bad Request") {
           for {
-            token      <- generateToken(PersonRole.SuperAdmin, cid = None)
-            createReq   = jsonReq(Method.POST, "/api/superadmin/airports", Some(createMucBody))
-                            .addHeader(Header.Authorization.Bearer(token))
-            _          <- run(createReq)
-            zoneBody    =
+            token    <- generateToken(PersonRole.SuperAdmin, cid = None)
+            createReq = jsonReq(Method.POST, "/api/superadmin/airports", Some(createMucBody))
+                          .addHeader(Header.Authorization.Bearer(token))
+            _        <- run(createReq)
+            zoneBody  =
               """{"airportCode":"MUC","terminalCode":"T1","checkpointType":"INVALID_TYPE","displayName":"X","lat":48.3526,"lon":11.7798,"radiusMeters":200,"sortOrder":1}"""
-            zoneReq     = jsonReq(Method.POST, "/api/superadmin/airports/MUC/zones", Some(zoneBody))
-                            .addHeader(Header.Authorization.Bearer(token))
-            resp       <- run(zoneReq)
+            zoneReq   = jsonReq(Method.POST, "/api/superadmin/airports/MUC/zones", Some(zoneBody))
+                          .addHeader(Header.Authorization.Bearer(token))
+            resp     <- run(zoneReq)
           } yield assertTrue(resp.status == Status.BadRequest)
         }
       ),
@@ -441,11 +441,11 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
         },
         test("Admin JWT → 403 on delete zone [CRITICAL]") {
           for {
-            token  <- generateToken(PersonRole.Admin, cid = Some(testCompanyId))
-            fakeId  = UUID.randomUUID().toString
-            req     = jsonReq(Method.DELETE, s"/api/superadmin/airports/MUC/zones/$fakeId")
-                        .addHeader(Header.Authorization.Bearer(token))
-            resp   <- run(req)
+            token <- generateToken(PersonRole.Admin, cid = Some(testCompanyId))
+            fakeId = UUID.randomUUID().toString
+            req    = jsonReq(Method.DELETE, s"/api/superadmin/airports/MUC/zones/$fakeId")
+                       .addHeader(Header.Authorization.Bearer(token))
+            resp  <- run(req)
           } yield assertTrue(resp.status == Status.Forbidden)
         }
       ),
@@ -475,5 +475,4 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
           } yield assertTrue(resp.status == Status.BadRequest)
         }
       )
-
     ).provide(testLayers) @@ TestAspect.sequential

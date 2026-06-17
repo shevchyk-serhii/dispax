@@ -429,6 +429,57 @@ class AppLocalizationsDe extends AppLocalizations {
   String get airportCheckpointPanelTitle => 'Mein Standort im Terminal';
 
   @override
+  String get airportExits => 'Flughafen-Ausgänge';
+
+  @override
+  String get addAirport => 'Flughafen hinzufügen';
+
+  @override
+  String get editAirport => 'Flughafen bearbeiten';
+
+  @override
+  String get deleteAirport => 'Flughafen deaktivieren';
+
+  @override
+  String get airportCode => 'Flughafen-Code (z. B. MUC)';
+
+  @override
+  String get airportName => 'Flughafenname';
+
+  @override
+  String get addZone => 'Zone hinzufügen';
+
+  @override
+  String get editZone => 'Zone bearbeiten';
+
+  @override
+  String get deleteZone => 'Zone löschen';
+
+  @override
+  String get terminalCode => 'Terminal (T1, T2, …)';
+
+  @override
+  String get checkpointType => 'Checkpoint-Typ';
+
+  @override
+  String get displayName => 'Anzeigename';
+
+  @override
+  String get latitude => 'Breitengrad';
+
+  @override
+  String get longitude => 'Längengrad';
+
+  @override
+  String get radiusMeters => 'Radius (Meter)';
+
+  @override
+  String get landingGeofence => 'Lande-Geofence';
+
+  @override
+  String get pickOnMap => 'Auf Karte wählen';
+
+  @override
   String checkpointNotifTitle(String checkpoint) {
     return 'Fahrgast hat $checkpoint erreicht';
   }

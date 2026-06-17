@@ -136,5 +136,7 @@ object PostgresFcmTokenRepositorySpec extends ZIOSpecDefault {
           kept.head.token == "fcm-p2"
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 }

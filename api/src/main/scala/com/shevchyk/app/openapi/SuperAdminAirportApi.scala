@@ -1,9 +1,10 @@
 package com.shevchyk.app.openapi
 
+import com.github.f4b6a3.uuid.UuidCreator
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.ride.application.service.AirportConfigService
-import com.shevchyk.ride.domain.{Airport, AirportCheckpointZone}
+import com.shevchyk.ride.domain.{Airport, AirportCheckpointZone, RideError}
 import sttp.model.StatusCode
 import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
@@ -12,7 +13,6 @@ import zio.ZIO
 import zio.json.*
 
 import java.time.Instant
-import java.util.UUID
 
 /**
  * Tapir descriptions and server logic for the SuperAdmin airport configuration endpoints.
@@ -154,6 +154,14 @@ object SuperAdminAirportApi:
 
   type SuperAdminAirportEnv = JwtService & AirportConfigService
 
+  // Maps a Throwable from the service layer:
+  //   RideError.ValidationError → 400 Bad Request  (validation moved to service)
+  //   anything else             → 500 Internal Server Error
+  private def fromServiceError(t: Throwable): Err =
+    t match
+      case RideError.ValidationError(msg) => (StatusCode.BadRequest, ApiError(msg))
+      case _                              => internal(t)
+
   // --------------------------------------------------------------------------
   // Endpoint descriptions
   // --------------------------------------------------------------------------
@@ -250,16 +258,6 @@ object SuperAdminAirportApi:
         for
           _       <- requireSuperAdmin(user)
           svc     <- ZIO.service[AirportConfigService]
-          // Validation: lat/lon ranges
-          _       <- ZIO
-                       .fail((StatusCode.BadRequest, ApiError("Latitude must be between -90 and 90")))
-                       .when(req.landingLat < -90.0 || req.landingLat > 90.0)
-          _       <- ZIO
-                       .fail((StatusCode.BadRequest, ApiError("Longitude must be between -180 and 180")))
-                       .when(req.landingLon < -180.0 || req.landingLon > 180.0)
-          _       <- ZIO
-                       .fail((StatusCode.BadRequest, ApiError("Landing radius must be positive")))
-                       .when(req.landingRadius <= 0)
           now      = Instant.now()
           airport  = Airport(
                        code = req.code.toUpperCase,
@@ -273,7 +271,7 @@ object SuperAdminAirportApi:
                        createdAt = now,
                        updatedAt = now
                      )
-          created <- svc.createAirport(airport).mapError(internal)
+          created <- svc.createAirport(airport).mapError(fromServiceError)
         yield AirportResponse.from(created)
       }
     }
@@ -288,23 +286,15 @@ object SuperAdminAirportApi:
           current  <- ZIO
                         .fromOption(existing)
                         .orElseFail((StatusCode.NotFound, ApiError(s"Airport not found: $code")))
-          newLat    = req.landingLat.getOrElse(current.landingLat)
-          newLon    = req.landingLon.getOrElse(current.landingLon)
-          _        <- ZIO
-                        .fail((StatusCode.BadRequest, ApiError("Latitude must be between -90 and 90")))
-                        .when(newLat < -90.0 || newLat > 90.0)
-          _        <- ZIO
-                        .fail((StatusCode.BadRequest, ApiError("Longitude must be between -180 and 180")))
-                        .when(newLon < -180.0 || newLon > 180.0)
           updated   = current.copy(
                         name = req.name.getOrElse(current.name),
                         country = req.country.getOrElse(current.country),
-                        landingLat = newLat,
-                        landingLon = newLon,
+                        landingLat = req.landingLat.getOrElse(current.landingLat),
+                        landingLon = req.landingLon.getOrElse(current.landingLon),
                         landingRadius = req.landingRadius.getOrElse(current.landingRadius),
                         isActive = req.isActive.getOrElse(current.isActive)
                       )
-          result   <- svc.updateAirport(code, updated).mapError(internal)
+          result   <- svc.updateAirport(code, updated).mapError(fromServiceError)
           airport  <- ZIO
                         .fromOption(result)
                         .orElseFail((StatusCode.NotFound, ApiError(s"Airport not found: $code")))
@@ -334,41 +324,23 @@ object SuperAdminAirportApi:
     .serverLogic[SuperAdminAirportEnv] { user =>
       { case (code, req) =>
         for
-          _         <- requireSuperAdmin(user)
-          svc       <- ZIO.service[AirportConfigService]
-          _         <- ZIO
-                         .fail((StatusCode.BadRequest, ApiError("Latitude must be between -90 and 90")))
-                         .when(req.lat < -90.0 || req.lat > 90.0)
-          _         <- ZIO
-                         .fail((StatusCode.BadRequest, ApiError("Longitude must be between -180 and 180")))
-                         .when(req.lon < -180.0 || req.lon > 180.0)
-          _         <- ZIO
-                         .fail((StatusCode.BadRequest, ApiError("Radius must be positive")))
-                         .when(req.radiusMeters <= 0)
-          validTypes = Set("landed", "arrivals_hall", "terminal_exit")
-          _         <- ZIO
-                         .fail(
-                           (
-                             StatusCode.BadRequest,
-                             ApiError(s"Invalid checkpoint type: ${req.checkpointType}. Valid: ${validTypes.mkString(", ")}")
-                           )
-                         )
-                         .when(!validTypes.contains(req.checkpointType))
-          now        = Instant.now()
-          zone       = AirportCheckpointZone(
-                         id = UUID.randomUUID(),
-                         airportCode = code,
-                         terminalCode = req.terminalCode,
-                         checkpointType = req.checkpointType,
-                         displayName = req.displayName,
-                         lat = req.lat,
-                         lon = req.lon,
-                         radiusMeters = req.radiusMeters,
-                         sortOrder = req.sortOrder,
-                         createdAt = now,
-                         updatedAt = now
-                       )
-          created   <- svc.createZone(zone).mapError(internal)
+          _       <- requireSuperAdmin(user)
+          svc     <- ZIO.service[AirportConfigService]
+          now      = Instant.now()
+          zone     = AirportCheckpointZone(
+                       id = UuidCreator.getTimeOrderedEpoch(),
+                       airportCode = code,
+                       terminalCode = req.terminalCode,
+                       checkpointType = req.checkpointType,
+                       displayName = req.displayName,
+                       lat = req.lat,
+                       lon = req.lon,
+                       radiusMeters = req.radiusMeters,
+                       sortOrder = req.sortOrder,
+                       createdAt = now,
+                       updatedAt = now
+                     )
+          created <- svc.createZone(zone).mapError(fromServiceError)
         yield AirportZoneResponse.from(created)
       }
     }
@@ -377,48 +349,30 @@ object SuperAdminAirportApi:
     .serverLogic[SuperAdminAirportEnv] { user =>
       { case (code, zoneIdStr, req) =>
         for
-          _         <- requireSuperAdmin(user)
-          svc       <- ZIO.service[AirportConfigService]
-          zoneId    <- parseUuid(zoneIdStr)
+          _       <- requireSuperAdmin(user)
+          svc     <- ZIO.service[AirportConfigService]
+          zoneId  <- parseUuid(zoneIdStr)
           // Load the airport to find the current zone for defaults
-          airOpt    <- svc.getAirport(code).mapError(internal)
-          airport   <- ZIO
-                         .fromOption(airOpt)
-                         .orElseFail((StatusCode.NotFound, ApiError(s"Airport not found: $code")))
-          current   <- ZIO
-                         .fromOption(airport.zones.find(_.id == zoneId))
-                         .orElseFail((StatusCode.NotFound, ApiError(s"Zone not found: $zoneIdStr")))
-          newLat     = req.lat.getOrElse(current.lat)
-          newLon     = req.lon.getOrElse(current.lon)
-          _         <- ZIO
-                         .fail((StatusCode.BadRequest, ApiError("Latitude must be between -90 and 90")))
-                         .when(newLat < -90.0 || newLat > 90.0)
-          _         <- ZIO
-                         .fail((StatusCode.BadRequest, ApiError("Longitude must be between -180 and 180")))
-                         .when(newLon < -180.0 || newLon > 180.0)
-          validTypes = Set("landed", "arrivals_hall", "terminal_exit")
-          newType    = req.checkpointType.getOrElse(current.checkpointType)
-          _         <- ZIO
-                         .fail(
-                           (
-                             StatusCode.BadRequest,
-                             ApiError(s"Invalid checkpoint type: $newType. Valid: ${validTypes.mkString(", ")}")
-                           )
-                         )
-                         .when(!validTypes.contains(newType))
-          updated    = current.copy(
-                         terminalCode = req.terminalCode.getOrElse(current.terminalCode),
-                         checkpointType = newType,
-                         displayName = req.displayName.getOrElse(current.displayName),
-                         lat = newLat,
-                         lon = newLon,
-                         radiusMeters = req.radiusMeters.getOrElse(current.radiusMeters),
-                         sortOrder = req.sortOrder.getOrElse(current.sortOrder)
-                       )
-          result    <- svc.updateZone(zoneId, updated).mapError(internal)
-          zone      <- ZIO
-                         .fromOption(result)
-                         .orElseFail((StatusCode.NotFound, ApiError(s"Zone not found: $zoneIdStr")))
+          airOpt  <- svc.getAirport(code).mapError(internal)
+          airport <- ZIO
+                       .fromOption(airOpt)
+                       .orElseFail((StatusCode.NotFound, ApiError(s"Airport not found: $code")))
+          current <- ZIO
+                       .fromOption(airport.zones.find(_.id == zoneId))
+                       .orElseFail((StatusCode.NotFound, ApiError(s"Zone not found: $zoneIdStr")))
+          updated  = current.copy(
+                       terminalCode = req.terminalCode.getOrElse(current.terminalCode),
+                       checkpointType = req.checkpointType.getOrElse(current.checkpointType),
+                       displayName = req.displayName.getOrElse(current.displayName),
+                       lat = req.lat.getOrElse(current.lat),
+                       lon = req.lon.getOrElse(current.lon),
+                       radiusMeters = req.radiusMeters.getOrElse(current.radiusMeters),
+                       sortOrder = req.sortOrder.getOrElse(current.sortOrder)
+                     )
+          result  <- svc.updateZone(zoneId, updated).mapError(fromServiceError)
+          zone    <- ZIO
+                       .fromOption(result)
+                       .orElseFail((StatusCode.NotFound, ApiError(s"Zone not found: $zoneIdStr")))
         yield AirportZoneResponse.from(zone)
       }
     }

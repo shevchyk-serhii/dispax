@@ -1266,42 +1266,42 @@ object TestApplication extends ZIOAppDefault:
         Ref.Synchronized.make(Map("MUC" -> mucAirport)).map { stateRef =>
           new AirportConfigRepository:
             import com.shevchyk.ride.domain.{Airport, AirportCheckpointZone}
-            def findAll(): Task[List[Airport]]                                          = stateRef.get.map(_.values.toList)
-            def findByCode(code: String): Task[Option[Airport]]                         = stateRef.get.map(_.get(code))
-            def create(airport: Airport): Task[Airport]                                 = stateRef.update(_.updated(airport.code, airport)).as(airport)
-            def update(code: String, airport: Airport): Task[Option[Airport]]           =
-              stateRef.get.flatMap { m =>
-                if m.contains(code) then stateRef.update(_.updated(code, airport.copy(code = code))).as(Some(airport.copy(code = code)))
-                else ZIO.succeed(None)
-              }
-            def delete(code: String): Task[Boolean]                                     =
-              stateRef.get.flatMap { m =>
-                m.get(code).filter(_.isActive) match
-                  case None    => ZIO.succeed(false)
-                  case Some(a) => stateRef.update(_.updated(code, a.copy(isActive = false))).as(true)
-              }
-            def createZone(zone: AirportCheckpointZone): Task[AirportCheckpointZone]   =
-              stateRef.get.flatMap { m =>
-                m.get(zone.airportCode) match
-                  case None    => ZIO.fail(new RuntimeException(s"Airport not found: ${zone.airportCode}"))
-                  case Some(a) =>
-                    val z = zone.copy(id = UUID.randomUUID())
-                    stateRef.update(_.updated(a.code, a.copy(zones = a.zones :+ z))).as(z)
-              }
-            def updateZone(id: UUID, zone: AirportCheckpointZone): Task[Option[AirportCheckpointZone]] =
-              stateRef.get.flatMap { m =>
+            def findAll(): Task[List[Airport]]                                                         = stateRef.get.map(_.values.toList)
+            def findByCode(code: String): Task[Option[Airport]]                                        = stateRef.get.map(_.get(code))
+            def create(airport: Airport): Task[Airport]                                                = stateRef.update(_.updated(airport.code, airport)).as(airport)
+            def update(code: String, airport: Airport): Task[Option[Airport]]                          = stateRef.get.flatMap { m =>
+              if m.contains(code) then
+                stateRef.update(_.updated(code, airport.copy(code = code))).as(Some(airport.copy(code = code)))
+              else ZIO.succeed(None)
+            }
+            def delete(code: String): Task[Boolean]                                                    = stateRef.get.flatMap { m =>
+              m.get(code).filter(_.isActive) match
+                case None    => ZIO.succeed(false)
+                case Some(a) => stateRef.update(_.updated(code, a.copy(isActive = false))).as(true)
+            }
+            def createZone(zone: AirportCheckpointZone): Task[AirportCheckpointZone]                   = stateRef.get.flatMap { m =>
+              m.get(zone.airportCode) match
+                case None    => ZIO.fail(new RuntimeException(s"Airport not found: ${zone.airportCode}"))
+                case Some(a) =>
+                  val z = zone.copy(id = UUID.randomUUID())
+                  stateRef.update(_.updated(a.code, a.copy(zones = a.zones :+ z))).as(z)
+            }
+            def updateZone(id: UUID, zone: AirportCheckpointZone): Task[Option[AirportCheckpointZone]] = stateRef.get
+              .flatMap { m =>
                 m.values.find(_.zones.exists(_.id == id)) match
                   case None    => ZIO.succeed(None)
                   case Some(a) =>
                     val updated = zone.copy(id = id, airportCode = a.code)
-                    stateRef.update(_.updated(a.code, a.copy(zones = a.zones.map(z => if z.id == id then updated else z)))).as(Some(updated))
+                    stateRef
+                      .update(_.updated(a.code, a.copy(zones = a.zones.map(z => if z.id == id then updated else z))))
+                      .as(Some(updated))
               }
-            def deleteZone(id: UUID): Task[Boolean]                                     =
-              stateRef.get.flatMap { m =>
-                m.values.find(_.zones.exists(_.id == id)) match
-                  case None    => ZIO.succeed(false)
-                  case Some(a) => stateRef.update(_.updated(a.code, a.copy(zones = a.zones.filterNot(_.id == id)))).as(true)
-              }
+            def deleteZone(id: UUID): Task[Boolean]                                                    = stateRef.get.flatMap { m =>
+              m.values.find(_.zones.exists(_.id == id)) match
+                case None    => ZIO.succeed(false)
+                case Some(a) =>
+                  stateRef.update(_.updated(a.code, a.copy(zones = a.zones.filterNot(_.id == id)))).as(true)
+            }
         }
       } >>> AirportConfigService.layer,
       // Driver + location

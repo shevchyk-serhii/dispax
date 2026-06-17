@@ -922,6 +922,108 @@ abstract class AppLocalizations {
   /// **'My location in terminal'**
   String get airportCheckpointPanelTitle;
 
+  /// No description provided for @airportExits.
+  ///
+  /// In en, this message translates to:
+  /// **'Airport Exits'**
+  String get airportExits;
+
+  /// No description provided for @addAirport.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Airport'**
+  String get addAirport;
+
+  /// No description provided for @editAirport.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Airport'**
+  String get editAirport;
+
+  /// No description provided for @deleteAirport.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate Airport'**
+  String get deleteAirport;
+
+  /// No description provided for @airportCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Airport Code (e.g. MUC)'**
+  String get airportCode;
+
+  /// No description provided for @airportName.
+  ///
+  /// In en, this message translates to:
+  /// **'Airport Name'**
+  String get airportName;
+
+  /// No description provided for @addZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Zone'**
+  String get addZone;
+
+  /// No description provided for @editZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Zone'**
+  String get editZone;
+
+  /// No description provided for @deleteZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Zone'**
+  String get deleteZone;
+
+  /// No description provided for @terminalCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal (T1, T2, …)'**
+  String get terminalCode;
+
+  /// No description provided for @checkpointType.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkpoint Type'**
+  String get checkpointType;
+
+  /// No description provided for @displayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Display Name'**
+  String get displayName;
+
+  /// No description provided for @latitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get latitude;
+
+  /// No description provided for @longitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get longitude;
+
+  /// No description provided for @radiusMeters.
+  ///
+  /// In en, this message translates to:
+  /// **'Radius (meters)'**
+  String get radiusMeters;
+
+  /// No description provided for @landingGeofence.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing Geofence'**
+  String get landingGeofence;
+
+  /// No description provided for @pickOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on map'**
+  String get pickOnMap;
+
   /// No description provided for @checkpointNotifTitle.
   ///
   /// In en, this message translates to:

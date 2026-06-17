@@ -239,5 +239,7 @@ object PostgresRidePoolRepositorySpec extends ZIOSpecDefault {
           members <- repo.findMembersByPoolId(pool.id)
         } yield assertTrue(updated, members.head.status == PoolMemberStatus.PickedUp)
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 }

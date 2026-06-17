@@ -204,5 +204,7 @@ object PostgresRideTemplateRepositorySpec extends ZIOSpecDefault {
           found   <- repo.findById(tpl.id)
         } yield assertTrue(deleted, !missing, found.isEmpty)
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 }
