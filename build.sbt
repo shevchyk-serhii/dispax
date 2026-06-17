@@ -41,6 +41,13 @@ ThisBuild / assembly / assemblyMergeStrategy := {
   case x if x.contains("deriving.conf")                => MergeStrategy.first
   case PathList("META-INF", "services", xs @ _*)       => MergeStrategy.filterDistinctLines
   case PathList("META-INF", "versions", _*)            => MergeStrategy.first
+  // Swagger UI ships as a webjar: assets under META-INF/resources and the
+  // version marker at META-INF/maven/org.webjars/swagger-ui/pom.properties
+  // (which tapir's SwaggerUI reads at class-init). The catch-all discard
+  // below would drop both, so the prod jar crashes with "META-INF resources
+  // are missing". Keep them.
+  case PathList("META-INF", "resources", xs @ _*)      => MergeStrategy.first
+  case PathList("META-INF", "maven", "org.webjars", xs @ _*) => MergeStrategy.first
   case PathList("META-INF", xs @ _*)                   => MergeStrategy.discard
   case x                                               => MergeStrategy.first
 }
