@@ -126,8 +126,29 @@ final case class Person(
     status: UserStatus = UserStatus.ACTIVE,
     lastLoginAt: Option[Instant] = None,
     clientCompanyId: Option[ClientCompanyId] = None,
-    reminderMinutes: Int = 60
-)
+    reminderMinutes: Int = 60,
+    roles: Set[PersonRole] = Set.empty
+):
+
+  /**
+   * The effective set of roles — always includes the primary role.
+   */
+  def effectiveRoles: Set[PersonRole] = if roles.isEmpty then Set(role) else roles + role
+
+  /**
+   * Returns true when the person carries the given role (among any of their roles).
+   */
+  def hasRole(r: PersonRole): Boolean = effectiveRoles.contains(r)
+
+  /**
+   * Convenience: true when the person can act as a Driver.
+   */
+  def canDrive: Boolean = hasRole(PersonRole.Driver)
+
+  /**
+   * Primary role (same as `role`, exposed for symmetry with `roles`).
+   */
+  def primaryRole: PersonRole = role
 
 // DTO for safe serialization — excludes passwordHash
 final case class PersonDto(
@@ -142,7 +163,8 @@ final case class PersonDto(
     preferredDriverId: Option[PersonId] = None,
     status: UserStatus = UserStatus.ACTIVE,
     clientCompanyId: Option[ClientCompanyId] = None,
-    reminderMinutes: Int = 60
+    reminderMinutes: Int = 60,
+    roles: Set[PersonRole] = Set.empty
 ) derives JsonCodec
 
 object PersonDto:
@@ -161,7 +183,8 @@ object PersonDto:
     preferredDriverId = p.preferredDriverId,
     status = p.status,
     clientCompanyId = p.clientCompanyId,
-    reminderMinutes = p.reminderMinutes
+    reminderMinutes = p.reminderMinutes,
+    roles = p.effectiveRoles
   )
 
 enum CompanyStatus derives JsonCodec:

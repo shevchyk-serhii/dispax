@@ -99,6 +99,8 @@ object RideServiceSpec extends ZIOSpecDefault {
 
     override def findByClientCompany(clientCompanyId: com.shevchyk.core.domain.ClientCompanyId): Task[List[Person]] =
       ZIO.succeed(Nil)
+
+    override def upsertDriverRow(personId: PersonId): Task[Unit] = ZIO.unit
   }
 
   val testPersonRepo = TestPersonRepository(

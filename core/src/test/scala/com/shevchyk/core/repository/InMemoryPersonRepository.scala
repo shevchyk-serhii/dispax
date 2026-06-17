@@ -20,10 +20,12 @@ class InMemoryPersonRepository extends PersonRepository:
 
   override def findByEmail(email: String): Task[Option[Person]] = people.get.map(_.values.find(_.email == email))
 
-  override def findByRole(role: PersonRole): Task[List[Person]] = people.get.map(_.values.filter(_.role == role).toList)
+  override def findByRole(role: PersonRole): Task[List[Person]] = people.get.map(
+    _.values.filter(_.hasRole(role)).toList
+  )
 
   override def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = people.get.map(
-    _.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList
+    _.values.filter(p => p.hasRole(role) && p.companyId.contains(companyId)).toList
   )
 
   override def findByCompanyId(companyId: CompanyId): Task[List[Person]] = people.get.map(
@@ -55,6 +57,8 @@ class InMemoryPersonRepository extends PersonRepository:
   override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] = people.get.map(
     _.values.filter(_.clientCompanyId.contains(clientCompanyId)).toList
   )
+
+  override def upsertDriverRow(personId: PersonId): Task[Unit] = ZIO.unit
 
 object InMemoryPersonRepository:
   val layer: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(new InMemoryPersonRepository)

@@ -15,9 +15,10 @@ final case class JwtPayload(
     role: PersonRole,
     companyId: Option[UUID] = None,
     clientCompanyId: Option[UUID] = None,
-    iat: Long,                       // issued at
-    exp: Long,                       // expires at
-    originalIat: Option[Long] = None // original session start (for absolute expiration)
+    iat: Long,                             // issued at
+    exp: Long,                             // expires at
+    originalIat: Option[Long] = None,      // original session start (for absolute expiration)
+    roles: Option[List[PersonRole]] = None // full set of roles; None in legacy tokens (back-compat)
 )
 
 object JwtPayload:
@@ -46,7 +47,8 @@ class JwtServiceImpl(config: JwtConfig) extends JwtService:
         clientCompanyId = person.clientCompanyId.map(_.value),
         iat = now.getEpochSecond,
         exp = exp.getEpochSecond,
-        originalIat = Some(now.getEpochSecond)
+        originalIat = Some(now.getEpochSecond),
+        roles = Some(person.effectiveRoles.toList)
       )
 
       val claim = JwtClaim(

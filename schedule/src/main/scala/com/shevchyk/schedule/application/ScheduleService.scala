@@ -139,7 +139,7 @@ class ScheduleServiceImpl(
       driver    <- ZIO.fromOption(driverOpt).orElseFail(ScheduleError.DriverNotFound(driverId))
       _         <-
         ZIO
-          .when(driver.role != PersonRole.Driver)(
+          .when(!driver.canDrive)(
             ZIO.fail(ScheduleError.ValidationError("Person is not a driver"))
           )
           .unit

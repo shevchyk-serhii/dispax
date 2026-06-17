@@ -12,6 +12,9 @@ import zio.ZIO
 
 import java.util.UUID
 
+private def effectiveRoles(user: AuthenticatedUser): Set[String] =
+  if user.roles.nonEmpty then user.roles else Set(user.role)
+
 /**
  * Shared building blocks for the api-module Tapir endpoints (package `com.shevchyk.app.openapi`).
  *
@@ -38,30 +41,36 @@ object AppSecure:
             case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
           },
           payload =>
+            val wireRoles = payload.roles
+              .map(_.map(PersonRole.toWire).toSet)
+              .getOrElse(Set(PersonRole.toWire(payload.role)))
             AuthenticatedUser(
               userId = payload.userId,
               email = payload.email,
-              role = payload.role.toString,
+              role = PersonRole.toWire(payload.role),
               companyId = payload.companyId,
-              clientCompanyId = payload.clientCompanyId
+              clientCompanyId = payload.clientCompanyId,
+              roles = wireRoles
             )
         )
     }
 
   // -- Role checks (mirror AuthMiddleware.checkRole / checkRoleOrOwner) -----
 
-  def checkRole(user: AuthenticatedUser, roles: String*): ZIO[Any, Err, Unit] =
-    val userRoleUpper = user.role.toUpperCase
+  def checkRole(user: AuthenticatedUser, allowedRoles: String*): ZIO[Any, Err, Unit] =
+    val userRoles = effectiveRoles(user)
     ZIO
       .fail((StatusCode.Forbidden, ApiError("Insufficient permissions")))
-      .unless(roles.exists(_.toUpperCase == userRoleUpper))
+      .unless(allowedRoles.exists(r => userRoles.exists(_.toUpperCase == r.toUpperCase)))
       .unit
 
-  def checkRoleOrOwner(user: AuthenticatedUser, resourceOwnerId: UUID, roles: String*): ZIO[Any, Err, Unit] =
-    val userRoleUpper = user.role.toUpperCase
+  def checkRoleOrOwner(user: AuthenticatedUser, resourceOwnerId: UUID, allowedRoles: String*): ZIO[Any, Err, Unit] =
+    val userRoles = effectiveRoles(user)
     ZIO
       .fail((StatusCode.Forbidden, ApiError("Access denied")))
-      .unless(roles.exists(_.toUpperCase == userRoleUpper) || user.userId == resourceOwnerId)
+      .unless(
+        allowedRoles.exists(r => userRoles.exists(_.toUpperCase == r.toUpperCase)) || user.userId == resourceOwnerId
+      )
       .unit
 
   // -- UUID parsing (mirrors UuidParser, which fails with 400) -------------
@@ -97,7 +106,9 @@ object AppSecure:
   //   SuperAdmin      → SUPERADMIN   ← the only role that matches
   // None of the non-SuperAdmin roles collapses to "SUPERADMIN" under toUpperCase.replace("_",""),
   // so the gate is collision-free today. Any new PersonRole must be re-checked here before merging.
-  def isSuperAdmin(user: AuthenticatedUser): Boolean = user.role.toUpperCase.replace("_", "") == "SUPERADMIN"
+  def isSuperAdmin(user: AuthenticatedUser): Boolean = effectiveRoles(user).exists(
+    _.toUpperCase.replace("_", "") == "SUPERADMIN"
+  )
 
   def requireSuperAdmin(user: AuthenticatedUser): ZIO[Any, Err, Unit] =
     if isSuperAdmin(user) then ZIO.unit

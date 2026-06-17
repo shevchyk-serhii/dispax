@@ -162,7 +162,7 @@ object EmergencyApi:
         blackRepo    <- ZIO.service[BlacklistRepository]
         candidates   <-
           ZIO
-            .filter(drivers.filter(d => d.role == PersonRole.Driver && !ride.driverId.contains(d.id)))(d =>
+            .filter(drivers.filter(d => d.hasRole(PersonRole.Driver) && !ride.driverId.contains(d.id)))(d =>
               blackRepo.isBlacklisted(ride.clientId, d.id).map(!_).mapError(internal)
             )
         clientRepo   <- personRepo.findById(ride.clientId).mapError(internal)

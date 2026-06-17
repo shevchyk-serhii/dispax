@@ -26,6 +26,13 @@ trait PersonRepository {
   def searchByQuery(query: String): Task[List[Person]]
   def updateLastLogin(id: PersonId): Task[Unit]
   def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]
+
+  /**
+   * Ensure a row exists in the `drivers` table for the given person. Used when a person gains the Driver role so they
+   * can receive location updates and appear in driver queries. Idempotent: safe to call even when the row already
+   * exists (ON CONFLICT DO NOTHING).
+   */
+  def upsertDriverRow(personId: PersonId): Task[Unit]
 }
 
 object PersonRepository {

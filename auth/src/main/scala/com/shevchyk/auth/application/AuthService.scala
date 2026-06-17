@@ -77,6 +77,12 @@ class AuthServiceImpl(
       _         <- personRepository.updateLastLogin(person.id).ignore
     yield LoginResponse(UserDto.fromPerson(person), token)
 
+  private def parseRoles(rawRoles: List[String]): Either[String, Set[PersonRole]] =
+    val parsed = rawRoles.map(r => parseRole(r).left.map(_ => r))
+    val errors = parsed.collect { case Left(r) => r }
+    if errors.nonEmpty then Left(s"Invalid roles: ${errors.mkString(", ")}")
+    else Right(parsed.collect { case Right(r) => r }.toSet)
+
   override def createUser(request: CreateUserRequest): ZIO[Any, AuthError, UserDto] =
     for
       _        <- ZIO.when(!validateEmail(request.email))(ZIO.fail(ValidationError("email", "Invalid email format")))
@@ -92,6 +98,19 @@ class AuthServiceImpl(
       existing <- personRepository.findByEmail(request.email).orElseFail(ValidationError("email", "Database error"))
       _        <- ZIO.when(existing.isDefined)(ZIO.fail(UserAlreadyExists(request.email)))
       role     <- ZIO.fromEither(parseRole(request.role)).orElseFail(ValidationError("role", "Invalid role"))
+      // roles: if provided, validate them; otherwise default to Set(role)
+      rolesSet <-
+        request.roles match
+          case None       => ZIO.succeed(Set(role))
+          case Some(raws) =>
+            ZIO.fromEither(parseRoles(raws)).orElseFail(ValidationError("roles", "One or more invalid roles"))
+      // Enforce invariant: primary role must be in the roles set
+      _        <-
+        ZIO
+          .when(!rolesSet.contains(role))(
+            ZIO.fail(ValidationError("roles", "Primary role must be included in roles"))
+          )
+      _        <- ZIO.when(rolesSet.isEmpty)(ZIO.fail(ValidationError("roles", "Roles must not be empty")))
       pwHash   <- hashPassword(request.password).orElseFail(ValidationError("password", "Failed to hash password"))
       person    = Person(
                     id = PersonId.generate(),
@@ -100,9 +119,18 @@ class AuthServiceImpl(
                     role = role,
                     passwordHash = pwHash,
                     phone = request.phone,
-                    status = UserStatus.ACTIVE
+                    status = UserStatus.ACTIVE,
+                    roles = rolesSet
                   )
       created  <- personRepository.create(person).orElseFail(ValidationError("user", "Failed to create user"))
+      // If the new person has the Driver role, ensure a drivers row exists for location/status tracking
+      _        <-
+        ZIO
+          .when(created.canDrive)(
+            personRepository
+              .upsertDriverRow(created.id)
+              .orElseFail(ValidationError("user", "Failed to create driver row"))
+          )
     yield UserDto.fromPerson(created)
 
   override def getUserById(id: UUID): ZIO[Any, AuthError, UserDto] =
@@ -133,8 +161,30 @@ class AuthServiceImpl(
         request.status.fold(ZIO.succeed(existing.status))(s =>
           ZIO.attempt(UserStatus.valueOf(s)).orElseFail(ValidationError("status", "Invalid status"))
         )
-      updated      = request.applyTo(existing, role, status)
+      // Resolve the new roles set: if provided, validate and use it; otherwise preserve existing
+      rolesSet    <-
+        request.roles match
+          case None       => ZIO.succeed(existing.effectiveRoles)
+          case Some(raws) =>
+            ZIO.fromEither(parseRoles(raws)).orElseFail(ValidationError("roles", "One or more invalid roles"))
+      // Enforce invariant: primary role must be in the roles set
+      _           <-
+        ZIO
+          .when(!rolesSet.contains(role))(
+            ZIO.fail(ValidationError("roles", "Primary role must be included in roles"))
+          )
+      _           <- ZIO.when(rolesSet.isEmpty)(ZIO.fail(ValidationError("roles", "Roles must not be empty")))
+      updated      = request.applyTo(existing, role, status, rolesSet)
       saved       <- personRepository.update(updated).orElseFail(ValidationError("user", "Failed to update user"))
+      // If Driver role was added (wasn't present before), ensure a drivers row exists
+      driverAdded  = saved.canDrive && !existing.canDrive
+      _           <-
+        ZIO
+          .when(driverAdded)(
+            personRepository
+              .upsertDriverRow(saved.id)
+              .orElseFail(ValidationError("user", "Failed to create driver row"))
+          )
     yield UserDto.fromPerson(saved)
 
   override def deleteUser(id: UUID): ZIO[Any, AuthError, Unit] =

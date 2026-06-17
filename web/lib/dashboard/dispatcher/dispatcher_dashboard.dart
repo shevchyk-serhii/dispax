@@ -20,6 +20,8 @@ import '../../screens/ride_pool_screen.dart';
 import '../../screens/notification_center_screen.dart';
 import '../../screens/gdpr_screen.dart';
 import '../../screens/session_management_screen.dart';
+import '../../screens/driver_map_screen.dart';
+import '../driver/today_rides_screen.dart';
 import 'widgets/payroll_screen.dart';
 import 'widgets/pending_rides_panel.dart';
 import 'widgets/driver_schedule_panel.dart';
@@ -93,63 +95,76 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     return result ?? false;
   }
 
+  // Screen indices for driver screens added at the end of the list (only when canDrive).
+  // These must not collide with the hard-coded indices 0..27 above.
+  static const int _driverMapScreenIndex = 28;
+  static const int _driverMyRidesScreenIndex = 29;
+
   // All screens in order
-  List<Widget> get _allScreens => [
-    const PendingRidesPanel(), // 0: Home
-    DriverSchedulePanel(
-      // 1: Schedule
-      selectedDate: _selectedDate,
-      onDateChanged: (date) => setState(() => _selectedDate = date),
-    ),
-    const AnalyticsPanel(), // 2: Analytics
-    CreateRideScreen(
-      // 3: New Ride
-      rideBloc: _rideBloc,
-      formBloc: _createRideFormBloc,
-      onCreated: () {
-        final user = context.read<AuthBloc>().state.user;
-        if (user != null) {
-          context.read<RideBloc>().add(RideLoadRequested(user: user));
-        }
-        setState(() => _mobileTabIndex = 0);
-      },
-    ),
-    _buildMoreScreen(), // 4: More menu
-    // Extended screens (accessed via More)
-    const DriverEarningsPanel(), // 5
-    const PeakHoursPanel(), // 6
-    const ClientValuePanel(), // 7
-    const DriverScorecardPanel(), // 8
-    const DriverRatingsPanel(), // 9
-    const AuditLogScreen(), // 10
-    const AdminUsersScreen(), // 11
-    const CompanySettingsScreen(), // 12
-    const ExpenseScreen(), // 13
-    const RideExportScreen(), // 14
-    const BillingScreen(), // 15
-    const RideTemplatesScreen(), // 16
-    const PaymentScreen(), // 17
-    const PayrollScreen(), // 18
-    const SettingsScreen(), // 19
-    const GeofenceScreen(), // 20
-    const DatevExportScreen(), // 21
-    const BlacklistScreen(), // 22
-    const EmergencyReassignmentScreen(), // 23
-    const RidePoolScreen(), // 24
-    const NotificationCenterScreen(), // 25
-    const GdprScreen(), // 26
-    const SessionManagementScreen(), // 27
-  ];
+  List<Widget> _buildAllScreens(bool canDrive) {
+    final user = context.read<AuthBloc>().state.user;
+    return [
+      const PendingRidesPanel(), // 0: Home
+      DriverSchedulePanel(
+        // 1: Schedule
+        selectedDate: _selectedDate,
+        onDateChanged: (date) => setState(() => _selectedDate = date),
+      ),
+      const AnalyticsPanel(), // 2: Analytics
+      CreateRideScreen(
+        // 3: New Ride
+        rideBloc: _rideBloc,
+        formBloc: _createRideFormBloc,
+        onCreated: () {
+          if (user != null) {
+            context.read<RideBloc>().add(RideLoadRequested(user: user));
+          }
+          setState(() => _mobileTabIndex = 0);
+        },
+      ),
+      _buildMoreScreen(canDrive), // 4: More menu
+      // Extended screens (accessed via More)
+      const DriverEarningsPanel(), // 5
+      const PeakHoursPanel(), // 6
+      const ClientValuePanel(), // 7
+      const DriverScorecardPanel(), // 8
+      const DriverRatingsPanel(), // 9
+      const AuditLogScreen(), // 10
+      const AdminUsersScreen(), // 11
+      const CompanySettingsScreen(), // 12
+      const ExpenseScreen(), // 13
+      const RideExportScreen(), // 14
+      const BillingScreen(), // 15
+      const RideTemplatesScreen(), // 16
+      const PaymentScreen(), // 17
+      const PayrollScreen(), // 18
+      const SettingsScreen(), // 19
+      const GeofenceScreen(), // 20
+      const DatevExportScreen(), // 21
+      const BlacklistScreen(), // 22
+      const EmergencyReassignmentScreen(), // 23
+      const RidePoolScreen(), // 24
+      const NotificationCenterScreen(), // 25
+      const GdprScreen(), // 26
+      const SessionManagementScreen(), // 27
+      // Driver screens — only meaningful when canDrive; appended at indices 28..29
+      // so existing hard-coded indices are never renumbered.
+      if (canDrive) const DriverMapScreen(), // 28
+      if (canDrive) const TodayRidesScreen(), // 29
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final user = context.read<AuthBloc>().state.user;
+    final canDrive = user?.canDrive ?? false;
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= 800) {
             return _buildSplitView(context);
           }
-          return _buildMobileView();
+          return _buildMobileView(canDrive);
         },
       ),
     );
@@ -215,9 +230,10 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     ),
   );
 
-  Widget _buildMobileView() {
+  Widget _buildMobileView(bool canDrive) {
+    final screens = _buildAllScreens(canDrive);
     return Scaffold(
-      body: IndexedStack(index: _mobileTabIndex, children: _allScreens),
+      body: IndexedStack(index: _mobileTabIndex, children: screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _navIndexForScreen(_mobileTabIndex),
         onTap: (navIndex) async {
@@ -283,7 +299,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     return _moreNavIndex;
   }
 
-  Widget _buildMoreScreen() {
+  Widget _buildMoreScreen(bool canDrive) {
     final items = [
       // Unified corporate graphite; only genuinely destructive items stay red.
       _MoreMenuItem(
@@ -409,6 +425,21 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         27,
         Theme.of(context).colorScheme.primary,
       ),
+      // Driver screens — only visible when this dispatcher also has the Driver role
+      if (canDrive)
+        _MoreMenuItem(
+          Icons.map,
+          'Driver Map',
+          _driverMapScreenIndex,
+          Theme.of(context).colorScheme.primary,
+        ),
+      if (canDrive)
+        _MoreMenuItem(
+          Icons.directions_car,
+          'My Rides',
+          _driverMyRidesScreenIndex,
+          Theme.of(context).colorScheme.primary,
+        ),
     ];
 
     return Column(

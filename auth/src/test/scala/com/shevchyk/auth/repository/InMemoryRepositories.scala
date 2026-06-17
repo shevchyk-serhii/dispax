@@ -121,6 +121,8 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
     _.values.filter(_.clientCompanyId.contains(clientCompanyId)).toList
   )
 
+  override def upsertDriverRow(personId: PersonId): Task[Unit] = ZIO.unit
+
 final class InMemoryTokenRepository extends TokenRepository:
   import TestUUIDs._
 
