@@ -241,14 +241,15 @@ object JwtServiceSpec extends ZIOSpecDefault {
           )
           val token        = Jwt.encode(claim, legacySecret, JwtAlgorithm.HS256)
 
-          val cfgLayer = ZLayer.succeed(
-            JwtConfig(
-              secret = legacySecret,
-              issuer = "dispax-test",
-              audience = "dispax-api",
-              expirationTime = scala.concurrent.duration.Duration.fromNanos(3600L * 1_000_000_000L)
-            )
-          ) >>> JwtService.live
+          val cfgLayer =
+            ZLayer.succeed(
+              JwtConfig(
+                secret = legacySecret,
+                issuer = "dispax-test",
+                audience = "dispax-api",
+                expirationTime = scala.concurrent.duration.Duration.fromNanos(3600L * 1_000_000_000L)
+              )
+            ) >>> JwtService.live
 
           for {
             service <- ZIO.service[JwtService].provide(cfgLayer)

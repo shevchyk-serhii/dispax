@@ -37,19 +37,21 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
   )
 
   // Meta for the roles array column (person_role[]).
-  // We read it as Array[String] and map each element through the same label<->enum
-  // function as personRoleMeta. On write we need an explicit ::person_role[] cast;
-  // see the sql"..." fragments in create/update below.
-  private def roleFromLabel(s: String): PersonRole =
+  // We read it as Array[String] and map each element to PersonRole via an Option-based
+  // lookup that does not throw. Unknown labels (impossible while Postgres enforces the
+  // enum constraint) are silently dropped — this matches the behaviour of
+  // doobie's own pgEnumStringOpt helper while keeping user code throw-free.
+  // On write we need an explicit ::person_role[] cast; see the sql"..." fragments below.
+  private def roleFromLabelOpt(s: String): Option[PersonRole] =
     s match
-      case "driver"           => PersonRole.Driver
-      case "client"           => PersonRole.Client
-      case "secretary"        => PersonRole.Secretary
-      case "dispatcher"       => PersonRole.Dispatcher
-      case "admin"            => PersonRole.Admin
-      case "client_secretary" => PersonRole.ClientSecretary
-      case "super_admin"      => PersonRole.SuperAdmin
-      case other              => throw new IllegalArgumentException(s"Unknown person_role: $other")
+      case "driver"           => Some(PersonRole.Driver)
+      case "client"           => Some(PersonRole.Client)
+      case "secretary"        => Some(PersonRole.Secretary)
+      case "dispatcher"       => Some(PersonRole.Dispatcher)
+      case "admin"            => Some(PersonRole.Admin)
+      case "client_secretary" => Some(PersonRole.ClientSecretary)
+      case "super_admin"      => Some(PersonRole.SuperAdmin)
+      case _                  => None
 
   private def roleToLabel(r: PersonRole): String =
     r match
@@ -62,7 +64,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       case PersonRole.SuperAdmin      => "super_admin"
 
   implicit val personRoleListMeta: Meta[List[PersonRole]] =
-    Meta[Array[String]].imap(arr => arr.toList.map(roleFromLabel))(list => list.map(roleToLabel).toArray)
+    Meta[Array[String]].timap(arr => arr.toList.flatMap(roleFromLabelOpt))(list => list.map(roleToLabel).toArray)
 
   implicit val userStatusMeta: Meta[UserStatus] =
     Meta[String].imap {

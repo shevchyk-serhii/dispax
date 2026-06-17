@@ -440,6 +440,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       case uuid if uuid == UUID.fromString("99999999-9999-9999-9999-999999999999") => "valid-token-99"
       case uuid if uuid == UUID.fromString("33333333-3333-3333-3333-333333333333") => "valid-token-33"
       case uuid if uuid == UUID.fromString("44444444-4444-4444-4444-444444444444") => "valid-token-44"
+      case uuid if uuid == UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd") => "valid-token-dd"
       case _                                                                       =>
         role match {
           case "dispatcher" => "valid-token-33"
@@ -1318,6 +1319,13 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     val testUuid = UUID.fromString("33333333-3333-3333-3333-333333333333")
     currentUserId = Some(PersonId(testUuid))
     authToken = Some(generateMockToken(PersonId(testUuid), "dispatcher"))
+  }
+
+  // A dispatcher who also holds the Driver role (37_dispatcher_can_drive scenarios)
+  Given("""^I am authenticated as a dispatcher-driver$""") { () =>
+    val testUuid = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd")
+    currentUserId = Some(PersonId(testUuid))
+    authToken = Some("valid-token-dd")
   }
 
   Given("""^I am authenticated as driver with ID (\d+)$""") { (driverId: String) =>

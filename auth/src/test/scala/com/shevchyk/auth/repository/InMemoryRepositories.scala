@@ -90,7 +90,9 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
   override def findByRoleAndCompany(
       role: PersonRole,
       companyId: com.shevchyk.core.domain.CompanyId
-  ): Task[List[Person]] = people.get.map(_.values.filter(p => p.hasRole(role) && p.companyId.contains(companyId)).toList)
+  ): Task[List[Person]] = people.get.map(
+    _.values.filter(p => p.hasRole(role) && p.companyId.contains(companyId)).toList
+  )
 
   override def findByCompanyId(companyId: com.shevchyk.core.domain.CompanyId): Task[List[Person]] = people.get.map(
     _.values.filter(_.companyId.contains(companyId)).toList

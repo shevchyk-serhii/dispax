@@ -199,17 +199,17 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
       },
       test("findByRoleAndCompany(Driver) returns dispatcher-driver") {
         for {
-          xa          <- ZIO.service[Transactor[Task]]
-          _           <- seedCompany(xa)
-          _           <- cleanPersons(xa)
-          repo         = PostgresPersonRepository(xa)
-          dispDriver   = makePerson(role = PersonRole.Dispatcher, email = "dd@test.com")
-                           .copy(roles = Set(PersonRole.Dispatcher, PersonRole.Driver))
-          pureDriver   = makePerson(role = PersonRole.Driver, email = "pure@test.com")
-          _           <- repo.create(dispDriver)
-          _           <- repo.create(pureDriver)
+          xa        <- ZIO.service[Transactor[Task]]
+          _         <- seedCompany(xa)
+          _         <- cleanPersons(xa)
+          repo       = PostgresPersonRepository(xa)
+          dispDriver = makePerson(role = PersonRole.Dispatcher, email = "dd@test.com")
+                         .copy(roles = Set(PersonRole.Dispatcher, PersonRole.Driver))
+          pureDriver = makePerson(role = PersonRole.Driver, email = "pure@test.com")
+          _         <- repo.create(dispDriver)
+          _         <- repo.create(pureDriver)
           // searching for Driver role must return BOTH the pure driver and the dispatcher-driver
-          drivers     <- repo.findByRoleAndCompany(PersonRole.Driver, testCompanyId)
+          drivers   <- repo.findByRoleAndCompany(PersonRole.Driver, testCompanyId)
         } yield assertTrue(
           drivers.length == 2,
           drivers.exists(_.id == dispDriver.id),
@@ -218,15 +218,15 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
       },
       test("findByRoleAndCompany(Dispatcher) returns dispatcher-driver") {
         for {
-          xa         <- ZIO.service[Transactor[Task]]
-          _          <- seedCompany(xa)
-          _          <- cleanPersons(xa)
-          repo        = PostgresPersonRepository(xa)
-          dispDriver  = makePerson(role = PersonRole.Dispatcher, email = "dd2@test.com")
-                          .copy(roles = Set(PersonRole.Dispatcher, PersonRole.Driver))
-          pureDisp    = makePerson(role = PersonRole.Dispatcher, email = "disp@test.com")
-          _          <- repo.create(dispDriver)
-          _          <- repo.create(pureDisp)
+          xa          <- ZIO.service[Transactor[Task]]
+          _           <- seedCompany(xa)
+          _           <- cleanPersons(xa)
+          repo         = PostgresPersonRepository(xa)
+          dispDriver   = makePerson(role = PersonRole.Dispatcher, email = "dd2@test.com")
+                           .copy(roles = Set(PersonRole.Dispatcher, PersonRole.Driver))
+          pureDisp     = makePerson(role = PersonRole.Dispatcher, email = "disp@test.com")
+          _           <- repo.create(dispDriver)
+          _           <- repo.create(pureDisp)
           dispatchers <- repo.findByRoleAndCompany(PersonRole.Dispatcher, testCompanyId)
         } yield assertTrue(
           dispatchers.length == 2,
@@ -236,16 +236,16 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
       },
       test("update preserves multi-role set") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedCompany(xa)
-          _       <- cleanPersons(xa)
-          repo     = PostgresPersonRepository(xa)
-          person   = makePerson(role = PersonRole.Dispatcher, email = "upddd@test.com")
-                       .copy(roles = Set(PersonRole.Dispatcher, PersonRole.Driver))
-          _       <- repo.create(person)
-          updated  = person.copy(name = "Updated")
-          _       <- repo.update(updated)
-          found   <- repo.findById(person.id)
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedCompany(xa)
+          _      <- cleanPersons(xa)
+          repo    = PostgresPersonRepository(xa)
+          person  = makePerson(role = PersonRole.Dispatcher, email = "upddd@test.com")
+                      .copy(roles = Set(PersonRole.Dispatcher, PersonRole.Driver))
+          _      <- repo.create(person)
+          updated = person.copy(name = "Updated")
+          _      <- repo.update(updated)
+          found  <- repo.findById(person.id)
         } yield assertTrue(
           found.get.name == "Updated",
           found.get.effectiveRoles == Set(PersonRole.Dispatcher, PersonRole.Driver)
@@ -253,15 +253,15 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
       },
       test("upsertDriverRow is idempotent") {
         for {
-          xa     <- ZIO.service[Transactor[Task]]
-          _      <- seedCompany(xa)
-          _      <- cleanPersons(xa)
-          repo    = PostgresPersonRepository(xa)
-          driver  = makePerson(role = PersonRole.Driver, email = "upsert@test.com")
-          _      <- repo.create(driver)
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          driver = makePerson(role = PersonRole.Driver, email = "upsert@test.com")
+          _     <- repo.create(driver)
           // call twice — ON CONFLICT DO NOTHING must not throw
-          _      <- repo.upsertDriverRow(driver.id)
-          _      <- repo.upsertDriverRow(driver.id)
+          _     <- repo.upsertDriverRow(driver.id)
+          _     <- repo.upsertDriverRow(driver.id)
         } yield assertCompletes
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(

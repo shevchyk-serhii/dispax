@@ -17,12 +17,12 @@ object RideServiceSpec extends ZIOSpecDefault {
   val testCompanyId  = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001"))
   val otherCompanyId = CompanyId(UUID.fromString("00000002-0000-0000-0000-000000000002"))
 
-  val testDriverId        = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000001"))
-  val testDriver2Id       = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000004"))
-  val testClientId        = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100"))
-  val vipClientId         = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000200"))
-  val dispatcherDriverId  = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000050"))
-  val pureDispatcherId    = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000060"))
+  val testDriverId       = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000001"))
+  val testDriver2Id      = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000004"))
+  val testClientId       = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100"))
+  val vipClientId        = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000200"))
+  val dispatcherDriverId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000050"))
+  val pureDispatcherId   = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000060"))
 
   val testDriver = Person(
     id = testDriverId,
@@ -127,13 +127,13 @@ object RideServiceSpec extends ZIOSpecDefault {
 
   val testPersonRepo = TestPersonRepository(
     Map(
-      testDriver.id          -> testDriver,
-      testDriver2.id         -> testDriver2,
-      wrongCompanyDriver.id  -> wrongCompanyDriver,
-      clientPerson.id        -> clientPerson,
-      vipClient.id           -> vipClient,
-      dispatcherDriver.id    -> dispatcherDriver,
-      pureDispatcher.id      -> pureDispatcher
+      testDriver.id         -> testDriver,
+      testDriver2.id        -> testDriver2,
+      wrongCompanyDriver.id -> wrongCompanyDriver,
+      clientPerson.id       -> clientPerson,
+      vipClient.id          -> vipClient,
+      dispatcherDriver.id   -> dispatcherDriver,
+      pureDispatcher.id     -> pureDispatcher
     )
   )
 
@@ -402,8 +402,8 @@ object RideServiceSpec extends ZIOSpecDefault {
         }.provide(standardLayers),
         test("company-mismatch still blocks dispatcher-driver") {
           // A dispatcher-driver from a different company must not be assignable.
-          val foreignDDId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000055"))
-          val foreignDD   = Person(
+          val foreignDDId         = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000055"))
+          val foreignDD           = Person(
             id = foreignDDId,
             name = "Foreign DD",
             email = "foreign@example.com",
@@ -411,7 +411,7 @@ object RideServiceSpec extends ZIOSpecDefault {
             companyId = Some(otherCompanyId),
             roles = Set(PersonRole.Dispatcher, PersonRole.Driver)
           )
-          val repoWithForeignDD = TestPersonRepository(
+          val repoWithForeignDD   = TestPersonRepository(
             Map(
               testDriver.id         -> testDriver,
               testDriver2.id        -> testDriver2,
