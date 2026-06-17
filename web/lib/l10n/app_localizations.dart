@@ -922,6 +922,18 @@ abstract class AppLocalizations {
   /// **'My location in terminal'**
   String get airportCheckpointPanelTitle;
 
+  /// No description provided for @checkpointNotifTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Client reached {checkpoint}'**
+  String checkpointNotifTitle(String checkpoint);
+
+  /// No description provided for @checkpointNotifBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your client is at {checkpointName}.'**
+  String checkpointNotifBody(String checkpointName);
+
   /// No description provided for @airportExits.
   ///
   /// In en, this message translates to:
@@ -1023,18 +1035,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pick on map'**
   String get pickOnMap;
-
-  /// No description provided for @checkpointNotifTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Client reached {checkpoint}'**
-  String checkpointNotifTitle(String checkpoint);
-
-  /// No description provided for @checkpointNotifBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Your client is at {checkpointName}.'**
-  String checkpointNotifBody(String checkpointName);
 }
 
 class _AppLocalizationsDelegate

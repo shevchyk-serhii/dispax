@@ -428,6 +428,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get airportCheckpointPanelTitle => 'My location in terminal';
 
   @override
+  String checkpointNotifTitle(String checkpoint) {
+    return 'Client reached $checkpoint';
+  }
+
+  @override
+  String checkpointNotifBody(String checkpointName) {
+    return 'Your client is at $checkpointName.';
+  }
+
+  @override
   String get airportExits => 'Airport Exits';
 
   @override
@@ -477,14 +487,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pickOnMap => 'Pick on map';
-
-  @override
-  String checkpointNotifTitle(String checkpoint) {
-    return 'Client reached $checkpoint';
-  }
-
-  @override
-  String checkpointNotifBody(String checkpointName) {
-    return 'Your client is at $checkpointName.';
-  }
 }

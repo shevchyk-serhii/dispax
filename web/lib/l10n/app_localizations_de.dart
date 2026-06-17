@@ -429,6 +429,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get airportCheckpointPanelTitle => 'Mein Standort im Terminal';
 
   @override
+  String checkpointNotifTitle(String checkpoint) {
+    return 'Fahrgast hat $checkpoint erreicht';
+  }
+
+  @override
+  String checkpointNotifBody(String checkpointName) {
+    return 'Ihr Fahrgast befindet sich bei $checkpointName.';
+  }
+
+  @override
   String get airportExits => 'Flughafen-Ausgänge';
 
   @override
@@ -478,14 +488,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get pickOnMap => 'Auf Karte wählen';
-
-  @override
-  String checkpointNotifTitle(String checkpoint) {
-    return 'Fahrgast hat $checkpoint erreicht';
-  }
-
-  @override
-  String checkpointNotifBody(String checkpointName) {
-    return 'Ihr Fahrgast befindet sich bei $checkpointName.';
-  }
 }

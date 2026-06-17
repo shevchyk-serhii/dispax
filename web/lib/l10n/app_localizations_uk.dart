@@ -427,6 +427,16 @@ class AppLocalizationsUk extends AppLocalizations {
   String get airportCheckpointPanelTitle => 'Моє місце в терміналі';
 
   @override
+  String checkpointNotifTitle(String checkpoint) {
+    return 'Клієнт досяг $checkpoint';
+  }
+
+  @override
+  String checkpointNotifBody(String checkpointName) {
+    return 'Ваш клієнт знаходиться біля $checkpointName.';
+  }
+
+  @override
   String get airportExits => 'Виходи з аеропорту';
 
   @override
@@ -476,14 +486,4 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get pickOnMap => 'Вибрати на карті';
-
-  @override
-  String checkpointNotifTitle(String checkpoint) {
-    return 'Клієнт досяг $checkpoint';
-  }
-
-  @override
-  String checkpointNotifBody(String checkpointName) {
-    return 'Ваш клієнт знаходиться біля $checkpointName.';
-  }
 }
