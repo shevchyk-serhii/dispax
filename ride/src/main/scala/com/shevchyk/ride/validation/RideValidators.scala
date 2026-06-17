@@ -8,6 +8,23 @@ import java.time.Instant
 import java.util.UUID
 import scala.util.Try
 
+// Reject out-of-range coordinates (lat ∈ [-90,90], lon ∈ [-180,180]) and NaN/∞ so a
+// malformed request can't poison ETA/proximity calculations downstream. Missing
+// coordinates are allowed (geocoding may fill them in later). Shared by the DTO and
+// domain location validators.
+private def validateCoordinates(
+    lat: Option[Double],
+    lon: Option[Double],
+    fieldName: String
+): IO[RideError, Unit] =
+  val latOk = lat.forall(v => !v.isNaN && !v.isInfinite && v >= -90.0 && v <= 90.0)
+  val lonOk = lon.forall(v => !v.isNaN && !v.isInfinite && v >= -180.0 && v <= 180.0)
+  ZIO
+    .unless(latOk && lonOk)(
+      ZIO.fail(RideError.ValidationError(s"$fieldName has invalid coordinates"))
+    )
+    .unit
+
 given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
   type Error = RideError
 
@@ -33,11 +50,14 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
       case other                              => other.toString
 
   private def validateLocation(location: LocationDto, fieldName: String): IO[RideError, Unit] =
-    ZIO
-      .when(location.address.trim.isEmpty)(
-        ZIO.fail(RideError.ValidationError(s"$fieldName cannot be empty"))
-      )
-      .unit
+    for {
+      _ <-
+        ZIO
+          .when(location.address.trim.isEmpty)(
+            ZIO.fail(RideError.ValidationError(s"$fieldName cannot be empty"))
+          )
+      _ <- validateCoordinates(location.latitude, location.longitude, fieldName)
+    } yield ()
 
   private def validateDateTime(dateTime: String): IO[RideError, Unit] = ZIO
     .attempt(Instant.parse(dateTime))
@@ -67,8 +87,8 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
 
   private def validatePrice(price: Option[Double]): IO[RideError, Unit] =
     ZIO
-      .when(price.exists(_ < 0))(
-        ZIO.fail(RideError.ValidationError("Price cannot be negative"))
+      .when(price.exists(_ <= 0))(
+        ZIO.fail(RideError.ValidationError("Price must be greater than zero"))
       )
       .unit
 
@@ -84,11 +104,14 @@ given createRideRequestValidator: Validator[CreateRideRequest] with
     } yield request
 
   private def validateDomainLocation(location: Location, fieldName: String): IO[RideError, Unit] =
-    ZIO
-      .when(location.address.trim.isEmpty)(
-        ZIO.fail(RideError.ValidationError(s"$fieldName cannot be empty"))
-      )
-      .unit
+    for {
+      _ <-
+        ZIO
+          .when(location.address.trim.isEmpty)(
+            ZIO.fail(RideError.ValidationError(s"$fieldName cannot be empty"))
+          )
+      _ <- validateCoordinates(location.latitude, location.longitude, fieldName)
+    } yield ()
 
   private def validateScheduledTime(time: Option[Instant]): IO[RideError, Unit] =
     ZIO

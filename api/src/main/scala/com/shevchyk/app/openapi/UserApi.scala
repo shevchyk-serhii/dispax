@@ -116,6 +116,20 @@ object UserApi:
   private def parseUuid(value: String): ZIO[Any, Err, UUID] = ZIO.attempt(UUID.fromString(value)).orElseFail(badUuid)
 
   /**
+   * Enforce company isolation for mutate-by-id operations: the target user must belong to the caller's company. Returns
+   * 404 ("User not found") otherwise so we don't leak the existence of users in other companies.
+   */
+  private def requireSameCompany(user: AuthenticatedUser, targetId: UUID): ZIO[PersonRepositoryDep, Err, Unit] =
+    for {
+      companyId <- requireCompanyId(user)
+      repo      <- ZIO.service[PersonRepositoryDep]
+      _         <- repo
+                     .findByIdAndCompany(PersonId(targetId), companyId)
+                     .mapError(internal)
+                     .someOrFail((StatusCode.NotFound, ApiError("User not found")))
+    } yield ()
+
+  /**
    * Reproduce `UserRoutes.checkRateLimit`: 429 if the per-IP rate limit is exceeded.
    */
   private def checkRateLimit(ip: Option[String]): ZIO[RateLimiter, Err, Unit] =
@@ -558,6 +572,7 @@ object UserApi:
       for {
         uid     <- parseUuid(userId)
         _       <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+        _       <- requireSameCompany(user, uid)
         userDto <- ZIO.serviceWithZIO[AuthService](_.updateUser(uid, updateReq)).mapError(mapAuthError)
       } yield userDto
     }
@@ -568,6 +583,7 @@ object UserApi:
       (for {
         _   <- checkRole(user, "DISPATCHER", "ADMIN")
         uid <- parseUuid(userId)
+        _   <- requireSameCompany(user, uid)
         _   <- ZIO
                  .serviceWithZIO[AuthService](_.updateUser(uid, UpdateUserRequest(status = Some("INACTIVE"))))
                  .mapError(mapAuthError)
@@ -583,6 +599,7 @@ object UserApi:
           _       <- ZIO
                        .fail(internal(new RuntimeException("Cannot change your own role")))
                        .when(user.userId == uid)
+          _       <- requireSameCompany(user, uid)
           userDto <- ZIO
                        .serviceWithZIO[AuthService](_.updateUser(uid, UpdateUserRequest(role = roleReq.role)))
                        .mapError(mapAuthError)
@@ -596,6 +613,7 @@ object UserApi:
         for {
           uid     <- parseUuid(userId)
           _       <- checkRole(user, "DISPATCHER")
+          _       <- requireSameCompany(user, uid)
           userDto <- ZIO
                        .serviceWithZIO[AuthService](_.updateUser(uid, UpdateUserRequest(status = statusReq.status)))
                        .mapError(mapAuthError)

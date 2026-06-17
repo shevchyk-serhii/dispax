@@ -1,14 +1,16 @@
--- Dispax Taxi Database Schema (consolidated from V1-V10)
+-- Dispax Taxi Database Schema (consolidated)
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Enums
 CREATE TYPE ride_status AS ENUM ('Requested', 'Assigned', 'InProgress', 'Completed', 'Cancelled');
-CREATE TYPE person_role AS ENUM ('driver', 'client', 'secretary', 'dispatcher', 'admin', 'client_secretary');
+CREATE TYPE person_role AS ENUM ('driver', 'client', 'secretary', 'dispatcher', 'admin', 'client_secretary', 'super_admin');
 CREATE TYPE driver_status AS ENUM ('Available', 'Busy', 'Offline');
 CREATE TYPE schedule_day_status AS ENUM ('Scheduled', 'Active', 'Completed', 'Cancelled');
 CREATE TYPE payment_status AS ENUM ('Unpaid', 'Pending', 'Paid');
 CREATE TYPE payment_method AS ENUM ('Cash', 'Card', 'Invoice', 'Bank', 'Receivable');
+CREATE TYPE company_status AS ENUM ('Active', 'Suspended', 'Trial', 'Inactive');
+CREATE TYPE subscription_plan AS ENUM ('Free', 'Starter', 'Professional', 'Enterprise');
 
 -- ============================================================
 -- Companies
@@ -19,6 +21,9 @@ CREATE TABLE companies (
     email VARCHAR(255),
     phone VARCHAR(20),
     address TEXT,
+    -- Lifecycle status and subscription plan, used by SuperAdmin platform management.
+    status company_status NOT NULL DEFAULT 'Active',
+    subscription_plan subscription_plan NOT NULL DEFAULT 'Free',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -228,6 +233,9 @@ CREATE TABLE invoices (
     due_date DATE,
     sent_at TIMESTAMP WITH TIME ZONE,
     paid_at TIMESTAMP WITH TIME ZONE,
+    -- When an overdue-payment reminder was sent, so the background scheduler
+    -- emails each unpaid invoice at most once.
+    reminder_sent_at TIMESTAMP WITH TIME ZONE,
     pdf_path TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -238,6 +246,11 @@ CREATE INDEX idx_invoices_taxi_company ON invoices(taxi_company_id);
 CREATE INDEX idx_invoices_client_company ON invoices(client_company_id);
 CREATE INDEX idx_invoices_status ON invoices(status);
 CREATE INDEX idx_invoices_period ON invoices(period_from, period_to);
+
+-- Supports the scheduler's candidate query (sent + unpaid + overdue + not yet reminded).
+CREATE INDEX idx_invoices_overdue
+    ON invoices (due_date)
+    WHERE status = 'sent' AND paid_at IS NULL AND reminder_sent_at IS NULL;
 
 -- ============================================================
 -- Rides
@@ -279,6 +292,8 @@ CREATE TABLE rides (
     flight_terminal VARCHAR(10),
     flight_status VARCHAR(50),
     flight_is_arrival BOOLEAN,
+    -- Current airport checkpoint for arrival-transfer rides: landed | arrivals_hall | terminal_exit
+    airport_checkpoint VARCHAR(30) DEFAULT NULL,
     specifics JSONB,
 
     schedule_day_id UUID REFERENCES schedule_days(id),
@@ -632,3 +647,57 @@ CREATE TABLE client_addresses (
 );
 
 CREATE INDEX idx_client_addresses_client_id ON client_addresses(client_id);
+
+-- ============================================================
+-- Company billing profile
+-- ============================================================
+-- Billing profile per taxi company: legally required issuer details for invoices
+-- (Rechnung): full address, tax IDs, bank/IBAN, payment terms and signature.
+-- These are static-per-company fields rendered into the invoice PDF, kept separate
+-- from `companies` (operational) and `company_settings` (dispatch settings).
+CREATE TABLE company_billing_profile (
+    company_id         UUID PRIMARY KEY REFERENCES companies(id) ON DELETE CASCADE,
+    business_type      VARCHAR(255),         -- e.g. "Mietwagenunternehmen / Transfer<>Service"
+    legal_name         VARCHAR(255),         -- issuer / signatory name
+    address_line1      VARCHAR(255),
+    address_line2      VARCHAR(255),
+    phone              VARCHAR(50),
+    email              VARCHAR(255),
+    tax_number         VARCHAR(50),          -- St-Nr.
+    vat_id             VARCHAR(50),          -- USt-IdNr.
+    bank_name          VARCHAR(255),
+    bank_account_no    VARCHAR(50),          -- Konto-Nr.
+    bank_code          VARCHAR(50),          -- BLZ
+    iban               VARCHAR(50),
+    bic                VARCHAR(50),
+    payment_terms_days INTEGER NOT NULL DEFAULT 7,
+    invoice_intro      TEXT,                 -- preamble printed under "Kostenrechnung"
+    created_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================================
+-- ETA-at-risk alert deduplication (predictive ETA monitor)
+-- ============================================================
+-- One row per (ride, driver) once a delay-risk alert has been sent, so the
+-- background monitor does not re-alert the dispatcher every tick. Mirrors
+-- sent_reminders. Cleared when the ride's pickup time changes.
+CREATE TABLE eta_alerts (
+    ride_id    UUID        NOT NULL REFERENCES rides(id) ON DELETE CASCADE,
+    driver_id  UUID        NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+    alerted_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (ride_id, driver_id)
+);
+
+-- ============================================================
+-- Airport checkpoint push notification deduplication
+-- ============================================================
+CREATE TABLE sent_checkpoint_notifications (
+    ride_id         UUID         NOT NULL REFERENCES rides(id)   ON DELETE CASCADE,
+    driver_id       UUID         NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+    checkpoint_type VARCHAR(50)  NOT NULL,
+    sent_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (ride_id, driver_id, checkpoint_type)
+);
+
+CREATE INDEX idx_sent_checkpoint_ride ON sent_checkpoint_notifications(ride_id);

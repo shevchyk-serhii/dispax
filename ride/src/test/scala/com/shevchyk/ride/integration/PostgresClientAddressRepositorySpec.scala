@@ -173,5 +173,7 @@ object PostgresClientAddressRepositorySpec extends ZIOSpecDefault {
           left  <- repo.findByClient(clientId)
         } yield assertTrue(!wrong, ok, left.isEmpty)
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 }

@@ -68,6 +68,42 @@ object PostgresTestContainer {
     c
   }
 
+  // Arbitrary fixed key identifying the global integration-test DB lock.
+  private val AdvisoryLockKey: Long = 0x2451d57aL
+
+  /**
+   * Serialises spec access to the shared database with a session-level Postgres
+   * advisory lock, held for a spec's whole lifetime (acquire→release of the
+   * Transactor scope) on a dedicated connection.
+   *
+   * Why a DB lock and not an in-JVM Semaphore: zio-test runs a module's spec
+   * classes concurrently, AND `make test` runs each module's tests in its own
+   * forked JVM. All of them attach to the one reusable container, so an in-memory
+   * permit only serialises specs within a single JVM — specs in different module
+   * JVMs still raced on the shared `public` schema, where one spec's startup
+   * [[resetDatabase]] TRUNCATE wiped a neighbour's just-inserted fixtures
+   * (random FK violations / "database gone"). A `pg_advisory_lock` lives in the
+   * database, so it serialises every spec process-wide.
+   */
+  private def advisoryLock(jdbcUrl: String, user: String, password: String): ZIO[Scope, Throwable, Unit] =
+    ZIO.acquireRelease(
+      ZIO.attempt {
+        // Ensure the JDBC driver is registered: in a freshly-forked module JVM it
+        // may not be loaded yet when we open this raw connection.
+        Class.forName("org.postgresql.Driver")
+        val conn = java.sql.DriverManager.getConnection(jdbcUrl, user, password)
+        conn.createStatement().execute(s"SELECT pg_advisory_lock($AdvisoryLockKey)")
+        conn
+      }
+    )(conn =>
+      ZIO
+        .attempt {
+          try conn.createStatement().execute(s"SELECT pg_advisory_unlock($AdvisoryLockKey)")
+          finally conn.close()
+        }
+        .ignore
+    ).unit
+
   /**
    * Provides a Transactor backed by the shared container, running Flyway
    * migrations (production schema only) to ensure the schema is present. The
@@ -77,6 +113,10 @@ object PostgresTestContainer {
   val layer: ZLayer[Any, Throwable, Transactor[Task]] = ZLayer.scoped {
     for {
       container <- ZIO.attempt(sharedContainer)
+      // Hold exclusive DB access for this spec's whole lifetime (released with the
+      // scope) via a process-wide Postgres advisory lock, so concurrently-scheduled
+      // specs — even in other module JVMs — can't race on the shared schema.
+      _         <- advisoryLock(container.jdbcUrl, container.username, container.password)
 
       dbConfig = DatabaseConfig(
                    driver = "org.postgresql.Driver",

@@ -187,6 +187,9 @@ object TestApplication extends ZIOAppDefault:
 
       def create(person: Person): Task[Person]                                             = ZIO.succeed(person)
       def findById(id: PersonId): Task[Option[Person]]                                     = ZIO.succeed(people.get(id))
+      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]     = ZIO.succeed(
+        people.get(id).filter(_.companyId.contains(companyId))
+      )
       def findByEmail(email: String): Task[Option[Person]]                                 = ZIO.succeed(people.values.find(_.email == email))
       def findByRole(role: PersonRole): Task[List[Person]]                                 = ZIO.succeed(people.values.filter(_.role == role).toList)
       def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
@@ -461,6 +464,11 @@ object TestApplication extends ZIOAppDefault:
             ridesRef.update(_.updated(r.id, r)).as(r)
           def findById(id: RideId): Task[Option[Ride]]                                                          = ridesRef.get.map(_.get(id))
           def update(ride: Ride): Task[Ride]                                                                    = ridesRef.update(_.updated(ride.id, ride)).as(ride)
+          def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]                      = ridesRef.modify { m =>
+            m.get(ride.id) match
+              case Some(c) if expectedStatuses.contains(c.status) => (true, m.updated(ride.id, ride))
+              case _                                              => (false, m)
+          }
           def findByClientId(cid: PersonId): Task[List[Ride]]                                                   = ridesRef.get
             .map(_.values.filter(_.clientId == cid).toList)
           def findByDriverId(did: PersonId): Task[List[Ride]]                                                   = ridesRef.get

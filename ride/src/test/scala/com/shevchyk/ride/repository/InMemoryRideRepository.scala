@@ -19,6 +19,12 @@ class InMemoryRideRepository extends RideRepository:
 
   override def update(ride: Ride): Task[Ride] = rides.update(_.updated(ride.id, ride)).as(ride)
 
+  override def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean] = rides.modify { m =>
+    m.get(ride.id) match
+      case Some(current) if expectedStatuses.contains(current.status) => (true, m.updated(ride.id, ride))
+      case _                                                          => (false, m)
+  }
+
   override def findByClientId(clientId: PersonId): Task[List[Ride]] = rides.get.map(
     _.values.filter(_.clientId == clientId).toList
   )

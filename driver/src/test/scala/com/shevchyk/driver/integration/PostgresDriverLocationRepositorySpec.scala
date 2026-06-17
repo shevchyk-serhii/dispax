@@ -126,5 +126,7 @@ object PostgresDriverLocationRepositorySpec extends ZIOSpecDefault {
           a.find(_._1 == driverA2).exists(d => d._3.isEmpty && d._4.isEmpty)
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 }

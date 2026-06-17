@@ -92,16 +92,44 @@ object RideValidatorsSpec extends ZIOSpecDefault {
       test("rejects negative price") {
         val req = validCreateRequest(price = Some(-5.0))
         summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
-          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("negative"))
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("greater than zero"))
         }
       },
-      test("accepts zero price") {
+      test("rejects zero price") {
         val req = validCreateRequest(price = Some(0.0))
-        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("greater than zero"))
+        }
       },
       test("accepts None price") {
         val req = validCreateRequest(price = None)
         summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("accepts valid coordinates") {
+        val req = validCreateRequest(from =
+          LocationDto(address = "A", latitude = Some(48.137), longitude = Some(11.575))
+        )
+        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("rejects out-of-range latitude") {
+        val req = validCreateRequest(from = LocationDto(address = "A", latitude = Some(999.0), longitude = Some(11.5)))
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("invalid coordinates"))
+        }
+      },
+      test("rejects out-of-range longitude") {
+        val req = validCreateRequest(to = LocationDto(address = "B", latitude = Some(48.1), longitude = Some(-181.0)))
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("invalid coordinates"))
+        }
+      },
+      test("rejects NaN coordinates") {
+        val req = validCreateRequest(from =
+          LocationDto(address = "A", latitude = Some(Double.NaN), longitude = Some(11.5))
+        )
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.isInstanceOf[RideError.ValidationError])
+        }
       }
     )
 

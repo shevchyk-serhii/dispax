@@ -46,6 +46,7 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       private def nope(m: String): Nothing                                               = throw new NotImplementedError(s"unexpected PersonRepository.$m")
       def create(person: Person): Task[Person]                                           = nope("create")
       def findById(id: PersonId): Task[Option[Person]]                                   = nope("findById")
+      def findByIdAndCompany(id: PersonId, company: CompanyId): Task[Option[Person]]     = nope("findByIdAndCompany")
       def findByEmail(email: String): Task[Option[Person]]                               = nope("findByEmail")
       def findByRole(role: PersonRole): Task[List[Person]]                               = nope("findByRole")
       def findByCompanyId(company: CompanyId): Task[List[Person]]                        = nope("findByCompanyId")

@@ -81,6 +81,9 @@ object BillingSecure:
       case InvoiceError.NotDraft(_)              => (StatusCode.Conflict, ApiError("Invoice must be in draft status"))
       case InvoiceError.InvalidStatus(cur, req)  =>
         (StatusCode.Conflict, ApiError(s"Invalid status: ${cur}, required: $req"))
+      case InvoiceError.RideNotBillable(rideId)  =>
+        (StatusCode.BadRequest, ApiError(s"Ride $rideId cannot be billed on this invoice"))
+      case InvoiceError.NoRecipientEmail(_)      => (StatusCode.BadRequest, ApiError("Client company has no email address"))
       case InvoiceError.DatabaseError(_)         => (StatusCode.InternalServerError, ApiError("Internal server error"))
       case InvoiceError.PdfGenerationError(_)    => (StatusCode.InternalServerError, ApiError("PDF generation failed"))
 

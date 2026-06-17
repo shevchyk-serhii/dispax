@@ -60,6 +60,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
     new PersonRepository:
       def create(person: Person): Task[Person]                                             = ZIO.succeed(person)
       def findById(id: PersonId): Task[Option[Person]]                                     = ZIO.succeed(None)
+      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]     = ZIO.succeed(None)
       def findByEmail(email: String): Task[Option[Person]]                                 = ZIO.succeed(None)
       def findByRole(role: PersonRole): Task[List[Person]]                                 = ZIO.succeed(Nil)
       def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(Nil)

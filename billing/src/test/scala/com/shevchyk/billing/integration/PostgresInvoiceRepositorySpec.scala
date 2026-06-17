@@ -419,5 +419,7 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
           counts.getOrElse(company2Id.value, 0) == 1
         )
       }
-    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
+    )
 }

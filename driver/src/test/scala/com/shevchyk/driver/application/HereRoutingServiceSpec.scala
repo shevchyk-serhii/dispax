@@ -75,7 +75,6 @@ object HereRoutingServiceSpec extends ZIOSpecDefault:
 
   // Build the service from its public layer (the impl class is private), reusing the
   // test-provided Client so its Netty event loop stays alive for the request below.
-  private def makeService(config: HereConfig): ZIO[Client, Nothing, HereRoutingService] =
-    ZIO
-      .service[HereRoutingService]
-      .provideSome[Client](HereRoutingService.layer, ZLayer.succeed(config))
+  private def makeService(config: HereConfig): ZIO[Client, Nothing, HereRoutingService] = ZIO
+    .service[HereRoutingService]
+    .provideSome[Client](HereRoutingService.layer, ZLayer.succeed(config))
