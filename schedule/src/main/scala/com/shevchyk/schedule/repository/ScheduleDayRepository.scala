@@ -15,7 +15,8 @@ trait ScheduleDayRepository:
   def findByCompanyAndDate(companyId: CompanyId, date: LocalDate): Task[List[ScheduleDay]]
   def findByCompanyAndDateRange(companyId: CompanyId, from: LocalDate, to: LocalDate): Task[List[ScheduleDay]]
   def update(scheduleDay: ScheduleDay): Task[ScheduleDay]
-  def delete(id: ScheduleDayId): Task[Unit]
+  // Tenant-scoped delete: only removes the schedule day when it belongs to `companyId`.
+  def delete(id: ScheduleDayId, companyId: CompanyId): Task[Unit]
 
 object ScheduleDayRepository:
 

@@ -15,6 +15,12 @@ import zio.interop.catz.*
 trait EtaAlertRepository:
   def isAlreadyAlerted(rideId: RideId, driverId: PersonId): Task[Boolean]
   def markAlerted(rideId: RideId, driverId: PersonId): Task[Unit]
+
+  /**
+   * Atomically records an alert for (ride, driver), returning `true` only if this call inserted a *new* row. Lets
+   * callers deduplicate without a check-then-act race: two concurrent monitor ticks cannot both observe `true`.
+   */
+  def markAlertedIfNew(rideId: RideId, driverId: PersonId): Task[Boolean]
   def clear(rideId: RideId): Task[Unit]
 
 object EtaAlertRepository:
@@ -42,6 +48,13 @@ final class PostgresEtaAlertRepository(xa: Transactor[Task]) extends EtaAlertRep
           ON CONFLICT DO NOTHING""".update.run
       .transact(xa)
       .unit
+
+  override def markAlertedIfNew(rideId: RideId, driverId: PersonId): Task[Boolean] =
+    sql"""INSERT INTO eta_alerts (ride_id, driver_id)
+          VALUES (${rideId.value}, ${driverId.value})
+          ON CONFLICT DO NOTHING""".update.run
+      .transact(xa)
+      .map(_ > 0)
 
   override def clear(rideId: RideId): Task[Unit] =
     sql"""DELETE FROM eta_alerts WHERE ride_id = ${rideId.value}""".update.run

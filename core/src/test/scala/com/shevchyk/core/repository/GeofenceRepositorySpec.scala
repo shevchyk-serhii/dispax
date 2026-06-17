@@ -126,14 +126,17 @@ object GeofenceRepositorySpec extends ZIOSpecDefault {
           for {
             repo    <- ZIO.service[GeofenceRepository]
             _       <- repo.create(g)
-            deleted <- repo.delete(g.id)
+            // Cross-tenant delete must not remove it.
+            cross   <- repo.delete(g.id, CompanyId.generate())
+            still   <- repo.findById(g.id)
+            deleted <- repo.delete(g.id, companyId)
             found   <- repo.findById(g.id)
-          } yield assertTrue(deleted && found.isEmpty)
+          } yield assertTrue(!cross && still.isDefined && deleted && found.isEmpty)
         }.provide(layers),
         test("returns false for unknown id") {
           for {
             repo    <- ZIO.service[GeofenceRepository]
-            deleted <- repo.delete(GeofenceId.generate())
+            deleted <- repo.delete(GeofenceId.generate(), companyId)
           } yield assertTrue(!deleted)
         }.provide(layers)
       ),

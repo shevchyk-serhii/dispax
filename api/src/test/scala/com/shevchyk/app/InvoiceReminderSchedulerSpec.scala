@@ -114,7 +114,7 @@ object InvoiceReminderSchedulerSpec extends ZIOSpecDefault:
           offset: Int
       ): Task[List[Invoice]] = nope("findByCompany")
       def update(invoice: Invoice): Task[Invoice]                                                            = nope("update")
-      def delete(id: InvoiceId): Task[Boolean]                                                               = nope("delete")
+      def delete(id: InvoiceId, taxiCompanyId: CompanyId): Task[Boolean]                                     = nope("delete")
       def addItems(items: List[InvoiceItem]): Task[Unit]                                                     = nope("addItems")
       def deleteItems(invoiceId: InvoiceId): Task[Unit]                                                      = nope("deleteItems")
       def replaceItems(invoiceId: InvoiceId, taxiCompanyId: CompanyId, items: List[InvoiceItem]): Task[Unit] = nope(

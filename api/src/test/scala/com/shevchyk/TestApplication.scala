@@ -477,7 +477,7 @@ object TestApplication extends ZIOAppDefault:
           def findByCompanyId(cid: CompanyId): Task[List[Ride]]                                                 = ridesRef.get
             .map(_.values.filter(_.companyId == cid).toList)
           def findAll(): Task[List[Ride]]                                                                       = ridesRef.get.map(_.values.toList)
-          def delete(id: RideId): Task[Unit]                                                                    = ridesRef.update(_.removed(id)).unit
+          def delete(id: RideId, companyId: CompanyId): Task[Unit]                                              = ridesRef.update(_.removed(id)).unit
           def countByCompanyGroupedByStatus(cid: CompanyId): Task[Map[String, Int]]                             = ridesRef.get
             .map(_.values.filter(_.companyId == cid).groupBy(_.status.toString).map((k, v) => k -> v.size))
           def sumRevenueByCompany(cid: CompanyId): Task[BigDecimal]                                             = ridesRef.get.map(
@@ -658,7 +658,7 @@ object TestApplication extends ZIOAppDefault:
         def update(scheduleDay: ScheduleDay): Task[ScheduleDay]                                                      = store
           .update(_.updated(scheduleDay.id, scheduleDay))
           .as(scheduleDay)
-        def delete(id: ScheduleDayId): Task[Unit]                                                                    = store.update(_.removed(id)).unit
+        def delete(id: ScheduleDayId, companyId: CompanyId): Task[Unit]                                              = store.update(_.removed(id)).unit
     }
   )
 
@@ -676,15 +676,15 @@ object TestApplication extends ZIOAppDefault:
   private val inMemoryBillingClientCompanyRepositoryLayer: ZLayer[Any, Nothing, BillingClientCompanyRepository] = ZLayer
     .succeed {
       new BillingClientCompanyRepository:
-        private val store                                                                             =
+        private val store                                                                          =
           new ConcurrentHashMap[ClientCompanyId, ClientCompany](
             Map(testBillingClientCompanyId -> testBillingClientCompany).asJava
           )
-        def findById(id: ClientCompanyId): Task[Option[ClientCompany]]                                = ZIO.succeed(Option(store.get(id)))
-        def findByTaxiCompany(taxiCompanyId: CompanyId): Task[List[ClientCompany]]                    = ZIO.succeed(
+        def findById(id: ClientCompanyId): Task[Option[ClientCompany]]                             = ZIO.succeed(Option(store.get(id)))
+        def findByTaxiCompany(taxiCompanyId: CompanyId): Task[List[ClientCompany]]                 = ZIO.succeed(
           store.values.asScala.filter(_.taxiCompanyId == taxiCompanyId).toList
         )
-        def create(req: CreateClientCompanyRequest, taxiCompanyId: CompanyId): Task[ClientCompany]    =
+        def create(req: CreateClientCompanyRequest, taxiCompanyId: CompanyId): Task[ClientCompany] =
           val cc = ClientCompany(
             ClientCompanyId(UUID.randomUUID()),
             req.name,
@@ -694,15 +694,21 @@ object TestApplication extends ZIOAppDefault:
             req.address
           )
           ZIO.succeed { store.put(cc.id, cc); cc }
-        def update(id: ClientCompanyId, req: CreateClientCompanyRequest): Task[Option[ClientCompany]] = ZIO.succeed(
-          Option(store.get(id)).map { old =>
+        def update(
+            id: ClientCompanyId,
+            taxiCompanyId: CompanyId,
+            req: CreateClientCompanyRequest
+        ): Task[Option[ClientCompany]] = ZIO.succeed(
+          Option(store.get(id)).filter(_.taxiCompanyId == taxiCompanyId).map { old =>
             val updated = old.copy(name = req.name, email = req.email, phone = req.phone, address = req.address)
             store.put(id, updated); updated
           }
         )
-        def delete(id: ClientCompanyId): Task[Boolean]                                                = ZIO.succeed(Option(store.get(id)).isDefined && {
-          store.remove(id); true
-        })
+        def delete(id: ClientCompanyId, taxiCompanyId: CompanyId): Task[Boolean]                   = ZIO.succeed(
+          Option(store.get(id)).exists(_.taxiCompanyId == taxiCompanyId) && {
+            store.remove(id); true
+          }
+        )
     }
 
   private val testInvoiceId = InvoiceId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
@@ -739,9 +745,11 @@ object TestApplication extends ZIOAppDefault:
         store.values.asScala.filter(_.taxiCompanyId == taxiCompanyId).drop(offset).take(limit).toList
       )
       def update(invoice: Invoice): Task[Invoice]                                                            = ZIO.succeed { store.put(invoice.id, invoice); invoice }
-      def delete(id: InvoiceId): Task[Boolean]                                                               = ZIO.succeed(Option(store.get(id)).isDefined && {
-        store.remove(id); true
-      })
+      def delete(id: InvoiceId, taxiCompanyId: CompanyId): Task[Boolean]                                     = ZIO.succeed(
+        Option(store.get(id)).exists(_.taxiCompanyId == taxiCompanyId) && {
+          store.remove(id); true
+        }
+      )
       def addItems(items: List[InvoiceItem]): Task[Unit]                                                     = ZIO.succeed(
         items.groupBy(_.invoiceId).foreach((k, v) => itemsStore.put(k, v))
       )
@@ -955,8 +963,10 @@ object TestApplication extends ZIOAppDefault:
         def findByCompanyId(companyId: CompanyId): Task[List[Expense]]                                          = store.get
           .map(_.values.filter(_.companyId == companyId).toList)
         def update(e: Expense): Task[Expense]                                                                   = store.update(_.updated(e.id, e)).as(e)
-        def delete(id: ExpenseId): Task[Boolean]                                                                = store.modify { m =>
-          val existed = m.contains(id); (existed, m.removed(id))
+        def delete(id: ExpenseId, companyId: CompanyId): Task[Boolean]                                          = store.modify { m =>
+          m.get(id) match
+            case Some(e) if e.companyId == companyId => (true, m.removed(id))
+            case _                                   => (false, m)
         }
         def sumByDriver(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant): Task[BigDecimal] =
           store.get.map(
@@ -997,11 +1007,15 @@ object TestApplication extends ZIOAppDefault:
         def findActiveByCompanyId(companyId: CompanyId): Task[List[RideTemplate]] = store.get
           .map(_.values.filter(t => t.companyId == companyId && t.isActive).toList)
         def update(t: RideTemplate): Task[RideTemplate]                           = store.update(_.updated(t.id, t)).as(t)
-        def delete(id: RideTemplateId): Task[Boolean]                             = store.modify { m =>
-          val existed = m.contains(id); (existed, m.removed(id))
+        def delete(id: RideTemplateId, companyId: CompanyId): Task[Boolean]       = store.modify { m =>
+          m.get(id) match
+            case Some(t) if t.companyId == companyId => (true, m.removed(id))
+            case _                                   => (false, m)
         }
-        def deactivate(id: RideTemplateId): Task[Boolean]                         = store.modify { m =>
-          (m.contains(id), m.updatedWith(id)(_.map(_.copy(isActive = false))))
+        def deactivate(id: RideTemplateId, companyId: CompanyId): Task[Boolean]   = store.modify { m =>
+          m.get(id) match
+            case Some(t) if t.companyId == companyId => (true, m.updatedWith(id)(_.map(_.copy(isActive = false))))
+            case _                                   => (false, m)
         }
     }
   )
@@ -1035,8 +1049,10 @@ object TestApplication extends ZIOAppDefault:
       )
       def findById(id: GeofenceId): Task[Option[Geofence]]                                 = geofencesRef.get.map(_.get(id))
       def update(g: Geofence): Task[Geofence]                                              = geofencesRef.update(_.updated(g.id, g)).as(g)
-      def delete(id: GeofenceId): Task[Boolean]                                            = geofencesRef.modify { m =>
-        val existed = m.contains(id); (existed, m.removed(id))
+      def delete(id: GeofenceId, companyId: CompanyId): Task[Boolean]                      = geofencesRef.modify { m =>
+        m.get(id) match
+          case Some(g) if g.companyId == companyId => (true, m.removed(id))
+          case _                                   => (false, m)
       }
       def saveAlert(alert: GeofenceAlert): Task[GeofenceAlert]                             = alertsRef.update(_ :+ alert).as(alert)
       def findAlertsByCompany(companyId: CompanyId, limit: Int): Task[List[GeofenceAlert]] = alertsRef.get.map(
@@ -1063,22 +1079,22 @@ object TestApplication extends ZIOAppDefault:
   private val inMemoryBlacklistRepositoryLayer: ZLayer[Any, Nothing, BlacklistRepository] = ZLayer.fromZIO(
     Ref.Synchronized.make(List[BlacklistEntry](testBlacklistEntry)).map { store =>
       new BlacklistRepository:
-        def create(entry: BlacklistEntry): Task[BlacklistEntry]                  = store
+        def create(entry: BlacklistEntry): Task[BlacklistEntry]                   = store
           .update(es => es.filterNot(e => e.clientId == entry.clientId && e.driverId == entry.driverId) :+ entry)
           .as(entry)
-        def findByCompanyId(companyId: CompanyId): Task[List[BlacklistEntry]]    = store.get
+        def findByCompanyId(companyId: CompanyId): Task[List[BlacklistEntry]]     = store.get
           .map(_.filter(e => e.companyId == companyId && e.isActive))
-        def findByClientId(clientId: PersonId): Task[List[BlacklistEntry]]       = store.get
+        def findByClientId(clientId: PersonId): Task[List[BlacklistEntry]]        = store.get
           .map(_.filter(e => e.clientId == clientId && e.isActive))
-        def findByDriverId(driverId: PersonId): Task[List[BlacklistEntry]]       = store.get
+        def findByDriverId(driverId: PersonId): Task[List[BlacklistEntry]]        = store.get
           .map(_.filter(e => e.driverId == driverId && e.isActive))
-        def isBlacklisted(clientId: PersonId, driverId: PersonId): Task[Boolean] = store.get
+        def isBlacklisted(clientId: PersonId, driverId: PersonId): Task[Boolean]  = store.get
           .map(_.exists(e => e.clientId == clientId && e.driverId == driverId && e.isActive))
-        def deactivate(id: BlacklistEntryId): Task[Boolean]                      = store.modify { es =>
-          val idx = es.indexWhere(_.id == id);
+        def deactivate(id: BlacklistEntryId, companyId: CompanyId): Task[Boolean] = store.modify { es =>
+          val idx = es.indexWhere(e => e.id == id && e.companyId == companyId);
           if idx >= 0 then (true, es.updated(idx, es(idx).copy(isActive = false))) else (false, es)
         }
-        def delete(id: BlacklistEntryId): Task[Boolean]                          = store.modify { es =>
+        def delete(id: BlacklistEntryId): Task[Boolean]                           = store.modify { es =>
           val before = es.size; val after = es.filterNot(_.id == id); (before > after.size, after)
         }
     }
@@ -1245,9 +1261,11 @@ object TestApplication extends ZIOAppDefault:
           def update(company: ClientCompany): Task[ClientCompany]                    = ZIO.succeed {
             store.put(company.id, company); company
           }
-          def delete(id: ClientCompanyId): Task[Boolean]                             = ZIO.succeed(Option(store.get(id)).isDefined && {
-            store.remove(id); true
-          })
+          def delete(id: ClientCompanyId, taxiCompanyId: CompanyId): Task[Boolean]   = ZIO.succeed(
+            Option(store.get(id)).exists(_.taxiCompanyId == taxiCompanyId) && {
+              store.remove(id); true
+            }
+          )
       },
       // Billing
       inMemoryBillingClientCompanyRepositoryLayer,

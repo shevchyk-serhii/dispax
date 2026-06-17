@@ -146,11 +146,12 @@ object PostgresBlacklistRepositorySpec extends ZIOSpecDefault {
           repo     = PostgresBlacklistRepository(xa)
           entry    = makeEntry(client = clientId, driver = driverId)
           _       <- repo.create(entry)
-          ok      <- repo.deactivate(entry.id)
-          missing <- repo.deactivate(BlacklistEntryId(UUID.randomUUID()))
+          cross   <- repo.deactivate(entry.id, otherCompanyId) // cross-tenant: no-op
+          ok      <- repo.deactivate(entry.id, testCompanyId)
+          missing <- repo.deactivate(BlacklistEntryId(UUID.randomUUID()), testCompanyId)
           active  <- repo.isBlacklisted(clientId, driverId)
           listed  <- repo.findByCompanyId(testCompanyId)
-        } yield assertTrue(ok, !missing, !active, listed.isEmpty)
+        } yield assertTrue(!cross, ok, !missing, !active, listed.isEmpty)
       },
       test("delete removes entry entirely") {
         for {

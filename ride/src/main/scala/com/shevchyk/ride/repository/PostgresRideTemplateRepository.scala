@@ -85,18 +85,19 @@ final class PostgresRideTemplateRepository(xa: Transactor[Task]) extends RideTem
         pickup_time = ${template.pickupTime}, is_active = ${template.isActive},
         flight_number = ${template.flightNumber}, is_airport_transfer = ${template.isAirportTransfer},
         price = ${template.price}, updated_at = NOW()
-      WHERE id = ${template.id.value}
+      WHERE id = ${template.id.value} AND company_id = ${template.companyId.value}
     """.update.run
       .transact(xa)
       .as(template.copy(updatedAt = Instant.now()))
 
-  override def delete(id: RideTemplateId): Task[Boolean] =
-    sql"""DELETE FROM ride_templates WHERE id = ${id.value}""".update.run
+  override def delete(id: RideTemplateId, companyId: CompanyId): Task[Boolean] =
+    sql"""DELETE FROM ride_templates WHERE id = ${id.value} AND company_id = ${companyId.value}""".update.run
       .transact(xa)
       .map(_ > 0)
 
-  override def deactivate(id: RideTemplateId): Task[Boolean] =
-    sql"""UPDATE ride_templates SET is_active = false, updated_at = NOW() WHERE id = ${id.value}""".update.run
+  override def deactivate(id: RideTemplateId, companyId: CompanyId): Task[Boolean] =
+    sql"""UPDATE ride_templates SET is_active = false, updated_at = NOW()
+          WHERE id = ${id.value} AND company_id = ${companyId.value}""".update.run
       .transact(xa)
       .map(_ > 0)
 

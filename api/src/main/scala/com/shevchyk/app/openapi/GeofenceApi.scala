@@ -150,7 +150,7 @@ object GeofenceApi:
       _         <- ZIO
                      .fail(internal(new RuntimeException("Geofence belongs to different company")))
                      .when(geofence.companyId != companyId)
-      deleted   <- repo.delete(geoId).mapError(internal)
+      deleted   <- repo.delete(geoId, companyId).mapError(internal)
     } yield if deleted then StatusCode.NoContent else StatusCode.NotFound
   }
 

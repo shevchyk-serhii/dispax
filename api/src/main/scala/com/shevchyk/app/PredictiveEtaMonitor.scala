@@ -67,9 +67,11 @@ object PredictiveEtaMonitor:
             val slack = minutesUntilPickup - eta.toLong
             if slack >= RiskThresholdMinutes then ZIO.unit
             else
-              alertRepo.isAlreadyAlerted(ride.id, driverId).flatMap {
-                case true  => ZIO.unit
-                case false =>
+              // Atomic claim: only the tick that actually inserted the (ride, driver) row publishes the alert,
+              // so two concurrent ticks can't both fire for the same at-risk ride.
+              alertRepo.markAlertedIfNew(ride.id, driverId).flatMap {
+                case false => ZIO.unit
+                case true  =>
                   val event = WebSocketEvent.EtaAtRisk(
                     rideId = ride.id.value,
                     driverId = driverId.value,
@@ -79,8 +81,7 @@ object PredictiveEtaMonitor:
                     slackMinutes = slack.toInt,
                     companyId = ride.companyId.value
                   )
-                  alertRepo.markAlerted(ride.id, driverId) *>
-                    eventHub.publish(event) *>
+                  eventHub.publish(event) *>
                     ZIO.logInfo(
                       s"ETA at risk for ride ${ride.id.value}: eta=${eta}m, until pickup=${minutesUntilPickup}m, slack=${slack}m"
                     )

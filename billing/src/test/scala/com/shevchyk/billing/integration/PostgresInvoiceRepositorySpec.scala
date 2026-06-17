@@ -125,9 +125,11 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
           repo     = PostgresInvoiceRepository(xa)
           invoice  = makeInvoice()
           _       <- repo.create(invoice)
-          deleted <- repo.delete(invoice.id)
+          cross   <- repo.delete(invoice.id, CompanyId(UUID.randomUUID())) // cross-tenant: no-op
+          still   <- repo.findById(invoice.id)
+          deleted <- repo.delete(invoice.id, testCompanyId)
           found   <- repo.findById(invoice.id)
-        } yield assertTrue(deleted, found.isEmpty)
+        } yield assertTrue(!cross, still.isDefined, deleted, found.isEmpty)
       },
       test("delete does not remove non-draft invoice") {
         for {
@@ -137,7 +139,7 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
           repo     = PostgresInvoiceRepository(xa)
           invoice  = makeInvoice(status = InvoiceStatus.Sent)
           _       <- repo.create(invoice)
-          deleted <- repo.delete(invoice.id)
+          deleted <- repo.delete(invoice.id, testCompanyId)
         } yield assertTrue(!deleted)
       },
       test("addItems and findById includes items") {

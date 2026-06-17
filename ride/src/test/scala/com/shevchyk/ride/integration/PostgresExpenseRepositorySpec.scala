@@ -165,16 +165,19 @@ object PostgresExpenseRepositorySpec extends ZIOSpecDefault {
       },
       test("delete removes expense") {
         for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- cleanExpenses(xa)
-          repo     = PostgresExpenseRepository(xa)
-          exp      = makeExpense(ride = None)
-          _       <- repo.create(exp)
-          deleted <- repo.delete(exp.id)
-          missing <- repo.delete(ExpenseId.generate())
-          found   <- repo.findById(exp.id)
-        } yield assertTrue(deleted, !missing, found.isEmpty)
+          xa          <- ZIO.service[Transactor[Task]]
+          _           <- seedTestData(xa)
+          _           <- cleanExpenses(xa)
+          repo         = PostgresExpenseRepository(xa)
+          exp          = makeExpense(ride = None)
+          _           <- repo.create(exp)
+          // Cross-tenant delete must not touch the row.
+          crossTenant <- repo.delete(exp.id, CompanyId(UUID.randomUUID()))
+          stillThere  <- repo.findById(exp.id)
+          deleted     <- repo.delete(exp.id, testCompanyId)
+          missing     <- repo.delete(ExpenseId.generate(), testCompanyId)
+          found       <- repo.findById(exp.id)
+        } yield assertTrue(!crossTenant, stillThere.isDefined, deleted, !missing, found.isEmpty)
       },
       test("sumByDriver sums amounts within date range and isolates driver/company") {
         for {

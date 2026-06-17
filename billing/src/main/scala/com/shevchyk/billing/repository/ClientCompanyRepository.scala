@@ -14,8 +14,14 @@ trait ClientCompanyRepository:
   def findById(id: ClientCompanyId): Task[Option[ClientCompany]]
   def findByTaxiCompany(taxiCompanyId: CompanyId): Task[List[ClientCompany]]
   def create(req: CreateClientCompanyRequest, taxiCompanyId: CompanyId): Task[ClientCompany]
-  def update(id: ClientCompanyId, req: CreateClientCompanyRequest): Task[Option[ClientCompany]]
-  def delete(id: ClientCompanyId): Task[Boolean]
+
+  // Tenant-scoped: only affect the client company owned by `taxiCompanyId`.
+  def update(
+      id: ClientCompanyId,
+      taxiCompanyId: CompanyId,
+      req: CreateClientCompanyRequest
+  ): Task[Option[ClientCompany]]
+  def delete(id: ClientCompanyId, taxiCompanyId: CompanyId): Task[Boolean]
 
 object ClientCompanyRepository:
 
@@ -57,19 +63,26 @@ final class PostgresClientCompanyRepository(xa: Transactor[Task]) extends Client
       .transact(xa)
       .as(ClientCompany(id, req.name, taxiCompanyId, req.email, req.phone, req.address))
 
-  override def update(id: ClientCompanyId, req: CreateClientCompanyRequest): Task[Option[ClientCompany]] =
+  override def update(
+      id: ClientCompanyId,
+      taxiCompanyId: CompanyId,
+      req: CreateClientCompanyRequest
+  ): Task[Option[ClientCompany]] =
     sql"""UPDATE client_companies
           SET name = ${req.name}, email = ${req.email}, phone = ${req.phone}, address = ${req.address},
               updated_at = NOW()
-          WHERE id = ${id.value}""".update.run
+          WHERE id = ${id.value} AND taxi_company_id = ${taxiCompanyId.value}""".update.run
       .transact(xa)
       .flatMap {
         case 0 => ZIO.none
         case _ => findById(id)
       }
 
-  override def delete(id: ClientCompanyId): Task[Boolean] =
-    sql"DELETE FROM client_companies WHERE id = ${id.value}".update.run.transact(xa).map(_ > 0)
+  override def delete(id: ClientCompanyId, taxiCompanyId: CompanyId): Task[Boolean] =
+    sql"""DELETE FROM client_companies
+          WHERE id = ${id.value} AND taxi_company_id = ${taxiCompanyId.value}""".update.run
+      .transact(xa)
+      .map(_ > 0)
 
 object PostgresClientCompanyRepository:
 

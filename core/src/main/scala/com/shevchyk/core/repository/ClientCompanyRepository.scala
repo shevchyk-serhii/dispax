@@ -9,7 +9,8 @@ trait ClientCompanyRepository:
   def findById(id: ClientCompanyId): Task[Option[ClientCompany]]
   def findByTaxiCompany(taxiCompanyId: CompanyId): Task[List[ClientCompany]]
   def update(company: ClientCompany): Task[ClientCompany]
-  def delete(id: ClientCompanyId): Task[Boolean]
+  // Tenant-scoped delete: only removes the client company owned by `taxiCompanyId`.
+  def delete(id: ClientCompanyId, taxiCompanyId: CompanyId): Task[Boolean]
 
 object ClientCompanyRepository:
 

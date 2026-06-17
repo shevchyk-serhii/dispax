@@ -96,7 +96,7 @@ object ExpenseApi:
       _          <- ZIO.fail(internalError).when(expense.companyId.value != userCid.value)
       _          <- ZIO.fail(internalError).when(user.role == "DRIVER" && expense.driverId.value != user.userId)
       deleteId   <- parseUuid(id).map(ExpenseId(_))
-      deleted    <- repo.delete(deleteId).mapError(_ => internalError)
+      deleted    <- repo.delete(deleteId, userCid).mapError(_ => internalError)
       _          <- ZIO.fail((StatusCode.NotFound, ApiError("Not found"))).when(!deleted)
     } yield ()
   }

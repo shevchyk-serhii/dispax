@@ -127,10 +127,14 @@ object PostgresClientCompanyRepositorySpec extends ZIOSpecDefault {
           repo    = PostgresClientCompanyRepository(xa)
           cc      = makeClientCompany()
           _      <- repo.create(cc)
-          first  <- repo.delete(cc.id)
-          second <- repo.delete(cc.id)
+          cross  <- repo.delete(cc.id, otherTaxiId) // cross-tenant: no-op
+          still  <- repo.findById(cc.id)
+          first  <- repo.delete(cc.id, taxiCompanyId)
+          second <- repo.delete(cc.id, taxiCompanyId)
           found  <- repo.findById(cc.id)
         } yield assertTrue(
+          !cross,
+          still.isDefined,
           first,
           !second,
           found.isEmpty

@@ -23,7 +23,8 @@ trait InvoiceRepository:
   // Sent, unpaid invoices whose due date has passed and which haven't been
   // reminded yet — the overdue-reminder candidate set (cross-tenant).
   def findOverdueUnpaid(now: java.time.Instant): Task[List[Invoice]]
-  def delete(id: InvoiceId): Task[Boolean]
+  // Tenant-scoped delete: only removes a draft invoice owned by `taxiCompanyId`.
+  def delete(id: InvoiceId, taxiCompanyId: CompanyId): Task[Boolean]
   def addItems(items: List[InvoiceItem]): Task[Unit]
   def deleteItems(invoiceId: InvoiceId): Task[Unit]
   // Atomically replace all items of an invoice: delete old items, insert new ones,

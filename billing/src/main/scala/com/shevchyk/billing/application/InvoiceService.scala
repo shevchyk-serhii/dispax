@@ -352,7 +352,7 @@ class InvoiceServiceImpl(
         ZIO.when(invoice.status != InvoiceStatus.Draft)(
           ZIO.fail(InvoiceError.NotDraft(id))
         )
-      _       <- invoiceRepo.delete(id).mapError(InvoiceError.DatabaseError(_))
+      _       <- invoiceRepo.delete(id, taxiCompanyId).mapError(InvoiceError.DatabaseError(_))
     } yield ()
 
   private def recalculate(invoice: Invoice): UIO[Invoice] = ZIO.succeed {

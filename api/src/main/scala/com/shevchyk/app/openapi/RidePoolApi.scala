@@ -291,10 +291,31 @@ object RidePoolApi:
                          .orElseFail((StatusCode.NotFound, ApiError("Pool not found")): Err)
         members     <- repo.findMembersByPoolId(pool.id).mapError(internal)
         service     <- ZIO.service[RideService]
-        _           <-
-          ZIO.foreach(members) { m =>
-            service.assignDriver(m.rideId, driverPid).catchAll(_ => ZIO.unit)
-          }
+        // Assign the driver to every ride in the pool. Don't swallow per-ride failures: log each one and, if any
+        // ride could not be assigned, fail the whole request so the pool isn't marked as driven while rides are
+        // left without a driver (avoids a silent inconsistent state).
+        failures    <- ZIO
+                         .foreach(members) { m =>
+                           service
+                             .assignDriver(m.rideId, driverPid)
+                             .as(Option.empty[String])
+                             .catchAll(e =>
+                               ZIO
+                                 .logWarning(
+                                   s"Failed to assign driver $driverPid to ride ${m.rideId} in pool ${pool.id}: $e"
+                                 )
+                                 .as(Some(m.rideId.value.toString))
+                             )
+                         }
+                         .map(_.flatten)
+        _           <- ZIO
+                         .fail(
+                           (
+                             StatusCode.Conflict,
+                             ApiError(s"Could not assign driver to ${failures.size} of ${members.size} rides in the pool")
+                           ): Err
+                         )
+                         .when(failures.nonEmpty)
         updated     <- repo.update(pool.copy(driverId = Some(driverPid))).mapError(internal)
       } yield updated
     }

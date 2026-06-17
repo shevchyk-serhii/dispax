@@ -12,7 +12,8 @@ trait GeofenceRepository:
   def findActiveByCompanyId(companyId: CompanyId): Task[List[Geofence]]
   def findById(id: GeofenceId): Task[Option[Geofence]]
   def update(geofence: Geofence): Task[Geofence]
-  def delete(id: GeofenceId): Task[Boolean]
+  // Tenant-scoped delete: only removes the geofence when it belongs to `companyId`.
+  def delete(id: GeofenceId, companyId: CompanyId): Task[Boolean]
   def saveAlert(alert: GeofenceAlert): Task[GeofenceAlert]
   def findAlertsByCompany(companyId: CompanyId, limit: Int): Task[List[GeofenceAlert]]
   def findAlertsByDriver(driverId: PersonId, limit: Int): Task[List[GeofenceAlert]]
@@ -43,8 +44,10 @@ class InMemoryGeofenceRepository extends GeofenceRepository:
     geofence
   }
 
-  def delete(id: GeofenceId): Task[Boolean] = ZIO.succeed {
-    Option(geofences.remove(id)).isDefined
+  def delete(id: GeofenceId, companyId: CompanyId): Task[Boolean] = ZIO.succeed {
+    Option(geofences.get(id)) match
+      case Some(g) if g.companyId == companyId => geofences.remove(id) != null
+      case _                                   => false
   }
 
   def saveAlert(alert: GeofenceAlert): Task[GeofenceAlert] = ZIO.succeed {
