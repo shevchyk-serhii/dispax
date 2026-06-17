@@ -494,10 +494,10 @@ class _AirportsTable extends StatelessWidget {
         Positioned(
           right: 24,
           bottom: 24,
-          child: FloatingActionButton.extended(
+          child: FloatingActionButton(
             onPressed: () => _showAddDialog(context),
-            icon: const Icon(Icons.add),
-            label: Text(AppLocalizations.of(context)!.addAirport),
+            tooltip: AppLocalizations.of(context)!.addAirport,
+            child: const Icon(Icons.add),
           ),
         ),
       ],

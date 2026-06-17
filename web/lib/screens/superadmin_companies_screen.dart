@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
+import '../modules/core/date_utils.dart';
 import '../modules/core/services/api_client.dart';
 
 // ---------------------------------------------------------------------------
@@ -320,45 +321,52 @@ class _CompaniesTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Companies (${companies.length})',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              if (companies.isEmpty)
-                const Center(child: Text('No companies found'))
-              else
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Name')),
-                      DataColumn(label: Text('Email')),
-                      DataColumn(label: Text('Status')),
-                      DataColumn(label: Text('Plan')),
-                      DataColumn(label: Text('Created')),
-                      DataColumn(label: Text('Actions')),
-                    ],
-                    rows: companies.map((c) => _buildRow(context, c)).toList(),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Companies (${companies.length})',
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                ),
-              // bottom padding so FAB doesn't obscure last row
-              const SizedBox(height: 80),
-            ],
+                  const SizedBox(height: 16),
+                  if (companies.isEmpty)
+                    const Center(child: Text('No companies found'))
+                  else
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        columns: const [
+                          DataColumn(label: Text('Name')),
+                          DataColumn(label: Text('Email')),
+                          DataColumn(label: Text('Status')),
+                          DataColumn(label: Text('Plan')),
+                          DataColumn(label: Text('Created')),
+                          DataColumn(label: Text('Actions')),
+                        ],
+                        rows: companies
+                            .map((c) => _buildRow(context, c))
+                            .toList(),
+                      ),
+                    ),
+                  // bottom padding so FAB doesn't obscure last row
+                  const SizedBox(height: 80),
+                ],
+              ),
+            ),
           ),
         ),
         Positioned(
           right: 24,
           bottom: 24,
-          child: FloatingActionButton.extended(
+          child: FloatingActionButton(
             onPressed: () => _showAddDialog(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Company'),
+            tooltip: 'Add Company',
+            child: const Icon(Icons.add),
           ),
         ),
       ],
@@ -372,7 +380,7 @@ class _CompaniesTable extends StatelessWidget {
         DataCell(Text(c.email)),
         DataCell(_StatusChip(status: c.status)),
         DataCell(Text(c.subscriptionPlan)),
-        DataCell(Text(c.createdAt ?? '-')),
+        DataCell(Text(_formatCreated(c.createdAt))),
         DataCell(
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -394,14 +402,14 @@ class _CompaniesTable extends StatelessWidget {
                 onPressed: () => _confirmDelete(context, c),
               ),
               PopupMenuButton<String>(
+                tooltip: 'Change status',
                 onSelected: (newStatus) => context
                     .read<SuperAdminCompanyBloc>()
                     .add(UpdateCompanyStatus(c.id, newStatus)),
                 itemBuilder: (_) => const [
                   PopupMenuItem(value: 'Active', child: Text('Set Active')),
-                  PopupMenuItem(value: 'Suspended', child: Text('Suspend')),
                   PopupMenuItem(value: 'Trial', child: Text('Set Trial')),
-                  PopupMenuItem(value: 'Inactive', child: Text('Set Inactive')),
+                  PopupMenuItem(value: 'Suspended', child: Text('Suspend')),
                 ],
                 child: const Icon(Icons.more_vert),
               ),
@@ -410,6 +418,12 @@ class _CompaniesTable extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _formatCreated(String? iso) {
+    if (iso == null) return '-';
+    final dt = DateTime.tryParse(iso);
+    return dt == null ? iso : AppDateUtils.formatDateTime(dt.toLocal());
   }
 
   void _confirmDelete(BuildContext context, CompanyInfo c) {
