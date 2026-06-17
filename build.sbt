@@ -53,7 +53,7 @@ ThisBuild / assembly / assemblyMergeStrategy := {
 }
 
 addCommandAlias("fmt", "; scalafmt ; scalafmtSbt")
-addCommandAlias("fmtDart", "! dart format /Users/shevchyk/projects/private/dispax/app/lib/ --set-exit-if-changed")
+addCommandAlias("fmtDart", "! dart format web/lib --set-exit-if-changed")
 addCommandAlias("fmtAll", "; fmt ; fmtDart")
 addCommandAlias("fmtWatch", "~fmtAll")
 addCommandAlias("cucumber", "testOnly *CucumberRunner")

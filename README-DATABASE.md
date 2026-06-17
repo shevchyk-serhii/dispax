@@ -19,7 +19,7 @@ docker-compose up -d postgres
 
 2. Run in development mode:
 ```bash
-sbt runDev
+make dev        # preferred (reads .env.dev); equivalent to `sbt runDev`
 ```
 
 3. Run in production mode:

@@ -77,9 +77,9 @@ root (api)
 
 | Command            | Description                          |
 |--------------------|--------------------------------------|
-| `sbt run`          | Run with default config              |
-| `sbt runDev`       | Run with development config          |
-| `sbt runProd`      | Run with production config           |
-| `sbt cucumber`     | Run Cucumber BDD tests               |
-| `sbt fmt`          | Format Scala code                    |
-| `sbt assembly`     | Build fat JAR (`dispax-server.jar`) |
+| `make dev`         | Run backend with dev config (port 8080) |
+| `make test-unit`   | Fast unit tests only (no Docker)     |
+| `make test`        | Unit + integration (Testcontainers)  |
+| `make test-bdd`    | Cucumber BDD scenarios               |
+| `make fmt`         | Format Scala code (scalafmt)         |
+| `sbt assembly`     | Build fat JAR (`dispax-server.jar`)  |
