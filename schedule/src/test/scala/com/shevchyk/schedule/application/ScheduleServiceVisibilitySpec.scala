@@ -61,7 +61,7 @@ object ScheduleServiceVisibilitySpec extends ZIOSpecDefault {
 
   val dispatcherAId = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000030"))
 
-  val dispatcherA   = Person(
+  val dispatcherA = Person(
     id = dispatcherAId,
     name = "Dispatcher A",
     email = "dispatcher@example.com",
@@ -71,7 +71,7 @@ object ScheduleServiceVisibilitySpec extends ZIOSpecDefault {
 
   val adminAId = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000040"))
 
-  val adminA   = Person(
+  val adminA = Person(
     id = adminAId,
     name = "Admin A",
     email = "admin@example.com",
@@ -81,7 +81,7 @@ object ScheduleServiceVisibilitySpec extends ZIOSpecDefault {
 
   val secretaryAId = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000050"))
 
-  val secretaryA   = Person(
+  val secretaryA = Person(
     id = secretaryAId,
     name = "Secretary A",
     email = "secretary@example.com",
