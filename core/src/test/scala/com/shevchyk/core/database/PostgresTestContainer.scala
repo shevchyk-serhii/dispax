@@ -66,6 +66,34 @@ object PostgresTestContainer {
   private val AdvisoryLockKey: Long = 0x2451d57aL
 
   /**
+   * Runs Flyway `migrate()` against the shared container exactly once per JVM.
+   *
+   * `make test` forks a JVM per module, so this `lazy val` fires on the first
+   * spec of each module: it brings the reused container's schema up to date
+   * (essential — a container left over from an older schema version would
+   * otherwise be stale), and every subsequent spec in the same JVM skips the
+   * Flyway connect + migrate entirely. The migration runs while the caller holds
+   * the advisory lock (see [[layer]]), so two module JVMs never migrate the
+   * shared container concurrently.
+   */
+  private lazy val migratedOnce: Unit = {
+    val c = sharedContainer
+    val dbConfig = DatabaseConfig(
+      driver = "org.postgresql.Driver",
+      url = c.jdbcUrl,
+      user = c.username,
+      password = c.password,
+      maxPoolSize = 1,
+      minIdle = 0
+    )
+    Unsafe.unsafe { implicit u =>
+      zio.Runtime.default.unsafe
+        .run(FlywayServiceImpl(dbConfig, "production").migrate())
+        .getOrThrowFiberFailure()
+    }
+  }
+
+  /**
    * Serialises spec access to the shared database with a session-level Postgres
    * advisory lock, held for a spec's whole lifetime (acquire→release of the
    * Transactor scope) on a dedicated connection.
@@ -120,8 +148,10 @@ object PostgresTestContainer {
                    minIdle = 1
                  )
 
-      flyway = FlywayServiceImpl(dbConfig, "production")
-      _     <- flyway.migrate()
+      // Migrate the shared container once per JVM (memoised). Forced here, under
+      // the advisory lock, so two module JVMs never migrate concurrently and
+      // every spec after the first skips the Flyway connect + migrate.
+      _  <- ZIO.attempt(migratedOnce)
 
       ec <- ZIO.descriptor.map(_.executor.asExecutionContext)
       ds <-

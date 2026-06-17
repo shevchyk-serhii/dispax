@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev run-test prod test test-unit test-integration test-bdd test-all clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-unit test-fast test-integration test-bdd test-all clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -58,16 +58,21 @@ test-bdd:
 test:
 	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test; billing/test"
 
+# ── DEFAULT INNER-LOOP ────────────────────────────────────────────────────
 # Run ONLY fast unit tests (in-memory repos, no Testcontainers / no Postgres).
 # Integration specs carry `@@ TestAspect.tag("integration")`; -ignore-tags drops
-# them. Fast inner-loop command — no Docker required.
+# them. This is the command to run while developing — no Docker, seconds not
+# minutes, no advisory-lock serialisation. Run `make test` (unit + integration)
+# before merging. `test-fast` is an alias.
+test-fast: test-unit
 test-unit:
 	sbt "core/testOnly * -- -ignore-tags integration; \
 	     auth/testOnly * -- -ignore-tags integration; \
 	     ride/testOnly * -- -ignore-tags integration; \
 	     driver/testOnly * -- -ignore-tags integration; \
 	     notification/testOnly * -- -ignore-tags integration; \
-	     schedule/testOnly * -- -ignore-tags integration"
+	     schedule/testOnly * -- -ignore-tags integration; \
+	     billing/testOnly * -- -ignore-tags integration"
 
 # Run ONLY the integration tests (Testcontainers + real Postgres). Requires Docker.
 # Selects specs tagged `integration` via -tags.
@@ -77,7 +82,8 @@ test-integration:
 	     ride/testOnly * -- -tags integration; \
 	     driver/testOnly * -- -tags integration; \
 	     notification/testOnly * -- -tags integration; \
-	     schedule/testOnly * -- -tags integration"
+	     schedule/testOnly * -- -tags integration; \
+	     billing/testOnly * -- -tags integration"
 
 # Run Flutter integration tests against local TestApplication.
 # Backend runs on TEST_PORT (default 8090) so it doesn't collide with a dev
