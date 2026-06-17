@@ -216,6 +216,91 @@ object AuthServiceSpec extends ZIOSpecDefault {
             user.phone.contains("+1234567890") &&
               user.role == "DRIVER"
           )
+        }.provide(layers),
+        // ── multi-role (dispatcher-can-drive) ──────────────────────────────
+        test("createUser with roles=[DISPATCHER,DRIVER] stores both and primary is in set") {
+          for {
+            service <- ZIO.service[AuthService]
+            user    <- service.createUser(
+                         CreateUserRequest(
+                           email = "dispdrv@example.com",
+                           name = "Disp Driver",
+                           role = "DISPATCHER",
+                           password = "Secure123",
+                           roles = Some(List("DISPATCHER", "DRIVER"))
+                         )
+                       )
+          } yield assertTrue(
+            user.role == "DISPATCHER",
+            user.roles.contains("DISPATCHER"),
+            user.roles.contains("DRIVER")
+          )
+        }.provide(layers),
+        test("createUser with roles where primary not in roles returns ValidationError") {
+          for {
+            service <- ZIO.service[AuthService]
+            result  <-
+              service
+                .createUser(
+                  CreateUserRequest(
+                    email = "bdroles@example.com",
+                    name = "Bad Roles",
+                    role = "DISPATCHER",
+                    password = "Secure123",
+                    roles = Some(List("DRIVER")) // primary DISPATCHER missing from roles
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ValidationError("roles", _) => true
+                case _                           => false
+              }
+            case _                   => false
+          })
+        }.provide(layers),
+        test("createUser with invalid role string in roles returns ValidationError") {
+          for {
+            service <- ZIO.service[AuthService]
+            result  <-
+              service
+                .createUser(
+                  CreateUserRequest(
+                    email = "badrole2@example.com",
+                    name = "Bad Role",
+                    role = "DISPATCHER",
+                    password = "Secure123",
+                    roles = Some(List("DISPATCHER", "FLYING_SAUCER"))
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ValidationError("roles", _) => true
+                case _                           => false
+              }
+            case _                   => false
+          })
+        }.provide(layers),
+        test("createUser without roles defaults to Set(primary role)") {
+          for {
+            service <- ZIO.service[AuthService]
+            user    <- service.createUser(
+                         CreateUserRequest(
+                           email = "noroles@example.com",
+                           name = "No Roles",
+                           role = "DISPATCHER",
+                           password = "Secure123"
+                           // roles not set
+                         )
+                       )
+          } yield assertTrue(
+            user.role == "DISPATCHER",
+            user.roles.contains("DISPATCHER"),
+            user.roles.size == 1
+          )
         }.provide(layers)
       ),
       suite("getUserById")(
@@ -334,6 +419,54 @@ object AuthServiceSpec extends ZIOSpecDefault {
               updated.role == original.role &&
               updated.phone == original.phone
           )
+        }.provide(layers),
+        // ── multi-role (dispatcher-can-drive) ──────────────────────────────
+        test("updateUser adding DRIVER role to dispatcher propagates roles") {
+          for {
+            service <- ZIO.service[AuthService]
+            // testUserId10 is a Driver; create a fresh dispatcher to update
+            created <- service.createUser(
+                         CreateUserRequest(
+                           email = "tobedriver@example.com",
+                           name = "Dispatcher To Drive",
+                           role = "DISPATCHER",
+                           password = "Secure123"
+                         )
+                       )
+            updated <- service.updateUser(
+                         created.id,
+                         UpdateUserRequest(
+                           role = Some("DISPATCHER"),
+                           roles = Some(List("DISPATCHER", "DRIVER"))
+                         )
+                       )
+          } yield assertTrue(
+            updated.role == "DISPATCHER",
+            updated.roles.contains("DISPATCHER"),
+            updated.roles.contains("DRIVER")
+          )
+        }.provide(layers),
+        test("updateUser with primary role not in new roles returns ValidationError") {
+          for {
+            service <- ZIO.service[AuthService]
+            result  <-
+              service
+                .updateUser(
+                  testUserId10,
+                  UpdateUserRequest(
+                    role = Some("DRIVER"),
+                    roles = Some(List("DISPATCHER")) // primary DRIVER missing
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ValidationError("roles", _) => true
+                case _                           => false
+              }
+            case _                   => false
+          })
         }.provide(layers)
       ),
       suite("deleteUser")(

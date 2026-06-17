@@ -176,6 +176,93 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           found.get.isVip,
           found.get.preferredDriverId.contains(driver.id)
         )
+      },
+      // ── multi-role (dispatcher-can-drive) ──────────────────────────────
+      test("create and findById round-trip preserves multi-role set") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          // Dispatcher who also drives: primary role = Dispatcher, roles = {Dispatcher, Driver}
+          person = makePerson(role = PersonRole.Dispatcher, email = "dispdrv@test.com")
+                     .copy(roles = Set(PersonRole.Dispatcher, PersonRole.Driver))
+          _     <- repo.create(person)
+          found <- repo.findById(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.role == PersonRole.Dispatcher,
+          found.get.effectiveRoles.contains(PersonRole.Dispatcher),
+          found.get.effectiveRoles.contains(PersonRole.Driver),
+          found.get.canDrive
+        )
+      },
+      test("findByRoleAndCompany(Driver) returns dispatcher-driver") {
+        for {
+          xa          <- ZIO.service[Transactor[Task]]
+          _           <- seedCompany(xa)
+          _           <- cleanPersons(xa)
+          repo         = PostgresPersonRepository(xa)
+          dispDriver   = makePerson(role = PersonRole.Dispatcher, email = "dd@test.com")
+                           .copy(roles = Set(PersonRole.Dispatcher, PersonRole.Driver))
+          pureDriver   = makePerson(role = PersonRole.Driver, email = "pure@test.com")
+          _           <- repo.create(dispDriver)
+          _           <- repo.create(pureDriver)
+          // searching for Driver role must return BOTH the pure driver and the dispatcher-driver
+          drivers     <- repo.findByRoleAndCompany(PersonRole.Driver, testCompanyId)
+        } yield assertTrue(
+          drivers.length == 2,
+          drivers.exists(_.id == dispDriver.id),
+          drivers.exists(_.id == pureDriver.id)
+        )
+      },
+      test("findByRoleAndCompany(Dispatcher) returns dispatcher-driver") {
+        for {
+          xa         <- ZIO.service[Transactor[Task]]
+          _          <- seedCompany(xa)
+          _          <- cleanPersons(xa)
+          repo        = PostgresPersonRepository(xa)
+          dispDriver  = makePerson(role = PersonRole.Dispatcher, email = "dd2@test.com")
+                          .copy(roles = Set(PersonRole.Dispatcher, PersonRole.Driver))
+          pureDisp    = makePerson(role = PersonRole.Dispatcher, email = "disp@test.com")
+          _          <- repo.create(dispDriver)
+          _          <- repo.create(pureDisp)
+          dispatchers <- repo.findByRoleAndCompany(PersonRole.Dispatcher, testCompanyId)
+        } yield assertTrue(
+          dispatchers.length == 2,
+          dispatchers.exists(_.id == dispDriver.id),
+          dispatchers.exists(_.id == pureDisp.id)
+        )
+      },
+      test("update preserves multi-role set") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedCompany(xa)
+          _       <- cleanPersons(xa)
+          repo     = PostgresPersonRepository(xa)
+          person   = makePerson(role = PersonRole.Dispatcher, email = "upddd@test.com")
+                       .copy(roles = Set(PersonRole.Dispatcher, PersonRole.Driver))
+          _       <- repo.create(person)
+          updated  = person.copy(name = "Updated")
+          _       <- repo.update(updated)
+          found   <- repo.findById(person.id)
+        } yield assertTrue(
+          found.get.name == "Updated",
+          found.get.effectiveRoles == Set(PersonRole.Dispatcher, PersonRole.Driver)
+        )
+      },
+      test("upsertDriverRow is idempotent") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedCompany(xa)
+          _      <- cleanPersons(xa)
+          repo    = PostgresPersonRepository(xa)
+          driver  = makePerson(role = PersonRole.Driver, email = "upsert@test.com")
+          _      <- repo.create(driver)
+          // call twice — ON CONFLICT DO NOTHING must not throw
+          _      <- repo.upsertDriverRow(driver.id)
+          _      <- repo.upsertDriverRow(driver.id)
+        } yield assertCompletes
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"

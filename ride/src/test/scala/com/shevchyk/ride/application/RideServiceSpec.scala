@@ -17,10 +17,12 @@ object RideServiceSpec extends ZIOSpecDefault {
   val testCompanyId  = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001"))
   val otherCompanyId = CompanyId(UUID.fromString("00000002-0000-0000-0000-000000000002"))
 
-  val testDriverId  = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000001"))
-  val testDriver2Id = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000004"))
-  val testClientId  = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100"))
-  val vipClientId   = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000200"))
+  val testDriverId        = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000001"))
+  val testDriver2Id       = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000004"))
+  val testClientId        = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100"))
+  val vipClientId         = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000200"))
+  val dispatcherDriverId  = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000050"))
+  val pureDispatcherId    = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000060"))
 
   val testDriver = Person(
     id = testDriverId,
@@ -64,6 +66,26 @@ object RideServiceSpec extends ZIOSpecDefault {
     preferredDriverId = Some(testDriverId)
   )
 
+  // Dispatcher who also has the Driver role — should be assignable to rides.
+  val dispatcherDriver = Person(
+    id = dispatcherDriverId,
+    name = "Dispatcher Driver",
+    email = "dispdriver@example.com",
+    role = PersonRole.Dispatcher,
+    companyId = Some(testCompanyId),
+    roles = Set(PersonRole.Dispatcher, PersonRole.Driver)
+  )
+
+  // Pure dispatcher — has no Driver role, must not be assignable to rides.
+  val pureDispatcher = Person(
+    id = pureDispatcherId,
+    name = "Pure Dispatcher",
+    email = "puredisp@example.com",
+    role = PersonRole.Dispatcher,
+    companyId = Some(testCompanyId),
+    roles = Set(PersonRole.Dispatcher)
+  )
+
   /**
    * MockPersonRepository that returns specific persons by ID
    */
@@ -81,7 +103,7 @@ object RideServiceSpec extends ZIOSpecDefault {
     )
 
     override def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
-      persons.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList
+      persons.values.filter(p => p.hasRole(role) && p.companyId.contains(companyId)).toList
     )
 
     override def findByCompanyId(companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
@@ -105,11 +127,13 @@ object RideServiceSpec extends ZIOSpecDefault {
 
   val testPersonRepo = TestPersonRepository(
     Map(
-      testDriver.id         -> testDriver,
-      testDriver2.id        -> testDriver2,
-      wrongCompanyDriver.id -> wrongCompanyDriver,
-      clientPerson.id       -> clientPerson,
-      vipClient.id          -> vipClient
+      testDriver.id          -> testDriver,
+      testDriver2.id         -> testDriver2,
+      wrongCompanyDriver.id  -> wrongCompanyDriver,
+      clientPerson.id        -> clientPerson,
+      vipClient.id           -> vipClient,
+      dispatcherDriver.id    -> dispatcherDriver,
+      pureDispatcher.id      -> pureDispatcher
     )
   )
 
@@ -336,7 +360,98 @@ object RideServiceSpec extends ZIOSpecDefault {
               }
             case _                   => false
           })
-        }.provide(standardLayers)
+        }.provide(standardLayers),
+        // ── multi-role (dispatcher-can-drive) ──────────────────────────────
+        test("dispatcher-driver (roles={Dispatcher,Driver}) can be assigned") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(
+                          CreateRideRequest(
+                            clientId = testClientId,
+                            companyId = testCompanyId,
+                            pickupLocation = Location("A"),
+                            dropoffLocation = Location("B")
+                          )
+                        )
+            assigned <- service.assignDriver(ride.id, dispatcherDriverId)
+          } yield assertTrue(
+            assigned.status == RideStatus.Assigned &&
+              assigned.driverId.contains(dispatcherDriverId)
+          )
+        }.provide(standardLayers),
+        test("pure dispatcher (roles={Dispatcher}) cannot be assigned") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B")
+                         )
+                       )
+            result  <- service.assignDriver(ride.id, pureDispatcherId).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation("driver_role", _) => true
+                case _                                                 => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("company-mismatch still blocks dispatcher-driver") {
+          // A dispatcher-driver from a different company must not be assignable.
+          val foreignDDId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000055"))
+          val foreignDD   = Person(
+            id = foreignDDId,
+            name = "Foreign DD",
+            email = "foreign@example.com",
+            role = PersonRole.Dispatcher,
+            companyId = Some(otherCompanyId),
+            roles = Set(PersonRole.Dispatcher, PersonRole.Driver)
+          )
+          val repoWithForeignDD = TestPersonRepository(
+            Map(
+              testDriver.id         -> testDriver,
+              testDriver2.id        -> testDriver2,
+              wrongCompanyDriver.id -> wrongCompanyDriver,
+              clientPerson.id       -> clientPerson,
+              vipClient.id          -> vipClient,
+              dispatcherDriver.id   -> dispatcherDriver,
+              pureDispatcher.id     -> pureDispatcher,
+              foreignDDId           -> foreignDD
+            )
+          )
+          val layersWithForeignDD =
+            (InMemoryRideRepository.layer ++
+              ZLayer.succeed[PersonRepository](repoWithForeignDD) ++
+              EventHub.layer ++
+              noopEmailSms ++
+              AuditService.inMemory ++
+              BlacklistRepository.inMemory ++
+              GeocodingService.noop ++ ExpenseRepository.inMemory) >+> RideService.layer
+
+          (for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B")
+                         )
+                       )
+            result  <- service.assignDriver(ride.id, foreignDDId).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation("company_isolation", _) => true
+                case _                                                       => false
+              }
+            case _                   => false
+          })).provide(layersWithForeignDD)
+        }
       ),
       suite("startRide")(
         test("happy path: Assigned → InProgress with startTime") {

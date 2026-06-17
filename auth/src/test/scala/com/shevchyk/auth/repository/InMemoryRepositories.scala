@@ -84,13 +84,13 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
   override def findAll(): Task[List[Person]] = people.get.map(_.values.toList.sortBy(_.id.value.toString))
 
   override def findByRole(role: PersonRole): Task[List[Person]] = people.get.map(
-    _.values.filter(_.role == role).toList.sortBy(_.id.value.toString)
+    _.values.filter(_.hasRole(role)).toList.sortBy(_.id.value.toString)
   )
 
   override def findByRoleAndCompany(
       role: PersonRole,
       companyId: com.shevchyk.core.domain.CompanyId
-  ): Task[List[Person]] = people.get.map(_.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList)
+  ): Task[List[Person]] = people.get.map(_.values.filter(p => p.hasRole(role) && p.companyId.contains(companyId)).toList)
 
   override def findByCompanyId(companyId: com.shevchyk.core.domain.CompanyId): Task[List[Person]] = people.get.map(
     _.values.filter(_.companyId.contains(companyId)).toList

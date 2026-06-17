@@ -2,7 +2,7 @@ package com.shevchyk.auth.service
 
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.domain.*
-import com.shevchyk.core.domain.{Person, PersonId, PersonRole, CompanyId, UserStatus}
+import com.shevchyk.core.domain.{Person, PersonId, PersonRole, CompanyId}
 import zio.*
 import zio.test.*
 import java.time.Instant
@@ -17,6 +17,15 @@ object JwtServiceSpec extends ZIOSpecDefault {
     name = "Test User",
     role = PersonRole.Client,
     passwordHash = "hashed"
+  )
+
+  val dispatcherDriverPerson = Person(
+    id = PersonId(UUID.fromString("22222222-2222-2222-2222-222222222222")),
+    email = "dispdriver@example.com",
+    name = "Dispatcher Driver",
+    role = PersonRole.Dispatcher,
+    passwordHash = "hashed",
+    roles = Set(PersonRole.Dispatcher, PersonRole.Driver)
   )
 
   val testConfig = JwtConfig(
@@ -198,6 +207,74 @@ object JwtServiceSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(shortLivedJwtLayer) @@ TestAspect.withLiveClock
+      ),
+      // -- multi-role (dispatcher-can-drive) ---------------------------------
+      suite("multi-role token")(
+        test("token for dispatcher-driver carries both roles in payload") {
+          for {
+            service <- ZIO.service[JwtService]
+            token   <- service.generateToken(dispatcherDriverPerson)
+            payload <- service.validateToken(token)
+          } yield assertTrue(
+            payload.roles.isDefined,
+            payload.roles.get.contains(PersonRole.Dispatcher),
+            payload.roles.get.contains(PersonRole.Driver),
+            payload.role == PersonRole.Dispatcher // primary role preserved
+          )
+        }.provide(jwtLayer),
+        test("legacy token without roles field falls back to Set(role) in AuthMiddleware") {
+          // Simulate a legacy JWT payload that has no `roles` field.
+          // AuthMiddleware must build roles = Set(role) from the single-role field.
+          import com.shevchyk.auth.config.JwtConfig
+          import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
+
+          val legacySecret = "test-secret-key-that-is-long-enough-for-hmac256"
+          val now          = java.time.Instant.now().getEpochSecond
+          // Manually craft a JWT payload without the `roles` field
+          val rawPayload   =
+            s"""{"userId":"11111111-1111-1111-1111-111111111111","email":"test@example.com","role":"CLIENT","iat":$now,"exp":${now + 3600}}"""
+          val claim        = JwtClaim(
+            content = rawPayload,
+            issuer = Some("dispax-test"),
+            issuedAt = Some(now),
+            expiration = Some(now + 3600)
+          )
+          val token        = Jwt.encode(claim, legacySecret, JwtAlgorithm.HS256)
+
+          val cfgLayer = ZLayer.succeed(
+            JwtConfig(
+              secret = legacySecret,
+              issuer = "dispax-test",
+              audience = "dispax-api",
+              expirationTime = scala.concurrent.duration.Duration.fromNanos(3600L * 1_000_000_000L)
+            )
+          ) >>> JwtService.live
+
+          for {
+            service <- ZIO.service[JwtService].provide(cfgLayer)
+            payload <- service.validateToken(token)
+          } yield assertTrue(
+            payload.roles.isEmpty, // legacy: no roles field
+            // Wire-side: fallback produces Set(role)
+            {
+              val wireRoles = payload.roles
+                .map(_.map(PersonRole.toWire).toSet)
+                .getOrElse(Set(PersonRole.toWire(payload.role)))
+              wireRoles == Set("CLIENT")
+            }
+          )
+        },
+        test("single-role person has roles Some(List(role)) in generated token") {
+          for {
+            service <- ZIO.service[JwtService]
+            token   <- service.generateToken(testPerson)
+            payload <- service.validateToken(token)
+          } yield assertTrue(
+            payload.roles.isDefined,
+            payload.roles.get.size == 1,
+            payload.roles.get.contains(PersonRole.Client)
+          )
+        }.provide(jwtLayer)
       ),
       // -- issuer validation -----------------------------------------------
       suite("validateToken issuer")(

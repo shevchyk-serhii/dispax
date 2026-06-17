@@ -16,6 +16,9 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
   val testDriverId   = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000001"))
   val otherDriverId  = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000002"))
 
+  val testDriverId2     = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000010"))
+  val pureDispatcherId2 = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000020"))
+
   val testDriver = Person(
     id = testDriverId,
     name = "Test Driver",
@@ -40,12 +43,34 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
     companyId = Some(testCompanyId)
   )
 
+  // Dispatcher who also holds the Driver role.
+  val dispatcherDriver = Person(
+    id = testDriverId2,
+    name = "Dispatcher Driver",
+    email = "dispdrv@example.com",
+    role = PersonRole.Dispatcher,
+    companyId = Some(testCompanyId),
+    roles = Set(PersonRole.Dispatcher, PersonRole.Driver)
+  )
+
+  // Pure dispatcher — only the Dispatcher role.
+  val pureDispatcher = Person(
+    id = pureDispatcherId2,
+    name = "Pure Dispatcher",
+    email = "puredisp2@example.com",
+    role = PersonRole.Dispatcher,
+    companyId = Some(testCompanyId),
+    roles = Set(PersonRole.Dispatcher)
+  )
+
   val testPersonRepoLayer: ZLayer[Any, Nothing, PersonRepository] = ZLayer {
     for {
       repo <- ZIO.succeed(new InMemoryPersonRepository)
       _    <- repo.create(testDriver).orDie
       _    <- repo.create(otherCompanyDriver).orDie
       _    <- repo.create(clientPerson).orDie
+      _    <- repo.create(dispatcherDriver).orDie
+      _    <- repo.create(pureDispatcher).orDie
     } yield repo
   }
 
@@ -163,6 +188,48 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
                     date = futureDate,
                     startTime = LocalTime.of(8, 0),
                     endTime = LocalTime.of(17, 0)
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ScheduleError.ValidationError(msg) => msg.contains("not a driver")
+                case _                                  => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        // ── multi-role (dispatcher-can-drive) ──────────────────────────────
+        test("dispatcher-driver (roles={Dispatcher,Driver}) can create schedule day") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            day     <- service.createScheduleDay(
+                         CreateScheduleDayRequest(
+                           driverId = testDriverId2,
+                           companyId = testCompanyId,
+                           date = futureDate.plusDays(20),
+                           startTime = LocalTime.of(8, 0),
+                           endTime = LocalTime.of(16, 0)
+                         )
+                       )
+          } yield assertTrue(
+            day.driverId == testDriverId2 &&
+              day.status == ScheduleDayStatus.Scheduled
+          )
+        }.provide(standardLayers),
+        test("pure dispatcher (roles={Dispatcher}) cannot create schedule day") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            result  <-
+              service
+                .createScheduleDay(
+                  CreateScheduleDayRequest(
+                    driverId = pureDispatcherId2,
+                    companyId = testCompanyId,
+                    date = futureDate.plusDays(21),
+                    startTime = LocalTime.of(8, 0),
+                    endTime = LocalTime.of(16, 0)
                   )
                 )
                 .exit
