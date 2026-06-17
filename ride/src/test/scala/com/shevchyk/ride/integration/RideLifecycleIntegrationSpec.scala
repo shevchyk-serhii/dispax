@@ -54,8 +54,8 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
   )
 
   final case class TestPersonRepo(persons: Map[PersonId, Person]) extends PersonRepository:
-    override def create(person: Person): Task[Person]                                         = ZIO.succeed(person)
-    override def findById(id: PersonId): Task[Option[Person]]                                 = ZIO.succeed(persons.get(id))
+    override def create(person: Person): Task[Person]         = ZIO.succeed(person)
+    override def findById(id: PersonId): Task[Option[Person]] = ZIO.succeed(persons.get(id))
 
     override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]] = ZIO.succeed(
       persons.get(id).filter(_.companyId.contains(companyId))

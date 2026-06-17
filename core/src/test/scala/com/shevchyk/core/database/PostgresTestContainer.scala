@@ -68,16 +68,14 @@ object PostgresTestContainer {
   /**
    * Runs Flyway `migrate()` against the shared container exactly once per JVM.
    *
-   * `make test` forks a JVM per module, so this `lazy val` fires on the first
-   * spec of each module: it brings the reused container's schema up to date
-   * (essential — a container left over from an older schema version would
-   * otherwise be stale), and every subsequent spec in the same JVM skips the
-   * Flyway connect + migrate entirely. The migration runs while the caller holds
-   * the advisory lock (see [[layer]]), so two module JVMs never migrate the
-   * shared container concurrently.
+   * `make test` forks a JVM per module, so this `lazy val` fires on the first spec of each module: it brings the reused
+   * container's schema up to date (essential — a container left over from an older schema version would otherwise be
+   * stale), and every subsequent spec in the same JVM skips the Flyway connect + migrate entirely. The migration runs
+   * while the caller holds the advisory lock (see [[layer]]), so two module JVMs never migrate the shared container
+   * concurrently.
    */
   private lazy val migratedOnce: Unit = {
-    val c = sharedContainer
+    val c        = sharedContainer
     val dbConfig = DatabaseConfig(
       driver = "org.postgresql.Driver",
       url = c.jdbcUrl,
@@ -94,37 +92,34 @@ object PostgresTestContainer {
   }
 
   /**
-   * Serialises spec access to the shared database with a session-level Postgres
-   * advisory lock, held for a spec's whole lifetime (acquire→release of the
-   * Transactor scope) on a dedicated connection.
+   * Serialises spec access to the shared database with a session-level Postgres advisory lock, held for a spec's whole
+   * lifetime (acquire→release of the Transactor scope) on a dedicated connection.
    *
-   * Why a DB lock and not an in-JVM Semaphore: zio-test runs a module's spec
-   * classes concurrently, AND `make test` runs each module's tests in its own
-   * forked JVM. All of them attach to the one reusable container, so an in-memory
-   * permit only serialises specs within a single JVM — specs in different module
-   * JVMs still raced on the shared `public` schema, where one spec's startup
-   * [[resetDatabase]] TRUNCATE wiped a neighbour's just-inserted fixtures
-   * (random FK violations / "database gone"). A `pg_advisory_lock` lives in the
-   * database, so it serialises every spec process-wide.
+   * Why a DB lock and not an in-JVM Semaphore: zio-test runs a module's spec classes concurrently, AND `make test` runs
+   * each module's tests in its own forked JVM. All of them attach to the one reusable container, so an in-memory permit
+   * only serialises specs within a single JVM — specs in different module JVMs still raced on the shared `public`
+   * schema, where one spec's startup [[resetDatabase]] TRUNCATE wiped a neighbour's just-inserted fixtures (random FK
+   * violations / "database gone"). A `pg_advisory_lock` lives in the database, so it serialises every spec
+   * process-wide.
    */
   private def advisoryLock(jdbcUrl: String, user: String, password: String): ZIO[Scope, Throwable, Unit] =
-    ZIO.acquireRelease(
-      ZIO.attempt {
-        // Ensure the JDBC driver is registered: in a freshly-forked module JVM it
-        // may not be loaded yet when we open this raw connection.
-        Class.forName("org.postgresql.Driver")
-        val conn = java.sql.DriverManager.getConnection(jdbcUrl, user, password)
-        conn.createStatement().execute(s"SELECT pg_advisory_lock($AdvisoryLockKey)")
-        conn
-      }
-    )(conn =>
-      ZIO
-        .attempt {
+    ZIO
+      .acquireRelease(
+        ZIO.attempt {
+          // Ensure the JDBC driver is registered: in a freshly-forked module JVM it
+          // may not be loaded yet when we open this raw connection.
+          Class.forName("org.postgresql.Driver")
+          val conn = java.sql.DriverManager.getConnection(jdbcUrl, user, password)
+          conn.createStatement().execute(s"SELECT pg_advisory_lock($AdvisoryLockKey)")
+          conn
+        }
+      )(conn =>
+        ZIO.attempt {
           try conn.createStatement().execute(s"SELECT pg_advisory_unlock($AdvisoryLockKey)")
           finally conn.close()
-        }
-        .ignore
-    ).unit
+        }.ignore
+      )
+      .unit
 
   /**
    * Provides a Transactor backed by the shared container, running Flyway migrations (production schema only) to ensure
@@ -151,7 +146,7 @@ object PostgresTestContainer {
       // Migrate the shared container once per JVM (memoised). Forced here, under
       // the advisory lock, so two module JVMs never migrate concurrently and
       // every spec after the first skips the Flyway connect + migrate.
-      _  <- ZIO.attempt(migratedOnce)
+      _       <- ZIO.attempt(migratedOnce)
 
       ec <- ZIO.descriptor.map(_.executor.asExecutionContext)
       ds <-

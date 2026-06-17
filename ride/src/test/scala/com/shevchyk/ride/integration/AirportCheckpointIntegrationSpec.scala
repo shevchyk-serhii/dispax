@@ -260,9 +260,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             found.exists(_.isArrivalAirportTransfer),
             found.exists(r =>
               r.specifics
-                .collectFirst { case at: RideSpecifics.AirportTransfer =>
-                  at.isArrival
-                }
+                .collectFirst { case at: RideSpecifics.AirportTransfer => at.isArrival }
                 .getOrElse(false)
             )
           )

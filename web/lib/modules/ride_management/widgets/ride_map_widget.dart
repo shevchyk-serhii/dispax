@@ -42,14 +42,14 @@ class _RideMapWidgetState extends State<RideMapWidget> {
           key: ValueKey(
             'map_${widget.fromLocation?.address}_${widget.toLocation?.address}',
           ),
-          cameraOptions: _createInitialCamera(),
+          viewport: _createInitialViewport(),
           onMapCreated: _onMapCreated,
         ),
       ),
     );
   }
 
-  CameraOptions _createInitialCamera() {
+  CameraViewportState _createInitialViewport() {
     double lat = MapboxService.defaultLatitude;
     double lng = MapboxService.defaultLongitude;
     double zoom = 12.0;
@@ -58,9 +58,8 @@ class _RideMapWidgetState extends State<RideMapWidget> {
       _updateCameraToLocations();
     }
 
-    return MapboxService.createCameraOptions(
-      latitude: lat,
-      longitude: lng,
+    return CameraViewportState(
+      center: Point(coordinates: Position(lng, lat)),
       zoom: zoom,
     );
   }
