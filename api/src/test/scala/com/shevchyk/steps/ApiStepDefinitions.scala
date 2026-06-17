@@ -55,9 +55,9 @@ object ApiStepDefinitions {
   }
 
   private def tryConnect(): Boolean = {
-    import java.net.{HttpURLConnection, URL}
+    import java.net.HttpURLConnection
     try {
-      val url        = new URL("http://localhost:8080/health")
+      val url        = java.net.URI.create("http://localhost:8080/health").toURL
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("GET")
       connection.setConnectTimeout(1000)
@@ -100,8 +100,6 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   private var authToken: Option[String]       = None
   private var currentUserId: Option[PersonId] = None
   private val testData                        = mutable.Map[String, Any]()
-
-  private val client = Client.default
 
   import ApiStepDefinitions._
 
@@ -540,7 +538,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       val response = Unsafe.unsafe { implicit u =>
         Runtime.default.unsafe
           .run(
-            Client.request(request).provide(Client.default, zio.Scope.default)
+            Client.batched(request).provide(Client.default, zio.Scope.default)
           )
           .getOrThrow()
       }
@@ -550,7 +548,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       }
     }
     catch {
-      case e: Exception =>
+      case _: Exception =>
         // Server unreachable — fall back to mock so tests at least document intent
         val mockStatus = determineMockStatusUpdated(request)
         val mockBody   = determineMockBody(request)
@@ -1414,7 +1412,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     executeRequest(request)
   }
 
-  When("""^I send (\d+) requests per minute to "(.+)"$""") { (count: String, endpoint: String) =>
+  When("""^I send (\d+) requests per minute to "(.+)"$""") { (count: String, _: String) =>
     testData("request_count") = count.toInt
     if (count.toInt >= 100) {
       testData("rate_limited") = true
@@ -1422,7 +1420,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   }
 
   Then("""^the (\d+)(?:st|nd|rd|th) request should return status (\d+)$""") {
-    (requestNum: String, expectedStatus: String) =>
+    (_: String, expectedStatus: String) =>
       if (testData.get("rate_limited").contains(true) && expectedStatus == "429") {
         lastResponse = Response.status(Status.TooManyRequests)
         lastResponseBody = """{"error":"Rate limit exceeded"}"""
@@ -1968,9 +1966,8 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   Then("""^each flight record should contain:$""") { (dataTable: DataTable) =>
     val requiredFields = dataTable.asMaps().asScala.toList
     requiredFields.foreach { row =>
-      val field     = row.get("field")
-      val fieldType = row.get("type")
-      val required  = row.get("required").toBoolean
+      val field    = row.get("field")
+      val required = row.get("required").toBoolean
 
       if (required) {
         assert(lastResponseBody.contains(field), s"Response should contain required field: $field")
@@ -2052,7 +2049,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     executeRequest(request)
   }
 
-  Then("""the response should contain JSON:""") { (expectedJson: String) =>
+  Then("""the response should contain JSON:""") { (_: String) =>
     assert(lastResponseBody.contains("{") && lastResponseBody.contains("}"), "Response should contain JSON data")
   }
 

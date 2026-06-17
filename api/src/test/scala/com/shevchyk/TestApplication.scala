@@ -3,7 +3,6 @@ package com.shevchyk
 import com.shevchyk.app.routes.WebSocketRoutes
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.config.JwtConfig
-import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.middleware.RateLimiter
 import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.auth.domain.JwtError
@@ -30,7 +29,6 @@ import com.shevchyk.core.domain.{
   RidePool,
   RidePoolId,
   RidePoolMember,
-  RidePoolMemberId,
   PoolStatus,
   PoolMemberStatus,
   Session,
@@ -52,13 +50,10 @@ import com.shevchyk.core.repository.{
 import com.shevchyk.notification.application.{FcmService, LoggingEmailSmsService}
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId}
 import com.shevchyk.notification.repository.{
-  CheckpointNotificationRepository,
-  InMemoryCheckpointNotificationRepository,
   InMemoryFcmTokenRepository,
-  InMemoryNotificationRepository,
   NotificationRepository
 }
-import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.application.service.{
@@ -78,10 +73,8 @@ import com.shevchyk.ride.domain.{
   Expense,
   ExpenseCategory,
   ExpenseId,
-  MucCheckpoints,
   RecurrencePattern,
   Ride,
-  RideError,
   RideSpecifics,
   RideStatus,
   RideTemplate,
@@ -106,7 +99,6 @@ import com.shevchyk.schedule.repository.{DriverScheduleVisibilityRepository, Sch
 import org.mindrot.jbcrypt.BCrypt
 import zio.*
 import zio.http.*
-import zio.json.*
 import zio.logging.backend.SLF4J
 
 import java.time.{Instant, LocalDate, ZoneOffset}
@@ -970,7 +962,6 @@ object TestApplication extends ZIOAppDefault:
           .map(_.values.filter(_.driverId == driverId).toList)
         def findByCompanyId(companyId: CompanyId): Task[List[Expense]]                                          = store.get
           .map(_.values.filter(_.companyId == companyId).toList)
-        def update(e: Expense): Task[Expense]                                                                   = store.update(_.updated(e.id, e)).as(e)
         def delete(id: ExpenseId, companyId: CompanyId): Task[Boolean]                                          = store.modify { m =>
           m.get(id) match
             case Some(e) if e.companyId == companyId => (true, m.removed(id))
@@ -1242,7 +1233,6 @@ object TestApplication extends ZIOAppDefault:
       NotificationPreferenceRepository.inMemory,
       noopFcmServiceLayer,
       LoggingEmailSmsService.layer,
-      InMemoryCheckpointNotificationRepository.layer,
       // Core infra
       EventHub.layer,
       AuditService.inMemory,
@@ -1363,7 +1353,6 @@ object TestApplication extends ZIOAppDefault:
       inMemoryClientLocationRepositoryLayer,
       AirportCheckpointService.layer,
       ClientLocationService.layer,
-      EtaService.layer,
       // Chat + templates
       InMemoryChatMessageRepository.layer,
       ChatService.layer,
