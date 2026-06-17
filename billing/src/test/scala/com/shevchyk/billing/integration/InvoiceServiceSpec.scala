@@ -674,6 +674,44 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           rides.head.rideId == completedId
         )
       },
+      // -- Plan criterion (b): SMTP failure must NOT advance invoice to Sent -------
+      test("sendInvoice keeps invoice in Draft when email delivery fails (EmailDeliveryError)") {
+        // Email double that always fails — simulates an SMTP transport error.
+        def makeFailingEmailService(xa: Transactor[Task]): InvoiceService =
+          val failingEmail =
+            new com.shevchyk.core.application.EmailSmsService:
+              def sendRideConfirmation(d: com.shevchyk.core.application.RideConfirmationData): Task[Unit] = ZIO.unit
+              def sendDriverAssignment(d: com.shevchyk.core.application.RideConfirmationData): Task[Unit] = ZIO.unit
+              def sendInvoiceEmail(d: InvoiceEmailData): Task[Unit]                                       = ZIO.fail(
+                new RuntimeException("Simulated SMTP failure")
+              )
+          InvoiceServiceImpl(
+            PostgresInvoiceRepository(xa),
+            PostgresClientCompanyRepository(xa),
+            PostgresCompanyBillingProfileRepository(xa),
+            failingEmail
+          )
+
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanData(xa)
+          svc      = makeFailingEmailService(xa)
+          inv     <- svc.createInvoice(testCompanyId, makeRequest())
+          result  <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir).either
+          // Re-fetch the invoice directly from the repo to confirm no status change.
+          repo     = PostgresInvoiceRepository(xa)
+          refetch <- repo.findById(inv.id)
+        } yield assertTrue(
+          // sendInvoice must fail with EmailDeliveryError.
+          result match
+            case Left(InvoiceError.EmailDeliveryError(_)) => true
+            case _                                        => false
+          ,
+          // The persisted invoice must still be in Draft — not Sent.
+          refetch.exists(_.status == InvoiceStatus.Draft)
+        )
+      },
       test("findOverdueUnpaid returns sent, unpaid, overdue, not-yet-reminded invoices") {
         for {
           xa      <- ZIO.service[Transactor[Task]]
