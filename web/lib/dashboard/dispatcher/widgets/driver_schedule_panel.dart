@@ -151,6 +151,7 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                     ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
               return BlocBuilder<RideBloc, RideState>(
+                buildWhen: (prev, curr) => prev.rides != curr.rides,
                 builder: (context, rideState) {
                   final days = _applyFilters(allDays, rideState.rides);
 
@@ -595,6 +596,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RideBloc, RideState>(
+      buildWhen: (prev, curr) => prev.rides != curr.rides,
       builder: (context, rideState) {
         final driverRides = rideState.rides
             .where(

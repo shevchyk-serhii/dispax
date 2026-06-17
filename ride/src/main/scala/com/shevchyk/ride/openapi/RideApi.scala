@@ -319,22 +319,23 @@ object RideApi:
   private val getClientRidesServer: ZServerEndpoint[RideEnv, Any] = getClientRidesEndpoint.serverLogic {
     user => clientId =>
       for {
-        clientPid  <- parsePersonId(clientId)
-        _          <- checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
-        service    <- ZIO.service[RideService]
-        personRepo <- ZIO.service[PersonRepository]
-        rides      <- service.getClientRides(clientPid).mapError(fromRideError)
-        clientName <- personRepo.findById(clientPid).map(_.map(_.name)).mapError(fromRideError)
-        rideDtos   <- ZIO
-                        .foreach(rides) { r =>
-                          r.driverId match
-                            case Some(dId) =>
-                              personRepo
-                                .findById(dId)
-                                .map(d => RideDto.fromDomain(r, clientName = clientName, driverName = d.map(_.name)))
-                            case None      => ZIO.succeed(RideDto.fromDomain(r, clientName = clientName))
-                        }
-                        .mapError(fromRideError)
+        clientPid   <- parsePersonId(clientId)
+        _           <- checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
+        service     <- ZIO.service[RideService]
+        personRepo  <- ZIO.service[PersonRepository]
+        rides       <- service.getClientRides(clientPid).mapError(fromRideError)
+        clientName  <- personRepo.findById(clientPid).map(_.map(_.name)).mapError(fromRideError)
+        // Resolve every distinct driver name once in parallel instead of one sequential
+        // findById per ride (was N+1).
+        driverIds    = rides.flatMap(_.driverId).distinct
+        driverNames <- ZIO
+                         .foreachPar(driverIds)(id => personRepo.findById(id).map(p => id -> p.map(_.name)))
+                         .map(_.toMap)
+                         .mapError(fromRideError)
+        rideDtos     = rides.map { r =>
+                         val driverName = r.driverId.flatMap(driverNames.getOrElse(_, None))
+                         RideDto.fromDomain(r, clientName = clientName, driverName = driverName)
+                       }
       } yield rideDtos
   }
 

@@ -195,64 +195,55 @@ object StatsApi:
   private val driverPerformanceServer: ZServerEndpoint[StatsEnv, Any] = driverPerformanceEndpoint.serverLogic {
     user => _ =>
       for {
-        _          <- checkRole(user, "DISPATCHER", "ADMIN")
-        companyId  <- requireCompanyId(user.companyId)
-        service    <- ZIO.service[RideService]
-        personRepo <- ZIO.service[PersonRepository]
-        ratingRepo <- ZIO.service[RideRatingRepository]
-        allRides   <- service.getRidesByCompany(companyId).mapError(_ => internalError)
-        drivers    <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId).mapError(_ => internalError)
-        entries    <- ZIO
-                        .foreach(drivers) { driver =>
-                          val driverRides    = allRides.filter(_.driverId.contains(driver.id))
-                          val completedRides = driverRides.filter(_.status == RideStatus.Completed)
-                          val cancelledRides = driverRides.count(_.status == RideStatus.Cancelled)
-                          val totalEarnings  =
-                            completedRides.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).map(_.doubleValue).sum
-                          val completionRate =
-                            if driverRides.nonEmpty then completedRides.size.toDouble / driverRides.size else 0.0
-                          val avgEarnings    = if completedRides.nonEmpty then totalEarnings / completedRides.size else 0.0
-                          ratingRepo.getDriverAvgRating(driver.id).map { avgRating =>
-                            DriverPerformanceEntry(
-                              driverId = driver.id.value.toString,
-                              driverName = driver.name,
-                              totalRides = driverRides.size,
-                              completedRides = completedRides.size,
-                              cancelledRides = cancelledRides,
-                              completionRate = completionRate,
-                              totalEarnings = totalEarnings,
-                              avgEarningsPerRide = avgEarnings,
-                              avgRating = avgRating
-                            )
-                          }
-                        }
-                        .mapError(_ => internalError)
-      } yield entries
+        _           <- checkRole(user, "DISPATCHER", "ADMIN")
+        companyId   <- requireCompanyId(user.companyId)
+        service     <- ZIO.service[RideService]
+        personRepo  <- ZIO.service[PersonRepository]
+        ratingRepo  <- ZIO.service[RideRatingRepository]
+        allRides    <- service.getRidesByCompany(companyId).mapError(_ => internalError)
+        drivers     <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId).mapError(_ => internalError)
+        // Single GROUP BY query instead of one avg-rating query per driver (was N+1).
+        ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(_ => internalError)
+      } yield drivers.map { driver =>
+        val driverRides    = allRides.filter(_.driverId.contains(driver.id))
+        val completedRides = driverRides.filter(_.status == RideStatus.Completed)
+        val cancelledRides = driverRides.count(_.status == RideStatus.Cancelled)
+        val totalEarnings  = completedRides.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).map(_.doubleValue).sum
+        val completionRate = if driverRides.nonEmpty then completedRides.size.toDouble / driverRides.size else 0.0
+        val avgEarnings    = if completedRides.nonEmpty then totalEarnings / completedRides.size else 0.0
+        DriverPerformanceEntry(
+          driverId = driver.id.value.toString,
+          driverName = driver.name,
+          totalRides = driverRides.size,
+          completedRides = completedRides.size,
+          cancelledRides = cancelledRides,
+          completionRate = completionRate,
+          totalEarnings = totalEarnings,
+          avgEarningsPerRide = avgEarnings,
+          avgRating = ratingStats.get(driver.id).map(_._1)
+        )
+      }
   }
 
   private val driverRatingsServer: ZServerEndpoint[StatsEnv, Any] = driverRatingsEndpoint.serverLogic { user => _ =>
     for {
-      _          <- checkRole(user, "DISPATCHER", "ADMIN")
-      companyId  <- requireCompanyId(user.companyId)
-      personRepo <- ZIO.service[PersonRepository]
-      ratingRepo <- ZIO.service[RideRatingRepository]
-      drivers    <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId).mapError(_ => internalError)
-      entries    <- ZIO
-                      .foreach(drivers) { driver =>
-                        for {
-                          ratings <- ratingRepo.findByDriverId(driver.id)
-                          avgOpt  <- ratingRepo.getDriverAvgRating(driver.id)
-                        } yield avgOpt.map { avg =>
-                          DriverRatingEntry(
-                            driverId = driver.id.value.toString,
-                            driverName = driver.name,
-                            avgRating = avg,
-                            totalRatings = ratings.size
-                          )
-                        }
-                      }
-                      .mapError(_ => internalError)
-    } yield entries.flatten
+      _           <- checkRole(user, "DISPATCHER", "ADMIN")
+      companyId   <- requireCompanyId(user.companyId)
+      personRepo  <- ZIO.service[PersonRepository]
+      ratingRepo  <- ZIO.service[RideRatingRepository]
+      drivers     <- personRepo.findByRoleAndCompany(PersonRole.Driver, companyId).mapError(_ => internalError)
+      // Single GROUP BY query instead of two queries (list + avg) per driver (was N+1).
+      ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(_ => internalError)
+    } yield drivers.flatMap { driver =>
+      ratingStats.get(driver.id).map { case (avg, count) =>
+        DriverRatingEntry(
+          driverId = driver.id.value.toString,
+          driverName = driver.name,
+          avgRating = avg,
+          totalRatings = count
+        )
+      }
+    }
   }
 
   val serverEndpoints: List[ZServerEndpoint[StatsEnv, Any]] = List(

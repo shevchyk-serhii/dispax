@@ -19,12 +19,35 @@ case class DatabaseConfig(
     user: String,
     password: String,
     maxPoolSize: Int = 10,
-    minIdle: Int = 2
+    minIdle: Int = 2,
+    // Hikari timeouts (milliseconds). Defaults mirror Hikari's own defaults but are made explicit
+    // and env-overridable so production can tune them: connectionTimeout caps how long a request
+    // waits for a free connection before failing fast; maxLifetime/idleTimeout recycle connections.
+    connectionTimeoutMs: Long = 30000,
+    idleTimeoutMs: Long = 600000,
+    maxLifetimeMs: Long = 1800000
 )
 
 object DatabaseConfig {
 
   private val configDescriptor: Config[DatabaseConfig] = deriveConfig[DatabaseConfig].nested("database")
+
+  /**
+   * Builds a fully-configured Hikari pool from a DatabaseConfig. Single source of truth so the pool settings (and
+   * timeouts) cannot drift between the migrating and non-migrating transactors.
+   */
+  private def buildHikari(dbConfig: DatabaseConfig): HikariConfig =
+    val hc = new HikariConfig()
+    hc.setDriverClassName(dbConfig.driver)
+    hc.setJdbcUrl(dbConfig.url)
+    hc.setUsername(dbConfig.user)
+    hc.setPassword(dbConfig.password)
+    hc.setMaximumPoolSize(dbConfig.maxPoolSize)
+    hc.setMinimumIdle(dbConfig.minIdle)
+    hc.setConnectionTimeout(dbConfig.connectionTimeoutMs)
+    hc.setIdleTimeout(dbConfig.idleTimeoutMs)
+    hc.setMaxLifetime(dbConfig.maxLifetimeMs)
+    hc
 
   val layer: ZLayer[Any, Throwable, DatabaseConfig] = ZLayer.fromZIO(
     read(configDescriptor.from(ConfigProvider.fromResourcePath()))
@@ -41,17 +64,10 @@ object DatabaseConfig {
 
   val transactorLayer: ZLayer[DatabaseConfig, Throwable, Transactor[Task]] = ZLayer.scoped {
     for {
-      dbConfig    <- ZIO.service[DatabaseConfig]
-      hikariConfig = new HikariConfig()
-      _            = hikariConfig.setDriverClassName(dbConfig.driver)
-      _            = hikariConfig.setJdbcUrl(dbConfig.url)
-      _            = hikariConfig.setUsername(dbConfig.user)
-      _            = hikariConfig.setPassword(dbConfig.password)
-      _            = hikariConfig.setMaximumPoolSize(dbConfig.maxPoolSize)
-      _            = hikariConfig.setMinimumIdle(dbConfig.minIdle)
-      dataSource  <- ZIO.fromAutoCloseable(ZIO.attempt(new HikariDataSource(hikariConfig)))
-      ec          <- ZIO.descriptor.map(_.executor.asExecutionContext)
-      transactor   = Transactor.fromDataSource[Task](dataSource, ec)
+      dbConfig   <- ZIO.service[DatabaseConfig]
+      dataSource <- ZIO.fromAutoCloseable(ZIO.attempt(new HikariDataSource(buildHikari(dbConfig))))
+      ec         <- ZIO.descriptor.map(_.executor.asExecutionContext)
+      transactor  = Transactor.fromDataSource[Task](dataSource, ec)
     } yield transactor
   }
 
@@ -65,14 +81,7 @@ object DatabaseConfig {
                            count => ZIO.logInfo(s"Applied $count migrations successfully")
                          )
       dbConfig      <- ZIO.service[DatabaseConfig]
-      hikariConfig   = new HikariConfig()
-      _              = hikariConfig.setDriverClassName(dbConfig.driver)
-      _              = hikariConfig.setJdbcUrl(dbConfig.url)
-      _              = hikariConfig.setUsername(dbConfig.user)
-      _              = hikariConfig.setPassword(dbConfig.password)
-      _              = hikariConfig.setMaximumPoolSize(dbConfig.maxPoolSize)
-      _              = hikariConfig.setMinimumIdle(dbConfig.minIdle)
-      dataSource    <- ZIO.fromAutoCloseable(ZIO.attempt(new HikariDataSource(hikariConfig)))
+      dataSource    <- ZIO.fromAutoCloseable(ZIO.attempt(new HikariDataSource(buildHikari(dbConfig))))
       ec            <- ZIO.descriptor.map(_.executor.asExecutionContext)
       transactor     = Transactor.fromDataSource[Task](dataSource, ec)
     } yield transactor

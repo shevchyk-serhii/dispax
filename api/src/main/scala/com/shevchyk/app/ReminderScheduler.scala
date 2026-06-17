@@ -13,7 +13,9 @@ import java.time.{Instant, ZoneOffset}
 object ReminderScheduler:
 
   def start: ZIO[RideRepository & PersonRepository & FcmService & SentReminderRepository, Nothing, Unit] =
-    val tick = checkAndSend.catchAll(e => ZIO.logError(s"ReminderScheduler error: $e"))
+    // Bound concurrency of the parallel FCM sends so a burst of due rides can't open an
+    // unbounded number of simultaneous push requests.
+    val tick = checkAndSend.withParallelism(8).catchAll(e => ZIO.logError(s"ReminderScheduler error: $e"))
     ZIO.logInfo("ReminderScheduler started") *>
       tick.repeat(Schedule.fixed(1.minute)).forkDaemon.unit
 
@@ -37,8 +39,10 @@ object ReminderScheduler:
             rides      <- rideRepo.findAssignedRidesInWindow(windowFrom, windowTo)
             driversById = drivers.filter(_.reminderMinutes == minutes).map(d => d.id -> d).toMap
 
+            // Each ride's reminder is independent; send them concurrently (bounded) so a large
+            // window doesn't take O(rides) FCM round-trips serially.
             _ <-
-              ZIO.foreachDiscard(rides) { ride =>
+              ZIO.foreachParDiscard(rides) { ride =>
                 ride.driverId match
                   case Some(driverId) if driversById.contains(driverId) =>
                     val driver = driversById(driverId)

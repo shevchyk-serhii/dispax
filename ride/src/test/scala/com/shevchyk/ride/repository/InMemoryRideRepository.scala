@@ -35,6 +35,15 @@ class InMemoryRideRepository extends RideRepository:
     _.values.filter(_.companyId == companyId).toList
   )
 
+  override def findByCompanyIdPaginated(companyId: CompanyId, offset: Int, limit: Int): Task[List[Ride]] = rides.get
+    .map(
+      _.values.filter(_.companyId == companyId).toList.sortBy(_.requestTime).reverse.drop(offset).take(limit)
+    )
+
+  override def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]] = rides.get.map(
+    _.values.filter(_.driverId.contains(driverId)).toList.sortBy(_.requestTime).reverse.drop(offset).take(limit)
+  )
+
   override def findAll(): Task[List[Ride]] = rides.get.map(_.values.toList)
 
   override def delete(id: RideId): Task[Unit] = rides.update(_.removed(id)).unit

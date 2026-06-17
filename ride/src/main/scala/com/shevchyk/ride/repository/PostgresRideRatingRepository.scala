@@ -54,6 +54,18 @@ final class PostgresRideRatingRepository(xa: Transactor[Task]) extends RideRatin
       .unique
       .transact(xa)
 
+  override def driverRatingStatsByCompany(companyId: CompanyId): Task[Map[PersonId, (Double, Int)]] =
+    sql"""
+      SELECT driver_id, AVG(rating)::double precision, COUNT(*)::int
+      FROM ride_ratings
+      WHERE company_id = ${companyId.value}
+      GROUP BY driver_id
+    """
+      .query[(UUID, Double, Int)]
+      .to[List]
+      .transact(xa)
+      .map(_.map { case (driverId, avg, count) => PersonId(driverId) -> (avg, count) }.toMap)
+
   implicit val ratingRead: Read[RideRating] = Read[(UUID, UUID, UUID, UUID, UUID, Int, Option[String], Instant)].map {
     case (id, rideId, clientId, driverId, companyId, rating, comment, createdAt) =>
       RideRating(

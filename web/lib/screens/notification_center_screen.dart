@@ -24,6 +24,18 @@ class _Notification {
     this.data,
   });
 
+  _Notification copyWith({bool? isRead}) {
+    return _Notification(
+      id: id,
+      title: title,
+      body: body,
+      notificationType: notificationType,
+      createdAt: createdAt,
+      isRead: isRead ?? this.isRead,
+      data: data,
+    );
+  }
+
   factory _Notification.fromJson(Map<String, dynamic> json) {
     return _Notification(
       id: json['id']?['value'] ?? json['id'] ?? '',
@@ -129,8 +141,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       final typeParam = _selectedFilter != 'all'
           ? '&type=$_selectedFilter'
           : '';
-      final resp = await apiClient.get('/notifications?limit=50$typeParam');
-      final countResp = await apiClient.get('/notifications/unread-count');
+      // Fetch list and unread-count in parallel instead of sequentially.
+      final responses = await Future.wait([
+        apiClient.get('/notifications?limit=50$typeParam'),
+        apiClient.get('/notifications/unread-count'),
+      ]);
+      final resp = responses[0];
+      final countResp = responses[1];
 
       if (mounted) {
         if (resp.statusCode == 200 && countResp.statusCode == 200) {
@@ -164,7 +181,19 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.put('/notifications/$id/read', {});
-      _loadNotifications();
+      // Update locally instead of refetching the whole list + count.
+      if (!mounted) return;
+      setState(() {
+        var decremented = false;
+        _notifications = _notifications.map((n) {
+          if (n.id == id && !n.isRead) {
+            decremented = true;
+            return n.copyWith(isRead: true);
+          }
+          return n;
+        }).toList();
+        if (decremented && _unreadCount > 0) _unreadCount--;
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -177,7 +206,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.put('/notifications/read-all', {});
-      _loadNotifications();
+      if (!mounted) return;
+      setState(() {
+        _notifications = _notifications
+            .map((n) => n.isRead ? n : n.copyWith(isRead: true))
+            .toList();
+        _unreadCount = 0;
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -190,7 +225,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.delete('/notifications/$id');
-      _loadNotifications();
+      if (!mounted) return;
+      setState(() {
+        final removed = _notifications.where((n) => n.id == id).toList();
+        final wasUnread = removed.any((n) => !n.isRead);
+        _notifications = _notifications.where((n) => n.id != id).toList();
+        if (wasUnread && _unreadCount > 0) _unreadCount--;
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -429,8 +470,15 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     );
   }
 
-  Widget _buildGroupedList() {
-    // Group by date
+  // Cache of the date-grouped notifications. Recomputed only when the underlying
+  // _notifications list reference changes (it is reassigned on every mutation), so we
+  // neither regroup on every build nor pay the O(n) entries.elementAt() per list item.
+  List<_Notification>? _groupedSource;
+  List<MapEntry<String, List<_Notification>>> _groupedEntries = const [];
+
+  List<MapEntry<String, List<_Notification>>> _computeGroupedEntries() {
+    if (identical(_groupedSource, _notifications)) return _groupedEntries;
+
     final grouped = <String, List<_Notification>>{};
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -453,11 +501,19 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       grouped.putIfAbsent(label, () => []).add(n);
     }
 
+    _groupedSource = _notifications;
+    _groupedEntries = grouped.entries.toList();
+    return _groupedEntries;
+  }
+
+  Widget _buildGroupedList() {
+    final entries = _computeGroupedEntries();
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      itemCount: grouped.length,
+      itemCount: entries.length,
       itemBuilder: (context, groupIndex) {
-        final entry = grouped.entries.elementAt(groupIndex);
+        final entry = entries[groupIndex];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

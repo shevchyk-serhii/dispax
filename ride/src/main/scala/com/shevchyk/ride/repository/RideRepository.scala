@@ -19,6 +19,10 @@ trait RideRepository {
   def findByClientId(clientId: PersonId): Task[List[Ride]]
   def findByDriverId(driverId: PersonId): Task[List[Ride]]
   def findByCompanyId(companyId: CompanyId): Task[List[Ride]]
+  // Paginated variants: ordering, LIMIT and OFFSET are applied in SQL so the full
+  // table is never loaded into memory just to serve a single page.
+  def findByCompanyIdPaginated(companyId: CompanyId, offset: Int, limit: Int): Task[List[Ride]]
+  def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]]
   def update(ride: Ride): Task[Ride]
   def delete(id: RideId): Task[Unit]
   def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]

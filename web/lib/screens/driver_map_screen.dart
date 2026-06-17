@@ -120,8 +120,14 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   void _startPulse() {
-    _pulseTimer = Timer.periodic(const Duration(milliseconds: 700), (_) {
+    // 1s interval (was 700ms): each tick fires async Mapbox bridge update() calls,
+    // so a slower pulse roughly halves that churn while staying visibly animated.
+    _pulseTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
+      // Nothing to animate yet — skip the bridge round-trips entirely.
+      if (_clientLabelAnnotation == null && _driverSelfAnnotation == null) {
+        return;
+      }
       _pulseState = !_pulseState;
       final size = _pulseState ? 2.0 : 1.5;
       if (_clientLabelAnnotation != null) {
@@ -143,6 +149,10 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     _wsSubscription?.cancel();
     _geofenceOverlayTimer?.cancel();
     _pulseTimer?.cancel();
+    // Release Mapbox annotations so markers don't linger on the shared native map.
+    _pointAnnotationManager?.deleteAll();
+    _circleAnnotationManager?.deleteAll();
+    _checkpointAnnotationManager?.deleteAll();
     _locationService.dispose();
     super.dispose();
   }
@@ -490,6 +500,8 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   DateTime? _lastLocationSent;
+  double? _lastSentLat;
+  double? _lastSentLng;
 
   void _sendLocationUpdate() {
     if (_currentPosition == null) return;
@@ -500,10 +512,25 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         now.difference(_lastLocationSent!).inSeconds < 10) {
       return;
     }
-    _lastLocationSent = now;
+
+    // Skip when the driver hasn't meaningfully moved (< 25m) since the last send:
+    // a parked driver shouldn't keep re-posting the same coordinate every 30s.
+    if (_lastSentLat != null && _lastSentLng != null) {
+      final moved = geo.Geolocator.distanceBetween(
+        _lastSentLat!,
+        _lastSentLng!,
+        _currentPosition!.latitude,
+        _currentPosition!.longitude,
+      );
+      if (moved < 25) return;
+    }
 
     final authState = context.read<AuthBloc>().state;
     if (!authState.isAuthenticated || authState.user == null) return;
+
+    _lastLocationSent = now;
+    _lastSentLat = _currentPosition!.latitude;
+    _lastSentLng = _currentPosition!.longitude;
 
     _rideService?.updateDriverLocation(
       authState.user!.id,

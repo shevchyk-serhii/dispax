@@ -22,6 +22,7 @@ class MonthViewWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return BlocBuilder<RideBloc, RideState>(
+      buildWhen: (prev, curr) => prev.rides != curr.rides,
       builder: (context, rideState) {
         return Container(
           decoration: BoxDecoration(

@@ -130,7 +130,7 @@ object ExportApi:
                        }
       clientIds      = completedRides.map(_.clientId).distinct
       clients       <-
-        ZIO.foreach(clientIds)(id => personRepo.findById(id).map(p => id -> p.map(_.name).getOrElse("Unbekannt")))
+        ZIO.foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p.map(_.name).getOrElse("Unbekannt")))
       clientMap      = clients.toMap
     yield (completedRides, monthExpenses, clientMap)).mapError(_ => internalError)
 

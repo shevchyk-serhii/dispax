@@ -76,6 +76,9 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
 
         if (timing?.shouldDepartNow == true) {
           widget.onEntryTimeReached?.call();
+          // Departure has been signalled — no further recalculation is useful, so stop
+          // the per-minute polling (and its network call) for this ride.
+          _updateTimer?.cancel();
         }
       }
     } catch (e) {

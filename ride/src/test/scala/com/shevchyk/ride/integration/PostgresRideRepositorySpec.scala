@@ -138,6 +138,42 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           empty.isEmpty
         )
       },
+      test("findByCompanyIdPaginated orders by request_time desc and applies limit/offset in SQL") {
+        val base = Instant.parse("2026-01-01T00:00:00Z")
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          // Five rides with strictly increasing request times → newest is r5.
+          rides  = (0 until 5).map(i => makeRide().copy(requestTime = base.plusSeconds(i.toLong * 60))).toList
+          _     <- ZIO.foreachDiscard(rides)(repo.create)
+          page1 <- repo.findByCompanyIdPaginated(testCompanyId, offset = 0, limit = 2)
+          page2 <- repo.findByCompanyIdPaginated(testCompanyId, offset = 2, limit = 2)
+          page3 <- repo.findByCompanyIdPaginated(testCompanyId, offset = 4, limit = 2)
+        } yield assertTrue(
+          page1.map(_.id) == List(rides(4).id, rides(3).id),
+          page2.map(_.id) == List(rides(2).id, rides(1).id),
+          page3.map(_.id) == List(rides(0).id)
+        )
+      },
+      test("findByDriverIdPaginated returns only the driver's rides, newest first") {
+        val base = Instant.parse("2026-02-01T00:00:00Z")
+        for {
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- seedTestData(xa)
+          _    <- cleanRides(xa)
+          repo  = PostgresRideRepository(xa)
+          d1    = makeRide(driver = Some(driverId)).copy(requestTime = base)
+          d2    = makeRide(driver = Some(driverId)).copy(requestTime = base.plusSeconds(60))
+          other = makeRide(driver = None).copy(requestTime = base.plusSeconds(120))
+          _    <- ZIO.foreachDiscard(List(d1, d2, other))(repo.create)
+          page <- repo.findByDriverIdPaginated(driverId, offset = 0, limit = 10)
+        } yield assertTrue(
+          page.map(_.id) == List(d2.id, d1.id),
+          page.forall(_.driverId.contains(driverId))
+        )
+      },
       test("findByDriverId returns assigned rides") {
         for {
           xa    <- ZIO.service[Transactor[Task]]
@@ -358,168 +394,192 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
       },
       // -------------------------------------------------------------------------
       // Platform-level (cross-tenant) analytics — Testcontainers integration
-    // These tests insert rides for TWO different companies and verify that the
-    // platform methods aggregate across company boundaries (no company_id filter)
-    // and that per-company breakdowns split correctly.
-    // -------------------------------------------------------------------------
-    suite("Platform-level cross-tenant analytics (Testcontainers)")(
-      test("countAllRidesByStatus spans both companies") {
-        val company2Id = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
-        for {
-          xa   <- ZIO.service[Transactor[Task]]
-          _    <- seedTestData(xa)
-          _    <- (for {
-                    _ <- sql"""INSERT INTO companies (id, name, email)
+      // These tests insert rides for TWO different companies and verify that the
+      // platform methods aggregate across company boundaries (no company_id filter)
+      // and that per-company breakdowns split correctly.
+      // -------------------------------------------------------------------------
+      suite("Platform-level cross-tenant analytics (Testcontainers)")(
+        test("countAllRidesByStatus spans both companies") {
+          val company2Id = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+          for {
+            xa     <- ZIO.service[Transactor[Task]]
+            _      <- seedTestData(xa)
+            _      <-
+              (for {
+                _ <-
+                  sql"""INSERT INTO companies (id, name, email)
                                  VALUES (${company2Id.value}, 'Company 2 GmbH', 'c2@test.com')
                                  ON CONFLICT DO NOTHING""".update.run
-                    _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+                _ <-
+                  sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
                                  VALUES (${UUID.fromString("00000002-0000-0000-0000-000000000003")},
                                          'Client 2', 'client2@test.com', 'client'::person_role,
                                          ${company2Id.value}, 'placeholder')
                                  ON CONFLICT DO NOTHING""".update.run
-                  } yield ()).transact(xa)
-          _    <- cleanRides(xa)
-          repo  = PostgresRideRepository(xa)
-          // Company 1: 2 Completed rides
-          _    <- repo.create(makeRide(status = RideStatus.Completed))
-          _    <- repo.create(makeRide(status = RideStatus.Completed))
-          // Company 2: 1 Requested ride (different company)
-          _    <- repo.create(
-                    makeRide(status = RideStatus.Requested).copy(
-                      companyId = company2Id,
-                      clientId = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003"))
-                    )
-                  )
-          counts <- repo.countAllRidesByStatus()
-        } yield assertTrue(
-          // Both companies' rides appear in the aggregate — no company filter applied
-          counts.getOrElse("Completed", 0) == 2,
-          counts.getOrElse("Requested", 0) == 1
-        )
-      },
-      test("sumAllRevenue aggregates Completed rides across both companies") {
-        val company2Id = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
-        for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- (for {
-                       _ <- sql"""INSERT INTO companies (id, name, email)
+              } yield ()).transact(xa)
+            _      <- cleanRides(xa)
+            repo    = PostgresRideRepository(xa)
+            // Company 1: 2 Completed rides
+            _      <- repo.create(makeRide(status = RideStatus.Completed))
+            _      <- repo.create(makeRide(status = RideStatus.Completed))
+            // Company 2: 1 Requested ride (different company)
+            _      <- repo.create(
+                        makeRide(status = RideStatus.Requested).copy(
+                          companyId = company2Id,
+                          clientId = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003"))
+                        )
+                      )
+            counts <- repo.countAllRidesByStatus()
+          } yield assertTrue(
+            // Both companies' rides appear in the aggregate — no company filter applied
+            counts.getOrElse("Completed", 0) == 2,
+            counts.getOrElse("Requested", 0) == 1
+          )
+        },
+        test("sumAllRevenue aggregates Completed rides across both companies") {
+          val company2Id = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+          for {
+            xa      <- ZIO.service[Transactor[Task]]
+            _       <- seedTestData(xa)
+            _       <-
+              (for {
+                _ <-
+                  sql"""INSERT INTO companies (id, name, email)
                                     VALUES (${company2Id.value}, 'Company 2 GmbH', 'c2@test.com')
                                     ON CONFLICT DO NOTHING""".update.run
-                       _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+                _ <-
+                  sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
                                     VALUES (${UUID.fromString("00000002-0000-0000-0000-000000000003")},
                                             'Client 2', 'client2@test.com', 'client'::person_role,
                                             ${company2Id.value}, 'placeholder')
                                     ON CONFLICT DO NOTHING""".update.run
-                     } yield ()).transact(xa)
-          _       <- cleanRides(xa)
-          repo     = PostgresRideRepository(xa)
-          now      = Instant.now()
-          endTime  = now.minusSeconds(60)
-          from     = now.minusSeconds(3600 * 24 * 7)
-          to       = now.plusSeconds(3600)
-          // Company 1: Completed ride worth 50
-          _       <- repo.create(makeRide(status = RideStatus.Completed).copy(
-                       finalPrice = Some(BigDecimal("50.00")),
-                       endTime = Some(endTime)
-                     ))
-          // Company 2: Completed ride worth 75
-          _       <- repo.create(makeRide(status = RideStatus.Completed).copy(
-                       companyId = company2Id,
-                       clientId = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003")),
-                       finalPrice = Some(BigDecimal("75.00")),
-                       endTime = Some(endTime)
-                     ))
-          // Cancelled ride: must NOT count towards revenue
-          _       <- repo.create(makeRide(status = RideStatus.Cancelled).copy(
-                       finalPrice = Some(BigDecimal("999.00")),
-                       endTime = Some(endTime)
-                     ))
-          revenue <- repo.sumAllRevenue(from, to)
-        } yield assertTrue(
-          // Revenue from both companies: 50 + 75 = 125; cancelled ride excluded
-          revenue == BigDecimal("125.00")
-        )
-      },
-      test("countRidesByCompany splits counts by company correctly") {
-        val company2Id = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
-        for {
-          xa   <- ZIO.service[Transactor[Task]]
-          _    <- seedTestData(xa)
-          _    <- (for {
-                    _ <- sql"""INSERT INTO companies (id, name, email)
+              } yield ()).transact(xa)
+            _       <- cleanRides(xa)
+            repo     = PostgresRideRepository(xa)
+            now      = Instant.now()
+            endTime  = now.minusSeconds(60)
+            from     = now.minusSeconds(3600 * 24 * 7)
+            to       = now.plusSeconds(3600)
+            // Company 1: Completed ride worth 50
+            _       <- repo.create(
+                         makeRide(status = RideStatus.Completed).copy(
+                           finalPrice = Some(BigDecimal("50.00")),
+                           endTime = Some(endTime)
+                         )
+                       )
+            // Company 2: Completed ride worth 75
+            _       <- repo.create(
+                         makeRide(status = RideStatus.Completed).copy(
+                           companyId = company2Id,
+                           clientId = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003")),
+                           finalPrice = Some(BigDecimal("75.00")),
+                           endTime = Some(endTime)
+                         )
+                       )
+            // Cancelled ride: must NOT count towards revenue
+            _       <- repo.create(
+                         makeRide(status = RideStatus.Cancelled).copy(
+                           finalPrice = Some(BigDecimal("999.00")),
+                           endTime = Some(endTime)
+                         )
+                       )
+            revenue <- repo.sumAllRevenue(from, to)
+          } yield assertTrue(
+            // Revenue from both companies: 50 + 75 = 125; cancelled ride excluded
+            revenue == BigDecimal("125.00")
+          )
+        },
+        test("countRidesByCompany splits counts by company correctly") {
+          val company2Id = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+          for {
+            xa     <- ZIO.service[Transactor[Task]]
+            _      <- seedTestData(xa)
+            _      <-
+              (for {
+                _ <-
+                  sql"""INSERT INTO companies (id, name, email)
                                  VALUES (${company2Id.value}, 'Company 2 GmbH', 'c2@test.com')
                                  ON CONFLICT DO NOTHING""".update.run
-                    _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+                _ <-
+                  sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
                                  VALUES (${UUID.fromString("00000002-0000-0000-0000-000000000003")},
                                          'Client 2', 'client2@test.com', 'client'::person_role,
                                          ${company2Id.value}, 'placeholder')
                                  ON CONFLICT DO NOTHING""".update.run
-                  } yield ()).transact(xa)
-          _    <- cleanRides(xa)
-          repo  = PostgresRideRepository(xa)
-          now   = Instant.now()
-          from  = now.minusSeconds(3600 * 24 * 7)
-          to    = now.plusSeconds(3600)
-          reqTime = now.minusSeconds(3600)
-          // Company 1: 2 rides
-          _    <- repo.create(makeRide(status = RideStatus.Requested).copy(requestTime = reqTime))
-          _    <- repo.create(makeRide(status = RideStatus.Completed).copy(requestTime = reqTime))
-          // Company 2: 1 ride
-          _    <- repo.create(
-                    makeRide(status = RideStatus.Requested).copy(
-                      companyId = company2Id,
-                      clientId = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003")),
-                      requestTime = reqTime
-                    )
-                  )
-          counts <- repo.countRidesByCompany(from, to)
-        } yield assertTrue(
-          // Company 1 has 2 rides; company 2 has 1 — both appear in the map
-          counts.getOrElse(testCompanyId.value, 0) == 2,
-          counts.getOrElse(company2Id.value, 0) == 1
-        )
-      },
-      test("sumRevenueByCompanyPlatform splits revenue by company") {
-        val company2Id = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
-        for {
-          xa      <- ZIO.service[Transactor[Task]]
-          _       <- seedTestData(xa)
-          _       <- (for {
-                       _ <- sql"""INSERT INTO companies (id, name, email)
+              } yield ()).transact(xa)
+            _      <- cleanRides(xa)
+            repo    = PostgresRideRepository(xa)
+            now     = Instant.now()
+            from    = now.minusSeconds(3600 * 24 * 7)
+            to      = now.plusSeconds(3600)
+            reqTime = now.minusSeconds(3600)
+            // Company 1: 2 rides
+            _      <- repo.create(makeRide(status = RideStatus.Requested).copy(requestTime = reqTime))
+            _      <- repo.create(makeRide(status = RideStatus.Completed).copy(requestTime = reqTime))
+            // Company 2: 1 ride
+            _      <- repo.create(
+                        makeRide(status = RideStatus.Requested).copy(
+                          companyId = company2Id,
+                          clientId = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003")),
+                          requestTime = reqTime
+                        )
+                      )
+            counts <- repo.countRidesByCompany(from, to)
+          } yield assertTrue(
+            // Company 1 has 2 rides; company 2 has 1 — both appear in the map
+            counts.getOrElse(testCompanyId.value, 0) == 2,
+            counts.getOrElse(company2Id.value, 0) == 1
+          )
+        },
+        test("sumRevenueByCompanyPlatform splits revenue by company") {
+          val company2Id = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+          for {
+            xa      <- ZIO.service[Transactor[Task]]
+            _       <- seedTestData(xa)
+            _       <-
+              (for {
+                _ <-
+                  sql"""INSERT INTO companies (id, name, email)
                                     VALUES (${company2Id.value}, 'Company 2 GmbH', 'c2@test.com')
                                     ON CONFLICT DO NOTHING""".update.run
-                       _ <- sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+                _ <-
+                  sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
                                     VALUES (${UUID.fromString("00000002-0000-0000-0000-000000000003")},
                                             'Client 2', 'client2@test.com', 'client'::person_role,
                                             ${company2Id.value}, 'placeholder')
                                     ON CONFLICT DO NOTHING""".update.run
-                     } yield ()).transact(xa)
-          _       <- cleanRides(xa)
-          repo     = PostgresRideRepository(xa)
-          now      = Instant.now()
-          endTime  = now.minusSeconds(60)
-          from     = now.minusSeconds(3600 * 24 * 7)
-          to       = now.plusSeconds(3600)
-          // Company 1: 100 EUR
-          _       <- repo.create(makeRide(status = RideStatus.Completed).copy(
-                       finalPrice = Some(BigDecimal("100.00")),
-                       endTime = Some(endTime)
-                     ))
-          // Company 2: 200 EUR
-          _       <- repo.create(makeRide(status = RideStatus.Completed).copy(
-                       companyId = company2Id,
-                       clientId = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003")),
-                       finalPrice = Some(BigDecimal("200.00")),
-                       endTime = Some(endTime)
-                     ))
-          revenue <- repo.sumRevenueByCompanyPlatform(from, to)
-        } yield assertTrue(
-          // Each company's revenue appears separately in the map
-          revenue.getOrElse(testCompanyId.value, BigDecimal("0")) == BigDecimal("100.00"),
-          revenue.getOrElse(company2Id.value, BigDecimal("0")) == BigDecimal("200.00")
-        )
-      }
+              } yield ()).transact(xa)
+            _       <- cleanRides(xa)
+            repo     = PostgresRideRepository(xa)
+            now      = Instant.now()
+            endTime  = now.minusSeconds(60)
+            from     = now.minusSeconds(3600 * 24 * 7)
+            to       = now.plusSeconds(3600)
+            // Company 1: 100 EUR
+            _       <- repo.create(
+                         makeRide(status = RideStatus.Completed).copy(
+                           finalPrice = Some(BigDecimal("100.00")),
+                           endTime = Some(endTime)
+                         )
+                       )
+            // Company 2: 200 EUR
+            _       <- repo.create(
+                         makeRide(status = RideStatus.Completed).copy(
+                           companyId = company2Id,
+                           clientId = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003")),
+                           finalPrice = Some(BigDecimal("200.00")),
+                           endTime = Some(endTime)
+                         )
+                       )
+            revenue <- repo.sumRevenueByCompanyPlatform(from, to)
+          } yield assertTrue(
+            // Each company's revenue appears separately in the map
+            revenue.getOrElse(testCompanyId.value, BigDecimal("0")) == BigDecimal("100.00"),
+            revenue.getOrElse(company2Id.value, BigDecimal("0")) == BigDecimal("200.00")
+          )
+        }
+      )
+    ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
+      "integration"
     )
-  ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag("integration")
 }

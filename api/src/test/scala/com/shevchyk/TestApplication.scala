@@ -468,6 +468,12 @@ object TestApplication extends ZIOAppDefault:
           def findByStatus(s: RideStatus): Task[List[Ride]]                                                     = ridesRef.get.map(_.values.filter(_.status == s).toList)
           def findByCompanyId(cid: CompanyId): Task[List[Ride]]                                                 = ridesRef.get
             .map(_.values.filter(_.companyId == cid).toList)
+          def findByCompanyIdPaginated(cid: CompanyId, offset: Int, limit: Int): Task[List[Ride]]               = ridesRef.get
+            .map(_.values.filter(_.companyId == cid).toList.sortBy(_.requestTime).reverse.drop(offset).take(limit))
+          def findByDriverIdPaginated(did: PersonId, offset: Int, limit: Int): Task[List[Ride]]                 = ridesRef.get
+            .map(
+              _.values.filter(_.driverId.contains(did)).toList.sortBy(_.requestTime).reverse.drop(offset).take(limit)
+            )
           def findAll(): Task[List[Ride]]                                                                       = ridesRef.get.map(_.values.toList)
           def delete(id: RideId): Task[Unit]                                                                    = ridesRef.update(_.removed(id)).unit
           def countByCompanyGroupedByStatus(cid: CompanyId): Task[Map[String, Int]]                             = ridesRef.get
@@ -1170,14 +1176,21 @@ object TestApplication extends ZIOAppDefault:
         )
         val store  = new ConcurrentHashMap[RideRatingId, RideRating](Map(rating.id -> rating).asJava)
         new RideRatingRepository:
-          def create(r: RideRating): Task[RideRating]                      = ZIO.succeed { store.put(r.id, r); r }
-          def findByRideId(rideId: RideId): Task[Option[RideRating]]       = ZIO
+          def create(r: RideRating): Task[RideRating]                                              = ZIO.succeed { store.put(r.id, r); r }
+          def findByRideId(rideId: RideId): Task[Option[RideRating]]                               = ZIO
             .succeed(store.values.asScala.find(_.rideId == rideId))
-          def findByDriverId(driverId: PersonId): Task[List[RideRating]]   = ZIO
+          def findByDriverId(driverId: PersonId): Task[List[RideRating]]                           = ZIO
             .succeed(store.values.asScala.filter(_.driverId == driverId).toList)
-          def getDriverAvgRating(driverId: PersonId): Task[Option[Double]] = ZIO.succeed {
+          def getDriverAvgRating(driverId: PersonId): Task[Option[Double]]                         = ZIO.succeed {
             val rs = store.values.asScala.filter(_.driverId == driverId).map(_.rating).toList;
             if rs.isEmpty then None else Some(rs.sum.toDouble / rs.size)
+          }
+          def driverRatingStatsByCompany(companyId: CompanyId): Task[Map[PersonId, (Double, Int)]] = ZIO.succeed {
+            store.values.asScala
+              .filter(_.companyId == companyId)
+              .groupBy(_.driverId)
+              .map { case (d, rs) => val xs = rs.map(_.rating).toList; d -> (xs.sum.toDouble / xs.size, xs.size) }
+              .toMap
           }
       },
       ClientAddressService.layer,
