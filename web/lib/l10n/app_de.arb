@@ -166,5 +166,23 @@
     "placeholders": {
       "checkpointName": {"type": "String"}
     }
-  }
+  },
+
+  "airportExits": "Flughafen-Ausgänge",
+  "addAirport": "Flughafen hinzufügen",
+  "editAirport": "Flughafen bearbeiten",
+  "deleteAirport": "Flughafen deaktivieren",
+  "airportCode": "Flughafen-Code (z. B. MUC)",
+  "airportName": "Flughafenname",
+  "addZone": "Zone hinzufügen",
+  "editZone": "Zone bearbeiten",
+  "deleteZone": "Zone löschen",
+  "terminalCode": "Terminal (T1, T2, …)",
+  "checkpointType": "Checkpoint-Typ",
+  "displayName": "Anzeigename",
+  "latitude": "Breitengrad",
+  "longitude": "Längengrad",
+  "radiusMeters": "Radius (Meter)",
+  "landingGeofence": "Lande-Geofence",
+  "pickOnMap": "Auf Karte wählen"
 }

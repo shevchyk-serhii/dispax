@@ -4,12 +4,14 @@ import com.shevchyk.ride.application.service.{
   RideService,
   ClientLocationService,
   AirportCheckpointService,
+  AirportConfigService,
   ChatService,
   ClientAddressService
 }
 import com.shevchyk.ride.repository.{
   RideRepository,
   PostgresRideRepository,
+  AirportConfigRepository,
   ClientLocationRepository,
   PostgresClientLocationRepository,
   ClientAddressRepository,
@@ -203,6 +205,8 @@ object Application extends ZIOAppDefault:
       ScheduleDayRepository.layer,
       ScheduleSvc.layer,
       ClientLocationRepository.layer,
+      AirportConfigRepository.layer,
+      AirportConfigService.layer,
       AirportCheckpointService.layer,
       ClientLocationService.layer,
       ChatMessageRepository.layer,

@@ -2,7 +2,7 @@ package com.shevchyk.ride.application.service
 
 import com.shevchyk.core.application.EventHub
 import com.shevchyk.core.domain.{PersonId, WebSocketEvent}
-import com.shevchyk.ride.domain.{AirportCheckpoint, MucCheckpoints, Ride, RideError, RideStatus}
+import com.shevchyk.ride.domain.{AirportCheckpoint, MucCheckpoints, Ride, RideError, RideSpecifics, RideStatus}
 import com.shevchyk.ride.repository.RideRepository
 import zio.*
 
@@ -26,7 +26,8 @@ trait AirportCheckpointService:
 
 class AirportCheckpointServiceImpl(
     rideRepository: RideRepository,
-    eventHub: EventHub
+    eventHub: EventHub,
+    airportConfigService: AirportConfigService
 ) extends AirportCheckpointService:
 
   private val EARTH_RADIUS_METERS = 6371000.0
@@ -41,6 +42,11 @@ class AirportCheckpointServiceImpl(
     val c    = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     EARTH_RADIUS_METERS * c
 
+  // Extract the IATA airport code from ride specifics, if this is an airport transfer.
+  private def extractAirportCode(ride: Ride): Option[String] = ride.specifics.collect {
+    case at: RideSpecifics.AirportTransfer => at.airportCode
+  }
+
   override def checkGeofenceForLanded(ride: Ride, lat: Double, lon: Double): UIO[Option[AirportCheckpoint]] =
     // Only trigger when:
     //  - ride is an arrival airport transfer
@@ -49,18 +55,25 @@ class AirportCheckpointServiceImpl(
     if !ride.isArrivalAirportTransfer || ride.status != RideStatus.InProgress || ride.airportCheckpoint.isDefined
     then ZIO.succeed(None)
     else
-      val distance = haversineDistance(
-        lat,
-        lon,
-        MucCheckpoints.TerminalPerimeterLat,
-        MucCheckpoints.TerminalPerimeterLon
-      )
-      if distance <= MucCheckpoints.TerminalPerimeterRadius
-      then
-        markCheckpoint(ride, AirportCheckpoint.Landed, ride.clientId)
-          .as(Some(AirportCheckpoint.Landed))
-          .catchAll(e => ZIO.logWarning(s"Auto-landed trigger failed: $e").as(None))
-      else ZIO.succeed(None)
+      // Resolve landing geofence from the configurable AirportConfigService.
+      // Falls back gracefully to None when no config is found for the airport code.
+      extractAirportCode(ride) match
+        case None       => ZIO.succeed(None)
+        case Some(code) =>
+          airportConfigService
+            .getLandingGeofence(code)
+            .flatMap {
+              case None                                             => ZIO.succeed(None)
+              case Some((geofenceLat, geofenceLon, geofenceRadius)) =>
+                val distance = haversineDistance(lat, lon, geofenceLat, geofenceLon)
+                if distance <= geofenceRadius
+                then
+                  markCheckpoint(ride, AirportCheckpoint.Landed, ride.clientId)
+                    .as(Some(AirportCheckpoint.Landed))
+                    .catchAll(e => ZIO.logWarning(s"Auto-landed trigger failed: $e").as(None))
+                else ZIO.succeed(None)
+            }
+            .catchAll(e => ZIO.logWarning(s"Failed to load landing geofence for $code: $e").as(None))
 
   override def markCheckpoint(
       ride: Ride,
@@ -83,6 +96,15 @@ class AirportCheckpointServiceImpl(
       _               <- ZIO
                            .fail(RideError.InvalidOperation("Checkpoint already passed or at the same level (concurrent update)"))
                            .when(!advanced)
+      // Resolve the display name from the configurable airport config, falling back to the enum name.
+      // Uses the airport code from the ride specifics; gracefully defaults when config is unavailable.
+      displayName     <-
+        extractAirportCode(ride)
+          .fold(ZIO.succeed(MucCheckpoints.displayName(requestedCheckpoint))) { code =>
+            airportConfigService
+              .getCheckpointDisplayName(code, requestedCheckpoint)
+              .catchAll(_ => ZIO.succeed(MucCheckpoints.displayName(requestedCheckpoint)))
+          }
       // Publish event only when a driverId is present; skip when None to avoid phantom dedup entries
       // and silently-failing FCM pushes to a non-existent recipient.
       _               <-
@@ -94,7 +116,7 @@ class AirportCheckpointServiceImpl(
                 driverId = did.value,
                 clientId = ride.clientId.value,
                 checkpointType = AirportCheckpoint.toDbString(requestedCheckpoint),
-                checkpointName = MucCheckpoints.displayName(requestedCheckpoint),
+                checkpointName = displayName,
                 companyId = ride.companyId.value
               )
             )
@@ -104,6 +126,5 @@ class AirportCheckpointServiceImpl(
 
 object AirportCheckpointService:
 
-  val layer: ZLayer[RideRepository & EventHub, Nothing, AirportCheckpointService] = ZLayer.fromFunction(
-    AirportCheckpointServiceImpl.apply
-  )
+  val layer: ZLayer[RideRepository & EventHub & AirportConfigService, Nothing, AirportCheckpointService] = ZLayer
+    .fromFunction(AirportCheckpointServiceImpl.apply)

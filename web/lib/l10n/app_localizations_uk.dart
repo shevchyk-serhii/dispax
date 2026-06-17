@@ -427,6 +427,57 @@ class AppLocalizationsUk extends AppLocalizations {
   String get airportCheckpointPanelTitle => 'Моє місце в терміналі';
 
   @override
+  String get airportExits => 'Виходи з аеропорту';
+
+  @override
+  String get addAirport => 'Додати аеропорт';
+
+  @override
+  String get editAirport => 'Редагувати аеропорт';
+
+  @override
+  String get deleteAirport => 'Деактивувати аеропорт';
+
+  @override
+  String get airportCode => 'Код аеропорту (напр. MUC)';
+
+  @override
+  String get airportName => 'Назва аеропорту';
+
+  @override
+  String get addZone => 'Додати зону';
+
+  @override
+  String get editZone => 'Редагувати зону';
+
+  @override
+  String get deleteZone => 'Видалити зону';
+
+  @override
+  String get terminalCode => 'Термінал (T1, T2, …)';
+
+  @override
+  String get checkpointType => 'Тип контрольної точки';
+
+  @override
+  String get displayName => 'Назва для відображення';
+
+  @override
+  String get latitude => 'Широта';
+
+  @override
+  String get longitude => 'Довгота';
+
+  @override
+  String get radiusMeters => 'Радіус (метри)';
+
+  @override
+  String get landingGeofence => 'Геозона посадки';
+
+  @override
+  String get pickOnMap => 'Вибрати на карті';
+
+  @override
   String checkpointNotifTitle(String checkpoint) {
     return 'Клієнт досяг $checkpoint';
   }
