@@ -130,6 +130,26 @@ object PostgresRideRatingRepositorySpec extends ZIOSpecDefault {
           math.abs(avg.get - 4.0) < 1e-9,
           noData.isEmpty
         )
+      },
+      test("driverRatingStatsByCompany aggregates avg and count per driver in one query") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRatings(xa)
+          repo   = PostgresRideRatingRepository(xa)
+          _     <- repo.create(makeRating(rideId1, driver = driverId, rating = 5))
+          _     <- repo.create(makeRating(rideId2, driver = driverId, rating = 3))
+          _     <- repo.create(makeRating(rideId3, driver = otherDriverId, rating = 2))
+          stats <- repo.driverRatingStatsByCompany(testCompanyId)
+          empty <- repo.driverRatingStatsByCompany(CompanyId(UUID.randomUUID()))
+        } yield assertTrue(
+          stats.size == 2,
+          math.abs(stats(driverId)._1 - 4.0) < 1e-9,
+          stats(driverId)._2 == 2,
+          math.abs(stats(otherDriverId)._1 - 2.0) < 1e-9,
+          stats(otherDriverId)._2 == 1,
+          empty.isEmpty
+        )
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -28,12 +30,28 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   _FilterMode _filterMode = _FilterMode.all;
   String _searchQuery = '';
   int _tabIndex = 0; // 0 = Pending, 1 = Assigned
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
     context.read<RideBloc>().add(const RideLoadPendingRequested());
     context.read<ScheduleBloc>().add(ScheduleLoadForDate(date: DateTime.now()));
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  // Debounce search input so we re-filter once the user pauses typing instead of
+  // running the full filter/sort on every keystroke.
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _searchQuery = value);
+    });
   }
 
   List<Ride> _applyFiltersAndSort(List<Ride> rides) {
@@ -96,6 +114,8 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         _buildFilterBar(),
         Expanded(
           child: BlocBuilder<RideBloc, RideState>(
+            buildWhen: (prev, curr) =>
+                prev.rides != curr.rides || prev.isLoading != curr.isLoading,
             builder: (context, state) {
               if (state.isLoading) {
                 return const Center(child: CircularProgressIndicator());
@@ -120,6 +140,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                     final ride = rides[index];
                     if (_tabIndex == 1) {
                       return _AssignedRideCard(
+                        key: ValueKey(ride.id),
                         ride: ride,
                         onReassign: () => _showDriverSelectionSheet(
                           context,
@@ -129,6 +150,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                       );
                     }
                     return Draggable<Ride>(
+                      key: ValueKey(ride.id),
                       data: ride,
                       feedback: Material(
                         elevation: 8,
@@ -263,7 +285,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                 ),
               ),
               style: const TextStyle(fontSize: 13),
-              onChanged: (v) => setState(() => _searchQuery = v),
+              onChanged: _onSearchChanged,
             ),
           ),
           const SizedBox(height: 6),
@@ -610,7 +632,11 @@ class _AssignedRideCard extends StatelessWidget {
   final Ride ride;
   final VoidCallback onReassign;
 
-  const _AssignedRideCard({required this.ride, required this.onReassign});
+  const _AssignedRideCard({
+    super.key,
+    required this.ride,
+    required this.onReassign,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -19,6 +19,10 @@ trait RideRepository {
   def findByClientId(clientId: PersonId): Task[List[Ride]]
   def findByDriverId(driverId: PersonId): Task[List[Ride]]
   def findByCompanyId(companyId: CompanyId): Task[List[Ride]]
+  // Paginated variants: ordering, LIMIT and OFFSET are applied in SQL so the full
+  // table is never loaded into memory just to serve a single page.
+  def findByCompanyIdPaginated(companyId: CompanyId, offset: Int, limit: Int): Task[List[Ride]]
+  def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]]
   def update(ride: Ride): Task[Ride]
   // Atomic compare-and-set on the ride status: persists `ride` only if the row's current
   // status is still one of `expectedStatuses`. Returns true on success, false if another

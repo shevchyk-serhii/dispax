@@ -32,9 +32,15 @@ class AuthServiceImpl(
     jwtService: JwtService
 ) extends AuthService:
 
-  private def hashPassword(password: String): String = BCrypt.hashpw(password, BCrypt.gensalt(12))
+  // BCrypt is deliberately CPU-intensive (~100-200ms). Run it on the blocking pool so concurrent
+  // logins/registrations don't starve the main ZIO worker threads.
+  private def hashPassword(password: String): Task[String] = ZIO.attemptBlocking(
+    BCrypt.hashpw(password, BCrypt.gensalt(12))
+  )
 
-  private def checkPassword(password: String, hash: String): Boolean = BCrypt.checkpw(password, hash)
+  private def checkPassword(password: String, hash: String): Task[Boolean] = ZIO.attemptBlocking(
+    BCrypt.checkpw(password, hash)
+  )
 
   private val emailRegex = """^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$""".r
   // Accepts international phone numbers: optional +, then 6–15 digits (with optional spaces/dashes).
@@ -58,7 +64,7 @@ class AuthServiceImpl(
       personOpt <- personRepository.findByEmail(email).orElseFail(UserNotFound(email))
       person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(email))
       _         <- ZIO.when(person.status != UserStatus.ACTIVE)(ZIO.fail(UserNotFound(email)))
-      pwMatch   <- ZIO.attempt(checkPassword(password, person.passwordHash)).orElseFail(InvalidCredentials(email))
+      pwMatch   <- checkPassword(password, person.passwordHash).orElseFail(InvalidCredentials(email))
       _         <- ZIO.when(!pwMatch)(ZIO.fail(InvalidCredentials(email)))
       token     <- jwtService.generateToken(person).mapError(identity)
       _         <- tokenRepository.create(token, person.id.value).orElseFail(ValidationError("token", "Failed to store token"))
@@ -80,12 +86,13 @@ class AuthServiceImpl(
       existing <- personRepository.findByEmail(request.email).orElseFail(ValidationError("email", "Database error"))
       _        <- ZIO.when(existing.isDefined)(ZIO.fail(UserAlreadyExists(request.email)))
       role     <- ZIO.fromEither(parseRole(request.role)).orElseFail(ValidationError("role", "Invalid role"))
+      pwHash   <- hashPassword(request.password).orElseFail(ValidationError("password", "Failed to hash password"))
       person    = Person(
                     id = PersonId.generate(),
                     name = request.name,
                     email = request.email,
                     role = role,
-                    passwordHash = hashPassword(request.password),
+                    passwordHash = pwHash,
                     phone = request.phone,
                     status = UserStatus.ACTIVE
                   )
@@ -140,11 +147,12 @@ class AuthServiceImpl(
         )
       personOpt <- personRepository.findById(PersonId(userId)).orElseFail(UserNotFound(s"ID: $userId"))
       person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(s"ID: $userId"))
-      _         <-
-        ZIO.when(!checkPassword(request.currentPassword, person.passwordHash))(
-          ZIO.fail(InvalidCredentials(person.email))
-        )
-      updated    = person.copy(passwordHash = hashPassword(request.newPassword))
+      pwMatch   <- checkPassword(request.currentPassword, person.passwordHash).orElseFail(
+                     InvalidCredentials(person.email)
+                   )
+      _         <- ZIO.when(!pwMatch)(ZIO.fail(InvalidCredentials(person.email)))
+      newHash   <- hashPassword(request.newPassword).orElseFail(ValidationError("password", "Failed to hash password"))
+      updated    = person.copy(passwordHash = newHash)
       _         <- personRepository.update(updated).orElseFail(ValidationError("user", "Failed to update password"))
       _         <- tokenRepository.deleteByUserId(userId).orElseFail(ValidationError("token", "Failed to invalidate tokens"))
     yield ()

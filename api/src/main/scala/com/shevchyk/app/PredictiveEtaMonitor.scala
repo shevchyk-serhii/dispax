@@ -30,7 +30,9 @@ object PredictiveEtaMonitor:
   type Env = RideRepository & EtaService & EtaAlertRepository & EventHub
 
   def start: ZIO[Env, Nothing, Unit] =
-    val safeTick = tick.catchAll(e => ZIO.logError(s"PredictiveEtaMonitor error: $e"))
+    // Bound concurrency of the parallel ETA evaluations (each hits the external HERE API) so a
+    // busy window doesn't flood the routing provider with simultaneous requests.
+    val safeTick = tick.withParallelism(8).catchAll(e => ZIO.logError(s"PredictiveEtaMonitor error: $e"))
     ZIO.logInfo("PredictiveEtaMonitor started") *>
       safeTick.repeat(Schedule.fixed(1.minute)).forkDaemon.unit
 
@@ -46,7 +48,7 @@ object PredictiveEtaMonitor:
       now        = Instant.now()
       windowTo   = now.plusSeconds(LookAheadMinutes * 60L)
       rides     <- rideRepo.findAssignedRidesInWindow(now, windowTo)
-      _         <- ZIO.foreachDiscard(rides)(ride => evaluate(ride, now, etaSvc, alertRepo, eventHub))
+      _         <- ZIO.foreachParDiscard(rides)(ride => evaluate(ride, now, etaSvc, alertRepo, eventHub))
     yield ()
 
   private def evaluate(

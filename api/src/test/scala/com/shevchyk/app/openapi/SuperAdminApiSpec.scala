@@ -160,6 +160,8 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
       def findByClientId(clientId: PersonId): Task[List[Ride]]                                                     = ZIO.succeed(Nil)
       def findByDriverId(driverId: PersonId): Task[List[Ride]]                                                     = ZIO.succeed(Nil)
       def findByCompanyId(companyId: CompanyId): Task[List[Ride]]                                                  = ZIO.succeed(Nil)
+      def findByCompanyIdPaginated(companyId: CompanyId, offset: Int, limit: Int): Task[List[Ride]]                = ZIO.succeed(Nil)
+      def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]]                   = ZIO.succeed(Nil)
       def update(ride: Ride): Task[Ride]                                                                           = ZIO.succeed(ride)
       def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]                             = ZIO.succeed(true)
       def delete(id: RideId): Task[Unit]                                                                           = ZIO.unit

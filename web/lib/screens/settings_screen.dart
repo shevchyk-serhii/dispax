@@ -59,7 +59,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = context.watch<AuthBloc>().state;
+    // Rebuild only when the fields this screen actually reads change, instead of on
+    // every AuthState emission (context.watch subscribes to the whole state).
+    // The selected record compares structurally, so unrelated AuthState changes
+    // (e.g. transient status flags) no longer rebuild the settings tree.
+    final authState = context.select(
+      (AuthBloc bloc) => (
+        user: bloc.state.user,
+        biometricAvailable: bloc.state.biometricAvailable,
+        biometricEnabled: bloc.state.biometricEnabled,
+      ),
+    );
     final user = authState.user;
 
     return Scaffold(
@@ -73,7 +83,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (user?.role == PersonRole.driver) _buildReminderSection(),
           _buildAppearanceSection(),
           _buildLanguageSection(),
-          _buildSecuritySection(authState),
+          _buildSecuritySection(
+            biometricAvailable: authState.biometricAvailable,
+            biometricEnabled: authState.biometricEnabled,
+            userId: user?.id,
+          ),
           _buildPrivacySection(),
           _buildAboutSection(),
           const SizedBox(height: 24),
@@ -345,22 +359,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSecuritySection(AuthState authState) {
+  Widget _buildSecuritySection({
+    required bool biometricAvailable,
+    required bool biometricEnabled,
+    required String? userId,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader('Security'),
-        if (authState.biometricAvailable)
+        if (biometricAvailable)
           SwitchListTile(
             secondary: const Icon(Icons.fingerprint),
             title: const Text('Biometric Login'),
-            value: authState.biometricEnabled,
+            value: biometricEnabled,
             onChanged: (v) {
               context.read<AuthBloc>().add(
-                AuthBiometricSetupRequested(
-                  enabled: v,
-                  userId: authState.user?.id,
-                ),
+                AuthBiometricSetupRequested(enabled: v, userId: userId),
               );
             },
           ),

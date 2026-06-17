@@ -599,14 +599,13 @@ class RideServiceImpl(
 
   def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]] =
     rideRepository
-      .findByCompanyId(companyId)
+      .findByCompanyIdPaginated(companyId, offset, limit)
       .mapDatabaseError
-      .map(_.sortBy(_.requestTime).reverse.drop(offset).take(limit))
 
-  def getDriverRidesPaginated(driverId: PersonId, offset: Int, limit: Int): IO[RideError, List[Ride]] = rideRepository
-    .findByDriverId(driverId)
-    .mapDatabaseError
-    .map(_.sortBy(_.requestTime).reverse.drop(offset).take(limit))
+  def getDriverRidesPaginated(driverId: PersonId, offset: Int, limit: Int): IO[RideError, List[Ride]] =
+    rideRepository
+      .findByDriverIdPaginated(driverId, offset, limit)
+      .mapDatabaseError
 
   def markPayment(
       rideId: RideId,

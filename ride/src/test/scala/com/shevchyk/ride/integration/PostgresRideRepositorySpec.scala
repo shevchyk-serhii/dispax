@@ -138,6 +138,42 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           empty.isEmpty
         )
       },
+      test("findByCompanyIdPaginated orders by request_time desc and applies limit/offset in SQL") {
+        val base = Instant.parse("2026-01-01T00:00:00Z")
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          // Five rides with strictly increasing request times → newest is r5.
+          rides  = (0 until 5).map(i => makeRide().copy(requestTime = base.plusSeconds(i.toLong * 60))).toList
+          _     <- ZIO.foreachDiscard(rides)(repo.create)
+          page1 <- repo.findByCompanyIdPaginated(testCompanyId, offset = 0, limit = 2)
+          page2 <- repo.findByCompanyIdPaginated(testCompanyId, offset = 2, limit = 2)
+          page3 <- repo.findByCompanyIdPaginated(testCompanyId, offset = 4, limit = 2)
+        } yield assertTrue(
+          page1.map(_.id) == List(rides(4).id, rides(3).id),
+          page2.map(_.id) == List(rides(2).id, rides(1).id),
+          page3.map(_.id) == List(rides(0).id)
+        )
+      },
+      test("findByDriverIdPaginated returns only the driver's rides, newest first") {
+        val base = Instant.parse("2026-02-01T00:00:00Z")
+        for {
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- seedTestData(xa)
+          _    <- cleanRides(xa)
+          repo  = PostgresRideRepository(xa)
+          d1    = makeRide(driver = Some(driverId)).copy(requestTime = base)
+          d2    = makeRide(driver = Some(driverId)).copy(requestTime = base.plusSeconds(60))
+          other = makeRide(driver = None).copy(requestTime = base.plusSeconds(120))
+          _    <- ZIO.foreachDiscard(List(d1, d2, other))(repo.create)
+          page <- repo.findByDriverIdPaginated(driverId, offset = 0, limit = 10)
+        } yield assertTrue(
+          page.map(_.id) == List(d2.id, d1.id),
+          page.forall(_.driverId.contains(driverId))
+        )
+      },
       test("findByDriverId returns assigned rides") {
         for {
           xa    <- ZIO.service[Transactor[Task]]

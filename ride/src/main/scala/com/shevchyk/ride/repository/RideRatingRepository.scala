@@ -12,6 +12,12 @@ trait RideRatingRepository:
   def findByDriverId(driverId: PersonId): Task[List[RideRating]]
   def getDriverAvgRating(driverId: PersonId): Task[Option[Double]]
 
+  /**
+   * Per-driver average rating and rating count for a whole company, in a single GROUP BY query. Replaces the previous
+   * per-driver N+1 (one avg + one list query per driver) in the stats endpoints.
+   */
+  def driverRatingStatsByCompany(companyId: CompanyId): Task[Map[PersonId, (Double, Int)]]
+
 class InMemoryRideRatingRepository extends RideRatingRepository:
   private val store = new ConcurrentHashMap[RideRatingId, RideRating]()
 
@@ -37,6 +43,19 @@ class InMemoryRideRatingRepository extends RideRatingRepository:
     val ratings = store.values().asScala.filter(_.driverId == driverId).map(_.rating).toList
     if ratings.isEmpty then None
     else Some(ratings.sum.toDouble / ratings.size)
+  }
+
+  def driverRatingStatsByCompany(companyId: CompanyId): Task[Map[PersonId, (Double, Int)]] = ZIO.succeed {
+    store
+      .values()
+      .asScala
+      .filter(_.companyId == companyId)
+      .groupBy(_.driverId)
+      .map { case (driverId, ratings) =>
+        val rs = ratings.map(_.rating).toList
+        driverId -> (rs.sum.toDouble / rs.size, rs.size)
+      }
+      .toMap
   }
 
 object RideRatingRepository:

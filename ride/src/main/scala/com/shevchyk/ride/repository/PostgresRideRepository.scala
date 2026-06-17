@@ -204,6 +204,24 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  def findByCompanyIdPaginated(companyId: CompanyId, offset: Int, limit: Int): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE company_id = ${companyId.value}" ++
+      fr"ORDER BY request_time DESC LIMIT $limit OFFSET $offset")
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
+  def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE driver_id = ${driverId.value}" ++
+      fr"ORDER BY request_time DESC LIMIT $limit OFFSET $offset")
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
   override def update(ride: Ride): Task[Ride] = {
     val updateSql =
       sql"""
