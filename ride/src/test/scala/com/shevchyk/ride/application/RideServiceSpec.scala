@@ -68,8 +68,8 @@ object RideServiceSpec extends ZIOSpecDefault {
    * MockPersonRepository that returns specific persons by ID
    */
   final case class TestPersonRepository(persons: Map[PersonId, Person]) extends PersonRepository {
-    override def create(person: Person): Task[Person]                                         = ZIO.succeed(person)
-    override def findById(id: PersonId): Task[Option[Person]]                                 = ZIO.succeed(persons.get(id))
+    override def create(person: Person): Task[Person]         = ZIO.succeed(person)
+    override def findById(id: PersonId): Task[Option[Person]] = ZIO.succeed(persons.get(id))
 
     override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]] = ZIO.succeed(
       persons.get(id).filter(_.companyId.contains(companyId))
@@ -224,6 +224,38 @@ object RideServiceSpec extends ZIOSpecDefault {
             assigned.status == RideStatus.Assigned &&
               assigned.driverId.contains(testDriverId)
           )
+        }.provide(standardLayers),
+        test("concurrent assignment: exactly one of two racing assigns wins") {
+          // Two dispatchers assign different drivers to the same Requested ride at the
+          // same time. The atomic compare-and-set (updateIfStatus) must let exactly one
+          // win; the loser gets InvalidStatusTransition, never a silent overwrite.
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            results   <- ZIO.collectAllPar(
+                           List(
+                             service.assignDriver(ride.id, testDriverId).exit,
+                             service.assignDriver(ride.id, testDriver2Id).exit
+                           )
+                         )
+            finalRide <- service.getRideById(ride.id)
+          } yield {
+            val failures = results.collect { case Exit.Failure(c) => c }
+            assertTrue(
+              results.count(_.isSuccess) == 1,
+              failures.size == 1,
+              failures.head.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition]),
+              finalRide.status == RideStatus.Assigned,
+              finalRide.driverId.contains(testDriverId) || finalRide.driverId.contains(testDriver2Id)
+            )
+          }
         }.provide(standardLayers),
         test("should fail when ride is not in Requested status") {
           for {
@@ -692,7 +724,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                          ride.id,
                          UpdateRideDetailsRequest(pickupLocation = Some(Location("New Pickup"))),
                          testClientId,
-                         PersonRole.Client
+                         PersonRole.Client,
+                         Some(testCompanyId)
                        )
           } yield assertTrue(updated.pickupLocation == Location("New Pickup"))
         }.provide(standardLayers),
@@ -715,7 +748,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                   started.id,
                   UpdateRideDetailsRequest(pickupLocation = Some(Location("X"))),
                   testClientId,
-                  PersonRole.Client
+                  PersonRole.Client,
+                  Some(testCompanyId)
                 )
                 .exit
           } yield assertTrue(result.isFailure)
@@ -740,7 +774,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                   completed.id,
                   UpdateRideDetailsRequest(pickupLocation = Some(Location("X"))),
                   testClientId,
-                  PersonRole.Client
+                  PersonRole.Client,
+                  Some(testCompanyId)
                 )
                 .exit
           } yield assertTrue(result.isFailure)
@@ -760,7 +795,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                          ride.id,
                          UpdateRideDetailsRequest(notes = Some("Updated")),
                          testClientId,
-                         PersonRole.Client
+                         PersonRole.Client,
+                         Some(testCompanyId)
                        )
           } yield assertTrue(updated.notes.contains("Updated"))
         }.provide(standardLayers),
@@ -780,7 +816,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                          ride.id,
                          UpdateRideDetailsRequest(notes = Some("Dispatch update")),
                          dispatcherId,
-                         PersonRole.Dispatcher
+                         PersonRole.Dispatcher,
+                         Some(testCompanyId)
                        )
           } yield assertTrue(updated.notes.contains("Dispatch update"))
         }.provide(standardLayers),
@@ -801,7 +838,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                   ride.id,
                   UpdateRideDetailsRequest(notes = Some("X")),
                   testDriverId,
-                  PersonRole.Driver
+                  PersonRole.Driver,
+                  Some(testCompanyId)
                 )
                 .exit
           } yield assertTrue(result match {

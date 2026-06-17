@@ -71,8 +71,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
    * MockPersonRepository that returns specific persons by ID
    */
   final case class TestPersonRepository(persons: Map[PersonId, Person]) extends PersonRepository {
-    override def create(person: Person): Task[Person]                                         = ZIO.succeed(person)
-    override def findById(id: PersonId): Task[Option[Person]]                                 = ZIO.succeed(persons.get(id))
+    override def create(person: Person): Task[Person]         = ZIO.succeed(person)
+    override def findById(id: PersonId): Task[Option[Person]] = ZIO.succeed(persons.get(id))
 
     override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]] = ZIO.succeed(
       persons.get(id).filter(_.companyId.contains(companyId))
@@ -369,12 +369,51 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                            specialRequirements = Some("Wheelchair access")
                          ),
                          testClientId,
-                         PersonRole.Client
+                         PersonRole.Client,
+                         Some(testCompanyId)
                        )
           } yield assertTrue(
             updated.notes.contains("Updated notes") &&
               updated.specialRequirements.contains("Wheelchair access")
           )
+        }.provide(standardLayers),
+        test("rejects update from a different company") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            result  <-
+              service
+                .updateRideDetails(
+                  ride.id,
+                  UpdateRideDetailsRequest(notes = Some("cross-tenant")),
+                  testClientId,
+                  PersonRole.Dispatcher,
+                  Some(otherCompanyId)
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("rejects update when companyId is absent (no isolation bypass)") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            result  <-
+              service
+                .updateRideDetails(
+                  ride.id,
+                  UpdateRideDetailsRequest(notes = Some("no company")),
+                  testClientId,
+                  PersonRole.Dispatcher,
+                  None
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+            case _                   => false
+          })
         }.provide(standardLayers),
         test("cannot update completed ride") {
           for {
@@ -386,7 +425,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                   completed.id,
                   UpdateRideDetailsRequest(notes = Some("Too late")),
                   testClientId,
-                  PersonRole.Client
+                  PersonRole.Client,
+                  Some(testCompanyId)
                 )
                 .exit
           } yield assertTrue(result match {
@@ -406,7 +446,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                            dropoffLocation = Some(Location("New Dropoff"))
                          ),
                          testClientId,
-                         PersonRole.Client
+                         PersonRole.Client,
+                         Some(testCompanyId)
                        )
           } yield assertTrue(
             updated.pickupLocation == Location("New Pickup") &&

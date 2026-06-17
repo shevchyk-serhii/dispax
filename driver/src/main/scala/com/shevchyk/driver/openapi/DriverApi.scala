@@ -299,7 +299,8 @@ object DriverApi:
                       parsedRideId,
                       com.shevchyk.ride.domain.UpdateRideDetailsRequest(pickupLocation = Some(enriched)),
                       PersonId(user.userId),
-                      PersonRole.valueOf(user.role)
+                      PersonRole.valueOf(user.role),
+                      Some(companyId)
                     )
                     .orElse(ZIO.succeed(ride0.copy(pickupLocation = enriched)))
                 else ZIO.succeed(ride0)
