@@ -25,15 +25,7 @@ import com.shevchyk.billing.repository.{
 import com.shevchyk.core.application.{AuditService, EventHub, GeocodingService, GeofenceService}
 import com.shevchyk.core.config.ServerConfig
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.domain.{
-  RidePool,
-  RidePoolId,
-  RidePoolMember,
-  PoolStatus,
-  PoolMemberStatus,
-  Session,
-  SessionId
-}
+import com.shevchyk.core.domain.{RidePool, RidePoolId, RidePoolMember, PoolStatus, PoolMemberStatus, Session, SessionId}
 import com.shevchyk.core.repository.{
   BlacklistRepository,
   ClientCompanyRepository,
@@ -49,10 +41,7 @@ import com.shevchyk.core.repository.{
 }
 import com.shevchyk.notification.application.{FcmService, LoggingEmailSmsService}
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId}
-import com.shevchyk.notification.repository.{
-  InMemoryFcmTokenRepository,
-  NotificationRepository
-}
+import com.shevchyk.notification.repository.{InMemoryFcmTokenRepository, NotificationRepository}
 import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.repository.DriverLocationRepository

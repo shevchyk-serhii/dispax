@@ -1419,23 +1419,22 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     }
   }
 
-  Then("""^the (\d+)(?:st|nd|rd|th) request should return status (\d+)$""") {
-    (_: String, expectedStatus: String) =>
-      if (testData.get("rate_limited").contains(true) && expectedStatus == "429") {
-        lastResponse = Response.status(Status.TooManyRequests)
-        lastResponseBody = """{"error":"Rate limit exceeded"}"""
-      }
-      else {
-        val status =
-          expectedStatus.toInt match {
-            case 429 => Status.TooManyRequests
-            case 408 => Status.RequestTimeout
-            case 413 => Status.RequestEntityTooLarge
-            case 500 => Status.InternalServerError
-            case _   => Status.Ok
-          }
-        lastResponse = Response.status(status)
-      }
+  Then("""^the (\d+)(?:st|nd|rd|th) request should return status (\d+)$""") { (_: String, expectedStatus: String) =>
+    if (testData.get("rate_limited").contains(true) && expectedStatus == "429") {
+      lastResponse = Response.status(Status.TooManyRequests)
+      lastResponseBody = """{"error":"Rate limit exceeded"}"""
+    }
+    else {
+      val status =
+        expectedStatus.toInt match {
+          case 429 => Status.TooManyRequests
+          case 408 => Status.RequestTimeout
+          case 413 => Status.RequestEntityTooLarge
+          case 500 => Status.InternalServerError
+          case _   => Status.Ok
+        }
+      lastResponse = Response.status(status)
+    }
   }
 
   When("""^I send a request to "/api/v2/auth/refresh" with the refresh token$""") { () =>
