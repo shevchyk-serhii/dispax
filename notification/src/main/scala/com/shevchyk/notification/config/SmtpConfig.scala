@@ -11,7 +11,12 @@ import zio.config.typesafe.*
  *
  * Production invariant: `application-production.conf` contains only `${?SMTP_*}` references with NO defaults. If an env
  * var is absent in production the HOCON parser leaves it unresolved and `layer` fails at startup — the same fail-fast
- * behaviour as `DATABASE_URL`. Tests and local dev use `defaultLayer` (port 1025 = MailHog / GreenMail).
+ * behaviour as `DATABASE_URL`. Tests and local dev use `defaultLayer` (port 1025 = MailHog / GreenMail plain SMTP).
+ *
+ * TLS modes (field `security`):
+ *   - "NONE" — plain TCP, no encryption; for dev (MailHog/GreenMail on port 1025)
+ *   - "STARTTLS" — opportunistic upgrade after connect (port 587); sets mail.smtp.starttls.enable=true
+ *   - "SSL" — implicit SSL/TLS from the start (port 465); sets mail.smtp.ssl.enable=true
  */
 final case class SmtpConfig(
     host: String,
@@ -20,7 +25,7 @@ final case class SmtpConfig(
     password: String,
     from: String,
     replyTo: Option[String] = None,
-    startTls: Boolean = true
+    security: String = "NONE"
 )
 
 object SmtpConfig:
@@ -36,7 +41,7 @@ object SmtpConfig:
 
   /**
    * Env-var fallback used when no HOCON config is loaded (e.g. in unit tests). Defaults point at a local
-   * MailHog/GreenMail instance on port 1025 with no auth — safe, non-secret values.
+   * MailHog/GreenMail instance on port 1025 with no auth and no TLS — safe, non-secret values.
    */
   val defaultLayer: ZLayer[Any, Nothing, SmtpConfig] = ZLayer.succeed(
     SmtpConfig(
@@ -46,7 +51,7 @@ object SmtpConfig:
       password = sys.env.getOrElse("SMTP_PASSWORD", ""),
       from = sys.env.getOrElse("SMTP_FROM", "noreply@dispax.de"),
       replyTo = sys.env.get("SMTP_REPLY_TO"),
-      startTls = sys.env.getOrElse("SMTP_STARTTLS", "false").toBoolean
+      security = sys.env.getOrElse("SMTP_SECURITY", "NONE")
     )
   )
 

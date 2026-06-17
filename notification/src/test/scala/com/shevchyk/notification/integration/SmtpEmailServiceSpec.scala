@@ -17,15 +17,9 @@ import java.time.LocalDate
  * GreenMail is in-process (no Docker / Testcontainers needed). Each test starts its own `GreenMail` instance on a
  * dedicated port to avoid port conflicts when tests run in parallel.
  *
- * NOTE: The production `SmtpEmailService.buildSession()` equates `startTls=false` with "implicit SSL" (sets
- * `mail.smtp.ssl.enable=true`). This makes it impossible to connect to a plain-TCP GreenMail SMTP server when
- * `startTls=false`. The tests therefore use `startTls=true`, which sets `mail.smtp.starttls.enable=true`. Jakarta Mail
- * treats STARTTLS as opportunistic when `mail.smtp.starttls.required` is absent (default false): if the server
- * (GreenMail) does not advertise STARTTLS in its EHLO capabilities, Jakarta Mail simply falls back to a plain-text
- * connection and AUTH proceeds normally.
- *
- * See production-code bug note in the test report: `startTls=false` in `SmtpConfig` should mean "no TLS" (plain SMTP),
- * but the implementation enables implicit SSL, breaking all plain-TCP local SMTP clients.
+ * All tests use `security = "NONE"` (plain TCP) — the real dev scenario (MailHog/GreenMail on port 1025). GreenMail
+ * listens on a plain TCP socket with no TLS negotiation, and `SmtpEmailService` must connect successfully without
+ * setting any TLS properties.
  */
 object SmtpEmailServiceSpec extends ZIOSpecDefault:
 
@@ -67,10 +61,8 @@ object SmtpEmailServiceSpec extends ZIOSpecDefault:
    * Allocate a GreenMail SMTP server on the given port, run `test` inside it, then shut it down regardless of outcome.
    * The registered user `login="gmtest"` / `password="gmtest"` is accepted by GreenMail as the SMTP AUTH credential.
    *
-   * We use `startTls=true` in the SmtpConfig because the production code sets `mail.smtp.ssl.enable=true` when
-   * `startTls=false`, which would fail against a plain-TCP GreenMail server. With `startTls=true`, Jakarta Mail sends a
-   * STARTTLS command; GreenMail's plain SMTP server does not advertise the extension, so Jakarta Mail falls back to a
-   * plain connection and proceeds to AUTH.
+   * We use `security = "NONE"` — plain TCP, the real dev scenario (MailHog/GreenMail port 1025). No TLS properties are
+   * set, so Jakarta Mail connects on a plain socket and proceeds directly to AUTH.
    */
   private def withGreenMail(
       port: Int
@@ -91,7 +83,7 @@ object SmtpEmailServiceSpec extends ZIOSpecDefault:
         password = "gmtest",
         from = "noreply@dispax.de",
         replyTo = None,
-        startTls = true // see class-level doc: startTls=false incorrectly enables SSL
+        security = "NONE" // plain TCP — the real dev scenario (MailHog/GreenMail, no TLS)
       )
       body(new SmtpEmailService(config), greenMail)
     }
@@ -158,7 +150,7 @@ object SmtpEmailServiceSpec extends ZIOSpecDefault:
             password = "x",
             from = "noreply@dispax.de",
             replyTo = None,
-            startTls = true
+            security = "NONE"
           )
           val service = new SmtpEmailService(config)
           for exit <- service.sendInvoiceEmail(baseData).exit

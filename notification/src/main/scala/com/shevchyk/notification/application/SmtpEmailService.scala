@@ -54,14 +54,17 @@ class SmtpEmailService(config: SmtpConfig) extends EmailSmsService:
     props.put("mail.smtp.host", config.host)
     props.put("mail.smtp.port", config.port.toString)
     props.put("mail.smtp.auth", "true")
-    if config.startTls then
-      // Port 587: negotiate STARTTLS after connecting on a plain socket.
-      props.put("mail.smtp.starttls.enable", "true"): Unit
-    else
-      // Port 465: implicit SSL from the start (no STARTTLS negotiation).
-      props.put("mail.smtp.ssl.enable", "true"): Unit
-      // Disable STARTTLS when using implicit SSL to avoid double-negotiation.
-      props.put("mail.smtp.starttls.enable", "false"): Unit
+    config.security.toUpperCase match
+      case "STARTTLS" =>
+        // Port 587: negotiate STARTTLS after connecting on a plain socket.
+        props.put("mail.smtp.starttls.enable", "true"): Unit
+      case "SSL"      =>
+        // Port 465: implicit SSL/TLS from the start (no STARTTLS negotiation).
+        props.put("mail.smtp.ssl.enable", "true"): Unit
+        props.put("mail.smtp.starttls.enable", "false"): Unit
+      case _          =>
+        // "NONE" (default) — plain TCP, no TLS properties set; for dev/MailHog/GreenMail.
+        ()
     Session.getInstance(props)
 
   private def buildMessage(session: Session, data: InvoiceEmailData): MimeMessage =
