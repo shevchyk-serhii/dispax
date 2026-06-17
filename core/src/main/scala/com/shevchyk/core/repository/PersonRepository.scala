@@ -17,6 +17,10 @@ trait PersonRepository {
   def findByCompanyId(companyId: CompanyId): Task[List[Person]]
   def findAll(): Task[List[Person]]
   def update(person: Person): Task[Person]
+  // NOTE: not tenant-scoped — deletes by id alone, ignoring company. Any API caller must
+  // first verify ownership (e.g. via findByIdAndCompany) before calling this, or it breaks
+  // company isolation. The production user-delete route uses a soft-delete guarded by
+  // UserApi.requireSameCompany; this hard delete is currently only exercised by tests.
   def delete(id: PersonId): Task[Unit]
   def findByStatus(status: UserStatus): Task[List[Person]]
   def searchByQuery(query: String): Task[List[Person]]

@@ -48,7 +48,7 @@ trait RideService:
       request: UpdateRideDetailsRequest,
       userId: PersonId,
       userRole: PersonRole,
-      companyId: Option[CompanyId] = None
+      companyId: Option[CompanyId]
   ): IO[RideError, Ride]
   def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride]
 
@@ -369,7 +369,7 @@ class RideServiceImpl(
       request: UpdateRideDetailsRequest,
       userId: PersonId,
       userRole: PersonRole,
-      companyId: Option[CompanyId] = None
+      companyId: Option[CompanyId]
   ): IO[RideError, Ride] =
     for {
       ride <- getRideById(rideId)
@@ -379,11 +379,13 @@ class RideServiceImpl(
           .fail(RideError.UnauthorizedAccess(userId, rideId))
           .when(ride.creatorId != userId && userRole != PersonRole.Dispatcher)
           .unit
-      // Company isolation: ensure ride belongs to user's company
+      // Company isolation: the ride must belong to the caller's company. A missing
+      // companyId is treated as a failure (not a bypass) so a caller can never skip the
+      // check by omitting it — the HTTP layer always supplies it via requireCompanyId.
       _    <-
         companyId match
           case Some(cid) => ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.companyId != cid).unit
-          case None      => ZIO.unit
+          case None      => ZIO.fail(RideError.UnauthorizedAccess(userId, rideId))
 
       newPickup  <-
         ZIO.foreach(request.pickupLocation)(loc =>

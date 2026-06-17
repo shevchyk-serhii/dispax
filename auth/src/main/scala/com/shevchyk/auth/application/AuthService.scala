@@ -15,6 +15,12 @@ trait AuthService:
   def getUserById(id: UUID): ZIO[Any, AuthError, UserDto]
   def getUserByEmail(email: String): ZIO[Any, AuthError, UserDto]
   def updateUser(id: UUID, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto]
+
+  /**
+   * Hard-deletes a user by id. NOT tenant-scoped — callers must verify the target belongs to the acting user's company
+   * before invoking this. The HTTP layer does not expose a hard delete: `UserApi.deleteUserServer` performs a soft
+   * delete guarded by `requireSameCompany`. This method is currently only used by tests.
+   */
   def deleteUser(id: UUID): ZIO[Any, AuthError, Unit]
   def changePassword(userId: UUID, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit]
   def validateToken(token: String): ZIO[Any, AuthError, UserDto]
