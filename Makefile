@@ -4,7 +4,7 @@
         patrol-test-android patrol-test-ios \
         emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
-        dev-all stop-dev \
+        dev-all dev-sim free-port stop-dev \
         deploy logs setup-hooks
 
 PROD_URL := https://dispax-o2trzxjbva-ew.a.run.app
@@ -17,6 +17,14 @@ GCP_REGION := europe-west1
 GCP_SERVICE := dispax
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/dispax-docker/dispax-server:latest
 FLUTTER_DIR    := web
+# Extra buffer (seconds) before launching Flutter in `make dev-all`, on top of
+# waiting for the backend's /health. Gives Flyway migrations + ZIO layers time
+# to finish so the first API calls (e.g. /users/clients) don't fail. Override:
+# `make dev-all FLUTTER_STARTUP_DELAY=15`
+FLUTTER_STARTUP_DELAY := 8
+# Booted iOS simulator UDID used by `make dev-sim`. Override if you boot a
+# different simulator: `make dev-sim IOS_SIM=<udid>` (find it via `flutter devices`).
+IOS_SIM        := 09021E1A-BC6A-4D86-A2EA-06A5894E4AEC
 PATROL         := $(HOME)/.pub-cache/bin/patrol
 ADB            := $(HOME)/Library/Android/sdk/platform-tools/adb
 # AVD launched by `emulator-up` if no device is connected. Override: ANDROID_AVD=Pixel_7 make e2e-fast
@@ -419,19 +427,45 @@ flutter-dev-sergii:
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
 	wait
 
+# Kill whatever is listening on :8080 so a stale backend never causes
+# "bind(..) failed: Address already in use". Used as a prerequisite by dev-all/dev-sim.
+free-port:
+	@pids=$$(lsof -ti tcp:8080 2>/dev/null); \
+	if [ -n "$$pids" ]; then \
+		echo "🧹 Freeing port 8080 (killing $$pids)"; \
+		echo "$$pids" | xargs kill -9 2>/dev/null || true; \
+		sleep 1; \
+	fi
+
 # Start local backend + Flutter on both devices in one command
 # Hot reload Flutter: press 'r' in each flutter process terminal
 # To restart backend after Scala changes: make stop-dev && make dev-all
-dev-all:
+dev-all: free-port
 	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
 	@echo "⏳ Waiting for backend on :8080..."
 	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
-	@echo "✅ Backend ready — starting Flutter on both devices"
+	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
+	@sleep $(FLUTTER_STARTUP_DELAY)
+	@echo "🚀 Starting Flutter on both devices"
 	@cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
 	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
 	wait
+
+# Start local backend + Flutter on the booted iOS simulator in one command.
+# The simulator shares the Mac's network, so it talks to the backend over
+# 127.0.0.1 (most reliable — no LAN/WiFi dependency). Override the simulator
+# with `make dev-sim IOS_SIM=<udid>`. Stop everything with `make stop-dev`.
+dev-sim: free-port
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
+	@echo "⏳ Waiting for backend on :8080..."
+	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
+	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
+	@sleep $(FLUTTER_STARTUP_DELAY)
+	@echo "🚀 Starting Flutter on iOS simulator $(IOS_SIM)"
+	@cd $(FLUTTER_DIR) && flutter run -d $(IOS_SIM) \
+		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api
 
 # Kill all dev processes (backend + flutter)
 stop-dev:
