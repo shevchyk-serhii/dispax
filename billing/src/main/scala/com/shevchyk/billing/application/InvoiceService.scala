@@ -73,7 +73,8 @@ class InvoiceServiceImpl(
     invoiceRepo: InvoiceRepository,
     clientCompanyRepo: ClientCompanyRepository,
     billingProfileRepo: CompanyBillingProfileRepository,
-    emailService: EmailSmsService
+    emailService: EmailSmsService,
+    defaultEmailLanguage: String = "de"
 ) extends InvoiceService:
 
   override def createInvoice(taxiCompanyId: CompanyId, req: CreateInvoiceRequest): IO[InvoiceError, Invoice] =
@@ -282,6 +283,7 @@ class InvoiceServiceImpl(
                    ZIO.fromOption(_).orElseFail(InvoiceError.ClientCompanyNotFound(invoice.clientCompanyId.value))
                  )
       email <- ZIO.fromOption(cc.email).orElseFail(InvoiceError.NoRecipientEmail(invoice.id))
+      lang   = cc.preferredLanguage.filter(_.nonEmpty).getOrElse(defaultEmailLanguage)
       _     <- emailService
                  .sendInvoiceEmail(
                    InvoiceEmailData(
@@ -293,7 +295,8 @@ class InvoiceServiceImpl(
                      dueDate = invoice.dueDate,
                      isReminder = isReminder,
                      pdfAttachment = pdf,
-                     pdfFilename = s"${invoice.number.replace('/', '-')}.pdf"
+                     pdfFilename = s"${invoice.number.replace('/', '-')}.pdf",
+                     language = lang
                    )
                  )
                  .mapError(InvoiceError.EmailDeliveryError(_))
@@ -364,6 +367,12 @@ class InvoiceServiceImpl(
   }
 
 object InvoiceService:
+
+  def layerWithLanguage(defaultEmailLanguage: String): ZLayer[
+    InvoiceRepository & ClientCompanyRepository & CompanyBillingProfileRepository & EmailSmsService,
+    Nothing,
+    InvoiceService
+  ] = ZLayer.fromFunction(InvoiceServiceImpl(_, _, _, _, defaultEmailLanguage))
 
   val layer: ZLayer[
     InvoiceRepository & ClientCompanyRepository & CompanyBillingProfileRepository & EmailSmsService,

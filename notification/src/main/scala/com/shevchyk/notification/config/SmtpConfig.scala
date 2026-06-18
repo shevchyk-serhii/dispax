@@ -25,7 +25,8 @@ final case class SmtpConfig(
     password: String,
     from: String,
     replyTo: Option[String] = None,
-    security: String = "NONE"
+    security: String = "NONE",
+    defaultLanguage: String = "de"
 )
 
 object SmtpConfig:
@@ -51,7 +52,8 @@ object SmtpConfig:
       password = sys.env.getOrElse("SMTP_PASSWORD", ""),
       from = sys.env.getOrElse("SMTP_FROM", "noreply@dispax.de"),
       replyTo = sys.env.get("SMTP_REPLY_TO"),
-      security = sys.env.getOrElse("SMTP_SECURITY", "NONE")
+      security = sys.env.getOrElse("SMTP_SECURITY", "NONE"),
+      defaultLanguage = sys.env.getOrElse("EMAIL_DEFAULT_LANG", "de")
     )
   )
 

@@ -2,7 +2,7 @@ package com.shevchyk.notification.integration
 
 import com.icegreen.greenmail.util.{GreenMail, ServerSetup}
 import com.shevchyk.core.application.InvoiceEmailData
-import com.shevchyk.notification.application.SmtpEmailService
+import com.shevchyk.notification.application.{EmailTemplateService, SmtpEmailService}
 import com.shevchyk.notification.config.SmtpConfig
 import jakarta.mail.internet.MimeMessage
 import jakarta.mail.Multipart
@@ -35,7 +35,8 @@ object SmtpEmailServiceSpec extends ZIOSpecDefault:
     dueDate = Some(LocalDate.of(2024, 12, 31)),
     isReminder = false,
     pdfAttachment = Array[Byte](1, 2, 3),
-    pdfFilename = "2024-001.pdf"
+    pdfFilename = "2024-001.pdf",
+    language = "de"
   )
 
   /**
@@ -83,9 +84,17 @@ object SmtpEmailServiceSpec extends ZIOSpecDefault:
         password = "gmtest",
         from = "noreply@dispax.de",
         replyTo = None,
-        security = "NONE" // plain TCP — the real dev scenario (MailHog/GreenMail, no TLS)
+        security = "NONE", // plain TCP — the real dev scenario (MailHog/GreenMail, no TLS)
+        defaultLanguage = "de"
       )
-      body(new SmtpEmailService(config), greenMail)
+      for
+        templateService <- ZIO
+                             .service[EmailTemplateService]
+                             .provideLayer(
+                               ZLayer.succeed(config) >>> EmailTemplateService.layer
+                             )
+        result          <- body(new SmtpEmailService(config, templateService), greenMail)
+      yield result
     }
 
   def spec =
@@ -143,17 +152,24 @@ object SmtpEmailServiceSpec extends ZIOSpecDefault:
       suite("sendInvoiceEmail — SMTP failure propagates")(
         test("ZIO effect fails when no SMTP listener is running (no throw)") {
           // Port 19999 — no GreenMail started here; connection must be refused.
-          val config  = SmtpConfig(
+          val config = SmtpConfig(
             host = "127.0.0.1",
             port = 19999,
             user = "x",
             password = "x",
             from = "noreply@dispax.de",
             replyTo = None,
-            security = "NONE"
+            security = "NONE",
+            defaultLanguage = "de"
           )
-          val service = new SmtpEmailService(config)
-          for exit <- service.sendInvoiceEmail(baseData).exit
+          for
+            templateService <- ZIO
+                                 .service[EmailTemplateService]
+                                 .provideLayer(
+                                   ZLayer.succeed(config) >>> EmailTemplateService.layer
+                                 )
+            service          = new SmtpEmailService(config, templateService)
+            exit            <- service.sendInvoiceEmail(baseData).exit
           yield assertTrue(exit.isFailure)
         }
       )

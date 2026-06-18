@@ -1,0 +1,10 @@
+Payment Reminder: Invoice {{invoiceNumber}}
+
+Dear Sir or Madam,
+
+this is a payment reminder for invoice {{invoiceNumber}} for {{totalAmount}} {{currency}}{{dueDate}}.
+
+Please settle the outstanding amount as soon as possible. The invoice document is attached.
+
+Kind regards,
+Your Dispax Team

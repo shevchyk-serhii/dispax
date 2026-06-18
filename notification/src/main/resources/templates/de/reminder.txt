@@ -1,0 +1,10 @@
+Zahlungserinnerung: Rechnung {{invoiceNumber}}
+
+Sehr geehrte Damen und Herren,
+
+dies ist eine Zahlungserinnerung für Rechnung {{invoiceNumber}} über {{totalAmount}} {{currency}}{{dueDate}}.
+
+Bitte begleichen Sie den offenen Betrag so bald wie möglich. Den Rechnungsbeleg finden Sie im Anhang.
+
+Mit freundlichen Grüßen
+Ihr Dispax-Team

@@ -1,0 +1,10 @@
+Your Invoice {{invoiceNumber}} from Dispax
+
+Dear Sir or Madam,
+
+please find enclosed your invoice {{invoiceNumber}} for {{totalAmount}} {{currency}}.
+
+The invoice document is attached to this email.
+
+Kind regards,
+Your Dispax Team

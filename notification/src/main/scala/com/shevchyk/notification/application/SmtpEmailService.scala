@@ -24,7 +24,7 @@ import java.util.Properties
  * `sendRideConfirmation` / `sendDriverAssignment` are out of scope for SMTP delivery and remain as log stubs (identical
  * to `LoggingEmailSmsService`) to avoid any regression.
  */
-class SmtpEmailService(config: SmtpConfig) extends EmailSmsService:
+class SmtpEmailService(config: SmtpConfig, templateService: EmailTemplateService) extends EmailSmsService:
 
   override def sendRideConfirmation(data: RideConfirmationData): Task[Unit] = ZIO.logInfo(
     s"[SMTP] Ride confirmation stub | ride: ${data.rideId}"
@@ -38,10 +38,12 @@ class SmtpEmailService(config: SmtpConfig) extends EmailSmsService:
     ZIO.logInfo(
       s"[SMTP] Sending invoice email | invoice: ${data.invoiceNumber} | attachment: ${data.pdfFilename} (${data.pdfAttachment.length} bytes)"
     ) *>
-      ZIO.attemptBlocking {
-        val session = buildSession()
-        val msg     = buildMessage(session, data)
-        Transport.send(msg, config.user, config.password)
+      templateService.renderInvoice(data).flatMap { case (subject, plain, html) =>
+        ZIO.attemptBlocking {
+          val session = buildSession()
+          val msg     = buildMessage(session, data, subject, plain, html)
+          Transport.send(msg, config.user, config.password)
+        }
       } *>
       ZIO.logInfo(s"[SMTP] Invoice email delivered | invoice: ${data.invoiceNumber}")
 
@@ -67,12 +69,18 @@ class SmtpEmailService(config: SmtpConfig) extends EmailSmsService:
         ()
     Session.getInstance(props)
 
-  private def buildMessage(session: Session, data: InvoiceEmailData): MimeMessage =
+  private def buildMessage(
+      session: Session,
+      data: InvoiceEmailData,
+      subject: String,
+      plainBody: String,
+      htmlBody: String
+  ): MimeMessage =
     val msg = new MimeMessage(session)
     msg.setFrom(new InternetAddress(config.from))
     config.replyTo.foreach(rt => msg.setReplyTo(Array(new InternetAddress(rt))))
     msg.setRecipient(Message.RecipientType.TO, new InternetAddress(data.toEmail))
-    msg.setSubject(subject(data), "UTF-8")
+    msg.setSubject(subject, "UTF-8")
 
     // Outer multipart/mixed: alternative body + PDF attachment
     val mixed = new MimeMultipart("mixed")
@@ -81,11 +89,11 @@ class SmtpEmailService(config: SmtpConfig) extends EmailSmsService:
     val alternative = new MimeMultipart("alternative")
 
     val plainPart = new MimeBodyPart()
-    plainPart.setText(plainBody(data), "UTF-8", "plain")
+    plainPart.setText(plainBody, "UTF-8", "plain")
     alternative.addBodyPart(plainPart)
 
     val htmlPart = new MimeBodyPart()
-    htmlPart.setText(htmlBody(data), "UTF-8", "html")
+    htmlPart.setText(htmlBody, "UTF-8", "html")
     alternative.addBodyPart(htmlPart)
 
     val alternativeWrapper = new MimeBodyPart()
@@ -103,80 +111,14 @@ class SmtpEmailService(config: SmtpConfig) extends EmailSmsService:
     msg.setContent(mixed)
     msg
 
-  private def subject(data: InvoiceEmailData): String =
-    if data.isReminder then s"Zahlungserinnerung: Rechnung ${data.invoiceNumber}"
-    else s"Ihre Rechnung ${data.invoiceNumber} von Dispax"
-
-  private def plainBody(data: InvoiceEmailData): String =
-    // PII rule: do NOT embed data.toEmail or data.totalAmount in logged strings.
-    // Body text itself is safe to compose — it is only delivered via SMTP, not logged.
-    if data.isReminder then
-      val dueLine = data.dueDate.fold("")(d => s", fällig am $d")
-      s"""Sehr geehrte Damen und Herren,
-
-dies ist eine Zahlungserinnerung für Rechnung ${data.invoiceNumber} über ${data.totalAmount} ${data.currency}$dueLine.
-
-Bitte begleichen Sie den offenen Betrag so bald wie möglich. Den Rechnungsbeleg finden Sie im Anhang.
-
-Mit freundlichen Grüßen
-Ihr Dispax-Team"""
-    else s"""Sehr geehrte Damen und Herren,
-
-anbei erhalten Sie Ihre Rechnung ${data.invoiceNumber} über ${data.totalAmount} ${data.currency}.
-
-Den Rechnungsbeleg finden Sie im Anhang dieser E-Mail.
-
-Mit freundlichen Grüßen
-Ihr Dispax-Team"""
-
-  private def htmlBody(data: InvoiceEmailData): String =
-    val reminderBadge =
-      if data.isReminder then
-        """<p style="background:#fff3cd;border:1px solid #ffc107;padding:12px 16px;border-radius:4px;color:#856404;font-weight:bold;">
-          |  Zahlungserinnerung
-          |</p>""".stripMargin
-      else ""
-
-    val dueDateRow =
-      data.dueDate.fold("") { d =>
-        val color = if data.isReminder then " color:#c0392b;" else ""
-        s"""<tr><td style="padding:6px 0;color:#555;">Fälligkeitsdatum</td>
-           |    <td style="padding:6px 0;font-weight:bold;$color">$d</td></tr>""".stripMargin
-      }
-
-    s"""<!DOCTYPE html>
-       |<html lang="de">
-       |<head><meta charset="UTF-8"><title>${subject(data)}</title></head>
-       |<body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:24px;">
-       |  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
-       |    <h1 style="color:#2c3e50;font-size:22px;margin-top:0;">${subject(data)}</h1>
-       |    $reminderBadge
-       |    <p style="color:#333;">Sehr geehrte Damen und Herren,</p>
-       |    <p style="color:#333;">
-       |      ${
-        if data.isReminder then s"dies ist eine Zahlungserinnerung für Rechnung <strong>${data.invoiceNumber}</strong>."
-        else s"anbei erhalten Sie Ihre Rechnung <strong>${data.invoiceNumber}</strong>."
-      }
-       |    </p>
-       |    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-       |      <tr><td style="padding:6px 0;color:#555;">Rechnungsnummer</td>
-       |          <td style="padding:6px 0;font-weight:bold;">${data.invoiceNumber}</td></tr>
-       |      <tr><td style="padding:6px 0;color:#555;">Betrag</td>
-       |          <td style="padding:6px 0;font-weight:bold;">${data.totalAmount} ${data.currency}</td></tr>
-       |      $dueDateRow
-       |    </table>
-       |    <p style="color:#333;">Den Rechnungsbeleg finden Sie im Anhang dieser E-Mail.</p>
-       |    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
-       |    <p style="color:#777;font-size:13px;">Mit freundlichen Grüßen<br>Ihr Dispax-Team</p>
-       |  </div>
-       |</body>
-       |</html>""".stripMargin
-
 object SmtpEmailService:
 
-  val layer: ZLayer[SmtpConfig, Nothing, EmailSmsService] = ZLayer.fromFunction(new SmtpEmailService(_))
+  val layer: ZLayer[SmtpConfig & EmailTemplateService, Nothing, EmailSmsService] = ZLayer.fromFunction(
+    new SmtpEmailService(_, _)
+  )
 
   /**
-   * Combined layer: reads `SmtpConfig` from HOCON/env, then builds `SmtpEmailService`.
+   * Combined layer: reads `SmtpConfig` from HOCON/env, builds `EmailTemplateService`, then `SmtpEmailService`.
    */
-  val liveLayer: ZLayer[Any, Nothing, EmailSmsService] = SmtpConfig.liveLayer >>> layer
+  val liveLayer: ZLayer[Any, Nothing, EmailSmsService] =
+    SmtpConfig.liveLayer >>> (ZLayer.service[SmtpConfig] ++ EmailTemplateService.layer) >>> layer
