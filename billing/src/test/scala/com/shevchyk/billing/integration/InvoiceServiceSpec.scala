@@ -635,6 +635,45 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           case _                                            => false
         )
       },
+      test("generateRideReceipt fails with RideNotBillable for non-existent rideId") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          svc     = makeService(xa)
+          rideId  = UUID.randomUUID()
+          result <- svc.generateRideReceipt(rideId, testCompanyId, BigDecimal("19"), "Test GmbH").either
+        } yield assertTrue(result match
+          case Left(InvoiceError.RideNotBillable(id)) => id == rideId
+          case _                                      => false
+        )
+      },
+      test("sendReminder fails with InvalidStatus for a Draft invoice") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          svc     = makeService(xa)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          result <- svc.sendReminder(inv.id, testCompanyId, "Test GmbH", storageDir).either
+        } yield assertTrue(result match
+          case Left(InvoiceError.InvalidStatus(InvoiceStatus.Draft, "sent")) => true
+          case _                                                             => false
+        )
+      },
+      test("listBillableRides excludes non-Completed (Requested) rides") {
+        for {
+          xa          <- ZIO.service[Transactor[Task]]
+          _           <- seedTestData(xa)
+          _           <- cleanData(xa)
+          _           <- linkClientToCompany(xa)
+          completedId <- insertCompletedRideReturningId(xa, BigDecimal("50.00"), LocalDate.of(2026, 1, 10))
+          _           <- insertRequestedRideReturningId(xa, BigDecimal("40.00"), LocalDate.of(2026, 1, 11))
+          svc          = makeService(xa)
+          rides       <- svc.listBillableRides(testCompanyId, clientCompanyId, None, None)
+        } yield assertTrue(
+          rides.length == 1,
+          rides.head.rideId == completedId
+        )
+      },
       test("findOverdueUnpaid returns sent, unpaid, overdue, not-yet-reminded invoices") {
         for {
           xa      <- ZIO.service[Transactor[Task]]
