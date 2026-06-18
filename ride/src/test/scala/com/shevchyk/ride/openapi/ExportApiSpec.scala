@@ -154,6 +154,31 @@ object ExportApiSpec extends ZIOSpecDefault {
           )
           // Both empty numbers become ;; in succession
           assertTrue(line.contains(";;"))
+        },
+        test("Beraternummer and Mandantennummer are at the correct fixed column positions (split by ';')") {
+          // DATEV Buchungsstapel v7: field positions are fixed.
+          // Beraternummer must be the 10th semicolon-delimited field (0-indexed: index 9).
+          // Mandantennummer must be at index 10.
+          // Rechnungslegungszweck (=1) must be at index 19.
+          // Festschreibung (=0) must be at index 21.
+          // This test pins exact column indices so any future shift in the header template is caught immediately.
+          val line   = ExportApi.extfHeaderLine(
+            timestamp = "20250515083045123",
+            beraternummer = "12345",
+            mandantennummer = "67890",
+            wjBeginn = "20250101",
+            sachkontenlaenge = 4,
+            datumVon = "20250501",
+            datumBis = "20250531",
+            bezeichnung = "Test batch"
+          )
+          val fields = line.split(";", -1)
+          assertTrue(
+            fields(9) == "12345",  // Beraternummer at field 10 (0-indexed: 9)
+            fields(10) == "67890", // Mandantennummer at field 11 (0-indexed: 10)
+            fields(19) == "1",     // Rechnungslegungszweck at field 20 (0-indexed: 19)
+            fields(21) == "0"      // Festschreibung at field 22 (0-indexed: 21); must NOT be "1" (locking)
+          )
         }
       ),
       suite("buildExtf file structure")(
