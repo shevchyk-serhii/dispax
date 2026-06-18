@@ -20,7 +20,8 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
   override def findByCompanyId(companyId: CompanyId): Task[Option[CompanySettings]] =
     sql"""
       SELECT company_id, commission_rate, working_hours_start::text, working_hours_end::text,
-             default_currency, cancellation_fee_default, no_show_fee, auto_assign_enabled, updated_at
+             default_currency, cancellation_fee_default, no_show_fee, auto_assign_enabled, updated_at,
+             datev_beraternummer, datev_mandantennummer, datev_sachkontenlaenge
       FROM company_settings
       WHERE company_id = ${companyId.value}
     """
@@ -31,11 +32,13 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
   override def upsert(settings: CompanySettings): Task[CompanySettings] =
     sql"""
       INSERT INTO company_settings (company_id, commission_rate, working_hours_start, working_hours_end,
-                                     default_currency, cancellation_fee_default, no_show_fee, auto_assign_enabled, updated_at)
+                                     default_currency, cancellation_fee_default, no_show_fee, auto_assign_enabled, updated_at,
+                                     datev_beraternummer, datev_mandantennummer, datev_sachkontenlaenge)
       VALUES (${settings.companyId.value}, ${settings.commissionRate},
               ${settings.workingHoursStart}::time, ${settings.workingHoursEnd}::time,
               ${settings.defaultCurrency}, ${settings.cancellationFeeDefault}, ${settings.noShowFee},
-              ${settings.autoAssignEnabled}, NOW())
+              ${settings.autoAssignEnabled}, NOW(),
+              ${settings.datevBeraternummer}, ${settings.datevMandantennummer}, ${settings.datevSachkontenlaenge})
       ON CONFLICT (company_id) DO UPDATE SET
         commission_rate = ${settings.commissionRate},
         working_hours_start = ${settings.workingHoursStart}::time,
@@ -44,13 +47,31 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
         cancellation_fee_default = ${settings.cancellationFeeDefault},
         no_show_fee = ${settings.noShowFee},
         auto_assign_enabled = ${settings.autoAssignEnabled},
-        updated_at = NOW()
+        updated_at = NOW(),
+        datev_beraternummer = ${settings.datevBeraternummer},
+        datev_mandantennummer = ${settings.datevMandantennummer},
+        datev_sachkontenlaenge = ${settings.datevSachkontenlaenge}
     """.update.run
       .transact(xa)
       .as(settings.copy(updatedAt = Instant.now()))
 
   implicit val settingsRead: Read[CompanySettings] =
-    Read[(UUID, BigDecimal, String, String, String, BigDecimal, BigDecimal, Boolean, Instant)].map {
+    Read[
+      (
+          UUID,
+          BigDecimal,
+          String,
+          String,
+          String,
+          BigDecimal,
+          BigDecimal,
+          Boolean,
+          Instant,
+          Option[String],
+          Option[String],
+          Option[Int]
+      )
+    ].map {
       case (
             companyId,
             commissionRate,
@@ -60,7 +81,10 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
             cancellationFee,
             noShowFee,
             autoAssign,
-            updatedAt
+            updatedAt,
+            datevBeraternummer,
+            datevMandantennummer,
+            datevSachkontenlaenge
           ) =>
         CompanySettings(
           companyId = CompanyId(companyId),
@@ -71,7 +95,10 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
           cancellationFeeDefault = cancellationFee,
           noShowFee = noShowFee,
           autoAssignEnabled = autoAssign,
-          updatedAt = updatedAt
+          updatedAt = updatedAt,
+          datevBeraternummer = datevBeraternummer,
+          datevMandantennummer = datevMandantennummer,
+          datevSachkontenlaenge = datevSachkontenlaenge
         )
     }
 

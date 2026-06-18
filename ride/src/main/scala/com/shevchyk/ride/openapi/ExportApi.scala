@@ -3,18 +3,20 @@ package com.shevchyk.ride.openapi
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{CompanyId, PersonId}
 import com.shevchyk.core.openapi.ApiError
-import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.repository.{CompanySettingsRepository, PersonRepository}
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.{Expense, ExpenseCategory, PaymentMethod, Ride, RideStatus}
 import com.shevchyk.ride.infrastructure.http.{DatevCsvSection, DatevExportResponse, DatevSummarySection}
 import com.shevchyk.ride.openapi.RideSchemas.given
 import com.shevchyk.ride.openapi.RideSecure.*
 import com.shevchyk.ride.repository.ExpenseRepository
-import sttp.model.{MediaType, StatusCode}
+import sttp.model.{HeaderNames, MediaType, StatusCode}
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
-import zio.ZIO
+import zio.{Clock, ZIO}
 
+import java.nio.charset.{Charset, CodingErrorAction}
+import java.time.format.DateTimeFormatter
 import java.time.{Instant, YearMonth, ZoneOffset}
 
 /**
@@ -27,7 +29,7 @@ object ExportApi:
 
   private val exportTag = "Export"
 
-  type ExportEnv = RideService & ExpenseRepository & PersonRepository & JwtService
+  type ExportEnv = RideService & ExpenseRepository & PersonRepository & JwtService & CompanySettingsRepository
 
   private def internalError: Err = (StatusCode.InternalServerError, ApiError("Internal server error"))
 
@@ -71,7 +73,7 @@ object ExportApi:
   private val expenseCsvHeader =
     "Umsatz (ohne Soll/Haben-Kz);Soll/Haben-Kennzeichen;WKZ Umsatz;Konto;Gegenkonto (ohne BU-Schluessel);BU-Schluessel;Belegdatum;Belegfeld 1;Buchungstext"
 
-  private def generateRevenueCsv(rides: List[Ride], clientNames: Map[PersonId, String]): String =
+  private[openapi] def generateRevenueCsv(rides: List[Ride], clientNames: Map[PersonId, String]): String =
     val rows = rides.map { ride =>
       val amount  = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue).getOrElse(0.0)
       val counter = counterAccountForPayment(ride.paymentMethod)
@@ -117,6 +119,137 @@ object ExportApi:
       }
 
     (header +: lines).mkString("\n")
+
+  // --- EXTF helpers ---
+
+  /**
+   * Format a monetary amount using the German decimal notation required by DATEV: comma as decimal separator, exactly
+   * two decimal places, no thousands separator. Examples: 1234.5 -> "1234,50", 0.0 -> "0,00"
+   */
+  private[openapi] def germanAmount(d: Double): String = f"$d%.2f".replace('.', ',')
+
+  /**
+   * Build the EXTF header line (line 1 of a Buchungsstapel file).
+   *
+   * @param timestamp
+   *   yyyyMMddHHmmssSSS — exactly 17 characters
+   * @param beraternummer
+   *   Steuerberater number; empty string if not configured
+   * @param mandantennummer
+   *   Mandant number; empty string if not configured
+   * @param wjBeginn
+   *   Start of fiscal year yyyyMMdd
+   * @param sachkontenlaenge
+   *   Account-number length (typically 4)
+   * @param datumVon
+   *   Period start yyyyMMdd
+   * @param datumBis
+   *   Period end yyyyMMdd
+   * @param bezeichnung
+   *   Free-text description of the batch (e.g. "Erlöse Mai 2025")
+   */
+  private[openapi] def extfHeaderLine(
+      timestamp: String,
+      beraternummer: String,
+      mandantennummer: String,
+      wjBeginn: String,
+      sachkontenlaenge: Int,
+      datumVon: String,
+      datumBis: String,
+      bezeichnung: String
+  ): String =
+    // Field layout follows DATEV Buchungsstapel Format v7 (22 fields, 0-indexed):
+    // [0]EXTF [1]700 [2]21 [3]Buchungsstapel [4]7 [5]Erzeugt-am [6]Importiert(empty)
+    // [7]Herkunft [8]Exportiert-von [9]Importiert-von(empty) [10]Beraternummer
+    // [11]Mandantennummer [12]WJ-Beginn [13]Sachkontenlänge [14]Datum-von [15]Datum-bis
+    // [16]Bezeichnung [17]Diktatkürzel [18]Buchungstyp [19]Rechnungslegungszweck(empty)
+    // [20]Festschreibung=0 [21]WKZ=EUR
+    s""""EXTF";700;21;"Buchungsstapel";7;$timestamp;;"";"";;$beraternummer;$mandantennummer;$wjBeginn;$sachkontenlaenge;$datumVon;$datumBis;"$bezeichnung";"";"";;0;"EUR";"""
+
+  private val datevCsvColumnHeader =
+    "Umsatz (ohne Soll/Haben-Kz);Soll/Haben-Kennzeichen;WKZ Umsatz;Konto;Gegenkonto (ohne BU-Schluessel);BU-Schluessel;Belegdatum;Belegfeld 1;Buchungstext"
+
+  /**
+   * Generate revenue rows in EXTF format: amounts use German comma notation.
+   */
+  private def generateRevenueCsvExtf(rides: List[Ride], clientNames: Map[PersonId, String]): List[String] = rides.map {
+    ride =>
+      val amount  = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue).getOrElse(0.0)
+      val counter = counterAccountForPayment(ride.paymentMethod)
+      val date    = datevDate(ride.endTime.getOrElse(ride.requestTime))
+      val rideId  = ride.id.value.toString.take(12)
+      val client  = clientNames.getOrElse(ride.clientId, "Unbekannt")
+      val text    = escapeCsvField(s"Fahrdienstleistung $client")
+      s"${germanAmount(amount)};S;EUR;8400;$counter;;$date;$rideId;$text"
+  }
+
+  /**
+   * Generate expense rows in EXTF format: amounts use German comma notation.
+   */
+  private def generateExpensesCsvExtf(expenses: List[Expense]): List[String] = expenses.map { exp =>
+    val account = expenseAccount(exp.category)
+    val date    = datevDate(exp.createdAt)
+    val expId   = exp.id.value.toString.take(12)
+    val desc    = exp.description.getOrElse("")
+    val text    = escapeCsvField(s"${exp.category} $desc")
+    s"${germanAmount(exp.amount.doubleValue)};S;EUR;$account;70000;;$date;$expId;$text"
+  }
+
+  private val win1252: Charset                        = Charset.forName("windows-1252")
+  private val yyyyMMddFmt: DateTimeFormatter          = DateTimeFormatter.ofPattern("yyyyMMdd")
+  private val yyyyMMddHHmmssSSSFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")
+
+  /**
+   * Assemble the complete EXTF Buchungsstapel byte array. Encoding: Windows-1252 with REPLACE for unmappable
+   * characters. Line separator: CRLF.
+   */
+  private[openapi] def buildExtf(
+      rides: List[Ride],
+      expenses: List[Expense],
+      clientNames: Map[PersonId, String],
+      month: YearMonth,
+      beraternummer: String,
+      mandantennummer: String,
+      sachkontenlaenge: Int,
+      now: Instant
+  ): Array[Byte] =
+    val zonedNow    = now.atZone(ZoneOffset.UTC)
+    val timestamp   = yyyyMMddHHmmssSSSFmt.format(zonedNow)
+    val wjBeginn    = yyyyMMddFmt.format(month.atDay(1).withDayOfYear(1))
+    val datumVon    = yyyyMMddFmt.format(month.atDay(1))
+    val datumBis    = yyyyMMddFmt.format(month.atEndOfMonth())
+    val bezeichnung = s"Buchungsstapel ${month.getMonthValue.toString.padTo(2, ' ').reverse.mkString}/${month.getYear}"
+
+    val header      = extfHeaderLine(
+      timestamp,
+      beraternummer,
+      mandantennummer,
+      wjBeginn,
+      sachkontenlaenge,
+      datumVon,
+      datumBis,
+      bezeichnung
+    )
+    val revenueRows = generateRevenueCsvExtf(rides, clientNames)
+    val expenseRows = generateExpensesCsvExtf(expenses)
+    val allRows     = List(header, datevCsvColumnHeader) ::: revenueRows ::: expenseRows
+    val content     = allRows.mkString("\r\n")
+
+    val encoder = win1252
+      .newEncoder()
+      .onMalformedInput(CodingErrorAction.REPLACE)
+      .onUnmappableCharacter(CodingErrorAction.REPLACE)
+    val charBuf = java.nio.CharBuffer.wrap(content)
+    val byteBuf = encoder.encode(charBuf)
+    val result  = new Array[Byte](byteBuf.remaining())
+    byteBuf.get(result)
+    result
+
+  /**
+   * Sanitise a string for safe use as a filename in a Content-Disposition header. Strips characters that are dangerous
+   * in filenames (path separators, quotes, control chars).
+   */
+  private[openapi] def sanitizeFilename(raw: String): String = raw.replaceAll("[^A-Za-z0-9._\\-]", "_")
 
   private def parseMonth(monthOpt: Option[String]): YearMonth = monthOpt
     .flatMap(s => scala.util.Try(YearMonth.parse(s)).toOption)
@@ -171,7 +304,16 @@ object ExportApi:
     .tag(exportTag)
     .summary("Expenses CSV (text/csv)")
 
-  val endpoints = List(datevExportEndpoint, datevRidesCsvEndpoint, datevExpensesCsvEndpoint)
+  val datevExtfEndpoint = secureEndpoint.get
+    .in("api" / "export" / "datev" / "extf")
+    .in(query[Option[String]]("month"))
+    .out(byteArrayBody)
+    .out(header(sttp.model.Header.contentType(MediaType.unsafeApply("text", "csv"))))
+    .out(header[String](HeaderNames.ContentDisposition))
+    .tag(exportTag)
+    .summary("Download DATEV EXTF Buchungsstapel file (Windows-1252, CRLF, German comma amounts)")
+
+  val endpoints = List(datevExportEndpoint, datevRidesCsvEndpoint, datevExpensesCsvEndpoint, datevExtfEndpoint)
 
   // -- Server logic --------------------------------------------------------
 
@@ -224,8 +366,41 @@ object ExportApi:
       } yield csv
   }
 
+  private val datevExtfServer: ZServerEndpoint[ExportEnv, Any] = datevExtfEndpoint.serverLogic { user => monthOpt =>
+    for {
+      _                                         <- checkRole(user, "DISPATCHER", "ADMIN")
+      companyId                                 <- requireCompanyId(user.companyId)
+      month                                      = parseMonth(monthOpt)
+      result                                    <- fetchData(companyId, month)
+      (completedRides, monthExpenses, clientMap) = result
+      settingsRepo                              <- ZIO.service[CompanySettingsRepository]
+      settingsOpt                               <- settingsRepo.findByCompanyId(companyId).mapError(_ => internalError)
+      settings                                   = settingsOpt.getOrElse(
+                                                     com.shevchyk.core.domain.CompanySettings(companyId = companyId)
+                                                   )
+      beraternummer                              = settings.datevBeraternummer.getOrElse("")
+      mandantennummer                            = settings.datevMandantennummer.getOrElse("")
+      sachkontenlaenge                           = settings.datevSachkontenlaenge.getOrElse(4)
+      now                                       <- Clock.instant
+      bytes                                      = buildExtf(
+                                                     completedRides,
+                                                     monthExpenses,
+                                                     clientMap,
+                                                     month,
+                                                     beraternummer,
+                                                     mandantennummer,
+                                                     sachkontenlaenge,
+                                                     now
+                                                   )
+      rawFilename                                = s"EXTF_Buchungsstapel_${companyId.value}_${month}"
+      filename                                   = sanitizeFilename(rawFilename) + ".csv"
+      disposition                                = s"""attachment; filename="$filename""""
+    } yield (bytes, disposition)
+  }
+
   val serverEndpoints: List[ZServerEndpoint[ExportEnv, Any]] = List(
     datevExportServer,
     datevRidesCsvServer,
-    datevExpensesCsvServer
+    datevExpensesCsvServer,
+    datevExtfServer
   )
