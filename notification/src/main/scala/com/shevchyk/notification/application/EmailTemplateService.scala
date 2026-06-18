@@ -18,9 +18,10 @@ import scala.io.Source
  * Placeholders (double-brace, replaced with str-replace): {{invoiceNumber}}, {{totalAmount}}, {{currency}},
  * {{dueDate}}, {{toName}}, {{dueDateRow}}
  *
- * {{dueDate}} in .txt files is substituted with either ", fällig am <date>" style text (language-neutral: the service
- * inserts the raw ISO date with a configurable prefix per locale) or an empty string. {{dueDateRow}} in .html files is
- * substituted with a pre-built <tr>…</tr> snippet or empty string.
+ * {{dueDate}} in .txt files is substituted with a language-aware phrase (de: ", fällig am <date>", en: ", due on
+ * <date>", uk: ", до сплати <date>") or an empty string when dueDate is absent. {{dueDateRow}} in .html files is
+ * substituted with a pre-built <tr>…</tr> snippet whose label is also language-aware (de: "Fälligkeitsdatum", en: "Due
+ * date", uk: "Термін оплати"), or empty string.
  *
  * Caching: each (lang, kind, format) triplet is loaded once on first use and stored in a Ref-backed map. Fallback:
  * unknown/unsupported language → defaultLang (from SmtpConfig.defaultLanguage).
@@ -68,7 +69,7 @@ object EmailTemplateService:
           cached match
             case Some(r) => ZIO.succeed(r)
             case None    => loadAndCache(lang, kind, format, key)
-        rendered = substitute(raw.subject + "\n\n" + raw.body, data, format)
+        rendered = substitute(raw.subject + "\n\n" + raw.body, data, format, lang)
       yield rendered
 
     private def loadAndCache(lang: String, kind: String, format: String, key: CacheKey): Task[RawTemplate] =
@@ -109,16 +110,29 @@ object EmailTemplateService:
       val idx = rendered.indexOf("\n\n")
       if idx < 0 then "" else rendered.substring(idx + 2).trim
 
-    private def substitute(template: String, data: InvoiceEmailData, format: String): String =
+    private def dueDateTxtPhrase(lang: String, d: Any): String =
+      lang match
+        case "en" => s", due on $d"
+        case "uk" => s", до сплати $d"
+        case _    => s", fällig am $d"
+
+    private def dueDateHtmlLabel(lang: String): String =
+      lang match
+        case "en" => "Due date"
+        case "uk" => "Термін оплати"
+        case _    => "Fälligkeitsdatum"
+
+    private def substitute(template: String, data: InvoiceEmailData, format: String, lang: String): String =
       val dueDateStr: String =
         data.dueDate.fold("") { d =>
-          if format == "txt" then s", fällig am $d" else d.toString
+          if format == "txt" then dueDateTxtPhrase(lang, d) else d.toString
         }
 
       val dueDateRowHtml: String =
         data.dueDate.fold("") { d =>
           val colorStyle = if data.isReminder then " color:#c0392b;" else ""
-          s"""<tr><td style="padding:6px 0;color:#555;">Fälligkeitsdatum</td>
+          val label      = dueDateHtmlLabel(lang)
+          s"""<tr><td style="padding:6px 0;color:#555;">$label</td>
     <td style="padding:6px 0;font-weight:bold;$colorStyle">$d</td></tr>"""
         }
 
