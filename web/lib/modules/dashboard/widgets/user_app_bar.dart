@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/models/person.dart';
+import '../../core/widgets/avatar_circle.dart';
+import '../../../blocs/auth/auth_bloc.dart';
 import '../../../constants/app_colors.dart';
 
 class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -63,16 +66,10 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
           ],
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: Text(
-                user.name.split(' ').map((e) => e[0]).take(2).join(),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            child: AvatarCircle(
+              user: user,
+              apiClient: context.read<AuthBloc>().apiClient,
+              radius: 16,
             ),
           ),
         ),

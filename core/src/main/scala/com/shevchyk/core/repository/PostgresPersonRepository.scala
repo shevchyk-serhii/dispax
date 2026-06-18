@@ -83,7 +83,7 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
     )
 
   private val selectColumns =
-    fr"id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, last_login_at, client_company_id, reminder_minutes, roles::text[]"
+    fr"id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, last_login_at, client_company_id, reminder_minutes, roles::text[], (avatar IS NOT NULL) AS has_avatar"
 
   override def create(person: Person): Task[Person] = {
     val rolesArray = person.effectiveRoles.toList
@@ -233,6 +233,22 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       .transact(xa)
       .unit
 
+  override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]] =
+    sql"SELECT avatar, avatar_content_type FROM persons WHERE id = ${id.value} AND avatar IS NOT NULL"
+      .query[(Array[Byte], String)]
+      .option
+      .transact(xa)
+
+  override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] =
+    sql"UPDATE persons SET avatar = $bytes, avatar_content_type = $contentType WHERE id = ${id.value}".update.run
+      .transact(xa)
+      .unit
+
+  override def deleteAvatar(id: PersonId): Task[Unit] =
+    sql"UPDATE persons SET avatar = NULL, avatar_content_type = NULL WHERE id = ${id.value}".update.run
+      .transact(xa)
+      .unit
+
   implicit val personRead: Read[Person] =
     Read[
       (
@@ -250,7 +266,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           Option[Instant],
           Option[UUID],
           Int,
-          List[PersonRole]
+          List[PersonRole],
+          Boolean
       )
     ].map {
       case (
@@ -268,7 +285,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
             lastLoginAt,
             clientCompanyId,
             reminderMinutes,
-            rolesList
+            rolesList,
+            hasAvatar
           ) =>
         Person(
           id = PersonId(id),
@@ -285,7 +303,8 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           lastLoginAt = lastLoginAt,
           clientCompanyId = clientCompanyId.map(ClientCompanyId.apply),
           reminderMinutes = reminderMinutes,
-          roles = rolesList.toSet
+          roles = rolesList.toSet,
+          avatarPresent = hasAvatar
         )
     }
 }

@@ -336,6 +336,21 @@ class AppLocalizationsUk extends AppLocalizations {
   String get profileUpdated => 'Профіль успішно оновлено';
 
   @override
+  String get uploadPhoto => 'Завантажити фото';
+
+  @override
+  String get changePhoto => 'Змінити фото';
+
+  @override
+  String get removePhoto => 'Видалити фото';
+
+  @override
+  String get photoUploadedSuccessfully => 'Фото успішно завантажено';
+
+  @override
+  String get failedToUploadPhoto => 'Не вдалося завантажити фото';
+
+  @override
   String get security => 'Безпека';
 
   @override

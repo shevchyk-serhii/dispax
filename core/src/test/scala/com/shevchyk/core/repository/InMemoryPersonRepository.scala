@@ -6,6 +6,13 @@ import zio.*
 
 class InMemoryPersonRepository extends PersonRepository:
 
+  // In-memory avatar store: maps PersonId -> (bytes, contentType)
+  private val avatars = Unsafe.unsafe { implicit unsafe =>
+    Runtime.default.unsafe
+      .run(Ref.Synchronized.make(Map.empty[PersonId, (Array[Byte], String)]))
+      .getOrThrowFiberFailure()
+  }
+
   private val people = Unsafe.unsafe { implicit unsafe =>
     Runtime.default.unsafe.run(Ref.Synchronized.make(Map.empty[PersonId, Person])).getOrThrowFiberFailure()
   }
@@ -59,6 +66,13 @@ class InMemoryPersonRepository extends PersonRepository:
   )
 
   override def upsertDriverRow(personId: PersonId): Task[Unit] = ZIO.unit
+
+  override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]] = avatars.get.map(_.get(id))
+
+  override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] =
+    avatars.update(_.updated(id, (bytes, contentType))).unit
+
+  override def deleteAvatar(id: PersonId): Task[Unit] = avatars.update(_.removed(id)).unit
 
 object InMemoryPersonRepository:
   val layer: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(new InMemoryPersonRepository)

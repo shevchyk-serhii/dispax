@@ -210,6 +210,9 @@ object TestApplication extends ZIOAppDefault:
       def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]        = ZIO.succeed(Nil)
       def upsertDriverRow(personId: PersonId): Task[Unit]                                  = ZIO.unit
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                     = ZIO.succeed(None)
+      def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]     = ZIO.unit
+      def deleteAvatar(id: PersonId): Task[Unit]                                           = ZIO.unit
     }
 
   private val mockTokenRepository: TokenRepository =

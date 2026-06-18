@@ -742,6 +742,36 @@ abstract class AppLocalizations {
   /// **'Profile updated successfully'**
   String get profileUpdated;
 
+  /// No description provided for @uploadPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Photo'**
+  String get uploadPhoto;
+
+  /// No description provided for @changePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Photo'**
+  String get changePhoto;
+
+  /// No description provided for @removePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Photo'**
+  String get removePhoto;
+
+  /// No description provided for @photoUploadedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo uploaded successfully'**
+  String get photoUploadedSuccessfully;
+
+  /// No description provided for @failedToUploadPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to upload photo'**
+  String get failedToUploadPhoto;
+
   /// No description provided for @security.
   ///
   /// In en, this message translates to:

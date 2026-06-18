@@ -17,6 +17,13 @@ object TestUUIDs:
  * InMemoryPersonRepository with pre-seeded test users for auth tests
  */
 final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
+
+  // In-memory avatar store: maps PersonId -> (bytes, contentType)
+  private val avatars = Unsafe.unsafe { implicit u =>
+    Runtime.default.unsafe
+      .run(Ref.Synchronized.make(Map.empty[PersonId, (Array[Byte], String)]))
+      .getOrThrow()
+  }
   import TestUUIDs._
 
   private def hashPassword(password: String): String = BCrypt.hashpw(password, BCrypt.gensalt(12))
@@ -124,6 +131,13 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
   )
 
   override def upsertDriverRow(personId: PersonId): Task[Unit] = ZIO.unit
+
+  override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]] = avatars.get.map(_.get(id))
+
+  override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] =
+    avatars.update(_.updated(id, (bytes, contentType))).unit
+
+  override def deleteAvatar(id: PersonId): Task[Unit] = avatars.update(_.removed(id)).unit
 
 final class InMemoryTokenRepository extends TokenRepository:
   import TestUUIDs._

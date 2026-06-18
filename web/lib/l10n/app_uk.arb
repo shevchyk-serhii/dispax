@@ -121,6 +121,11 @@
   "name": "Ім'я",
   "phone": "Телефон",
   "profileUpdated": "Профіль успішно оновлено",
+  "uploadPhoto": "Завантажити фото",
+  "changePhoto": "Змінити фото",
+  "removePhoto": "Видалити фото",
+  "photoUploadedSuccessfully": "Фото успішно завантажено",
+  "failedToUploadPhoto": "Не вдалося завантажити фото",
 
   "security": "Безпека",
   "biometricLogin": "Біометричний вхід",

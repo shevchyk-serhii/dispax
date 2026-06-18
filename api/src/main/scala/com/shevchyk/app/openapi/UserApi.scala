@@ -4,15 +4,17 @@ import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.middleware.{AuthenticatedUser, RateLimiter}
 import com.shevchyk.auth.service.JwtService
+import com.shevchyk.core.application.{AvatarError, AvatarService}
 import com.shevchyk.core.domain.{PersonDto, PersonId, PersonRole}
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.notification.application.FcmService
 import com.shevchyk.notification.domain.RegisterFcmTokenRequest
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.RideStatus
-import sttp.model.StatusCode
+import sttp.model.{Part, StatusCode}
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
+import sttp.tapir.generic.auto.*
 import zio.ZIO
 import zio.json.*
 import java.util.UUID
@@ -71,6 +73,9 @@ object UserApi:
   final case class SuccessResponse(success: Boolean) derives JsonCodec
 
   final case class AvatarUploadResponse(success: Boolean, avatarUrl: String) derives JsonCodec
+
+  // Multipart input for avatar upload: a single file part named "file"
+  final case class AvatarUploadInput(file: Part[Array[Byte]])
 
   // -- Error helpers --------------------------------------------------------
   //
@@ -158,7 +163,7 @@ object UserApi:
   //
   // All server endpoints share one environment (incl. JwtService from the secure
   // security logic) so they can be interpreted together.
-  type UserEnv                     = JwtService & AuthService & PersonRepositoryDep & FcmService & RideService & RateLimiter
+  type UserEnv                     = JwtService & AuthService & PersonRepositoryDep & FcmService & RideService & RateLimiter & AvatarService
   // PersonRepository lives in core; alias keeps the type readable.
   private type PersonRepositoryDep = com.shevchyk.core.repository.PersonRepository
 
@@ -199,11 +204,26 @@ object UserApi:
     .tag(usersTag)
     .summary("Change password (stub)")
 
-  val avatarStubEndpoint = endpoint.post
-    .in("api" / "users" / "avatar")
+  // Avatar endpoints (authenticated) ---------------------------------------
+  val uploadAvatarEndpoint = secureBase.post
+    .in("api" / "users" / path[String]("id") / "avatar")
+    .in(multipartBody[AvatarUploadInput])
     .out(jsonBody[AvatarUploadResponse])
     .tag(usersTag)
-    .summary("Upload avatar (stub)")
+    .summary("Upload or replace profile photo")
+
+  val getAvatarEndpoint = secureBase.get
+    .in("api" / "users" / path[String]("id") / "avatar")
+    .out(byteArrayBody)
+    .out(header[String]("Content-Type"))
+    .tag(usersTag)
+    .summary("Serve profile photo bytes (authenticated, tenant-isolated)")
+
+  val deleteAvatarEndpoint = secureBase.delete
+    .in("api" / "users" / path[String]("id") / "avatar")
+    .out(statusCode(StatusCode.NoContent))
+    .tag(usersTag)
+    .summary("Remove profile photo")
 
   // Authenticated stats ----------------------------------------------------
   val statsRidesEndpoint = secureBase.get
@@ -337,7 +357,9 @@ object UserApi:
    */
   val endpoints = List(
     passwordChangeStubEndpoint,
-    avatarStubEndpoint,
+    uploadAvatarEndpoint,
+    getAvatarEndpoint,
+    deleteAvatarEndpoint,
     statsRidesEndpoint,
     statsRidesDailyEndpoint,
     statsDriversEndpoint,
@@ -365,9 +387,44 @@ object UserApi:
     ZIO.succeed(SuccessResponse(success = true))
   )
 
-  private val avatarStubServer = avatarStubEndpoint.zServerLogic[UserEnv](_ =>
-    ZIO.succeed(AvatarUploadResponse(success = true, avatarUrl = "https://storage.example.com/avatars/user.jpg"))
-  )
+  private val uploadAvatarServer: ZServerEndpoint[UserEnv, Any] = uploadAvatarEndpoint.serverLogic[UserEnv] { user =>
+    { case (userId, input) =>
+      for {
+        uid        <- parseUuid(userId)
+        _          <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+        _          <- requireSameCompany(user, uid)
+        bytes       = input.file.body
+        contentType = input.file.contentType.map(_.toString).getOrElse("image/jpeg")
+        _          <- ZIO
+                        .serviceWithZIO[AvatarService](_.uploadAvatar(PersonId(uid), bytes, contentType))
+                        .mapError { case e: AvatarError =>
+                          (StatusCode.BadRequest, ApiError(e.message))
+                        }
+      } yield AvatarUploadResponse(success = true, avatarUrl = s"/api/users/$userId/avatar")
+    }
+  }
+
+  private val getAvatarServer: ZServerEndpoint[UserEnv, Any] = getAvatarEndpoint.serverLogic[UserEnv] {
+    user => userId =>
+      for {
+        uid    <- parseUuid(userId)
+        _      <- requireSameCompany(user, uid)
+        result <- ZIO
+                    .serviceWithZIO[AvatarService](_.getAvatar(PersonId(uid)))
+                    .mapError(internal)
+                    .someOrFail((StatusCode.NotFound, ApiError("Avatar not found")))
+      } yield (result._1, result._2)
+  }
+
+  private val deleteAvatarServer: ZServerEndpoint[UserEnv, Any] = deleteAvatarEndpoint.serverLogic[UserEnv] {
+    user => userId =>
+      (for {
+        uid <- parseUuid(userId)
+        _   <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+        _   <- requireSameCompany(user, uid)
+        _   <- ZIO.serviceWithZIO[AvatarService](_.deleteAvatar(PersonId(uid))).mapError(internal)
+      } yield ()).unit
+  }
 
   private val statsRidesServer: ZServerEndpoint[UserEnv, Any] = statsRidesEndpoint.serverLogic[UserEnv] { user => _ =>
     for {
@@ -635,7 +692,6 @@ object UserApi:
   val serverEndpoints: List[ZServerEndpoint[UserEnv, Any]] = List(
     // public stubs
     passwordChangeStubServer,
-    avatarStubServer,
     // stats
     statsRidesDailyServer,
     statsRidesServer,
@@ -653,6 +709,10 @@ object UserApi:
     // users — collection
     listUsersServer,
     createUserServer,
+    // users — {id}/avatar (must come before {id} to avoid being captured as id="avatar")
+    uploadAvatarServer,
+    getAvatarServer,
+    deleteAvatarServer,
     // users — {id} (and {id}/role, {id}/status)
     updateUserRoleServer,
     updateUserStatusServer,

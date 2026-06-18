@@ -338,6 +338,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileUpdated => 'Profil erfolgreich aktualisiert';
 
   @override
+  String get uploadPhoto => 'Foto hochladen';
+
+  @override
+  String get changePhoto => 'Foto ändern';
+
+  @override
+  String get removePhoto => 'Foto entfernen';
+
+  @override
+  String get photoUploadedSuccessfully => 'Foto erfolgreich hochgeladen';
+
+  @override
+  String get failedToUploadPhoto => 'Foto-Upload fehlgeschlagen';
+
+  @override
   String get security => 'Sicherheit';
 
   @override

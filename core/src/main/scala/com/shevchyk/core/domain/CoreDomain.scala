@@ -127,7 +127,13 @@ final case class Person(
     lastLoginAt: Option[Instant] = None,
     clientCompanyId: Option[ClientCompanyId] = None,
     reminderMinutes: Int = 60,
-    roles: Set[PersonRole] = Set.empty
+    roles: Set[PersonRole] = Set.empty,
+    // avatarPresent is a computed flag populated by selectColumns (avatar IS NOT NULL).
+    // The actual bytes are NOT loaded in routine selects — use PersonRepository.getAvatar.
+    avatarPresent: Boolean = false,
+    // avatar bytes are only populated by PersonRepository.getAvatar, never by selectColumns.
+    avatar: Option[Array[Byte]] = None,
+    avatarContentType: Option[String] = None
 ):
 
   /**
@@ -150,7 +156,7 @@ final case class Person(
    */
   def primaryRole: PersonRole = role
 
-// DTO for safe serialization — excludes passwordHash
+// DTO for safe serialization — excludes passwordHash and avatar bytes
 final case class PersonDto(
     id: PersonId,
     name: String,
@@ -164,7 +170,9 @@ final case class PersonDto(
     status: UserStatus = UserStatus.ACTIVE,
     clientCompanyId: Option[ClientCompanyId] = None,
     reminderMinutes: Int = 60,
-    roles: Set[PersonRole] = Set.empty
+    roles: Set[PersonRole] = Set.empty,
+    // true when the person has a profile photo; raw bytes are served separately via GET /api/users/{id}/avatar
+    hasAvatar: Boolean = false
 ) derives JsonCodec
 
 object PersonDto:
@@ -184,7 +192,8 @@ object PersonDto:
     status = p.status,
     clientCompanyId = p.clientCompanyId,
     reminderMinutes = p.reminderMinutes,
-    roles = p.effectiveRoles
+    roles = p.effectiveRoles,
+    hasAvatar = p.avatarPresent
   )
 
 enum CompanyStatus derives JsonCodec:

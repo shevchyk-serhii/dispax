@@ -59,6 +59,10 @@ class Person {
   /// (e.g. for very old cached responses — back-compat fallback).
   final Set<PersonRole> roles;
 
+  /// True when the person has a profile photo stored on the server.
+  /// Raw bytes are fetched separately via ApiClient.getBytes('/users/$id/avatar').
+  final bool hasAvatar;
+
   Person({
     required this.id,
     required this.name,
@@ -73,6 +77,7 @@ class Person {
     this.status = 'ACTIVE',
     this.reminderMinutes = 60,
     Set<PersonRole>? roles,
+    this.hasAvatar = false,
   }) : roles = roles != null ? {...roles, role} : {role};
 
   /// Returns true when the person carries [r] as one of their roles.
@@ -117,6 +122,7 @@ class Person {
       status: json['status']?.toString() ?? 'ACTIVE',
       reminderMinutes: (json['reminderMinutes'] as int?) ?? 60,
       roles: parsedRoles,
+      hasAvatar: json['hasAvatar'] as bool? ?? false,
     );
   }
 
@@ -134,6 +140,7 @@ class Person {
       'isVip': isVip,
       'preferredDriverId': preferredDriverId,
       'status': status,
+      'hasAvatar': hasAvatar,
     };
   }
 

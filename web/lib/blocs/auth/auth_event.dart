@@ -42,3 +42,9 @@ class AuthBiometricSetupRequested extends AuthEvent {
   @override
   List<Object?> get props => [enabled, userId];
 }
+
+/// Trigger a silent refresh of the authenticated user's profile from the server.
+/// Used after avatar upload/delete to propagate hasAvatar state to all widgets.
+class AuthProfileRefreshRequested extends AuthEvent {
+  const AuthProfileRefreshRequested();
+}

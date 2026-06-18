@@ -103,6 +103,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthErrorCleared>(_onErrorCleared);
     on<AuthBiometricLoginRequested>(_onBiometricLoginRequested);
     on<AuthBiometricSetupRequested>(_onBiometricSetupRequested);
+    on<AuthProfileRefreshRequested>(_onProfileRefreshRequested);
   }
 
   ApiClient get apiClient => privateApiClient;
@@ -378,6 +379,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           errorMessage: 'Biometric setup error: $e',
         ),
       );
+    }
+  }
+
+  Future<void> _onProfileRefreshRequested(
+    AuthProfileRefreshRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final response = await privateApiClient.get('/users/profile');
+      if (response.statusCode == 200) {
+        final userJson = jsonDecode(response.body);
+        final user = Person.fromJson(userJson);
+        // Persist the refreshed user so the next app start reflects changes
+        await _storage.write(privateUserKey, jsonEncode(userJson));
+        emit(
+          state.copyWith(
+            status: AuthStatus.authenticated,
+            user: user,
+            errorMessage: null,
+          ),
+        );
+      }
+    } catch (_) {
+      // Refresh failures are non-fatal — current state is preserved.
     }
   }
 
