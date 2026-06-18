@@ -13,6 +13,35 @@ import zio.test.*
 import java.time.Instant
 import java.util.UUID
 
+// Helper: construct a minimal Person with the given companyId
+private def testPerson(id: PersonId, companyId: Option[CompanyId]): Person = Person(
+  id = id,
+  name = "Test Driver",
+  email = "driver@test.com",
+  role = PersonRole.Driver,
+  companyId = companyId
+)
+
+// Helper: ZLayer that returns a fixed Person from findById
+private def personRepoReturning(person: Person): ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
+  new PersonRepository:
+    def create(p: Person): Task[Person]                                          = ZIO.succeed(p)
+    def findById(id: PersonId): Task[Option[Person]]                             = ZIO.succeed(Some(person))
+    def findByIdAndCompany(id: PersonId, c: CompanyId): Task[Option[Person]]     = ZIO.succeed(None)
+    def findByEmail(email: String): Task[Option[Person]]                         = ZIO.succeed(None)
+    def findByRole(role: PersonRole): Task[List[Person]]                         = ZIO.succeed(Nil)
+    def findByRoleAndCompany(role: PersonRole, c: CompanyId): Task[List[Person]] = ZIO.succeed(Nil)
+    def findByCompanyId(c: CompanyId): Task[List[Person]]                        = ZIO.succeed(Nil)
+    def findAll(): Task[List[Person]]                                            = ZIO.succeed(Nil)
+    def update(p: Person): Task[Person]                                          = ZIO.succeed(p)
+    def delete(id: PersonId): Task[Unit]                                         = ZIO.unit
+    def findByStatus(status: UserStatus): Task[List[Person]]                     = ZIO.succeed(Nil)
+    def searchByQuery(query: String): Task[List[Person]]                         = ZIO.succeed(Nil)
+    def updateLastLogin(id: PersonId): Task[Unit]                                = ZIO.unit
+    def findByClientCompany(ccId: ClientCompanyId): Task[List[Person]]           = ZIO.succeed(Nil)
+    def upsertDriverRow(personId: PersonId): Task[Unit]                          = ZIO.unit
+)
+
 object DriverLocationServiceSpec extends ZIOSpecDefault {
 
   val testCompanyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001"))
@@ -310,6 +339,311 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
             drivers <- service.getAvailableDrivers(testCompanyId)
           } yield assertTrue(drivers.length == 2)
         }.provide(standardLayers)
+      ),
+      // -----------------------------------------------------------------------
+      // NEW: updateLocation — EventHub publication
+      // -----------------------------------------------------------------------
+      suite("updateLocation — EventHub publication")(
+        test("publishes LocationUpdated event with correct fields when driver has a company") {
+          for {
+            captured         <- Ref.make(Option.empty[WebSocketEvent])
+            recordingEventHub = ZLayer.succeed[EventHub](
+                                  new EventHub:
+                                    def publish(event: WebSocketEvent): UIO[Boolean]            = captured
+                                      .set(Some(event))
+                                      .as(true)
+                                    def subscribe: ZIO[Scope, Nothing, Dequeue[WebSocketEvent]] = Hub
+                                      .bounded[WebSocketEvent](1)
+                                      .flatMap(_.subscribe)
+                                )
+            driverPerson      = testPerson(testDriverId, Some(testCompanyId))
+            layers            =
+              InMemoryDriverLocationRepository.layer ++
+                recordingEventHub ++
+                noopGeofenceService ++
+                InMemoryRideRepository.layer ++
+                personRepoReturning(driverPerson) >>>
+                DriverLocationService.layer
+            service          <- ZIO.service[DriverLocationService].provide(layers)
+            _                <- service.updateLocation(testDriverId, 48.1351, 11.5820)
+            event            <- captured.get
+          } yield assertTrue(
+            event.isDefined,
+            event.get.isInstanceOf[WebSocketEvent.LocationUpdated],
+            event.get.asInstanceOf[WebSocketEvent.LocationUpdated].userId == testDriverId.value,
+            event.get.asInstanceOf[WebSocketEvent.LocationUpdated].latitude == 48.1351,
+            event.get.asInstanceOf[WebSocketEvent.LocationUpdated].longitude == 11.5820,
+            event.get.asInstanceOf[WebSocketEvent.LocationUpdated].locationType == "driver",
+            event.get.asInstanceOf[WebSocketEvent.LocationUpdated].companyId == testCompanyId.value
+          )
+        },
+        test("no event published when driver has no company") {
+          for {
+            captured         <- Ref.make(Option.empty[WebSocketEvent])
+            recordingEventHub = ZLayer.succeed[EventHub](
+                                  new EventHub:
+                                    def publish(event: WebSocketEvent): UIO[Boolean]            = captured
+                                      .set(Some(event))
+                                      .as(true)
+                                    def subscribe: ZIO[Scope, Nothing, Dequeue[WebSocketEvent]] = Hub
+                                      .bounded[WebSocketEvent](1)
+                                      .flatMap(_.subscribe)
+                                )
+            driverPerson      = testPerson(testDriverId, None)
+            layers            =
+              InMemoryDriverLocationRepository.layer ++
+                recordingEventHub ++
+                noopGeofenceService ++
+                InMemoryRideRepository.layer ++
+                personRepoReturning(driverPerson) >>>
+                DriverLocationService.layer
+            service          <- ZIO.service[DriverLocationService].provide(layers)
+            _                <- service.updateLocation(testDriverId, 48.1351, 11.5820)
+            event            <- captured.get
+          } yield assertTrue(event.isEmpty)
+        }
+      ),
+      // -----------------------------------------------------------------------
+      // NEW: checkGeofences — ride status filtering
+      // -----------------------------------------------------------------------
+      suite("checkGeofences — ride status filtering")(
+        test("Completed and Cancelled rides are excluded from proximity check") {
+          val companyA                           = CompanyId(UUID.fromString("00000001-0000-0000-0000-00000000000a"))
+          def makeRide(status: RideStatus): Ride = Ride(
+            id = RideId.generate(),
+            clientId = PersonId(UUID.randomUUID()),
+            creatorId = PersonId(UUID.randomUUID()),
+            companyId = companyA,
+            driverId = Some(testDriverId),
+            status = status,
+            pickupLocation = Location("Pickup", Some(48.1), Some(11.5)),
+            dropoffLocation = Location("Dropoff"),
+            pickupDateTime = Instant.now().plusSeconds(3600)
+          )
+          for {
+            capturedRides                             <- Ref.make(Option.empty[List[ActiveRideInfo]])
+            recordingGeofence                          = ZLayer.succeed[GeofenceService](
+                                                           new GeofenceService:
+                                                             def checkDriverLocation(
+                                                                 dId: PersonId,
+                                                                 cId: CompanyId,
+                                                                 lat: Double,
+                                                                 lng: Double
+                                                             ): UIO[List[GeofenceAlert]] = ZIO.succeed(Nil)
+                                                             def checkClientProximity(
+                                                                 dId: PersonId,
+                                                                 lat: Double,
+                                                                 lng: Double,
+                                                                 activeRides: List[ActiveRideInfo]
+                                                             ): UIO[Unit] = capturedRides.set(Some(activeRides))
+                                                         )
+            rideRepoLayer                              = InMemoryRideRepository.layer
+            depsLayer                                  =
+              rideRepoLayer ++
+                InMemoryDriverLocationRepository.layer ++
+                EventHub.layer ++
+                recordingGeofence ++
+                noopPersonRepository
+            serviceLayer                               = depsLayer >+> DriverLocationService.layer
+            result                                    <-
+              (for {
+                rideRepo <- ZIO.service[RideRepository]
+                // create() re-generates the ride ID; capture the actual stored IDs
+                stored1  <- rideRepo.create(makeRide(RideStatus.Assigned))
+                stored2  <- rideRepo.create(makeRide(RideStatus.InProgress))
+                stored3  <- rideRepo.create(makeRide(RideStatus.Completed))
+                service  <- ZIO.service[DriverLocationService]
+                _        <- service.updateLocation(testDriverId, 48.1, 11.5)
+                seen     <- capturedRides.get.repeatUntil(_.isDefined).timeout(5.seconds)
+              } yield (seen, stored1.id, stored2.id, stored3.id)).provide(serviceLayer)
+            seen: Option[Option[List[ActiveRideInfo]]] = result._1
+            id1                                        = result._2
+            id2                                        = result._3
+            id3                                        = result._4
+            activeRides: List[ActiveRideInfo]          = seen.flatten.getOrElse(Nil)
+          } yield assertTrue(
+            activeRides.length == 2,
+            activeRides.exists(_.rideId == id1.value),
+            activeRides.exists(_.rideId == id2.value),
+            !activeRides.exists(_.rideId == id3.value)
+          )
+        } @@ TestAspect.withLiveClock @@ TestAspect.flaky,
+        test("checkGeofences skips proximity check entirely when driver has no rides") {
+          for {
+            capturedRides    <- Ref.make(Option.empty[List[ActiveRideInfo]])
+            recordingGeofence = ZLayer.succeed[GeofenceService](
+                                  new GeofenceService:
+                                    def checkDriverLocation(
+                                        dId: PersonId,
+                                        cId: CompanyId,
+                                        lat: Double,
+                                        lng: Double
+                                    ): UIO[List[GeofenceAlert]] = ZIO.succeed(Nil)
+                                    def checkClientProximity(
+                                        dId: PersonId,
+                                        lat: Double,
+                                        lng: Double,
+                                        activeRides: List[ActiveRideInfo]
+                                    ): UIO[Unit] = capturedRides.set(Some(activeRides))
+                                )
+            layers            =
+              InMemoryDriverLocationRepository.layer ++
+                EventHub.layer ++
+                recordingGeofence ++
+                InMemoryRideRepository.layer ++
+                noopPersonRepository >>>
+                DriverLocationService.layer
+            service          <- ZIO.service[DriverLocationService].provide(layers)
+            _                <- service.updateLocation(testDriverId, 48.1, 11.5)
+            // wait briefly — the daemon may fire but should take the `case None` path
+            _                <- ZIO.sleep(200.millis)
+            result           <- capturedRides.get
+          } yield assertTrue(result.isEmpty)
+        } @@ TestAspect.withLiveClock @@ TestAspect.flaky,
+        test("checkGeofences error is swallowed — updateLocation succeeds") {
+          val failingRideRepo = ZLayer.succeed[RideRepository](new RideRepository:
+            def create(ride: Ride): Task[Ride]                                                              = ZIO.succeed(ride)
+            def findById(id: RideId): Task[Option[Ride]]                                                    = ZIO.succeed(None)
+            def update(ride: Ride): Task[Ride]                                                              = ZIO.succeed(ride)
+            def updateIfStatus(ride: Ride, expected: Set[RideStatus]): Task[Boolean]                        = ZIO.succeed(false)
+            def findByClientId(id: PersonId): Task[List[Ride]]                                              = ZIO.succeed(Nil)
+            def findByDriverId(id: PersonId): Task[List[Ride]]                                              = ZIO.fail(RuntimeException("db error"))
+            def findByStatus(s: RideStatus): Task[List[Ride]]                                               = ZIO.succeed(Nil)
+            def findByCompanyId(c: CompanyId): Task[List[Ride]]                                             = ZIO.succeed(Nil)
+            def findByCompanyIdPaginated(c: CompanyId, o: Int, l: Int): Task[List[Ride]]                    = ZIO.succeed(Nil)
+            def findByDriverIdPaginated(id: PersonId, o: Int, l: Int): Task[List[Ride]]                     = ZIO.succeed(Nil)
+            def findAll(): Task[List[Ride]]                                                                 = ZIO.succeed(Nil)
+            def delete(id: RideId, c: CompanyId): Task[Unit]                                                = ZIO.unit
+            def countByCompanyGroupedByStatus(c: CompanyId): Task[Map[String, Int]]                         = ZIO.succeed(Map.empty)
+            def sumRevenueByCompany(c: CompanyId): Task[BigDecimal]                                         = ZIO.succeed(BigDecimal(0))
+            def sumTodayRevenueByCompany(c: CompanyId): Task[BigDecimal]                                    = ZIO.succeed(BigDecimal(0))
+            def avgAssignmentMinutesByCompany(c: CompanyId): Task[Double]                                   = ZIO.succeed(0.0)
+            def countDailyStatsByCompany(c: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]]      = ZIO.succeed(
+              Nil
+            )
+            def earningsByDriver(
+                dId: PersonId,
+                c: CompanyId,
+                from: java.time.Instant,
+                to: java.time.Instant
+            ): Task[com.shevchyk.ride.domain.DriverEarnings] = ZIO.succeed(
+              com.shevchyk.ride.domain.DriverEarnings(BigDecimal(0), 0, 0)
+            )
+            def earningsBucketsByDriver(
+                dId: PersonId,
+                c: CompanyId,
+                from: java.time.Instant,
+                to: java.time.Instant,
+                bucket: com.shevchyk.ride.repository.TimeBucket
+            ): Task[List[(java.time.Instant, BigDecimal)]] = ZIO.succeed(Nil)
+            def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]] = ZIO
+              .succeed(Nil)
+            def clearReminders(id: RideId): Task[Unit]                                                      = ZIO.unit
+            def countAllRidesByStatus(): Task[Map[String, Int]]                                             = ZIO.succeed(Map.empty)
+            def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]             = ZIO.succeed(
+              BigDecimal(0)
+            )
+            def countRidesByCompany(
+                from: java.time.Instant,
+                to: java.time.Instant
+            ): Task[Map[java.util.UUID, Int]] = ZIO.succeed(Map.empty)
+            def sumRevenueByCompanyPlatform(
+                from: java.time.Instant,
+                to: java.time.Instant
+            ): Task[Map[java.util.UUID, BigDecimal]] = ZIO.succeed(Map.empty)
+            def updateCheckpoint(
+                id: RideId,
+                cp: com.shevchyk.ride.domain.AirportCheckpoint
+            ): Task[Boolean] = ZIO.succeed(false)
+          )
+          val layers          =
+            InMemoryDriverLocationRepository.layer ++
+              EventHub.layer ++
+              noopGeofenceService ++
+              failingRideRepo ++
+              noopPersonRepository >>>
+              DriverLocationService.layer
+          for {
+            service <- ZIO.service[DriverLocationService].provide(layers)
+            result  <- service.updateLocation(testDriverId, 48.1, 11.5).exit
+          } yield assertTrue(result.isSuccess)
+        }
+      ),
+      // -----------------------------------------------------------------------
+      // NEW: getAvailableDrivers — tenant isolation (service layer)
+      // -----------------------------------------------------------------------
+      suite("getAvailableDrivers — tenant isolation (service layer)")(
+        test("getAvailableDrivers with wrong companyId returns empty list") {
+          // Use a company-aware driver location repo to verify the service passes
+          // the correct companyId through to the repository query.
+          val companyA = testCompanyId
+          val companyB = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+
+          class CompanyAwareDriverLocationRepository extends DriverLocationRepository:
+
+            private val locations = Unsafe.unsafe { implicit unsafe =>
+              Runtime.default.unsafe
+                .run(Ref.Synchronized.make(Map.empty[PersonId, DriverLocation]))
+                .getOrThrowFiberFailure()
+            }
+
+            private val availability = Unsafe.unsafe { implicit unsafe =>
+              Runtime.default.unsafe
+                .run(Ref.Synchronized.make(Map.empty[PersonId, (String, CompanyId)]))
+                .getOrThrowFiberFailure()
+            }
+
+            override def updateLocation(driverId: PersonId, lat: Double, lng: Double): Task[Unit] = locations.update(
+              _.updated(driverId, DriverLocation(driverId, lat, lng, Instant.now()))
+            )
+
+            override def getLocation(driverId: PersonId): Task[Option[DriverLocation]] = locations.get.map(
+              _.get(driverId)
+            )
+
+            override def updateAvailability(driverId: PersonId, status: String): Task[Unit] =
+              // Associate with companyA when the driver is testDriverId
+              availability.update(_.updated(driverId, (status, companyA)))
+
+            override def getAvailability(driverId: PersonId): Task[Option[String]] = availability.get.map(
+              _.get(driverId).map(_._1)
+            )
+
+            override def findAvailableByCompanyId(
+                cId: CompanyId
+            ): Task[List[(PersonId, String, Option[Double], Option[Double])]] =
+              for {
+                avail <- availability.get
+                locs  <- locations.get
+              } yield avail
+                .filter { case (_, (status, company)) => status == "Available" && company == cId }
+                .keys
+                .toList
+                .map { pid =>
+                  val loc = locs.get(pid)
+                  (pid, "Available", loc.map(_.latitude), loc.map(_.longitude))
+                }
+
+          val repoLayer: ZLayer[Any, Nothing, DriverLocationRepository] = ZLayer.succeed(
+            new CompanyAwareDriverLocationRepository
+          )
+
+          val layers =
+            repoLayer ++
+              EventHub.layer ++
+              noopGeofenceService ++
+              InMemoryRideRepository.layer ++
+              noopPersonRepository >>>
+              DriverLocationService.layer
+
+          for {
+            service <- ZIO.service[DriverLocationService].provide(layers)
+            _       <- service.updateAvailability(testDriverId, "Available")
+            _       <- service.updateLocation(testDriverId, 48.1351, 11.5820)
+            // testDriverId is in companyA — querying companyB must return empty
+            drivers <- service.getAvailableDrivers(companyB)
+          } yield assertTrue(drivers.isEmpty)
+        }
       )
     )
 }

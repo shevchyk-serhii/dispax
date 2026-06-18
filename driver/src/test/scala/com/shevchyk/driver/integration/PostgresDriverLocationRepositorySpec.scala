@@ -125,7 +125,56 @@ object PostgresDriverLocationRepositorySpec extends ZIOSpecDefault {
           a.find(_._1 == driverA1).exists(d => d._3.contains(48.1) && d._4.contains(11.5)),
           a.find(_._1 == driverA2).exists(d => d._3.isEmpty && d._4.isEmpty)
         )
-      }
+      },
+      // -----------------------------------------------------------------------
+      // NEW: updateLocation INSERT and UPDATE branches
+      // -----------------------------------------------------------------------
+      test("updateLocation INSERT branch: new driver gets first location set") {
+        for {
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedTestData(xa)
+          _   <- cleanDrivers(xa)
+          repo = PostgresDriverLocationRepository(xa)
+          // driverA1 has a persons row but NO drivers row yet
+          _   <- repo.updateLocation(driverA1, 48.1, 11.5)
+          loc <- repo.getLocation(driverA1)
+        } yield assertTrue(
+          loc.isDefined,
+          loc.get.driverId == driverA1,
+          loc.get.latitude == 48.1,
+          loc.get.longitude == 11.5
+        )
+      } @@ TestAspect.tag("integration"),
+      test("updateLocation UPDATE branch: existing driver's location is replaced") {
+        for {
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedTestData(xa)
+          _   <- cleanDrivers(xa)
+          repo = PostgresDriverLocationRepository(xa)
+          // Seed an existing drivers row with old coordinates
+          _   <- seedDriver(xa, driverA1, companyA, "Available", Some(0.0), Some(0.0))
+          _   <- repo.updateLocation(driverA1, 48.1, 11.5)
+          loc <- repo.getLocation(driverA1)
+        } yield assertTrue(
+          loc.isDefined,
+          loc.get.latitude == 48.1,
+          loc.get.longitude == 11.5
+        )
+      } @@ TestAspect.tag("integration"),
+      test("updateLocation when person row missing: silent no-op, getLocation returns None") {
+        val unknownId = PersonId(UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff"))
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanDrivers(xa)
+          repo    = PostgresDriverLocationRepository(xa)
+          result <- repo.updateLocation(unknownId, 1.0, 1.0).exit
+          loc    <- repo.getLocation(unknownId)
+        } yield assertTrue(
+          result.isSuccess,
+          loc.isEmpty
+        )
+      } @@ TestAspect.tag("integration")
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"
     )
