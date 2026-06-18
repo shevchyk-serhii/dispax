@@ -5,6 +5,7 @@ import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_colors.dart';
+import 'widgets/ride_badges.dart';
 
 class WeekViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -213,41 +214,52 @@ class WeekViewWidget extends StatelessWidget {
       left: 2,
       right: 2,
       height: height,
-      child: Container(
-        decoration: BoxDecoration(
-          color: color.withAlpha(204),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: color, width: 1),
-        ),
-        padding: const EdgeInsets.all(4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              DateFormat.Hm().format(ride.pickupDateTime),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+      child: Tooltip(
+        message: RideBadges.tooltip(ride),
+        waitDuration: const Duration(milliseconds: 300),
+        child: Container(
+          decoration: BoxDecoration(
+            color: color.withAlpha(204),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: color, width: 1),
+          ),
+          padding: const EdgeInsets.all(4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      DateFormat.Hm().format(ride.pickupDateTime),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  RideBadges.blockMarkers(ride),
+                ],
               ),
-            ),
-            if (height > 30)
-              Flexible(
-                child: Text(
-                  ride.clientName,
-                  style: const TextStyle(color: Colors.white, fontSize: 9),
-                  overflow: TextOverflow.ellipsis,
+              if (height > 30)
+                Flexible(
+                  child: Text(
+                    ride.clientName,
+                    style: const TextStyle(color: Colors.white, fontSize: 9),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-            if (height > 50)
-              Flexible(
-                child: Text(
-                  ride.to.address,
-                  style: const TextStyle(color: Colors.white70, fontSize: 8),
-                  overflow: TextOverflow.ellipsis,
+              if (height > 50)
+                Flexible(
+                  child: Text(
+                    ride.to.address,
+                    style: const TextStyle(color: Colors.white70, fontSize: 8),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
