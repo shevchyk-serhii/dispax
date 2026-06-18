@@ -28,3 +28,19 @@ Feature: DATEV Export
   Scenario: Export without authentication
     When I send a GET request to "/api/export/datev" without authentication
     Then the response status should be 401
+
+  Scenario: Download EXTF Buchungsstapel file authenticated
+    Given I am authenticated as an admin
+    When I send a GET request to "/api/export/datev/extf"
+    Then the response status should be 200
+    And the response should contain export data details
+
+  Scenario: Download EXTF file with explicit month parameter
+    Given I am authenticated as an admin
+    When I send a GET request to "/api/export/datev/extf?month=2025-05"
+    Then the response status should be 200
+    And the response should contain export data details
+
+  Scenario: Download EXTF file without authentication returns 401
+    When I send a GET request to "/api/export/datev/extf" without authentication
+    Then the response status should be 401

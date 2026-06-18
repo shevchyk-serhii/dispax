@@ -73,7 +73,7 @@ object ExportApi:
   private val expenseCsvHeader =
     "Umsatz (ohne Soll/Haben-Kz);Soll/Haben-Kennzeichen;WKZ Umsatz;Konto;Gegenkonto (ohne BU-Schluessel);BU-Schluessel;Belegdatum;Belegfeld 1;Buchungstext"
 
-  private def generateRevenueCsv(rides: List[Ride], clientNames: Map[PersonId, String]): String =
+  private[openapi] def generateRevenueCsv(rides: List[Ride], clientNames: Map[PersonId, String]): String =
     val rows = rides.map { ride =>
       val amount  = ride.finalPrice.orElse(ride.estimatedPrice).map(_.doubleValue).getOrElse(0.0)
       val counter = counterAccountForPayment(ride.paymentMethod)
@@ -126,7 +126,7 @@ object ExportApi:
    * Format a monetary amount using the German decimal notation required by DATEV: comma as decimal separator, exactly
    * two decimal places, no thousands separator. Examples: 1234.5 -> "1234,50", 0.0 -> "0,00"
    */
-  private def germanAmount(d: Double): String = f"$d%.2f".replace('.', ',')
+  private[openapi] def germanAmount(d: Double): String = f"$d%.2f".replace('.', ',')
 
   /**
    * Build the EXTF header line (line 1 of a Buchungsstapel file).
@@ -148,7 +148,7 @@ object ExportApi:
    * @param bezeichnung
    *   Free-text description of the batch (e.g. "Erlöse Mai 2025")
    */
-  private def extfHeaderLine(
+  private[openapi] def extfHeaderLine(
       timestamp: String,
       beraternummer: String,
       mandantennummer: String,
@@ -199,7 +199,7 @@ object ExportApi:
    * Assemble the complete EXTF Buchungsstapel byte array. Encoding: Windows-1252 with REPLACE for unmappable
    * characters. Line separator: CRLF.
    */
-  private def buildExtf(
+  private[openapi] def buildExtf(
       rides: List[Ride],
       expenses: List[Expense],
       clientNames: Map[PersonId, String],
@@ -245,7 +245,7 @@ object ExportApi:
    * Sanitise a string for safe use as a filename in a Content-Disposition header. Strips characters that are dangerous
    * in filenames (path separators, quotes, control chars).
    */
-  private def sanitizeFilename(raw: String): String = raw.replaceAll("[^A-Za-z0-9._\\-]", "_")
+  private[openapi] def sanitizeFilename(raw: String): String = raw.replaceAll("[^A-Za-z0-9._\\-]", "_")
 
   private def parseMonth(monthOpt: Option[String]): YearMonth = monthOpt
     .flatMap(s => scala.util.Try(YearMonth.parse(s)).toOption)
