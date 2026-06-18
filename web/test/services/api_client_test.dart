@@ -115,6 +115,44 @@ void main() {
 
         expect(() => apiClient.get('/rides'), throwsA(isA<ApiException>()));
       });
+
+      test('get with acceptOverride sends that Accept header', () async {
+        late Map<String, String> capturedHeaders;
+        final client = MockClient((request) async {
+          capturedHeaders = request.headers;
+          return http.Response.bytes([0x25, 0x50, 0x44, 0x46], 200);
+        });
+
+        final apiClient = ApiClient(
+          client: client,
+          baseUrl: 'http://localhost:8080/api',
+        );
+        await apiClient.get(
+          '/billing/invoices/1/pdf',
+          acceptOverride: 'application/pdf',
+        );
+
+        expect(capturedHeaders['Accept'], 'application/pdf');
+      });
+
+      test(
+        'get without acceptOverride still sends Accept: application/json',
+        () async {
+          late Map<String, String> capturedHeaders;
+          final client = MockClient((request) async {
+            capturedHeaders = request.headers;
+            return http.Response('[]', 200);
+          });
+
+          final apiClient = ApiClient(
+            client: client,
+            baseUrl: 'http://localhost:8080/api',
+          );
+          await apiClient.get('/rides');
+
+          expect(capturedHeaders['Accept'], 'application/json');
+        },
+      );
     });
 
     group('RideService shares ApiClient without closing it', () {
