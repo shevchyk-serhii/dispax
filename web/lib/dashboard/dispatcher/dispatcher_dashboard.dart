@@ -23,6 +23,7 @@ import '../../screens/session_management_screen.dart';
 import '../../screens/driver_schedule_visibility_screen.dart';
 import '../../screens/driver_map_screen.dart';
 import '../driver/today_rides_screen.dart';
+import '../driver/calendar/calendar_schedule_screen.dart';
 import 'widgets/payroll_screen.dart';
 import 'widgets/pending_rides_panel.dart';
 import 'widgets/driver_schedule_panel.dart';
@@ -55,6 +56,11 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   // Bottom-nav slots after the 5 primary tabs: Billing, then the More menu.
   static const int _billingNavIndex = 5;
   static const int _moreNavIndex = 6;
+  // "My Schedule" is a dispatcher-who-also-drives extra: it gets its own
+  // bottom-nav slot (appended after More) and its own extended-screen index,
+  // both present only when canDrive.
+  static const int _myScheduleNavIndex = 7;
+  static const int _myScheduleScreenIndex = 31;
 
   @override
   void didChangeDependencies() {
@@ -153,6 +159,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       // so existing hard-coded indices are never renumbered.
       if (canDrive) const DriverMapScreen(), // 29
       if (canDrive) const TodayRidesScreen(), // 30
+      if (canDrive) const CalendarScheduleScreen(), // 31: My Schedule
     ];
   }
 
@@ -272,6 +279,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           final screenIndex = switch (navIndex) {
             _billingNavIndex => _billingTabIndex,
             _moreNavIndex => 4,
+            _myScheduleNavIndex => _myScheduleScreenIndex,
             _ => navIndex,
           };
           if (_mobileTabIndex == _createRideTabIndex &&
@@ -283,37 +291,44 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.accent,
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.calendar_month_outlined),
             activeIcon: Icon(Icons.calendar_month),
             label: 'Schedule',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart_outlined),
             activeIcon: Icon(Icons.bar_chart),
             label: 'Analytics',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.add_circle_outline),
             activeIcon: Icon(Icons.add_circle),
             label: 'New Ride',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.request_quote_outlined),
             activeIcon: Icon(Icons.request_quote),
             label: 'Billing',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.grid_view_outlined),
             activeIcon: Icon(Icons.grid_view),
             label: 'More',
           ),
+          // Only when this dispatcher also drives: their own driver schedule.
+          if (canDrive)
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.event_note_outlined),
+              activeIcon: Icon(Icons.event_note),
+              label: 'My Schedule',
+            ),
         ],
       ),
     );
@@ -325,6 +340,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   int _navIndexForScreen(int screenIndex) {
     if (screenIndex < _primaryTabCount) return screenIndex;
     if (screenIndex == _billingTabIndex) return _billingNavIndex;
+    if (screenIndex == _myScheduleScreenIndex) return _myScheduleNavIndex;
     return _moreNavIndex;
   }
 
