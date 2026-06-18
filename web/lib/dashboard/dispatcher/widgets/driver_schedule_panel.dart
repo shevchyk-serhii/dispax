@@ -703,14 +703,16 @@ class _DriverScheduleDropTarget extends StatelessWidget {
     return BlocBuilder<RideBloc, RideState>(
       buildWhen: (prev, curr) => prev.rides != curr.rides,
       builder: (context, rideState) {
-        final driverRides = rideState.rides
-            .where(
-              (r) =>
-                  r.driverId == scheduleDay.driverId &&
-                  r.status != RideStatus.cancelled &&
-                  r.status != RideStatus.completed,
-            )
-            .toList();
+        final driverRides =
+            rideState.rides
+                .where(
+                  (r) =>
+                      r.driverId == scheduleDay.driverId &&
+                      r.status != RideStatus.cancelled &&
+                      r.status != RideStatus.completed,
+                )
+                .toList()
+              ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
 
         final rideCount = driverRides.length;
         final loadColor = rideCount == 0
