@@ -340,11 +340,10 @@ object AvatarApiSpec extends ZIOSpecDefault:
           } yield assertTrue(resp.status == Status.NotFound)
         },
 
-        // NOTE: The upload endpoint has a production code bug — multipartBody[AvatarUploadInput]
-        // picks up the ZIO-JSON Codec for Array[Byte] (JSON array) instead of the binary codec
-        // (application/octet-stream), so binary JPEG bytes fail with "expected '[' got '\\xff'".
-        // This test bypasses the broken upload endpoint and seeds the avatar directly via the
-        // PersonRepository to test the GET endpoint's 200-path and Content-Type behaviour.
+        // Seed the avatar directly via the PersonRepository to achieve test isolation:
+        // each test should control its own fixture state rather than depend on a prior upload
+        // test having run. This verifies the GET endpoint's 200-path and Content-Type header
+        // with a known binary payload.
         test("GET avatar → 200 with correct Content-Type header (seeded via repo)") {
           val testBytes = Array.fill(256)(0x42.toByte)
           val testMime  = "image/jpeg"

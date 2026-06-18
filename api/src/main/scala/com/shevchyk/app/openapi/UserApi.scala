@@ -11,10 +11,9 @@ import com.shevchyk.notification.application.FcmService
 import com.shevchyk.notification.domain.RegisterFcmTokenRequest
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.RideStatus
-import sttp.model.{Part, StatusCode}
+import sttp.model.StatusCode
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
-import sttp.tapir.generic.auto.*
 import zio.ZIO
 import zio.json.*
 import java.util.UUID
@@ -73,9 +72,6 @@ object UserApi:
   final case class SuccessResponse(success: Boolean) derives JsonCodec
 
   final case class AvatarUploadResponse(success: Boolean, avatarUrl: String) derives JsonCodec
-
-  // Multipart input for avatar upload: a single file part named "file".
-  final case class AvatarUploadInput(file: Part[Array[Byte]])
 
   // -- Error helpers --------------------------------------------------------
   //

@@ -44,14 +44,15 @@ object AvatarService:
 final case class AvatarServiceImpl(repo: PersonRepository) extends AvatarService:
 
   override def uploadAvatar(personId: PersonId, bytes: Array[Byte], contentType: String): IO[AvatarError, Unit] =
+    val normalizedContentType = contentType.toLowerCase
     for
       _ <- ZIO
              .fail(AvatarError.InvalidContentType(contentType))
-             .unless(AvatarService.AllowedTypes.contains(contentType.toLowerCase))
+             .unless(AvatarService.AllowedTypes.contains(normalizedContentType))
       _ <- ZIO
              .fail(AvatarError.FileTooLarge)
              .when(bytes.length > AvatarService.MaxBytes)
-      _ <- repo.setAvatar(personId, bytes, contentType).orDie
+      _ <- repo.setAvatar(personId, bytes, normalizedContentType).orDie
     yield ()
 
   override def getAvatar(personId: PersonId): Task[Option[(Array[Byte], String)]] = repo.getAvatar(personId)

@@ -46,6 +46,15 @@ Feature: User profile photo upload
   # ── Tenant isolation — CRITICAL ─────────────────────────────────────────────
 
   @avatar @tenant-isolation @security
+  Scenario: Cannot POST (upload) avatar for user in another company — returns 404
+    # testPersonId1 (client, companyA = 10101010) tries to POST avatar to
+    # a user that does NOT belong to their company (unknown ID).
+    # The endpoint must return 404 — not 200, not 403 — to avoid leaking tenant existence.
+    Given I am authenticated as a client
+    When I upload a JPEG image to "/api/users/ffffffff-ffff-ffff-ffff-ffffffffffff/avatar"
+    Then the response status should be 404
+
+  @avatar @tenant-isolation @security
   Scenario: Cannot GET avatar of user in another company — returns 404
     # testPersonId1 (client, companyA = 10101010) tries to GET avatar of
     # a user that does NOT belong to their company (unknown ID).

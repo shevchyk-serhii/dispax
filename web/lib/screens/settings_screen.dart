@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +8,7 @@ import '../constants/app_dimensions.dart';
 import '../modules/core/models/person.dart';
 import '../modules/core/widgets/avatar_circle.dart';
 import '../main.dart' show themeModeNotifier, themeFromString;
+import '../l10n/app_localizations.dart';
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
 import '../dashboard/driver/earnings_screen.dart';
@@ -228,23 +228,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted) {
           context.read<AuthBloc>().add(const AuthProfileRefreshRequested());
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Photo uploaded successfully')),
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.photoUploadedSuccessfully,
+              ),
+            ),
           );
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to upload photo (${response.statusCode})'),
+              content: Text(
+                '${AppLocalizations.of(context)!.failedToUploadPhoto} (${response.statusCode})',
+              ),
             ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to upload photo: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.failedToUploadPhoto}: $e',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _uploadingAvatar = false);
@@ -258,15 +268,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if ((response.statusCode == 204 || response.statusCode == 200) &&
           mounted) {
         context.read<AuthBloc>().add(const AuthProfileRefreshRequested());
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Photo removed')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.removePhoto)),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to remove photo: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.failedToUploadPhoto}: $e',
+            ),
+          ),
+        );
       }
     }
   }
@@ -694,7 +708,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _deleteAvatar(user);
               },
               style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              child: const Text('Remove Photo'),
+              child: Text(AppLocalizations.of(ctx)!.removePhoto),
             ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
