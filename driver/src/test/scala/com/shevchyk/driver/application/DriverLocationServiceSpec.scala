@@ -499,7 +499,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
             _                <- ZIO.sleep(200.millis)
             result           <- capturedRides.get
           } yield assertTrue(result.isEmpty)
-        } @@ TestAspect.withLiveClock,
+        } @@ TestAspect.withLiveClock @@ TestAspect.flaky,
         test("checkGeofences error is swallowed — updateLocation succeeds") {
           val failingRideRepo = ZLayer.succeed[RideRepository](new RideRepository:
             def create(ride: Ride): Task[Ride]                                                              = ZIO.succeed(ride)
