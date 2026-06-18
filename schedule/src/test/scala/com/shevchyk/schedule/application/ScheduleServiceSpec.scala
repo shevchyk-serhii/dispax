@@ -245,6 +245,93 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
               }
             case _                   => false
           })
+        }.provide(standardLayers),
+        test("should fail when driver belongs to a different company (cross-company attempt)") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            result  <-
+              service
+                .createScheduleDay(
+                  CreateScheduleDayRequest(
+                    driverId = otherDriverId,
+                    companyId = testCompanyId,
+                    date = futureDate.plusDays(22),
+                    startTime = LocalTime.of(8, 0),
+                    endTime = LocalTime.of(17, 0)
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.CompanyMismatch])
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("should fail when driver has no company (companyId = None)") {
+          val noCompanyDriverId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000099"))
+          for {
+            service <- ZIO.service[ScheduleService]
+            result  <-
+              service
+                .createScheduleDay(
+                  CreateScheduleDayRequest(
+                    driverId = noCompanyDriverId,
+                    companyId = testCompanyId,
+                    date = futureDate.plusDays(23),
+                    startTime = LocalTime.of(8, 0),
+                    endTime = LocalTime.of(17, 0)
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.CompanyMismatch])
+            case _                   => false
+          })
+        }.provide(
+          InMemoryScheduleDayRepository.layer ++
+            InMemoryDriverScheduleVisibilityRepository.layer ++
+            ZLayer {
+              for {
+                repo <- ZIO.succeed(new InMemoryPersonRepository)
+                _    <- repo.create(testDriver).orDie
+                _    <-
+                  repo
+                    .create(
+                      Person(
+                        id = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000099")),
+                        name = "No Company Driver",
+                        email = "nocompany@example.com",
+                        role = PersonRole.Driver,
+                        companyId = None
+                      )
+                    )
+                    .orDie
+              } yield repo
+            } >>>
+            ScheduleService.layer
+        ),
+        test("start time equal to end time fails validation") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            result  <-
+              service
+                .createScheduleDay(
+                  CreateScheduleDayRequest(
+                    driverId = testDriverId,
+                    companyId = testCompanyId,
+                    date = futureDate.plusDays(24),
+                    startTime = LocalTime.of(9, 0),
+                    endTime = LocalTime.of(9, 0)
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ScheduleError.ValidationError(msg) => msg.contains("before")
+                case _                                  => false
+              }
+            case _                   => false
+          })
         }.provide(standardLayers)
       ),
       suite("createBatch")(
@@ -306,6 +393,70 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
               }
             case _                   => false
           })
+        }.provide(standardLayers),
+        test("should fail when batch driver belongs to a different company") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            result  <-
+              service
+                .createBatch(
+                  CreateScheduleBatchRequest(
+                    driverId = otherDriverId,
+                    companyId = testCompanyId,
+                    days = List(
+                      CreateScheduleBatchDay(futureDate.plusDays(84), LocalTime.of(8, 0), LocalTime.of(17, 0), None)
+                    )
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.CompanyMismatch])
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("partial failure: first day persists when second day has duplicate date (non-atomic semantics)") {
+          // BUG: createBatch is not atomic — day 1 persists even when day 2 fails.
+          // Fix tracked as a separate run: wrap createBatch in a transactional boundary or
+          // collect all records first and emit them in a single multi-row INSERT.
+          for {
+            service     <- ZIO.service[ScheduleService]
+            existingDate = futureDate.plusDays(150)
+            // Pre-create a day so that the second batch entry triggers DuplicateScheduleDay
+            _           <- service.createScheduleDay(
+                             CreateScheduleDayRequest(
+                               driverId = testDriverId,
+                               companyId = testCompanyId,
+                               date = existingDate,
+                               startTime = LocalTime.of(8, 0),
+                               endTime = LocalTime.of(12, 0)
+                             )
+                           )
+            // Batch: batchNewDate (new) succeeds first, then existingDate duplicate causes failure
+            batchNewDate = futureDate.plusDays(151)
+            batchResult <-
+              service
+                .createBatch(
+                  CreateScheduleBatchRequest(
+                    driverId = testDriverId,
+                    companyId = testCompanyId,
+                    days = List(
+                      CreateScheduleBatchDay(batchNewDate, LocalTime.of(8, 0), LocalTime.of(12, 0), None),
+                      CreateScheduleBatchDay(existingDate, LocalTime.of(9, 0), LocalTime.of(17, 0), None) // duplicate
+                    )
+                  )
+                )
+                .exit
+            // Verify via the service (not the raw repo) — both approaches work here
+            allDays     <- service.getDriverSchedule(testDriverId, testCompanyId)
+          } yield assertTrue(
+            // The batch must fail with DuplicateScheduleDay
+            (batchResult match {
+              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.DuplicateScheduleDay])
+              case _                   => false
+            }) &&
+              // BUG: batchNewDate was already persisted by the first iteration despite the batch failure
+              allDays.exists(_.date == batchNewDate)
+          )
         }.provide(standardLayers)
       ),
       suite("getScheduleDay")(
@@ -494,6 +645,32 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
             farDate  = futureDate.plusDays(100)
             days    <- service.getScheduleForDateRange(testCompanyId, farDate, farDate.plusDays(1))
           } yield assertTrue(days.isEmpty)
+        }.provide(standardLayers),
+        test("returns empty list when from > to (no error, silent empty result)") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            days    <- service.getScheduleForDateRange(
+                         testCompanyId,
+                         futureDate.plusDays(120),
+                         futureDate.plusDays(110)
+                       )
+          } yield assertTrue(days.isEmpty)
+        }.provide(standardLayers),
+        test("single-day range (from == to) returns that day") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            dayDate  = futureDate.plusDays(130)
+            _       <- service.createScheduleDay(
+                         CreateScheduleDayRequest(
+                           driverId = testDriverId,
+                           companyId = testCompanyId,
+                           date = dayDate,
+                           startTime = LocalTime.of(8, 0),
+                           endTime = LocalTime.of(17, 0)
+                         )
+                       )
+            days    <- service.getScheduleForDateRange(testCompanyId, dayDate, dayDate)
+          } yield assertTrue(days.size == 1 && days.head.date == dayDate)
         }.provide(standardLayers)
       ),
       suite("getDriverSchedule")(

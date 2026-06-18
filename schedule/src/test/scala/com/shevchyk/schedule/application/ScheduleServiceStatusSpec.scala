@@ -132,6 +132,127 @@ object ScheduleServiceStatusSpec extends ZIOSpecDefault {
           case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.InvalidStatusTransition])
           case _                   => false
         })
+      }.provide(standardLayers),
+      test("Completed -> Scheduled is invalid") {
+        for {
+          service   <- ZIO.service[ScheduleService]
+          active    <- createAndTransition(service, futureDate.plusDays(205), ScheduleDayStatus.Active)
+          completed <- service.updateScheduleDay(
+                         active.id,
+                         UpdateScheduleDayRequest(status = Some(ScheduleDayStatus.Completed)),
+                         testCompanyId
+                       )
+          result    <-
+            service
+              .updateScheduleDay(
+                completed.id,
+                UpdateScheduleDayRequest(status = Some(ScheduleDayStatus.Scheduled)),
+                testCompanyId
+              )
+              .exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.InvalidStatusTransition])
+          case _                   => false
+        })
+      }.provide(standardLayers),
+      test("Completed -> Cancelled is invalid") {
+        for {
+          service   <- ZIO.service[ScheduleService]
+          active    <- createAndTransition(service, futureDate.plusDays(206), ScheduleDayStatus.Active)
+          completed <- service.updateScheduleDay(
+                         active.id,
+                         UpdateScheduleDayRequest(status = Some(ScheduleDayStatus.Completed)),
+                         testCompanyId
+                       )
+          result    <- service.cancelScheduleDay(completed.id, testCompanyId).exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.InvalidStatusTransition])
+          case _                   => false
+        })
+      }.provide(standardLayers),
+      test("Cancelled -> Scheduled is invalid") {
+        for {
+          service   <- ZIO.service[ScheduleService]
+          day       <- service.createScheduleDay(
+                         CreateScheduleDayRequest(
+                           driverId = testDriverId,
+                           companyId = testCompanyId,
+                           date = futureDate.plusDays(207),
+                           startTime = LocalTime.of(8, 0),
+                           endTime = LocalTime.of(17, 0)
+                         )
+                       )
+          cancelled <- service.cancelScheduleDay(day.id, testCompanyId)
+          result    <-
+            service
+              .updateScheduleDay(
+                cancelled.id,
+                UpdateScheduleDayRequest(status = Some(ScheduleDayStatus.Scheduled)),
+                testCompanyId
+              )
+              .exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.InvalidStatusTransition])
+          case _                   => false
+        })
+      }.provide(standardLayers),
+      test("Cancelled -> Completed is invalid") {
+        for {
+          service   <- ZIO.service[ScheduleService]
+          day       <- service.createScheduleDay(
+                         CreateScheduleDayRequest(
+                           driverId = testDriverId,
+                           companyId = testCompanyId,
+                           date = futureDate.plusDays(208),
+                           startTime = LocalTime.of(8, 0),
+                           endTime = LocalTime.of(17, 0)
+                         )
+                       )
+          cancelled <- service.cancelScheduleDay(day.id, testCompanyId)
+          result    <-
+            service
+              .updateScheduleDay(
+                cancelled.id,
+                UpdateScheduleDayRequest(status = Some(ScheduleDayStatus.Completed)),
+                testCompanyId
+              )
+              .exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.InvalidStatusTransition])
+          case _                   => false
+        })
+      }.provide(standardLayers),
+      test("Completed -> Completed self-transition is allowed") {
+        for {
+          service   <- ZIO.service[ScheduleService]
+          active    <- createAndTransition(service, futureDate.plusDays(209), ScheduleDayStatus.Active)
+          completed <- service.updateScheduleDay(
+                         active.id,
+                         UpdateScheduleDayRequest(status = Some(ScheduleDayStatus.Completed)),
+                         testCompanyId
+                       )
+          result    <- service.updateScheduleDay(
+                         completed.id,
+                         UpdateScheduleDayRequest(status = Some(ScheduleDayStatus.Completed)),
+                         testCompanyId
+                       )
+        } yield assertTrue(result.status == ScheduleDayStatus.Completed)
+      }.provide(standardLayers),
+      test("Cancelled -> Cancelled self-transition is allowed") {
+        for {
+          service   <- ZIO.service[ScheduleService]
+          day       <- service.createScheduleDay(
+                         CreateScheduleDayRequest(
+                           driverId = testDriverId,
+                           companyId = testCompanyId,
+                           date = futureDate.plusDays(210),
+                           startTime = LocalTime.of(8, 0),
+                           endTime = LocalTime.of(17, 0)
+                         )
+                       )
+          cancelled <- service.cancelScheduleDay(day.id, testCompanyId)
+          result    <- service.cancelScheduleDay(cancelled.id, testCompanyId)
+        } yield assertTrue(result.status == ScheduleDayStatus.Cancelled)
       }.provide(standardLayers)
     )
 }
