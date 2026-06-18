@@ -68,7 +68,8 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
   /// immediately visible to Form validation (Create Ride reads it right away).
   void _syncControllerText(String next) {
     final phase = SchedulerBinding.instance.schedulerPhase;
-    final midFrame = phase == SchedulerPhase.persistentCallbacks ||
+    final midFrame =
+        phase == SchedulerPhase.persistentCallbacks ||
         phase == SchedulerPhase.midFrameMicrotasks;
     if (!midFrame) {
       _controller.text = next;
