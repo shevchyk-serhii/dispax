@@ -78,13 +78,7 @@ class ApiClient {
       rethrow;
     } on SocketException catch (e) {
       debugPrint('❌ SocketException: $e');
-      throw ApiException(
-        'Network error: Unable to connect to server at $_baseUrl. Make sure:\n'
-        '1. Backend is running on your computer\n'
-        '2. Your phone and computer are on the same WiFi network\n'
-        '3. Firewall allows port 8080\n'
-        'Error details: $e',
-      );
+      throw ApiException(_networkErrorMessage(e));
     } on HttpException catch (e) {
       debugPrint('❌ HttpException: $e');
       throw ApiException('HTTP error: $e');
@@ -214,9 +208,8 @@ class ApiClient {
         throw ApiException('Login failed with status: ${response.statusCode}');
       }
     } on SocketException catch (e) {
-      throw ApiException(
-        'Network error: Unable to connect to server. Make sure the backend is running. Error: $e',
-      );
+      debugPrint('❌ SocketException (login): $e');
+      throw ApiException(_networkErrorMessage(e));
     } catch (e) {
       throw ApiException('Login failed: $e');
     }
@@ -225,6 +218,24 @@ class ApiClient {
   void _handleUnauthorized() {
     onUnauthorized?.call();
     throw UnauthorizedException();
+  }
+
+  /// Builds a user-facing message for a failed network connection.
+  ///
+  /// In release builds we never surface the raw socket error, the server URL,
+  /// or local-development hints (backend/WiFi/firewall) — that leaks internal
+  /// infrastructure and confuses real users. In debug builds we keep the full
+  /// diagnostics, since they're invaluable when running against a local backend.
+  String _networkErrorMessage(Object error) {
+    if (kDebugMode) {
+      return 'Network error: Unable to connect to server at $_baseUrl. Make sure:\n'
+          '1. Backend is running on your computer\n'
+          '2. Your phone and computer are on the same WiFi network\n'
+          '3. Firewall allows port 8080\n'
+          'Error details: $error';
+    }
+    return 'Unable to reach the server. Please check your internet connection '
+        'and try again.';
   }
 
   void dispose() {
