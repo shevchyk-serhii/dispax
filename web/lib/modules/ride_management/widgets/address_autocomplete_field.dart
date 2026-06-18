@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../models/client_address.dart';
@@ -54,8 +55,32 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
     if (oldWidget.initialValue != widget.initialValue &&
         widget.initialValue != _controller.text &&
         !_focusNode.hasFocus) {
-      _controller.text = widget.initialValue;
+      _syncControllerText(widget.initialValue);
     }
+  }
+
+  /// Writes [next] into the controller. Setting controller.text synchronously
+  /// notifies listeners, which bubbles up to Form._forceRebuild → setState().
+  /// If didUpdateWidget runs inside the parent's build (e.g. the location
+  /// section's BlocBuilder on an address swap), that setState() lands during
+  /// build and Flutter throws. So when we're mid-build/layout we defer the write
+  /// to the next frame; otherwise we write synchronously so the value is
+  /// immediately visible to Form validation (Create Ride reads it right away).
+  void _syncControllerText(String next) {
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    final midFrame = phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks;
+    if (!midFrame) {
+      _controller.text = next;
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Re-check: state may have changed before this callback ran.
+      if (next != _controller.text && !_focusNode.hasFocus) {
+        _controller.text = next;
+      }
+    });
   }
 
   @override
