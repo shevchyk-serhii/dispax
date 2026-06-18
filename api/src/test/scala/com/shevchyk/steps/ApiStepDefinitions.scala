@@ -2303,13 +2303,36 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     val nl          = "\r\n"
     // Minimal 1×1 valid JPEG (26 bytes)
     val jpegBytes   = Array[Byte](
-      0xff.toByte, 0xd8.toByte, 0xff.toByte, 0xe0.toByte, 0x00.toByte, 0x10.toByte,
-      0x4a.toByte, 0x46.toByte, 0x49.toByte, 0x46.toByte, 0x00.toByte, 0x01.toByte,
-      0x01.toByte, 0x00.toByte, 0x00.toByte, 0x01.toByte, 0x00.toByte, 0x01.toByte,
-      0x00.toByte, 0x00.toByte, 0xff.toByte, 0xdb.toByte, 0x00.toByte, 0x43.toByte,
-      0x00.toByte, 0xff.toByte, 0xd9.toByte
+      0xff.toByte,
+      0xd8.toByte,
+      0xff.toByte,
+      0xe0.toByte,
+      0x00.toByte,
+      0x10.toByte,
+      0x4a.toByte,
+      0x46.toByte,
+      0x49.toByte,
+      0x46.toByte,
+      0x00.toByte,
+      0x01.toByte,
+      0x01.toByte,
+      0x00.toByte,
+      0x00.toByte,
+      0x01.toByte,
+      0x00.toByte,
+      0x01.toByte,
+      0x00.toByte,
+      0x00.toByte,
+      0xff.toByte,
+      0xdb.toByte,
+      0x00.toByte,
+      0x43.toByte,
+      0x00.toByte,
+      0xff.toByte,
+      0xd9.toByte
     )
-    val header      = s"--$boundary${nl}Content-Disposition: form-data; name=\"file\"; filename=\"avatar.jpg\"${nl}Content-Type: image/jpeg${nl}${nl}"
+    val header      =
+      s"--$boundary${nl}Content-Disposition: form-data; name=\"file\"; filename=\"avatar.jpg\"${nl}Content-Type: image/jpeg${nl}${nl}"
     val footer      = s"${nl}--$boundary--${nl}"
     val headerBytes = header.getBytes("UTF-8")
     val footerBytes = footer.getBytes("UTF-8")

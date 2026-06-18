@@ -74,7 +74,7 @@ object UserApi:
 
   final case class AvatarUploadResponse(success: Boolean, avatarUrl: String) derives JsonCodec
 
-  // Multipart input for avatar upload: a single file part named "file"
+  // Multipart input for avatar upload: a single file part named "file".
   final case class AvatarUploadInput(file: Part[Array[Byte]])
 
   // -- Error helpers --------------------------------------------------------
@@ -205,9 +205,16 @@ object UserApi:
     .summary("Change password (stub)")
 
   // Avatar endpoints (authenticated) ---------------------------------------
+  // Use the untyped multipartBody (Seq[Part[Array[Byte]]]) so that Tapir uses
+  // MultipartCodec.Default which reads each part as raw bytes (ByteArrayBody).
+  // The typed multipartBody[AvatarUploadInput] cannot be used here because
+  // `import sttp.tapir.json.zio.*` brings Codec[String, Array[Byte], Json] into
+  // scope; via `part` + `listHead` it satisfies the Part[Array[Byte]] candidate
+  // BEFORE the binary ByteArrayBody candidate, causing ZIO-JSON to try to parse
+  // raw JPEG bytes as a JSON array and fail with 400.
   val uploadAvatarEndpoint = secureBase.post
     .in("api" / "users" / path[String]("id") / "avatar")
-    .in(multipartBody[AvatarUploadInput])
+    .in(multipartBody)
     .out(jsonBody[AvatarUploadResponse])
     .tag(usersTag)
     .summary("Upload or replace profile photo")
@@ -388,18 +395,19 @@ object UserApi:
   )
 
   private val uploadAvatarServer: ZServerEndpoint[UserEnv, Any] = uploadAvatarEndpoint.serverLogic[UserEnv] { user =>
-    { case (userId, input) =>
+    { case (userId, parts) =>
       for {
         uid        <- parseUuid(userId)
-        _          <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
         _          <- requireSameCompany(user, uid)
-        bytes       = input.file.body
-        contentType = input.file.contentType.map(_.toString).getOrElse("image/jpeg")
+        _          <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+        filePart   <- ZIO
+                        .fromOption(parts.find(_.name == "file"))
+                        .orElseFail((StatusCode.BadRequest, ApiError("Missing 'file' part in multipart body")))
+        bytes       = filePart.body
+        contentType = filePart.contentType.getOrElse("image/jpeg")
         _          <- ZIO
                         .serviceWithZIO[AvatarService](_.uploadAvatar(PersonId(uid), bytes, contentType))
-                        .mapError { case e: AvatarError =>
-                          (StatusCode.BadRequest, ApiError(e.message))
-                        }
+                        .mapError { case e: AvatarError => (StatusCode.BadRequest, ApiError(e.message)) }
       } yield AvatarUploadResponse(success = true, avatarUrl = s"/api/users/$userId/avatar")
     }
   }
@@ -420,8 +428,8 @@ object UserApi:
     user => userId =>
       (for {
         uid <- parseUuid(userId)
-        _   <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
         _   <- requireSameCompany(user, uid)
+        _   <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
         _   <- ZIO.serviceWithZIO[AvatarService](_.deleteAvatar(PersonId(uid))).mapError(internal)
       } yield ()).unit
   }

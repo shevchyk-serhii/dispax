@@ -10,8 +10,8 @@ import java.util.UUID
 /**
  * Unit tests for AvatarService business logic.
  *
- * Uses InMemoryPersonRepository (no DB, no Testcontainers). Covers every branch
- * documented in the plan §Tests / Unit tests section.
+ * Uses InMemoryPersonRepository (no DB, no Testcontainers). Covers every branch documented in the plan §Tests / Unit
+ * tests section.
  */
 object AvatarServiceSpec extends ZIOSpecDefault:
 
@@ -23,8 +23,8 @@ object AvatarServiceSpec extends ZIOSpecDefault:
   // 6 MB — exceeds the 5 MB limit
   private val largeBytes: Array[Byte] = Array.fill(6 * 1024 * 1024)(0x01.toByte)
 
-  private val validJpegType    = "image/jpeg"
-  private val invalidMimeType  = "application/pdf"
+  private val validJpegType   = "image/jpeg"
+  private val invalidMimeType = "application/pdf"
 
   def spec =
     suite("AvatarService")(
@@ -128,7 +128,7 @@ object AvatarServiceSpec extends ZIOSpecDefault:
         } yield assertTrue(result.isEmpty)
       },
       test("uploadAvatar replaces an existing avatar") {
-        val id         = PersonId(UUID.randomUUID())
+        val id          = PersonId(UUID.randomUUID())
         val firstBytes  = Array.fill(512)(0x01.toByte)
         val secondBytes = Array.fill(1024)(0x02.toByte)
         for {
@@ -154,10 +154,8 @@ object AvatarServiceSpec extends ZIOSpecDefault:
           service <- ZIO.service[AvatarService]
           result  <- service.uploadAvatar(testPersonId, smallBytes, "text/plain").either
         } yield result match
-          case Left(AvatarError.InvalidContentType(ct)) =>
-            assertTrue(ct == "text/plain")
-          case _ =>
-            assertTrue(false)
+          case Left(AvatarError.InvalidContentType(ct)) => assertTrue(ct == "text/plain")
+          case _                                        => assertTrue(false)
       }
     ).provide(
       // Fresh InMemoryPersonRepository per test run — ZLayer.scoped would be ideal,
