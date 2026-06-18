@@ -39,6 +39,7 @@ import 'widgets/client_value_panel.dart';
 import 'widgets/driver_scorecard_panel.dart';
 import 'widgets/driver_ratings_panel.dart';
 import '../../modules/core/services/websocket_service.dart';
+import '../../modules/core/services/user_service.dart';
 import 'dart:async';
 
 class DispatcherDashboard extends StatefulWidget {
@@ -56,6 +57,10 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   final List<EtaAtRiskInfo> _etaAlerts = [];
   StreamSubscription? _wsSubscription;
 
+  /// driverId → display name, loaded from /users/drivers.
+  /// Used to resolve the driver name for ETA alert cards.
+  Map<String, String> _driverNames = {};
+
   // Screen index of the "New Ride" screen — used to detect unsaved form changes
   // when the user navigates away. This is a screen index, not a nav position.
   static const int _createRideTabIndex = 3;
@@ -71,7 +76,11 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       if (!mounted) return;
       if (event.isEtaAtRisk) {
         final rideId = event.rideId ?? '';
-        final driverName = event.data['driverName'] as String? ?? 'Unknown';
+        final driverId = event.etaRiskDriverId ?? '';
+        // Resolve the human-readable name from the already-loaded driver list.
+        // Fall back to the driverId string when the driver isn't in the cache.
+        final driverName = _driverNames[driverId] ??
+            (driverId.isNotEmpty ? driverId : 'Unknown');
         final etaMin = event.etaMinutes ?? 0;
         final pickupMin = event.pickupInMinutes ?? 0;
         final slack = event.slackMinutes ?? 0;
@@ -96,6 +105,24 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _rideBloc = context.read<RideBloc>();
+    _loadDriverNames();
+  }
+
+  /// Loads the driverId→name map from /users/drivers so that ETA alert cards
+  /// can show a human-readable name instead of a UUID.
+  Future<void> _loadDriverNames() async {
+    final userService = UserService(
+      apiClient: context.read<AuthBloc>().apiClient,
+    );
+    try {
+      final drivers = await userService.getDrivers();
+      if (!mounted) return;
+      setState(() {
+        _driverNames = {for (final d in drivers) d.id: d.name};
+      });
+    } catch (_) {
+      // Names are a nicety; on failure the driverId string is shown as fallback.
+    }
   }
 
   @override

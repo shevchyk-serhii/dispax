@@ -1085,7 +1085,7 @@ class _BillingNavRail extends StatelessWidget {
         ),
         NavigationRailDestination(
           icon: Icon(LucideCompat.download),
-          label: Text('Rides'),
+          label: Text('DATEV'),
         ),
       ],
     );
