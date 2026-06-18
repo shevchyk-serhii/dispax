@@ -4,6 +4,7 @@ import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_styles.dart';
+import '../../constants/lucide_compat.dart';
 import '../../screens/create_ride_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/expense_screen.dart';
@@ -26,6 +27,7 @@ import '../../screens/driver_schedule_visibility_screen.dart';
 import '../../screens/driver_map_screen.dart';
 import '../driver/today_rides_screen.dart';
 import '../driver/calendar/calendar_schedule_screen.dart';
+import '../../widgets/common/responsive_scaffold.dart';
 import 'widgets/payroll_screen.dart';
 import 'widgets/pending_rides_panel.dart';
 import 'widgets/eta_alert_card.dart';
@@ -201,23 +203,36 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   Widget build(BuildContext context) {
     final user = context.read<AuthBloc>().state.user;
     final canDrive = user?.canDrive ?? false;
-    return Scaffold(
+    final navOrder = _navOrder(canDrive);
+    final navDestinations = _buildNavDestinations(canDrive);
+
+    return ResponsiveScaffold(
+      destinations: navDestinations,
+      selectedIndex: _navIndexForScreen(_mobileTabIndex, navOrder),
+      onDestinationSelected: (navPos) async {
+        final screenIndex = navOrder[navPos];
+        if (_mobileTabIndex == _createRideTabIndex &&
+            screenIndex != _createRideTabIndex) {
+          final canLeave = await _confirmLeaveCreateRide(context);
+          if (!canLeave) return;
+        }
+        setState(() => _mobileTabIndex = screenIndex);
+      },
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= AppDimensions.breakpointDesktop) {
-            return _buildSplitView(context);
+            return _buildSplitViewContent(context, canDrive);
           }
-          return _buildMobileView(canDrive);
+          return _buildMobileBody(canDrive);
         },
       ),
     );
   }
 
-  Widget _buildSplitView(BuildContext context) {
-    // This view is nested inside DashboardScreen's Scaffold (which owns the
-    // UserAppBar), so it must not add its own AppBar. The wide layout has no
-    // bottom nav, so surface a Billing entry point as a toolbar row on top.
-    final canDrive = context.read<AuthBloc>().state.user?.canDrive ?? false;
+  /// Desktop split view: PendingRidesPanel on left + DriverSchedulePanel on right.
+  /// The NavigationRail is provided by [ResponsiveScaffold]; this is the content
+  /// area only (no extra Scaffold or navigation chrome).
+  Widget _buildSplitViewContent(BuildContext context, bool canDrive) {
     return Container(
       color: Theme.of(context).colorScheme.surface,
       child: Column(
@@ -238,8 +253,6 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
                     ),
                     const SizedBox(width: 8),
                   ],
-                  // Filled accent button: AppColors.primary is near-black graphite
-                  // and was invisible on the dark dashboard background.
                   FilledButton.icon(
                     onPressed: () => _openBilling(context),
                     icon: const Icon(Icons.request_quote, size: 20),
@@ -286,8 +299,6 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   void _openBilling(BuildContext context) => Navigator.of(context).push(
     MaterialPageRoute<void>(
-      // BillingScreen.build returns a bare Column (it's normally an IndexedStack
-      // child), so wrap it in a Scaffold to get an app bar and a back button.
       builder: (_) => Scaffold(
         appBar: AppBar(title: const Text('Billing')),
         body: const BillingScreen(),
@@ -303,6 +314,13 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       ),
     ),
   );
+
+  /// Mobile body: the IndexedStack with all screens. The BottomNavigationBar is
+  /// provided by [ResponsiveScaffold] at the mobile breakpoint.
+  Widget _buildMobileBody(bool canDrive) {
+    final screens = _buildAllScreens(canDrive);
+    return IndexedStack(index: _mobileTabIndex, children: screens);
+  }
 
   /// Returns the ordered list of screen indices for each bottom-nav position.
   ///
@@ -327,63 +345,30 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           _billingTabIndex, // pos 5: Billing
         ];
 
-  /// Returns the nav item for a given screen index.
-  BottomNavigationBarItem _navItemForScreen(int screenIndex) {
-    switch (screenIndex) {
-      case 0:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: 'Home',
-        );
-      case 1:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          activeIcon: Icon(Icons.calendar_month),
-          label: 'Schedule',
-        );
-      case 2:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_outlined),
-          activeIcon: Icon(Icons.bar_chart),
-          label: 'Analytics',
-        );
-      case 3:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.add_circle_outline),
-          activeIcon: Icon(Icons.add_circle),
-          label: 'New Ride',
-        );
-      case 4:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.grid_view_outlined),
-          activeIcon: Icon(Icons.grid_view),
-          label: 'More',
-        );
-      case _billingTabIndex:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.request_quote_outlined),
-          activeIcon: Icon(Icons.request_quote),
-          label: 'Billing',
-        );
-      case _driverMyRidesScreenIndex:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.directions_car_outlined),
-          activeIcon: Icon(Icons.directions_car),
-          label: 'My Rides',
-        );
-      case _myScheduleScreenIndex:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.event_note_outlined),
-          activeIcon: Icon(Icons.event_note),
-          label: 'My Schedule',
-        );
-      default:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.more_horiz),
-          label: '',
-        );
+  /// Builds the [NavigationDestination] list matching the nav order.
+  List<NavigationDestination> _buildNavDestinations(bool canDrive) {
+    NavigationDestination dest(IconData icon, String label) =>
+        NavigationDestination(icon: Icon(icon), label: label);
+
+    if (canDrive) {
+      return [
+        dest(LucideCompat.clipboardList, 'Home'),
+        dest(Icons.event_note_outlined, 'My Schedule'),
+        dest(LucideCompat.calendarDays, 'Schedule'),
+        dest(Icons.directions_car_outlined, 'My Rides'),
+        dest(Icons.add_circle_outline, 'New Ride'),
+        dest(Icons.grid_view_outlined, 'More'),
+        dest(Icons.request_quote_outlined, 'Billing'),
+      ];
     }
+    return [
+      dest(LucideCompat.clipboardList, 'Home'),
+      dest(LucideCompat.calendarDays, 'Schedule'),
+      dest(Icons.bar_chart_outlined, 'Analytics'),
+      dest(Icons.add_circle_outline, 'New Ride'),
+      dest(Icons.grid_view_outlined, 'More'),
+      dest(Icons.request_quote_outlined, 'Billing'),
+    ];
   }
 
   /// Maps the current screen index to the highlighted bottom-nav position.
@@ -393,29 +378,6 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     if (idx != -1) return idx;
     // Screen not in nav (e.g. an extended More-menu screen): highlight More.
     return navOrder.indexOf(4);
-  }
-
-  Widget _buildMobileView(bool canDrive) {
-    final screens = _buildAllScreens(canDrive);
-    final navOrder = _navOrder(canDrive);
-    return Scaffold(
-      body: IndexedStack(index: _mobileTabIndex, children: screens),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _navIndexForScreen(_mobileTabIndex, navOrder),
-        onTap: (navPos) async {
-          final screenIndex = navOrder[navPos];
-          if (_mobileTabIndex == _createRideTabIndex &&
-              screenIndex != _createRideTabIndex) {
-            final canLeave = await _confirmLeaveCreateRide(context);
-            if (!canLeave) return;
-          }
-          setState(() => _mobileTabIndex = screenIndex);
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.accent,
-        items: navOrder.map(_navItemForScreen).toList(),
-      ),
-    );
   }
 
   Widget _buildMoreScreen(bool canDrive) {

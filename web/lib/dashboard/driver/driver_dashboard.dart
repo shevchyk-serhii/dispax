@@ -6,6 +6,8 @@ import '../../screens/settings_screen.dart';
 import '../../screens/driver_map_screen.dart';
 import '../../screens/create_ride_screen.dart';
 import '../../constants/app_colors.dart';
+import '../../constants/lucide_compat.dart';
+import '../../widgets/common/responsive_scaffold.dart';
 import '../../blocs/blocs.dart';
 
 class DriverDashboard extends StatefulWidget {
@@ -60,6 +62,34 @@ class _DriverDashboardState extends State<DriverDashboard> {
     return result ?? false;
   }
 
+  static const _destinations = [
+    NavigationDestination(
+      icon: Icon(LucideCompat.car),
+      selectedIcon: Icon(LucideCompat.car),
+      label: 'Today',
+    ),
+    NavigationDestination(
+      icon: Icon(LucideCompat.calendarDays),
+      selectedIcon: Icon(LucideCompat.calendarDays),
+      label: 'Calendar',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.add_circle_outline),
+      selectedIcon: Icon(Icons.add_circle),
+      label: 'Book',
+    ),
+    NavigationDestination(
+      icon: Icon(LucideCompat.map),
+      selectedIcon: Icon(LucideCompat.map),
+      label: 'Map',
+    ),
+    NavigationDestination(
+      icon: Icon(LucideCompat.settings),
+      selectedIcon: Icon(LucideCompat.settings),
+      label: 'Settings',
+    ),
+  ];
+
   Widget _buildCurrentTab() {
     switch (_selectedIndex) {
       case 0:
@@ -88,47 +118,17 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ResponsiveScaffold(
+      destinations: _destinations,
+      selectedIndex: _selectedIndex,
+      onDestinationSelected: (index) async {
+        if (_selectedIndex == 2 && index != 2) {
+          final canLeave = await _confirmLeaveCreateRide(context);
+          if (!canLeave) return;
+        }
+        setState(() => _selectedIndex = index);
+      },
       body: _buildCurrentTab(),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.accent,
-        onTap: (index) async {
-          if (_selectedIndex == 2 && index != 2) {
-            final canLeave = await _confirmLeaveCreateRide(context);
-            if (!canLeave) return;
-          }
-          setState(() => _selectedIndex = index);
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.today_outlined),
-            activeIcon: Icon(Icons.today),
-            label: 'Today',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            activeIcon: Icon(Icons.calendar_month),
-            label: 'Calendar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outline),
-            activeIcon: Icon(Icons.add_circle),
-            label: 'Book',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: 'Map',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-      ),
     );
   }
 }
