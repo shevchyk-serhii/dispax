@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../blocs/blocs.dart';
@@ -176,6 +177,45 @@ class DayViewWidget extends StatelessWidget {
     return items;
   }
 
+  /// Average effective city driving speed (km/h) used to turn straight-line
+  /// distance into a rough trip duration. Deliberately conservative to absorb
+  /// the detour vs. crow-flies gap and typical urban traffic.
+  static const double _avgCitySpeedKmh = 30;
+
+  /// A rough client-side estimate of the A→B trip duration in minutes, derived
+  /// from the straight-line distance between pickup and drop-off. Returns null
+  /// when either endpoint lacks coordinates (then no duration is shown).
+  ///
+  /// This is intentionally approximate — the backend has no stored trip
+  /// duration, and a real routed ETA would require a per-ride HERE API call.
+  int? _estimatedTripMinutes(Ride ride) {
+    final fromLat = ride.from.latitude;
+    final fromLng = ride.from.longitude;
+    final toLat = ride.to.latitude;
+    final toLng = ride.to.longitude;
+    if (fromLat == null || fromLng == null || toLat == null || toLng == null) {
+      return null;
+    }
+    final meters = geo.Geolocator.distanceBetween(
+      fromLat,
+      fromLng,
+      toLat,
+      toLng,
+    );
+    final minutes = (meters / 1000) / _avgCitySpeedKmh * 60;
+    // Floor at 1 min so very short hops don't render as "~0 min".
+    return minutes < 1 ? 1 : minutes.round();
+  }
+
+  /// Formats an estimated trip duration in minutes as a compact label,
+  /// e.g. 25 → "~25 min", 80 → "~1 h 20 min", 120 → "~2 h".
+  String _formatDuration(int minutes) {
+    if (minutes < 60) return '~$minutes min';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    return m == 0 ? '~$h h' : '~$h h $m min';
+  }
+
   Widget buildRideCard(BuildContext context, Ride ride, bool isLast) {
     final colorScheme = Theme.of(context).colorScheme;
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
@@ -212,6 +252,25 @@ class DayViewWidget extends StatelessWidget {
                           color: colorScheme.onSurface,
                         ),
                       ),
+                      if (_estimatedTripMinutes(ride) case final mins?) ...[
+                        const SizedBox(width: 10),
+                        Icon(
+                          Icons.timelapse,
+                          size: 15,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          // Rough A→B trip duration estimated client-side from
+                          // the straight-line distance, e.g. "~25 min".
+                          _formatDuration(mins),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                       if (ride.price != null) ...[
                         const SizedBox(width: 10),
                         Text(
