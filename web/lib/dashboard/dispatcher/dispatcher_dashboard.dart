@@ -176,6 +176,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     // This view is nested inside DashboardScreen's Scaffold (which owns the
     // UserAppBar), so it must not add its own AppBar. The wide layout has no
     // bottom nav, so surface a Billing entry point as a toolbar row on top.
+    final canDrive = context.read<AuthBloc>().state.user?.canDrive ?? false;
     return Container(
       color: Theme.of(context).colorScheme.surface,
       child: Column(
@@ -184,16 +185,33 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
             alignment: Alignment.centerRight,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              // Filled accent button: AppColors.primary is near-black graphite
-              // and was invisible on the dark dashboard background.
-              child: FilledButton.icon(
-                onPressed: () => _openBilling(context),
-                icon: const Icon(Icons.request_quote, size: 20),
-                label: const Text('Billing'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: Colors.white,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (canDrive) ...[
+                    FilledButton.icon(
+                      onPressed: () => _openDriverMap(context),
+                      icon: const Icon(Icons.map, size: 20),
+                      label: const Text('Driver Map'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  // Filled accent button: AppColors.primary is near-black graphite
+                  // and was invisible on the dark dashboard background.
+                  FilledButton.icon(
+                    onPressed: () => _openBilling(context),
+                    icon: const Icon(Icons.request_quote, size: 20),
+                    label: const Text('Billing'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -228,6 +246,15 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       builder: (_) => Scaffold(
         appBar: AppBar(title: const Text('Billing')),
         body: const BillingScreen(),
+      ),
+    ),
+  );
+
+  void _openDriverMap(BuildContext context) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const Text('Driver Map')),
+        body: const DriverMapScreen(),
       ),
     ),
   );
