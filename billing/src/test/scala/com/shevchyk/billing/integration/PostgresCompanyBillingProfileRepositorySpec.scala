@@ -104,6 +104,40 @@ object PostgresCompanyBillingProfileRepositorySpec extends ZIOSpecDefault {
           repo   = PostgresCompanyBillingProfileRepository(xa)
           saved <- repo.upsert(testCompanyId, UpdateCompanyBillingProfileRequest(legalName = Some("Minimal")))
         } yield assertTrue(saved.paymentTermsDays == 7)
+      },
+      test("upsert with None fields nulls out previously-set optional fields (EXCLUDED semantics)") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seed(xa)
+          _       <- clean(xa)
+          repo     = PostgresCompanyBillingProfileRepository(xa)
+          _       <- repo.upsert(testCompanyId, fullRequest)
+          updated <- repo.upsert(
+                       testCompanyId,
+                       UpdateCompanyBillingProfileRequest(legalName = Some("Renamed GmbH"))
+                     )
+        } yield assertTrue(
+          updated.legalName.contains("Renamed GmbH"),
+          updated.phone.isEmpty,
+          updated.iban.isEmpty,
+          updated.paymentTermsDays == 7
+        )
+      },
+      test("upsert with invoiceIntro round-trips correctly") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seed(xa)
+          _       <- clean(xa)
+          repo     = PostgresCompanyBillingProfileRepository(xa)
+          saved   <- repo.upsert(
+                       testCompanyId,
+                       UpdateCompanyBillingProfileRequest(invoiceIntro = Some("Ich gestatte mir, ..."))
+                     )
+          fetched <- repo.findByCompany(testCompanyId)
+        } yield assertTrue(
+          saved.invoiceIntro.contains("Ich gestatte mir, ..."),
+          fetched.exists(_.invoiceIntro.contains("Ich gestatte mir, ..."))
+        )
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"
