@@ -247,10 +247,10 @@ object PdfGeneratorSpec extends ZIOSpecDefault {
         },
         test("written file bytes match generateBytes output") {
           // generateToFile calls generateBytes once internally and writes those exact bytes.
-          // Calling generateBytes a second time would embed a different CreationDate timestamp,
-          // so we verify the file by reading back what generateToFile wrote and confirming it is
-          // a non-empty, valid PDF (magic number present and length equal to what generateBytes
-          // produces on a second, identical invocation — lengths match even when timestamps differ).
+          // Byte-equality against a second generateBytes call is impossible: OpenPDF embeds a
+          // CreationDate timestamp, so two identical invocations differ. We instead verify the
+          // file-write path by reading back what generateToFile wrote and confirming it is a
+          // non-empty, valid PDF (%PDF magic number present).
           val invoice = makeInvoice(items = List(makeItem("Ride", BigDecimal(1), BigDecimal(50.00))))
           val path    = s"/tmp/test-invoice-${UUID.randomUUID()}.pdf"
           for {
