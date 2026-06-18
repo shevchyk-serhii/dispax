@@ -158,9 +158,13 @@ object ExportApi:
       datumBis: String,
       bezeichnung: String
   ): String =
-    // Field layout follows DATEV Buchungsstapel Format v7.
-    // Trailing semicolons preserve the fixed number of fields in the header record.
-    s""""EXTF";700;21;"Buchungsstapel";7;$timestamp;;"";"";$beraternummer;$mandantennummer;$wjBeginn;$sachkontenlaenge;$datumVon;$datumBis;"$bezeichnung";"";"";;1;;0;"EUR";"""
+    // Field layout follows DATEV Buchungsstapel Format v7 (22 fields, 0-indexed):
+    // [0]EXTF [1]700 [2]21 [3]Buchungsstapel [4]7 [5]Erzeugt-am [6]Importiert(empty)
+    // [7]Herkunft [8]Exportiert-von [9]Importiert-von(empty) [10]Beraternummer
+    // [11]Mandantennummer [12]WJ-Beginn [13]Sachkontenlänge [14]Datum-von [15]Datum-bis
+    // [16]Bezeichnung [17]Diktatkürzel [18]Buchungstyp [19]Rechnungslegungszweck(empty)
+    // [20]Festschreibung=0 [21]WKZ=EUR
+    s""""EXTF";700;21;"Buchungsstapel";7;$timestamp;;"";"";;$beraternummer;$mandantennummer;$wjBeginn;$sachkontenlaenge;$datumVon;$datumBis;"$bezeichnung";"";"";;0;"EUR";"""
 
   private val datevCsvColumnHeader =
     "Umsatz (ohne Soll/Haben-Kz);Soll/Haben-Kennzeichen;WKZ Umsatz;Konto;Gegenkonto (ohne BU-Schluessel);BU-Schluessel;Belegdatum;Belegfeld 1;Buchungstext"

@@ -156,11 +156,13 @@ object ExportApiSpec extends ZIOSpecDefault {
           assertTrue(line.contains(";;"))
         },
         test("Beraternummer and Mandantennummer are at the correct fixed column positions (split by ';')") {
-          // DATEV Buchungsstapel v7: field positions are fixed.
-          // Beraternummer must be the 10th semicolon-delimited field (0-indexed: index 9).
-          // Mandantennummer must be at index 10.
-          // Rechnungslegungszweck (=1) must be at index 19.
-          // Festschreibung (=0) must be at index 21.
+          // DATEV Buchungsstapel v7: field positions are fixed (0-indexed after split by ";").
+          // [9]  Importiert-von  — empty
+          // [10] Beraternummer   — "12345"
+          // [11] Mandantennummer — "67890"
+          // [19] Rechnungslegungszweck — empty
+          // [20] Festschreibung  — "0" (must NOT be "1"; 1 locks the batch in DATEV)
+          // [21] WKZ             — "\"EUR\""
           // This test pins exact column indices so any future shift in the header template is caught immediately.
           val line   = ExportApi.extfHeaderLine(
             timestamp = "20250515083045123",
@@ -174,10 +176,11 @@ object ExportApiSpec extends ZIOSpecDefault {
           )
           val fields = line.split(";", -1)
           assertTrue(
-            fields(9) == "12345",  // Beraternummer at field 10 (0-indexed: 9)
-            fields(10) == "67890", // Mandantennummer at field 11 (0-indexed: 10)
-            fields(19) == "1",     // Rechnungslegungszweck at field 20 (0-indexed: 19)
-            fields(21) == "0"      // Festschreibung at field 22 (0-indexed: 21); must NOT be "1" (locking)
+            fields(10) == "12345",  // Beraternummer at spec field 11 (0-indexed: 10)
+            fields(11) == "67890",  // Mandantennummer at spec field 12 (0-indexed: 11)
+            fields(19) == "",       // Rechnungslegungszweck at spec field 20 (0-indexed: 19) — empty
+            fields(20) == "0",      // Festschreibung at spec field 21 (0-indexed: 20); must NOT be "1" (locking)
+            fields(21) == "\"EUR\"" // WKZ at spec field 22 (0-indexed: 21)
           )
         }
       ),
