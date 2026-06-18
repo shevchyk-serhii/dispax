@@ -126,6 +126,11 @@ make flutter-test-integration # Flutter integration tests → local TestApplicat
 
 **Test data:** the Flyway migration `V1001__Insert_dev_data.sql` (dev environment only)
 
+**Bug → regression test rule:**
+When a bug is found, first check whether a test already covers that case. If none exists, add one
+**before/alongside the fix — a unit test first** (in-memory double); add an integration/BDD test
+too if the bug crosses a repository or HTTP boundary. A bug fix without a covering test is not done.
+
 ---
 
 ## Business Rules & Constraints
@@ -190,3 +195,4 @@ PORT=8080
 - Do not use `Future` or `throw` — only ZIO effects
 - Do not put business logic in route handlers — only in the application layer
 - Do not hardcode secrets — only via env vars
+- Do not fix a bug without adding a regression test for it (a unit test first)
