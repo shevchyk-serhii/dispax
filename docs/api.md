@@ -143,9 +143,10 @@ All endpoints return JSON. Authenticated endpoints require `Authorization: Beare
 
 | Method | Path                         | Auth | Roles      | Description                         |
 |--------|------------------------------|------|------------|-------------------------------------|
-| GET    | `/api/export/datev`          | Yes  | DISPATCHER | Export DATEV accounting data (JSON) |
-| GET    | `/api/export/datev/rides`    | Yes  | DISPATCHER | Export rides as DATEV CSV           |
-| GET    | `/api/export/datev/expenses` | Yes  | DISPATCHER | Export expenses as DATEV CSV        |
+| GET    | `/api/export/datev`          | Yes  | DISPATCHER, ADMIN | Export DATEV accounting data (JSON preview + copy)        |
+| GET    | `/api/export/datev/rides`    | Yes  | DISPATCHER, ADMIN | Export rides as DATEV CSV                                 |
+| GET    | `/api/export/datev/expenses` | Yes  | DISPATCHER, ADMIN | Export expenses as DATEV CSV                              |
+| GET    | `/api/export/datev/extf`     | Yes  | DISPATCHER, ADMIN | Download DATEV EXTF/Buchungsstapel file (Windows-1252)    |
 
 ## Sessions
 
