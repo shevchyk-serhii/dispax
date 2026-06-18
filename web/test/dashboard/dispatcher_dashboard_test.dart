@@ -186,11 +186,42 @@ void main() {
   // label composition and the More-menu grid contents which are safe to render.
 
   // ---------------------------------------------------------------------------
-  // Mobile — canDrive == true: nav items and More-menu contents
+  // Mobile — canDrive=true: exact nav order
+  //   0=Home | 1=My Schedule | 2=Schedule | 3=My Rides | 4=New Ride | 5=More | 6=Billing
+  // ---------------------------------------------------------------------------
+  testWidgets('mobile nav (canDrive=true): nav positions are '
+      '0=Home 1=MySchedule 2=Schedule 3=MyRides 4=NewRide 5=More 6=Billing', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(420, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(buildApp(_dispatcherWithDrive()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final nav = tester.widget<BottomNavigationBar>(
+      find.byType(BottomNavigationBar),
+    );
+    final labels = nav.items.map((item) => item.label ?? '').toList();
+
+    expect(labels.length, equals(7), reason: 'canDrive=true must have 7 tabs');
+    expect(labels[0], equals('Home'));
+    expect(labels[1], equals('My Schedule'));
+    expect(labels[2], equals('Schedule'));
+    expect(labels[3], equals('My Rides'));
+    expect(labels[4], equals('New Ride'));
+    expect(labels[5], equals('More'));
+    expect(labels[6], equals('Billing'));
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mobile — canDrive=true: presence checks and relative ordering
   // ---------------------------------------------------------------------------
   testWidgets(
-    'mobile nav (canDrive=true): has "My Rides" and "My Schedule" tabs, '
-    'no "Analytics" tab; More-menu has "Analytics" grid entry',
+    'mobile nav (canDrive=true): "My Schedule" appears before "My Rides"; '
+    '"Analytics" is absent from nav but present in More-menu',
     (tester) async {
       tester.view.physicalSize = const Size(420, 900);
       tester.view.devicePixelRatio = 1.0;
@@ -200,7 +231,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      // The mobile bottom-nav must contain 'My Rides' at position 2.
+      // Both "My Schedule" and "My Rides" must be in the bottom nav.
+      expect(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('My Schedule'),
+        ),
+        findsOneWidget,
+        reason: 'canDrive=true must show "My Schedule" in bottom nav',
+      );
       expect(
         find.descendant(
           of: find.byType(BottomNavigationBar),
@@ -210,14 +249,16 @@ void main() {
         reason: 'canDrive=true must show "My Rides" in bottom nav',
       );
 
-      // 'My Schedule' tab must be present (pos 6).
+      // Verify "My Schedule" is at position 1 and "My Rides" is at position 3
+      // (i.e., My Schedule precedes My Rides).
+      final nav = tester.widget<BottomNavigationBar>(
+        find.byType(BottomNavigationBar),
+      );
+      final labels = nav.items.map((item) => item.label ?? '').toList();
       expect(
-        find.descendant(
-          of: find.byType(BottomNavigationBar),
-          matching: find.text('My Schedule'),
-        ),
-        findsOneWidget,
-        reason: 'canDrive=true must show "My Schedule" in bottom nav',
+        labels.indexOf('My Schedule') < labels.indexOf('My Rides'),
+        isTrue,
+        reason: '"My Schedule" (pos 1) must precede "My Rides" (pos 3)',
       );
 
       // 'Analytics' must NOT be in the bottom nav (it moved to More-menu).
@@ -230,7 +271,7 @@ void main() {
         reason: 'canDrive=true must hide "Analytics" from bottom nav',
       );
 
-      // Navigate to the More menu (screen index 4) by tapping pos 4 'More'.
+      // Navigate to the More menu (screen index 4) by tapping pos 5 'More'.
       await tester.tap(
         find.descendant(
           of: find.byType(BottomNavigationBar),
@@ -259,7 +300,37 @@ void main() {
   );
 
   // ---------------------------------------------------------------------------
-  // Mobile — canDrive == false: nav items
+  // Mobile — canDrive=false: exact nav order
+  //   0=Home | 1=Schedule | 2=Analytics | 3=New Ride | 4=More | 5=Billing
+  // ---------------------------------------------------------------------------
+  testWidgets('mobile nav (canDrive=false): nav positions are '
+      '0=Home 1=Schedule 2=Analytics 3=NewRide 4=More 5=Billing', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(420, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(buildApp(_dispatcherOnly()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final nav = tester.widget<BottomNavigationBar>(
+      find.byType(BottomNavigationBar),
+    );
+    final labels = nav.items.map((item) => item.label ?? '').toList();
+
+    expect(labels.length, equals(6), reason: 'canDrive=false must have 6 tabs');
+    expect(labels[0], equals('Home'));
+    expect(labels[1], equals('Schedule'));
+    expect(labels[2], equals('Analytics'));
+    expect(labels[3], equals('New Ride'));
+    expect(labels[4], equals('More'));
+    expect(labels[5], equals('Billing'));
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mobile — canDrive=false: no driver-only tabs
   // ---------------------------------------------------------------------------
   testWidgets(
     'mobile nav (canDrive=false): has "Analytics" tab, no "My Rides" or '
@@ -306,12 +377,11 @@ void main() {
   );
 
   // ---------------------------------------------------------------------------
-  // Mobile — nav index consistency: tapping 'More' (pos 4) opens More screen,
-  // not Billing. Tapping 'Billing' (pos 5) changes the selected nav item
-  // to Billing (regression guard for the swapped-positions bug).
+  // Mobile — nav index consistency: More at pos 5 (canDrive=true) / pos 4 (canDrive=false),
+  // Billing at pos 6 (canDrive=true) / pos 5 (canDrive=false).
   // ---------------------------------------------------------------------------
   testWidgets(
-    'mobile nav: "More" is at pos 4 and "Billing" is at pos 5 (index regression)',
+    'mobile nav (canDrive=false): "More" is at pos 4 and "Billing" is at pos 5',
     (tester) async {
       tester.view.physicalSize = const Size(420, 900);
       tester.view.devicePixelRatio = 1.0;
@@ -321,52 +391,50 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      // Collect BottomNavigationBarItem labels in order.
       final nav = tester.widget<BottomNavigationBar>(
         find.byType(BottomNavigationBar),
       );
       final labels = nav.items.map((item) => item.label ?? '').toList();
 
-      // Verify the corrected order: pos 4 = More, pos 5 = Billing.
       expect(
         labels[4],
         equals('More'),
-        reason: '"More" must be at nav position 4',
+        reason: '"More" must be at nav position 4 (canDrive=false)',
       );
       expect(
         labels[5],
         equals('Billing'),
-        reason: '"Billing" must be at nav position 5',
+        reason: '"Billing" must be at nav position 5 (canDrive=false)',
       );
     },
   );
 
-  // ---------------------------------------------------------------------------
-  // Mobile — canDrive=true: nav index order includes My Schedule at pos 6.
-  // ---------------------------------------------------------------------------
-  testWidgets('mobile nav (canDrive=true): nav positions are '
-      '0=Home 1=Schedule 2=MyRides 3=NewRide 4=More 5=Billing 6=MySchedule', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(420, 900);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
+  testWidgets(
+    'mobile nav (canDrive=true): "More" is at pos 5 and "Billing" is at pos 6',
+    (tester) async {
+      tester.view.physicalSize = const Size(420, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(buildApp(_dispatcherWithDrive()));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpWidget(buildApp(_dispatcherWithDrive()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-    final nav = tester.widget<BottomNavigationBar>(
-      find.byType(BottomNavigationBar),
-    );
-    final labels = nav.items.map((item) => item.label ?? '').toList();
+      final nav = tester.widget<BottomNavigationBar>(
+        find.byType(BottomNavigationBar),
+      );
+      final labels = nav.items.map((item) => item.label ?? '').toList();
 
-    expect(labels[0], equals('Home'));
-    expect(labels[1], equals('Schedule'));
-    expect(labels[2], equals('My Rides'));
-    expect(labels[3], equals('New Ride'));
-    expect(labels[4], equals('More'));
-    expect(labels[5], equals('Billing'));
-    expect(labels[6], equals('My Schedule'));
-  });
+      expect(
+        labels[5],
+        equals('More'),
+        reason: '"More" must be at nav position 5 (canDrive=true)',
+      );
+      expect(
+        labels[6],
+        equals('Billing'),
+        reason: '"Billing" must be at nav position 6 (canDrive=true)',
+      );
+    },
+  );
 }

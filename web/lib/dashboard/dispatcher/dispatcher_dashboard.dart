@@ -47,23 +47,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   late RideBloc _rideBloc;
   final CreateRideFormBloc _createRideFormBloc = CreateRideFormBloc();
 
-  // Primary tabs (shown in bottom nav)
-  static const int _primaryTabCount = 5;
+  // Screen index of the "New Ride" screen — used to detect unsaved form changes
+  // when the user navigates away. This is a screen index, not a nav position.
   static const int _createRideTabIndex = 3;
-  // Billing lives in the extended screen list (index 15) but also gets a
-  // dedicated bottom-nav tab so dispatchers can reach invoicing in one tap.
+  // Billing lives at screen index 15 in the extended list.
   static const int _billingTabIndex = 15;
-  // Bottom-nav item positions (0-based):
-  //   0 Home | 1 Schedule | 2 Analytics/MyRides | 3 New Ride | 4 More | 5 Billing | [6 My Schedule]
-  // NOTE: More is at position 4 (= _primaryTabCount - 1) so that screen indices
-  // 0..4 map 1:1 to nav positions 0..4 and the _navIndexForScreen fallback
-  // (screenIndex < _primaryTabCount) routes screen 4 → nav 4 (More).
-  static const int _moreNavIndex = 4;
-  static const int _billingNavIndex = 5;
-  // "My Schedule" is a dispatcher-who-also-drives extra: it gets its own
-  // bottom-nav slot (appended after Billing) and its own extended-screen index,
-  // both present only when canDrive.
-  static const int _myScheduleNavIndex = 6;
+  // Screen index for driver's own schedule (only when canDrive).
   static const int _myScheduleScreenIndex = 31;
 
   @override
@@ -270,23 +259,106 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     ),
   );
 
+  /// Returns the ordered list of screen indices for each bottom-nav position.
+  ///
+  /// canDrive=true  → 7 tabs: Home | My Schedule | Schedule | My Rides | New Ride | More | Billing
+  /// canDrive=false → 6 tabs: Home | Schedule | Analytics | New Ride | More | Billing
+  List<int> _navOrder(bool canDrive) => canDrive
+      ? [
+          0, // pos 0: Home (PendingRidesPanel)
+          _myScheduleScreenIndex, // pos 1: My Schedule (CalendarScheduleScreen)
+          1, // pos 2: Schedule (DriverSchedulePanel)
+          _driverMyRidesScreenIndex, // pos 3: My Rides (TodayRidesScreen)
+          3, // pos 4: New Ride (CreateRideScreen)
+          4, // pos 5: More
+          _billingTabIndex, // pos 6: Billing
+        ]
+      : [
+          0, // pos 0: Home
+          1, // pos 1: Schedule
+          2, // pos 2: Analytics
+          3, // pos 3: New Ride
+          4, // pos 4: More
+          _billingTabIndex, // pos 5: Billing
+        ];
+
+  /// Returns the nav item for a given screen index.
+  BottomNavigationBarItem _navItemForScreen(int screenIndex) {
+    switch (screenIndex) {
+      case 0:
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home),
+          label: 'Home',
+        );
+      case 1:
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.calendar_month_outlined),
+          activeIcon: Icon(Icons.calendar_month),
+          label: 'Schedule',
+        );
+      case 2:
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.bar_chart_outlined),
+          activeIcon: Icon(Icons.bar_chart),
+          label: 'Analytics',
+        );
+      case 3:
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.add_circle_outline),
+          activeIcon: Icon(Icons.add_circle),
+          label: 'New Ride',
+        );
+      case 4:
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.grid_view_outlined),
+          activeIcon: Icon(Icons.grid_view),
+          label: 'More',
+        );
+      case _billingTabIndex:
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.request_quote_outlined),
+          activeIcon: Icon(Icons.request_quote),
+          label: 'Billing',
+        );
+      case _driverMyRidesScreenIndex:
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.directions_car_outlined),
+          activeIcon: Icon(Icons.directions_car),
+          label: 'My Rides',
+        );
+      case _myScheduleScreenIndex:
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.event_note_outlined),
+          activeIcon: Icon(Icons.event_note),
+          label: 'My Schedule',
+        );
+      default:
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.more_horiz),
+          label: '',
+        );
+    }
+  }
+
+  /// Maps the current screen index to the highlighted bottom-nav position.
+  /// Falls back to the "More" position (screen index 4) for screens not in nav.
+  int _navIndexForScreen(int screenIndex, List<int> navOrder) {
+    final idx = navOrder.indexOf(screenIndex);
+    if (idx != -1) return idx;
+    // Screen not in nav (e.g. an extended More-menu screen): highlight More.
+    return navOrder.indexOf(4);
+  }
+
   Widget _buildMobileView(bool canDrive) {
     final screens = _buildAllScreens(canDrive);
+    final navOrder = _navOrder(canDrive);
     return Scaffold(
       body: IndexedStack(index: _mobileTabIndex, children: screens),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _navIndexForScreen(_mobileTabIndex),
-        onTap: (navIndex) async {
-          // Map the tapped nav item back to a screen index.
-          // Nav positions: 0 Home | 1 Schedule | 2 Analytics(or MyRides if canDrive)
-          //                | 3 New Ride | 4 More | 5 Billing | [6 My Schedule]
-          final screenIndex = switch (navIndex) {
-            2 when canDrive => _driverMyRidesScreenIndex, // My Rides tab
-            _billingNavIndex => _billingTabIndex,
-            _moreNavIndex => 4, // More menu grid lives at screen index 4
-            _myScheduleNavIndex => _myScheduleScreenIndex,
-            _ => navIndex, // 0,1,2(!canDrive),3 map 1:1 to screen indices
-          };
+        currentIndex: _navIndexForScreen(_mobileTabIndex, navOrder),
+        onTap: (navPos) async {
+          final screenIndex = navOrder[navPos];
           if (_mobileTabIndex == _createRideTabIndex &&
               screenIndex != _createRideTabIndex) {
             final canLeave = await _confirmLeaveCreateRide(context);
@@ -296,74 +368,9 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.accent,
-        items: [
-          // pos 0
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          // pos 1
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            activeIcon: Icon(Icons.calendar_month),
-            label: 'Schedule',
-          ),
-          // pos 2: Analytics for pure dispatcher; My Rides when canDrive.
-          if (canDrive)
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.directions_car_outlined),
-              activeIcon: Icon(Icons.directions_car),
-              label: 'My Rides',
-            )
-          else
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart_outlined),
-              activeIcon: Icon(Icons.bar_chart),
-              label: 'Analytics',
-            ),
-          // pos 3
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outline),
-            activeIcon: Icon(Icons.add_circle),
-            label: 'New Ride',
-          ),
-          // pos 4: More menu grid (screen index 4 — satisfies 1:1 primary mapping).
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_outlined),
-            activeIcon: Icon(Icons.grid_view),
-            label: 'More',
-          ),
-          // pos 5: Billing (screen index 15).
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.request_quote_outlined),
-            activeIcon: Icon(Icons.request_quote),
-            label: 'Billing',
-          ),
-          // pos 6: Only when this dispatcher also drives — their own driver schedule.
-          if (canDrive)
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.event_note_outlined),
-              activeIcon: Icon(Icons.event_note),
-              label: 'My Schedule',
-            ),
-        ],
+        items: navOrder.map(_navItemForScreen).toList(),
       ),
     );
-  }
-
-  // Map the active screen index to the highlighted bottom-nav item.
-  // Nav positions: 0 Home | 1 Schedule | 2 Analytics/MyRides | 3 New Ride
-  //               | 4 More | 5 Billing | [6 My Schedule]
-  // Screen indices 0..4 map 1:1 to nav positions 0..4 (primary tabs).
-  // Screen 30 (My Rides) highlights nav 2 when canDrive is true.
-  int _navIndexForScreen(int screenIndex) {
-    final canDrive = context.read<AuthBloc>().state.user?.canDrive ?? false;
-    if (screenIndex == _driverMyRidesScreenIndex && canDrive) return 2;
-    if (screenIndex < _primaryTabCount) return screenIndex;
-    if (screenIndex == _billingTabIndex) return _billingNavIndex;
-    if (screenIndex == _myScheduleScreenIndex) return _myScheduleNavIndex;
-    return _moreNavIndex;
   }
 
   Widget _buildMoreScreen(bool canDrive) {

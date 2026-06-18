@@ -4,11 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
-import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../modules/core/navigation_utils.dart';
 import '../../../modules/core/navigation_helper.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_colors.dart';
+import 'widgets/ride_badges.dart';
 
 class DayViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -26,162 +26,37 @@ class DayViewWidget extends StatelessWidget {
 
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) {
-        return BlocBuilder<ScheduleBloc, ScheduleState>(
-          builder: (context, scheduleState) {
-            final dayRides = getRidesForDay(rideState.rides, selectedDay);
-            dayRides.sort(
-              (a, b) => a.pickupDateTime.compareTo(b.pickupDateTime),
-            );
+        final dayRides = getRidesForDay(rideState.rides, selectedDay);
+        dayRides.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
 
-            final daySchedules = scheduleState.scheduleDays
-                .where(
-                  (d) =>
-                      d.date.year == selectedDay.year &&
-                      d.date.month == selectedDay.month &&
-                      d.date.day == selectedDay.day &&
-                      d.status != ScheduleDayStatus.cancelled,
-                )
-                .toList();
-
-            return Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(25),
-                    spreadRadius: 1,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  buildDayHeader(context),
-                  if (daySchedules.isNotEmpty)
-                    _buildScheduleBlock(context, daySchedules),
-                  Expanded(
-                    child: dayRides.isEmpty
-                        ? buildEmptyState(context)
-                        : buildRidesList(context, dayRides),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildScheduleBlock(
-    BuildContext context,
-    List<ScheduleDay> schedules,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withAlpha(80),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colorScheme.primary.withAlpha(80)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.work_outline, size: 16, color: colorScheme.primary),
-              const SizedBox(width: 6),
-              Text(
-                'Work Schedule',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.primary,
-                ),
+        return Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(25),
+                spreadRadius: 1,
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          ...schedules.map(
-            (s) => Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Row(
-                children: [
-                  Icon(Icons.schedule, size: 14, color: colorScheme.primary),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${s.startTime} — ${s.endTime}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _scheduleStatusColor(
-                        colorScheme,
-                        s.status,
-                      ).withAlpha(30),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      s.status.displayName,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: _scheduleStatusColor(colorScheme, s.status),
-                      ),
-                    ),
-                  ),
-                  if (s.notes != null && s.notes!.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        s.notes!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              buildDayHeader(context),
+              Expanded(
+                child: dayRides.isEmpty
+                    ? buildEmptyState(context)
+                    : buildRidesList(context, dayRides),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
-  }
-
-  Color _scheduleStatusColor(
-    ColorScheme colorScheme,
-    ScheduleDayStatus status,
-  ) {
-    switch (status) {
-      case ScheduleDayStatus.scheduled:
-        return AppColors.info;
-      case ScheduleDayStatus.active:
-        return AppColors.success;
-      case ScheduleDayStatus.completed:
-        return colorScheme.onSurfaceVariant;
-      case ScheduleDayStatus.cancelled:
-        return AppColors.error;
-    }
   }
 
   Widget buildDayHeader(BuildContext context) {
@@ -324,13 +199,31 @@ class DayViewWidget extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    DateFormat.Hm().format(ride.pickupDateTime),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        DateFormat.Hm().format(ride.pickupDateTime),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      if (ride.price != null) ...[
+                        const SizedBox(width: 10),
+                        Text(
+                          '€${ride.price!.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -352,6 +245,7 @@ class DayViewWidget extends StatelessWidget {
                   ),
                 ],
               ),
+              RideBadges.chips(context, ride),
               const SizedBox(height: 12),
               buildLocationRow(
                 context,
@@ -368,6 +262,7 @@ class DayViewWidget extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               buildLocationRow(context, Icons.flag, 'To', ride.to.address),
+              RideBadges.requirements(context, ride),
               const SizedBox(height: 12),
               buildActionButtons(context, ride),
             ],
