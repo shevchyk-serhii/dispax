@@ -40,7 +40,10 @@ class WebSocketService {
     if (_token == null || !_shouldReconnect) return;
 
     try {
-      _channel?.sink.close(ws_status.goingAway);
+      // 1000 (normalClosure), not 1001 (goingAway): the web_socket backend
+      // rejects 1001 ("close code must be 1000 or in the range 3000-4999"),
+      // which threw on every reconnect and tore the socket into a reconnect loop.
+      _channel?.sink.close(ws_status.normalClosure);
       // Browser WebSocket can't send custom headers; the token is carried in
       // the query string (`?token=...`, see `_wsUrl`), which the server accepts.
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
@@ -91,7 +94,8 @@ class WebSocketService {
   void disconnect() {
     _shouldReconnect = false;
     _reconnectTimer?.cancel();
-    _channel?.sink.close(ws_status.goingAway);
+    // 1000, not 1001 — see _doConnect: the web_socket backend rejects 1001.
+    _channel?.sink.close(ws_status.normalClosure);
     _channel = null;
     _token = null;
     _reconnectAttempt = 0;
