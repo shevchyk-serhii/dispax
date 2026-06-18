@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
+import '../../../modules/core/services/user_service.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
@@ -26,14 +27,58 @@ class DriverSchedulePanel extends StatefulWidget {
 
 enum _LoadFilter { all, available, moderate, busy }
 
+/// Resolves a human-readable driver label from a schedule day, preferring a
+/// real driver name (driverId → name) loaded from `/users/drivers`, then the
+/// day's free-text notes, then a truncated id as a last resort.
+String resolveDriverLabel(ScheduleDay d, Map<String, String> driverNames) {
+  final name = driverNames[d.driverId];
+  if (name != null && name.isNotEmpty) return name;
+  if (d.notes?.isNotEmpty == true) return d.notes!;
+  final id = d.driverId;
+  return 'Driver ${id.length > 8 ? id.substring(0, 8) : id}...';
+}
+
 class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
   String _searchQuery = '';
   _LoadFilter _loadFilter = _LoadFilter.all;
+
+  /// driverId → display name, loaded once from `/users/drivers`.
+  Map<String, String> _driverNames = {};
 
   @override
   void initState() {
     super.initState();
     _loadSchedule();
+    _loadRides();
+    _loadDriverNames();
+  }
+
+  /// The dispatcher dashboard never loads rides on startup (unlike the driver/
+  /// client/secretary dashboards), so this panel — which derives each driver's
+  /// load from RideBloc — must request them itself, or every driver shows
+  /// "0 rides". Reuses the authenticated user from AuthBloc.
+  void _loadRides() {
+    final user = context.read<AuthBloc>().state.user;
+    if (user != null) {
+      context.read<RideBloc>().add(RideLoadRequested(user: user));
+    }
+  }
+
+  Future<void> _loadDriverNames() async {
+    // Reuse the authenticated ApiClient from AuthBloc — never instantiate a
+    // bare ApiClient() (it would be missing the auth token → 401).
+    final userService = UserService(
+      apiClient: context.read<AuthBloc>().apiClient,
+    );
+    try {
+      final drivers = await userService.getDrivers();
+      if (!mounted) return;
+      setState(() {
+        _driverNames = {for (final d in drivers) d.id: d.name};
+      });
+    } catch (_) {
+      // Names are a nicety; on failure we silently fall back to notes/id.
+    }
   }
 
   void _loadSchedule() {
@@ -47,6 +92,7 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedDate != widget.selectedDate) {
       _loadSchedule();
+      _loadRides();
     }
   }
 
@@ -54,9 +100,7 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
     widget.onDateChanged(widget.selectedDate.add(Duration(days: days)));
   }
 
-  String _driverLabel(ScheduleDay d) => d.notes?.isNotEmpty == true
-      ? d.notes!
-      : 'Driver ${d.driverId.length > 8 ? d.driverId.substring(0, 8) : d.driverId}...';
+  String _driverLabel(ScheduleDay d) => resolveDriverLabel(d, _driverNames);
 
   int _driverRideCount(ScheduleDay d, List<Ride> allRides) => allRides
       .where(
@@ -160,7 +204,10 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                   }
 
                   return RefreshIndicator(
-                    onRefresh: () async => _loadSchedule(),
+                    onRefresh: () async {
+                      _loadSchedule();
+                      _loadRides();
+                    },
                     child: ListView.builder(
                       padding: const EdgeInsets.all(
                         AppDimensions.paddingMedium,
@@ -169,6 +216,7 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                       itemBuilder: (context, index) {
                         return _DriverScheduleDropTarget(
                           scheduleDay: days[index],
+                          driverNames: _driverNames,
                         );
                       },
                     ),
@@ -305,7 +353,10 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
             ),
             IconButton(
               icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: _loadSchedule,
+              onPressed: () {
+                _loadSchedule();
+                _loadRides();
+              },
             ),
           ],
         ),
@@ -402,8 +453,12 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
 
 class _DriverScheduleDropTarget extends StatelessWidget {
   final ScheduleDay scheduleDay;
+  final Map<String, String> driverNames;
 
-  const _DriverScheduleDropTarget({required this.scheduleDay});
+  const _DriverScheduleDropTarget({
+    required this.scheduleDay,
+    required this.driverNames,
+  });
 
   void _showReassignSheet(BuildContext context, Ride ride) {
     final scheduleState = context.read<ScheduleBloc>().state;
@@ -505,9 +560,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                       ? AppColors.warning
                       : AppColors.error;
 
-                  final driverLabel = schedule.notes?.isNotEmpty == true
-                      ? schedule.notes!
-                      : 'Driver ${schedule.driverId.length > 8 ? schedule.driverId.substring(0, 8) : schedule.driverId}...';
+                  final driverLabel = resolveDriverLabel(schedule, driverNames);
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -621,9 +674,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
           onAcceptWithDetails: (details) {
             final ride = details.data;
             final conflicts = ConflictDetector.findConflicts(ride, driverRides);
-            final driverLabel = scheduleDay.notes?.isNotEmpty == true
-                ? scheduleDay.notes!
-                : 'Driver ${scheduleDay.driverId.length > 8 ? scheduleDay.driverId.substring(0, 8) : scheduleDay.driverId}...';
+            final driverLabel = resolveDriverLabel(scheduleDay, driverNames);
 
             showDialog(
               context: context,
@@ -681,7 +732,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Driver ${scheduleDay.driverId.length > 8 ? scheduleDay.driverId.substring(0, 8) : scheduleDay.driverId}...',
+                              resolveDriverLabel(scheduleDay, driverNames),
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
@@ -699,10 +750,10 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                     context: context,
                                     builder: (_) => BulkReassignDialog(
                                       fromDriverId: scheduleDay.driverId,
-                                      fromDriverLabel:
-                                          scheduleDay.notes?.isNotEmpty == true
-                                          ? scheduleDay.notes!
-                                          : 'Driver ${scheduleDay.driverId.length > 8 ? scheduleDay.driverId.substring(0, 8) : scheduleDay.driverId}...',
+                                      fromDriverLabel: resolveDriverLabel(
+                                        scheduleDay,
+                                        driverNames,
+                                      ),
                                       rides: driverRides,
                                     ),
                                   );
