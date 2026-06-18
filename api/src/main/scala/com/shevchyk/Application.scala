@@ -50,7 +50,7 @@ import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.middleware.RateLimiter
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.application.{EventHub, AuditService, PostgresAuditService, GeofenceService}
+import com.shevchyk.core.application.{AvatarService, EventHub, AuditService, PostgresAuditService, GeofenceService}
 import com.shevchyk.core.repository.{
   GeofenceRepository,
   GdprRepository,
@@ -202,6 +202,7 @@ object Application extends ZIOAppDefault:
       ) >>> Server.live,
       ServerConfig.liveLayer,
       PersonRepository.layer,
+      AvatarService.layer,
       CompanyRepository.layer,
       TokenRepository.layer,
       RideRepository.layer,

@@ -57,6 +57,9 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       def updateLastLogin(id: PersonId): Task[Unit]                                      = nope("updateLastLogin")
       def findByClientCompany(c: ClientCompanyId): Task[List[Person]]                    = nope("findByClientCompany")
       def upsertDriverRow(personId: PersonId): Task[Unit]                                = ZIO.unit
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                   = ZIO.succeed(None)
+      def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]   = ZIO.unit
+      def deleteAvatar(id: PersonId): Task[Unit]                                         = ZIO.unit
 
   private val baseLayers =
     EventHub.layer ++

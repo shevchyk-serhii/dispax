@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../../../constants/app_constants.dart';
 
 class UnauthorizedException extends ApiException {
@@ -212,6 +214,69 @@ class ApiClient {
       throw ApiException(_networkErrorMessage(e));
     } catch (e) {
       throw ApiException('Login failed: $e');
+    }
+  }
+
+  /// Upload a file as multipart/form-data with Bearer authentication.
+  /// Used for profile avatar upload.
+  Future<http.Response> postMultipart(
+    String endpoint,
+    String fieldName,
+    Uint8List bytes,
+    String contentType,
+  ) async {
+    try {
+      final uri = Uri.parse('$_baseUrl$endpoint');
+      final request = http.MultipartRequest('POST', uri);
+      if (privateAuthToken != null) {
+        request.headers['Authorization'] = 'Bearer $privateAuthToken';
+      }
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          fieldName,
+          bytes,
+          filename: 'avatar',
+          contentType: MediaType.parse(contentType),
+        ),
+      );
+      final streamed = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
+      final response = await http.Response.fromStream(streamed);
+      if (response.statusCode == 401) _handleUnauthorized();
+      return response;
+    } on UnauthorizedException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Failed to upload file: $e');
+    }
+  }
+
+  /// Fetch raw bytes from an authenticated endpoint.
+  /// Used for profile avatar retrieval (GET /users/{id}/avatar requires Bearer).
+  /// Returns null for 404 (no avatar / not found) so callers can fall back to initials.
+  Future<Uint8List?> getBytes(String endpoint) async {
+    try {
+      final uri = Uri.parse('$_baseUrl$endpoint');
+      final response = await privateClient
+          .get(uri, headers: privateHeaders)
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 401) {
+        _handleUnauthorized();
+        return null;
+      }
+      if (response.statusCode == 404) return null;
+      if (response.statusCode != 200) {
+        throw ApiException(
+          'getBytes failed with status ${response.statusCode}: ${response.body}',
+        );
+      }
+      return response.bodyBytes;
+    } on UnauthorizedException {
+      rethrow;
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to fetch bytes from $_baseUrl$endpoint: $e');
     }
   }
 

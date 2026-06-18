@@ -22,7 +22,7 @@ import com.shevchyk.billing.repository.{
   CompanyBillingProfileRepository,
   InvoiceRepository
 }
-import com.shevchyk.core.application.{AuditService, EventHub, GeocodingService, GeofenceService}
+import com.shevchyk.core.application.{AuditService, AvatarService, EventHub, GeocodingService, GeofenceService}
 import com.shevchyk.core.config.ServerConfig
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.domain.{RidePool, RidePoolId, RidePoolMember, PoolStatus, PoolMemberStatus, Session, SessionId}
@@ -210,6 +210,9 @@ object TestApplication extends ZIOAppDefault:
       def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]        = ZIO.succeed(Nil)
       def upsertDriverRow(personId: PersonId): Task[Unit]                                  = ZIO.unit
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                     = ZIO.succeed(None)
+      def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]     = ZIO.unit
+      def deleteAvatar(id: PersonId): Task[Unit]                                           = ZIO.unit
     }
 
   private val mockTokenRepository: TokenRepository =
@@ -1399,5 +1402,7 @@ object TestApplication extends ZIOAppDefault:
       // Chat + templates
       InMemoryChatMessageRepository.layer,
       ChatService.layer,
-      inMemoryRideTemplateRepositoryLayer
+      inMemoryRideTemplateRepositoryLayer,
+      // Avatar
+      AvatarService.layer
     )

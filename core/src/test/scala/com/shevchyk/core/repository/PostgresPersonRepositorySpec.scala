@@ -263,6 +263,129 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           _     <- repo.upsertDriverRow(driver.id)
           _     <- repo.upsertDriverRow(driver.id)
         } yield assertCompletes
+      },
+      // ── avatar (BYTEA) round-trip ──────────────────────────────────────────
+      test("setAvatar + getAvatar round-trip — BYTEA survives write/read unchanged") {
+        val bytes       = Array.tabulate(1024)(i => (i % 256).toByte)
+        val contentType = "image/jpeg"
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "avatar-roundtrip@test.com")
+          _     <- repo.create(person)
+          _     <- repo.setAvatar(person.id, bytes, contentType)
+          found <- repo.getAvatar(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get._1.length == bytes.length,
+          found.get._1.toSeq == bytes.toSeq,
+          found.get._2 == contentType
+        )
+      },
+      test("getAvatar on person without avatar returns None") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "no-avatar@test.com")
+          _     <- repo.create(person)
+          found <- repo.getAvatar(person.id)
+        } yield assertTrue(found.isEmpty)
+      },
+      test("deleteAvatar — subsequent getAvatar returns None") {
+        val bytes = Array.fill(512)(0x7f.toByte)
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "delete-avatar@test.com")
+          _     <- repo.create(person)
+          _     <- repo.setAvatar(person.id, bytes, "image/png")
+          _     <- repo.deleteAvatar(person.id)
+          found <- repo.getAvatar(person.id)
+        } yield assertTrue(found.isEmpty)
+      },
+      test("deleteAvatar is idempotent — safe to call when no avatar exists") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "idempotent-delete@test.com")
+          _     <- repo.create(person)
+          // delete on a person with no avatar must not fail
+          _     <- repo.deleteAvatar(person.id)
+          _     <- repo.deleteAvatar(person.id)
+        } yield assertCompletes
+      },
+      test("findById after setAvatar — avatarPresent == true") {
+        // Verifies that the (avatar IS NOT NULL) AS has_avatar computed column is read correctly.
+        val bytes = Array.fill(256)(0x01.toByte)
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "has-avatar@test.com")
+          _     <- repo.create(person)
+          _     <- repo.setAvatar(person.id, bytes, "image/webp")
+          found <- repo.findById(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.avatarPresent
+        )
+      },
+      test("findById before setAvatar — avatarPresent == false") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "no-avatar-flag@test.com")
+          _     <- repo.create(person)
+          found <- repo.findById(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          !found.get.avatarPresent
+        )
+      },
+      test("findById after deleteAvatar — avatarPresent reverts to false") {
+        val bytes = Array.fill(128)(0x02.toByte)
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "avatar-flag-revert@test.com")
+          _     <- repo.create(person)
+          _     <- repo.setAvatar(person.id, bytes, "image/jpeg")
+          _     <- repo.deleteAvatar(person.id)
+          found <- repo.findById(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          !found.get.avatarPresent
+        )
+      },
+      test("setAvatar stores different MIME types correctly (PNG, WebP)") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedCompany(xa)
+          _      <- cleanPersons(xa)
+          repo    = PostgresPersonRepository(xa)
+          person  = makePerson(email = "mime-types@test.com")
+          _      <- repo.create(person)
+          _      <- repo.setAvatar(person.id, Array(0x01.toByte), "image/png")
+          found1 <- repo.getAvatar(person.id)
+          _      <- repo.setAvatar(person.id, Array(0x02.toByte), "image/webp")
+          found2 <- repo.getAvatar(person.id)
+        } yield assertTrue(
+          found1.get._2 == "image/png",
+          found2.get._2 == "image/webp"
+        )
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/models/person.dart';
+import '../modules/core/widgets/avatar_circle.dart';
 import '../main.dart' show themeModeNotifier, themeFromString;
+import '../l10n/app_localizations.dart';
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
 import '../dashboard/driver/earnings_screen.dart';
@@ -25,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _chatNotifications = true;
   int _reminderMinutes = 60;
   bool _savingReminder = false;
+  bool _uploadingAvatar = false;
 
   @override
   void initState() {
@@ -114,6 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildProfileSection(Person user) {
+    final apiClient = context.read<AuthBloc>().apiClient;
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -123,17 +128,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.white.withAlpha(60),
-            child: Text(
-              user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+          Stack(
+            children: [
+              AvatarCircle(user: user, apiClient: apiClient, radius: 30),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _uploadingAvatar
+                      ? null
+                      : () => _pickAndUploadAvatar(user),
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: _uploadingAvatar
+                        ? const Padding(
+                            padding: EdgeInsets.all(3),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(
+                            Icons.camera_alt,
+                            size: 14,
+                            color: Colors.black54,
+                          ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -175,6 +200,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _pickAndUploadAvatar(Person user) async {
+    final picker = ImagePicker();
+    final xFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
+    if (xFile == null) return;
+    final bytes = await xFile.readAsBytes();
+    final mime = xFile.mimeType ?? 'image/jpeg';
+
+    if (!mounted) return;
+    setState(() => _uploadingAvatar = true);
+    try {
+      final apiClient = context.read<AuthBloc>().apiClient;
+      final response = await apiClient.postMultipart(
+        '/users/${user.id}/avatar',
+        'file',
+        bytes,
+        mime,
+      );
+      if (response.statusCode == 200) {
+        if (mounted) {
+          context.read<AuthBloc>().add(const AuthProfileRefreshRequested());
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.photoUploadedSuccessfully,
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${AppLocalizations.of(context)!.failedToUploadPhoto} (${response.statusCode})',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.failedToUploadPhoto}: $e',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
+  }
+
+  Future<void> _deleteAvatar(Person user) async {
+    try {
+      final apiClient = context.read<AuthBloc>().apiClient;
+      final response = await apiClient.delete('/users/${user.id}/avatar');
+      if ((response.statusCode == 204 || response.statusCode == 200) &&
+          mounted) {
+        context.read<AuthBloc>().add(const AuthProfileRefreshRequested());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.removePhoto)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.failedToUploadPhoto}: $e',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildEarningsSection() {
@@ -593,6 +701,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         actions: [
+          if (user.hasAvatar)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _deleteAvatar(user);
+              },
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              child: Text(AppLocalizations.of(ctx)!.removePhoto),
+            ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),

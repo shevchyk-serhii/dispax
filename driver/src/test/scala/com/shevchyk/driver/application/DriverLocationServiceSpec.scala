@@ -25,21 +25,24 @@ private def testPerson(id: PersonId, companyId: Option[CompanyId]): Person = Per
 // Helper: ZLayer that returns a fixed Person from findById
 private def personRepoReturning(person: Person): ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
   new PersonRepository:
-    def create(p: Person): Task[Person]                                          = ZIO.succeed(p)
-    def findById(id: PersonId): Task[Option[Person]]                             = ZIO.succeed(Some(person))
-    def findByIdAndCompany(id: PersonId, c: CompanyId): Task[Option[Person]]     = ZIO.succeed(None)
-    def findByEmail(email: String): Task[Option[Person]]                         = ZIO.succeed(None)
-    def findByRole(role: PersonRole): Task[List[Person]]                         = ZIO.succeed(Nil)
-    def findByRoleAndCompany(role: PersonRole, c: CompanyId): Task[List[Person]] = ZIO.succeed(Nil)
-    def findByCompanyId(c: CompanyId): Task[List[Person]]                        = ZIO.succeed(Nil)
-    def findAll(): Task[List[Person]]                                            = ZIO.succeed(Nil)
-    def update(p: Person): Task[Person]                                          = ZIO.succeed(p)
-    def delete(id: PersonId): Task[Unit]                                         = ZIO.unit
-    def findByStatus(status: UserStatus): Task[List[Person]]                     = ZIO.succeed(Nil)
-    def searchByQuery(query: String): Task[List[Person]]                         = ZIO.succeed(Nil)
-    def updateLastLogin(id: PersonId): Task[Unit]                                = ZIO.unit
-    def findByClientCompany(ccId: ClientCompanyId): Task[List[Person]]           = ZIO.succeed(Nil)
-    def upsertDriverRow(personId: PersonId): Task[Unit]                          = ZIO.unit
+    def create(p: Person): Task[Person]                                              = ZIO.succeed(p)
+    def findById(id: PersonId): Task[Option[Person]]                                 = ZIO.succeed(Some(person))
+    def findByIdAndCompany(id: PersonId, c: CompanyId): Task[Option[Person]]         = ZIO.succeed(None)
+    def findByEmail(email: String): Task[Option[Person]]                             = ZIO.succeed(None)
+    def findByRole(role: PersonRole): Task[List[Person]]                             = ZIO.succeed(Nil)
+    def findByRoleAndCompany(role: PersonRole, c: CompanyId): Task[List[Person]]     = ZIO.succeed(Nil)
+    def findByCompanyId(c: CompanyId): Task[List[Person]]                            = ZIO.succeed(Nil)
+    def findAll(): Task[List[Person]]                                                = ZIO.succeed(Nil)
+    def update(p: Person): Task[Person]                                              = ZIO.succeed(p)
+    def delete(id: PersonId): Task[Unit]                                             = ZIO.unit
+    def findByStatus(status: UserStatus): Task[List[Person]]                         = ZIO.succeed(Nil)
+    def searchByQuery(query: String): Task[List[Person]]                             = ZIO.succeed(Nil)
+    def updateLastLogin(id: PersonId): Task[Unit]                                    = ZIO.unit
+    def findByClientCompany(ccId: ClientCompanyId): Task[List[Person]]               = ZIO.succeed(Nil)
+    def upsertDriverRow(personId: PersonId): Task[Unit]                              = ZIO.unit
+    def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                 = ZIO.succeed(None)
+    def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
+    def deleteAvatar(id: PersonId): Task[Unit]                                       = ZIO.unit
 )
 
 object DriverLocationServiceSpec extends ZIOSpecDefault {
@@ -102,6 +105,9 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
       def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]        = ZIO.succeed(Nil)
       def upsertDriverRow(personId: PersonId): Task[Unit]                                  = ZIO.unit
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                     = ZIO.succeed(None)
+      def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]     = ZIO.unit
+      def deleteAvatar(id: PersonId): Task[Unit]                                           = ZIO.unit
   )
 
   // Noop GeofenceService

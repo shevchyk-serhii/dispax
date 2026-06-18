@@ -28,6 +28,10 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Dispax uses Face ID for quick and secure login to the app.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Dispax needs access to your photo library to set a profile picture.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Dispax needs camera access to take a profile photo.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs location access to show your current position on the map and help with navigation.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

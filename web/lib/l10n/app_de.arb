@@ -121,6 +121,11 @@
   "name": "Name",
   "phone": "Telefon",
   "profileUpdated": "Profil erfolgreich aktualisiert",
+  "uploadPhoto": "Foto hochladen",
+  "changePhoto": "Foto ändern",
+  "removePhoto": "Foto entfernen",
+  "photoUploadedSuccessfully": "Foto erfolgreich hochgeladen",
+  "failedToUploadPhoto": "Foto-Upload fehlgeschlagen",
 
   "security": "Sicherheit",
   "biometricLogin": "Biometrische Anmeldung",

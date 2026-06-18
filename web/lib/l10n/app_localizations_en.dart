@@ -337,6 +337,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileUpdated => 'Profile updated successfully';
 
   @override
+  String get uploadPhoto => 'Upload Photo';
+
+  @override
+  String get changePhoto => 'Change Photo';
+
+  @override
+  String get removePhoto => 'Remove Photo';
+
+  @override
+  String get photoUploadedSuccessfully => 'Photo uploaded successfully';
+
+  @override
+  String get failedToUploadPhoto => 'Failed to upload photo';
+
+  @override
   String get security => 'Security';
 
   @override

@@ -136,6 +136,11 @@
   "name": "Name",
   "phone": "Phone",
   "profileUpdated": "Profile updated successfully",
+  "uploadPhoto": "Upload Photo",
+  "changePhoto": "Change Photo",
+  "removePhoto": "Remove Photo",
+  "photoUploadedSuccessfully": "Photo uploaded successfully",
+  "failedToUploadPhoto": "Failed to upload photo",
 
   "security": "Security",
   "biometricLogin": "Biometric Login",

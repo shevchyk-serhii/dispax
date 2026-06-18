@@ -12,7 +12,7 @@ import com.shevchyk.billing.repository.{
   CompanyBillingProfileRepository,
   InvoiceRepository
 }
-import com.shevchyk.core.application.{AuditService, EventHub, GeocodingService, GeofenceService}
+import com.shevchyk.core.application.{AuditService, AvatarService, EventHub, GeocodingService, GeofenceService}
 import com.shevchyk.core.repository.{
   BlacklistRepository,
   ClientCompanyRepository,
@@ -71,8 +71,8 @@ object OpenApiServer:
    * one list typed at [[ApiEnv]]. All of these layers are provided in `Application`.
    */
   type ApiEnv =
-    JwtService & AuthService & RateLimiter & PersonRepository & FcmService & RideService & ScheduleService &
-      InvoiceService & InvoiceRepository & ClientCompanyRepository & BillingClientCompanyRepository &
+    JwtService & AuthService & RateLimiter & PersonRepository & AvatarService & FcmService & RideService &
+      ScheduleService & InvoiceService & InvoiceRepository & ClientCompanyRepository & BillingClientCompanyRepository &
       CompanyBillingProfileRepository & GdprRepository & RideRepository & ExpenseRepository & NotificationRepository &
       AuditService & SessionRepository & TokenRepository & NotificationPreferenceRepository & BlacklistRepository &
       CompanySettingsRepository & GeofenceRepository & GeofenceService & RidePoolRepository & EventHub &

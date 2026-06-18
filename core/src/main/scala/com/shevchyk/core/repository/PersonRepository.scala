@@ -33,6 +33,23 @@ trait PersonRepository {
    * exists (ON CONFLICT DO NOTHING).
    */
   def upsertDriverRow(personId: PersonId): Task[Unit]
+
+  /**
+   * Return the avatar bytes and MIME type for the given person, or None if no avatar has been uploaded. Avatar bytes
+   * are intentionally kept out of the regular selectColumns to avoid loading megabytes on every list/find query.
+   */
+  def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]
+
+  /**
+   * Store (or replace) the avatar for the given person. Validation (MIME type, size limit) is enforced by AvatarService
+   * before this method is called.
+   */
+  def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]
+
+  /**
+   * Remove the avatar for the given person. Idempotent: safe to call when no avatar exists.
+   */
+  def deleteAvatar(id: PersonId): Task[Unit]
 }
 
 object PersonRepository {
