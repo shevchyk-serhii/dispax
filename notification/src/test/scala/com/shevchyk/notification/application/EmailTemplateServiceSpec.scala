@@ -108,6 +108,29 @@ object EmailTemplateServiceSpec extends ZIOSpecDefault:
           val (subj, _, html) = result
           assertTrue(subj.contains("Payment Reminder")) &&
           assertTrue(html.contains("Payment Reminder"))
+      },
+      // Localization regression: EN reminder with a due date must NOT leak German text.
+      // The substitute() method must NOT insert the German phrase "fällig am" into non-DE
+      // plain bodies, and must NOT inject the German label "Fälligkeitsdatum" into HTML
+      // for non-DE locales. If either assertion fails it means the coder's
+      // EmailTemplateService.substitute() is language-unaware (known deviation #4).
+      test("plain body with dueDate does NOT contain German 'fällig am' phrase") {
+        val due = LocalDate.of(2024, 12, 31)
+        for
+          svc    <- ZIO.service[EmailTemplateService]
+          result <- svc.renderInvoice(makeData("en", isReminder = true, dueDate = Some(due)))
+        yield
+          val (_, plain, _) = result
+          assertTrue(!plain.contains("fällig am"))
+      },
+      test("HTML body with dueDate does NOT contain German 'Fälligkeitsdatum' label") {
+        val due = LocalDate.of(2024, 12, 31)
+        for
+          svc    <- ZIO.service[EmailTemplateService]
+          result <- svc.renderInvoice(makeData("en", isReminder = true, dueDate = Some(due)))
+        yield
+          val (_, _, html) = result
+          assertTrue(!html.contains("Fälligkeitsdatum"))
       }
     ),
     suite("UK reminder")(
@@ -119,6 +142,25 @@ object EmailTemplateServiceSpec extends ZIOSpecDefault:
           val (subj, _, html) = result
           assertTrue(subj.contains("2024/042")) &&
           assertTrue(html.contains("2024/042"))
+      },
+      // Localization regression: UK reminder must also not leak German phrases.
+      test("plain body with dueDate does NOT contain German 'fällig am' phrase") {
+        val due = LocalDate.of(2024, 12, 31)
+        for
+          svc    <- ZIO.service[EmailTemplateService]
+          result <- svc.renderInvoice(makeData("uk", isReminder = true, dueDate = Some(due)))
+        yield
+          val (_, plain, _) = result
+          assertTrue(!plain.contains("fällig am"))
+      },
+      test("HTML body with dueDate does NOT contain German 'Fälligkeitsdatum' label") {
+        val due = LocalDate.of(2024, 12, 31)
+        for
+          svc    <- ZIO.service[EmailTemplateService]
+          result <- svc.renderInvoice(makeData("uk", isReminder = true, dueDate = Some(due)))
+        yield
+          val (_, _, html) = result
+          assertTrue(!html.contains("Fälligkeitsdatum"))
       }
     ),
     suite("Language fallback")(

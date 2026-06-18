@@ -139,6 +139,53 @@ object PostgresClientCompanyRepositorySpec extends ZIOSpecDefault {
           !second,
           found.isEmpty
         )
+      },
+      // T7: preferredLanguage=Some("en") round-trip (Flyway V6 migration covers the new column).
+      test("create and findById round-trip preserves preferredLanguage = Some(\"en\")") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanClientCompanies(xa)
+          repo   = PostgresClientCompanyRepository(xa)
+          cc     = makeClientCompany().copy(preferredLanguage = Some("en"))
+          _     <- repo.create(cc)
+          found <- repo.findById(cc.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.preferredLanguage == Some("en")
+        )
+      },
+      // T8: preferredLanguage=None round-trip — existing rows without the column must map to None.
+      test("create and findById round-trip preserves preferredLanguage = None") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanClientCompanies(xa)
+          repo   = PostgresClientCompanyRepository(xa)
+          cc     = makeClientCompany().copy(preferredLanguage = None)
+          _     <- repo.create(cc)
+          found <- repo.findById(cc.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.preferredLanguage.isEmpty
+        )
+      },
+      // T7 variant: update also persists preferredLanguage correctly.
+      test("update persists preferredLanguage change") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanClientCompanies(xa)
+          repo    = PostgresClientCompanyRepository(xa)
+          cc      = makeClientCompany().copy(preferredLanguage = None)
+          _      <- repo.create(cc)
+          updated = cc.copy(preferredLanguage = Some("uk"))
+          _      <- repo.update(updated)
+          found  <- repo.findById(cc.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.preferredLanguage == Some("uk")
+        )
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"

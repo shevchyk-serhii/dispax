@@ -596,6 +596,51 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           emails(1).isReminder
         )
       },
+      // T10: preferredLanguage = Some("en") → InvoiceEmailData.language == "en"
+      test("sendInvoice uses cc.preferredLanguage when set (T10)") {
+        val enClient = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-0000000000e0"))
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          // Insert a client company whose preferred language is English.
+          _      <-
+            sql"""INSERT INTO client_companies (id, name, taxi_company_id, email, preferred_language)
+                  VALUES (${enClient.value}, 'EN Client GmbH', ${testCompanyId.value}, 'en-client@test.com', 'en')
+                  ON CONFLICT (id) DO NOTHING""".update.run.transact(xa)
+          sent   <- Ref.make(List.empty[InvoiceEmailData])
+          svc     = makeRecordingService(xa, sent)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest(clientId = enClient.value))
+          _      <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir)
+          emails <- sent.get
+        } yield assertTrue(
+          emails.length == 1,
+          emails.head.language == "en"
+        )
+      },
+      // T11: preferredLanguage = None → InvoiceEmailData.language == defaultEmailLanguage ("de")
+      test("sendInvoice falls back to defaultEmailLanguage when cc.preferredLanguage is None (T11)") {
+        val noLangClient = ClientCompanyId(UUID.fromString("00000003-0000-0000-0000-0000000000d0"))
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          // Insert a client company with no preferred language (NULL column).
+          _      <-
+            sql"""INSERT INTO client_companies (id, name, taxi_company_id, email, preferred_language)
+                  VALUES (${noLangClient.value}, 'NoLang Client GmbH', ${testCompanyId.value}, 'nolang-client@test.com', NULL)
+                  ON CONFLICT (id) DO NOTHING""".update.run.transact(xa)
+          sent   <- Ref.make(List.empty[InvoiceEmailData])
+          // Use default "de" language (the InvoiceServiceImpl default constructor param).
+          svc     = makeRecordingService(xa, sent)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest(clientId = noLangClient.value))
+          _      <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir)
+          emails <- sent.get
+        } yield assertTrue(
+          emails.length == 1,
+          emails.head.language == "de"
+        )
+      },
       test("generateRideReceipt produces a PDF for a completed ride") {
         for {
           xa     <- ZIO.service[Transactor[Task]]
