@@ -22,7 +22,7 @@ import com.shevchyk.billing.repository.{
   CompanyBillingProfileRepository,
   InvoiceRepository
 }
-import com.shevchyk.core.application.{AuditService, EventHub, GeocodingService, GeofenceService}
+import com.shevchyk.core.application.{AuditService, AvatarService, EventHub, GeocodingService, GeofenceService}
 import com.shevchyk.core.config.ServerConfig
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.domain.{RidePool, RidePoolId, RidePoolMember, PoolStatus, PoolMemberStatus, Session, SessionId}
@@ -1402,5 +1402,7 @@ object TestApplication extends ZIOAppDefault:
       // Chat + templates
       InMemoryChatMessageRepository.layer,
       ChatService.layer,
-      inMemoryRideTemplateRepositoryLayer
+      inMemoryRideTemplateRepositoryLayer,
+      // Avatar
+      AvatarService.layer
     )
