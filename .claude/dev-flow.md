@@ -13,7 +13,7 @@ dispatcher, driver, or client. Full requirements: `docs/requirements.md`.
 
 ## Main branch
 
-`main`
+`master`
 
 ## Stack
 
