@@ -84,7 +84,8 @@ object MessageTemplatesSpec extends ZIOSpecDefault {
             dueDate = Some(LocalDate.of(2026, 7, 1)),
             isReminder = false,
             pdfAttachment = Array(1, 2, 3),
-            pdfFilename = "invoice-001.pdf"
+            pdfFilename = "invoice-001.pdf",
+            language = "de"
           )
           svc.sendInvoiceEmail(data).as(assertCompletes)
         },
@@ -99,7 +100,8 @@ object MessageTemplatesSpec extends ZIOSpecDefault {
             dueDate = None,
             isReminder = true,
             pdfAttachment = Array(9, 8, 7, 6),
-            pdfFilename = "reminder-002.pdf"
+            pdfFilename = "reminder-002.pdf",
+            language = "de"
           )
           svc.sendInvoiceEmail(data).as(assertCompletes)
         }
