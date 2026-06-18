@@ -103,7 +103,10 @@ class InvoiceService {
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Future<Uint8List> downloadPdf(String id) async {
-    final response = await _apiClient.get('/billing/invoices/$id/pdf');
+    final response = await _apiClient.get(
+      '/billing/invoices/$id/pdf',
+      acceptOverride: 'application/pdf',
+    );
     if (response.statusCode == 200) {
       return response.bodyBytes;
     }
@@ -117,6 +120,7 @@ class InvoiceService {
   }) async {
     final response = await _apiClient.get(
       '/billing/rides/$rideId/receipt?taxRate=${taxRate.toStringAsFixed(0)}',
+      acceptOverride: 'application/pdf',
     );
     if (response.statusCode == 200) {
       return response.bodyBytes;

@@ -60,13 +60,18 @@ class ApiClient {
     reasonPhrase: r.reasonPhrase,
   );
 
-  Future<http.Response> get(String endpoint) async {
+  Future<http.Response> get(String endpoint, {String? acceptOverride}) async {
     try {
       var url = '$_baseUrl$endpoint';
       debugPrint('🌐 GET $endpoint');
 
+      final headers = acceptOverride == null
+          ? privateHeaders
+          : (Map<String, String>.from(privateHeaders)
+            ..['Accept'] = acceptOverride);
+
       final raw = await privateClient
-          .get(Uri.parse(url), headers: privateHeaders)
+          .get(Uri.parse(url), headers: headers)
           .timeout(const Duration(seconds: 15));
       final response = _utf8Response(raw);
 

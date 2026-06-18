@@ -82,6 +82,13 @@ class RideServiceImpl(
     expenseRepository: ExpenseRepository
 ) extends RideService:
 
+  /**
+   * Log the violated rule name and message, then fail with BusinessRuleViolation.
+   */
+  private def failRule(rule: String, msg: String): IO[RideError, Nothing] =
+    ZIO.logWarning(s"assignDriver rejected: rule=$rule msg=$msg") *>
+      ZIO.fail(RideError.BusinessRuleViolation(rule, msg))
+
   def getRideById(rideId: RideId): IO[RideError, Ride] = rideRepository
     .findById(rideId)
     .mapDatabaseError
@@ -424,27 +431,18 @@ class RideServiceImpl(
       driverOpt <- personRepository.findById(driverId).mapDatabaseError
       driver    <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(driverId))
 
+      _       <- failRule("driver_role", "Person is not a driver").when(!driver.canDrive).unit
       _       <-
-        ZIO
-          .fail(RideError.BusinessRuleViolation("driver_role", "Person is not a driver"))
-          .when(!driver.canDrive)
-          .unit
-      _       <-
-        ZIO
-          .fail(RideError.BusinessRuleViolation("company_isolation", "Driver belongs to a different company"))
+        failRule("company_isolation", "Driver belongs to a different company")
           .when(!driver.companyId.contains(ride.companyId))
           .unit
 
       // Check blacklist
       blocked <- blacklistRepository.isBlacklisted(ride.clientId, driverId).mapDatabaseError
-      _       <-
-        ZIO
-          .fail(RideError.BusinessRuleViolation("blacklist", "This driver is blacklisted for the ride's client"))
-          .when(blocked)
-          .unit
+      _       <- failRule("blacklist", "This driver is blacklisted for the ride's client").when(blocked).unit
 
       // Check scheduling conflicts
-      _       <- checkScheduleConflict(driverId, ride)
+      _ <- checkScheduleConflict(driverId, ride)
 
       // Check VIP and preferred driver
       clientOpt        <- personRepository.findById(ride.clientId).mapDatabaseError
@@ -742,23 +740,40 @@ class RideServiceImpl(
         conflict match
           case Some(conflicting) =>
             val conflictTime = conflicting.scheduledTime.getOrElse(conflicting.requestTime)
-            ZIO.fail(
-              RideError.BusinessRuleViolation(
-                "schedule_conflict",
-                s"Driver already has ride ${conflicting.id.value} " +
-                  s"at ${conflictTime} — insufficient buffer (min ${MinBufferMinutes} min)"
-              )
-            )
+            val msg          =
+              s"Driver already has ride ${conflicting.id.value} " +
+                s"at ${conflictTime} — time windows overlap (buffer ${MinBufferMinutes} min)"
+            ZIO.logWarning(s"assignDriver rejected: rule=schedule_conflict msg=$msg") *>
+              ZIO.fail(RideError.BusinessRuleViolation("schedule_conflict", msg))
           case None              => ZIO.unit
     } yield ()
 
   /**
-   * Two rides overlap when the gap between their scheduled times is less than the buffer.
+   * Two rides overlap when their time windows intersect.
+   *
+   * Each ride occupies the window [start, start + defaultDuration + buffer], where `buffer` accounts for travel time to
+   * the next pickup location. A conflict exists iff the two windows intersect:
+   *   - existingEnd = existingStart + duration + buffer
+   *   - candidateEnd = candidateStart + duration + buffer
+   *   - overlap iff candidateStart < existingEnd AND existingStart < candidateEnd
+   *
+   * Examples (duration=60 min, buffer=30 min):
+   *   - existing=10:00, candidate=11:31 (91 min gap): existingEnd=11:30, candidateEnd=13:01 → 11:31 < 11:30 = false →
+   *     NO overlap (back-to-back rides are allowed)
+   *   - existing=10:00, candidate=11:29 (89 min gap): existingEnd=11:30, candidateEnd=13:01 → 11:29 < 11:30 AND 10:00 <
+   *     13:01 → OVERLAP (genuine conflict)
+   *   - existing=10:00, candidate=10:45 (45 min gap): overlap → conflict
    */
-  private def ridesOverlap(t1: Instant, t2: Instant): Boolean =
-    val DefaultRideDurationMinutes = 60L
-    val gap                        = Math.abs(Duration.between(t1, t2).toMinutes)
-    gap < (DefaultRideDurationMinutes + MinBufferMinutes)
+  private def ridesOverlap(
+      candidateTime: Instant,
+      existingTime: Instant,
+      existingDurationMinutes: Long = 60L
+  ): Boolean =
+    val DefaultRideDurationMinutes = existingDurationMinutes
+    val existingEnd                = existingTime.plusSeconds((DefaultRideDurationMinutes + MinBufferMinutes) * 60)
+    val candidateEnd               = candidateTime.plusSeconds((DefaultRideDurationMinutes + MinBufferMinutes) * 60)
+    // Standard interval overlap: [existingStart, existingEnd) overlaps [candidateStart, candidateEnd) iff:
+    candidateTime.isBefore(existingEnd) && existingTime.isBefore(candidateEnd)
 
 object RideService:
 

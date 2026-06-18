@@ -11,6 +11,7 @@ import java.time.LocalDate
 import java.util.UUID
 import sttp.model.{HeaderNames, MediaType, StatusCode}
 import sttp.tapir.Schema
+import sttp.tapir.{CodecFormat, Codec, RawBodyType, EndpointIO}
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
@@ -27,6 +28,20 @@ object InvoiceApi:
 
   private val storageDir  = sys.env.getOrElse("PDF_STORAGE_DIR", "/tmp/invoices")
   private val companyName = sys.env.getOrElse("COMPANY_NAME", "Dispax GmbH")
+
+  // -- application/pdf body (announces pdf media-type for content negotiation) -----
+  // `byteArrayBody` declares `application/octet-stream`; Tapir's NotAcceptableInterceptor
+  // rejects `Accept: application/pdf` against octet-stream.  We need a body whose codec
+  // declares `application/pdf` so that (a) the negotiation passes and (b) the
+  // Content-Type response header is automatically set to `application/pdf`.
+  private object PdfCodecFormat extends CodecFormat:
+    override val mediaType: MediaType = MediaType.ApplicationPdf
+
+  private val pdfBody: EndpointIO.Body[Array[Byte], Array[Byte]] = EndpointIO.Body(
+    RawBodyType.ByteArrayBody,
+    Codec.id[Array[Byte], PdfCodecFormat.type](PdfCodecFormat, sttp.tapir.Schema.binary),
+    EndpointIO.Info.empty
+  )
 
   // -- Environment ---------------------------------------------------------
   type BillingEnv = InvoiceService & JwtService
@@ -93,16 +108,14 @@ object InvoiceApi:
   val rideReceiptEndpoint = secureEndpoint.get
     .in("api" / "billing" / "rides" / path[String]("rideId") / "receipt")
     .in(query[Option[String]]("taxRate"))
-    .out(byteArrayBody)
-    .out(header(sttp.model.Header.contentType(MediaType.ApplicationPdf)))
+    .out(pdfBody) // declares application/pdf for content-negotiation; Content-Type is set by the codec format
     .out(header[String](HeaderNames.ContentDisposition))
     .tag(invoiceTag)
     .summary("Download a single-ride receipt (Quittung) as a PDF")
 
   val invoicePdfEndpoint = secureEndpoint.get
     .in("api" / "billing" / "invoices" / path[String]("id") / "pdf")
-    .out(byteArrayBody)
-    .out(header(sttp.model.Header.contentType(MediaType.ApplicationPdf)))
+    .out(pdfBody) // declares application/pdf for content-negotiation; Content-Type is set by the codec format
     .out(header[String](HeaderNames.ContentDisposition))
     .tag(invoiceTag)
     .summary("Download an invoice as a PDF")

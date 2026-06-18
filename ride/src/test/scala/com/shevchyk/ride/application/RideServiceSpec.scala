@@ -1221,7 +1221,9 @@ object RideServiceSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(standardLayers),
-        test("assignDriver succeeds when rides are far enough apart") {
+        test("assignDriver succeeds when rides are far enough apart (back-to-back, just past the window)") {
+          // Each ride occupies [start, start + 60min duration + 30min buffer) = a 90-min window.
+          // A 91-min gap means the windows no longer touch, so back-to-back rides are allowed.
           val pickupAt = Instant.now().plusSeconds(7200)
           for {
             service  <- ZIO.service[RideService]
@@ -1241,11 +1243,45 @@ object RideServiceSpec extends ZIOSpecDefault {
                             companyId = testCompanyId,
                             pickupLocation = Location("C"),
                             dropoffLocation = Location("D"),
-                            scheduledTime = Some(pickupAt.plusSeconds(5400)) // 90 min later
+                            scheduledTime = Some(pickupAt.plusSeconds(91 * 60)) // 91 min later — just past the window
                           )
                         )
             assigned <- service.assignDriver(ride2.id, testDriverId)
           } yield assertTrue(assigned.status == RideStatus.Assigned)
+        }.provide(standardLayers),
+        test("assignDriver fails when windows genuinely overlap (45 min apart)") {
+          // existingEnd = start + 90min; candidateStart = start + 45min < existingEnd → windows overlap → conflict.
+          val pickupAt = Instant.now().plusSeconds(7200)
+          for {
+            service <- ZIO.service[RideService]
+            ride1   <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B"),
+                           scheduledTime = Some(pickupAt)
+                         )
+                       )
+            _       <- service.assignDriver(ride1.id, testDriverId)
+            ride2   <- service.createRide(
+                         CreateRideRequest(
+                           clientId = vipClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("C"),
+                           dropoffLocation = Location("D"),
+                           scheduledTime = Some(pickupAt.plusSeconds(45 * 60)) // 45 min later — inside the window
+                         )
+                       )
+            result  <- service.assignDriver(ride2.id, testDriverId).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation("schedule_conflict", _) => true
+                case _                                                       => false
+              }
+            case _                   => false
+          })
         }.provide(standardLayers),
         test("reassignDriver checks conflicts for new driver") {
           val pickupAt = Instant.now().plusSeconds(7200)
