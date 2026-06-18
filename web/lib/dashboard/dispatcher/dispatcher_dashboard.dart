@@ -53,13 +53,17 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   // Billing lives in the extended screen list (index 15) but also gets a
   // dedicated bottom-nav tab so dispatchers can reach invoicing in one tap.
   static const int _billingTabIndex = 15;
-  // Bottom-nav slots after the 5 primary tabs: Billing, then the More menu.
+  // Bottom-nav item positions (0-based):
+  //   0 Home | 1 Schedule | 2 Analytics/MyRides | 3 New Ride | 4 More | 5 Billing | [6 My Schedule]
+  // NOTE: More is at position 4 (= _primaryTabCount - 1) so that screen indices
+  // 0..4 map 1:1 to nav positions 0..4 and the _navIndexForScreen fallback
+  // (screenIndex < _primaryTabCount) routes screen 4 → nav 4 (More).
+  static const int _moreNavIndex = 4;
   static const int _billingNavIndex = 5;
-  static const int _moreNavIndex = 6;
   // "My Schedule" is a dispatcher-who-also-drives extra: it gets its own
-  // bottom-nav slot (appended after More) and its own extended-screen index,
+  // bottom-nav slot (appended after Billing) and its own extended-screen index,
   // both present only when canDrive.
-  static const int _myScheduleNavIndex = 7;
+  static const int _myScheduleNavIndex = 6;
   static const int _myScheduleScreenIndex = 31;
 
   @override
@@ -273,14 +277,15 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _navIndexForScreen(_mobileTabIndex),
         onTap: (navIndex) async {
-          // Map the tapped nav item back to a screen index: the first 5 are
-          // primary tabs (1:1), Billing jumps to its extended-screen index, and
-          // More opens the menu grid (screen index 4).
+          // Map the tapped nav item back to a screen index.
+          // Nav positions: 0 Home | 1 Schedule | 2 Analytics(or MyRides if canDrive)
+          //                | 3 New Ride | 4 More | 5 Billing | [6 My Schedule]
           final screenIndex = switch (navIndex) {
+            2 when canDrive => _driverMyRidesScreenIndex, // My Rides tab
             _billingNavIndex => _billingTabIndex,
-            _moreNavIndex => 4,
+            _moreNavIndex => 4, // More menu grid lives at screen index 4
             _myScheduleNavIndex => _myScheduleScreenIndex,
-            _ => navIndex,
+            _ => navIndex, // 0,1,2(!canDrive),3 map 1:1 to screen indices
           };
           if (_mobileTabIndex == _createRideTabIndex &&
               screenIndex != _createRideTabIndex) {
@@ -292,37 +297,50 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.accent,
         items: [
+          // pos 0
           const BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
             label: 'Home',
           ),
+          // pos 1
           const BottomNavigationBarItem(
             icon: Icon(Icons.calendar_month_outlined),
             activeIcon: Icon(Icons.calendar_month),
             label: 'Schedule',
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_outlined),
-            activeIcon: Icon(Icons.bar_chart),
-            label: 'Analytics',
-          ),
+          // pos 2: Analytics for pure dispatcher; My Rides when canDrive.
+          if (canDrive)
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.directions_car_outlined),
+              activeIcon: Icon(Icons.directions_car),
+              label: 'My Rides',
+            )
+          else
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_outlined),
+              activeIcon: Icon(Icons.bar_chart),
+              label: 'Analytics',
+            ),
+          // pos 3
           const BottomNavigationBarItem(
             icon: Icon(Icons.add_circle_outline),
             activeIcon: Icon(Icons.add_circle),
             label: 'New Ride',
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.request_quote_outlined),
-            activeIcon: Icon(Icons.request_quote),
-            label: 'Billing',
-          ),
+          // pos 4: More menu grid (screen index 4 — satisfies 1:1 primary mapping).
           const BottomNavigationBarItem(
             icon: Icon(Icons.grid_view_outlined),
             activeIcon: Icon(Icons.grid_view),
             label: 'More',
           ),
-          // Only when this dispatcher also drives: their own driver schedule.
+          // pos 5: Billing (screen index 15).
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.request_quote_outlined),
+            activeIcon: Icon(Icons.request_quote),
+            label: 'Billing',
+          ),
+          // pos 6: Only when this dispatcher also drives — their own driver schedule.
           if (canDrive)
             const BottomNavigationBarItem(
               icon: Icon(Icons.event_note_outlined),
@@ -334,10 +352,14 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     );
   }
 
-  // Map the active screen index to the highlighted bottom-nav item: primary
-  // tabs map 1:1, Billing has its own item, and any other extended screen
-  // falls back to the More tab.
+  // Map the active screen index to the highlighted bottom-nav item.
+  // Nav positions: 0 Home | 1 Schedule | 2 Analytics/MyRides | 3 New Ride
+  //               | 4 More | 5 Billing | [6 My Schedule]
+  // Screen indices 0..4 map 1:1 to nav positions 0..4 (primary tabs).
+  // Screen 30 (My Rides) highlights nav 2 when canDrive is true.
   int _navIndexForScreen(int screenIndex) {
+    final canDrive = context.read<AuthBloc>().state.user?.canDrive ?? false;
+    if (screenIndex == _driverMyRidesScreenIndex && canDrive) return 2;
     if (screenIndex < _primaryTabCount) return screenIndex;
     if (screenIndex == _billingTabIndex) return _billingNavIndex;
     if (screenIndex == _myScheduleScreenIndex) return _myScheduleNavIndex;
@@ -476,7 +498,15 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         28,
         Theme.of(context).colorScheme.primary,
       ),
-      // Driver screens — only visible when this dispatcher also has the Driver role
+      // Driver screens — only visible when this dispatcher also has the Driver role.
+      // Analytics is removed from nav pos 2 when canDrive, so surface it here.
+      if (canDrive)
+        _MoreMenuItem(
+          Icons.bar_chart,
+          'Analytics',
+          2,
+          Theme.of(context).colorScheme.primary,
+        ),
       if (canDrive)
         _MoreMenuItem(
           Icons.map,
