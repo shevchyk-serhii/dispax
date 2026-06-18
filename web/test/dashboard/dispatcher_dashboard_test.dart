@@ -93,36 +93,28 @@ void main() {
     when(() => authBloc.apiClient).thenReturn(apiClient);
 
     // Stub every GET request to return an empty list — keeps panels happy.
-    when(() => apiClient.get(any())).thenAnswer(
-      (_) async => http.Response('[]', 200),
-    );
+    when(
+      () => apiClient.get(any()),
+    ).thenAnswer((_) async => http.Response('[]', 200));
 
     // RideBloc: idle loaded state, silently accept events.
     when(() => rideBloc.state).thenReturn(RideState.loaded(const []));
-    when(
-      () => rideBloc.add(any()),
-    ).thenAnswer((_) {});
+    when(() => rideBloc.add(any())).thenAnswer((_) {});
 
     // ScheduleBloc: idle loaded state, silently accept events.
     when(() => scheduleBloc.state).thenReturn(ScheduleState.loaded(const []));
-    when(
-      () => scheduleBloc.add(any()),
-    ).thenAnswer((_) {});
+    when(() => scheduleBloc.add(any())).thenAnswer((_) {});
 
     // CreateRideFormBloc: default unmodified state.
-    when(() => createRideFormBloc.state).thenReturn(
-      CreateRideFormState.initial(),
-    );
     when(
-      () => createRideFormBloc.add(any()),
-    ).thenAnswer((_) {});
+      () => createRideFormBloc.state,
+    ).thenReturn(CreateRideFormState.initial());
+    when(() => createRideFormBloc.add(any())).thenAnswer((_) {});
   });
 
   /// Builds a [MaterialApp] with all required BLoCs for [DispatcherDashboard].
   Widget buildApp(Person user) {
-    when(
-      () => authBloc.state,
-    ).thenReturn(AuthState.authenticated(user));
+    when(() => authBloc.state).thenReturn(AuthState.authenticated(user));
 
     return MaterialApp(
       home: MultiBlocProvider(
@@ -179,4 +171,202 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Billing'), findsOneWidget);
     },
   );
+
+  // ===========================================================================
+  // Mobile bottom-nav layout tests (window < 800 px → mobile view)
+  // ===========================================================================
+  //
+  // NOTE on tap-navigation tests: the IndexedStack builds all children eagerly.
+  // TodayRidesScreen (screen 30), DriverMapScreen (screen 29), and
+  // CalendarScheduleScreen (screen 31) depend on WebSocketService,
+  // LocationService, and Mapbox platform channels that are not available in the
+  // headless test environment. These screens throw on initState or during their
+  // first build. Tap-navigation assertions that require switching to those
+  // screens are therefore skipped; the tests below confirm only the bottom-nav
+  // label composition and the More-menu grid contents which are safe to render.
+
+  // ---------------------------------------------------------------------------
+  // Mobile — canDrive == true: nav items and More-menu contents
+  // ---------------------------------------------------------------------------
+  testWidgets(
+    'mobile nav (canDrive=true): has "My Rides" and "My Schedule" tabs, '
+    'no "Analytics" tab; More-menu has "Analytics" grid entry',
+    (tester) async {
+      tester.view.physicalSize = const Size(420, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(buildApp(_dispatcherWithDrive()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // The mobile bottom-nav must contain 'My Rides' at position 2.
+      expect(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('My Rides'),
+        ),
+        findsOneWidget,
+        reason: 'canDrive=true must show "My Rides" in bottom nav',
+      );
+
+      // 'My Schedule' tab must be present (pos 6).
+      expect(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('My Schedule'),
+        ),
+        findsOneWidget,
+        reason: 'canDrive=true must show "My Schedule" in bottom nav',
+      );
+
+      // 'Analytics' must NOT be in the bottom nav (it moved to More-menu).
+      expect(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('Analytics'),
+        ),
+        findsNothing,
+        reason: 'canDrive=true must hide "Analytics" from bottom nav',
+      );
+
+      // Navigate to the More menu (screen index 4) by tapping pos 4 'More'.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('More'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // The More-menu grid is lazy (GridView.builder): only items visible in the
+      // viewport are built. 'Analytics' is near the end of a 26-item grid, so
+      // we scroll the GridView until the Analytics label becomes visible.
+      await tester.scrollUntilVisible(
+        find.text('Analytics'),
+        200.0,
+        scrollable: find.byType(Scrollable).last,
+      );
+
+      // After scrolling, the 'Analytics' grid entry must be present.
+      expect(
+        find.text('Analytics'),
+        findsOneWidget,
+        reason: 'More-menu must have "Analytics" grid entry when canDrive=true',
+      );
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // Mobile — canDrive == false: nav items
+  // ---------------------------------------------------------------------------
+  testWidgets(
+    'mobile nav (canDrive=false): has "Analytics" tab, no "My Rides" or '
+    '"My Schedule" tabs',
+    (tester) async {
+      tester.view.physicalSize = const Size(420, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(buildApp(_dispatcherOnly()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // 'Analytics' must be in the bottom nav at position 2.
+      expect(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('Analytics'),
+        ),
+        findsOneWidget,
+        reason: 'canDrive=false must show "Analytics" in bottom nav',
+      );
+
+      // 'My Rides' must not appear in nav.
+      expect(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('My Rides'),
+        ),
+        findsNothing,
+        reason: 'canDrive=false must not show "My Rides" in bottom nav',
+      );
+
+      // 'My Schedule' must not appear in nav.
+      expect(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('My Schedule'),
+        ),
+        findsNothing,
+        reason: 'canDrive=false must not show "My Schedule" in bottom nav',
+      );
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // Mobile — nav index consistency: tapping 'More' (pos 4) opens More screen,
+  // not Billing. Tapping 'Billing' (pos 5) changes the selected nav item
+  // to Billing (regression guard for the swapped-positions bug).
+  // ---------------------------------------------------------------------------
+  testWidgets(
+    'mobile nav: "More" is at pos 4 and "Billing" is at pos 5 (index regression)',
+    (tester) async {
+      tester.view.physicalSize = const Size(420, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(buildApp(_dispatcherOnly()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Collect BottomNavigationBarItem labels in order.
+      final nav = tester.widget<BottomNavigationBar>(
+        find.byType(BottomNavigationBar),
+      );
+      final labels = nav.items.map((item) => item.label ?? '').toList();
+
+      // Verify the corrected order: pos 4 = More, pos 5 = Billing.
+      expect(
+        labels[4],
+        equals('More'),
+        reason: '"More" must be at nav position 4',
+      );
+      expect(
+        labels[5],
+        equals('Billing'),
+        reason: '"Billing" must be at nav position 5',
+      );
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // Mobile — canDrive=true: nav index order includes My Schedule at pos 6.
+  // ---------------------------------------------------------------------------
+  testWidgets('mobile nav (canDrive=true): nav positions are '
+      '0=Home 1=Schedule 2=MyRides 3=NewRide 4=More 5=Billing 6=MySchedule', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(420, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(buildApp(_dispatcherWithDrive()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final nav = tester.widget<BottomNavigationBar>(
+      find.byType(BottomNavigationBar),
+    );
+    final labels = nav.items.map((item) => item.label ?? '').toList();
+
+    expect(labels[0], equals('Home'));
+    expect(labels[1], equals('Schedule'));
+    expect(labels[2], equals('My Rides'));
+    expect(labels[3], equals('New Ride'));
+    expect(labels[4], equals('More'));
+    expect(labels[5], equals('Billing'));
+    expect(labels[6], equals('My Schedule'));
+  });
 }
