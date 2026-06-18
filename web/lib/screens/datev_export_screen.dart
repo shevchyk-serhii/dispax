@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../modules/billing/csv_download_stub.dart'
+    if (dart.library.html) '../modules/billing/csv_download_web.dart';
 
 class DatevExportScreen extends StatefulWidget {
   const DatevExportScreen({super.key});
@@ -16,6 +19,7 @@ class DatevExportScreen extends StatefulWidget {
 class _DatevExportScreenState extends State<DatevExportScreen> {
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   bool _isLoading = false;
+  bool _isDownloading = false;
   String? _error;
   Map<String, dynamic>? _data;
 
@@ -121,6 +125,41 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
     buffer.writeln('=== Zusammenfassung ===');
     buffer.writeln(_summaryCsv);
     _copyToClipboard(buffer.toString(), 'Alle DATEV-Daten');
+  }
+
+  Future<void> _downloadExtf() async {
+    setState(() => _isDownloading = true);
+    try {
+      final apiClient = context.read<AuthBloc>().apiClient;
+      final response = await apiClient.get(
+        '/export/datev/extf?month=$_monthParam',
+      );
+      if (response.statusCode == 200) {
+        final bytes = response.bodyBytes;
+        final filename = 'EXTF_Buchungsstapel_$_monthParam.csv';
+        triggerCsvDownload(Uint8List.fromList(bytes), filename);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Download fehlgeschlagen: ${response.statusCode}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
+    }
   }
 
   // --- Build ---
@@ -515,13 +554,36 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _copyAll,
-                icon: const Icon(Icons.copy_all),
-                label: const Text('Alles kopieren'),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _copyAll,
+                    icon: const Icon(Icons.copy_all),
+                    label: const Text('Alles kopieren'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _isDownloading ? null : _downloadExtf,
+                    icon: _isDownloading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.download),
+                    label: const Text('Download .csv (EXTF)'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.dispatcherColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             Text(

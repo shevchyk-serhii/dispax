@@ -12,7 +12,10 @@ final case class CompanySettings(
     cancellationFeeDefault: BigDecimal = BigDecimal(0),
     noShowFee: BigDecimal = BigDecimal(0),
     autoAssignEnabled: Boolean = false,
-    updatedAt: Instant = Instant.now()
+    updatedAt: Instant = Instant.now(),
+    datevBeraternummer: Option[String] = None,
+    datevMandantennummer: Option[String] = None,
+    datevSachkontenlaenge: Option[Int] = None
 ) derives JsonCodec
 
 final case class UpdateCompanySettingsRequest(
@@ -22,7 +25,10 @@ final case class UpdateCompanySettingsRequest(
     defaultCurrency: Option[String] = None,
     cancellationFeeDefault: Option[BigDecimal] = None,
     noShowFee: Option[BigDecimal] = None,
-    autoAssignEnabled: Option[Boolean] = None
+    autoAssignEnabled: Option[Boolean] = None,
+    datevBeraternummer: Option[String] = None,
+    datevMandantennummer: Option[String] = None,
+    datevSachkontenlaenge: Option[Int] = None
 ) derives JsonCodec:
 
   /**
@@ -36,5 +42,8 @@ final case class UpdateCompanySettingsRequest(
     cancellationFeeDefault = cancellationFeeDefault.getOrElse(current.cancellationFeeDefault),
     noShowFee = noShowFee.getOrElse(current.noShowFee),
     autoAssignEnabled = autoAssignEnabled.getOrElse(current.autoAssignEnabled),
+    datevBeraternummer = datevBeraternummer.orElse(current.datevBeraternummer),
+    datevMandantennummer = datevMandantennummer.orElse(current.datevMandantennummer),
+    datevSachkontenlaenge = datevSachkontenlaenge.orElse(current.datevSachkontenlaenge),
     updatedAt = Instant.now()
   )

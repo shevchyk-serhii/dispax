@@ -29,6 +29,11 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
   final _airportSurchargeController = TextEditingController();
   final _nightSurchargeController = TextEditingController();
 
+  // DATEV integration fields
+  final _datevBeraternummerController = TextEditingController();
+  final _datevMandantennummerController = TextEditingController();
+  final _datevSachkontenlaengeController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +50,9 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     _pricePerKmController.dispose();
     _airportSurchargeController.dispose();
     _nightSurchargeController.dispose();
+    _datevBeraternummerController.dispose();
+    _datevMandantennummerController.dispose();
+    _datevSachkontenlaengeController.dispose();
     super.dispose();
   }
 
@@ -78,6 +86,12 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
             minute: settings['workEndMinute'] ?? 0,
           );
         }
+        _datevBeraternummerController.text =
+            settings['datevBeraternummer'] as String? ?? '';
+        _datevMandantennummerController.text =
+            settings['datevMandantennummer'] as String? ?? '';
+        _datevSachkontenlaengeController.text =
+            (settings['datevSachkontenlaenge'] as int?)?.toString() ?? '';
       }
 
       if (tariffResponse.statusCode == 200) {
@@ -104,7 +118,15 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
 
-      await apiClient.put('/company/settings', {
+      final datevBeraternummer = _datevBeraternummerController.text.trim();
+      final datevMandantennummer = _datevMandantennummerController.text.trim();
+      final datevSachkontenlaengeRaw = _datevSachkontenlaengeController.text
+          .trim();
+      final datevSachkontenlaenge = datevSachkontenlaengeRaw.isNotEmpty
+          ? int.tryParse(datevSachkontenlaengeRaw)
+          : null;
+
+      final settingsPayload = <String, dynamic>{
         'commissionRate': double.tryParse(_commissionController.text) ?? 0,
         'defaultCurrency': _defaultCurrencyController.text,
         'cancellationFee':
@@ -114,7 +136,18 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
         'workStartMinute': _workStart.minute,
         'workEndHour': _workEnd.hour,
         'workEndMinute': _workEnd.minute,
-      });
+      };
+      if (datevBeraternummer.isNotEmpty) {
+        settingsPayload['datevBeraternummer'] = datevBeraternummer;
+      }
+      if (datevMandantennummer.isNotEmpty) {
+        settingsPayload['datevMandantennummer'] = datevMandantennummer;
+      }
+      if (datevSachkontenlaenge != null) {
+        settingsPayload['datevSachkontenlaenge'] = datevSachkontenlaenge;
+      }
+
+      await apiClient.put('/company/settings', settingsPayload);
 
       await apiClient.put('/company/tariff', {
         'basePrice': double.tryParse(_basePriceController.text) ?? 0,
@@ -278,6 +311,34 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
         _buildTextField(
           _nightSurchargeController,
           'Night Surcharge (\u20AC)',
+          TextInputType.number,
+        ),
+        const SizedBox(height: 24),
+        _buildSectionTitle('DATEV Integration'),
+        const SizedBox(height: 4),
+        Text(
+          'Beraternummer und Mandantennummer werden im EXTF-Buchungsstapel-Header verwendet.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildTextField(
+          _datevBeraternummerController,
+          'Beraternummer (max. 7 Stellen)',
+          TextInputType.number,
+        ),
+        const SizedBox(height: 12),
+        _buildTextField(
+          _datevMandantennummerController,
+          'Mandantennummer (max. 5 Stellen)',
+          TextInputType.number,
+        ),
+        const SizedBox(height: 12),
+        _buildTextField(
+          _datevSachkontenlaengeController,
+          'Sachkontenlänge (Standard: 4)',
           TextInputType.number,
         ),
         const SizedBox(height: 24),

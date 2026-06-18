@@ -93,6 +93,9 @@ object CompanySettingsApi:
                        cancellationFeeDefault = updateReq.cancellationFeeDefault.getOrElse(current.cancellationFeeDefault),
                        noShowFee = updateReq.noShowFee.getOrElse(current.noShowFee),
                        autoAssignEnabled = updateReq.autoAssignEnabled.getOrElse(current.autoAssignEnabled),
+                       datevBeraternummer = updateReq.datevBeraternummer.orElse(current.datevBeraternummer),
+                       datevMandantennummer = updateReq.datevMandantennummer.orElse(current.datevMandantennummer),
+                       datevSachkontenlaenge = updateReq.datevSachkontenlaenge.orElse(current.datevSachkontenlaenge),
                        updatedAt = Instant.now()
                      )
         saved     <- repo.upsert(updated).mapError(internal)
