@@ -70,6 +70,6 @@ class WebSocketEvent {
   // EtaAtRisk event accessors
   String? get etaRiskDriverId => data['driverId'] as String?;
   int? get etaMinutes => (data['etaMinutes'] as num?)?.toInt();
-  int? get pickupInMinutes => (data['pickupInMinutes'] as num?)?.toInt();
+  int? get pickupInMinutes => (data['minutesUntilPickup'] as num?)?.toInt();
   int? get slackMinutes => (data['slackMinutes'] as num?)?.toInt();
 }

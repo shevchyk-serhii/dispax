@@ -6,10 +6,9 @@
 //   {"EtaAtRisk": {"rideId":..., "driverId":..., "etaMinutes":...,
 //                  "minutesUntilPickup":..., "slackMinutes":..., ...}}
 //
-// NOTE: the Scala case-class field is `minutesUntilPickup`, **not**
-// `pickupInMinutes`.  The Flutter getter `pickupInMinutes` therefore reads the
-// wrong key and will always return null against a real server payload.
-// This test suite documents that regression explicitly.
+// The Scala case-class field is `minutesUntilPickup`. The Flutter getter
+// `pickupInMinutes` reads `data['minutesUntilPickup']` to match this wire
+// field name.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dispax/modules/core/models/websocket_event.dart';
@@ -111,9 +110,7 @@ void main() {
     // to `pickupInMinutes`).
     // ------------------------------------------------------------------
     test(
-      'pickupInMinutes reads minutesUntilPickup from real server payload — '
-      'FAILS because getter uses wrong key "pickupInMinutes" vs '
-      'server field "minutesUntilPickup"',
+      'pickupInMinutes reads minutesUntilPickup from real server payload',
       () {
         // The raw data map has key 'minutesUntilPickup' (Scala field name).
         expect(
@@ -124,18 +121,15 @@ void main() {
         expect(
           event.data.containsKey('pickupInMinutes'),
           isFalse,
-          reason:
-              'server does NOT send pickupInMinutes — the Flutter getter key is wrong',
+          reason: 'server does NOT send pickupInMinutes',
         );
-        // This will return null because the getter reads the wrong key.
-        // Once the production bug is fixed (getter reads 'minutesUntilPickup'),
-        // this assertion should become: expect(event.pickupInMinutes, equals(7))
+        // Getter now correctly reads data['minutesUntilPickup'].
         expect(
           event.pickupInMinutes,
-          isNull,
+          equals(7),
           reason:
-              'PRODUCTION BUG: pickupInMinutes getter reads data["pickupInMinutes"] '
-              'but the server sends "minutesUntilPickup"; fix the getter key',
+              'pickupInMinutes getter must read data["minutesUntilPickup"] '
+              'to match the Scala EtaAtRisk wire field name',
         );
       },
     );
