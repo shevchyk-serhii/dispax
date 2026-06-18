@@ -10,26 +10,27 @@ import java.util.UUID
 
 final class PostgresClientCompanyRepository(xa: Transactor[Task]) extends ClientCompanyRepository:
 
-  private val selectColumns = fr"id, name, taxi_company_id, email, phone, address"
+  private val selectColumns = fr"id, name, taxi_company_id, email, phone, address, preferred_language"
 
   implicit val clientCompanyRead: Read[ClientCompany] =
-    Read[(UUID, String, UUID, Option[String], Option[String], Option[String])].map {
-      case (id, name, taxiCompanyId, email, phone, address) =>
+    Read[(UUID, String, UUID, Option[String], Option[String], Option[String], Option[String])].map {
+      case (id, name, taxiCompanyId, email, phone, address, preferredLanguage) =>
         ClientCompany(
           id = ClientCompanyId(id),
           name = name,
           taxiCompanyId = CompanyId(taxiCompanyId),
           email = email,
           phone = phone,
-          address = address
+          address = address,
+          preferredLanguage = preferredLanguage
         )
     }
 
   override def create(company: ClientCompany): Task[ClientCompany] =
     sql"""
-      INSERT INTO client_companies (id, name, taxi_company_id, email, phone, address)
+      INSERT INTO client_companies (id, name, taxi_company_id, email, phone, address, preferred_language)
       VALUES (${company.id.value}, ${company.name}, ${company.taxiCompanyId.value},
-              ${company.email}, ${company.phone}, ${company.address})
+              ${company.email}, ${company.phone}, ${company.address}, ${company.preferredLanguage})
     """.update.run
       .transact(xa)
       .as(company)
@@ -53,6 +54,7 @@ final class PostgresClientCompanyRepository(xa: Transactor[Task]) extends Client
           email = ${company.email},
           phone = ${company.phone},
           address = ${company.address},
+          preferred_language = ${company.preferredLanguage},
           updated_at = NOW()
       WHERE id = ${company.id.value} AND taxi_company_id = ${company.taxiCompanyId.value}
     """.update.run

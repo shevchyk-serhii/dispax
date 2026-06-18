@@ -28,7 +28,8 @@ final case class InvoiceEmailData(
     dueDate: Option[java.time.LocalDate],
     isReminder: Boolean,
     pdfAttachment: Array[Byte],
-    pdfFilename: String
+    pdfFilename: String,
+    language: String // resolved language code (e.g. "de", "en", "uk"); already a fallback-applied value
 )
 
 /**

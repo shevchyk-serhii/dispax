@@ -217,12 +217,14 @@ final case class ClientCompany(
     taxiCompanyId: CompanyId,
     email: Option[String] = None,
     phone: Option[String] = None,
-    address: Option[String] = None
+    address: Option[String] = None,
+    preferredLanguage: Option[String] = None
 ) derives JsonCodec
 
 final case class CreateClientCompanyRequest(
     name: String,
     email: Option[String] = None,
     phone: Option[String] = None,
-    address: Option[String] = None
+    address: Option[String] = None,
+    preferredLanguage: Option[String] = None
 ) derives JsonCodec

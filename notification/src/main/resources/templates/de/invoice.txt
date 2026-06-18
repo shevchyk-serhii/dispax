@@ -1,0 +1,10 @@
+Ihre Rechnung {{invoiceNumber}} von Dispax
+
+Sehr geehrte Damen und Herren,
+
+anbei erhalten Sie Ihre Rechnung {{invoiceNumber}} über {{totalAmount}} {{currency}}.
+
+Den Rechnungsbeleg finden Sie im Anhang dieser E-Mail.
+
+Mit freundlichen Grüßen
+Ihr Dispax-Team

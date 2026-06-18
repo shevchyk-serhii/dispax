@@ -426,74 +426,93 @@ class _BillingScreenState extends State<BillingScreen>
     final emailCtrl = TextEditingController(text: existing?.email ?? '');
     final phoneCtrl = TextEditingController(text: existing?.phone ?? '');
     final addressCtrl = TextEditingController(text: existing?.address ?? '');
+    String? selectedLanguage = existing?.preferredLanguage;
     final messenger = ScaffoldMessenger.of(context);
 
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          existing == null
-              ? 'Unternehmen hinzufügen'
-              : 'Unternehmen bearbeiten',
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name *'),
-              ),
-              TextField(
-                controller: emailCtrl,
-                decoration: const InputDecoration(labelText: 'E-Mail'),
-              ),
-              TextField(
-                controller: phoneCtrl,
-                decoration: const InputDecoration(labelText: 'Telefon'),
-              ),
-              TextField(
-                controller: addressCtrl,
-                decoration: const InputDecoration(labelText: 'Adresse'),
-              ),
-            ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(
+            existing == null
+                ? 'Unternehmen hinzufügen'
+                : 'Unternehmen bearbeiten',
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Abbrechen'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Name *'),
+                ),
+                TextField(
+                  controller: emailCtrl,
+                  decoration: const InputDecoration(labelText: 'E-Mail'),
+                ),
+                TextField(
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(labelText: 'Telefon'),
+                ),
+                TextField(
+                  controller: addressCtrl,
+                  decoration: const InputDecoration(labelText: 'Adresse'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String?>(
+                  value: selectedLanguage,
+                  decoration: const InputDecoration(
+                    labelText: 'Rechnungssprache',
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: null, child: Text('Standard')),
+                    DropdownMenuItem(value: 'de', child: Text('Deutsch')),
+                    DropdownMenuItem(value: 'en', child: Text('English')),
+                    DropdownMenuItem(value: 'uk', child: Text('Українська')),
+                  ],
+                  onChanged: (value) =>
+                      setDialogState(() => selectedLanguage = value),
+                ),
+              ],
+            ),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameCtrl.text.trim().isEmpty) return;
-              Navigator.pop(ctx);
-              final req = CreateClientCompanyRequest(
-                name: nameCtrl.text.trim(),
-                email: emailCtrl.text.trim().isEmpty
-                    ? null
-                    : emailCtrl.text.trim(),
-                phone: phoneCtrl.text.trim().isEmpty
-                    ? null
-                    : phoneCtrl.text.trim(),
-                address: addressCtrl.text.trim().isEmpty
-                    ? null
-                    : addressCtrl.text.trim(),
-              );
-              try {
-                if (existing == null) {
-                  await _companyService.createCompany(req);
-                } else {
-                  await _companyService.updateCompany(existing.id, req);
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameCtrl.text.trim().isEmpty) return;
+                Navigator.pop(ctx);
+                final req = CreateClientCompanyRequest(
+                  name: nameCtrl.text.trim(),
+                  email: emailCtrl.text.trim().isEmpty
+                      ? null
+                      : emailCtrl.text.trim(),
+                  phone: phoneCtrl.text.trim().isEmpty
+                      ? null
+                      : phoneCtrl.text.trim(),
+                  address: addressCtrl.text.trim().isEmpty
+                      ? null
+                      : addressCtrl.text.trim(),
+                  preferredLanguage: selectedLanguage,
+                );
+                try {
+                  if (existing == null) {
+                    await _companyService.createCompany(req);
+                  } else {
+                    await _companyService.updateCompany(existing.id, req);
+                  }
+                  await _loadCompanies();
+                } catch (e) {
+                  messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
                 }
-                await _loadCompanies();
-              } catch (e) {
-                messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
-              }
-            },
-            child: Text(existing == null ? 'Hinzufügen' : 'Speichern'),
-          ),
-        ],
+              },
+              child: Text(existing == null ? 'Hinzufügen' : 'Speichern'),
+            ),
+          ],
+        ),
       ),
     ).whenComplete(() {
       nameCtrl.dispose();

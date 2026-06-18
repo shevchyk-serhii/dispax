@@ -1,0 +1,25 @@
+Ваш рахунок {{invoiceNumber}} від Dispax
+
+<!DOCTYPE html>
+<html lang="uk">
+<head><meta charset="UTF-8"><title>Ваш рахунок {{invoiceNumber}} від Dispax</title></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:24px;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+    <h1 style="color:#2c3e50;font-size:22px;margin-top:0;">Ваш рахунок {{invoiceNumber}} від Dispax</h1>
+    <p style="color:#333;">Шановні пані та панове,</p>
+    <p style="color:#333;">
+      надсилаємо вам рахунок <strong>{{invoiceNumber}}</strong>.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+      <tr><td style="padding:6px 0;color:#555;">Номер рахунку</td>
+          <td style="padding:6px 0;font-weight:bold;">{{invoiceNumber}}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Сума</td>
+          <td style="padding:6px 0;font-weight:bold;">{{totalAmount}} {{currency}}</td></tr>
+      {{dueDateRow}}
+    </table>
+    <p style="color:#333;">Документ рахунку додається до цього листа.</p>
+    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+    <p style="color:#777;font-size:13px;">З повагою,<br>Команда Dispax</p>
+  </div>
+</body>
+</html>

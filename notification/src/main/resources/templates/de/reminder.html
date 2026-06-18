@@ -1,0 +1,28 @@
+Zahlungserinnerung: Rechnung {{invoiceNumber}}
+
+<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="UTF-8"><title>Zahlungserinnerung: Rechnung {{invoiceNumber}}</title></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:24px;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+    <h1 style="color:#2c3e50;font-size:22px;margin-top:0;">Zahlungserinnerung: Rechnung {{invoiceNumber}}</h1>
+    <p style="background:#fff3cd;border:1px solid #ffc107;padding:12px 16px;border-radius:4px;color:#856404;font-weight:bold;">
+      Zahlungserinnerung
+    </p>
+    <p style="color:#333;">Sehr geehrte Damen und Herren,</p>
+    <p style="color:#333;">
+      dies ist eine Zahlungserinnerung für Rechnung <strong>{{invoiceNumber}}</strong>.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+      <tr><td style="padding:6px 0;color:#555;">Rechnungsnummer</td>
+          <td style="padding:6px 0;font-weight:bold;">{{invoiceNumber}}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Betrag</td>
+          <td style="padding:6px 0;font-weight:bold;">{{totalAmount}} {{currency}}</td></tr>
+      {{dueDateRow}}
+    </table>
+    <p style="color:#333;">Den Rechnungsbeleg finden Sie im Anhang dieser E-Mail.</p>
+    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+    <p style="color:#777;font-size:13px;">Mit freundlichen Grüßen<br>Ihr Dispax-Team</p>
+  </div>
+</body>
+</html>
