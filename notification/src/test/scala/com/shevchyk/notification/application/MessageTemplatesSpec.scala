@@ -1,11 +1,11 @@
 package com.shevchyk.notification.application
 
-import com.shevchyk.core.application.{EmailSmsService, RideConfirmationData}
+import com.shevchyk.core.application.{InvoiceEmailData, RideConfirmationData}
 import com.shevchyk.notification.domain.MessageTemplates
 import zio.*
 import zio.test.*
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 
 object MessageTemplatesSpec extends ZIOSpecDefault {
 
@@ -72,6 +72,36 @@ object MessageTemplatesSpec extends ZIOSpecDefault {
         test("sendDriverAssignment completes without error") {
           val svc = new LoggingEmailSmsService
           svc.sendDriverAssignment(baseData).as(assertCompletes)
+        },
+        test("sendInvoiceEmail with isReminder=false completes without error") {
+          val svc  = new LoggingEmailSmsService
+          val data = InvoiceEmailData(
+            toEmail = "client@example.com",
+            toName = "Test GmbH",
+            invoiceNumber = "INV-001",
+            totalAmount = BigDecimal("150.00"),
+            currency = "EUR",
+            dueDate = Some(LocalDate.of(2026, 7, 1)),
+            isReminder = false,
+            pdfAttachment = Array(1, 2, 3),
+            pdfFilename = "invoice-001.pdf"
+          )
+          svc.sendInvoiceEmail(data).as(assertCompletes)
+        },
+        test("sendInvoiceEmail with isReminder=true completes without error") {
+          val svc  = new LoggingEmailSmsService
+          val data = InvoiceEmailData(
+            toEmail = "client@example.com",
+            toName = "Test GmbH",
+            invoiceNumber = "INV-002",
+            totalAmount = BigDecimal("200.00"),
+            currency = "EUR",
+            dueDate = None,
+            isReminder = true,
+            pdfAttachment = Array(9, 8, 7, 6),
+            pdfFilename = "reminder-002.pdf"
+          )
+          svc.sendInvoiceEmail(data).as(assertCompletes)
         }
       )
     )

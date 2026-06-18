@@ -14,7 +14,6 @@ import zio.*
 import zio.test.*
 import zio.test.TestClock
 
-import java.time.Instant
 import java.util.UUID
 
 object PushNotificationListenerSpec extends ZIOSpecDefault {
@@ -348,6 +347,143 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
               !notifs.exists(n => n.data.exists(d => d.contains("\"landed\"") || d.contains("\"arrivals_hall\"")))
             )
           }
+        }
+      }.provide(baseLayers),
+
+      // -- EtaAtRisk branch coverage -------------------------------------------
+
+      test("EtaAtRisk with slackMinutes < 0 body contains 'min late'") {
+        // slackMinutes = -5 → lateBy = 5 → body: "Driver is ~5 min late …"
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.EtaAtRisk(rideId, driverId, clientId, 20, 15, -5, companyId),
+            PersonId(dispatcherId)
+          ).map { notifs =>
+            val body = notifs.find(_.notificationType == "eta_at_risk").map(_.body).getOrElse("")
+            assertTrue(body.contains("min late"))
+          }
+        }
+      }.provide(baseLayers),
+      test("EtaAtRisk with slackMinutes >= 0 body contains 'Tight pickup' and not 'late'") {
+        // slackMinutes = 3 → body: "Tight pickup: ETA …"
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.EtaAtRisk(rideId, driverId, clientId, 10, 13, 3, companyId),
+            PersonId(dispatcherId)
+          ).map { notifs =>
+            val body = notifs.find(_.notificationType == "eta_at_risk").map(_.body).getOrElse("")
+            assertTrue(body.contains("Tight pickup"), !body.contains("late"))
+          }
+        }
+      }.provide(baseLayers),
+      test("EtaAtRisk with zero dispatchers in company saves nothing") {
+        // Publish an EtaAtRisk for a company that has no dispatchers.
+        // personRepoStub returns Nil for any company != companyId.
+        val otherCompany = UUID.fromString("00000099-0000-0000-0000-000000000099")
+        ZIO.scoped {
+          for {
+            _         <- PushNotificationListener.start
+            eventHub  <- ZIO.service[EventHub]
+            notifRepo <- ZIO.service[NotificationRepository]
+            _         <- eventHub.publish(
+                           WebSocketEvent.EtaAtRisk(rideId, driverId, clientId, 20, 10, -5, otherCompany)
+                         )
+            _         <- TestClock.adjust(200.millis)
+            // dispatcherId belongs to companyId, not otherCompany — no notifications expected
+            notifs    <- notifRepo.findByPersonId(PersonId(dispatcherId), limit = 10, offset = 0)
+          } yield assertTrue(notifs.isEmpty)
+        }
+      }.provide(baseLayers),
+      test("[TENANT ISOLATION - NEGATIVE] EtaAtRisk dispatcher of a different company receives no notification") {
+        // personRepoStub only returns the dispatcher for companyId, not for otherCompany.
+        // This is the sole fan-out path in PushNotificationListener that resolves recipients
+        // by CompanyId (findByRoleAndCompany). All other events carry explicit IDs from the event.
+        val otherCompany    = UUID.fromString("00000088-0000-0000-0000-000000000088")
+        val otherDispatcher = UUID.fromString("00000077-0000-0000-0000-000000000077")
+        ZIO.scoped {
+          for {
+            _         <- PushNotificationListener.start
+            eventHub  <- ZIO.service[EventHub]
+            notifRepo <- ZIO.service[NotificationRepository]
+            // Publish for otherCompany; personRepoStub returns Nil for it
+            _         <- eventHub.publish(
+                           WebSocketEvent.EtaAtRisk(rideId, driverId, clientId, 20, 10, -5, otherCompany)
+                         )
+            _         <- TestClock.adjust(200.millis)
+            // The dispatcher of the correct companyId must NOT receive a cross-tenant alert
+            notifs    <- notifRepo.findByPersonId(PersonId(dispatcherId), limit = 10, offset = 0)
+            // The hypothetical dispatcher of otherCompany is also not notified (not in repo)
+            other     <- notifRepo.findByPersonId(PersonId(otherDispatcher), limit = 10, offset = 0)
+          } yield assertTrue(notifs.isEmpty, other.isEmpty)
+        }
+      }.provide(baseLayers),
+      test("daemon fiber resilience: save fails on first event but succeeds on second") {
+        // A FailOnceNotificationRepository that rejects the first save, then delegates normally.
+        // This tests that .catchAll inside start keeps .forever alive after a transient error.
+        // We wire everything through a single ZIO.provide so the Hub instance is shared.
+        for {
+          failCount                        <- Ref.make(0)
+          innerRepo                         = new InMemoryNotificationRepository
+          flakyRepo: NotificationRepository =
+            new NotificationRepository:
+              def save(
+                  n: com.shevchyk.notification.domain.AppNotification
+              ): Task[com.shevchyk.notification.domain.AppNotification] = failCount.getAndUpdate(_ + 1).flatMap { c =>
+                if c == 0 then ZIO.fail(new RuntimeException("flaky save"))
+                else innerRepo.save(n)
+              }
+              def findByPersonId(pid: PersonId, limit: Int, offset: Int)                            = innerRepo.findByPersonId(pid, limit, offset)
+              def markAsRead(id: com.shevchyk.notification.domain.AppNotificationId, pid: PersonId) = innerRepo
+                .markAsRead(id, pid)
+              def markAllAsRead(pid: PersonId)                                                      = innerRepo.markAllAsRead(pid)
+              def countUnread(pid: PersonId)                                                        = innerRepo.countUnread(pid)
+              def delete(id: com.shevchyk.notification.domain.AppNotificationId, pid: PersonId)     = innerRepo.delete(
+                id,
+                pid
+              )
+              def deleteAllForPerson(pid: PersonId)                                                 = innerRepo.deleteAllForPerson(pid)
+          flakyLayers                       =
+            EventHub.layer ++
+              ZLayer.succeed[NotificationRepository](flakyRepo) ++
+              testFcmLayer ++
+              ZLayer.succeed(personRepoStub) ++
+              InMemoryCheckpointNotificationRepository.layer
+          result                           <- ZIO
+                                                .scoped {
+                                                  for {
+                                                    _        <- PushNotificationListener.start
+                                                    eventHub <- ZIO.service[EventHub]
+                                                    notifRepo = flakyRepo
+                                                    // First event → flaky save fails; .catchAll logs warning, .forever restarts
+                                                    _        <- eventHub.publish(WebSocketEvent.RideCreated(rideId, clientId, companyId))
+                                                    _        <- TestClock.adjust(200.millis)
+                                                    // Second event → save succeeds
+                                                    _        <- eventHub.publish(WebSocketEvent.RideCreated(rideId, clientId, companyId))
+                                                    _        <- TestClock.adjust(200.millis)
+                                                    notifs   <- notifRepo.findByPersonId(PersonId(clientId), limit = 10, offset = 0)
+                                                  } yield assertTrue(notifs.size == 1)
+                                                }
+                                                .provide(flakyLayers)
+        } yield result
+      },
+      test("lifecycle: event published before start is not delivered; event after start is delivered") {
+        // The Hub subscription is opened inside start; events published before start is called
+        // are not buffered for late subscribers (Hub semantics: only current subscribers receive).
+        // After `start` returns (subscribed.await has completed), the next event is delivered.
+        ZIO.scoped {
+          for {
+            _         <- ZIO.service[EventHub] // ensure hub exists before publish
+            eventHub  <- ZIO.service[EventHub]
+            notifRepo <- ZIO.service[NotificationRepository]
+            // Publish BEFORE start — listener is not subscribed yet
+            _         <- eventHub.publish(WebSocketEvent.RideCreated(rideId, clientId, companyId))
+            _         <- TestClock.adjust(200.millis)
+            _         <- PushNotificationListener.start
+            // Publish AFTER start — listener is now subscribed (subscribed.await guarantees it)
+            _         <- eventHub.publish(WebSocketEvent.RideCreated(rideId, clientId, companyId))
+            _         <- TestClock.adjust(200.millis)
+            notifs    <- notifRepo.findByPersonId(PersonId(clientId), limit = 10, offset = 0)
+          } yield assertTrue(notifs.size == 1)
         }
       }.provide(baseLayers)
     )
