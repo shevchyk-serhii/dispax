@@ -21,6 +21,18 @@ object HereRoutingServiceSpec extends ZIOSpecDefault:
     )
     Server.install(routes) *> ZIO.serviceWithZIO[Server](_.port)
 
+  // A stub HERE Routing endpoint that returns an explicit HTTP status code.
+  private def stubServerStatus(statusRef: Ref[Status], bodyRef: Ref[String]): ZIO[Scope & Server, Throwable, Int] =
+    val routes = Routes(
+      Method.GET / "v8" / "routes" -> handler { (_: Request) =>
+        for {
+          status <- statusRef.get
+          body   <- bodyRef.get
+        } yield Response(status = status, body = Body.fromString(body))
+      }
+    )
+    Server.install(routes) *> ZIO.serviceWithZIO[Server](_.port)
+
   private val validBody = """{"routes":[{"sections":[{"summary":{"duration":125}}]}]}"""
 
   // An ephemeral-port (0) zio-http server layer for the stub HERE endpoint.
@@ -68,6 +80,48 @@ object HereRoutingServiceSpec extends ZIOSpecDefault:
               service <- makeService(HereConfig(apiKey = "k", baseUrl = s"http://127.0.0.1:$port"))
               eta     <- service.getEtaMinutes(48.1, 11.5, 48.2, 11.6)
             } yield assertTrue(eta.isEmpty)
+          }
+          .provide(Client.default, serverLayer)
+      },
+      // -----------------------------------------------------------------------
+      // NEW: additional branch coverage
+      // -----------------------------------------------------------------------
+      test("returns None when response is non-2xx (HTTP 404)") {
+        ZIO
+          .scoped {
+            for {
+              statusRef <- Ref.make[Status](Status.NotFound)
+              bodyRef   <- Ref.make("""{"error":"not found"}""")
+              port      <- stubServerStatus(statusRef, bodyRef)
+              service   <- makeService(HereConfig(apiKey = "k", baseUrl = s"http://127.0.0.1:$port"))
+              eta       <- service.getEtaMinutes(48.1, 11.5, 48.2, 11.6)
+            } yield assertTrue(eta.isEmpty)
+          }
+          .provide(Client.default, serverLayer)
+      },
+      test("returns None when the route has an empty sections list") {
+        ZIO
+          .scoped {
+            for {
+              bodyRef <- Ref.make("""{"routes":[{"sections":[]}]}""")
+              port    <- stubServer(bodyRef)
+              service <- makeService(HereConfig(apiKey = "k", baseUrl = s"http://127.0.0.1:$port"))
+              eta     <- service.getEtaMinutes(48.1, 11.5, 48.2, 11.6)
+            } yield assertTrue(eta.isEmpty)
+          }
+          .provide(Client.default, serverLayer)
+      },
+      test("uses first route when multiple routes are returned") {
+        val multiRouteBody =
+          """{"routes":[{"sections":[{"summary":{"duration":60}}]},{"sections":[{"summary":{"duration":300}}]}]}"""
+        ZIO
+          .scoped {
+            for {
+              bodyRef <- Ref.make(multiRouteBody)
+              port    <- stubServer(bodyRef)
+              service <- makeService(HereConfig(apiKey = "k", baseUrl = s"http://127.0.0.1:$port"))
+              eta     <- service.getEtaMinutes(48.1, 11.5, 48.2, 11.6)
+            } yield assertTrue(eta.contains(1)) // 60s -> ceil(1.0) = 1 min
           }
           .provide(Client.default, serverLayer)
       }

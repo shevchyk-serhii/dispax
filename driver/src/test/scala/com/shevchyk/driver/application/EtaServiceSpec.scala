@@ -118,5 +118,54 @@ object EtaServiceSpec extends ZIOSpecDefault:
           eta <- svc.etaForRide(ride(pickupHasCoords = true))
         } yield assertTrue(eta.exists(_ <= 5)))
           .provide(etaLayer(driverAtMunich, hereLayer(None), nearClient))
+      },
+      // -----------------------------------------------------------------------
+      // NEW: missing destination coordinate combinations
+      // -----------------------------------------------------------------------
+      test("returns None when pickup has no coords and geocoding returns original (no coords)") {
+        // GeocodingService.noop returns the original Location unchanged (no coords added).
+        // With pickup.latitude == None, the Option zip short-circuits → None.
+        (for {
+          svc <- ZIO.service[EtaService]
+          eta <- svc.etaForRide(ride(pickupHasCoords = false))
+        } yield assertTrue(eta.isEmpty))
+          .provide(etaLayer(driverAtMunich, hereLayer(Some(17))))
+      },
+      test("geocoding enriches pickup coords → HERE returns ETA") {
+        val enrichingGeocoding: ZLayer[Any, Nothing, GeocodingService] = ZLayer.succeed(
+          new GeocodingService:
+            def geocode(address: String): Task[Option[(Double, Double)]] = ZIO.succeed(Some((airportLat, airportLng)))
+        )
+        val layers                                                     = (driverAtMunich ++ hereLayer(Some(20)) ++ enrichingGeocoding ++ noClientLoc) >>> EtaService.layer
+        (for {
+          svc <- ZIO.service[EtaService]
+          eta <- svc.etaForRide(ride(pickupHasCoords = false))
+        } yield assertTrue(eta.contains(20)))
+          .provide(layers)
+      },
+      test("geocoding fails → falls back to original pickup (no coords) → returns None") {
+        val failingGeocoding: ZLayer[Any, Nothing, GeocodingService] = ZLayer.succeed(
+          new GeocodingService:
+            def geocode(address: String): Task[Option[(Double, Double)]] = ZIO.fail(RuntimeException("geocoding down"))
+        )
+        // The source uses .orElse(ZIO.succeed(ride.pickupLocation)) so the failure
+        // yields the original Location which has no coords → eta is None.
+        val layers                                                   = (driverAtMunich ++ hereLayer(Some(20)) ++ failingGeocoding ++ noClientLoc) >>> EtaService.layer
+        (for {
+          svc <- ZIO.service[EtaService]
+          eta <- svc.etaForRide(ride(pickupHasCoords = false))
+        } yield assertTrue(eta.isEmpty))
+          .provide(layers)
+      },
+      // -----------------------------------------------------------------------
+      // NEW: estimateEtaMinutes direct unit tests (private[application])
+      // -----------------------------------------------------------------------
+      test("estimateEtaMinutes: zero distance clamps to 1 minute") {
+        val result = EtaService.estimateEtaMinutes(48.1351, 11.5820, 48.1351, 11.5820)
+        assertTrue(result.contains(1))
+      },
+      test("estimateEtaMinutes: non-trivial distance yields result >= 1") {
+        val result = EtaService.estimateEtaMinutes(48.1, 11.5, 48.2, 11.6)
+        assertTrue(result.exists(_ >= 1))
       }
     )
