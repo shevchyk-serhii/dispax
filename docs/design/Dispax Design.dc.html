@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F4F5;color:#18181B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  @keyframes dispaxPulse{0%{transform:scale(1);opacity:.55;}70%{transform:scale(2.6);opacity:0;}100%{opacity:0;}}
+  @keyframes dispaxBlink{0%,100%{opacity:1;}50%{opacity:.35;}}
+</style>
+</helmet>
+
+<div style="width:100%;min-height:100vh;background:#F4F4F5;">
+
+  <!-- ============ COVER ============ -->
+  <div style="position:relative;background:#18181B;color:#fff;overflow:hidden;padding:72px 56px 64px;">
+    <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.045) 1px,transparent 1px);background-size:22px 22px;"></div>
+    <div style="position:absolute;top:-120px;right:-80px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(14,165,233,0.22),transparent 62%);filter:blur(6px);"></div>
+    <div style="position:relative;max-width:1200px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:13px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(145deg,#27272A,#09090B);border:1px solid #3F3F46;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,0.4);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 11.5L21 3l-8.5 18-2.2-7.3L3 11.5z" fill="#0EA5E9"></path></svg>
+        </div>
+        <div style="font-size:21px;font-weight:700;letter-spacing:-0.01em;">Dispax</div>
+        <div style="margin-left:6px;padding:4px 9px;border:1px solid #3F3F46;border-radius:999px;font-size:11px;font-weight:600;color:#A1A1AA;letter-spacing:0.02em;">Design System v1</div>
+      </div>
+
+      <div style="margin-top:64px;max-width:780px;">
+        <div style="font-size:12px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#0EA5E9;margin-bottom:18px;">Ride dispatch · Munich</div>
+        <h1 style="margin:0;font-size:58px;line-height:1.03;font-weight:700;letter-spacing:-0.03em;">The client<br>does not wait.</h1>
+        <p style="margin:22px 0 0;font-size:18px;line-height:1.55;color:#A1A1AA;max-width:560px;">A unified visual language for the Dispax dispatch platform — graphite, precise and quiet. One system across driver, client, dispatcher and billing, on phone and desktop.</p>
+      </div>
+
+      <div style="margin-top:44px;display:flex;flex-wrap:wrap;gap:10px;">
+        <div style="padding:9px 15px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:999px;font-size:13px;font-weight:500;color:#E4E4E7;">Tech-premium</div>
+        <div style="padding:9px 15px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:999px;font-size:13px;font-weight:500;color:#E4E4E7;">Graphite + Sky</div>
+        <div style="padding:9px 15px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:999px;font-size:13px;font-weight:500;color:#E4E4E7;">Inter</div>
+        <div style="padding:9px 15px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:999px;font-size:13px;font-weight:500;color:#E4E4E7;">Clarity over decoration</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CONTENT COLUMN ============ -->
+  <div style="max-width:1200px;margin:0 auto;padding:72px 56px 96px;">
+
+    <!-- ===== 01 COLOR ===== -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#A1A1AA;">01 — Foundation</div>
+      <h2 style="margin:8px 0 0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#18181B;">Color</h2>
+      <p style="margin:10px 0 0;font-size:15px;line-height:1.6;color:#71717A;max-width:620px;">A single graphite ramp carries the brand. One Sky-cyan accent marks the live, the active and the actionable. Color is functional — never decorative.</p>
+    </div>
+
+    <!-- Graphite ramp -->
+    <div style="font-size:13px;font-weight:600;color:#52525B;margin:32px 0 12px;">Graphite — corporate base</div>
+    <div style="display:flex;gap:6px;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);">
+      <div style="flex:1;height:96px;background:#09090B;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">950</span><span style="font-size:11px;font-weight:600;">#09090B</span></div>
+      <div style="flex:1;height:96px;background:#18181B;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">900</span><span style="font-size:11px;font-weight:600;">#18181B</span></div>
+      <div style="flex:1;height:96px;background:#27272A;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">800</span><span style="font-size:11px;font-weight:600;">#27272A</span></div>
+      <div style="flex:1;height:96px;background:#3F3F46;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">700</span><span style="font-size:11px;font-weight:600;">#3F3F46</span></div>
+      <div style="flex:1;height:96px;background:#52525B;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">600</span><span style="font-size:11px;font-weight:600;">#52525B</span></div>
+      <div style="flex:1;height:96px;background:#71717A;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">500</span><span style="font-size:11px;font-weight:600;">#71717A</span></div>
+      <div style="flex:1;height:96px;background:#A1A1AA;color:#18181B;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">400</span><span style="font-size:11px;font-weight:600;">#A1A1AA</span></div>
+      <div style="flex:1;height:96px;background:#D4D4D8;color:#18181B;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">300</span><span style="font-size:11px;font-weight:600;">#D4D4D8</span></div>
+      <div style="flex:1;height:96px;background:#E4E4E7;color:#18181B;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">200</span><span style="font-size:11px;font-weight:600;">#E4E4E7</span></div>
+      <div style="flex:1;height:96px;background:#F4F4F5;color:#18181B;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">100</span><span style="font-size:11px;font-weight:600;">#F4F4F5</span></div>
+    </div>
+
+    <!-- Accent ramp + neutrals usage -->
+    <div style="display:flex;gap:24px;margin-top:28px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:300px;">
+        <div style="font-size:13px;font-weight:600;color:#52525B;margin:0 0 12px;">Sky — single accent</div>
+        <div style="display:flex;gap:6px;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);">
+          <div style="flex:1;height:96px;background:#0369A1;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">700</span><span style="font-size:11px;font-weight:600;">#0369A1</span></div>
+          <div style="flex:1;height:96px;background:#0284C7;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">600</span><span style="font-size:11px;font-weight:600;">#0284C7</span></div>
+          <div style="flex:1.4;height:96px;background:#0EA5E9;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.85;">500 · accent</span><span style="font-size:11px;font-weight:600;">#0EA5E9</span></div>
+          <div style="flex:1;height:96px;background:#38BDF8;color:#0C4A6E;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">400</span><span style="font-size:11px;font-weight:600;">#38BDF8</span></div>
+          <div style="flex:1;height:96px;background:#F0F9FF;color:#0C4A6E;border-left:1px solid #E4E4E7;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;"><span style="font-size:11px;font-weight:600;opacity:.7;">50</span><span style="font-size:11px;font-weight:600;">#F0F9FF</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status colors -->
+    <div style="font-size:13px;font-weight:600;color:#52525B;margin:32px 0 12px;">Ride status — functional, role-independent</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:170px;background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#FFFBEB;border:1px solid #FCD34D;"><span style="width:7px;height:7px;border-radius:50%;background:#F59E0B;"></span><span style="font-size:12px;font-weight:600;color:#92400E;">Requested</span></div>
+        <div style="margin-top:12px;font-size:11px;color:#A1A1AA;font-weight:600;">#F59E0B · amber</div>
+      </div>
+      <div style="flex:1;min-width:170px;background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#EFF6FF;border:1px solid #93C5FD;"><span style="width:7px;height:7px;border-radius:50%;background:#3B82F6;"></span><span style="font-size:12px;font-weight:600;color:#1E40AF;">Assigned</span></div>
+        <div style="margin-top:12px;font-size:11px;color:#A1A1AA;font-weight:600;">#3B82F6 · blue</div>
+      </div>
+      <div style="flex:1;min-width:170px;background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#F0FDFA;border:1px solid #5EEAD4;"><span style="width:7px;height:7px;border-radius:50%;background:#14B8A6;"></span><span style="font-size:12px;font-weight:600;color:#115E59;">In progress</span></div>
+        <div style="margin-top:12px;font-size:11px;color:#A1A1AA;font-weight:600;">#14B8A6 · teal</div>
+      </div>
+      <div style="flex:1;min-width:170px;background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#F0FDF4;border:1px solid #86EFAC;"><span style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></span><span style="font-size:12px;font-weight:600;color:#166534;">Completed</span></div>
+        <div style="margin-top:12px;font-size:11px;color:#A1A1AA;font-weight:600;">#22C55E · green</div>
+      </div>
+      <div style="flex:1;min-width:170px;background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#FEF2F2;border:1px solid #FCA5A5;"><span style="width:7px;height:7px;border-radius:50%;background:#EF4444;"></span><span style="font-size:12px;font-weight:600;color:#991B1B;">Cancelled</span></div>
+        <div style="margin-top:12px;font-size:11px;color:#A1A1AA;font-weight:600;">#EF4444 · red</div>
+      </div>
+    </div>
+
+    <!-- ===== 02 TYPOGRAPHY ===== -->
+    <div style="margin:72px 0 24px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#A1A1AA;">02 — Foundation</div>
+      <h2 style="margin:8px 0 0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#18181B;">Typography</h2>
+      <p style="margin:10px 0 0;font-size:15px;line-height:1.6;color:#71717A;max-width:620px;">Inter, throughout. Tight tracking on headings, comfortable line-height in body. Nine roles cover the entire product.</p>
+    </div>
+    <div style="background:#fff;border:1px solid #E4E4E7;border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);overflow:hidden;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:20px 24px;border-bottom:1px solid #F4F4F5;"><span style="font-size:36px;font-weight:700;letter-spacing:-0.02em;color:#18181B;line-height:1.1;">14 minutes early</span><span style="font-size:11px;color:#A1A1AA;font-weight:600;white-space:nowrap;">Display · 36 / 700</span></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:18px 24px;border-bottom:1px solid #F4F4F5;"><span style="font-size:28px;font-weight:700;letter-spacing:-0.01em;color:#18181B;">Today's rides</span><span style="font-size:11px;color:#A1A1AA;font-weight:600;white-space:nowrap;">H1 · 28 / 700</span></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:18px 24px;border-bottom:1px solid #F4F4F5;"><span style="font-size:22px;font-weight:600;color:#18181B;">Driver schedule</span><span style="font-size:11px;color:#A1A1AA;font-weight:600;white-space:nowrap;">H2 · 22 / 600</span></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:18px 24px;border-bottom:1px solid #F4F4F5;"><span style="font-size:18px;font-weight:600;color:#18181B;">Munich Airport · T2</span><span style="font-size:11px;color:#A1A1AA;font-weight:600;white-space:nowrap;">H3 · 18 / 600</span></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:18px 24px;border-bottom:1px solid #F4F4F5;"><span style="font-size:16px;font-weight:400;color:#27272A;">Pickup at Marienplatz 4, 80331 München</span><span style="font-size:11px;color:#A1A1AA;font-weight:600;white-space:nowrap;">Body L · 16 / 400</span></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:18px 24px;border-bottom:1px solid #F4F4F5;"><span style="font-size:14px;font-weight:400;color:#71717A;">Driver arrives in approximately 8 minutes.</span><span style="font-size:11px;color:#A1A1AA;font-weight:600;white-space:nowrap;">Body M · 14 / 400</span></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:18px 24px;"><span style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;">Updated 12:04 · LH 1845</span><span style="font-size:11px;color:#A1A1AA;font-weight:600;white-space:nowrap;">Label S · 11 / 600</span></div>
+    </div>
+
+    <!-- ===== 03 BUTTONS ===== -->
+    <div style="margin:72px 0 24px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#A1A1AA;">03 — Foundation</div>
+      <h2 style="margin:8px 0 0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#18181B;">Buttons &amp; controls</h2>
+      <p style="margin:10px 0 0;font-size:15px;line-height:1.6;color:#71717A;max-width:620px;">Graphite is the default action. Sky-cyan is reserved for the single most positive, live action on a screen. Radius 10, height 44 on mobile / 40 on desktop.</p>
+    </div>
+    <div style="background:#fff;border:1px solid #E4E4E7;border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);padding:28px;display:flex;flex-wrap:wrap;gap:40px;">
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:14px;">Primary · graphite</div>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start;">
+          <button style="font-family:inherit;border:none;cursor:pointer;background:#18181B;color:#fff;font-size:14px;font-weight:600;padding:0 18px;height:44px;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,0.12);">Confirm ride</button>
+          <button style="font-family:inherit;border:none;cursor:pointer;background:#3F3F46;color:#fff;font-size:14px;font-weight:600;padding:0 18px;height:44px;border-radius:10px;">Hover</button>
+          <button style="font-family:inherit;border:none;background:#E4E4E7;color:#A1A1AA;font-size:14px;font-weight:600;padding:0 18px;height:44px;border-radius:10px;">Disabled</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:14px;">Accent · live action</div>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start;">
+          <button style="font-family:inherit;border:none;cursor:pointer;background:#0EA5E9;color:#fff;font-size:14px;font-weight:600;padding:0 18px;height:44px;border-radius:10px;box-shadow:0 4px 12px rgba(14,165,233,0.30);display:inline-flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z" stroke="#fff" stroke-width="2"></path><circle cx="12" cy="10" r="2.5" stroke="#fff" stroke-width="2"></circle></svg>Track driver</button>
+          <button style="font-family:inherit;border:none;cursor:pointer;background:#0284C7;color:#fff;font-size:14px;font-weight:600;padding:0 18px;height:44px;border-radius:10px;">Hover</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:14px;">Secondary &amp; ghost</div>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start;">
+          <button style="font-family:inherit;cursor:pointer;background:#fff;color:#18181B;border:1px solid #D4D4D8;font-size:14px;font-weight:600;padding:0 18px;height:44px;border-radius:10px;">Reschedule</button>
+          <button style="font-family:inherit;cursor:pointer;background:transparent;color:#3F3F46;border:none;font-size:14px;font-weight:600;padding:0 14px;height:44px;border-radius:10px;">View details</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:14px;">Destructive</div>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start;">
+          <button style="font-family:inherit;cursor:pointer;background:#fff;color:#991B1B;border:1px solid #FCA5A5;font-size:14px;font-weight:600;padding:0 18px;height:44px;border-radius:10px;">Cancel ride</button>
+          <button style="font-family:inherit;border:none;cursor:pointer;background:#EF4444;color:#fff;font-size:14px;font-weight:600;padding:0 18px;height:44px;border-radius:10px;">Emergency reassign</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 04 COMPONENTS ===== -->
+    <div style="margin:72px 0 24px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#A1A1AA;">04 — Foundation</div>
+      <h2 style="margin:8px 0 0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#18181B;">Core components</h2>
+      <p style="margin:10px 0 0;font-size:15px;line-height:1.6;color:#71717A;max-width:620px;">The recurring pieces every screen is built from — inputs, the segmented switch, toggles and stat tiles.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+      <!-- Input -->
+      <div style="background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:14px;">Input · search</div>
+        <div style="display:flex;align-items:center;gap:10px;height:48px;background:#F4F4F5;border:1px solid #D4D4D8;border-radius:999px;padding:0 16px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#A1A1AA" stroke-width="2"></circle><path d="M20 20l-3-3" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"></path></svg>
+          <span style="font-size:14px;color:#A1A1AA;">Search rides, drivers…</span>
+        </div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:10px;height:48px;background:#fff;border:2px solid #0EA5E9;border-radius:10px;padding:0 14px;box-shadow:0 0 0 4px rgba(14,165,233,0.12);">
+          <span style="font-size:14px;color:#18181B;">München Hauptbahnhof</span>
+        </div>
+      </div>
+      <!-- Segmented -->
+      <div style="background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:14px;">Segmented control</div>
+        <div style="display:flex;gap:4px;background:#F4F4F5;border-radius:12px;padding:4px;">
+          <div style="flex:1;text-align:center;font-size:13px;font-weight:600;color:#18181B;background:#fff;border-radius:9px;padding:9px 0;box-shadow:0 1px 2px rgba(0,0,0,0.1);">Today</div>
+          <div style="flex:1;text-align:center;font-size:13px;font-weight:500;color:#71717A;padding:9px 0;">Upcoming</div>
+          <div style="flex:1;text-align:center;font-size:13px;font-weight:500;color:#71717A;padding:9px 0;">History</div>
+        </div>
+        <div style="margin-top:18px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:12px;">Availability toggle</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:14px;font-weight:600;color:#18181B;">Online</span>
+          <div style="width:48px;height:28px;border-radius:999px;background:#0EA5E9;position:relative;"><div style="position:absolute;top:3px;left:23px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.25);"></div></div>
+        </div>
+      </div>
+      <!-- Stat tiles -->
+      <div style="background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:14px;">Stat tiles</div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;background:#18181B;border-radius:12px;padding:14px;color:#fff;"><div style="font-size:26px;font-weight:700;letter-spacing:-0.02em;">28</div><div style="font-size:11px;color:#A1A1AA;font-weight:500;margin-top:2px;">Completed</div></div>
+          <div style="flex:1;background:#F4F4F5;border-radius:12px;padding:14px;"><div style="font-size:26px;font-weight:700;letter-spacing:-0.02em;color:#18181B;">€642</div><div style="font-size:11px;color:#71717A;font-weight:500;margin-top:2px;">Earned</div></div>
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:12px;padding:12px 14px;">
+          <div style="position:relative;width:9px;height:9px;"><span style="position:absolute;inset:0;border-radius:50%;background:#0EA5E9;"></span><span style="position:absolute;inset:0;border-radius:50%;background:#0EA5E9;animation:dispaxPulse 2s ease-out infinite;"></span></div>
+          <span style="font-size:13px;font-weight:600;color:#075985;">2 rides live now</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 05 TOKENS ===== -->
+    <div style="margin:72px 0 24px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#A1A1AA;">05 — Foundation</div>
+      <h2 style="margin:8px 0 0;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#18181B;">Radius, elevation &amp; spacing</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+      <div style="background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:22px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:16px;">Radius</div>
+        <div style="display:flex;gap:12px;align-items:flex-end;">
+          <div style="text-align:center;"><div style="width:48px;height:48px;background:#F4F4F5;border:1px solid #D4D4D8;border-radius:6px;"></div><div style="font-size:10px;color:#A1A1AA;margin-top:6px;font-weight:600;">6</div></div>
+          <div style="text-align:center;"><div style="width:48px;height:48px;background:#F4F4F5;border:1px solid #D4D4D8;border-radius:10px;"></div><div style="font-size:10px;color:#A1A1AA;margin-top:6px;font-weight:600;">10</div></div>
+          <div style="text-align:center;"><div style="width:48px;height:48px;background:#F4F4F5;border:1px solid #D4D4D8;border-radius:12px;"></div><div style="font-size:10px;color:#A1A1AA;margin-top:6px;font-weight:600;">12</div></div>
+          <div style="text-align:center;"><div style="width:48px;height:48px;background:#F4F4F5;border:1px solid #D4D4D8;border-radius:16px;"></div><div style="font-size:10px;color:#A1A1AA;margin-top:6px;font-weight:600;">16</div></div>
+          <div style="text-align:center;"><div style="width:48px;height:48px;background:#F4F4F5;border:1px solid #D4D4D8;border-radius:999px;"></div><div style="font-size:10px;color:#A1A1AA;margin-top:6px;font-weight:600;">full</div></div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:22px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:16px;">Elevation</div>
+        <div style="display:flex;gap:18px;align-items:center;">
+          <div style="text-align:center;"><div style="width:52px;height:52px;background:#fff;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,0.05);"></div><div style="font-size:10px;color:#A1A1AA;margin-top:8px;font-weight:600;">xs</div></div>
+          <div style="text-align:center;"><div style="width:52px;height:52px;background:#fff;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);"></div><div style="font-size:10px;color:#A1A1AA;margin-top:8px;font-weight:600;">md</div></div>
+          <div style="text-align:center;"><div style="width:52px;height:52px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);"></div><div style="font-size:10px;color:#A1A1AA;margin-top:8px;font-weight:600;">lg</div></div>
+          <div style="text-align:center;"><div style="width:52px;height:52px;background:#fff;border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,0.16);"></div><div style="font-size:10px;color:#A1A1AA;margin-top:8px;font-weight:600;">xl</div></div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:22px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;margin-bottom:16px;">Spacing · 4px base</div>
+        <div style="display:flex;gap:10px;align-items:flex-end;height:52px;">
+          <div style="width:4px;height:16px;background:#0EA5E9;border-radius:2px;"></div>
+          <div style="width:8px;height:24px;background:#0EA5E9;border-radius:2px;"></div>
+          <div style="width:12px;height:32px;background:#0EA5E9;border-radius:2px;"></div>
+          <div style="width:16px;height:40px;background:#0EA5E9;border-radius:2px;"></div>
+          <div style="width:24px;height:48px;background:#0EA5E9;border-radius:2px;"></div>
+        </div>
+        <div style="font-size:11px;color:#A1A1AA;margin-top:10px;font-weight:600;">4 · 8 · 12 · 16 · 24 · 32 · 48</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ SCREENS DIVIDER ============ -->
+  <div style="background:#18181B;color:#fff;padding:56px 56px;">
+    <div style="max-width:1200px;margin:0 auto;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#0EA5E9;">The system, applied</div>
+      <h2 style="margin:10px 0 0;font-size:34px;font-weight:700;letter-spacing:-0.02em;">Product screens</h2>
+      <p style="margin:12px 0 0;font-size:16px;line-height:1.6;color:#A1A1AA;max-width:600px;">The same foundation across every role and surface — driver and client on the phone, dispatcher and billing on the desktop.</p>
+    </div>
+  </div>
+
+  <!-- ============ MOBILE ROW ============ -->
+  <div style="max-width:1200px;margin:0 auto;padding:64px 56px 0;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#A1A1AA;margin-bottom:6px;">Mobile · iOS</div>
+    <h3 style="margin:0 0 32px;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#18181B;">Driver &amp; client</h3>
+    <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start;">
+
+      <!-- ===== PHONE 1: DRIVER TODAY ===== -->
+      <div style="flex:none;">
+        <div style="font-size:12px;font-weight:600;color:#52525B;margin-bottom:14px;display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:50%;background:#0EA5E9;"></span>Driver — Today</div>
+        <div style="width:320px;height:680px;background:#18181B;border-radius:46px;padding:11px;box-shadow:0 30px 60px rgba(0,0,0,0.26);">
+          <div style="position:relative;width:100%;height:100%;background:#FAFAFA;border-radius:36px;overflow:hidden;display:flex;flex-direction:column;">
+            <div style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#000;border-radius:999px;z-index:20;"></div>
+            <!-- header -->
+            <div style="background:#18181B;color:#fff;padding:16px 18px 18px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;"><span>9:41</span><span style="display:flex;gap:6px;align-items:center;"><svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="6" width="3" height="5" rx="1" fill="#fff"></rect><rect x="4.5" y="4" width="3" height="7" rx="1" fill="#fff"></rect><rect x="9" y="2" width="3" height="9" rx="1" fill="#fff"></rect><rect x="13.5" y="0" width="3" height="11" rx="1" fill="#fff"></rect></svg><svg width="22" height="11" viewBox="0 0 24 12" fill="none"><rect x="1" y="1" width="19" height="10" rx="2.5" stroke="#fff" stroke-opacity="0.6"></rect><rect x="3" y="3" width="14" height="6" rx="1" fill="#fff"></rect><rect x="21" y="4" width="2" height="4" rx="1" fill="#fff"></rect></svg></span></div>
+              <div style="margin-top:18px;display:flex;justify-content:space-between;align-items:flex-start;">
+                <div>
+                  <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#71717A;white-space:nowrap;">Tue · 18 June</div>
+                  <div style="font-size:26px;font-weight:700;letter-spacing:-0.02em;margin-top:3px;">Today</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;position:relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9z" stroke="#fff" stroke-width="1.8" stroke-linecap="round"></path><path d="M10.3 21a2 2 0 0 0 3.4 0" stroke="#fff" stroke-width="1.8" stroke-linecap="round"></path></svg><span style="position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:#0EA5E9;border:1.5px solid #18181B;"></span></div>
+                </div>
+              </div>
+              <div style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:11px 14px;">
+                <span style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,0.25);"></span>You're online</span>
+                <div style="width:44px;height:26px;border-radius:999px;background:#0EA5E9;position:relative;"><div style="position:absolute;top:3px;left:21px;width:20px;height:20px;border-radius:50%;background:#fff;"></div></div>
+              </div>
+            </div>
+            <!-- content -->
+            <div style="flex:1;overflow:hidden;padding:16px;">
+              <div style="display:flex;gap:4px;background:#EDEDF0;border-radius:11px;padding:4px;margin-bottom:14px;">
+                <div style="flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#18181B;background:#fff;border-radius:8px;padding:7px 0;box-shadow:0 1px 2px rgba(0,0,0,0.08);">Today · 4</div>
+                <div style="flex:1;text-align:center;font-size:12.5px;font-weight:500;color:#71717A;padding:7px 0;">Upcoming</div>
+                <div style="flex:1;text-align:center;font-size:12.5px;font-weight:500;color:#71717A;padding:7px 0;">History</div>
+              </div>
+              <!-- live card -->
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#F0FDFA;border:1px solid #5EEAD4;flex-shrink:0;white-space:nowrap;"><span style="width:6px;height:6px;border-radius:50%;background:#14B8A6;"></span><span style="font-size:11px;font-weight:600;color:#115E59;">In progress</span></div>
+                  <span style="font-size:12px;font-weight:600;color:#71717A;">Pickup 12:30</span>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:13px;">
+                  <div style="display:flex;flex-direction:column;align-items:center;padding-top:5px;"><span style="width:9px;height:9px;border-radius:50%;border:2.5px solid #0EA5E9;"></span><span style="width:2px;flex:1;background:#E4E4E7;margin:3px 0;min-height:22px;"></span><span style="width:9px;height:9px;border-radius:2px;background:#18181B;"></span></div>
+                  <div style="flex:1;">
+                    <div style="font-size:14px;font-weight:600;color:#18181B;line-height:1.25;">Marienplatz 4</div>
+                    <div style="font-size:11.5px;color:#A1A1AA;">80331 München</div>
+                    <div style="height:10px;"></div>
+                    <div style="font-size:14px;font-weight:600;color:#18181B;line-height:1.25;">Munich Airport · T2</div>
+                    <div style="font-size:11.5px;color:#A1A1AA;">Terminal 2 · Departures</div>
+                  </div>
+                </div>
+                <div style="margin-top:12px;display:flex;align-items:center;gap:8px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;padding:9px 11px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#0284C7" stroke-width="2"></circle><path d="M12 7v5l3 2" stroke="#0284C7" stroke-width="2" stroke-linecap="round"></path></svg>
+                  <span style="font-size:12.5px;font-weight:600;color:#075985;white-space:nowrap;">Arriving in 8 min</span>
+                  <span style="margin-left:auto;font-size:11px;font-weight:600;color:#0EA5E9;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;">✈ LH 1845</span>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;">
+                  <button style="flex:1;font-family:inherit;border:none;cursor:pointer;background:#0EA5E9;color:#fff;font-size:13px;font-weight:600;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z" stroke="#fff" stroke-width="2"></path><circle cx="12" cy="10" r="2.5" stroke="#fff" stroke-width="2"></circle></svg>Navigate</button>
+                  <button style="width:40px;font-family:inherit;cursor:pointer;background:#fff;border:1px solid #D4D4D8;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L16 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" stroke="#18181B" stroke-width="1.8" stroke-linejoin="round"></path></svg></button>
+                </div>
+              </div>
+              <!-- next card -->
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,0.04);margin-top:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#EFF6FF;border:1px solid #93C5FD;"><span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;"></span><span style="font-size:11px;font-weight:600;color:#1E40AF;">Assigned</span></div>
+                  <span style="font-size:12px;font-weight:600;color:#71717A;">Pickup 13:15</span>
+                </div>
+                <div style="margin-top:11px;font-size:14px;font-weight:600;color:#18181B;">Bayerischer Hof → Hauptbahnhof</div>
+                <div style="font-size:11.5px;color:#A1A1AA;margin-top:2px;">Corporate · Frau Keller</div>
+              </div>
+            </div>
+            <!-- bottom nav -->
+            <div style="display:flex;justify-content:space-around;align-items:center;background:#fff;border-top:1px solid #E4E4E7;padding:9px 0 20px;">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="3" stroke="#0EA5E9" stroke-width="2"></rect><path d="M3 9h18M8 2v4M16 2v4" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round"></path></svg><span style="font-size:10px;font-weight:600;color:#0EA5E9;">Today</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="3" stroke="#A1A1AA" stroke-width="2"></rect><path d="M3 9h18M8 13h3M8 17h6" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"></path></svg><span style="font-size:10px;font-weight:500;color:#A1A1AA;">Calendar</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#A1A1AA" stroke-width="2"></circle><path d="M12 8v8M8 12h8" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"></path></svg><span style="font-size:10px;font-weight:500;color:#A1A1AA;">Book</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3z" stroke="#A1A1AA" stroke-width="2" stroke-linejoin="round"></path><path d="M9 3v15M15 6v15" stroke="#A1A1AA" stroke-width="2"></path></svg><span style="font-size:10px;font-weight:500;color:#A1A1AA;">Map</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#A1A1AA" stroke-width="2"></circle><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z" stroke="#A1A1AA" stroke-width="1.6"></path></svg><span style="font-size:10px;font-weight:500;color:#A1A1AA;">Settings</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PHONE 2: CLIENT LIVE TRACKING ===== -->
+      <div style="flex:none;">
+        <div style="font-size:12px;font-weight:600;color:#52525B;margin-bottom:14px;display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:50%;background:#0EA5E9;"></span>Client — Live tracking &amp; ETA</div>
+        <div style="width:320px;height:680px;background:#18181B;border-radius:46px;padding:11px;box-shadow:0 30px 60px rgba(0,0,0,0.26);">
+          <div style="position:relative;width:100%;height:100%;background:#E8E8EC;border-radius:36px;overflow:hidden;display:flex;flex-direction:column;">
+            <div style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#000;border-radius:999px;z-index:30;"></div>
+            <!-- MAP -->
+            <div style="position:absolute;inset:0;">
+              <svg width="100%" height="100%" viewBox="0 0 320 680" preserveAspectRatio="xMidYMid slice" style="display:block;">
+                <rect width="320" height="680" fill="#E5E7EB"></rect>
+                <rect x="-20" y="120" width="360" height="60" fill="#EEF0F2" transform="rotate(-18 160 150)"></rect>
+                <rect x="-20" y="380" width="360" height="46" fill="#EEF0F2" transform="rotate(8 160 400)"></rect>
+                <path d="M40 -20 L130 700" stroke="#D1D5DB" stroke-width="14"></path>
+                <path d="M260 -20 L210 700" stroke="#D1D5DB" stroke-width="12"></path>
+                <path d="M-20 250 L340 210" stroke="#D1D5DB" stroke-width="12"></path>
+                <path d="M-20 520 L340 470" stroke="#D1D5DB" stroke-width="10"></path>
+                <rect x="150" y="60" width="60" height="70" rx="4" fill="#DDE1E6"></rect>
+                <rect x="60" y="300" width="55" height="60" rx="4" fill="#DDE1E6"></rect>
+                <rect x="230" y="330" width="60" height="80" rx="4" fill="#DDE1E6"></rect>
+                <rect x="40" y="560" width="70" height="60" rx="4" fill="#DDE1E6"></rect>
+                <rect x="150" y="540" width="40" height="14" rx="3" fill="#BBF7D0"></rect>
+                <rect x="195" y="100" width="50" height="14" rx="3" fill="#BBF7D0"></rect>
+                <!-- route -->
+                <path d="M95 470 C 120 380, 150 330, 175 250 C 195 190, 200 160, 215 110" fill="none" stroke="#0EA5E9" stroke-width="6" stroke-linecap="round" opacity="0.30"></path>
+                <path d="M95 470 C 120 380, 150 330, 175 250" fill="none" stroke="#0EA5E9" stroke-width="6" stroke-linecap="round"></path>
+                <!-- destination pin -->
+                <g transform="translate(215 110)"><path d="M0 6 C 11 6 18 -2 18 -11 A 18 18 0 1 0 -18 -11 C -18 -2 -11 6 0 6 Z" fill="#18181B"></path><circle cx="0" cy="-13" r="6" fill="#fff"></circle></g>
+              </svg>
+              <!-- driver marker (pulsing) -->
+              <div style="position:absolute;left:84px;top:452px;width:34px;height:34px;">
+                <span style="position:absolute;inset:0;border-radius:50%;background:rgba(14,165,233,0.45);animation:dispaxPulse 2.4s ease-out infinite;"></span>
+                <span style="position:absolute;inset:0;border-radius:50%;background:#0EA5E9;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11v6a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-6z" fill="#fff"></path><circle cx="8" cy="14.5" r="1.2" fill="#0EA5E9"></circle><circle cx="16" cy="14.5" r="1.2" fill="#0EA5E9"></circle></svg></span>
+              </div>
+            </div>
+            <!-- top status bar overlay -->
+            <div style="position:relative;z-index:25;padding:16px 18px 0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:#18181B;"><span>9:41</span><span style="display:flex;gap:6px;align-items:center;"><svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="6" width="3" height="5" rx="1" fill="#18181B"></rect><rect x="4.5" y="4" width="3" height="7" rx="1" fill="#18181B"></rect><rect x="9" y="2" width="3" height="9" rx="1" fill="#18181B"></rect><rect x="13.5" y="0" width="3" height="11" rx="1" fill="#18181B"></rect></svg><svg width="22" height="11" viewBox="0 0 24 12" fill="none"><rect x="1" y="1" width="19" height="10" rx="2.5" stroke="#18181B" stroke-opacity="0.5"></rect><rect x="3" y="3" width="14" height="6" rx="1" fill="#18181B"></rect><rect x="21" y="4" width="2" height="4" rx="1" fill="#18181B"></rect></svg></span></div>
+              <div style="margin-top:14px;display:flex;align-items:center;gap:10px;">
+                <div style="width:38px;height:38px;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#18181B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+                <div style="background:#18181B;color:#fff;border-radius:999px;padding:8px 14px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);"><span style="width:7px;height:7px;border-radius:50%;background:#0EA5E9;"></span><span style="font-size:13px;font-weight:600;">Driver on the way</span></div>
+              </div>
+            </div>
+            <!-- bottom sheet -->
+            <div style="position:relative;z-index:25;margin-top:auto;background:#fff;border-radius:24px 24px 36px 36px;box-shadow:0 -8px 24px rgba(0,0,0,0.12);padding:14px 18px 24px;">
+              <div style="width:38px;height:4px;border-radius:999px;background:#D4D4D8;margin:0 auto 14px;"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div style="width:48px;height:48px;border-radius:50%;background:#18181B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;">SM</div>
+                  <div>
+                    <div style="font-size:16px;font-weight:700;color:#18181B;letter-spacing:-0.01em;">Stefan M.</div>
+                    <div style="font-size:12px;color:#71717A;display:flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="#F59E0B"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.8L12 17.5 5.7 20.5l1.6-6.8L2 9.1l7-.6z"></path></svg>4.9 · 1.2k rides</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:24px;font-weight:700;color:#0EA5E9;letter-spacing:-0.02em;line-height:1;">8<span style="font-size:13px;color:#71717A;font-weight:600;"> min</span></div>
+                  <div style="font-size:11px;color:#A1A1AA;font-weight:600;margin-top:2px;">to pickup</div>
+                </div>
+              </div>
+              <div style="margin-top:14px;display:flex;align-items:center;gap:10px;background:#F4F4F5;border-radius:12px;padding:11px 13px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="7" rx="2" stroke="#18181B" stroke-width="1.8"></rect><path d="M6 11l1.5-4h9L18 11M7 18v2M17 18v2" stroke="#18181B" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:#18181B;">Mercedes E-Class · Black</div><div style="font-size:11.5px;color:#A1A1AA;">M-XA 4821</div></div>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;">
+                <button style="flex:1;font-family:inherit;border:none;cursor:pointer;background:#18181B;color:#fff;font-size:13.5px;font-weight:600;height:46px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:7px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"></path></svg>Call</button>
+                <button style="flex:1;font-family:inherit;cursor:pointer;background:#fff;color:#18181B;border:1px solid #D4D4D8;font-size:13.5px;font-weight:600;height:46px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:7px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.5 8.5 0 0 1-12 7.7L3 21l1.8-6A8.5 8.5 0 1 1 21 11.5z" stroke="#18181B" stroke-width="1.8" stroke-linejoin="round"></path></svg>Message</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PHONE 3: RIDE LIFECYCLE ===== -->
+      <div style="flex:none;">
+        <div style="font-size:12px;font-weight:600;color:#52525B;margin-bottom:14px;display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:50%;background:#0EA5E9;"></span>Ride lifecycle — status machine</div>
+        <div style="width:320px;height:680px;background:#18181B;border-radius:46px;padding:11px;box-shadow:0 30px 60px rgba(0,0,0,0.26);">
+          <div style="position:relative;width:100%;height:100%;background:#FAFAFA;border-radius:36px;overflow:hidden;display:flex;flex-direction:column;">
+            <div style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#000;border-radius:999px;z-index:20;"></div>
+            <div style="background:#18181B;color:#fff;padding:16px 18px 20px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;"><span>9:41</span><span style="display:flex;gap:6px;align-items:center;"><svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="6" width="3" height="5" rx="1" fill="#fff"></rect><rect x="4.5" y="4" width="3" height="7" rx="1" fill="#fff"></rect><rect x="9" y="2" width="3" height="9" rx="1" fill="#fff"></rect><rect x="13.5" y="0" width="3" height="11" rx="1" fill="#fff"></rect></svg><svg width="22" height="11" viewBox="0 0 24 12" fill="none"><rect x="1" y="1" width="19" height="10" rx="2.5" stroke="#fff" stroke-opacity="0.6"></rect><rect x="3" y="3" width="14" height="6" rx="1" fill="#fff"></rect><rect x="21" y="4" width="2" height="4" rx="1" fill="#fff"></rect></svg></span></div>
+              <div style="margin-top:16px;display:flex;align-items:center;gap:10px;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                <div><div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#71717A;">Ride #1042</div><div style="font-size:20px;font-weight:700;letter-spacing:-0.01em;margin-top:1px;">Airport transfer</div></div>
+              </div>
+              <div style="margin-top:14px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 12px;">
+                <span style="font-size:12px;font-weight:600;color:#fff;">✈ LH 1845</span>
+                <span style="font-size:12px;color:#A1A1AA;">· T2 · Dep 14:05</span>
+                <span style="margin-left:auto;font-size:11px;font-weight:600;color:#0EA5E9;">On time</span>
+              </div>
+            </div>
+            <div style="flex:1;padding:20px 18px;">
+              <div style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#A1A1AA;margin-bottom:18px;">Progress</div>
+              <!-- step requested -->
+              <div style="display:flex;gap:14px;">
+                <div style="display:flex;flex-direction:column;align-items:center;"><span style="width:26px;height:26px;border-radius:50%;background:#F0FDF4;border:2px solid #22C55E;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="#22C55E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span style="width:2px;flex:1;background:#22C55E;min-height:26px;"></span></div>
+                <div style="padding-bottom:22px;"><div style="font-size:14px;font-weight:600;color:#18181B;">Requested</div><div style="font-size: 12px; color: #6f6f87">11:58 · by Secretary</div></div>
+              </div>
+              <!-- step assigned -->
+              <div style="display:flex;gap:14px;">
+                <div style="display:flex;flex-direction:column;align-items:center;"><span style="width:26px;height:26px;border-radius:50%;background:#F0FDF4;border:2px solid #22C55E;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="#22C55E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span style="width:2px;flex:1;background:#22C55E;min-height:26px;"></span></div>
+                <div style="padding-bottom:22px;"><div style="font-size:14px;font-weight:600;color:#18181B;">Assigned</div><div style="font-size: 12px; color: #66667e">12:03 · Stefan M.</div></div>
+              </div>
+              <!-- step in progress (current) -->
+              <div style="display:flex;gap:14px;">
+                <div style="display:flex;flex-direction:column;align-items:center;"><span style="width:26px;height:26px;border-radius:50%;background:#14B8A6;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px rgba(20,184,166,0.18);"><span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:dispaxBlink 1.6s ease-in-out infinite;"></span></span><span style="width:2px;flex:1;background:#E4E4E7;min-height:26px;"></span></div>
+                <div style="padding-bottom:22px;flex:1;"><div style="font-size:14px;font-weight:700;color:#115E59;">In progress</div><div style="font-size:12px;color:#71717A;">12:30 · en route to airport</div>
+                  <div style="margin-top:10px;display:flex;align-items:center;gap:8px;background:#F0FDFA;border:1px solid #5EEAD4;border-radius:10px;padding:9px 11px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#0F766E" stroke-width="2"></circle><path d="M12 7v5l3 2" stroke="#0F766E" stroke-width="2" stroke-linecap="round"></path></svg><span style="font-size:12px;font-weight:600;color:#115E59;">ETA 8 min · 14 min slack</span></div>
+                </div>
+              </div>
+              <!-- step completed (pending) -->
+              <div style="display:flex;gap:14px;">
+                <div style="display:flex;flex-direction:column;align-items:center;"><span style="width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid #D4D4D8;"></span></div>
+                <div><div style="font-size:14px;font-weight:600;color:#A1A1AA;">Completed</div><div style="font-size: 12px; color: #82828d">Expected 13:05</div></div>
+              </div>
+            </div>
+            <div style="padding:0 18px 22px;"><button style="width:100%;font-family:inherit;border:none;cursor:pointer;background:#18181B;color:#fff;font-size:14px;font-weight:600;height:48px;border-radius:14px;">View full details</button></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ DESKTOP DISPATCHER ============ -->
+  <div style="max-width:1200px;margin:0 auto;padding:72px 56px 0;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#A1A1AA;margin-bottom:6px;">Desktop · Dispatcher</div>
+    <h3 style="margin:0 0 32px;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#18181B;">Dispatch board &amp; predictive ETA</h3>
+
+    <div style="border-radius:14px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,0.20);border:1px solid #E4E4E7;background:#fff;">
+      <!-- window chrome -->
+      <div style="height:44px;background:#F4F4F5;border-bottom:1px solid #E4E4E7;display:flex;align-items:center;padding:0 16px;gap:8px;">
+        <span style="width:12px;height:12px;border-radius:50%;background:#FF5F57;"></span>
+        <span style="width:12px;height:12px;border-radius:50%;background:#FEBC2E;"></span>
+        <span style="width:12px;height:12px;border-radius:50%;background:#28C840;"></span>
+        <div style="margin-left:16px;flex:1;max-width:360px;height:28px;background:#fff;border:1px solid #E4E4E7;border-radius:8px;display:flex;align-items:center;padding:0 12px;font-size:12px;color:#A1A1AA;gap:8px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="4" y="11" width="16" height="10" rx="2" stroke="#A1A1AA" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#A1A1AA" stroke-width="2"/></svg>app.dispax.io/dispatch</div>
+      </div>
+
+      <!-- app body -->
+      <div style="display:flex;height:700px;background:#FAFAFA;">
+        <!-- sidebar -->
+        <div style="width:224px;flex:none;background:#18181B;display:flex;flex-direction:column;padding:20px 14px;">
+          <div style="display:flex;align-items:center;gap:10px;padding:0 6px 22px;">
+            <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(145deg,#27272A,#09090B);border:1px solid #3F3F46;display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M3 11.5L21 3l-8.5 18-2.2-7.3L3 11.5z" fill="#0EA5E9"/></svg></div>
+            <span style="font-size:16px;font-weight:700;color:#fff;letter-spacing:-0.01em;">Dispax</span>
+          </div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#52525B;padding:0 8px 8px;">Operations</div>
+          <div style="position:relative;display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;background:rgba(14,165,233,0.12);margin-bottom:3px;"><span style="position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:2px;background:#0EA5E9;"></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="2" stroke="#0EA5E9" stroke-width="2"/><rect x="13" y="3" width="8" height="8" rx="2" stroke="#0EA5E9" stroke-width="2"/><rect x="3" y="13" width="8" height="8" rx="2" stroke="#0EA5E9" stroke-width="2"/><rect x="13" y="13" width="8" height="8" rx="2" stroke="#0EA5E9" stroke-width="2"/></svg><span style="font-size:13.5px;font-weight:600;color:#fff;">Dispatch board</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;margin-bottom:3px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="3" stroke="#A1A1AA" stroke-width="2"/><path d="M3 9h18M8 2v4M16 2v4" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"/></svg><span style="font-size:13.5px;font-weight:500;color:#A1A1AA;">Schedule</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;margin-bottom:3px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"/></svg><span style="font-size:13.5px;font-weight:500;color:#A1A1AA;">Analytics</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;margin-bottom:3px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#A1A1AA" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"/></svg><span style="font-size:13.5px;font-weight:500;color:#A1A1AA;">New ride</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;margin-bottom:3px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v14H4zM4 9h16M8 14h5" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:13.5px;font-weight:500;color:#A1A1AA;">Billing</span></div>
+          <div style="margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 8px;border-top:1px solid rgba(255,255,255,0.08);"><div style="width:32px;height:32px;border-radius:50%;background:#3F3F46;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">AK</div><div style="line-height:1.2;"><div style="font-size:12.5px;font-weight:600;color:#fff;">Anna Krause</div><div style="font-size:11px;color:#71717A;">Dispatcher · München Süd</div></div></div>
+        </div>
+
+        <!-- main -->
+        <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+          <!-- topbar -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid #E4E4E7;background:#fff;">
+            <div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:-0.01em;color:#18181B;">Dispatch board</div>
+              <div style="font-size:13px;color:#71717A;margin-top:1px;">Tuesday, 18 June · 12 active rides</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="display:flex;align-items:center;gap:8px;width:240px;height:38px;background:#F4F4F5;border:1px solid #E4E4E7;border-radius:999px;padding:0 14px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#A1A1AA" stroke-width="2"/><path d="M20 20l-3-3" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"/></svg><span style="font-size:13px;color:#A1A1AA;">Search rides, drivers…</span></div>
+              <button style="font-family:inherit;border:none;cursor:pointer;background:#18181B;color:#fff;font-size:13px;font-weight:600;height:38px;padding:0 16px;border-radius:10px;display:inline-flex;align-items:center;gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>New ride</button>
+            </div>
+          </div>
+
+          <div style="flex:1;overflow:hidden;padding:22px 24px;">
+            <!-- PREDICTIVE ETA ALERT -->
+            <div style="display:flex;gap:16px;background:#fff;border:1px solid #FCA5A5;border-left:4px solid #EF4444;border-radius:14px;padding:18px 20px;box-shadow:0 4px 16px rgba(239,68,68,0.10);">
+              <div style="width:42px;height:42px;flex:none;border-radius:11px;background:#FEF2F2;display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3l9.5 17H2.5L12 3z" stroke="#EF4444" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="#EF4444" stroke-width="2" stroke-linecap="round"/></svg></div>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:15px;font-weight:700;color:#991B1B;">Ride at risk of delay</span>
+                  <span style="font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#A1A1AA;background:#F4F4F5;border-radius:999px;padding:3px 9px;">Predictive ETA Monitor · 60s</span>
+                </div>
+                <div style="font-size:13.5px;color:#52525B;margin-top:5px;">Ride <strong style="color:#18181B;">#1042</strong> · Marienplatz 4 → Munich Airport T2 · driver <strong style="color:#18181B;">Stefan M.</strong></div>
+                <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+                  <div style="background:#FAFAFA;border:1px solid #E4E4E7;border-radius:10px;padding:9px 14px;"><div style="font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#A1A1AA;">Driver ETA</div><div style="font-size:18px;font-weight:700;color:#18181B;margin-top:2px;">18 min</div></div>
+                  <div style="background:#FAFAFA;border:1px solid #E4E4E7;border-radius:10px;padding:9px 14px;"><div style="font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#A1A1AA;">Pickup in</div><div style="font-size:18px;font-weight:700;color:#18181B;margin-top:2px;">12 min</div></div>
+                  <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:10px;padding:9px 14px;"><div style="font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#B91C1C;">Slack</div><div style="font-size:18px;font-weight:700;color:#DC2626;margin-top:2px;">−6 min</div></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;justify-content:center;">
+                <button style="font-family:inherit;border:none;cursor:pointer;background:#18181B;color:#fff;font-size:13px;font-weight:600;height:38px;padding:0 16px;border-radius:10px;white-space:nowrap;">Reassign driver</button>
+                <button style="font-family:inherit;cursor:pointer;background:#fff;color:#18181B;border:1px solid #D4D4D8;font-size:13px;font-weight:600;height:38px;padding:0 16px;border-radius:10px;white-space:nowrap;">View ride</button>
+              </div>
+            </div>
+
+            <!-- stats -->
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px;">
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.04);"><div style="font-size:12px;color:#71717A;font-weight:500;">Active rides</div><div style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:#18181B;margin-top:4px;">12</div></div>
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.04);"><div style="font-size:12px;color:#71717A;font-weight:500;">At risk</div><div style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:#DC2626;margin-top:4px;">1</div></div>
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.04);"><div style="font-size:12px;color:#71717A;font-weight:500;">Drivers online</div><div style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:#18181B;margin-top:4px;">8<span style="font-size:14px;color:#A1A1AA;font-weight:600;"> / 11</span></div></div>
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.04);"><div style="font-size:12px;color:#71717A;font-weight:500;">On-time today</div><div style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:#18181B;margin-top:4px;">96<span style="font-size:14px;color:#A1A1AA;font-weight:600;">%</span></div></div>
+            </div>
+
+            <!-- two columns -->
+            <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:16px;margin-top:18px;">
+              <!-- ride pool -->
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,0.04);overflow:hidden;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #F4F4F5;"><span style="font-size:14px;font-weight:700;color:#18181B;">Pending requests</span><span style="font-size:11px;font-weight:600;color:#92400E;background:#FFFBEB;border:1px solid #FCD34D;border-radius:999px;padding:3px 9px;">3 unassigned</span></div>
+                <!-- row 1 -->
+                <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid #F4F4F5;">
+                  <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:#FFFBEB;border:1px solid #FCD34D;flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:#F59E0B;"></span><span style="font-size:11px;font-weight:600;color:#92400E;white-space:nowrap;">Requested</span></div>
+                  <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:#18181B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Hbf → Munich Airport T1</div><div style="font-size:11.5px;color:#A1A1AA;">13:40 · ✈ LH 1845 · 2 pax</div></div>
+                  <button style="font-family:inherit;border:none;cursor:pointer;background:#18181B;color:#fff;font-size:12px;font-weight:600;height:32px;padding:0 13px;border-radius:8px;white-space:nowrap;">Assign</button>
+                </div>
+                <!-- row 2 -->
+                <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid #F4F4F5;">
+                  <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:#FFFBEB;border:1px solid #FCD34D;flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:#F59E0B;"></span><span style="font-size:11px;font-weight:600;color:#92400E;white-space:nowrap;">Requested</span></div>
+                  <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:#18181B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Schwabing → Messe München</div><div style="font-size:11.5px;color:#A1A1AA;">14:10 · Corporate · Hr. Weber</div></div>
+                  <button style="font-family:inherit;border:none;cursor:pointer;background:#18181B;color:#fff;font-size:12px;font-weight:600;height:32px;padding:0 13px;border-radius:8px;white-space:nowrap;">Assign</button>
+                </div>
+                <!-- row 3 assigned -->
+                <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid #F4F4F5;">
+                  <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:#EFF6FF;border:1px solid #93C5FD;flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;"></span><span style="font-size:11px;font-weight:600;color:#1E40AF;white-space:nowrap;">Assigned</span></div>
+                  <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:#18181B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Bayerischer Hof → Hbf</div><div style="font-size:11.5px;color:#A1A1AA;">13:15 · Stefan M.</div></div>
+                  <span style="font-size:12px;font-weight:600;color:#71717A;white-space:nowrap;">12 min</span>
+                </div>
+                <!-- row 4 in progress (at risk) -->
+                <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;background:#FFFCFC;">
+                  <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:#F0FDFA;border:1px solid #5EEAD4;flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:#14B8A6;"></span><span style="font-size:11px;font-weight:600;color:#115E59;white-space:nowrap;">In progress</span></div>
+                  <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:#18181B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Marienplatz → Airport T2 <span style="color:#DC2626;">⚠</span></div><div style="font-size:11.5px;color:#A1A1AA;">#1042 · Stefan M. · slack −6 min</div></div>
+                  <button style="font-family:inherit;cursor:pointer;background:#fff;color:#991B1B;border:1px solid #FCA5A5;font-size:12px;font-weight:600;height:32px;padding:0 13px;border-radius:8px;white-space:nowrap;">Reassign</button>
+                </div>
+              </div>
+
+              <!-- drivers + mini map -->
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,0.04);overflow:hidden;">
+                <div style="padding:15px 18px;border-bottom:1px solid #F4F4F5;font-size:14px;font-weight:700;color:#18181B;">Live fleet</div>
+                <div style="position:relative;height:150px;background:#E5E7EB;">
+                  <svg width="100%" height="150" viewBox="0 0 380 150" preserveAspectRatio="xMidYMid slice" style="display:block;">
+                    <rect width="380" height="150" fill="#E5E7EB"/>
+                    <path d="M-10 40 L390 30" stroke="#D1D5DB" stroke-width="9"/>
+                    <path d="M-10 110 L390 120" stroke="#D1D5DB" stroke-width="7"/>
+                    <path d="M90 -10 L70 160" stroke="#D1D5DB" stroke-width="8"/>
+                    <path d="M250 -10 L270 160" stroke="#D1D5DB" stroke-width="7"/>
+                    <rect x="120" y="55" width="60" height="40" rx="4" fill="#DDE1E6"/>
+                    <rect x="290" y="60" width="50" height="50" rx="4" fill="#DDE1E6"/>
+                    <rect x="20" y="70" width="40" height="35" rx="4" fill="#DDE1E6"/>
+                  </svg>
+                  <div style="position:absolute;left:70px;top:44px;width:14px;height:14px;border-radius:50%;background:#0EA5E9;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+                  <div style="position:absolute;left:200px;top:90px;width:14px;height:14px;border-radius:50%;background:#0EA5E9;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+                  <div style="position:absolute;left:300px;top:70px;width:14px;height:14px;border-radius:50%;background:#EF4444;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+                  <div style="position:absolute;left:120px;top:110px;width:14px;height:14px;border-radius:50%;background:#A1A1AA;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+                </div>
+                <div style="padding:6px 0;">
+                  <div style="display:flex;align-items:center;gap:11px;padding:9px 18px;"><div style="width:30px;height:30px;border-radius:50%;background:#18181B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none;">SM</div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:#18181B;">Stefan M.</div><div style="font-size:11px;color:#DC2626;">On ride #1042 · delayed</div></div><span style="width:8px;height:8px;border-radius:50%;background:#EF4444;flex:none;"></span></div>
+                  <div style="display:flex;align-items:center;gap:11px;padding:9px 18px;"><div style="width:30px;height:30px;border-radius:50%;background:#3F3F46;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none;">JD</div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:#18181B;">Jonas D.</div><div style="font-size:11px;color:#71717A;">Available · Schwabing</div></div><span style="width:8px;height:8px;border-radius:50%;background:#22C55E;flex:none;"></span></div>
+                  <div style="display:flex;align-items:center;gap:11px;padding:9px 18px;"><div style="width:30px;height:30px;border-radius:50%;background:#3F3F46;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none;">PL</div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:#18181B;">Petra L.</div><div style="font-size:11px;color:#71717A;">On ride · on time</div></div><span style="width:8px;height:8px;border-radius:50%;background:#14B8A6;flex:none;"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BILLING (DESKTOP) ============ -->
+  <div style="max-width:1200px;margin:0 auto;padding:72px 56px 0;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#A1A1AA;margin-bottom:6px;">Desktop · Billing</div>
+    <h3 style="margin:0 0 32px;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#18181B;">Invoices &amp; DATEV export</h3>
+
+    <div style="border-radius:14px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,0.20);border:1px solid #E4E4E7;background:#fff;">
+      <div style="height:44px;background:#F4F4F5;border-bottom:1px solid #E4E4E7;display:flex;align-items:center;padding:0 16px;gap:8px;">
+        <span style="width:12px;height:12px;border-radius:50%;background:#FF5F57;"></span>
+        <span style="width:12px;height:12px;border-radius:50%;background:#FEBC2E;"></span>
+        <span style="width:12px;height:12px;border-radius:50%;background:#28C840;"></span>
+        <div style="margin-left:16px;flex:1;max-width:360px;height:28px;background:#fff;border:1px solid #E4E4E7;border-radius:8px;display:flex;align-items:center;padding:0 12px;font-size:12px;color:#A1A1AA;gap:8px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="4" y="11" width="16" height="10" rx="2" stroke="#A1A1AA" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#A1A1AA" stroke-width="2"/></svg>app.dispax.io/billing</div>
+      </div>
+
+      <div style="display:flex;height:620px;background:#FAFAFA;">
+        <!-- sidebar -->
+        <div style="width:224px;flex:none;background:#18181B;display:flex;flex-direction:column;padding:20px 14px;">
+          <div style="display:flex;align-items:center;gap:10px;padding:0 6px 22px;">
+            <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(145deg,#27272A,#09090B);border:1px solid #3F3F46;display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M3 11.5L21 3l-8.5 18-2.2-7.3L3 11.5z" fill="#0EA5E9"/></svg></div>
+            <span style="font-size:16px;font-weight:700;color:#fff;letter-spacing:-0.01em;">Dispax</span>
+          </div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#52525B;padding:0 8px 8px;">Operations</div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;margin-bottom:3px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="2" stroke="#A1A1AA" stroke-width="2"/><rect x="13" y="3" width="8" height="8" rx="2" stroke="#A1A1AA" stroke-width="2"/><rect x="3" y="13" width="8" height="8" rx="2" stroke="#A1A1AA" stroke-width="2"/><rect x="13" y="13" width="8" height="8" rx="2" stroke="#A1A1AA" stroke-width="2"/></svg><span style="font-size:13.5px;font-weight:500;color:#A1A1AA;">Dispatch board</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;margin-bottom:3px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="3" stroke="#A1A1AA" stroke-width="2"/><path d="M3 9h18M8 2v4M16 2v4" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"/></svg><span style="font-size:13.5px;font-weight:500;color:#A1A1AA;">Schedule</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;margin-bottom:3px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"/></svg><span style="font-size:13.5px;font-weight:500;color:#A1A1AA;">Analytics</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;margin-bottom:3px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#A1A1AA" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"/></svg><span style="font-size:13.5px;font-weight:500;color:#A1A1AA;">New ride</span></div>
+          <div style="position:relative;display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;background:rgba(14,165,233,0.12);margin-bottom:3px;"><span style="position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:2px;background:#0EA5E9;"></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v14H4zM4 9h16M8 14h5" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:13.5px;font-weight:600;color:#fff;">Billing</span></div>
+          <div style="margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 8px;border-top:1px solid rgba(255,255,255,0.08);"><div style="width:32px;height:32px;border-radius:50%;background:#3F3F46;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">AK</div><div style="line-height:1.2;"><div style="font-size:12.5px;font-weight:600;color:#fff;">Anna Krause</div><div style="font-size:11px;color:#71717A;">Dispatcher · München Süd</div></div></div>
+        </div>
+
+        <!-- main -->
+        <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid #E4E4E7;background:#fff;">
+            <div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:-0.01em;color:#18181B;">Billing</div>
+              <div style="font-size:13px;color:#71717A;margin-top:1px;">June 2026 · 24 invoices</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button style="font-family:inherit;cursor:pointer;background:#fff;color:#18181B;border:1px solid #D4D4D8;font-size:13px;font-weight:600;height:38px;padding:0 15px;border-radius:10px;display:inline-flex;align-items:center;gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v12M7 11l5 4 5-4M5 21h14" stroke="#18181B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Export DATEV</button>
+              <button style="font-family:inherit;border:none;cursor:pointer;background:#18181B;color:#fff;font-size:13px;font-weight:600;height:38px;padding:0 16px;border-radius:10px;display:inline-flex;align-items:center;gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>New invoice</button>
+            </div>
+          </div>
+
+          <div style="flex:1;overflow:hidden;padding:22px 24px;">
+            <!-- stats -->
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+              <div style="background:#18181B;border-radius:14px;padding:16px 18px;color:#fff;"><div style="font-size:12px;color:#A1A1AA;font-weight:500;">Outstanding</div><div style="font-size:26px;font-weight:700;letter-spacing:-0.02em;margin-top:4px;">€4,820</div></div>
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.04);"><div style="font-size:12px;color:#71717A;font-weight:500;">Paid · June</div><div style="font-size:26px;font-weight:700;letter-spacing:-0.02em;color:#18181B;margin-top:4px;">€18,640</div></div>
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.04);"><div style="font-size:12px;color:#71717A;font-weight:500;">Overdue</div><div style="font-size:26px;font-weight:700;letter-spacing:-0.02em;color:#DC2626;margin-top:4px;">€640</div></div>
+              <div style="background:#fff;border:1px solid #E4E4E7;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,0.04);"><div style="font-size:12px;color:#71717A;font-weight:500;">Collection rate</div><div style="font-size:26px;font-weight:700;letter-spacing:-0.02em;color:#18181B;margin-top:4px;">97<span style="font-size:14px;color:#A1A1AA;font-weight:600;">%</span></div></div>
+            </div>
+
+            <!-- invoice table -->
+            <div style="background:#fff;border:1px solid #E4E4E7;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,0.04);overflow:hidden;margin-top:18px;">
+              <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.9fr) minmax(0,1fr) minmax(0,0.95fr) 30px;gap:12px;padding:12px 20px;border-bottom:1px solid #E4E4E7;background:#FAFAFA;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#A1A1AA;">
+                <span>Invoice</span><span>Client</span><span style="text-align:right;">Amount</span><span>Status</span><span></span>
+              </div>
+              <!-- rows -->
+              <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.9fr) minmax(0,1fr) minmax(0,0.95fr) 30px;gap:12px;padding:14px 20px;border-bottom:1px solid #F4F4F5;align-items:center;">
+                <span style="font-size:13px;font-weight:600;color:#18181B;">INV-2026-0142</span>
+                <span style="font-size:13px;color:#27272A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Bayern Transfer GmbH</span>
+                <span style="font-size:13px;font-weight:600;color:#18181B;text-align:right;">€2,480.00</span>
+                <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;background:#F0FDF4;border:1px solid #86EFAC;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px;font-weight:600;color:#166534;">Paid</span></span></span>
+                <span style="text-align:right;color:#A1A1AA;font-weight:700;">⋯</span>
+              </div>
+              <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.9fr) minmax(0,1fr) minmax(0,0.95fr) 30px;gap:12px;padding:14px 20px;border-bottom:1px solid #F4F4F5;align-items:center;">
+                <span style="font-size:13px;font-weight:600;color:#18181B;">INV-2026-0141</span>
+                <span style="font-size:13px;color:#27272A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Müller Consulting AG</span>
+                <span style="font-size:13px;font-weight:600;color:#18181B;text-align:right;">€1,340.00</span>
+                <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;background:#FFFBEB;border:1px solid #FCD34D;"><span style="width:6px;height:6px;border-radius:50%;background:#F59E0B;"></span><span style="font-size:11px;font-weight:600;color:#92400E;">Pending</span></span></span>
+                <span style="text-align:right;color:#A1A1AA;font-weight:700;">⋯</span>
+              </div>
+              <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.9fr) minmax(0,1fr) minmax(0,0.95fr) 30px;gap:12px;padding:14px 20px;border-bottom:1px solid #F4F4F5;align-items:center;">
+                <span style="font-size:13px;font-weight:600;color:#18181B;">INV-2026-0140</span>
+                <span style="font-size:13px;color:#27272A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Klinikum München</span>
+                <span style="font-size:13px;font-weight:600;color:#18181B;text-align:right;">€3,920.00</span>
+                <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;background:#F0FDF4;border:1px solid #86EFAC;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px;font-weight:600;color:#166534;">Paid</span></span></span>
+                <span style="text-align:right;color:#A1A1AA;font-weight:700;">⋯</span>
+              </div>
+              <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.9fr) minmax(0,1fr) minmax(0,0.95fr) 30px;gap:12px;padding:14px 20px;border-bottom:1px solid #F4F4F5;align-items:center;">
+                <span style="font-size:13px;font-weight:600;color:#18181B;">INV-2026-0139</span>
+                <span style="font-size:13px;color:#27272A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Hotel Vier Jahreszeiten</span>
+                <span style="font-size:13px;font-weight:600;color:#18181B;text-align:right;">€640.00</span>
+                <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;background:#FEF2F2;border:1px solid #FCA5A5;"><span style="width:6px;height:6px;border-radius:50%;background:#EF4444;"></span><span style="font-size:11px;font-weight:600;color:#991B1B;">Overdue</span></span></span>
+                <span style="text-align:right;color:#A1A1AA;font-weight:700;">⋯</span>
+              </div>
+              <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.9fr) minmax(0,1fr) minmax(0,0.95fr) 30px;gap:12px;padding:14px 20px;align-items:center;">
+                <span style="font-size:13px;font-weight:600;color:#18181B;">INV-2026-0138</span>
+                <span style="font-size:13px;color:#27272A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Siemens AG</span>
+                <span style="font-size:13px;font-weight:600;color:#18181B;text-align:right;">€5,210.00</span>
+                <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;background:#F0FDF4;border:1px solid #86EFAC;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px;font-weight:600;color:#166534;">Paid</span></span></span>
+                <span style="text-align:right;color:#A1A1AA;font-weight:700;">⋯</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12px;color:#A1A1AA;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#A1A1AA" stroke-width="2"/><path d="M12 11v5M12 8h.01" stroke="#A1A1AA" stroke-width="2" stroke-linecap="round"/></svg>DATEV export generates a GoBD-compliant CSV for your tax accountant · last export 14 June.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:64px 0 8px;color:#A1A1AA;font-size:13px;">Dispax Design System · graphite + sky · one system, every surface.</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
