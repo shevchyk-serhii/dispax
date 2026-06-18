@@ -39,10 +39,10 @@ object InvoicePdfEndpointSpec extends ZIOSpecDefault:
 
   // ── IDs ─────────────────────────────────────────────────────────────────────
 
-  private val companyAId  = CompanyId(UUID.fromString("0000000A-0000-0000-0000-000000000001"))
-  private val companyBId  = CompanyId(UUID.fromString("0000000B-0000-0000-0000-000000000001"))
-  private val invoiceAId  = InvoiceId(UUID.fromString("AAAAAAAA-0000-0000-0000-000000000001"))
-  private val invoiceBId  = InvoiceId(UUID.fromString("BBBBBBBB-0000-0000-0000-000000000001"))
+  private val companyAId = CompanyId(UUID.fromString("0000000A-0000-0000-0000-000000000001"))
+  private val companyBId = CompanyId(UUID.fromString("0000000B-0000-0000-0000-000000000001"))
+  private val invoiceAId = InvoiceId(UUID.fromString("AAAAAAAA-0000-0000-0000-000000000001"))
+  private val invoiceBId = InvoiceId(UUID.fromString("BBBBBBBB-0000-0000-0000-000000000001"))
 
   private val dispatcherA = Person(
     id = PersonId(UUID.fromString("0000AADD-0000-0000-0000-000000000001")),

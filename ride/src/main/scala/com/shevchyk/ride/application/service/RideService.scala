@@ -521,27 +521,18 @@ class RideServiceImpl(
       driverOpt <- personRepository.findById(newDriverId).mapDatabaseError
       driver    <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(newDriverId))
 
+      _       <- failRule("driver_role", "Person is not a driver").when(!driver.canDrive).unit
       _       <-
-        ZIO
-          .fail(RideError.BusinessRuleViolation("driver_role", "Person is not a driver"))
-          .when(!driver.canDrive)
-          .unit
-      _       <-
-        ZIO
-          .fail(RideError.BusinessRuleViolation("company_isolation", "Driver belongs to a different company"))
+        failRule("company_isolation", "Driver belongs to a different company")
           .when(!driver.companyId.contains(ride.companyId))
           .unit
 
       // Check blacklist
       blocked <- blacklistRepository.isBlacklisted(ride.clientId, newDriverId).mapDatabaseError
-      _       <-
-        ZIO
-          .fail(RideError.BusinessRuleViolation("blacklist", "This driver is blacklisted for the ride's client"))
-          .when(blocked)
-          .unit
+      _       <- failRule("blacklist", "This driver is blacklisted for the ride's client").when(blocked).unit
 
       // Check scheduling conflicts (exclude current ride from conflict check)
-      _       <- checkScheduleConflict(newDriverId, ride)
+      _ <- checkScheduleConflict(newDriverId, ride)
 
       updatedRide   = ride
                         .focus(_.driverId)
@@ -764,14 +755,12 @@ class RideServiceImpl(
    *     13:01 → OVERLAP (genuine conflict)
    *   - existing=10:00, candidate=10:45 (45 min gap): overlap → conflict
    */
-  private def ridesOverlap(
-      candidateTime: Instant,
-      existingTime: Instant,
-      existingDurationMinutes: Long = 60L
-  ): Boolean =
-    val DefaultRideDurationMinutes = existingDurationMinutes
-    val existingEnd                = existingTime.plusSeconds((DefaultRideDurationMinutes + MinBufferMinutes) * 60)
-    val candidateEnd               = candidateTime.plusSeconds((DefaultRideDurationMinutes + MinBufferMinutes) * 60)
+  private def ridesOverlap(candidateTime: Instant, existingTime: Instant): Boolean =
+    // Without real ETA data we assume a default ride duration of 60 min for both rides.
+    val DefaultRideDurationMinutes = 60L
+    val windowSeconds              = (DefaultRideDurationMinutes + MinBufferMinutes) * 60
+    val existingEnd                = existingTime.plusSeconds(windowSeconds)
+    val candidateEnd               = candidateTime.plusSeconds(windowSeconds)
     // Standard interval overlap: [existingStart, existingEnd) overlaps [candidateStart, candidateEnd) iff:
     candidateTime.isBefore(existingEnd) && existingTime.isBefore(candidateEnd)
 
