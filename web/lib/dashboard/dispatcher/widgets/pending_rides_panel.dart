@@ -13,9 +13,19 @@ import '../../../constants/app_dimensions.dart';
 import '../utils/conflict_detector.dart';
 import '../../../widgets/common/notification_bell.dart';
 import 'assignment_dialog.dart';
+import 'eta_alert_card.dart';
 
 class PendingRidesPanel extends StatefulWidget {
-  const PendingRidesPanel({super.key});
+  final List<EtaAtRiskInfo> etaAlerts;
+  final void Function(String rideId)? onDismissEtaAlert;
+  final void Function(String rideId)? onReassignFromEtaAlert;
+
+  const PendingRidesPanel({
+    super.key,
+    this.etaAlerts = const [],
+    this.onDismissEtaAlert,
+    this.onReassignFromEtaAlert,
+  });
 
   @override
   State<PendingRidesPanel> createState() => _PendingRidesPanelState();
@@ -110,6 +120,25 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     return Column(
       children: [
         _buildHeader(),
+        if (widget.etaAlerts.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.paddingMedium,
+              vertical: AppDimensions.paddingSmall,
+            ),
+            child: Column(
+              children: widget.etaAlerts
+                  .map(
+                    (a) => EtaAlertCard(
+                      info: a,
+                      onDismiss: () => widget.onDismissEtaAlert?.call(a.rideId),
+                      onReassign: () =>
+                          widget.onReassignFromEtaAlert?.call(a.rideId),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
         _buildTabBar(),
         _buildFilterBar(),
         Expanded(

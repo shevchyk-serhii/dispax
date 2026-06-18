@@ -38,19 +38,31 @@ void main() {
   test('rejects rating a non-completed ride with a 4xx (not 500)', () async {
     final rideId = await createRideId(clientToken); // Requested
     final res = await rateRide(rideId, clientToken, 5);
-    expect(res.status, anyOf(400, 403, 409),
-        reason: 'rating a non-completed ride must be 4xx, was ${res.status}');
+    expect(
+      res.status,
+      anyOf(400, 403, 409),
+      reason: 'rating a non-completed ride must be 4xx, was ${res.status}',
+    );
   });
 
-  test('accepts a valid rating on a completed ride, and rejects a second one',
-      () async {
-    final rideId = await completeRide(clientToken, dispatcherToken);
+  test(
+    'accepts a valid rating on a completed ride, and rejects a second one',
+    () async {
+      final rideId = await completeRide(clientToken, dispatcherToken);
 
-    final first = await rateRide(rideId, clientToken, 5);
-    expect(first.status, anyOf(200, 201), reason: 'first rating should succeed');
+      final first = await rateRide(rideId, clientToken, 5);
+      expect(
+        first.status,
+        anyOf(200, 201),
+        reason: 'first rating should succeed',
+      );
 
-    final second = await rateRide(rideId, clientToken, 4);
-    expect(second.status, anyOf(400, 409),
-        reason: 'a second rating must be a 4xx, was ${second.status}');
-  });
+      final second = await rateRide(rideId, clientToken, 4);
+      expect(
+        second.status,
+        anyOf(400, 409),
+        reason: 'a second rating must be a 4xx, was ${second.status}',
+      );
+    },
+  );
 }

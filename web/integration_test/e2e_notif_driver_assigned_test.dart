@@ -12,16 +12,20 @@ import 'notif_helpers.dart';
 /// NotificationBell → the "Notifications" screen shows the entry. We also assert
 /// the REST inbox/unread-count independently of UI flake.
 void main() {
-  patrolTest('driver receives in-app notification when assigned a ride',
-      ($) async {
+  patrolTest('driver receives in-app notification when assigned a ride', (
+    $,
+  ) async {
     await resetTestData();
     final rideId = await seedAssignedRide();
 
     // Backend-level assertion first: the driver has an unread "ride_assigned".
     final driverToken = await apiLogin(kDevDriver1, kDevPassword);
     final unread = await unreadCount(driverToken);
-    expect(unread, greaterThanOrEqualTo(1),
-        reason: 'driver should have >=1 unread notification after assignment');
+    expect(
+      unread,
+      greaterThanOrEqualTo(1),
+      reason: 'driver should have >=1 unread notification after assignment',
+    );
     final notifs = await fetchNotifications(driverToken);
     expect(
       notifs.any((n) => n['notificationType'] == 'ride_assigned'),

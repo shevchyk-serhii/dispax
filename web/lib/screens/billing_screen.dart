@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../modules/billing/pdf_download_stub.dart'
     if (dart.library.html) '../modules/billing/pdf_download_web.dart';
 import '../modules/billing/pdf_preview_stub.dart'
@@ -131,36 +131,39 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(Icons.receipt_long, color: Colors.white, size: 24),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Abrechnung',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.receipt_long, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Abrechnung',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: () {
-                _loadInvoices();
-                _loadCompanies();
-              },
-            ),
-          ],
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                onPressed: () {
+                  _loadInvoices();
+                  _loadCompanies();
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -460,7 +463,7 @@ class _BillingScreenState extends State<BillingScreen>
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String?>(
-                  value: selectedLanguage,
+                  initialValue: selectedLanguage,
                   decoration: const InputDecoration(
                     labelText: 'Rechnungssprache',
                   ),

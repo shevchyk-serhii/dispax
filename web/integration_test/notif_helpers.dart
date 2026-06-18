@@ -31,8 +31,10 @@ Future<String> apiLogin(String email, String password) async {
 /// Creates a ride as the BMW client (returns the ride id).
 Future<String> seedRequestedRide({String? token}) async {
   final clientToken = token ?? await apiLogin(kDevClient1, kDevPassword);
-  final pickup =
-      DateTime.now().toUtc().add(const Duration(hours: 1)).toIso8601String();
+  final pickup = DateTime.now()
+      .toUtc()
+      .add(const Duration(hours: 1))
+      .toIso8601String();
   final res = await http.post(
     Uri.parse('$kApiBaseUrl/rides'),
     headers: {
@@ -52,7 +54,10 @@ Future<String> seedRequestedRide({String? token}) async {
 }
 
 /// Assigns Hans (driver1) to the given ride as the dispatcher.
-Future<void> assignDriver(String rideId, {String driverId = hansDriverId}) async {
+Future<void> assignDriver(
+  String rideId, {
+  String driverId = hansDriverId,
+}) async {
   final dispatcherToken = await apiLogin(kDevDispatcher, kDevPassword);
   await http.put(
     Uri.parse('$kApiBaseUrl/rides/$rideId/assign-driver'),
@@ -86,7 +91,10 @@ Future<void> setStatus(String rideId, String status) async {
 }
 
 /// Cancels a ride with a reason as the dispatcher.
-Future<void> cancelRide(String rideId, {String reason = 'Client no-show'}) async {
+Future<void> cancelRide(
+  String rideId, {
+  String reason = 'Client no-show',
+}) async {
   final dispatcherToken = await apiLogin(kDevDispatcher, kDevPassword);
   await http.put(
     Uri.parse('$kApiBaseUrl/rides/$rideId/cancel'),
@@ -110,8 +118,10 @@ Future<int> unreadCount(String token) async {
 /// REST: returns the raw notification list for the token's user. Uses a high
 /// limit so assertions don't silently hit the default page size (20) when an
 /// inbox has accumulated entries across runs.
-Future<List<Map<String, dynamic>>> fetchNotifications(String token,
-    {int limit = 100}) async {
+Future<List<Map<String, dynamic>>> fetchNotifications(
+  String token, {
+  int limit = 100,
+}) async {
   final r = await http.get(
     Uri.parse('$kApiBaseUrl/notifications?limit=$limit'),
     headers: {'Authorization': 'Bearer $token'},
@@ -155,10 +165,15 @@ Future<List<Map<String, dynamic>>> waitForNotification(
 /// Lands on a screen whose app bar title is "Notifications".
 Future<void> openNotifications(PatrolIntegrationTester $) async {
   final bell = find.byIcon(Icons.notifications_outlined);
-  expect(bell, findsWidgets,
-      reason: 'NotificationBell (notifications_outlined) should be in the app bar');
+  expect(
+    bell,
+    findsWidgets,
+    reason:
+        'NotificationBell (notifications_outlined) should be in the app bar',
+  );
   await $.tester.tap(bell.first, warnIfMissed: false);
   await $.pumpAndSettle(timeout: const Duration(seconds: 10));
-  await $('Notifications')
-      .waitUntilVisible(timeout: const Duration(seconds: 15));
+  await $(
+    'Notifications',
+  ).waitUntilVisible(timeout: const Duration(seconds: 15));
 }

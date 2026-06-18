@@ -21,7 +21,10 @@ const double _marienplatzLat = 48.1374;
 const double _marienplatzLng = 11.5755;
 
 Future<void> _pushDriverLocation(
-    String driverId, double lat, double lng) async {
+  String driverId,
+  double lat,
+  double lng,
+) async {
   final dispatcherToken = await apiLogin(kDevDispatcher, kDevPassword);
   await http.put(
     Uri.parse('$kApiBaseUrl/drivers/$driverId/location'),

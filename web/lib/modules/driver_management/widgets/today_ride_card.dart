@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../ride_management/models/ride.dart';
 import '../../../screens/ride_details_screen.dart';
@@ -6,6 +7,7 @@ import '../../core/widgets/ride_info_row.dart';
 import 'ride_quick_actions.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_colors.dart';
+import '../../../constants/app_styles.dart';
 
 class TodayRideCard extends StatelessWidget {
   final Ride ride;
@@ -46,15 +48,18 @@ class TodayRideCard extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap:
-              onViewDetails ??
-              () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => RideDetailsScreen(ride: ride),
-                  ),
-                );
-              },
+          onTap: () {
+            HapticFeedback.selectionClick();
+            if (onViewDetails != null) {
+              onViewDetails!();
+            } else {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => RideDetailsScreen(ride: ride),
+                ),
+              );
+            }
+          },
           child: Container(
             decoration: BoxDecoration(
               border: Border(
@@ -192,10 +197,9 @@ class TodayRideCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '~$etaMinutes min',
-                        style: const TextStyle(
+                        style: AppStyles.labelLarge.copyWith(
                           color: Colors.white,
                           fontSize: 10,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],

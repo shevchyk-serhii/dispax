@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -68,7 +67,7 @@ class ApiClient {
       final headers = acceptOverride == null
           ? privateHeaders
           : (Map<String, String>.from(privateHeaders)
-            ..['Accept'] = acceptOverride);
+              ..['Accept'] = acceptOverride);
 
       final raw = await privateClient
           .get(Uri.parse(url), headers: headers)

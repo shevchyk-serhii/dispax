@@ -23,8 +23,10 @@ const String _uniqueDropoff = 'Olympiapark Live-Test, München';
 
 Future<void> _createRideWithDropoff(String dropoff) async {
   final clientToken = await apiLogin(kDevClient1, kDevPassword);
-  final pickup =
-      DateTime.now().toUtc().add(const Duration(hours: 2)).toIso8601String();
+  final pickup = DateTime.now()
+      .toUtc()
+      .add(const Duration(hours: 2))
+      .toIso8601String();
   await http.post(
     Uri.parse('$kApiBaseUrl/rides'),
     headers: {
@@ -43,8 +45,9 @@ Future<void> _createRideWithDropoff(String dropoff) async {
 }
 
 void main() {
-  patrolTest('dispatcher sees a newly booked ride appear live in Pending',
-      ($) async {
+  patrolTest('dispatcher sees a newly booked ride appear live in Pending', (
+    $,
+  ) async {
     await resetTestData();
 
     await bootstrapTestApp();
@@ -61,8 +64,9 @@ void main() {
     await _createRideWithDropoff(_uniqueDropoff);
 
     // It should appear live, without a manual pull-to-refresh.
-    await $(_uniqueDropoff)
-        .waitUntilVisible(timeout: const Duration(seconds: 20));
+    await $(
+      _uniqueDropoff,
+    ).waitUntilVisible(timeout: const Duration(seconds: 20));
     expect($(_uniqueDropoff), findsWidgets);
   });
 }

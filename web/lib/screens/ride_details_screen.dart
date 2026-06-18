@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../modules/core/models/person.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../constants/app_colors.dart';
 import '../modules/ride_management/widgets/widgets.dart';
+import '../modules/ride_management/widgets/ride_lifecycle_stepper.dart';
 import '../modules/core/widgets/widgets.dart';
 import '../modules/ride_management/services/ride_service.dart';
 import '../modules/core/navigation_utils.dart';
@@ -72,7 +74,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  RideStatusCard(
+                  RideLifecycleStepperWidget(
                     ride: _currentRide,
                     isClientView: widget.isClientView,
                   ),
@@ -370,6 +372,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () {
+                            HapticFeedback.mediumImpact();
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => ChatScreen(ride: _currentRide),

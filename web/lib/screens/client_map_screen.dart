@@ -509,7 +509,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             ),
           ),
         ),
-        Switch(
+        Switch.adaptive(
           value: _sharingLocation,
           onChanged: (value) {
             setState(() => _sharingLocation = value);
@@ -522,7 +522,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             }
           },
           activeThumbColor: Colors.white,
-          activeTrackColor: AppColors.success,
+          activeTrackColor: AppColors.accent,
           inactiveThumbColor: Colors.white,
           inactiveTrackColor: Theme.of(context).colorScheme.onSurfaceVariant,
         ),

@@ -20,9 +20,7 @@ Future<void> bootstrapTestApp() async {
   final prefs = await SharedPreferences.getInstance();
   themeModeNotifier.value = themeFromString(prefs.getString('theme_mode'));
 
-  MapboxOptions.setAccessToken(
-    'MAPBOX_PUBLIC_TOKEN_REMOVED',
-  );
+  MapboxOptions.setAccessToken('MAPBOX_PUBLIC_TOKEN_REMOVED');
 
   try {
     await Firebase.initializeApp(

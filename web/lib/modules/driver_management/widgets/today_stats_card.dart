@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
+import '../../../constants/app_styles.dart';
+import '../../../constants/app_dimensions.dart';
 
 class TodayStatsCard extends StatelessWidget {
   final List<Ride> todayRides;
@@ -22,32 +24,17 @@ class TodayStatsCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(AppDimensions.paddingMedium),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(15),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: AppStyles.primaryCardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Today\'s Overview',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
+            style: AppStyles.titleMedium.copyWith(color: colorScheme.onSurface),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppDimensions.paddingMedium),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -101,22 +88,20 @@ class TodayStatsCard extends StatelessWidget {
           height: 48,
           decoration: BoxDecoration(
             color: color.withAlpha(25),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
           ),
-          child: Icon(icon, color: color, size: 24),
+          child: Icon(icon, color: color, size: AppDimensions.iconLarge),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppDimensions.paddingSmall),
         Text(
           count.toString(),
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
+          style: AppStyles.displayLarge.copyWith(color: color),
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+          style: AppStyles.bodySmall.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

@@ -37,6 +37,8 @@ class AppDimensions {
   static const double dividerIndent = 16.0;
 
   static const double maxContentWidth = 1200.0;
+  static const double breakpointDesktop = 800.0;
+  static const double radiusButton = 10.0;
   static const double screenPadding = 16.0;
   static const double sectionSpacing = 24.0;
   static const double itemSpacing = 16.0;

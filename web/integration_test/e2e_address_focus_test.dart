@@ -14,8 +14,9 @@ import 'patrol_helpers.dart';
 /// field, the client search at the top of the form. This test asserts focus
 /// stays out of the client field after editing To.
 void main() {
-  patrolTest('entering To does not steal focus back to the client field',
-      ($) async {
+  patrolTest('entering To does not steal focus back to the client field', (
+    $,
+  ) async {
     await resetTestData();
     await bootstrapTestApp();
     await $.pumpAndSettle();
@@ -37,25 +38,36 @@ void main() {
       of: find.text('Client Name'),
       matching: find.byType(TextField),
     );
-    expect(clientField, findsOneWidget,
-        reason: 'Client search field should be present on the driver form');
+    expect(
+      clientField,
+      findsOneWidget,
+      reason: 'Client search field should be present on the driver form',
+    );
 
     // The bug: editing To recreated the address widget and bounced focus to the
     // client field. After the fix, the client field must NOT hold focus.
     final clientFocus =
         $.tester.widget<TextField>(clientField).focusNode?.hasFocus ?? false;
-    expect(clientFocus, isFalse,
-        reason: 'Editing the To address must not steal focus to the client '
-            'search field');
+    expect(
+      clientFocus,
+      isFalse,
+      reason:
+          'Editing the To address must not steal focus to the client '
+          'search field',
+    );
 
     // And the global primary focus must not sit inside the client field.
     final primary = FocusManager.instance.primaryFocus;
     final clientContext = clientField.evaluate().single;
-    final focusInsideClient = primary != null &&
+    final focusInsideClient =
+        primary != null &&
         primary.context != null &&
         _isAncestorContext(clientContext, primary.context!);
-    expect(focusInsideClient, isFalse,
-        reason: 'Primary focus must not be inside the client search field');
+    expect(
+      focusInsideClient,
+      isFalse,
+      reason: 'Primary focus must not be inside the client search field',
+    );
   });
 }
 

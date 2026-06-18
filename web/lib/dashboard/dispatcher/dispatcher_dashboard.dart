@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
+import '../../constants/app_dimensions.dart';
+import '../../constants/app_styles.dart';
 import '../../screens/create_ride_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/expense_screen.dart';
@@ -26,6 +28,7 @@ import '../driver/today_rides_screen.dart';
 import '../driver/calendar/calendar_schedule_screen.dart';
 import 'widgets/payroll_screen.dart';
 import 'widgets/pending_rides_panel.dart';
+import 'widgets/eta_alert_card.dart';
 import 'widgets/driver_schedule_panel.dart';
 import 'widgets/analytics_panel.dart';
 import 'widgets/driver_earnings_panel.dart';
@@ -33,6 +36,8 @@ import 'widgets/peak_hours_panel.dart';
 import 'widgets/client_value_panel.dart';
 import 'widgets/driver_scorecard_panel.dart';
 import 'widgets/driver_ratings_panel.dart';
+import '../../modules/core/services/websocket_service.dart';
+import 'dart:async';
 
 class DispatcherDashboard extends StatefulWidget {
   const DispatcherDashboard({super.key});
@@ -46,6 +51,8 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   int _mobileTabIndex = 0;
   late RideBloc _rideBloc;
   final CreateRideFormBloc _createRideFormBloc = CreateRideFormBloc();
+  final List<EtaAtRiskInfo> _etaAlerts = [];
+  StreamSubscription? _wsSubscription;
 
   // Screen index of the "New Ride" screen — used to detect unsaved form changes
   // when the user navigates away. This is a screen index, not a nav position.
@@ -56,6 +63,34 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   static const int _myScheduleScreenIndex = 31;
 
   @override
+  void initState() {
+    super.initState();
+    _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
+      if (!mounted) return;
+      if (event.isEtaAtRisk) {
+        final rideId = event.rideId ?? '';
+        final driverName = event.data['driverName'] as String? ?? 'Unknown';
+        final etaMin = event.etaMinutes ?? 0;
+        final pickupMin = event.pickupInMinutes ?? 0;
+        final slack = event.slackMinutes ?? 0;
+        setState(() {
+          _etaAlerts.removeWhere((a) => a.rideId == rideId);
+          _etaAlerts.insert(
+            0,
+            EtaAtRiskInfo(
+              rideId: rideId,
+              driverName: driverName,
+              etaMinutes: etaMin,
+              pickupInMinutes: pickupMin,
+              slackMinutes: slack,
+            ),
+          );
+        });
+      }
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _rideBloc = context.read<RideBloc>();
@@ -63,6 +98,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   @override
   void dispose() {
+    _wsSubscription?.cancel();
     _createRideFormBloc.close();
     super.dispose();
   }
@@ -104,7 +140,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   List<Widget> _buildAllScreens(bool canDrive) {
     final user = context.read<AuthBloc>().state.user;
     return [
-      const PendingRidesPanel(), // 0: Home
+      PendingRidesPanel(
+        etaAlerts: _etaAlerts,
+        onDismissEtaAlert: (rideId) {
+          setState(() => _etaAlerts.removeWhere((a) => a.rideId == rideId));
+        },
+      ), // 0: Home
       DriverSchedulePanel(
         // 1: Schedule
         selectedDate: _selectedDate,
@@ -163,7 +204,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth >= 800) {
+          if (constraints.maxWidth >= AppDimensions.breakpointDesktop) {
             return _buildSplitView(context);
           }
           return _buildMobileView(canDrive);
@@ -193,10 +234,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
                       onPressed: () => _openDriverMap(context),
                       icon: const Icon(Icons.map, size: 20),
                       label: const Text('Driver Map'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: Colors.white,
-                      ),
+                      style: AppStyles.accentButtonStyle,
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -206,10 +244,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
                     onPressed: () => _openBilling(context),
                     icon: const Icon(Icons.request_quote, size: 20),
                     label: const Text('Billing'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
-                    ),
+                    style: AppStyles.accentButtonStyle,
                   ),
                 ],
               ),
@@ -218,7 +253,17 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           Expanded(
             child: Row(
               children: [
-                Expanded(flex: 2, child: const PendingRidesPanel()),
+                Expanded(
+                  flex: 2,
+                  child: PendingRidesPanel(
+                    etaAlerts: _etaAlerts,
+                    onDismissEtaAlert: (rideId) {
+                      setState(
+                        () => _etaAlerts.removeWhere((a) => a.rideId == rideId),
+                      );
+                    },
+                  ),
+                ),
                 Container(
                   width: 1,
                   color: Theme.of(context).colorScheme.outlineVariant,
