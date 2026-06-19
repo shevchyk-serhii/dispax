@@ -1,4 +1,5 @@
 import '../../core/models/location.dart';
+import 'vehicle_class.dart';
 
 /// Simplified request model that matches what the backend actually uses
 /// Backend converts this via CreateRideApiRequest.toDomain() which only uses:
@@ -22,6 +23,7 @@ class CreateRideRequest {
   final List<String>? specialRequirements;
   final String? driverId;
   final String? newClientPhone;
+  final VehicleClass vehicleClass;
 
   const CreateRideRequest({
     required this.clientId,
@@ -37,6 +39,7 @@ class CreateRideRequest {
     this.specialRequirements,
     this.driverId,
     this.newClientPhone,
+    this.vehicleClass = VehicleClass.business,
   });
 
   Map<String, dynamic> toJson() {
@@ -56,6 +59,7 @@ class CreateRideRequest {
       if (driverId != null) 'driverId': driverId,
       if (newClientPhone != null && newClientPhone!.isNotEmpty)
         'clientPhone': newClientPhone,
+      'vehicleClass': vehicleClass.wire,
     };
   }
 

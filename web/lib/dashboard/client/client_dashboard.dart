@@ -6,16 +6,18 @@ import '../../widgets/widgets.dart';
 import '../../modules/core/date_utils.dart';
 import '../../screens/ride_details_screen.dart';
 import '../../screens/settings_screen.dart';
-import '../../screens/create_ride_screen.dart';
 
 import '../../screens/client_map_screen.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/lucide_compat.dart';
 import '../../utils/ride_status_styles.dart';
 import 'client_ride_history_screen.dart';
+import 'client_home_screen.dart';
+import 'client_book_screen.dart';
 import '../../widgets/common/cancel_ride_dialog.dart';
 import '../../widgets/common/responsive_scaffold.dart';
 import '../../modules/ride_management/services/ride_service.dart';
+import '../../modules/ride_management/services/client_address_service.dart';
 
 class ClientDashboard extends StatefulWidget {
   const ClientDashboard({super.key});
@@ -28,16 +30,34 @@ class _ClientDashboardState extends State<ClientDashboard> {
   int _selectedIndex = 0;
   late RideBloc _rideBloc;
   final CreateRideFormBloc _createRideFormBloc = CreateRideFormBloc();
+  late SavedPlacesBloc _savedPlacesBloc;
+  bool _savedPlacesBlocCreated = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _rideBloc = context.read<RideBloc>();
+    // didChangeDependencies fires on every ancestor InheritedWidget change
+    // (auth/theme/MediaQuery), so guard the bloc creation to run exactly once —
+    // otherwise each call leaks an unclosed SavedPlacesBloc.
+    if (!_savedPlacesBlocCreated) {
+      _savedPlacesBlocCreated = true;
+      final user = context.read<AuthBloc>().state.user;
+      _savedPlacesBloc = SavedPlacesBloc(
+        addressService: ClientAddressService(
+          apiClient: context.read<AuthBloc>().apiClient,
+        ),
+      );
+      if (user != null) {
+        _savedPlacesBloc.add(SavedPlacesLoadRequested(user.id));
+      }
+    }
   }
 
   @override
   void dispose() {
     _createRideFormBloc.close();
+    _savedPlacesBloc.close();
     super.dispose();
   }
 
@@ -100,26 +120,39 @@ class _ClientDashboardState extends State<ClientDashboard> {
   Widget _buildCurrentTab() {
     switch (_selectedIndex) {
       case 0:
-        return MyRidesTab(onOpenMap: () => setState(() => _selectedIndex = 3));
+        return BlocProvider.value(
+          value: _savedPlacesBloc,
+          child: ClientHomeScreen(
+            onBookTap: () => setState(() => _selectedIndex = 2),
+          ),
+        );
       case 1:
         return const ClientRideHistoryScreen();
       case 2:
-        return CreateRideScreen(
-          rideBloc: _rideBloc,
-          formBloc: _createRideFormBloc,
-          onCreated: () {
-            context.read<RideBloc>().add(
-              RideLoadRequested(user: context.read<AuthBloc>().state.user!),
-            );
-            setState(() => _selectedIndex = 0);
-          },
+        return BlocProvider.value(
+          value: _savedPlacesBloc,
+          child: ClientBookScreen(
+            formBloc: _createRideFormBloc,
+            rideBloc: _rideBloc,
+            onCreated: () {
+              context.read<RideBloc>().add(
+                RideLoadRequested(user: context.read<AuthBloc>().state.user!),
+              );
+              setState(() => _selectedIndex = 0);
+            },
+          ),
         );
       case 3:
         return const ClientMapScreen();
       case 4:
         return const SettingsScreen();
       default:
-        return MyRidesTab(onOpenMap: () => setState(() => _selectedIndex = 3));
+        return BlocProvider.value(
+          value: _savedPlacesBloc,
+          child: ClientHomeScreen(
+            onBookTap: () => setState(() => _selectedIndex = 2),
+          ),
+        );
     }
   }
 

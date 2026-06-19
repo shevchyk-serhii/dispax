@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import '../../modules/ride_management/models/vehicle_class.dart';
+import '../../modules/ride_management/models/ride_estimate.dart';
 
 enum CreateRideFormStatus { initial, submitting, success, failure }
 
@@ -28,6 +30,19 @@ class CreateRideFormState extends Equatable {
   final String baselineClientName;
   final String? baselineDriverId;
 
+  // ─── Client booking extensions ───
+  /// Selected vehicle class for the client booking flow.
+  final VehicleClass selectedVehicleClass;
+
+  /// Whether the ride is scheduled (true) or ASAP / Now (false).
+  final bool isScheduled;
+
+  /// Estimate returned for the business vehicle class.
+  final RideEstimate? estimateBusiness;
+
+  /// Estimate returned for the van vehicle class.
+  final RideEstimate? estimateVan;
+
   const CreateRideFormState({
     required this.clientName,
     this.selectedClientId,
@@ -50,6 +65,10 @@ class CreateRideFormState extends Equatable {
     this.baselineClientId,
     this.baselineClientName = '',
     this.baselineDriverId,
+    this.selectedVehicleClass = VehicleClass.business,
+    this.isScheduled = true,
+    this.estimateBusiness,
+    this.estimateVan,
   });
 
   factory CreateRideFormState.initial() {
@@ -70,6 +89,10 @@ class CreateRideFormState extends Equatable {
       specialRequirements: const [],
       isNewClient: false,
       newClientPhone: '',
+      selectedVehicleClass: VehicleClass.business,
+      isScheduled: true,
+      estimateBusiness: null,
+      estimateVan: null,
     );
   }
 
@@ -99,6 +122,12 @@ class CreateRideFormState extends Equatable {
     String? baselineClientName,
     String? baselineDriverId,
     bool clearBaselineDriverId = false,
+    VehicleClass? selectedVehicleClass,
+    bool? isScheduled,
+    RideEstimate? estimateBusiness,
+    bool clearEstimateBusiness = false,
+    RideEstimate? estimateVan,
+    bool clearEstimateVan = false,
   }) {
     return CreateRideFormState(
       clientName: clientName ?? this.clientName,
@@ -130,8 +159,18 @@ class CreateRideFormState extends Equatable {
       baselineDriverId: clearBaselineDriverId
           ? null
           : (baselineDriverId ?? this.baselineDriverId),
+      selectedVehicleClass: selectedVehicleClass ?? this.selectedVehicleClass,
+      isScheduled: isScheduled ?? this.isScheduled,
+      estimateBusiness: clearEstimateBusiness
+          ? null
+          : (estimateBusiness ?? this.estimateBusiness),
+      estimateVan: clearEstimateVan ? null : (estimateVan ?? this.estimateVan),
     );
   }
+
+  /// The estimate for the currently selected vehicle class.
+  RideEstimate? get activeEstimate =>
+      selectedVehicleClass == VehicleClass.van ? estimateVan : estimateBusiness;
 
   bool get isValid {
     final clientOk = isNewClient
@@ -179,5 +218,9 @@ class CreateRideFormState extends Equatable {
     baselineClientId,
     baselineClientName,
     baselineDriverId,
+    selectedVehicleClass,
+    isScheduled,
+    estimateBusiness,
+    estimateVan,
   ];
 }

@@ -56,6 +56,14 @@ class Ride {
   final String? terminal;
   final String? flightStatus;
   final String? driverName;
+
+  /// The assigned driver's average rating across all their rides (0–5), as
+  /// returned in RideDto. Distinct from [rating], which is the client's rating
+  /// of THIS ride. Null when the driver has no ratings yet or none is assigned.
+  final double? driverRating;
+
+  /// Number of ratings the [driverRating] average is based on.
+  final int? driverRatingCount;
   final Location? driverLocation;
   final Location? clientLocation;
   final bool driverApproaching;
@@ -99,6 +107,8 @@ class Ride {
     this.terminal,
     this.flightStatus,
     this.driverName,
+    this.driverRating,
+    this.driverRatingCount,
     this.driverLocation,
     this.clientLocation,
     this.driverApproaching = false,
@@ -146,6 +156,8 @@ class Ride {
       terminal: json['terminal'],
       flightStatus: json['flightStatus'],
       driverName: json['driverName'],
+      driverRating: (json['driverRating'] as num?)?.toDouble(),
+      driverRatingCount: json['driverRatingCount'] as int?,
       driverLocation: json['driverLocation'] != null
           ? Location.fromJson(json['driverLocation'])
           : null,
@@ -195,6 +207,8 @@ class Ride {
       'terminal': terminal,
       'flightStatus': flightStatus,
       'driverName': driverName,
+      'driverRating': driverRating,
+      'driverRatingCount': driverRatingCount,
       'driverLocation': driverLocation?.toJson(),
       'clientLocation': clientLocation?.toJson(),
       'driverApproaching': driverApproaching,
@@ -239,6 +253,8 @@ class Ride {
     String? terminal,
     String? flightStatus,
     String? driverName,
+    double? driverRating,
+    int? driverRatingCount,
     Location? driverLocation,
     Location? clientLocation,
     bool? driverApproaching,
@@ -281,6 +297,8 @@ class Ride {
       terminal: terminal ?? this.terminal,
       flightStatus: flightStatus ?? this.flightStatus,
       driverName: driverName ?? this.driverName,
+      driverRating: driverRating ?? this.driverRating,
+      driverRatingCount: driverRatingCount ?? this.driverRatingCount,
       driverLocation: driverLocation ?? this.driverLocation,
       clientLocation: clientLocation ?? this.clientLocation,
       driverApproaching: driverApproaching ?? this.driverApproaching,

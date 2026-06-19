@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import '../../modules/ride_management/models/vehicle_class.dart';
+import '../../modules/ride_management/models/ride_estimate.dart';
 
 abstract class CreateRideFormEvent extends Equatable {
   const CreateRideFormEvent();
@@ -184,4 +186,36 @@ class NewClientPhoneChanged extends CreateRideFormEvent {
 
   @override
   List<Object?> get props => [phone];
+}
+
+/// Emitted when the user picks a vehicle class on the client booking flow.
+class VehicleClassSelected extends CreateRideFormEvent {
+  final VehicleClass vehicleClass;
+
+  const VehicleClassSelected(this.vehicleClass);
+
+  @override
+  List<Object?> get props => [vehicleClass];
+}
+
+/// Emitted when the user toggles the scheduled/now toggle on the client booking flow.
+class ScheduleModeToggled extends CreateRideFormEvent {
+  /// true = scheduled (user picks date/time), false = ASAP / Now.
+  final bool scheduled;
+
+  const ScheduleModeToggled({required this.scheduled});
+
+  @override
+  List<Object?> get props => [scheduled];
+}
+
+/// Emitted when an estimate response arrives for a given vehicle class.
+class EstimateReceived extends CreateRideFormEvent {
+  final VehicleClass vehicleClass;
+  final RideEstimate? estimate;
+
+  const EstimateReceived({required this.vehicleClass, this.estimate});
+
+  @override
+  List<Object?> get props => [vehicleClass, estimate];
 }

@@ -15,7 +15,6 @@ import '../modules/core/services/websocket_service.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
-import '../modules/core/date_utils.dart';
 
 class ClientMapScreen extends StatefulWidget {
   const ClientMapScreen({super.key});
@@ -383,10 +382,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Full-bleed Mapbox map: light tiles are visible under the status bar.
-    // Use SystemUiOverlayStyle.dark so the clock/icons remain legible over
-    // the light map background. The floating info panel does not reach the
-    // very top edge, so there is no dark header to justify .light icons.
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
@@ -413,22 +408,118 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           },
           child: Stack(
             children: [
+              // ── Full-bleed map ──────────────────────────────────────────────
               MapWidget(
                 key: const ValueKey('client_map'),
                 onMapCreated: _onMapCreated,
               ),
 
+              // ── Top overlay: back btn + status pill ─────────────────────────
               SafeArea(
-                child: Column(
-                  children: [
-                    _buildInfoPanel(),
-                    if (_approachingBannerMessage != null)
-                      _buildApproachingBanner(),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      // Back button
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).maybePop(),
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.12),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            size: 20,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      // Status pill
+                      if (_activeRide != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.accent,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Driver on the way',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
 
-              Positioned(bottom: 100, right: 16, child: _buildControlButtons()),
+              // ── Approaching banner (if any) ─────────────────────────────────
+              if (_approachingBannerMessage != null)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 68,
+                  left: 16,
+                  right: 16,
+                  child: _buildApproachingBanner(),
+                ),
+
+              // ── FAB controls ────────────────────────────────────────────────
+              Positioned(
+                bottom: _activeRide != null ? 270 : 100,
+                right: 16,
+                child: _buildControlButtons(),
+              ),
+
+              // ── Driver bottom sheet ─────────────────────────────────────────
+              if (_activeRide != null)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _buildDriverBottomSheet(),
+                )
+              else
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _buildNoActiveRidePanel(),
+                ),
             ],
           ),
         ),
@@ -436,84 +527,401 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     );
   }
 
-  Widget _buildInfoPanel() {
+  // ─── Driver bottom sheet ──────────────────────────────────────────────────────
+
+  /// "4.9 · 1.2k rides" when the driver has an average rating, otherwise a
+  /// neutral placeholder. Counts ≥ 1000 are abbreviated (1.2k).
+  String _driverRatingLabel(Ride ride) {
+    final rating = ride.driverRating;
+    if (rating == null) return 'New driver';
+    final count = ride.driverRatingCount ?? 0;
+    final countLabel = count >= 1000
+        ? '${(count / 1000).toStringAsFixed(1)}k rides'
+        : '$count rides';
+    return '${rating.toStringAsFixed(1)} · $countLabel';
+  }
+
+  Widget _buildDriverBottomSheet() {
+    final ride = _activeRide!;
+    final cs = Theme.of(context).colorScheme;
+
+    // Driver initials
+    final driverName = ride.driverName ?? 'Driver';
+    final initials = driverName
+        .split(' ')
+        .where((p) => p.isNotEmpty)
+        .map((p) => p[0].toUpperCase())
+        .take(2)
+        .join('');
+
+    // ETA
+    final eta = ride.etaMinutes;
+
     return Container(
-      margin: const EdgeInsets.all(AppDimensions.paddingMedium),
-      padding: const EdgeInsets.all(AppDimensions.paddingLarge),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                color: AppColors.clientColor,
-                size: AppDimensions.iconMedium,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          20 + MediaQuery.of(context).padding.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4D4D8),
+                borderRadius: BorderRadius.circular(2),
               ),
-              const SizedBox(width: AppDimensions.paddingSmall),
-              Text(
-                'Your Location',
-                style: AppStyles.titleMedium.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
+            ),
 
-          if (_activeRide != null) ...[
-            const SizedBox(height: AppDimensions.paddingMedium),
-            _buildActiveRideInfo(),
-            const SizedBox(height: AppDimensions.paddingMedium),
-            _buildLocationSharingToggle(),
+            const SizedBox(height: 16),
+
+            // Driver row
+            Row(
+              children: [
+                // Avatar
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.primary,
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Name + rating
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        driverName,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            size: 13,
+                            color: Color(0xFFF59E0B), // amber
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            // Driver's average rating + how many ratings it is
+                            // based on, from the RideDto. Degrade gracefully.
+                            _driverRatingLabel(ride),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ETA
+                if (eta != null) ...[
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '$eta',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.accent,
+                              ),
+                            ),
+                            const TextSpan(
+                              text: ' min',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        'to pickup',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            // Vehicle chip
+            _buildVehicleChip(cs),
+
+            const SizedBox(height: 12),
+
+            // Action buttons
+            Row(
+              children: [
+                // Call button (graphite filled)
+                Expanded(
+                  child: SizedBox(
+                    height: 46,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // TODO: launch tel: URL when driver phone is available
+                      },
+                      icon: const Icon(Icons.phone, size: 16),
+                      label: const Text(
+                        'Call',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                // Message button (outlined)
+                Expanded(
+                  child: SizedBox(
+                    height: 46,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        // TODO: open chat screen with driver
+                      },
+                      icon: const Icon(Icons.chat_bubble_outline, size: 16),
+                      label: const Text(
+                        'Message',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: cs.onSurface,
+                        side: const BorderSide(color: Color(0xFFD4D4D8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Airport checkpoint panel (if applicable)
             if (_activeRide!.isAirportTransfer &&
                 _activeRide!.isArrival &&
                 _activeRide!.status == RideStatus.inProgress) ...[
-              const SizedBox(height: AppDimensions.paddingMedium),
+              const SizedBox(height: 12),
               _buildAirportCheckpointPanel(),
             ],
-          ] else ...[
-            const SizedBox(height: AppDimensions.paddingSmall),
-            Text(
-              'No active ride',
-              style: AppStyles.bodyMedium.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
+
+            // Location sharing toggle
+            const SizedBox(height: 8),
+            _buildLocationSharingToggle(),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVehicleChip(ColorScheme cs) {
+    // Vehicle fields (plate, model, color) are not on Ride model yet.
+    // Degrade gracefully: show what we have.
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.directions_car, size: 18, color: cs.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  // No vehicle model on Ride yet
+                  'Vehicle',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                  ),
+                ),
+                // Plate not on model — omit gracefully
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
+  // ─── No active ride panel ─────────────────────────────────────────────────────
+
+  Widget _buildNoActiveRidePanel() {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16,
+        20,
+        16 + MediaQuery.of(context).padding.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 38,
+            height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD4D4D8),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No active ride',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: cs.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Your driver will appear here once a ride is assigned.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Approaching banner ───────────────────────────────────────────────────────
+
+  Widget _buildApproachingBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.paddingLarge,
+        vertical: AppDimensions.paddingSmall,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.success,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowMedium,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.directions_car, color: Colors.white, size: 20),
+          const SizedBox(width: AppDimensions.paddingSmall),
+          Expanded(
+            child: Text(
+              _approachingBannerMessage!,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() => _approachingBannerMessage = null),
+            child: const Icon(Icons.close, color: Colors.white, size: 18),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Location sharing toggle ──────────────────────────────────────────────────
+
   Widget _buildLocationSharingToggle() {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
         Icon(
           _sharingLocation ? Icons.location_on : Icons.location_off,
-          color: _sharingLocation
-              ? AppColors.success
-              : Theme.of(context).colorScheme.onSurfaceVariant,
+          color: _sharingLocation ? AppColors.success : cs.onSurfaceVariant,
           size: AppDimensions.iconSmall,
         ),
         const SizedBox(width: AppDimensions.paddingSmall),
         Expanded(
           child: Text(
             'Share my location',
-            style: AppStyles.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+            style: AppStyles.bodySmall.copyWith(color: cs.onSurface),
           ),
         ),
         Switch.adaptive(
@@ -531,99 +939,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           activeThumbColor: Colors.white,
           activeTrackColor: AppColors.accent,
           inactiveThumbColor: Colors.white,
-          inactiveTrackColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          inactiveTrackColor: cs.onSurfaceVariant,
         ),
       ],
     );
   }
 
-  Widget _buildActiveRideInfo() {
-    if (_activeRide == null) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.paddingSmall,
-            vertical: AppDimensions.paddingXSmall,
-          ),
-          decoration: BoxDecoration(
-            color: _getRideStatusColor(_activeRide!.status),
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-          ),
-          child: Text(
-            _activeRide!.statusDisplayName,
-            style: AppStyles.labelSmall.copyWith(
-              color: AppColors.textOnPrimary,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: AppDimensions.paddingMedium),
-
-        Row(
-          children: [
-            Icon(
-              Icons.schedule,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              size: AppDimensions.iconSmall,
-            ),
-            const SizedBox(width: AppDimensions.paddingSmall),
-            Text(
-              'Pickup: ${AppDateUtils.formatDateTime(_activeRide!.pickupDateTime)}',
-              style: AppStyles.bodySmall.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: AppDimensions.paddingSmall),
-
-        Row(
-          children: [
-            Icon(
-              Icons.route,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              size: AppDimensions.iconSmall,
-            ),
-            const SizedBox(width: AppDimensions.paddingSmall),
-            Expanded(
-              child: Text(
-                '${_activeRide!.from.address} -> ${_activeRide!.to.address}',
-                style: AppStyles.bodySmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-
-        if (_activeRide!.driverName != null) ...[
-          const SizedBox(height: AppDimensions.paddingSmall),
-          Row(
-            children: [
-              Icon(
-                Icons.person,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                size: AppDimensions.iconSmall,
-              ),
-              const SizedBox(width: AppDimensions.paddingSmall),
-              Text(
-                'Driver: ${_activeRide!.driverName}',
-                style: AppStyles.bodySmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
+  // ─── Airport checkpoint panel ─────────────────────────────────────────────────
 
   int _checkpointOrdinal(String? key) {
     const order = ['landed', 'arrivals_hall', 'terminal_exit'];
@@ -634,6 +956,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   Widget _buildAirportCheckpointPanel() {
     if (_activeRide == null) return const SizedBox.shrink();
 
+    final cs = Theme.of(context).colorScheme;
     final currentOrdinal = _checkpointOrdinal(_activeRide!.airportCheckpoint);
 
     const checkpoints = [
@@ -649,7 +972,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           'My location in terminal',
           style: AppStyles.bodySmall.copyWith(
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: cs.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
@@ -713,58 +1036,19 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     );
   }
 
-  Widget _buildApproachingBanner() {
-    return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.paddingMedium,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.paddingLarge,
-        vertical: AppDimensions.paddingSmall,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.success,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowMedium,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.directions_car, color: Colors.white, size: 20),
-          const SizedBox(width: AppDimensions.paddingSmall),
-          Expanded(
-            child: Text(
-              _approachingBannerMessage!,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _approachingBannerMessage = null),
-            child: const Icon(Icons.close, color: Colors.white, size: 18),
-          ),
-        ],
-      ),
-    );
-  }
+  // ─── FAB controls ─────────────────────────────────────────────────────────────
 
   Widget _buildControlButtons() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         FloatingActionButton(
           heroTag: 'center_location',
           onPressed: _centerOnCurrentLocation,
-          backgroundColor: AppColors.clientColor,
-          child: const Icon(Icons.my_location, color: AppColors.textOnPrimary),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          child: const Icon(Icons.my_location),
         ),
 
         if (_activeRide != null) ...[
@@ -772,11 +1056,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           FloatingActionButton(
             heroTag: 'center_route',
             onPressed: _centerOnRoute,
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            child: Icon(
-              Icons.route,
-              color: Theme.of(context).colorScheme.onPrimary,
-            ),
+            backgroundColor: cs.primary,
+            foregroundColor: cs.onPrimary,
+            child: const Icon(Icons.route),
           ),
         ],
       ],
@@ -802,19 +1084,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         currentPosition: _currentPosition,
       );
       _mapboxMap!.setCamera(cameraOptions);
-    }
-  }
-
-  Color _getRideStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.assigned:
-        return Theme.of(context).colorScheme.primary;
-      case RideStatus.inProgress:
-        return AppColors.clientColor;
-      case RideStatus.completed:
-        return Theme.of(context).colorScheme.onSurfaceVariant;
-      default:
-        return Theme.of(context).colorScheme.primary;
     }
   }
 }
