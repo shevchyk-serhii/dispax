@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../modules/ride_management/models/vehicle_class.dart';
 import 'create_ride_form_event.dart';
 import 'create_ride_form_state.dart';
 
@@ -27,6 +28,9 @@ class CreateRideFormBloc
     on<AddressesSwapped>(_onAddressesSwapped);
     on<NewClientModeToggled>(_onNewClientModeToggled);
     on<NewClientPhoneChanged>(_onNewClientPhoneChanged);
+    on<VehicleClassSelected>(_onVehicleClassSelected);
+    on<ScheduleModeToggled>(_onScheduleModeToggled);
+    on<EstimateReceived>(_onEstimateReceived);
   }
 
   void _onNotesToggled(NotesToggled event, Emitter<CreateRideFormState> emit) {
@@ -241,6 +245,51 @@ class CreateRideFormBloc
   ) {
     if (state.isValid) {
       emit(state.copyWith(status: CreateRideFormStatus.submitting));
+    }
+  }
+
+  void _onVehicleClassSelected(
+    VehicleClassSelected event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    emit(state.copyWith(selectedVehicleClass: event.vehicleClass));
+  }
+
+  void _onScheduleModeToggled(
+    ScheduleModeToggled event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    if (!event.scheduled) {
+      // ASAP → set pickupDateTime to now so the backend treats it as immediate.
+      emit(state.copyWith(isScheduled: false, pickupDateTime: DateTime.now()));
+    } else {
+      emit(
+        state.copyWith(
+          isScheduled: true,
+          pickupDateTime: DateTime.now().add(const Duration(hours: 1)),
+        ),
+      );
+    }
+  }
+
+  void _onEstimateReceived(
+    EstimateReceived event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    if (event.vehicleClass == VehicleClass.van) {
+      emit(
+        state.copyWith(
+          estimateVan: event.estimate,
+          clearEstimateVan: event.estimate == null,
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          estimateBusiness: event.estimate,
+          clearEstimateBusiness: event.estimate == null,
+        ),
+      );
     }
   }
 

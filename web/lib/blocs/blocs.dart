@@ -19,3 +19,7 @@ export 'client/client_event.dart';
 export 'client/client_state.dart';
 
 export 'earnings/earnings_cubit.dart';
+
+export 'saved_places/saved_places_bloc.dart';
+export 'saved_places/saved_places_event.dart';
+export 'saved_places/saved_places_state.dart';

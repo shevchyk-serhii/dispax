@@ -136,6 +136,7 @@ class CreateRideFormHelper {
           ? formState.specialRequirements
           : null,
       driverId: formState.selectedDriverId,
+      vehicleClass: formState.selectedVehicleClass,
     );
 
     context.read<RideBloc>().add(RideCreateRequested(request: createRequest));
