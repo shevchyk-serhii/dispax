@@ -5,7 +5,8 @@
         emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
         dev-all dev-sim free-port stop-dev \
-        deploy logs setup-hooks
+        deploy logs setup-hooks \
+        load-test
 
 PROD_URL := https://dispax-o2trzxjbva-ew.a.run.app
 # Wi-Fi (en0) IP for physical devices on the same network; falls back to en1,
@@ -353,6 +354,17 @@ clean:
 
 rebuild: clean
 	sbt compile
+
+# ─── Load tests ─────────────────────────────────────────────────────────────
+
+# Smoke load test: login → list rides → create ride (baseline latency).
+# Requires k6 (brew install k6) and a running backend (make dev).
+# Override target: BASE_URL=http://staging.example.com make load-test
+load-test:
+	@command -v k6 >/dev/null 2>&1 || { echo "❌ k6 is not installed. Run: brew install k6"; exit 1; }
+	@echo "🚀 Running k6 smoke test against $${BASE_URL:-http://localhost:8080} ..."
+	@k6 run -e BASE_URL=$${BASE_URL:-http://localhost:8080} load-tests/smoke-ride-lifecycle.js
+	@echo "✅ k6 smoke test finished"
 
 # ─── Deploy ─────────────────────────────────────────────────────────────────
 
