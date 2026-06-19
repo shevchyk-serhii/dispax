@@ -174,43 +174,46 @@ class _RideExportScreenState extends State<RideExportScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(Icons.download, color: Colors.white, size: 24),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Export Rides',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.download, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Export Rides',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            FilledButton.icon(
-              onPressed: _filteredRides.isNotEmpty ? _exportCsv : null,
-              icon: const Icon(Icons.copy, size: 18),
-              label: const Text('Copy CSV'),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.white.withAlpha(40),
-                foregroundColor: Colors.white,
+              FilledButton.icon(
+                onPressed: _filteredRides.isNotEmpty ? _exportCsv : null,
+                icon: const Icon(Icons.copy, size: 18),
+                label: const Text('Copy CSV'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white.withAlpha(40),
+                  foregroundColor: Colors.white,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: _loadRides,
-            ),
-          ],
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                onPressed: _loadRides,
+              ),
+            ],
+          ),
         ),
       ),
     );

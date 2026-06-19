@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../blocs/blocs.dart';
@@ -173,33 +174,36 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(Icons.payment, color: Colors.white, size: 24),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Payments',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.payment, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Payments',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: _loadUnpaidRides,
-            ),
-          ],
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                onPressed: _loadUnpaidRides,
+              ),
+            ],
+          ),
         ),
       ),
     );

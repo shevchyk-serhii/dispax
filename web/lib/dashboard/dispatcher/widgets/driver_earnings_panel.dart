@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
@@ -110,70 +111,73 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(Icons.euro, color: Colors.white, size: 24),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Driver Earnings',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.euro, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Driver Earnings',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.sort, color: Colors.white, size: 22),
-              onSelected: (v) => setState(() => _sortBy = v),
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'earnings',
-                  child: Row(
-                    children: [
-                      if (_sortBy == 'earnings')
-                        const Icon(Icons.check, size: 16),
-                      if (_sortBy == 'earnings') const SizedBox(width: 8),
-                      const Text('Sort by Earnings'),
-                    ],
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.sort, color: Colors.white, size: 22),
+                onSelected: (v) => setState(() => _sortBy = v),
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'earnings',
+                    child: Row(
+                      children: [
+                        if (_sortBy == 'earnings')
+                          const Icon(Icons.check, size: 16),
+                        if (_sortBy == 'earnings') const SizedBox(width: 8),
+                        const Text('Sort by Earnings'),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'rides',
-                  child: Row(
-                    children: [
-                      if (_sortBy == 'rides') const Icon(Icons.check, size: 16),
-                      if (_sortBy == 'rides') const SizedBox(width: 8),
-                      const Text('Sort by Rides'),
-                    ],
+                  PopupMenuItem(
+                    value: 'rides',
+                    child: Row(
+                      children: [
+                        if (_sortBy == 'rides') const Icon(Icons.check, size: 16),
+                        if (_sortBy == 'rides') const SizedBox(width: 8),
+                        const Text('Sort by Rides'),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'name',
-                  child: Row(
-                    children: [
-                      if (_sortBy == 'name') const Icon(Icons.check, size: 16),
-                      if (_sortBy == 'name') const SizedBox(width: 8),
-                      const Text('Sort by Name'),
-                    ],
+                  PopupMenuItem(
+                    value: 'name',
+                    child: Row(
+                      children: [
+                        if (_sortBy == 'name') const Icon(Icons.check, size: 16),
+                        if (_sortBy == 'name') const SizedBox(width: 8),
+                        const Text('Sort by Name'),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: _loadStats,
-            ),
-          ],
+                ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                onPressed: _loadStats,
+              ),
+            ],
+          ),
         ),
       ),
     );

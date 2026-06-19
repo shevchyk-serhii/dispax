@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
@@ -406,66 +407,69 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: BlocBuilder<RideBloc, RideState>(
-          builder: (context, state) {
-            final pendingCount = state.rides
-                .where((r) => r.status == RideStatus.requested)
-                .length;
-            final assignedCount = state.rides
-                .where((r) => r.status == RideStatus.assigned)
-                .length;
-            return Row(
-              children: [
-                const Icon(
-                  Icons.pending_actions,
-                  color: Colors.white,
-                  size: 24,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Ride Management',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '$pendingCount pending · $assignedCount assigned',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(200),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const NotificationBell(),
-                IconButton(
-                  icon: const Icon(
-                    Icons.refresh,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: BlocBuilder<RideBloc, RideState>(
+            builder: (context, state) {
+              final pendingCount = state.rides
+                  .where((r) => r.status == RideStatus.requested)
+                  .length;
+              final assignedCount = state.rides
+                  .where((r) => r.status == RideStatus.assigned)
+                  .length;
+              return Row(
+                children: [
+                  const Icon(
+                    Icons.pending_actions,
                     color: Colors.white,
-                    size: 22,
+                    size: 24,
                   ),
-                  onPressed: () => context.read<RideBloc>().add(
-                    const RideLoadPendingRequested(),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Ride Management',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '$pendingCount pending · $assignedCount assigned',
+                          style: TextStyle(
+                            color: Colors.white.withAlpha(200),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                  const NotificationBell(),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    onPressed: () => context.read<RideBloc>().add(
+                      const RideLoadPendingRequested(),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
@@ -214,43 +215,46 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(Icons.business, color: Colors.white, size: 24),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Company Settings',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.business, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Company Settings',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            if (_isSaving)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
+              if (_isSaving)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.save, color: Colors.white, size: 22),
+                  onPressed: _saveSettings,
                 ),
-              )
-            else
-              IconButton(
-                icon: const Icon(Icons.save, color: Colors.white, size: 22),
-                onPressed: _saveSettings,
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
