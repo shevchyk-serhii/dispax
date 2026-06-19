@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
+import '../../../constants/app_styles.dart';
 
 class AvailabilityToggle extends StatefulWidget {
   const AvailabilityToggle({super.key});
@@ -41,6 +43,7 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
   }
 
   Future<void> _toggleAvailability(bool value) async {
+    HapticFeedback.selectionClick();
     final user = context.read<AuthBloc>().state.user;
     if (user == null) return;
 
@@ -99,9 +102,7 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
                 children: [
                   Text(
                     _isAvailable ? 'Available' : 'Offline',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
+                    style: AppStyles.labelLarge.copyWith(
                       color: _isAvailable
                           ? AppColors.success
                           : Theme.of(context).colorScheme.onSurfaceVariant,
@@ -111,8 +112,7 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
                     _isAvailable
                         ? 'You are accepting rides'
                         : 'You are not accepting rides',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: AppStyles.bodySmall.copyWith(
                       color: Theme.of(context).colorScheme.outlineVariant,
                     ),
                   ),
@@ -126,9 +126,10 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             else
-              Switch(
+              Switch.adaptive(
                 value: _isAvailable,
                 onChanged: _toggleAvailability,
+                activeTrackColor: AppColors.accent,
                 activeThumbColor: AppColors.success,
               ),
           ],

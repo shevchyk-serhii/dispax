@@ -33,6 +33,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   image_picker: ^1.1.2
   http_parser: ^4.0.2
+  lucide_icons: ^0.257.0
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +69,17 @@ flutter:
     - assets/client_marker.svg
     - assets/pickup_marker.svg
     - assets/destination_marker.svg
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
 
 flutter_launcher_icons:
   android: true

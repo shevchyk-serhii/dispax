@@ -5,6 +5,14 @@ import 'app_dimensions.dart';
 class AppStyles {
   AppStyles._();
 
+  static const TextStyle displayLarge = TextStyle(
+    fontSize: 36,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.5,
+    height: 1.15,
+    color: AppColors.textPrimary,
+  );
+
   static const TextStyle headlineLarge = TextStyle(
     fontSize: 32,
     fontWeight: FontWeight.w700,
@@ -30,7 +38,7 @@ class AppStyles {
   );
 
   static const TextStyle titleLarge = TextStyle(
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.1,
     color: AppColors.textPrimary,
@@ -74,7 +82,7 @@ class AppStyles {
 
   static const TextStyle labelLarge = TextStyle(
     fontSize: 14,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
@@ -142,6 +150,15 @@ class AppStyles {
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+    ),
+  );
+
+  static ButtonStyle accentButtonStyle = FilledButton.styleFrom(
+    backgroundColor: AppColors.accent,
+    foregroundColor: Colors.white,
+    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
     ),
   );
 

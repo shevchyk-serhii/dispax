@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../constants/app_colors.dart';
 
@@ -23,8 +24,9 @@ class _AndroidMapScreenState extends State<AndroidMapScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Map (Android)'),
-        backgroundColor: AppColors.info,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
       body: GoogleMap(
         initialCameraPosition: _initialPosition,

@@ -20,9 +20,15 @@ void main() {
 
     final notifs = await fetchNotifications(clientToken);
     final titles = notifs.map((n) => n['title']).toList();
-    expect(titles, contains('Driver Assigned'),
-        reason: 'client should be told a driver was assigned');
-    expect(titles, contains('Ride Started'),
-        reason: 'client should be told the ride started');
+    expect(
+      titles,
+      contains('Driver Assigned'),
+      reason: 'client should be told a driver was assigned',
+    );
+    expect(
+      titles,
+      contains('Ride Started'),
+      reason: 'client should be told the ride started',
+    );
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
@@ -96,6 +97,7 @@ class AssignmentDialog extends StatelessWidget {
         ),
         ElevatedButton(
           onPressed: () {
+            HapticFeedback.selectionClick();
             Navigator.of(context).pop();
             onConfirm();
           },

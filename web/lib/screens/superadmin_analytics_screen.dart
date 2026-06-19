@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
+import '../constants/app_colors.dart';
 import '../modules/core/services/api_client.dart';
 
 // ---------------------------------------------------------------------------
@@ -201,39 +203,87 @@ class _AnalyticsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SuperAdminAnalyticsBloc, SuperAdminAnalyticsState>(
-      builder: (context, state) {
-        if (state is AnalyticsLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (state is AnalyticsError) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Error: ${state.message}'),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    final now = DateTime.now();
-                    context.read<SuperAdminAnalyticsBloc>().add(
-                      LoadAnalytics(
-                        from: DateTime(now.year, now.month, 1),
-                        to: now,
-                      ),
-                    );
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
+    return Column(
+      children: [
+        AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: AppColors.dispatcherGradient),
             ),
-          );
-        }
-        if (state is AnalyticsLoaded) {
-          return _AnalyticsDashboard(data: state.data);
-        }
-        return const Center(child: CircularProgressIndicator());
-      },
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                children: [
+                  const Icon(Icons.analytics, color: Colors.white, size: 24),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Platform Analytics',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                    onPressed: () {
+                      final now = DateTime.now();
+                      context.read<SuperAdminAnalyticsBloc>().add(
+                        LoadAnalytics(
+                          from: DateTime(now.year, now.month, 1),
+                          to: now,
+                        ),
+                      );
+                    },
+                    tooltip: 'Refresh',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: BlocBuilder<SuperAdminAnalyticsBloc, SuperAdminAnalyticsState>(
+            builder: (context, state) {
+              if (state is AnalyticsLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is AnalyticsError) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Error: ${state.message}'),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          final now = DateTime.now();
+                          context.read<SuperAdminAnalyticsBloc>().add(
+                            LoadAnalytics(
+                              from: DateTime(now.year, now.month, 1),
+                              to: now,
+                            ),
+                          );
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              if (state is AnalyticsLoaded) {
+                return _AnalyticsDashboard(data: state.data);
+              }
+              return const Center(child: CircularProgressIndicator());
+            },
+          ),
+        ),
+      ],
     );
   }
 }

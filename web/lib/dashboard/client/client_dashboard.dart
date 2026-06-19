@@ -10,9 +10,11 @@ import '../../screens/create_ride_screen.dart';
 
 import '../../screens/client_map_screen.dart';
 import '../../constants/app_colors.dart';
+import '../../constants/lucide_compat.dart';
 import '../../utils/ride_status_styles.dart';
 import 'client_ride_history_screen.dart';
 import '../../widgets/common/cancel_ride_dialog.dart';
+import '../../widgets/common/responsive_scaffold.dart';
 import '../../modules/ride_management/services/ride_service.dart';
 
 class ClientDashboard extends StatefulWidget {
@@ -67,53 +69,33 @@ class _ClientDashboardState extends State<ClientDashboard> {
     return result ?? false;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _buildCurrentTab(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.accent,
-        onTap: (index) async {
-          if (_selectedIndex == 2 && index != 2) {
-            final canLeave = await _confirmLeaveCreateRide(context);
-            if (!canLeave) return;
-          }
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list_outlined),
-            activeIcon: Icon(Icons.list),
-            label: 'Rides',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outline),
-            activeIcon: Icon(Icons.add_circle),
-            label: 'Book',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: 'Map',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-      ),
-    );
-  }
+  static const _destinations = [
+    NavigationDestination(
+      icon: Icon(Icons.home_outlined),
+      selectedIcon: Icon(Icons.home),
+      label: 'Home',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.list_outlined),
+      selectedIcon: Icon(Icons.list),
+      label: 'Rides',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.add_circle_outline),
+      selectedIcon: Icon(Icons.add_circle),
+      label: 'Book',
+    ),
+    NavigationDestination(
+      icon: Icon(LucideCompat.map),
+      selectedIcon: Icon(LucideCompat.map),
+      label: 'Map',
+    ),
+    NavigationDestination(
+      icon: Icon(LucideCompat.settings),
+      selectedIcon: Icon(LucideCompat.settings),
+      label: 'Settings',
+    ),
+  ];
 
   Widget _buildCurrentTab() {
     switch (_selectedIndex) {
@@ -139,6 +121,24 @@ class _ClientDashboardState extends State<ClientDashboard> {
       default:
         return MyRidesTab(onOpenMap: () => setState(() => _selectedIndex = 3));
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ResponsiveScaffold(
+      destinations: _destinations,
+      selectedIndex: _selectedIndex,
+      onDestinationSelected: (index) async {
+        if (_selectedIndex == 2 && index != 2) {
+          final canLeave = await _confirmLeaveCreateRide(context);
+          if (!canLeave) return;
+        }
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
+      body: _buildCurrentTab(),
+    );
   }
 }
 

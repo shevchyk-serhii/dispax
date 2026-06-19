@@ -8,14 +8,18 @@ import 'notif_helpers.dart';
 /// screen and taps "Mark all read", the unread count drops to zero. Exercises
 /// PUT /api/notifications/read-all and the UI button.
 void main() {
-  patrolTest('driver marks all notifications read and unread count clears',
-      ($) async {
+  patrolTest('driver marks all notifications read and unread count clears', (
+    $,
+  ) async {
     await resetTestData();
     await seedAssignedRide();
 
     final driverToken = await apiLogin(kDevDriver1, kDevPassword);
-    expect(await unreadCount(driverToken), greaterThanOrEqualTo(1),
-        reason: 'precondition: driver has at least one unread notification');
+    expect(
+      await unreadCount(driverToken),
+      greaterThanOrEqualTo(1),
+      reason: 'precondition: driver has at least one unread notification',
+    );
 
     await bootstrapTestApp();
     await $.pumpAndSettle();
@@ -30,7 +34,10 @@ void main() {
     await $.pumpAndSettle(timeout: const Duration(seconds: 10));
 
     // Backend reflects the read state.
-    expect(await unreadCount(driverToken), 0,
-        reason: 'unread count should be 0 after "Mark all read"');
+    expect(
+      await unreadCount(driverToken),
+      0,
+      reason: 'unread count should be 0 after "Mark all read"',
+    );
   });
 }

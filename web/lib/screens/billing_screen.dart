@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../modules/billing/pdf_download_stub.dart'
     if (dart.library.html) '../modules/billing/pdf_download_web.dart';
 import '../modules/billing/pdf_preview_stub.dart'
@@ -7,6 +7,8 @@ import '../modules/billing/pdf_preview_stub.dart'
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_dimensions.dart';
+import '../constants/lucide_compat.dart';
 import '../modules/billing/models/client_company.dart';
 import '../modules/billing/models/invoice.dart';
 import '../modules/billing/services/client_company_service.dart';
@@ -37,12 +39,19 @@ class _BillingScreenState extends State<BillingScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 3, vsync: this)
+      ..addListener(_onTabChanged);
     final apiClient = context.read<AuthBloc>().apiClient;
     _invoiceService = InvoiceService(apiClient: apiClient);
     _companyService = ClientCompanyService(apiClient: apiClient);
     _loadInvoices();
     _loadCompanies();
+  }
+
+  void _onTabChanged() {
+    // Rebuild so the desktop layout reflects the new index when the rail
+    // or a programmatic animation completes.
+    if (!_tabController.indexIsChanging) setState(() {});
   }
 
   Future<void> _loadInvoices() async {
@@ -98,6 +107,45 @@ class _BillingScreenState extends State<BillingScreen>
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= AppDimensions.breakpointDesktop) {
+          return _buildDesktopLayout(context);
+        }
+        return _buildMobileLayout(context);
+      },
+    );
+  }
+
+  /// Desktop: header on top, NavigationRail on the left, tab content on the right.
+  Widget _buildDesktopLayout(BuildContext context) {
+    final tabContent = [
+      _buildInvoicesTab(),
+      _buildCompaniesTab(),
+      const BillingRidesScreen(),
+    ];
+    return Column(
+      children: [
+        _buildHeader(),
+        Expanded(
+          child: Row(
+            children: [
+              _BillingNavRail(
+                selectedIndex: _tabController.index,
+                onDestinationSelected: (i) =>
+                    setState(() => _tabController.index = i),
+              ),
+              const VerticalDivider(width: 1, thickness: 1),
+              Expanded(child: tabContent[_tabController.index]),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Mobile: existing header + TabBar + TabBarView.
+  Widget _buildMobileLayout(BuildContext context) {
     return Column(
       children: [
         _buildHeader(),
@@ -131,36 +179,39 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(Icons.receipt_long, color: Colors.white, size: 24),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Abrechnung',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.receipt_long, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Abrechnung',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: () {
-                _loadInvoices();
-                _loadCompanies();
-              },
-            ),
-          ],
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                onPressed: () {
+                  _loadInvoices();
+                  _loadCompanies();
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -605,6 +656,7 @@ class _BillingScreenState extends State<BillingScreen>
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     _invoiceService.dispose();
     _companyService.dispose();
@@ -994,4 +1046,48 @@ class _TotalRow extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// Desktop navigation rail for the Billing screen.
+/// Replaces the mobile [TabBar] at >= [AppDimensions.breakpointDesktop].
+class _BillingNavRail extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+
+  const _BillingNavRail({
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+  });
+
+  TextStyle _labelStyle(Color color) =>
+      TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600);
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationRail(
+      backgroundColor: AppColors.primary,
+      indicatorColor: AppColors.accent.withValues(alpha: 0.2),
+      selectedIconTheme: const IconThemeData(color: AppColors.accent),
+      unselectedIconTheme: const IconThemeData(color: AppColors.textOnPrimary),
+      selectedLabelTextStyle: _labelStyle(AppColors.accent),
+      unselectedLabelTextStyle: _labelStyle(AppColors.textOnPrimary),
+      labelType: NavigationRailLabelType.all,
+      selectedIndex: selectedIndex,
+      onDestinationSelected: onDestinationSelected,
+      destinations: const [
+        NavigationRailDestination(
+          icon: Icon(LucideCompat.receipt),
+          label: Text('Invoices'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(LucideCompat.building2),
+          label: Text('Clients'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(LucideCompat.download),
+          label: Text('DATEV'),
+        ),
+      ],
+    );
+  }
 }

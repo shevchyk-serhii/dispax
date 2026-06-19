@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
@@ -57,6 +58,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
         ),
         backgroundColor: AppColors.secretaryColor,
         foregroundColor: AppColors.textOnPrimary,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         elevation: AppDimensions.appBarElevation,
         automaticallyImplyLeading: false,
         actions: [

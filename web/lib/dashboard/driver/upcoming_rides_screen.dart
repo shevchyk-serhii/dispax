@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../blocs/blocs.dart';
@@ -28,51 +29,63 @@ class UpcomingRidesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.event_note, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Upcoming Rides'),
-          ],
-        ),
-        backgroundColor: AppColors.infoStrong,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => refreshRides(context),
-            tooltip: 'Refresh',
+      body: Column(
+        children: [
+          _buildHeader(context),
+          Expanded(
+            child: BlocListener<RideBloc, RideState>(
+              listener: (context, state) {
+                if (state.hasError) {
+                  NavigationHelper.showSnackBar(
+                    context,
+                    state.errorMessage!,
+                    isError: true,
+                  );
+                }
+              },
+              child: BlocBuilder<RideBloc, RideState>(
+                builder: (context, rideState) {
+                  return buildBody(context, rideState);
+                },
+              ),
+            ),
           ),
         ],
       ),
-      body: BlocListener<RideBloc, RideState>(
-        listener: (context, state) {
-          if (state.hasError) {
-            NavigationHelper.showSnackBar(
-              context,
-              state.errorMessage!,
-              isError: true,
-            );
-          }
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppColors.infoStrong,
-                Theme.of(context).colorScheme.surface,
-              ],
-              stops: const [0.0, 0.2],
-            ),
-          ),
-          child: BlocBuilder<RideBloc, RideState>(
-            builder: (context, rideState) {
-              return buildBody(context, rideState);
-            },
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.driverGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.event_note, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Upcoming Rides',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                onPressed: () => refreshRides(context),
+                tooltip: 'Refresh',
+              ),
+            ],
           ),
         ),
       ),

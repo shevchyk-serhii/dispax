@@ -11,18 +11,24 @@ void main() {
   setUpAll(() async {
     final client = makeClient();
     try {
-      loginResponse = await client.login(kClientEmail, kClientPassword)
+      loginResponse = await client
+          .login(kClientEmail, kClientPassword)
           .catchError((e) {
             final msg = e.toString();
-            if (msg.contains('429') || msg.contains('503') || msg.contains('connect')) {
+            if (msg.contains('429') ||
+                msg.contains('503') ||
+                msg.contains('connect')) {
               markTestSkipped('Backend unavailable or rate-limited — skipping');
               throw e;
             }
             throw e;
           });
       await Future.delayed(const Duration(milliseconds: 300));
-      driverLoginResponse = await client.login(kDriverEmail, kPassword)
-          .catchError((e) { throw e; });
+      driverLoginResponse = await client
+          .login(kDriverEmail, kPassword)
+          .catchError((e) {
+            throw e;
+          });
     } finally {
       client.dispose();
     }

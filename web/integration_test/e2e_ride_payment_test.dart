@@ -26,19 +26,28 @@ void main() {
   test('cannot mark a non-completed ride as paid', () async {
     final rideId = await createRideId(clientToken); // status Requested
     final res = await markPaid(rideId, dispatcherToken);
-    expect(res.status, 400,
-        reason: 'paying a Requested ride must be 400, was ${res.status}');
+    expect(
+      res.status,
+      400,
+      reason: 'paying a Requested ride must be 400, was ${res.status}',
+    );
     final ride = await rideJson(rideId, dispatcherToken);
-    expect(ride['paymentStatus'], 'Unpaid',
-        reason: 'paymentStatus must stay Unpaid after the rejected payment');
+    expect(
+      ride['paymentStatus'],
+      'Unpaid',
+      reason: 'paymentStatus must stay Unpaid after the rejected payment',
+    );
   });
 
   test('marks a completed ride paid, and re-paying is idempotent', () async {
     final rideId = await completeRide(clientToken, dispatcherToken);
 
     final first = await markPaid(rideId, dispatcherToken);
-    expect(first.status, anyOf(200, 201),
-        reason: 'paying a Completed ride should succeed');
+    expect(
+      first.status,
+      anyOf(200, 201),
+      reason: 'paying a Completed ride should succeed',
+    );
     final paidAt1 = (await rideJson(rideId, dispatcherToken))['paidAt'];
     expect(paidAt1, isNotNull, reason: 'paidAt should be set');
 
@@ -46,7 +55,10 @@ void main() {
     final second = await markPaid(rideId, dispatcherToken);
     expect(second.status, anyOf(200, 201));
     final paidAt2 = (await rideJson(rideId, dispatcherToken))['paidAt'];
-    expect(paidAt2, paidAt1,
-        reason: 're-paying must not overwrite paidAt (idempotent)');
+    expect(
+      paidAt2,
+      paidAt1,
+      reason: 're-paying must not overwrite paidAt (idempotent)',
+    );
   });
 }

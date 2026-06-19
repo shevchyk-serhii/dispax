@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/core/models/person.dart';
@@ -138,8 +139,9 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         title: _canViewOtherSchedules && _colleagues.isNotEmpty
             ? _buildDriverDropdown(myId, titleText)
             : Text(titleText),
-        backgroundColor: AppColors.infoStrong,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         elevation: 0,
         actions: [
           ValueListenableBuilder<CalendarViewType>(
@@ -199,50 +201,40 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
             );
           }
         },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppColors.infoStrong, AppColors.infoBg],
-              stops: const [0.0, 0.3],
-            ),
-          ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                ValueListenableBuilder<DateTime>(
-                  valueListenable: selectedDayNotifier,
-                  builder: (context, selectedDay, child) {
-                    return ValueListenableBuilder<CalendarViewType>(
-                      valueListenable: viewTypeNotifier,
-                      builder: (context, viewType, child) {
-                        return CalendarControls(
-                          selectedDay: selectedDay,
-                          viewType: viewType,
-                          onPrevious: navigatePrevious,
-                          onNext: navigateNext,
-                          onDatePickerTap: () => showDatePickerDialog(context),
-                        );
+        child: SafeArea(
+          child: Column(
+            children: [
+              ValueListenableBuilder<DateTime>(
+                valueListenable: selectedDayNotifier,
+                builder: (context, selectedDay, child) {
+                  return ValueListenableBuilder<CalendarViewType>(
+                    valueListenable: viewTypeNotifier,
+                    builder: (context, viewType, child) {
+                      return CalendarControls(
+                        selectedDay: selectedDay,
+                        viewType: viewType,
+                        onPrevious: navigatePrevious,
+                        onNext: navigateNext,
+                        onDatePickerTap: () => showDatePickerDialog(context),
+                      );
+                    },
+                  );
+                },
+              ),
+              Expanded(
+                child: ValueListenableBuilder<CalendarViewType>(
+                  valueListenable: viewTypeNotifier,
+                  builder: (context, viewType, child) {
+                    return ValueListenableBuilder<DateTime>(
+                      valueListenable: selectedDayNotifier,
+                      builder: (context, selectedDay, child) {
+                        return buildCalendarView(viewType, selectedDay);
                       },
                     );
                   },
                 ),
-                Expanded(
-                  child: ValueListenableBuilder<CalendarViewType>(
-                    valueListenable: viewTypeNotifier,
-                    builder: (context, viewType, child) {
-                      return ValueListenableBuilder<DateTime>(
-                        valueListenable: selectedDayNotifier,
-                        builder: (context, selectedDay, child) {
-                          return buildCalendarView(viewType, selectedDay);
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -251,7 +243,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           selectedDayNotifier.value = DateTime.now();
           viewTypeNotifier.value = CalendarViewType.day;
         },
-        backgroundColor: AppColors.infoStrong,
+        backgroundColor: AppColors.primary,
         tooltip: 'Today\'s Schedule',
         child: const Icon(Icons.today, color: Colors.white),
       ),
@@ -285,7 +277,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
     return DropdownButtonHideUnderline(
       child: DropdownButton<String?>(
         value: _selectedDriverId,
-        dropdownColor: AppColors.infoStrong,
+        dropdownColor: AppColors.primary,
         iconEnabledColor: Colors.white,
         style: const TextStyle(color: Colors.white, fontSize: 18),
         items: items,

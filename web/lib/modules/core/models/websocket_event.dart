@@ -58,6 +58,7 @@ class WebSocketEvent {
   bool get isPoolUpdate =>
       type == 'RideStatusChanged' && data['newStatus'] == 'PooledRide';
   bool get isAirportCheckpointReached => type == 'AirportCheckpointReached';
+  bool get isEtaAtRisk => type == 'EtaAtRisk';
 
   String? get geofenceName => data['geofenceName'];
   String? get alertType => data['alertType'];
@@ -65,4 +66,10 @@ class WebSocketEvent {
   int? get threshold => data['threshold'];
   String? get checkpointType => data['checkpointType'];
   String? get checkpointName => data['checkpointName'];
+
+  // EtaAtRisk event accessors
+  String? get etaRiskDriverId => data['driverId'] as String?;
+  int? get etaMinutes => (data['etaMinutes'] as num?)?.toInt();
+  int? get pickupInMinutes => (data['minutesUntilPickup'] as num?)?.toInt();
+  int? get slackMinutes => (data['slackMinutes'] as num?)?.toInt();
 }

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
+import '../../constants/app_dimensions.dart';
+import '../../constants/app_styles.dart';
+import '../../constants/lucide_compat.dart';
 import '../../screens/create_ride_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/expense_screen.dart';
@@ -24,8 +28,10 @@ import '../../screens/driver_schedule_visibility_screen.dart';
 import '../../screens/driver_map_screen.dart';
 import '../driver/today_rides_screen.dart';
 import '../driver/calendar/calendar_schedule_screen.dart';
+import '../../widgets/common/responsive_scaffold.dart';
 import 'widgets/payroll_screen.dart';
 import 'widgets/pending_rides_panel.dart';
+import 'widgets/eta_alert_card.dart';
 import 'widgets/driver_schedule_panel.dart';
 import 'widgets/analytics_panel.dart';
 import 'widgets/driver_earnings_panel.dart';
@@ -33,6 +39,9 @@ import 'widgets/peak_hours_panel.dart';
 import 'widgets/client_value_panel.dart';
 import 'widgets/driver_scorecard_panel.dart';
 import 'widgets/driver_ratings_panel.dart';
+import '../../modules/core/services/websocket_service.dart';
+import '../../modules/core/services/user_service.dart';
+import 'dart:async';
 
 class DispatcherDashboard extends StatefulWidget {
   const DispatcherDashboard({super.key});
@@ -46,6 +55,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   int _mobileTabIndex = 0;
   late RideBloc _rideBloc;
   final CreateRideFormBloc _createRideFormBloc = CreateRideFormBloc();
+  final List<EtaAtRiskInfo> _etaAlerts = [];
+  StreamSubscription? _wsSubscription;
+
+  /// driverId → display name, loaded from /users/drivers.
+  /// Used to resolve the driver name for ETA alert cards.
+  Map<String, String> _driverNames = {};
 
   // Screen index of the "New Ride" screen — used to detect unsaved form changes
   // when the user navigates away. This is a screen index, not a nav position.
@@ -56,13 +71,64 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   static const int _myScheduleScreenIndex = 31;
 
   @override
+  void initState() {
+    super.initState();
+    _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
+      if (!mounted) return;
+      if (event.isEtaAtRisk) {
+        final rideId = event.rideId ?? '';
+        final driverId = event.etaRiskDriverId ?? '';
+        // Resolve the human-readable name from the already-loaded driver list.
+        // Fall back to the driverId string when the driver isn't in the cache.
+        final driverName = _driverNames[driverId] ??
+            (driverId.isNotEmpty ? driverId : 'Unknown');
+        final etaMin = event.etaMinutes ?? 0;
+        final pickupMin = event.pickupInMinutes ?? 0;
+        final slack = event.slackMinutes ?? 0;
+        setState(() {
+          _etaAlerts.removeWhere((a) => a.rideId == rideId);
+          _etaAlerts.insert(
+            0,
+            EtaAtRiskInfo(
+              rideId: rideId,
+              driverName: driverName,
+              etaMinutes: etaMin,
+              pickupInMinutes: pickupMin,
+              slackMinutes: slack,
+            ),
+          );
+        });
+      }
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _rideBloc = context.read<RideBloc>();
+    _loadDriverNames();
+  }
+
+  /// Loads the driverId→name map from /users/drivers so that ETA alert cards
+  /// can show a human-readable name instead of a UUID.
+  Future<void> _loadDriverNames() async {
+    final userService = UserService(
+      apiClient: context.read<AuthBloc>().apiClient,
+    );
+    try {
+      final drivers = await userService.getDrivers();
+      if (!mounted) return;
+      setState(() {
+        _driverNames = {for (final d in drivers) d.id: d.name};
+      });
+    } catch (_) {
+      // Names are a nicety; on failure the driverId string is shown as fallback.
+    }
   }
 
   @override
   void dispose() {
+    _wsSubscription?.cancel();
     _createRideFormBloc.close();
     super.dispose();
   }
@@ -104,7 +170,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   List<Widget> _buildAllScreens(bool canDrive) {
     final user = context.read<AuthBloc>().state.user;
     return [
-      const PendingRidesPanel(), // 0: Home
+      PendingRidesPanel(
+        etaAlerts: _etaAlerts,
+        onDismissEtaAlert: (rideId) {
+          setState(() => _etaAlerts.removeWhere((a) => a.rideId == rideId));
+        },
+      ), // 0: Home
       DriverSchedulePanel(
         // 1: Schedule
         selectedDate: _selectedDate,
@@ -160,23 +231,36 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   Widget build(BuildContext context) {
     final user = context.read<AuthBloc>().state.user;
     final canDrive = user?.canDrive ?? false;
-    return Scaffold(
+    final navOrder = _navOrder(canDrive);
+    final navDestinations = _buildNavDestinations(canDrive);
+
+    return ResponsiveScaffold(
+      destinations: navDestinations,
+      selectedIndex: _navIndexForScreen(_mobileTabIndex, navOrder),
+      onDestinationSelected: (navPos) async {
+        final screenIndex = navOrder[navPos];
+        if (_mobileTabIndex == _createRideTabIndex &&
+            screenIndex != _createRideTabIndex) {
+          final canLeave = await _confirmLeaveCreateRide(context);
+          if (!canLeave) return;
+        }
+        setState(() => _mobileTabIndex = screenIndex);
+      },
       body: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth >= 800) {
-            return _buildSplitView(context);
+          if (constraints.maxWidth >= AppDimensions.breakpointDesktop) {
+            return _buildSplitViewContent(context, canDrive);
           }
-          return _buildMobileView(canDrive);
+          return _buildMobileBody(canDrive);
         },
       ),
     );
   }
 
-  Widget _buildSplitView(BuildContext context) {
-    // This view is nested inside DashboardScreen's Scaffold (which owns the
-    // UserAppBar), so it must not add its own AppBar. The wide layout has no
-    // bottom nav, so surface a Billing entry point as a toolbar row on top.
-    final canDrive = context.read<AuthBloc>().state.user?.canDrive ?? false;
+  /// Desktop split view: PendingRidesPanel on left + DriverSchedulePanel on right.
+  /// The NavigationRail is provided by [ResponsiveScaffold]; this is the content
+  /// area only (no extra Scaffold or navigation chrome).
+  Widget _buildSplitViewContent(BuildContext context, bool canDrive) {
     return Container(
       color: Theme.of(context).colorScheme.surface,
       child: Column(
@@ -193,23 +277,15 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
                       onPressed: () => _openDriverMap(context),
                       icon: const Icon(Icons.map, size: 20),
                       label: const Text('Driver Map'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: Colors.white,
-                      ),
+                      style: AppStyles.accentButtonStyle,
                     ),
                     const SizedBox(width: 8),
                   ],
-                  // Filled accent button: AppColors.primary is near-black graphite
-                  // and was invisible on the dark dashboard background.
                   FilledButton.icon(
                     onPressed: () => _openBilling(context),
                     icon: const Icon(Icons.request_quote, size: 20),
                     label: const Text('Billing'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
-                    ),
+                    style: AppStyles.accentButtonStyle,
                   ),
                 ],
               ),
@@ -218,7 +294,17 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           Expanded(
             child: Row(
               children: [
-                Expanded(flex: 2, child: const PendingRidesPanel()),
+                Expanded(
+                  flex: 2,
+                  child: PendingRidesPanel(
+                    etaAlerts: _etaAlerts,
+                    onDismissEtaAlert: (rideId) {
+                      setState(
+                        () => _etaAlerts.removeWhere((a) => a.rideId == rideId),
+                      );
+                    },
+                  ),
+                ),
                 Container(
                   width: 1,
                   color: Theme.of(context).colorScheme.outlineVariant,
@@ -241,8 +327,6 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   void _openBilling(BuildContext context) => Navigator.of(context).push(
     MaterialPageRoute<void>(
-      // BillingScreen.build returns a bare Column (it's normally an IndexedStack
-      // child), so wrap it in a Scaffold to get an app bar and a back button.
       builder: (_) => Scaffold(
         appBar: AppBar(title: const Text('Billing')),
         body: const BillingScreen(),
@@ -258,6 +342,13 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       ),
     ),
   );
+
+  /// Mobile body: the IndexedStack with all screens. The BottomNavigationBar is
+  /// provided by [ResponsiveScaffold] at the mobile breakpoint.
+  Widget _buildMobileBody(bool canDrive) {
+    final screens = _buildAllScreens(canDrive);
+    return IndexedStack(index: _mobileTabIndex, children: screens);
+  }
 
   /// Returns the ordered list of screen indices for each bottom-nav position.
   ///
@@ -282,63 +373,30 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           _billingTabIndex, // pos 5: Billing
         ];
 
-  /// Returns the nav item for a given screen index.
-  BottomNavigationBarItem _navItemForScreen(int screenIndex) {
-    switch (screenIndex) {
-      case 0:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: 'Home',
-        );
-      case 1:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          activeIcon: Icon(Icons.calendar_month),
-          label: 'Schedule',
-        );
-      case 2:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_outlined),
-          activeIcon: Icon(Icons.bar_chart),
-          label: 'Analytics',
-        );
-      case 3:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.add_circle_outline),
-          activeIcon: Icon(Icons.add_circle),
-          label: 'New Ride',
-        );
-      case 4:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.grid_view_outlined),
-          activeIcon: Icon(Icons.grid_view),
-          label: 'More',
-        );
-      case _billingTabIndex:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.request_quote_outlined),
-          activeIcon: Icon(Icons.request_quote),
-          label: 'Billing',
-        );
-      case _driverMyRidesScreenIndex:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.directions_car_outlined),
-          activeIcon: Icon(Icons.directions_car),
-          label: 'My Rides',
-        );
-      case _myScheduleScreenIndex:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.event_note_outlined),
-          activeIcon: Icon(Icons.event_note),
-          label: 'My Schedule',
-        );
-      default:
-        return const BottomNavigationBarItem(
-          icon: Icon(Icons.more_horiz),
-          label: '',
-        );
+  /// Builds the [NavigationDestination] list matching the nav order.
+  List<NavigationDestination> _buildNavDestinations(bool canDrive) {
+    NavigationDestination dest(IconData icon, String label) =>
+        NavigationDestination(icon: Icon(icon), label: label);
+
+    if (canDrive) {
+      return [
+        dest(LucideCompat.clipboardList, 'Home'),
+        dest(Icons.event_note_outlined, 'My Schedule'),
+        dest(LucideCompat.calendarDays, 'Schedule'),
+        dest(Icons.directions_car_outlined, 'My Rides'),
+        dest(Icons.add_circle_outline, 'New Ride'),
+        dest(Icons.grid_view_outlined, 'More'),
+        dest(Icons.request_quote_outlined, 'Billing'),
+      ];
     }
+    return [
+      dest(LucideCompat.clipboardList, 'Home'),
+      dest(LucideCompat.calendarDays, 'Schedule'),
+      dest(Icons.bar_chart_outlined, 'Analytics'),
+      dest(Icons.add_circle_outline, 'New Ride'),
+      dest(Icons.grid_view_outlined, 'More'),
+      dest(Icons.request_quote_outlined, 'Billing'),
+    ];
   }
 
   /// Maps the current screen index to the highlighted bottom-nav position.
@@ -348,29 +406,6 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     if (idx != -1) return idx;
     // Screen not in nav (e.g. an extended More-menu screen): highlight More.
     return navOrder.indexOf(4);
-  }
-
-  Widget _buildMobileView(bool canDrive) {
-    final screens = _buildAllScreens(canDrive);
-    final navOrder = _navOrder(canDrive);
-    return Scaffold(
-      body: IndexedStack(index: _mobileTabIndex, children: screens),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _navIndexForScreen(_mobileTabIndex, navOrder),
-        onTap: (navPos) async {
-          final screenIndex = navOrder[navPos];
-          if (_mobileTabIndex == _createRideTabIndex &&
-              screenIndex != _createRideTabIndex) {
-            final canLeave = await _confirmLeaveCreateRide(context);
-            if (!canLeave) return;
-          }
-          setState(() => _mobileTabIndex = screenIndex);
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.accent,
-        items: navOrder.map(_navItemForScreen).toList(),
-      ),
-    );
   }
 
   Widget _buildMoreScreen(bool canDrive) {
@@ -532,20 +567,23 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
     return Column(
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-          ),
-          child: const SafeArea(
-            bottom: false,
-            child: Text(
-              'More',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+        AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+            ),
+            child: const SafeArea(
+              bottom: false,
+              child: Text(
+                'More',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

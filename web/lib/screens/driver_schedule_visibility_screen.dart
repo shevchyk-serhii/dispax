@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
 import '../modules/core/models/person.dart';
@@ -109,8 +110,9 @@ class _DriverScheduleVisibilityScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Schedule Visibility'),
-        backgroundColor: AppColors.accent,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         elevation: 0,
         actions: [
           IconButton(
@@ -167,7 +169,7 @@ class _DriverScheduleVisibilityScreenState
             itemBuilder: (context, index) {
               final driver = _drivers[index];
               final canView = _visibilityMap[driver.id] ?? false;
-              return SwitchListTile(
+              return SwitchListTile.adaptive(
                 title: Text(driver.name),
                 subtitle: Text(driver.email),
                 secondary: CircleAvatar(
@@ -180,7 +182,7 @@ class _DriverScheduleVisibilityScreenState
                   ),
                 ),
                 value: canView,
-                activeThumbColor: AppColors.accent,
+                activeTrackColor: AppColors.accent,
                 onChanged: (value) => _setVisibility(driver.id, value),
               );
             },

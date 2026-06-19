@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/client/client_bloc.dart';
 import '../../../blocs/client/client_event.dart';
@@ -42,6 +43,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
         ),
         backgroundColor: AppColors.secretaryColor,
         foregroundColor: AppColors.textOnPrimary,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         elevation: AppDimensions.appBarElevation,
         automaticallyImplyLeading: false,
         actions: [

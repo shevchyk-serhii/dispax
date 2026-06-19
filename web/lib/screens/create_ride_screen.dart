@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../modules/ride_management/widgets/widgets.dart';
@@ -101,6 +102,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
           ),
           backgroundColor: AppColors.secretaryColor,
           foregroundColor: AppColors.textOnPrimary,
+          systemOverlayStyle: SystemUiOverlayStyle.light,
           elevation: AppDimensions.appBarElevation,
         ),
         body: CreateRideFormBody(formKey: _formKey),

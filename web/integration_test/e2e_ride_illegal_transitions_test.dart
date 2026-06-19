@@ -23,23 +23,46 @@ void main() {
     final rideId = await createRideId(clientToken);
 
     final res = await setStatus(rideId, dispatcherToken, 'Completed');
-    expect(res.status, 409,
-        reason: 'Requested→Completed must be a 409 conflict, was ${res.status}');
-    expect(await rideStatus(rideId, dispatcherToken), 'Requested',
-        reason: 'the ride must stay Requested after a rejected completion');
+    expect(
+      res.status,
+      409,
+      reason: 'Requested→Completed must be a 409 conflict, was ${res.status}',
+    );
+    expect(
+      await rideStatus(rideId, dispatcherToken),
+      'Requested',
+      reason: 'the ride must stay Requested after a rejected completion',
+    );
   });
 
   test('cannot assign a driver to an already-assigned ride', () async {
     final rideId = await createRideId(clientToken);
-    final first = await assignDriver(rideId, dispatcherToken, driverId: hansDriverId);
-    expect(first.status, anyOf(200, 201), reason: 'first assign should succeed');
+    final first = await assignDriver(
+      rideId,
+      dispatcherToken,
+      driverId: hansDriverId,
+    );
+    expect(
+      first.status,
+      anyOf(200, 201),
+      reason: 'first assign should succeed',
+    );
 
-    final second =
-        await assignDriver(rideId, dispatcherToken, driverId: klausDriverId);
-    expect(second.status, 409,
-        reason: 'assigning an Assigned ride must be a 409, was ${second.status}');
-    expect(await rideStatus(rideId, dispatcherToken), 'Assigned',
-        reason: 'the ride must remain Assigned (to the first driver)');
+    final second = await assignDriver(
+      rideId,
+      dispatcherToken,
+      driverId: klausDriverId,
+    );
+    expect(
+      second.status,
+      409,
+      reason: 'assigning an Assigned ride must be a 409, was ${second.status}',
+    );
+    expect(
+      await rideStatus(rideId, dispatcherToken),
+      'Assigned',
+      reason: 'the ride must remain Assigned (to the first driver)',
+    );
   });
 
   test('cannot cancel a completed ride', () async {
@@ -49,9 +72,15 @@ void main() {
     await setStatus(rideId, dispatcherToken, 'Completed');
 
     final res = await cancelRide(rideId, dispatcherToken);
-    expect(res.status, 403,
-        reason: 'cancelling a Completed ride must be 403, was ${res.status}');
-    expect(await rideStatus(rideId, dispatcherToken), 'Completed',
-        reason: 'the ride must stay Completed after a rejected cancellation');
+    expect(
+      res.status,
+      403,
+      reason: 'cancelling a Completed ride must be 403, was ${res.status}',
+    );
+    expect(
+      await rideStatus(rideId, dispatcherToken),
+      'Completed',
+      reason: 'the ride must stay Completed after a rejected cancellation',
+    );
   });
 }

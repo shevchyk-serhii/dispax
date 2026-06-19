@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -184,71 +185,83 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Icon(Icons.today, color: Colors.white),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Today\'s Schedule',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  DateFormat.yMMMEd().format(DateTime.now()),
-                  style: const TextStyle(fontSize: 12, color: Colors.white70),
-                ),
-              ],
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: BlocListener<RideBloc, RideState>(
+              listener: (context, state) {
+                if (state.hasError) {
+                  NavigationHelper.showSnackBar(
+                    context,
+                    state.errorMessage!,
+                    isError: true,
+                  );
+                }
+                // Restore tracking if the ride is already in progress (after screen reload)
+                if (state.status == RideStateStatus.loaded && !_trackingStarted) {
+                  final hasActiveRide = state.rides.any(
+                    (r) => r.status == RideStatus.inProgress,
+                  );
+                  if (hasActiveRide) _startLocationTracking();
+                }
+              },
+              child: BlocBuilder<RideBloc, RideState>(
+                builder: (context, rideState) {
+                  return buildBody(context, rideState);
+                },
+              ),
             ),
-          ],
-        ),
-        backgroundColor: AppColors.infoStrong,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          const NotificationBell(),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => refreshRides(context),
-            tooltip: 'Refresh',
           ),
         ],
       ),
-      body: BlocListener<RideBloc, RideState>(
-        listener: (context, state) {
-          if (state.hasError) {
-            NavigationHelper.showSnackBar(
-              context,
-              state.errorMessage!,
-              isError: true,
-            );
-          }
-          // Restore tracking if the ride is already in progress (after screen reload)
-          if (state.status == RideStateStatus.loaded && !_trackingStarted) {
-            final hasActiveRide = state.rides.any(
-              (r) => r.status == RideStatus.inProgress,
-            );
-            if (hasActiveRide) _startLocationTracking();
-          }
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppColors.infoStrong,
-                Theme.of(context).colorScheme.surface,
-              ],
-              stops: const [0.0, 0.2],
-            ),
-          ),
-          child: BlocBuilder<RideBloc, RideState>(
-            builder: (context, rideState) {
-              return buildBody(context, rideState);
-            },
+    );
+  }
+
+  Widget _buildHeader() {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.driverGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.today, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Today's Schedule",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      DateFormat.yMMMEd().format(DateTime.now()),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const NotificationBell(),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                onPressed: () => refreshRides(context),
+                tooltip: 'Refresh',
+              ),
+            ],
           ),
         ),
       ),

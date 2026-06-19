@@ -39,7 +39,10 @@ void main() {
       isFalse,
       reason: "another user's inbox must not leak the driver's notification",
     );
-    expect(await unreadCount(otherToken), 0,
-        reason: 'the unrelated user should have no unread notifications');
+    expect(
+      await unreadCount(otherToken),
+      0,
+      reason: 'the unrelated user should have no unread notifications',
+    );
   });
 }

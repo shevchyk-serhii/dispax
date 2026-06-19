@@ -52,7 +52,11 @@ Future<ApiResult> apiGet(String path, String token) async {
   return ApiResult(r.statusCode, _decode(r));
 }
 
-Future<ApiResult> apiPost(String path, String token, Map<String, dynamic> body) async {
+Future<ApiResult> apiPost(
+  String path,
+  String token,
+  Map<String, dynamic> body,
+) async {
   final r = await http.post(
     Uri.parse('$kApiBaseUrl$path'),
     headers: {
@@ -64,7 +68,11 @@ Future<ApiResult> apiPost(String path, String token, Map<String, dynamic> body) 
   return ApiResult(r.statusCode, _decode(r));
 }
 
-Future<ApiResult> apiPut(String path, String token, Map<String, dynamic> body) async {
+Future<ApiResult> apiPut(
+  String path,
+  String token,
+  Map<String, dynamic> body,
+) async {
   final r = await http.put(
     Uri.parse('$kApiBaseUrl$path'),
     headers: {
@@ -101,30 +109,41 @@ Future<ApiResult> createRide(
 
 /// Convenience: create a ride and return its id (fails the test caller's
 /// expectations naturally if creation did not return 200).
-Future<String> createRideId(String clientToken,
-    {String? pickupDateTime}) async {
+Future<String> createRideId(
+  String clientToken, {
+  String? pickupDateTime,
+}) async {
   final res = await createRide(clientToken, pickupDateTime: pickupDateTime);
   return (res.body as Map<String, dynamic>)['id'] as String;
 }
 
-Future<ApiResult> assignDriver(String rideId, String dispatcherToken,
-        {String driverId = hansDriverId}) =>
-    apiPut('/rides/$rideId/assign-driver', dispatcherToken, {'driverId': driverId});
+Future<ApiResult> assignDriver(
+  String rideId,
+  String dispatcherToken, {
+  String driverId = hansDriverId,
+}) => apiPut('/rides/$rideId/assign-driver', dispatcherToken, {
+  'driverId': driverId,
+});
 
 Future<ApiResult> setStatus(String rideId, String token, String status) =>
     apiPut('/rides/$rideId/status', token, {'status': status});
 
-Future<ApiResult> cancelRide(String rideId, String token,
-        {String reason = 'Test cancel'}) =>
-    apiPut('/rides/$rideId/cancel', token, {'reason': reason});
+Future<ApiResult> cancelRide(
+  String rideId,
+  String token, {
+  String reason = 'Test cancel',
+}) => apiPut('/rides/$rideId/cancel', token, {'reason': reason});
 
 Future<ApiResult> addBlacklist(
-        String dispatcherToken, String clientId, String driverId, String reason) =>
-    apiPost('/blacklist', dispatcherToken, {
-      'clientId': clientId,
-      'driverId': driverId,
-      'reason': reason,
-    });
+  String dispatcherToken,
+  String clientId,
+  String driverId,
+  String reason,
+) => apiPost('/blacklist', dispatcherToken, {
+  'clientId': clientId,
+  'driverId': driverId,
+  'reason': reason,
+});
 
 /// Reads a single ride's current status via GET /rides/{id}.
 Future<String> rideStatus(String rideId, String token) async {
@@ -138,11 +157,17 @@ Future<Map<String, dynamic>> rideJson(String rideId, String token) async {
   return res.body as Map<String, dynamic>;
 }
 
-Future<ApiResult> markPaid(String rideId, String dispatcherToken) =>
-    apiPut('/rides/$rideId/payment', dispatcherToken, {'paymentStatus': 'Paid'});
+Future<ApiResult> markPaid(String rideId, String dispatcherToken) => apiPut(
+  '/rides/$rideId/payment',
+  dispatcherToken,
+  {'paymentStatus': 'Paid'},
+);
 
-Future<ApiResult> createExpense(String driverToken,
-        {required double amount, String category = 'Fuel'}) =>
+Future<ApiResult> createExpense(
+  String driverToken, {
+  required double amount,
+  String category = 'Fuel',
+}) =>
     apiPost('/expenses', driverToken, {'category': category, 'amount': amount});
 
 Future<ApiResult> rateRide(String rideId, String clientToken, int rating) =>

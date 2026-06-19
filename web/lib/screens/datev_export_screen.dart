@@ -1,8 +1,8 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../constants/app_styles.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../modules/billing/csv_download_stub.dart'
@@ -192,33 +192,36 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(Icons.account_balance, color: Colors.white, size: 24),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'DATEV Export',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.account_balance, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'DATEV Export',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-              onPressed: _loadData,
-            ),
-          ],
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                onPressed: _loadData,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -577,9 +580,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
                           )
                         : const Icon(Icons.download),
                     label: const Text('Download .csv (EXTF)'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.dispatcherColor,
-                    ),
+                    style: AppStyles.accentButtonStyle,
                   ),
                 ),
               ],
