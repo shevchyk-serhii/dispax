@@ -2,7 +2,8 @@ package com.shevchyk.auth.application
 
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.domain.*
-import com.shevchyk.core.domain.{PersonRole, UserStatus}
+import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole, UserStatus}
+import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.auth.repository.{InMemoryPersonRepositoryWithUsers, InMemoryTokenRepository, TestLayers, TestUUIDs}
 import com.shevchyk.auth.service.JwtService
 import zio.*
@@ -22,6 +23,16 @@ object AuthServiceSpec extends ZIOSpecDefault {
     (ZLayer.succeed(InMemoryPersonRepositoryWithUsers()) ++
       ZLayer.succeed(InMemoryTokenRepository()) ++
       (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
+
+  // Like `layers`, but also exposes the underlying PersonRepository so a test can seed/inspect
+  // rows directly (used by the tenant-scoped deleteUser tests).
+  def layersWithRepo: ZLayer[Any, Nothing, AuthService & PersonRepository] = {
+    val repo = ZLayer.succeed[PersonRepository](InMemoryPersonRepositoryWithUsers())
+    val auth =
+      (repo ++ ZLayer.succeed(InMemoryTokenRepository()) ++
+        (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
+    repo ++ auth
+  }
 
   def spec =
     suite("AuthService")(
@@ -470,29 +481,63 @@ object AuthServiceSpec extends ZIOSpecDefault {
         }.provide(layers)
       ),
       suite("deleteUser")(
-        test("deletes existing user") {
+        test("deletes existing user in the same company") {
+          val companyId = CompanyId(UUID.randomUUID())
+          val person    = Person(
+            id = PersonId.generate(),
+            name = "To Delete",
+            email = "todelete@example.com",
+            role = PersonRole.Client,
+            passwordHash = "hash",
+            status = UserStatus.ACTIVE,
+            companyId = Some(companyId),
+            roles = Set(PersonRole.Client)
+          )
           for {
+            repo    <- ZIO.service[PersonRepository]
+            _       <- repo.create(person)
             service <- ZIO.service[AuthService]
-            // Create a user first to delete
-            user    <- service.createUser(
-                         CreateUserRequest(
-                           email = "todelete@example.com",
-                           name = "To Delete",
-                           role = "CLIENT",
-                           password = "Secure123"
-                         )
-                       )
-            _       <- service.deleteUser(user.id)
-            result  <- service.getUserById(user.id).exit
+            _       <- service.deleteUser(person.id.value, companyId)
+            result  <- service.getUserById(person.id.value).exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[UserNotFound])
             case _                   => false
           })
-        }.provide(layers),
+        }.provide(layersWithRepo),
+        // Regression for the tenant-isolation gap: a hard delete must not touch a user that
+        // belongs to a different company, even when the id is known. The row must survive and
+        // the call must fail with UserNotFound (the target is invisible to the other tenant).
+        test("does not delete a user from another company") {
+          val ownerCompany    = CompanyId(UUID.randomUUID())
+          val attackerCompany = CompanyId(UUID.randomUUID())
+          val person          = Person(
+            id = PersonId.generate(),
+            name = "Other Tenant",
+            email = "victim@other.example.com",
+            role = PersonRole.Client,
+            passwordHash = "hash",
+            status = UserStatus.ACTIVE,
+            companyId = Some(ownerCompany),
+            roles = Set(PersonRole.Client)
+          )
+          for {
+            repo      <- ZIO.service[PersonRepository]
+            _         <- repo.create(person)
+            service   <- ZIO.service[AuthService]
+            result    <- service.deleteUser(person.id.value, attackerCompany).exit
+            stillHere <- repo.findById(person.id)
+          } yield assertTrue(
+            result.isFailure,
+            stillHere.isDefined
+          )
+        }.provide(layersWithRepo),
         test("returns error for unknown user") {
           for {
             service <- ZIO.service[AuthService]
-            result  <- service.deleteUser(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")).exit
+            result  <-
+              service
+                .deleteUser(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), CompanyId(UUID.randomUUID()))
+                .exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[UserNotFound])
             case _                   => false

@@ -25,24 +25,25 @@ private def testPerson(id: PersonId, companyId: Option[CompanyId]): Person = Per
 // Helper: ZLayer that returns a fixed Person from findById
 private def personRepoReturning(person: Person): ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
   new PersonRepository:
-    def create(p: Person): Task[Person]                                              = ZIO.succeed(p)
-    def findById(id: PersonId): Task[Option[Person]]                                 = ZIO.succeed(Some(person))
-    def findByIdAndCompany(id: PersonId, c: CompanyId): Task[Option[Person]]         = ZIO.succeed(None)
-    def findByEmail(email: String): Task[Option[Person]]                             = ZIO.succeed(None)
-    def findByRole(role: PersonRole): Task[List[Person]]                             = ZIO.succeed(Nil)
-    def findByRoleAndCompany(role: PersonRole, c: CompanyId): Task[List[Person]]     = ZIO.succeed(Nil)
-    def findByCompanyId(c: CompanyId): Task[List[Person]]                            = ZIO.succeed(Nil)
-    def findAll(): Task[List[Person]]                                                = ZIO.succeed(Nil)
-    def update(p: Person): Task[Person]                                              = ZIO.succeed(p)
-    def delete(id: PersonId): Task[Unit]                                             = ZIO.unit
-    def findByStatus(status: UserStatus): Task[List[Person]]                         = ZIO.succeed(Nil)
-    def searchByQuery(query: String): Task[List[Person]]                             = ZIO.succeed(Nil)
-    def updateLastLogin(id: PersonId): Task[Unit]                                    = ZIO.unit
-    def findByClientCompany(ccId: ClientCompanyId): Task[List[Person]]               = ZIO.succeed(Nil)
-    def upsertDriverRow(personId: PersonId): Task[Unit]                              = ZIO.unit
-    def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                 = ZIO.succeed(None)
-    def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
-    def deleteAvatar(id: PersonId): Task[Unit]                                       = ZIO.unit
+    def create(p: Person): Task[Person]                                                          = ZIO.succeed(p)
+    def findById(id: PersonId): Task[Option[Person]]                                             = ZIO.succeed(Some(person))
+    def findByIdAndCompany(id: PersonId, c: CompanyId): Task[Option[Person]]                     = ZIO.succeed(None)
+    def findByEmail(email: String): Task[Option[Person]]                                         = ZIO.succeed(None)
+    def findByRole(role: PersonRole): Task[List[Person]]                                         = ZIO.succeed(Nil)
+    def findByRoleAndCompany(role: PersonRole, c: CompanyId): Task[List[Person]]                 = ZIO.succeed(Nil)
+    def findByCompanyId(c: CompanyId): Task[List[Person]]                                        = ZIO.succeed(Nil)
+    def findAll(): Task[List[Person]]                                                            = ZIO.succeed(Nil)
+    def update(p: Person): Task[Person]                                                          = ZIO.succeed(p)
+    def delete(id: PersonId): Task[Unit]                                                         = ZIO.unit
+    def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit] = ZIO.unit
+    def findByStatus(status: UserStatus): Task[List[Person]]                                     = ZIO.succeed(Nil)
+    def searchByQuery(query: String): Task[List[Person]]                                         = ZIO.succeed(Nil)
+    def updateLastLogin(id: PersonId): Task[Unit]                                                = ZIO.unit
+    def findByClientCompany(ccId: ClientCompanyId): Task[List[Person]]                           = ZIO.succeed(Nil)
+    def upsertDriverRow(personId: PersonId): Task[Unit]                                          = ZIO.unit
+    def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                             = ZIO.succeed(None)
+    def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]             = ZIO.unit
+    def deleteAvatar(id: PersonId): Task[Unit]                                                   = ZIO.unit
 )
 
 object DriverLocationServiceSpec extends ZIOSpecDefault {
@@ -90,24 +91,25 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
   // Noop PersonRepository
   val noopPersonRepository: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
     new PersonRepository:
-      def create(person: Person): Task[Person]                                             = ZIO.succeed(person)
-      def findById(id: PersonId): Task[Option[Person]]                                     = ZIO.succeed(None)
-      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]     = ZIO.succeed(None)
-      def findByEmail(email: String): Task[Option[Person]]                                 = ZIO.succeed(None)
-      def findByRole(role: PersonRole): Task[List[Person]]                                 = ZIO.succeed(Nil)
-      def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(Nil)
-      def findByCompanyId(companyId: CompanyId): Task[List[Person]]                        = ZIO.succeed(Nil)
-      def findAll(): Task[List[Person]]                                                    = ZIO.succeed(Nil)
-      def update(person: Person): Task[Person]                                             = ZIO.succeed(person)
-      def delete(id: PersonId): Task[Unit]                                                 = ZIO.unit
-      def findByStatus(status: UserStatus): Task[List[Person]]                             = ZIO.succeed(Nil)
-      def searchByQuery(query: String): Task[List[Person]]                                 = ZIO.succeed(Nil)
-      def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
-      def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]        = ZIO.succeed(Nil)
-      def upsertDriverRow(personId: PersonId): Task[Unit]                                  = ZIO.unit
-      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                     = ZIO.succeed(None)
-      def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]     = ZIO.unit
-      def deleteAvatar(id: PersonId): Task[Unit]                                           = ZIO.unit
+      def create(person: Person): Task[Person]                                                     = ZIO.succeed(person)
+      def findById(id: PersonId): Task[Option[Person]]                                             = ZIO.succeed(None)
+      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]             = ZIO.succeed(None)
+      def findByEmail(email: String): Task[Option[Person]]                                         = ZIO.succeed(None)
+      def findByRole(role: PersonRole): Task[List[Person]]                                         = ZIO.succeed(Nil)
+      def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]         = ZIO.succeed(Nil)
+      def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                = ZIO.succeed(Nil)
+      def findAll(): Task[List[Person]]                                                            = ZIO.succeed(Nil)
+      def update(person: Person): Task[Person]                                                     = ZIO.succeed(person)
+      def delete(id: PersonId): Task[Unit]                                                         = ZIO.unit
+      def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit] = ZIO.unit
+      def findByStatus(status: UserStatus): Task[List[Person]]                                     = ZIO.succeed(Nil)
+      def searchByQuery(query: String): Task[List[Person]]                                         = ZIO.succeed(Nil)
+      def updateLastLogin(id: PersonId): Task[Unit]                                                = ZIO.unit
+      def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                = ZIO.succeed(Nil)
+      def upsertDriverRow(personId: PersonId): Task[Unit]                                          = ZIO.unit
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                             = ZIO.succeed(None)
+      def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]             = ZIO.unit
+      def deleteAvatar(id: PersonId): Task[Unit]                                                   = ZIO.unit
   )
 
   // Noop GeofenceService
@@ -508,23 +510,29 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
         } @@ TestAspect.withLiveClock @@ TestAspect.flaky,
         test("checkGeofences error is swallowed — updateLocation succeeds") {
           val failingRideRepo = ZLayer.succeed[RideRepository](new RideRepository:
-            def create(ride: Ride): Task[Ride]                                                              = ZIO.succeed(ride)
-            def findById(id: RideId): Task[Option[Ride]]                                                    = ZIO.succeed(None)
-            def update(ride: Ride): Task[Ride]                                                              = ZIO.succeed(ride)
-            def updateIfStatus(ride: Ride, expected: Set[RideStatus]): Task[Boolean]                        = ZIO.succeed(false)
-            def findByClientId(id: PersonId): Task[List[Ride]]                                              = ZIO.succeed(Nil)
-            def findByDriverId(id: PersonId): Task[List[Ride]]                                              = ZIO.fail(RuntimeException("db error"))
-            def findByStatus(s: RideStatus): Task[List[Ride]]                                               = ZIO.succeed(Nil)
-            def findByCompanyId(c: CompanyId): Task[List[Ride]]                                             = ZIO.succeed(Nil)
-            def findByCompanyIdPaginated(c: CompanyId, o: Int, l: Int): Task[List[Ride]]                    = ZIO.succeed(Nil)
-            def findByDriverIdPaginated(id: PersonId, o: Int, l: Int): Task[List[Ride]]                     = ZIO.succeed(Nil)
-            def findAll(): Task[List[Ride]]                                                                 = ZIO.succeed(Nil)
-            def delete(id: RideId, c: CompanyId): Task[Unit]                                                = ZIO.unit
-            def countByCompanyGroupedByStatus(c: CompanyId): Task[Map[String, Int]]                         = ZIO.succeed(Map.empty)
-            def sumRevenueByCompany(c: CompanyId): Task[BigDecimal]                                         = ZIO.succeed(BigDecimal(0))
-            def sumTodayRevenueByCompany(c: CompanyId): Task[BigDecimal]                                    = ZIO.succeed(BigDecimal(0))
-            def avgAssignmentMinutesByCompany(c: CompanyId): Task[Double]                                   = ZIO.succeed(0.0)
-            def countDailyStatsByCompany(c: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]]      = ZIO.succeed(
+            def create(ride: Ride): Task[Ride]                                                                  = ZIO.succeed(ride)
+            def findById(id: RideId): Task[Option[Ride]]                                                        = ZIO.succeed(None)
+            def update(ride: Ride): Task[Ride]                                                                  = ZIO.succeed(ride)
+            def updateIfStatus(ride: Ride, expected: Set[RideStatus]): Task[Boolean]                            = ZIO.succeed(false)
+            def findByClientId(id: PersonId): Task[List[Ride]]                                                  = ZIO.succeed(Nil)
+            def findByDriverId(id: PersonId): Task[List[Ride]]                                                  = ZIO.fail(RuntimeException("db error"))
+            def findByDriverIdAndCompany(id: PersonId, c: CompanyId): Task[List[Ride]]                          = ZIO.fail(
+              RuntimeException("db error")
+            )
+            def findByClientIdAndCompany(id: PersonId, c: CompanyId): Task[List[Ride]]                          = ZIO.succeed(Nil)
+            def findByStatus(s: RideStatus): Task[List[Ride]]                                                   = ZIO.succeed(Nil)
+            def findByCompanyId(c: CompanyId): Task[List[Ride]]                                                 = ZIO.succeed(Nil)
+            def findByCompanyIdPaginated(c: CompanyId, o: Int, l: Int): Task[List[Ride]]                        = ZIO.succeed(Nil)
+            def findByDriverIdPaginated(id: PersonId, o: Int, l: Int): Task[List[Ride]]                         = ZIO.succeed(Nil)
+            def findByDriverIdAndCompanyPaginated(id: PersonId, c: CompanyId, o: Int, l: Int): Task[List[Ride]] = ZIO
+              .succeed(Nil)
+            def findAll(): Task[List[Ride]]                                                                     = ZIO.succeed(Nil)
+            def delete(id: RideId, c: CompanyId): Task[Unit]                                                    = ZIO.unit
+            def countByCompanyGroupedByStatus(c: CompanyId): Task[Map[String, Int]]                             = ZIO.succeed(Map.empty)
+            def sumRevenueByCompany(c: CompanyId): Task[BigDecimal]                                             = ZIO.succeed(BigDecimal(0))
+            def sumTodayRevenueByCompany(c: CompanyId): Task[BigDecimal]                                        = ZIO.succeed(BigDecimal(0))
+            def avgAssignmentMinutesByCompany(c: CompanyId): Task[Double]                                       = ZIO.succeed(0.0)
+            def countDailyStatsByCompany(c: CompanyId, days: Int): Task[List[(String, Int, Int, Int)]]          = ZIO.succeed(
               Nil
             )
             def earningsByDriver(
@@ -542,11 +550,11 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
                 to: java.time.Instant,
                 bucket: com.shevchyk.ride.repository.TimeBucket
             ): Task[List[(java.time.Instant, BigDecimal)]] = ZIO.succeed(Nil)
-            def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]] = ZIO
+            def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]     = ZIO
               .succeed(Nil)
-            def clearReminders(id: RideId): Task[Unit]                                                      = ZIO.unit
-            def countAllRidesByStatus(): Task[Map[String, Int]]                                             = ZIO.succeed(Map.empty)
-            def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]             = ZIO.succeed(
+            def clearReminders(id: RideId): Task[Unit]                                                          = ZIO.unit
+            def countAllRidesByStatus(): Task[Map[String, Int]]                                                 = ZIO.succeed(Map.empty)
+            def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]                 = ZIO.succeed(
               BigDecimal(0)
             )
             def countRidesByCompany(

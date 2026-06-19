@@ -87,12 +87,13 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       persons.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList
     )
 
-    override def findByCompanyId(companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
+    override def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                = ZIO.succeed(
       persons.values.filter(_.companyId.contains(companyId)).toList
     )
-    override def findAll(): Task[List[Person]]                             = ZIO.succeed(persons.values.toList)
-    override def update(person: Person): Task[Person]                      = ZIO.succeed(person)
-    override def delete(id: PersonId): Task[Unit]                          = ZIO.unit
+    override def findAll(): Task[List[Person]]                                                            = ZIO.succeed(persons.values.toList)
+    override def update(person: Person): Task[Person]                                                     = ZIO.succeed(person)
+    override def delete(id: PersonId): Task[Unit]                                                         = ZIO.unit
+    override def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit] = ZIO.unit
 
     override def findByStatus(status: com.shevchyk.core.domain.UserStatus): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(_.status == status).toList

@@ -17,11 +17,14 @@ trait PersonRepository {
   def findByCompanyId(companyId: CompanyId): Task[List[Person]]
   def findAll(): Task[List[Person]]
   def update(person: Person): Task[Person]
-  // NOTE: not tenant-scoped — deletes by id alone, ignoring company. Any API caller must
-  // first verify ownership (e.g. via findByIdAndCompany) before calling this, or it breaks
-  // company isolation. The production user-delete route uses a soft-delete guarded by
-  // UserApi.requireSameCompany; this hard delete is currently only exercised by tests.
+  // NOTE: not tenant-scoped — deletes by id alone, ignoring company. Prefer deleteInCompany
+  // for anything driven by a request. Kept for cross-tenant maintenance and tests; any API
+  // caller using it must first verify ownership (e.g. via findByIdAndCompany), or it breaks
+  // company isolation.
   def delete(id: PersonId): Task[Unit]
+  // Tenant-scoped hard delete: only removes the person when it belongs to `companyId`.
+  // Safe to call with an id taken from a request as long as companyId comes from the JWT.
+  def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]
   def findByStatus(status: UserStatus): Task[List[Person]]
   def searchByQuery(query: String): Task[List[Person]]
   def updateLastLogin(id: PersonId): Task[Unit]

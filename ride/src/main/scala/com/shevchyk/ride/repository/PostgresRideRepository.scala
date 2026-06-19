@@ -196,6 +196,24 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++
+      fr"FROM rides WHERE driver_id = ${driverId.value} AND company_id = ${companyId.value} ORDER BY request_time DESC")
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
+  def findByClientIdAndCompany(clientId: PersonId, companyId: CompanyId): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++
+      fr"FROM rides WHERE client_id = ${clientId.value} AND company_id = ${companyId.value} ORDER BY request_time DESC")
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
   def findByCompanyId(companyId: CompanyId): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE company_id = ${companyId.value} ORDER BY request_time DESC")
       .query[Ride]
@@ -215,6 +233,21 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
 
   def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE driver_id = ${driverId.value}" ++
+      fr"ORDER BY request_time DESC LIMIT $limit OFFSET $offset")
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
+  def findByDriverIdAndCompanyPaginated(
+      driverId: PersonId,
+      companyId: CompanyId,
+      offset: Int,
+      limit: Int
+  ): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++
+      fr"FROM rides WHERE driver_id = ${driverId.value} AND company_id = ${companyId.value}" ++
       fr"ORDER BY request_time DESC LIMIT $limit OFFSET $offset")
       .query[Ride]
       .to[List]

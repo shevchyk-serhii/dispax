@@ -106,12 +106,13 @@ object RideServiceSpec extends ZIOSpecDefault {
       persons.values.filter(p => p.hasRole(role) && p.companyId.contains(companyId)).toList
     )
 
-    override def findByCompanyId(companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
+    override def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                = ZIO.succeed(
       persons.values.filter(_.companyId.contains(companyId)).toList
     )
-    override def findAll(): Task[List[Person]]                             = ZIO.succeed(persons.values.toList)
-    override def update(person: Person): Task[Person]                      = ZIO.succeed(person)
-    override def delete(id: PersonId): Task[Unit]                          = ZIO.unit
+    override def findAll(): Task[List[Person]]                                                            = ZIO.succeed(persons.values.toList)
+    override def update(person: Person): Task[Person]                                                     = ZIO.succeed(person)
+    override def delete(id: PersonId): Task[Unit]                                                         = ZIO.unit
+    override def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit] = ZIO.unit
 
     override def findByStatus(status: com.shevchyk.core.domain.UserStatus): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(_.status == status).toList
@@ -1495,7 +1496,7 @@ object RideServiceSpec extends ZIOSpecDefault {
                          )
                        )
             _       <- service.assignDriver(ride.id, testDriverId)
-            rides   <- service.getDriverRides(testDriverId)
+            rides   <- service.getDriverRides(testDriverId, testCompanyId)
           } yield assertTrue(rides.nonEmpty && rides.forall(_.driverId.contains(testDriverId)))
         }.provide(standardLayers),
         test("getClientRides returns client's rides") {
@@ -1509,8 +1510,42 @@ object RideServiceSpec extends ZIOSpecDefault {
                            dropoffLocation = Location("B")
                          )
                        )
-            rides   <- service.getClientRides(testClientId)
+            rides   <- service.getClientRides(testClientId, testCompanyId)
           } yield assertTrue(rides.nonEmpty && rides.forall(_.clientId == testClientId))
+        }.provide(standardLayers),
+        // Regression for the IDOR: a dispatcher of another company must not see a driver's or
+        // client's rides. Querying with the wrong companyId returns nothing, even though the
+        // driver/client id is valid.
+        test("getDriverRides does not leak rides to another company") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B")
+                         )
+                       )
+            _       <- service.assignDriver(ride.id, testDriverId)
+            mine    <- service.getDriverRides(testDriverId, testCompanyId)
+            leaked  <- service.getDriverRides(testDriverId, otherCompanyId)
+          } yield assertTrue(mine.nonEmpty && leaked.isEmpty)
+        }.provide(standardLayers),
+        test("getClientRides does not leak rides to another company") {
+          for {
+            service <- ZIO.service[RideService]
+            _       <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B")
+                         )
+                       )
+            mine    <- service.getClientRides(testClientId, testCompanyId)
+            leaked  <- service.getClientRides(testClientId, otherCompanyId)
+          } yield assertTrue(mine.nonEmpty && leaked.isEmpty)
         }.provide(standardLayers),
         test("getCancellationStats groups by reason") {
           for {

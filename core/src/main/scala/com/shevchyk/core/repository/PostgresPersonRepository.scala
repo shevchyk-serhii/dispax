@@ -184,6 +184,14 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       .unit
   }
 
+  override def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit] = {
+    sql"""
+      DELETE FROM persons WHERE id = ${id.value} AND company_id = ${companyId.value}
+    """.update.run
+      .transact(xa)
+      .unit
+  }
+
   override def findByStatus(status: UserStatus): Task[List[Person]] = {
     (fr"SELECT" ++ selectColumns ++ fr"FROM persons WHERE status = $status")
       .query[Person]

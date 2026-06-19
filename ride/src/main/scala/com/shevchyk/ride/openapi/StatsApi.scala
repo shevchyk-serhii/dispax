@@ -111,8 +111,9 @@ object StatsApi:
                                .mapError(_ => internalError)
         (fromInst, toInst) = parsed
         driverPid         <- parsePersonId(driverId)
+        companyId         <- requireCompanyId(user.companyId)
         rideService       <- ZIO.service[RideService]
-        allDriverRides    <- rideService.getDriverRides(driverPid).mapError(_ => internalError)
+        allDriverRides    <- rideService.getDriverRides(driverPid, companyId).mapError(_ => internalError)
         completedRides     = allDriverRides.filter { ride =>
                                ride.status == RideStatus.Completed &&
                                ride.endTime.exists(t => !t.isBefore(fromInst) && t.isBefore(toInst))
