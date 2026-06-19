@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../modules/flight_management/services/flight_service.dart';
 import '../constants/app_colors.dart';
 
@@ -52,8 +53,15 @@ class _FlightScreenState extends State<FlightScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Flight Information'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        elevation: 0,
         bottom: TabBar(
           controller: _tabController,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
           tabs: const [
             Tab(text: 'Arrivals', icon: Icon(Icons.flight_land)),
             Tab(text: 'Departures', icon: Icon(Icons.flight_takeoff)),

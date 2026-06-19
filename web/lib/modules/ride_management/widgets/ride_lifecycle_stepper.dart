@@ -65,11 +65,16 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-      decoration: AppStyles.primaryCardDecoration,
+      decoration: AppStyles.primaryCardDecorationOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Ride Status', style: AppStyles.titleMedium),
+          Text(
+            'Ride Status',
+            style: AppStyles.titleMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
           const SizedBox(height: AppDimensions.paddingMedium),
           if (isCancelled)
             _buildCancelledIndicator(brightness)

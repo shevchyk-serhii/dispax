@@ -25,13 +25,16 @@ class LocationOptionItem extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(AppDimensions.paddingMedium),
           decoration: BoxDecoration(
+            // Card parent is graphite (AppColors.primary), so the selected
+            // state uses the sky accent and unselected uses a white overlay —
+            // graphite-on-graphite would be invisible.
             color: isSelected
-                ? AppColors.clientColor.withAlpha(100)
-                : Theme.of(context).colorScheme.surface.withAlpha(50),
+                ? AppColors.accent.withAlpha(60)
+                : Colors.white.withAlpha(20),
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
             border: Border.all(
               color: isSelected
-                  ? AppColors.clientColor
+                  ? AppColors.accentLight
                   : AppColors.textOnPrimary.withAlpha(50),
               width: isSelected ? 2 : 1,
             ),
@@ -43,7 +46,7 @@ class LocationOptionItem extends StatelessWidget {
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
                 color: isSelected
-                    ? AppColors.clientColor
+                    ? AppColors.accentLight
                     : AppColors.textOnPrimary.withAlpha(128),
               ),
               const SizedBox(width: AppDimensions.paddingMedium),

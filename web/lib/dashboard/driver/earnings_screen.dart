@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/driver_earnings.dart';
-import '../../theme/app_theme.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
@@ -122,7 +121,7 @@ class _EarningsBody extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-      decoration: AppTheme.glassDecoration,
+      decoration: AppStyles.glassCardDecorationOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -194,7 +193,7 @@ class _EarningsBody extends StatelessWidget {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-        decoration: AppTheme.glassDecoration,
+        decoration: AppStyles.glassCardDecorationOf(context),
         child: Column(
           children: [
             Icon(icon, color: color, size: AppDimensions.iconMedium),
@@ -228,7 +227,7 @@ class _EarningsBody extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-      decoration: AppTheme.glassDecoration,
+      decoration: AppStyles.glassCardDecorationOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

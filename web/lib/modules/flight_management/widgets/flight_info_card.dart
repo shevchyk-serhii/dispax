@@ -3,7 +3,6 @@ import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
-import '../../../theme/app_theme.dart';
 import '../../core/date_utils.dart';
 
 class FlightInfoCard extends StatelessWidget {
@@ -15,7 +14,17 @@ class FlightInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-      decoration: AppTheme.glassDecoration,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowSm,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -23,7 +32,7 @@ class FlightInfoCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.flight_land,
-                color: Theme.of(context).colorScheme.primary,
+                color: AppColors.accentLight,
                 size: AppDimensions.iconLarge,
               ),
               const SizedBox(width: AppDimensions.paddingMedium),
@@ -54,12 +63,9 @@ class FlightInfoCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppDimensions.paddingMedium),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withAlpha(150),
+              color: Colors.white.withAlpha(20),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withAlpha(100),
-                width: 1,
-              ),
+              border: Border.all(color: Colors.white.withAlpha(40), width: 1),
             ),
             child: Column(
               children: [

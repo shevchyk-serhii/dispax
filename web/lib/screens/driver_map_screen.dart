@@ -564,94 +564,103 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocListener<RideBloc, RideState>(
-        listener: (context, state) {
-          final authState = context.read<AuthBloc>().state;
-          if (authState.isAuthenticated && authState.user != null) {
-            final driverRides = state.rides
-                .where(
-                  (ride) =>
-                      ride.driverId == authState.user!.id &&
-                      (ride.status == RideStatus.assigned ||
-                          ride.status == RideStatus.inProgress),
-                )
-                .toList();
-
-            // inProgress first, then earliest assigned
-            final currentRide =
-                driverRides
-                    .where((r) => r.status == RideStatus.inProgress)
-                    .firstOrNull ??
-                (driverRides
-                        .where((r) => r.status == RideStatus.assigned)
-                        .toList()
-                      ..sort(
-                        (a, b) => a.pickupDateTime.compareTo(b.pickupDateTime),
-                      ))
-                    .firstOrNull;
-
-            if (driverRides != _assignedRides ||
-                currentRide?.id != _currentRide?.id) {
-              setState(() {
-                _assignedRides = driverRides;
-                _currentRide = currentRide;
-              });
-              _updateMapMarkers();
-              _refreshEta();
-            }
-          }
-        },
-        child: Stack(
-          children: [
-            MapWidget(
-              key: const ValueKey('driver_map'),
-              onMapCreated: _onMapCreated,
-            ),
-
-            SafeArea(
-              child: Column(
-                children: [
-                  _buildInfoPanel(),
-
-                  if (_geofenceOverlayMessage != null) _buildGeofenceOverlay(),
-
-                  if (_assignedRides.any(
+    // Full-bleed Mapbox map: light tiles are visible under the status bar.
+    // Use SystemUiOverlayStyle.dark so the clock/icons remain legible over
+    // the light map background. The floating info panel does not reach the
+    // very top edge, so there is no dark header to justify .light icons.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        body: BlocListener<RideBloc, RideState>(
+          listener: (context, state) {
+            final authState = context.read<AuthBloc>().state;
+            if (authState.isAuthenticated && authState.user != null) {
+              final driverRides = state.rides
+                  .where(
                     (ride) =>
-                        ride.isAirportTransfer &&
-                        ride.status == RideStatus.assigned,
-                  ))
-                    ..._assignedRides
-                        .where(
-                          (ride) =>
-                              ride.isAirportTransfer &&
-                              ride.status == RideStatus.assigned,
-                        )
-                        .map(
-                          (ride) => AirportEntryTimer(
-                            ride: ride,
-                            onEntryTimeReached: () =>
-                                _onAirportEntryTimeReached(ride),
+                        ride.driverId == authState.user!.id &&
+                        (ride.status == RideStatus.assigned ||
+                            ride.status == RideStatus.inProgress),
+                  )
+                  .toList();
+
+              // inProgress first, then earliest assigned
+              final currentRide =
+                  driverRides
+                      .where((r) => r.status == RideStatus.inProgress)
+                      .firstOrNull ??
+                  (driverRides
+                          .where((r) => r.status == RideStatus.assigned)
+                          .toList()
+                        ..sort(
+                          (a, b) =>
+                              a.pickupDateTime.compareTo(b.pickupDateTime),
+                        ))
+                      .firstOrNull;
+
+              if (driverRides != _assignedRides ||
+                  currentRide?.id != _currentRide?.id) {
+                setState(() {
+                  _assignedRides = driverRides;
+                  _currentRide = currentRide;
+                });
+                _updateMapMarkers();
+                _refreshEta();
+              }
+            }
+          },
+          child: Stack(
+            children: [
+              MapWidget(
+                key: const ValueKey('driver_map'),
+                onMapCreated: _onMapCreated,
+              ),
+
+              SafeArea(
+                child: Column(
+                  children: [
+                    _buildInfoPanel(),
+
+                    if (_geofenceOverlayMessage != null)
+                      _buildGeofenceOverlay(),
+
+                    if (_assignedRides.any(
+                      (ride) =>
+                          ride.isAirportTransfer &&
+                          ride.status == RideStatus.assigned,
+                    ))
+                      ..._assignedRides
+                          .where(
+                            (ride) =>
+                                ride.isAirportTransfer &&
+                                ride.status == RideStatus.assigned,
+                          )
+                          .map(
+                            (ride) => AirportEntryTimer(
+                              ride: ride,
+                              onEntryTimeReached: () =>
+                                  _onAirportEntryTimeReached(ride),
+                            ),
                           ),
-                        ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            if (_currentRide != null)
+              if (_currentRide != null)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildRideControlPanel(),
+                ),
+
               Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: _buildRideControlPanel(),
+                bottom: _currentRide != null ? 260 : 100,
+                right: 16,
+                child: _buildControlButtons(),
               ),
-
-            Positioned(
-              bottom: _currentRide != null ? 260 : 100,
-              right: 16,
-              child: _buildControlButtons(),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

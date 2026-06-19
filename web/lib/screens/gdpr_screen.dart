@@ -165,7 +165,13 @@ class _GdprScreenState extends State<GdprScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy & Data (GDPR)')),
+      appBar: AppBar(
+        title: const Text('Privacy & Data (GDPR)'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        elevation: 0,
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

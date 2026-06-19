@@ -26,7 +26,7 @@ class TodayStatsCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(AppDimensions.paddingMedium),
       padding: const EdgeInsets.all(20),
-      decoration: AppStyles.primaryCardDecoration,
+      decoration: AppStyles.primaryCardDecorationOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
