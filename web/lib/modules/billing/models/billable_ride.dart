@@ -1,3 +1,5 @@
+import '../../core/json_parse.dart';
+
 /// A completed, unbilled ride eligible to be added to an invoice. Mirrors the
 /// backend BillableRideDto. Ids arrive as flat strings.
 class BillableRide {
@@ -18,11 +20,11 @@ class BillableRide {
   });
 
   factory BillableRide.fromJson(Map<String, dynamic> json) => BillableRide(
-    rideId: json['rideId'] as String,
-    clientId: json['clientId'] as String,
-    pickupAddress: json['pickupAddress'] as String,
-    dropoffAddress: json['dropoffAddress'] as String,
-    pickupDatetime: DateTime.parse(json['pickupDatetime'] as String),
-    price: (json['price'] as num).toDouble(),
+    rideId: JsonParse.requiredString(json, 'rideId'),
+    clientId: JsonParse.requiredString(json, 'clientId'),
+    pickupAddress: JsonParse.requiredString(json, 'pickupAddress'),
+    dropoffAddress: JsonParse.requiredString(json, 'dropoffAddress'),
+    pickupDatetime: JsonParse.requiredDateTime(json, 'pickupDatetime'),
+    price: JsonParse.requiredDouble(json, 'price'),
   );
 }

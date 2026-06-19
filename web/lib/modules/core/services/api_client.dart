@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -315,7 +314,32 @@ class ApiClient {
 
 class ApiException implements Exception {
   final String message;
-  ApiException(this.message);
+  final int? statusCode;
+  ApiException(this.message, {this.statusCode});
+
+  /// Builds an exception from a failed [http.Response], surfacing the server's
+  /// own error message instead of a bare status code. The backend returns
+  /// `{"error": "..."}` (see ApiError on the server) for 4xx/5xx; we extract
+  /// that so the UI shows the real reason (e.g. "Validation error: Pickup
+  /// location cannot be empty") rather than just "400". Falls back to the raw
+  /// body, then to the status code, when the body isn't the expected shape.
+  factory ApiException.fromResponse(http.Response response, String action) {
+    String detail = 'status ${response.statusCode}';
+    final body = response.body.trim();
+    if (body.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(body);
+        if (decoded is Map<String, dynamic> && decoded['error'] is String) {
+          detail = decoded['error'] as String;
+        } else {
+          detail = body;
+        }
+      } on FormatException {
+        detail = body;
+      }
+    }
+    return ApiException('$action: $detail', statusCode: response.statusCode);
+  }
 
   @override
   String toString() => 'ApiException: $message';

@@ -1,3 +1,5 @@
+import '../../core/json_parse.dart';
+
 class ClientAddress {
   final String id;
   final String clientId;
@@ -29,14 +31,14 @@ class ClientAddress {
   factory ClientAddress.fromJson(Map<String, dynamic> json) => ClientAddress(
     id: _id(json['id']),
     clientId: _id(json['clientId']),
-    label: json['label'] as String,
-    address: json['address'] as String,
+    label: JsonParse.requiredString(json, 'label'),
+    address: JsonParse.requiredString(json, 'address'),
     latitude: (json['latitude'] as num?)?.toDouble(),
     longitude: (json['longitude'] as num?)?.toDouble(),
     useCount: json['useCount'] as int? ?? 1,
     aliases: (json['aliases'] as List<dynamic>?)?.cast<String>() ?? [],
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    updatedAt: DateTime.parse(json['updatedAt'] as String),
+    createdAt: JsonParse.requiredDateTime(json, 'createdAt'),
+    updatedAt: JsonParse.requiredDateTime(json, 'updatedAt'),
   );
 
   Map<String, dynamic> toJson() => {

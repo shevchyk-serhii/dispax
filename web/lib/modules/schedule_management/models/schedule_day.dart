@@ -1,3 +1,5 @@
+import '../../core/json_parse.dart';
+
 enum ScheduleDayStatus {
   scheduled('Scheduled'),
   active('Active'),
@@ -47,13 +49,13 @@ class ScheduleDay {
       id: json['id'] ?? '',
       driverId: json['driverId'] ?? '',
       companyId: json['companyId'] ?? '',
-      date: DateTime.parse(json['date']),
+      date: JsonParse.requiredDateTime(json, 'date'),
       startTime: json['startTime'] ?? '',
       endTime: json['endTime'] ?? '',
       status: ScheduleDayStatus.fromString(json['status'] ?? 'Scheduled'),
       notes: json['notes'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: JsonParse.requiredDateTime(json, 'createdAt'),
+      updatedAt: JsonParse.requiredDateTime(json, 'updatedAt'),
     );
   }
 
