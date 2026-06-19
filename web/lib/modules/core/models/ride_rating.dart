@@ -1,3 +1,5 @@
+import '../json_parse.dart';
+
 class RideRating {
   final String id;
   final String rideId;
@@ -28,7 +30,7 @@ class RideRating {
       companyId: json['companyId'] ?? '',
       rating: json['rating'] ?? 0,
       comment: json['comment'],
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: JsonParse.requiredDateTime(json, 'createdAt'),
     );
   }
 

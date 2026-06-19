@@ -109,8 +109,12 @@ class RideService {
         final Map<String, dynamic> json = jsonDecode(response.body);
         return Ride.fromJson(json);
       } else {
-        throw ApiException('Failed to create ride: ${response.statusCode}');
+        throw ApiException.fromResponse(response, 'Failed to create ride');
       }
+    } on ApiException {
+      // Already carries the server's message (e.g. a 400 validation error);
+      // don't re-wrap it into an opaque "Error creating ride: ApiException: ..."
+      rethrow;
     } catch (e) {
       throw ApiException('Error creating ride: $e');
     }

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../core/json_parse.dart';
 
 class AirportTiming extends Equatable {
   final DateTime optimalEntryTime;
@@ -36,17 +37,18 @@ class AirportTiming extends Equatable {
 
   factory AirportTiming.fromJson(Map<String, dynamic> json) {
     return AirportTiming(
-      optimalEntryTime: DateTime.parse(json['optimalEntryTime']),
-      latestEntryTime: DateTime.parse(json['latestEntryTime']),
+      optimalEntryTime: JsonParse.requiredDateTime(json, 'optimalEntryTime'),
+      latestEntryTime: JsonParse.requiredDateTime(json, 'latestEntryTime'),
       travelTime: Duration(minutes: json['travelTimeMinutes']),
       bufferTime: Duration(minutes: json['bufferTimeMinutes']),
-      optimalParkingCost: (json['optimalParkingCost'] as num).toDouble(),
-      earlyEntryParkingCost: (json['earlyEntryParkingCost'] as num).toDouble(),
-      savings: (json['savings'] as num).toDouble(),
+      optimalParkingCost: JsonParse.requiredDouble(json, 'optimalParkingCost'),
+      earlyEntryParkingCost: JsonParse.requiredDouble(
+        json,
+        'earlyEntryParkingCost',
+      ),
+      savings: JsonParse.requiredDouble(json, 'savings'),
       flightStatus: json['flightStatus'],
-      actualArrivalTime: json['actualArrivalTime'] != null
-          ? DateTime.parse(json['actualArrivalTime'])
-          : null,
+      actualArrivalTime: JsonParse.optionalDateTime(json, 'actualArrivalTime'),
       timeToDepart: Duration(minutes: json['timeToDepartMinutes']),
     );
   }

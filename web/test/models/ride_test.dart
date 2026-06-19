@@ -106,6 +106,53 @@ void main() {
       expect(ride.driverName, isNull);
       expect(ride.price, isNull);
     });
+
+    // Regression: a missing/malformed pickupDateTime used to throw an opaque
+    // "type 'Null' is not a subtype of String" deep in DateTime.parse and take
+    // down the whole ride-list parse. It must now throw a FormatException that
+    // names the field, and a bad optional date (flightTime) must not throw.
+    test('fromJson throws a named FormatException on bad pickupDateTime', () {
+      final base = {
+        'id': 'r1',
+        'clientId': 'c1',
+        'creatorId': 'cr1',
+        'companyId': 'co1',
+        'from': {'address': 'A'},
+        'to': {'address': 'B'},
+        'clientName': 'Client',
+      };
+
+      expect(
+        () => Ride.fromJson(base),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('pickupDateTime'),
+          ),
+        ),
+      );
+      expect(
+        () => Ride.fromJson({...base, 'pickupDateTime': 'garbage'}),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('fromJson tolerates a malformed optional flightTime', () {
+      final ride = Ride.fromJson({
+        'id': 'r1',
+        'clientId': 'c1',
+        'creatorId': 'cr1',
+        'companyId': 'co1',
+        'pickupDateTime': '2026-03-15T10:00:00.000Z',
+        'from': {'address': 'A'},
+        'to': {'address': 'B'},
+        'clientName': 'Client',
+        'flightTime': 'not-a-date',
+      });
+
+      expect(ride.flightTime, isNull);
+    });
   });
 
   group('RideStatus.fromString', () {

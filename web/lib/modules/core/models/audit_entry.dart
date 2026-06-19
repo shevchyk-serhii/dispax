@@ -1,3 +1,5 @@
+import '../json_parse.dart';
+
 class AuditEntry {
   final String id;
   final String companyId;
@@ -36,7 +38,7 @@ class AuditEntry {
       metadata: json['metadata'] != null
           ? Map<String, dynamic>.from(json['metadata'])
           : null,
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: JsonParse.requiredDateTime(json, 'createdAt'),
     );
   }
 

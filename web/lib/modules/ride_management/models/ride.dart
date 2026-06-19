@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/json_parse.dart';
 import '../../core/models/location.dart';
 import '../../core/models/person.dart';
 
@@ -129,15 +130,16 @@ class Ride {
       driverId: json['driverId']?.toString(),
       companyId: json['companyId']?.toString() ?? '',
       scheduleDayId: json['scheduleDayId'],
-      pickupDateTime: DateTime.parse(json['pickupDateTime']).toLocal(),
+      pickupDateTime: JsonParse.requiredDateTime(
+        json,
+        'pickupDateTime',
+      ).toLocal(),
       from: Location.fromJson(json['from']),
       to: Location.fromJson(json['to']),
       status: RideStatus.fromString(json['status'] ?? 'Requested'),
       clientName: json['clientName'] ?? 'Unknown Client',
       flightNumber: json['flightNumber'],
-      flightTime: json['flightTime'] != null
-          ? DateTime.parse(json['flightTime'])
-          : null,
+      flightTime: JsonParse.optionalDateTime(json, 'flightTime'),
       isAirportTransfer: json['isAirportTransfer'] ?? false,
       isArrival: json['isArrival'] ?? false,
       gate: json['gate'],
@@ -158,7 +160,7 @@ class Ride {
       specialRequirements: json['specialRequirements'],
       paymentStatus: json['paymentStatus'],
       paymentMethod: json['paymentMethod'],
-      paidAt: json['paidAt'] != null ? DateTime.parse(json['paidAt']) : null,
+      paidAt: JsonParse.optionalDateTime(json, 'paidAt'),
       confirmationSent: json['confirmationSent'] ?? false,
       cancellationReason: json['cancellationReason'],
       cancellationFee: json['cancellationFee']?.toDouble(),

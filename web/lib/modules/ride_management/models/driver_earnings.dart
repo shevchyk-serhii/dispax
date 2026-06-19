@@ -1,3 +1,5 @@
+import '../../core/json_parse.dart';
+
 /// A single earnings chart bar: bucket start (hour/day) and revenue amount.
 class EarningsBucket {
   final DateTime bucketStart;
@@ -7,7 +9,7 @@ class EarningsBucket {
 
   factory EarningsBucket.fromJson(Map<String, dynamic> json) {
     return EarningsBucket(
-      bucketStart: DateTime.parse(json['bucketStart'] as String).toLocal(),
+      bucketStart: JsonParse.requiredDateTime(json, 'bucketStart').toLocal(),
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
     );
   }
