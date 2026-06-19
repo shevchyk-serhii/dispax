@@ -4,6 +4,7 @@ import '../../core/models/person.dart';
 import '../../../blocs/auth/auth_bloc.dart';
 import '../../../blocs/auth/auth_event.dart';
 import '../../../blocs/auth/auth_state.dart';
+import '../../../constants/app_colors.dart';
 
 class ProfileDialog extends StatelessWidget {
   final Person user;
@@ -53,8 +54,9 @@ class ProfileDialog extends StatelessWidget {
                         style: TextStyle(fontSize: 14),
                       ),
                     ),
-                    Switch(
+                    Switch.adaptive(
                       value: authState.biometricEnabled,
+                      activeTrackColor: AppColors.accent,
                       onChanged: (value) {
                         context.read<AuthBloc>().add(
                           AuthBiometricSetupRequested(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/driver_earnings.dart';
@@ -23,10 +24,37 @@ class EarningsScreen extends StatelessWidget {
         return cubit;
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('My Earnings')),
-        body: AppTheme.buildGradientContainer(
-          colors: AppColors.driverGradient,
-          child: const _EarningsBody(),
+        body: Column(
+          children: [
+            AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle.light,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(colors: AppColors.driverGradient),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Row(
+                    children: const [
+                      Icon(Icons.euro, color: Colors.white, size: 24),
+                      SizedBox(width: 10),
+                      Text(
+                        'My Earnings',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const Expanded(child: _EarningsBody()),
+          ],
         ),
       ),
     );

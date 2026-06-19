@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
@@ -68,6 +69,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         ),
         backgroundColor: AppColors.secretaryColor,
         foregroundColor: AppColors.textOnPrimary,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         elevation: AppDimensions.appBarElevation,
         actions: [
           IconButton(

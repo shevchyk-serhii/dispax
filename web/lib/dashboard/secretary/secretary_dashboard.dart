@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/core/services/user_service.dart';
@@ -100,28 +101,31 @@ class _CreateRidesTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: AppColors.secretaryGradient),
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Create New Ride',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+        AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: AppColors.secretaryGradient),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                children: const [
+                  Expanded(
+                    child: Text(
+                      'Create New Ride',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-                const NotificationBell(),
-              ],
+                  NotificationBell(),
+                ],
+              ),
             ),
           ),
         ),

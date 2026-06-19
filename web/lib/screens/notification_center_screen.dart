@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../blocs/blocs.dart';
@@ -329,57 +330,60 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(Icons.notifications, color: Colors.white, size: 24),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Notification Center',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            if (_unreadCount > 0)
-              IconButton(
-                icon: const Icon(Icons.done_all, color: Colors.white, size: 22),
-                onPressed: _markAllAsRead,
-                tooltip: 'Mark all as read',
-              ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.white, size: 22),
-              onSelected: (value) {
-                if (value == 'delete_all') _deleteAll();
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'delete_all',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.delete_sweep,
-                        size: 18,
-                        color: AppColors.error,
-                      ),
-                      SizedBox(width: 8),
-                      Text('Clear All'),
-                    ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(Icons.notifications, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Notification Center',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ],
-            ),
-          ],
+              ),
+              if (_unreadCount > 0)
+                IconButton(
+                  icon: const Icon(Icons.done_all, color: Colors.white, size: 22),
+                  onPressed: _markAllAsRead,
+                  tooltip: 'Mark all as read',
+                ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.white, size: 22),
+                onSelected: (value) {
+                  if (value == 'delete_all') _deleteAll();
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'delete_all',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_sweep,
+                          size: 18,
+                          color: AppColors.error,
+                        ),
+                        SizedBox(width: 8),
+                        Text('Clear All'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -920,7 +924,7 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
     bool value,
     ValueChanged<bool> onChanged,
   ) {
-    return SwitchListTile(
+    return SwitchListTile.adaptive(
       title: Text(title, style: const TextStyle(fontSize: 13)),
       subtitle: Text(
         subtitle,
@@ -931,6 +935,7 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
       ),
       value: value,
       onChanged: onChanged,
+      activeTrackColor: AppColors.accent,
       contentPadding: EdgeInsets.zero,
     );
   }
