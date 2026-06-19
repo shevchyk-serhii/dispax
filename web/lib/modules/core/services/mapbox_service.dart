@@ -70,13 +70,9 @@ class MapboxService {
       final response = await http.get(url).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final features = data['features'] as List?;
-        if (features != null && features.isNotEmpty) {
-          final coordinates = features[0]['center'] as List;
-          // Mapbox returns [longitude, latitude], we return [latitude, longitude]
-          return [coordinates[1].toDouble(), coordinates[0].toDouble()];
-        }
+        final coords = parseGeocodeCoordinates(jsonDecode(response.body));
+        if (coords != null) return coords;
+        debugPrint('MapboxService: unexpected geocoding response shape');
       } else {
         debugPrint(
           'MapboxService: Geocoding failed with status ${response.statusCode}',
@@ -87,6 +83,31 @@ class MapboxService {
     }
 
     return null;
+  }
+
+  /// Extracts `[latitude, longitude]` from a decoded Mapbox geocoding response.
+  ///
+  /// Returns null for any malformed/partial shape — missing `features`, an empty
+  /// list, a missing or non-list `center`, or fewer than two numeric entries —
+  /// instead of throwing. This is the part that used to crash the callers
+  /// (`features[0]['center'] as List` then `coordinates[1].toDouble()`).
+  ///
+  /// Mapbox returns `center` as `[longitude, latitude]`; we return
+  /// `[latitude, longitude]` to match the rest of the app.
+  static List<double>? parseGeocodeCoordinates(dynamic data) {
+    final features = data is Map ? data['features'] : null;
+    if (features is! List || features.isEmpty) return null;
+
+    final first = features.first;
+    final center = first is Map ? first['center'] : null;
+    if (center is! List ||
+        center.length < 2 ||
+        center[0] is! num ||
+        center[1] is! num) {
+      return null;
+    }
+
+    return [(center[1] as num).toDouble(), (center[0] as num).toDouble()];
   }
 
   static CameraOptions createCameraOptions({
