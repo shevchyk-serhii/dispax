@@ -356,12 +356,20 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
               ),
               if (_unreadCount > 0)
                 IconButton(
-                  icon: const Icon(Icons.done_all, color: Colors.white, size: 22),
+                  icon: const Icon(
+                    Icons.done_all,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                   onPressed: _markAllAsRead,
                   tooltip: 'Mark all as read',
                 ),
               PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Colors.white, size: 22),
+                icon: const Icon(
+                  Icons.more_vert,
+                  color: Colors.white,
+                  size: 22,
+                ),
                 onSelected: (value) {
                   if (value == 'delete_all') _deleteAll();
                 },

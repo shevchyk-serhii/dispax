@@ -386,7 +386,11 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
           bottom: false,
           child: Row(
             children: [
-              const Icon(Icons.calendar_view_day, color: Colors.white, size: 24),
+              const Icon(
+                Icons.calendar_view_day,
+                color: Colors.white,
+                size: 24,
+              ),
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(

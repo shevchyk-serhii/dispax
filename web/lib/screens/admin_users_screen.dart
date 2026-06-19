@@ -331,7 +331,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.person_add, color: Colors.white, size: 22),
+                icon: const Icon(
+                  Icons.person_add,
+                  color: Colors.white,
+                  size: 22,
+                ),
                 onPressed: _showCreateUserDialog,
               ),
               IconButton(

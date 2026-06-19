@@ -110,9 +110,7 @@ class _SuperAdminSettingsPlaceholder extends StatelessWidget {
           ),
         ),
         const Expanded(
-          child: Center(
-            child: Text('Platform Admin Settings — coming soon'),
-          ),
+          child: Center(child: Text('Platform Admin Settings — coming soon')),
         ),
       ],
     );

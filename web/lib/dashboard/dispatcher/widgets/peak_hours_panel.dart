@@ -92,7 +92,11 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
           bottom: false,
           child: Row(
             children: [
-              const Icon(Icons.access_time_filled, color: Colors.white, size: 24),
+              const Icon(
+                Icons.access_time_filled,
+                color: Colors.white,
+                size: 24,
+              ),
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(

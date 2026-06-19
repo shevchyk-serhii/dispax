@@ -154,7 +154,8 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                     value: 'rides',
                     child: Row(
                       children: [
-                        if (_sortBy == 'rides') const Icon(Icons.check, size: 16),
+                        if (_sortBy == 'rides')
+                          const Icon(Icons.check, size: 16),
                         if (_sortBy == 'rides') const SizedBox(width: 8),
                         const Text('Sort by Rides'),
                       ],
@@ -164,7 +165,8 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                     value: 'name',
                     child: Row(
                       children: [
-                        if (_sortBy == 'name') const Icon(Icons.check, size: 16),
+                        if (_sortBy == 'name')
+                          const Icon(Icons.check, size: 16),
                         if (_sortBy == 'name') const SizedBox(width: 8),
                         const Text('Sort by Name'),
                       ],

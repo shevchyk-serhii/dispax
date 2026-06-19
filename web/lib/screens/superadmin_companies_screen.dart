@@ -303,7 +303,11 @@ class _CompaniesView extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     onPressed: () => context.read<SuperAdminCompanyBloc>().add(
                       LoadCompanies(),
                     ),
@@ -328,10 +332,9 @@ class _CompaniesView extends StatelessWidget {
                       Text('Error: ${state.message}'),
                       const SizedBox(height: 12),
                       ElevatedButton(
-                        onPressed: () =>
-                            context.read<SuperAdminCompanyBloc>().add(
-                              LoadCompanies(),
-                            ),
+                        onPressed: () => context
+                            .read<SuperAdminCompanyBloc>()
+                            .add(LoadCompanies()),
                         child: const Text('Retry'),
                       ),
                     ],

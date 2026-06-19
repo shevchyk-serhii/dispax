@@ -80,7 +80,8 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         final driverId = event.etaRiskDriverId ?? '';
         // Resolve the human-readable name from the already-loaded driver list.
         // Fall back to the driverId string when the driver isn't in the cache.
-        final driverName = _driverNames[driverId] ??
+        final driverName =
+            _driverNames[driverId] ??
             (driverId.isNotEmpty ? driverId : 'Unknown');
         final etaMin = event.etaMinutes ?? 0;
         final pickupMin = event.pickupInMinutes ?? 0;

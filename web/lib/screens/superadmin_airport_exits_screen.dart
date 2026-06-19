@@ -447,10 +447,14 @@ class _AirportExitsView extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-                    onPressed: () => context
-                        .read<SuperAdminAirportBloc>()
-                        .add(LoadAirports()),
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    onPressed: () => context.read<SuperAdminAirportBloc>().add(
+                      LoadAirports(),
+                    ),
                     tooltip: 'Refresh',
                   ),
                 ],

@@ -199,7 +199,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen> {
                   );
                 }
                 // Restore tracking if the ride is already in progress (after screen reload)
-                if (state.status == RideStateStatus.loaded && !_trackingStarted) {
+                if (state.status == RideStateStatus.loaded &&
+                    !_trackingStarted) {
                   final hasActiveRide = state.rides.any(
                     (r) => r.status == RideStatus.inProgress,
                   );

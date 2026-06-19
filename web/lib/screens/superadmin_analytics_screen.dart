@@ -230,7 +230,11 @@ class _AnalyticsView extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     onPressed: () {
                       final now = DateTime.now();
                       context.read<SuperAdminAnalyticsBloc>().add(
