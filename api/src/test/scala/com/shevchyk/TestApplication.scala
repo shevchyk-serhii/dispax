@@ -181,38 +181,39 @@ object TestApplication extends ZIOAppDefault:
         )
       )
 
-      def create(person: Person): Task[Person]                                             = ZIO.succeed(person)
-      def findById(id: PersonId): Task[Option[Person]]                                     = ZIO.succeed(people.get(id))
-      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]     = ZIO.succeed(
+      def create(person: Person): Task[Person]                                                     = ZIO.succeed(person)
+      def findById(id: PersonId): Task[Option[Person]]                                             = ZIO.succeed(people.get(id))
+      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]             = ZIO.succeed(
         people.get(id).filter(_.companyId.contains(companyId))
       )
-      def findByEmail(email: String): Task[Option[Person]]                                 = ZIO.succeed(people.values.find(_.email == email))
-      def findByRole(role: PersonRole): Task[List[Person]]                                 = ZIO.succeed(people.values.filter(_.role == role).toList)
-      def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
+      def findByEmail(email: String): Task[Option[Person]]                                         = ZIO.succeed(people.values.find(_.email == email))
+      def findByRole(role: PersonRole): Task[List[Person]]                                         = ZIO.succeed(people.values.filter(_.role == role).toList)
+      def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]         = ZIO.succeed(
         people.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList
       )
-      def findByCompanyId(companyId: CompanyId): Task[List[Person]]                        = ZIO.succeed(
+      def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                = ZIO.succeed(
         people.values.filter(_.companyId.contains(companyId)).toList
       )
-      def findAll(): Task[List[Person]]                                                    = ZIO.succeed(people.values.toList)
-      def update(person: Person): Task[Person]                                             = ZIO.succeed(person)
-      def delete(id: PersonId): Task[Unit]                                                 = ZIO.unit
-      def findByStatus(status: UserStatus): Task[List[Person]]                             = ZIO.succeed(
+      def findAll(): Task[List[Person]]                                                            = ZIO.succeed(people.values.toList)
+      def update(person: Person): Task[Person]                                                     = ZIO.succeed(person)
+      def delete(id: PersonId): Task[Unit]                                                         = ZIO.unit
+      def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit] = ZIO.unit
+      def findByStatus(status: UserStatus): Task[List[Person]]                                     = ZIO.succeed(
         people.values.filter(_.status == status).toList
       )
-      def searchByQuery(query: String): Task[List[Person]]                                 = ZIO.succeed(
+      def searchByQuery(query: String): Task[List[Person]]                                         = ZIO.succeed(
         people.values
           .filter(p =>
             p.name.toLowerCase.contains(query.toLowerCase) || p.email.toLowerCase.contains(query.toLowerCase)
           )
           .toList
       )
-      def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
-      def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]        = ZIO.succeed(Nil)
-      def upsertDriverRow(personId: PersonId): Task[Unit]                                  = ZIO.unit
-      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                     = ZIO.succeed(None)
-      def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]     = ZIO.unit
-      def deleteAvatar(id: PersonId): Task[Unit]                                           = ZIO.unit
+      def updateLastLogin(id: PersonId): Task[Unit]                                                = ZIO.unit
+      def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                = ZIO.succeed(Nil)
+      def upsertDriverRow(personId: PersonId): Task[Unit]                                          = ZIO.unit
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                             = ZIO.succeed(None)
+      def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]             = ZIO.unit
+      def deleteAvatar(id: PersonId): Task[Unit]                                                   = ZIO.unit
     }
 
   private val mockTokenRepository: TokenRepository =
@@ -513,6 +514,10 @@ object TestApplication extends ZIOAppDefault:
             .map(_.values.filter(_.clientId == cid).toList)
           def findByDriverId(did: PersonId): Task[List[Ride]]                                                   = ridesRef.get
             .map(_.values.filter(_.driverId.contains(did)).toList)
+          def findByDriverIdAndCompany(did: PersonId, cid: CompanyId): Task[List[Ride]]                         = ridesRef.get
+            .map(_.values.filter(r => r.driverId.contains(did) && r.companyId == cid).toList)
+          def findByClientIdAndCompany(clid: PersonId, cid: CompanyId): Task[List[Ride]]                        = ridesRef.get
+            .map(_.values.filter(r => r.clientId == clid && r.companyId == cid).toList)
           def findByStatus(s: RideStatus): Task[List[Ride]]                                                     = ridesRef.get.map(_.values.filter(_.status == s).toList)
           def findByCompanyId(cid: CompanyId): Task[List[Ride]]                                                 = ridesRef.get
             .map(_.values.filter(_.companyId == cid).toList)
@@ -521,6 +526,21 @@ object TestApplication extends ZIOAppDefault:
           def findByDriverIdPaginated(did: PersonId, offset: Int, limit: Int): Task[List[Ride]]                 = ridesRef.get
             .map(
               _.values.filter(_.driverId.contains(did)).toList.sortBy(_.requestTime).reverse.drop(offset).take(limit)
+            )
+          def findByDriverIdAndCompanyPaginated(
+              did: PersonId,
+              cid: CompanyId,
+              offset: Int,
+              limit: Int
+          ): Task[List[Ride]] = ridesRef.get
+            .map(
+              _.values
+                .filter(r => r.driverId.contains(did) && r.companyId == cid)
+                .toList
+                .sortBy(_.requestTime)
+                .reverse
+                .drop(offset)
+                .take(limit)
             )
           def findAll(): Task[List[Ride]]                                                                       = ridesRef.get.map(_.values.toList)
           def delete(id: RideId, companyId: CompanyId): Task[Unit]                                              = ridesRef.update(_.removed(id)).unit

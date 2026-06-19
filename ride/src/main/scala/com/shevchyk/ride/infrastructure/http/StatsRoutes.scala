@@ -93,9 +93,10 @@ object StatsRoutes:
           fromInst   = fromDate.atStartOfDay().toInstant(ZoneOffset.UTC)
           toInst     = toDate.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC)
           driverPid <- UuidParser.parsePersonId(driverId)
+          companyId <- UuidParser.requireCompanyId(user.companyId)
 
           rideService    <- ZIO.service[RideService]
-          allDriverRides <- rideService.getDriverRides(driverPid)
+          allDriverRides <- rideService.getDriverRides(driverPid, companyId)
           completedRides  = allDriverRides.filter { ride =>
                               ride.status == RideStatus.Completed &&
                               ride.endTime.exists(t => !t.isBefore(fromInst) && t.isBefore(toInst))

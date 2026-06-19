@@ -305,9 +305,10 @@ object RideApi:
       for {
         driverPid  <- parsePersonId(driverId)
         _          <- checkRoleOrOwner(user, driverPid.value, "DISPATCHER")
+        companyId  <- requireCompanyId(user.companyId)
         service    <- ZIO.service[RideService]
         personRepo <- ZIO.service[PersonRepository]
-        rides      <- service.getDriverRides(driverPid).mapError(fromRideError)
+        rides      <- service.getDriverRides(driverPid, companyId).mapError(fromRideError)
         clientIds   = rides.map(_.clientId).distinct
         persons    <- ZIO
                         .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
@@ -321,9 +322,10 @@ object RideApi:
       for {
         clientPid   <- parsePersonId(clientId)
         _           <- checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
+        companyId   <- requireCompanyId(user.companyId)
         service     <- ZIO.service[RideService]
         personRepo  <- ZIO.service[PersonRepository]
-        rides       <- service.getClientRides(clientPid).mapError(fromRideError)
+        rides       <- service.getClientRides(clientPid, companyId).mapError(fromRideError)
         clientName  <- personRepo.findById(clientPid).map(_.map(_.name)).mapError(fromRideError)
         // Resolve every distinct driver name once in parallel instead of one sequential
         // findById per ride (was N+1).

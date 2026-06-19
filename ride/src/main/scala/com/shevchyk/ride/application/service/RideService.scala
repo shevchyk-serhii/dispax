@@ -36,12 +36,20 @@ trait RideService:
   ): IO[RideError, Ride]
   def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride]
   def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]
-  def getDriverRides(driverId: PersonId): IO[RideError, List[Ride]]
-  def getClientRides(clientId: PersonId): IO[RideError, List[Ride]]
+  // Company-scoped: a dispatcher can only list rides of a driver/client within their own
+  // tenant. The companyId comes from the caller's JWT, never from the request path.
+  def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]
+  def getClientRides(clientId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]
   def getAllRides: IO[RideError, List[Ride]]
   def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]
   def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]]
-  def getDriverRidesPaginated(driverId: PersonId, offset: Int, limit: Int): IO[RideError, List[Ride]]
+
+  def getDriverRidesPaginated(
+      driverId: PersonId,
+      companyId: CompanyId,
+      offset: Int,
+      limit: Int
+  ): IO[RideError, List[Ride]]
 
   def updateRideDetails(
       rideId: RideId,
@@ -577,11 +585,11 @@ class RideServiceImpl(
   def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]] =
     rideRepository.findByStatus(status).mapDatabaseError
 
-  def getDriverRides(driverId: PersonId): IO[RideError, List[Ride]] =
-    rideRepository.findByDriverId(driverId).mapDatabaseError
+  def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]] =
+    rideRepository.findByDriverIdAndCompany(driverId, companyId).mapDatabaseError
 
-  def getClientRides(clientId: PersonId): IO[RideError, List[Ride]] =
-    rideRepository.findByClientId(clientId).mapDatabaseError
+  def getClientRides(clientId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]] =
+    rideRepository.findByClientIdAndCompany(clientId, companyId).mapDatabaseError
 
   def getAllRides: IO[RideError, List[Ride]] = rideRepository.findAll().mapDatabaseError
 
@@ -593,9 +601,14 @@ class RideServiceImpl(
       .findByCompanyIdPaginated(companyId, offset, limit)
       .mapDatabaseError
 
-  def getDriverRidesPaginated(driverId: PersonId, offset: Int, limit: Int): IO[RideError, List[Ride]] =
+  def getDriverRidesPaginated(
+      driverId: PersonId,
+      companyId: CompanyId,
+      offset: Int,
+      limit: Int
+  ): IO[RideError, List[Ride]] =
     rideRepository
-      .findByDriverIdPaginated(driverId, offset, limit)
+      .findByDriverIdAndCompanyPaginated(driverId, companyId, offset, limit)
       .mapDatabaseError
 
   def markPayment(

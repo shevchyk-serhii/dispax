@@ -4,7 +4,7 @@ import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.repository.*
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.core.domain.{Person, PersonId, PersonRole, UserStatus}
+import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole, UserStatus}
 import zio.*
 import java.util.UUID
 import org.mindrot.jbcrypt.BCrypt
@@ -17,11 +17,12 @@ trait AuthService:
   def updateUser(id: UUID, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto]
 
   /**
-   * Hard-deletes a user by id. NOT tenant-scoped — callers must verify the target belongs to the acting user's company
-   * before invoking this. The HTTP layer does not expose a hard delete: `UserApi.deleteUserServer` performs a soft
-   * delete guarded by `requireSameCompany`. This method is currently only used by tests.
+   * Hard-deletes a user by id, scoped to `companyId`: the row is only removed when it belongs to that company, so a
+   * caller cannot delete another tenant's user even with a guessed id. The HTTP layer does not expose a hard delete —
+   * `UserApi.deleteUserServer` performs a soft delete guarded by `requireSameCompany`; this method is used by tests and
+   * any future hard-delete path.
    */
-  def deleteUser(id: UUID): ZIO[Any, AuthError, Unit]
+  def deleteUser(id: UUID, companyId: CompanyId): ZIO[Any, AuthError, Unit]
   def changePassword(userId: UUID, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit]
   def validateToken(token: String): ZIO[Any, AuthError, UserDto]
   def refreshToken(token: String): ZIO[Any, AuthError, String]
@@ -187,11 +188,13 @@ class AuthServiceImpl(
           )
     yield UserDto.fromPerson(saved)
 
-  override def deleteUser(id: UUID): ZIO[Any, AuthError, Unit] =
+  override def deleteUser(id: UUID, companyId: CompanyId): ZIO[Any, AuthError, Unit] =
     for
-      personOpt <- personRepository.findById(PersonId(id)).orElseFail(UserNotFound(s"ID: $id"))
+      personOpt <- personRepository.findByIdAndCompany(PersonId(id), companyId).orElseFail(UserNotFound(s"ID: $id"))
       _         <- ZIO.when(personOpt.isEmpty)(ZIO.fail(UserNotFound(s"ID: $id")))
-      _         <- personRepository.delete(PersonId(id)).orElseFail(ValidationError("user", "Failed to delete user"))
+      _         <- personRepository
+                     .deleteInCompany(PersonId(id), companyId)
+                     .orElseFail(ValidationError("user", "Failed to delete user"))
       _         <- tokenRepository.deleteByUserId(id).orElseFail(ValidationError("token", "Failed to delete tokens"))
     yield ()
 

@@ -18,11 +18,25 @@ trait RideRepository {
   def findAll(): Task[List[Ride]]
   def findByClientId(clientId: PersonId): Task[List[Ride]]
   def findByDriverId(driverId: PersonId): Task[List[Ride]]
+  // Tenant-scoped variants: the same lookups but constrained to a single company.
+  // Use these whenever the caller acts within one tenant (e.g. a dispatcher listing
+  // a driver's/client's rides). The unscoped variants above must only be used where
+  // company isolation is enforced elsewhere (status machine on an already-loaded ride,
+  // GDPR self-export, SuperAdmin) — never with an id taken straight from the request path.
+  def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Ride]]
+  def findByClientIdAndCompany(clientId: PersonId, companyId: CompanyId): Task[List[Ride]]
   def findByCompanyId(companyId: CompanyId): Task[List[Ride]]
   // Paginated variants: ordering, LIMIT and OFFSET are applied in SQL so the full
   // table is never loaded into memory just to serve a single page.
   def findByCompanyIdPaginated(companyId: CompanyId, offset: Int, limit: Int): Task[List[Ride]]
   def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]]
+
+  def findByDriverIdAndCompanyPaginated(
+      driverId: PersonId,
+      companyId: CompanyId,
+      offset: Int,
+      limit: Int
+  ): Task[List[Ride]]
   def update(ride: Ride): Task[Ride]
   // Atomic compare-and-set on the ride status: persists `ride` only if the row's current
   // status is still one of `expectedStatuses`. Returns true on success, false if another
