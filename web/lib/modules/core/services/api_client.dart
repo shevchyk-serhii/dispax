@@ -68,7 +68,7 @@ class ApiClient {
       final headers = acceptOverride == null
           ? privateHeaders
           : (Map<String, String>.from(privateHeaders)
-            ..['Accept'] = acceptOverride);
+              ..['Accept'] = acceptOverride);
 
       final raw = await privateClient
           .get(Uri.parse(url), headers: headers)
