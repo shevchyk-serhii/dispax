@@ -42,6 +42,9 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
       def create(ride: Ride): Task[Ride]                                                                          = nope("create")
       def findById(id: RideId): Task[Option[Ride]]                                                                = nope("findById")
       def findByStatus(status: RideStatus): Task[List[Ride]]                                                      = nope("findByStatus")
+      def findByStatusAndCompany(status: RideStatus, companyId: CompanyId): Task[List[Ride]]                      = nope(
+        "findByStatusAndCompany"
+      )
       def findAll(): Task[List[Ride]]                                                                             = nope("findAll")
       def findByClientId(clientId: PersonId): Task[List[Ride]]                                                    = nope("findByClientId")
       def findByDriverId(driverId: PersonId): Task[List[Ride]]                                                    = nope("findByDriverId")

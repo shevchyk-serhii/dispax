@@ -45,6 +45,10 @@ class InMemoryRideRepository extends RideRepository:
     _.values.filter(_.status == status).toList
   )
 
+  override def findByStatusAndCompany(status: RideStatus, companyId: CompanyId): Task[List[Ride]] = rides.get.map(
+    _.values.filter(r => r.status == status && r.companyId == companyId).toList
+  )
+
   override def findByCompanyId(companyId: CompanyId): Task[List[Ride]] = rides.get.map(
     _.values.filter(_.companyId == companyId).toList
   )

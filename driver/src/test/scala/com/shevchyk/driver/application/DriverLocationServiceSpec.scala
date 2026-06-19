@@ -521,6 +521,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
             )
             def findByClientIdAndCompany(id: PersonId, c: CompanyId): Task[List[Ride]]                          = ZIO.succeed(Nil)
             def findByStatus(s: RideStatus): Task[List[Ride]]                                                   = ZIO.succeed(Nil)
+            def findByStatusAndCompany(s: RideStatus, c: CompanyId): Task[List[Ride]]                           = ZIO.succeed(Nil)
             def findByCompanyId(c: CompanyId): Task[List[Ride]]                                                 = ZIO.succeed(Nil)
             def findByCompanyIdPaginated(c: CompanyId, o: Int, l: Int): Task[List[Ride]]                        = ZIO.succeed(Nil)
             def findByDriverIdPaginated(id: PersonId, o: Int, l: Int): Task[List[Ride]]                         = ZIO.succeed(Nil)

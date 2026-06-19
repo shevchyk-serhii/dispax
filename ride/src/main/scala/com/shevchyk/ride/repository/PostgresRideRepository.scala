@@ -175,6 +175,15 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  override def findByStatusAndCompany(status: RideStatus, companyId: CompanyId): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++
+      fr"FROM rides WHERE status = $status AND company_id = ${companyId.value} ORDER BY request_time DESC")
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
   override def findAll(): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides ORDER BY request_time DESC")
       .query[Ride]

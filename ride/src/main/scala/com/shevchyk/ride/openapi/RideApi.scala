@@ -295,7 +295,7 @@ object RideApi:
       service     <- ZIO.service[RideService]
       personRepo  <- ZIO.service[PersonRepository]
       ratingRepo  <- ZIO.service[RideRatingRepository]
-      rides       <- service.getRidesByStatus(RideStatus.Requested).mapError(fromRideError)
+      rides       <- service.getRidesByStatusAndCompany(RideStatus.Requested, companyId).mapError(fromRideError)
       clientIds    = rides.map(_.clientId).distinct
       persons     <- ZIO
                        .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))

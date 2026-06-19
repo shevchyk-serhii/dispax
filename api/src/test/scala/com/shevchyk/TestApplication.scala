@@ -519,6 +519,8 @@ object TestApplication extends ZIOAppDefault:
           def findByClientIdAndCompany(clid: PersonId, cid: CompanyId): Task[List[Ride]]                        = ridesRef.get
             .map(_.values.filter(r => r.clientId == clid && r.companyId == cid).toList)
           def findByStatus(s: RideStatus): Task[List[Ride]]                                                     = ridesRef.get.map(_.values.filter(_.status == s).toList)
+          def findByStatusAndCompany(s: RideStatus, cid: CompanyId): Task[List[Ride]]                           = ridesRef.get
+            .map(_.values.filter(r => r.status == s && r.companyId == cid).toList)
           def findByCompanyId(cid: CompanyId): Task[List[Ride]]                                                 = ridesRef.get
             .map(_.values.filter(_.companyId == cid).toList)
           def findByCompanyIdPaginated(cid: CompanyId, offset: Int, limit: Int): Task[List[Ride]]               = ridesRef.get

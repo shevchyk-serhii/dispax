@@ -25,6 +25,7 @@ trait RideRepository {
   // GDPR self-export, SuperAdmin) — never with an id taken straight from the request path.
   def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Ride]]
   def findByClientIdAndCompany(clientId: PersonId, companyId: CompanyId): Task[List[Ride]]
+  def findByStatusAndCompany(status: RideStatus, companyId: CompanyId): Task[List[Ride]]
   def findByCompanyId(companyId: CompanyId): Task[List[Ride]]
   // Paginated variants: ordering, LIMIT and OFFSET are applied in SQL so the full
   // table is never loaded into memory just to serve a single page.
