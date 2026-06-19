@@ -174,6 +174,24 @@ class AppStyles {
     ],
   );
 
+  /// Theme-aware card decoration. Use this from widgets instead of the static
+  /// [primaryCardDecoration] so the surface follows the active brightness
+  /// (white in light mode, graphite `surfaceDark` in dark mode).
+  static BoxDecoration primaryCardDecorationOf(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return BoxDecoration(
+      color: isDark ? AppColors.surfaceDark : AppColors.surface,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.shadowSm,
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
   // Formerly a glass-morphism decoration; now a plain corporate card.
   // Kept under the same name so all existing call sites stay flat-styled.
   static BoxDecoration glassCardDecoration = BoxDecoration(
@@ -188,6 +206,26 @@ class AppStyles {
       ),
     ],
   );
+
+  /// Theme-aware variant of [glassCardDecoration] — surface and border follow
+  /// the active brightness.
+  static BoxDecoration glassCardDecorationOf(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return BoxDecoration(
+      color: isDark ? AppColors.surfaceDark : AppColors.surface,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      border: Border.all(
+        color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.shadowSm,
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
 
   static InputDecoration textFieldDecoration({
     required String labelText,

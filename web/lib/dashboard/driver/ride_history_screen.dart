@@ -119,7 +119,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
       child: Container(
         margin: const EdgeInsets.all(AppDimensions.paddingLarge),
         padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
-        decoration: AppTheme.glassDecoration,
+        decoration: AppStyles.glassCardDecorationOf(context),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -217,7 +217,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
             child: Container(
               margin: const EdgeInsets.all(AppDimensions.paddingLarge),
               padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-              decoration: AppTheme.glassDecoration,
+              decoration: AppStyles.glassCardDecorationOf(context),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

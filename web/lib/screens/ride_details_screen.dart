@@ -7,7 +7,6 @@ import '../../modules/ride_management/models/ride.dart';
 import '../constants/app_colors.dart';
 import '../modules/ride_management/widgets/widgets.dart';
 import '../modules/ride_management/widgets/ride_lifecycle_stepper.dart';
-import '../modules/core/widgets/widgets.dart';
 import '../modules/ride_management/services/ride_service.dart';
 import '../modules/core/navigation_utils.dart';
 import '../widgets/common/cancel_ride_dialog.dart';
@@ -62,10 +61,16 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: widget.isClientView
-            ? 'My Ride #${_currentRide.id}'
-            : 'Ride #${_currentRide.id}',
+      appBar: AppBar(
+        title: Text(
+          widget.isClientView
+              ? 'My Ride #${_currentRide.id}'
+              : 'Ride #${_currentRide.id}',
+        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        elevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

@@ -10,6 +10,7 @@ import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
 import '../../screens/settings_screen.dart';
 import '../../widgets/common/notification_bell.dart';
+import '../../widgets/common/responsive_scaffold.dart';
 import 'widgets/secretary_reports_panel.dart';
 
 class SecretaryDashboard extends StatefulWidget {
@@ -23,6 +24,29 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
   int _selectedIndex = 0;
   late RideBloc _rideBloc;
 
+  static const _destinations = [
+    NavigationDestination(
+      icon: Icon(Icons.home_outlined),
+      selectedIcon: Icon(Icons.home),
+      label: 'Home',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.list_outlined),
+      selectedIcon: Icon(Icons.list),
+      label: 'Rides',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.add_circle_outline),
+      selectedIcon: Icon(Icons.add_circle),
+      label: 'Create',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.settings_outlined),
+      selectedIcon: Icon(Icons.settings),
+      label: 'Settings',
+    ),
+  ];
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -31,6 +55,24 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    // IndexedStack keeps every tab's State alive across switches so panels
+    // (e.g. SecretaryReportsPanel) don't re-fetch on each visit.
+    final tabs = [
+      const _CreateRidesTab(),
+      const SecretaryReportsPanel(),
+      CreateRideScreen(
+        rideBloc: _rideBloc,
+        onCreated: () {
+          final user = context.read<AuthBloc>().state.user;
+          if (user != null) {
+            context.read<RideBloc>().add(RideLoadRequested(user: user));
+          }
+          setState(() => _selectedIndex = 0);
+        },
+      ),
+      const SettingsScreen(),
+    ];
+
     return BlocProvider<ClientBloc>(
       create: (context) {
         final authBloc = context.read<AuthBloc>();
@@ -38,57 +80,12 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
           userService: UserService(apiClient: authBloc.apiClient),
         );
       },
-      child: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            const _CreateRidesTab(),
-            const SecretaryReportsPanel(),
-            CreateRideScreen(
-              rideBloc: _rideBloc,
-              onCreated: () {
-                final user = context.read<AuthBloc>().state.user;
-                if (user != null) {
-                  context.read<RideBloc>().add(RideLoadRequested(user: user));
-                }
-                setState(() => _selectedIndex = 0);
-              },
-            ),
-            const SettingsScreen(),
-          ],
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _selectedIndex,
-          selectedItemColor: AppColors.accent,
-          onTap: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.list_outlined),
-              activeIcon: Icon(Icons.list),
-              label: 'Rides',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle_outline),
-              activeIcon: Icon(Icons.add_circle),
-              label: 'Create',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined),
-              activeIcon: Icon(Icons.settings),
-              label: 'Settings',
-            ),
-          ],
-        ),
+      child: ResponsiveScaffold(
+        destinations: _destinations,
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) =>
+            setState(() => _selectedIndex = index),
+        body: IndexedStack(index: _selectedIndex, children: tabs),
       ),
     );
   }

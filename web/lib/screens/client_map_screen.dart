@@ -383,47 +383,54 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocListener<RideBloc, RideState>(
-        listener: (context, state) {
-          final authState = context.read<AuthBloc>().state;
-          if (authState.isAuthenticated && authState.user != null) {
-            final activeRide = state.rides
-                .where(
-                  (ride) =>
-                      ride.clientId == authState.user!.id &&
-                      (ride.status == RideStatus.assigned ||
-                          ride.status == RideStatus.inProgress),
-                )
-                .firstOrNull;
+    // Full-bleed Mapbox map: light tiles are visible under the status bar.
+    // Use SystemUiOverlayStyle.dark so the clock/icons remain legible over
+    // the light map background. The floating info panel does not reach the
+    // very top edge, so there is no dark header to justify .light icons.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        body: BlocListener<RideBloc, RideState>(
+          listener: (context, state) {
+            final authState = context.read<AuthBloc>().state;
+            if (authState.isAuthenticated && authState.user != null) {
+              final activeRide = state.rides
+                  .where(
+                    (ride) =>
+                        ride.clientId == authState.user!.id &&
+                        (ride.status == RideStatus.assigned ||
+                            ride.status == RideStatus.inProgress),
+                  )
+                  .firstOrNull;
 
-            if (activeRide != _activeRide) {
-              setState(() {
-                _activeRide = activeRide;
-              });
-              _updateMapMarkers();
+              if (activeRide != _activeRide) {
+                setState(() {
+                  _activeRide = activeRide;
+                });
+                _updateMapMarkers();
+              }
             }
-          }
-        },
-        child: Stack(
-          children: [
-            MapWidget(
-              key: const ValueKey('client_map'),
-              onMapCreated: _onMapCreated,
-            ),
-
-            SafeArea(
-              child: Column(
-                children: [
-                  _buildInfoPanel(),
-                  if (_approachingBannerMessage != null)
-                    _buildApproachingBanner(),
-                ],
+          },
+          child: Stack(
+            children: [
+              MapWidget(
+                key: const ValueKey('client_map'),
+                onMapCreated: _onMapCreated,
               ),
-            ),
 
-            Positioned(bottom: 100, right: 16, child: _buildControlButtons()),
-          ],
+              SafeArea(
+                child: Column(
+                  children: [
+                    _buildInfoPanel(),
+                    if (_approachingBannerMessage != null)
+                      _buildApproachingBanner(),
+                  ],
+                ),
+              ),
+
+              Positioned(bottom: 100, right: 16, child: _buildControlButtons()),
+            ],
+          ),
         ),
       ),
     );

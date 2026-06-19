@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
@@ -105,7 +106,13 @@ class _ChatScreenState extends State<ChatScreen> {
         widget.ride.status == RideStatus.inProgress;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Chat - ${widget.ride.clientName}')),
+      appBar: AppBar(
+        title: Text('Chat - ${widget.ride.clientName}'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        elevation: 0,
+      ),
       body: Column(
         children: [
           // Ride info bar

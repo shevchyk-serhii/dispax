@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
-import '../../../theme/app_theme.dart';
 import 'location_option_item.dart';
 
 class LocationSelectionCard extends StatelessWidget {
@@ -23,7 +22,17 @@ class LocationSelectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-      decoration: AppTheme.glassDecoration,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowSm,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -60,7 +69,7 @@ class LocationSelectionCard extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: 'Specify your location',
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surface.withAlpha(100),
+                fillColor: Colors.white.withAlpha(20),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(
                     AppDimensions.radiusMedium,

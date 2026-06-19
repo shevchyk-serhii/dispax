@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
@@ -144,11 +145,18 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Active Sessions'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        elevation: 0,
         actions: [
           if (otherSessions.isNotEmpty)
             TextButton(
               onPressed: _revokeAllOtherSessions,
-              child: const Text('Revoke All'),
+              child: const Text(
+                'Revoke All',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
         ],
       ),

@@ -7,11 +7,14 @@ import '../../modules/core/models/person.dart';
 import '../../screens/superadmin_companies_screen.dart';
 import '../../screens/superadmin_analytics_screen.dart';
 import '../../screens/superadmin_airport_exits_screen.dart';
+import '../../widgets/common/responsive_scaffold.dart';
 
 /// Platform SuperAdmin dashboard.
 ///
 /// Shown when a user with role [PersonRole.superAdmin] logs in.
 /// Provides cross-tenant company management and platform analytics.
+/// At >= [AppDimensions.breakpointDesktop] (800 px) the graphite
+/// [NavigationRail] is shown; below that a bottom nav bar is used.
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
 
@@ -22,11 +25,36 @@ class SuperAdminDashboard extends StatefulWidget {
 class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   int _selectedTab = 0;
 
-  static const List<_Tab> _tabs = [
-    _Tab(icon: Icons.business, label: 'Companies'),
-    _Tab(icon: Icons.analytics, label: 'Analytics'),
-    _Tab(icon: Icons.flight_land, label: 'Airport Exits'),
-    _Tab(icon: Icons.settings, label: 'Settings'),
+  static const _destinations = [
+    NavigationDestination(
+      icon: Icon(Icons.business_outlined),
+      selectedIcon: Icon(Icons.business),
+      label: 'Companies',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.analytics_outlined),
+      selectedIcon: Icon(Icons.analytics),
+      label: 'Analytics',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.flight_land_outlined),
+      selectedIcon: Icon(Icons.flight_land),
+      label: 'Airport Exits',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.settings_outlined),
+      selectedIcon: Icon(Icons.settings),
+      label: 'Settings',
+    ),
+  ];
+
+  // IndexedStack keeps each screen's BLoC alive across tab switches so they
+  // don't re-fetch (companies/airports) every time the tab is revisited.
+  static const _tabBodies = [
+    SuperAdminCompaniesScreen(),
+    SuperAdminAnalyticsScreen(),
+    SuperAdminAirportExitsScreen(),
+    _SuperAdminSettingsPlaceholder(),
   ];
 
   @override
@@ -40,37 +68,16 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           return const Scaffold(body: Center(child: Text('Access denied')));
         }
 
-        return Scaffold(
-          body: IndexedStack(
-            index: _selectedTab,
-            children: const [
-              SuperAdminCompaniesScreen(),
-              SuperAdminAnalyticsScreen(),
-              SuperAdminAirportExitsScreen(),
-              _SuperAdminSettingsPlaceholder(),
-            ],
-          ),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: _selectedTab,
-            onDestinationSelected: (index) =>
-                setState(() => _selectedTab = index),
-            destinations: _tabs
-                .map(
-                  (t) =>
-                      NavigationDestination(icon: Icon(t.icon), label: t.label),
-                )
-                .toList(),
-          ),
+        return ResponsiveScaffold(
+          destinations: _destinations,
+          selectedIndex: _selectedTab,
+          onDestinationSelected: (index) =>
+              setState(() => _selectedTab = index),
+          body: IndexedStack(index: _selectedTab, children: _tabBodies),
         );
       },
     );
   }
-}
-
-class _Tab {
-  final IconData icon;
-  final String label;
-  const _Tab({required this.icon, required this.label});
 }
 
 class _SuperAdminSettingsPlaceholder extends StatelessWidget {
