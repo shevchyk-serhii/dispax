@@ -5,6 +5,9 @@ import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.repository.{InMemoryPersonRepositoryWithUsers, InMemoryTokenRepository, TestLayers}
 import com.shevchyk.auth.service.JwtService
+import com.shevchyk.core.domain.{CompanyId, PersonId}
+import com.shevchyk.core.repository.PersonRepository
+import java.util.UUID
 import zio.*
 import zio.test.*
 
@@ -17,6 +20,16 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
     (ZLayer.succeed(InMemoryPersonRepositoryWithUsers()) ++
       ZLayer.succeed(InMemoryTokenRepository()) ++
       (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
+
+  // Variant exposing the PersonRepository so the delete-flow tests can stamp a companyId on the
+  // created user (createUser leaves it None) and then exercise the tenant-scoped deleteUser.
+  def layersWithRepo: ZLayer[Any, Nothing, AuthService & PersonRepository] = {
+    val repo = ZLayer.succeed[PersonRepository](InMemoryPersonRepositoryWithUsers())
+    val auth =
+      (repo ++ ZLayer.succeed(InMemoryTokenRepository()) ++
+        (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
+    repo ++ auth
+  }
 
   def spec =
     suite("AuthFlow Integration")(
@@ -59,7 +72,9 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
         )
       }.provide(layers),
       test("createUser → deleteUser → login fails") {
+        val companyId = CompanyId(UUID.randomUUID())
         for {
+          repo    <- ZIO.service[PersonRepository]
           service <- ZIO.service[AuthService]
           user    <- service.createUser(
                        CreateUserRequest(
@@ -69,15 +84,20 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
                          password = "Secure123"
                        )
                      )
-          _       <- service.deleteUser(user.id)
+          // createUser leaves companyId None; stamp one so the tenant-scoped delete can target it.
+          person  <- repo.findById(PersonId(user.id)).someOrFailException
+          _       <- repo.update(person.copy(companyId = Some(companyId)))
+          _       <- service.deleteUser(user.id, companyId)
           result  <- service.login("flow3@example.com", "Secure123").exit
         } yield assertTrue(result match {
           case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[UserNotFound])
           case _                   => false
         })
-      }.provide(layers),
+      }.provide(layersWithRepo),
       test("login → validateToken → deleteUser → validateToken fails") {
+        val companyId = CompanyId(UUID.randomUUID())
         for {
+          repo      <- ZIO.service[PersonRepository]
           service   <- ZIO.service[AuthService]
           user      <- service.createUser(
                          CreateUserRequest(
@@ -87,14 +107,16 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
                            password = "Secure123"
                          )
                        )
+          person    <- repo.findById(PersonId(user.id)).someOrFailException
+          _         <- repo.update(person.copy(companyId = Some(companyId)))
           login     <- service.login("flow4@example.com", "Secure123")
           validated <- service.validateToken(login.token)
-          _         <- service.deleteUser(user.id)
+          _         <- service.deleteUser(user.id, companyId)
           result    <- service.validateToken(login.token).exit
         } yield assertTrue(
           validated.email == "flow4@example.com" &&
             result.isFailure
         )
-      }.provide(layers)
+      }.provide(layersWithRepo)
     ) @@ TestAspect.tag("integration")
 }

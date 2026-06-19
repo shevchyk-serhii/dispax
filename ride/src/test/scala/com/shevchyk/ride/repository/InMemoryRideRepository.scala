@@ -33,6 +33,14 @@ class InMemoryRideRepository extends RideRepository:
     _.values.filter(_.driverId.contains(driverId)).toList
   )
 
+  override def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Ride]] = rides.get.map(
+    _.values.filter(r => r.driverId.contains(driverId) && r.companyId == companyId).toList
+  )
+
+  override def findByClientIdAndCompany(clientId: PersonId, companyId: CompanyId): Task[List[Ride]] = rides.get.map(
+    _.values.filter(r => r.clientId == clientId && r.companyId == companyId).toList
+  )
+
   override def findByStatus(status: RideStatus): Task[List[Ride]] = rides.get.map(
     _.values.filter(_.status == status).toList
   )
@@ -48,6 +56,21 @@ class InMemoryRideRepository extends RideRepository:
 
   override def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]] = rides.get.map(
     _.values.filter(_.driverId.contains(driverId)).toList.sortBy(_.requestTime).reverse.drop(offset).take(limit)
+  )
+
+  override def findByDriverIdAndCompanyPaginated(
+      driverId: PersonId,
+      companyId: CompanyId,
+      offset: Int,
+      limit: Int
+  ): Task[List[Ride]] = rides.get.map(
+    _.values
+      .filter(r => r.driverId.contains(driverId) && r.companyId == companyId)
+      .toList
+      .sortBy(_.requestTime)
+      .reverse
+      .drop(offset)
+      .take(limit)
   )
 
   override def findAll(): Task[List[Ride]] = rides.get.map(_.values.toList)

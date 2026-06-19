@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
+import 'widgets/ride_badges.dart';
 
 class MonthViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -94,10 +95,19 @@ class MonthViewWidget extends StatelessWidget {
               markerBuilder: (context, day, rides) {
                 if (rides.isEmpty) return null;
 
-                return Positioned(
-                  right: 1,
-                  bottom: 1,
-                  child: buildRideCountIndicator(rides.length),
+                return Stack(
+                  children: [
+                    Positioned(
+                      left: 1,
+                      bottom: 2,
+                      child: RideBadges.dayMarkers(context, rides, size: 10),
+                    ),
+                    Positioned(
+                      right: 1,
+                      bottom: 1,
+                      child: buildRideCountIndicator(rides.length),
+                    ),
+                  ],
                 );
               },
               dowBuilder: (context, day) {

@@ -184,6 +184,43 @@ void main() {
       });
     });
 
+    group('ApiException.fromResponse', () {
+      test('extracts the server error message from a JSON body', () {
+        final response = http.Response(
+          jsonEncode({
+            'error': 'Validation error: Pickup location cannot be empty',
+          }),
+          400,
+        );
+
+        final ex = ApiException.fromResponse(response, 'Failed to create ride');
+
+        expect(
+          ex.message,
+          'Failed to create ride: Validation error: Pickup location cannot be empty',
+        );
+        expect(ex.statusCode, 400);
+      });
+
+      test('falls back to the raw body when it is not the error shape', () {
+        final response = http.Response('Bad Gateway', 502);
+
+        final ex = ApiException.fromResponse(response, 'Failed to create ride');
+
+        expect(ex.message, 'Failed to create ride: Bad Gateway');
+        expect(ex.statusCode, 502);
+      });
+
+      test('falls back to the status code when the body is empty', () {
+        final response = http.Response('', 400);
+
+        final ex = ApiException.fromResponse(response, 'Failed to create ride');
+
+        expect(ex.message, 'Failed to create ride: status 400');
+        expect(ex.statusCode, 400);
+      });
+    });
+
     group('401 unauthorized handling', () {
       test(
         'get: 401 calls onUnauthorized and throws UnauthorizedException',

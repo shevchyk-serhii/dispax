@@ -1,3 +1,5 @@
+import '../json_parse.dart';
+
 class Geofence {
   final String id;
   final String companyId;
@@ -37,9 +39,8 @@ class Geofence {
       isActive: json['isActive'] ?? true,
       notifyOnEntry: json['notifyOnEntry'] ?? true,
       notifyOnExit: json['notifyOnExit'] ?? false,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
+      createdAt:
+          JsonParse.optionalDateTime(json, 'createdAt') ?? DateTime.now(),
     );
   }
 
@@ -125,9 +126,8 @@ class GeofenceAlert {
       geofenceName: json['geofenceName'] ?? '',
       latitude: (json['latitude'] ?? 0).toDouble(),
       longitude: (json['longitude'] ?? 0).toDouble(),
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
+      createdAt:
+          JsonParse.optionalDateTime(json, 'createdAt') ?? DateTime.now(),
     );
   }
 }

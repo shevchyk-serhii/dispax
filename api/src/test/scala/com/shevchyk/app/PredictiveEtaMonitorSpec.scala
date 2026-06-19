@@ -45,6 +45,12 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
       def findAll(): Task[List[Ride]]                                                                             = nope("findAll")
       def findByClientId(clientId: PersonId): Task[List[Ride]]                                                    = nope("findByClientId")
       def findByDriverId(driverId: PersonId): Task[List[Ride]]                                                    = nope("findByDriverId")
+      def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Ride]]                    = nope(
+        "findByDriverIdAndCompany"
+      )
+      def findByClientIdAndCompany(clientId: PersonId, companyId: CompanyId): Task[List[Ride]]                    = nope(
+        "findByClientIdAndCompany"
+      )
       def findByCompanyId(companyId: CompanyId): Task[List[Ride]]                                                 = nope("findByCompanyId")
       def findByCompanyIdPaginated(c: CompanyId, offset: Int, limit: Int): Task[List[Ride]]                       = nope(
         "findByCompanyIdPaginated"
@@ -52,6 +58,12 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
       def findByDriverIdPaginated(d: PersonId, offset: Int, limit: Int): Task[List[Ride]]                         = nope(
         "findByDriverIdPaginated"
       )
+      def findByDriverIdAndCompanyPaginated(
+          d: PersonId,
+          c: CompanyId,
+          offset: Int,
+          limit: Int
+      ): Task[List[Ride]] = nope("findByDriverIdAndCompanyPaginated")
       def update(ride: Ride): Task[Ride]                                                                          = nope("update")
       def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]                            = nope("updateIfStatus")
       def delete(id: RideId, companyId: CompanyId): Task[Unit]                                                    = nope("delete")

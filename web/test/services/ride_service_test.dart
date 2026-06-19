@@ -124,6 +124,27 @@ void main() {
           throwsA(isA<ApiException>()),
         );
       });
+
+      // Regression: a 400 used to surface as a bare "Failed to create ride: 400",
+      // hiding the server's validation reason. The exception must now carry the
+      // server's `{"error": ...}` message and the status code, without being
+      // re-wrapped into an opaque "Error creating ride: ..." layer.
+      test('400 surfaces server validation message and status code', () async {
+        when(() => mockApiClient.post('/rides', any())).thenAnswer(
+          (_) async => jsonResponse({
+            'error': 'Validation error: Pickup location cannot be empty',
+          }, statusCode: 400),
+        );
+
+        try {
+          await rideService.createRide(TestFixtures.createRideRequest());
+          fail('expected ApiException');
+        } on ApiException catch (e) {
+          expect(e.message, contains('Pickup location cannot be empty'));
+          expect(e.message, isNot(contains('Error creating ride')));
+          expect(e.statusCode, 400);
+        }
+      });
     });
 
     group('updateRide', () {

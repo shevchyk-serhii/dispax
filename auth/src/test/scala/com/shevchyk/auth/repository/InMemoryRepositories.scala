@@ -113,6 +113,15 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
 
   override def delete(id: PersonId): Task[Unit] = people.update(_.removed(id)).unit
 
+  override def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit] =
+    people
+      .update(m =>
+        m.get(id) match
+          case Some(p) if p.companyId.contains(companyId) => m.removed(id)
+          case _                                          => m
+      )
+      .unit
+
   override def searchByQuery(query: String): Task[List[Person]] = people.get.map(
     _.values
       .filter { p =>
