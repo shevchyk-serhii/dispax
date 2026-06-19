@@ -15,13 +15,20 @@ import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.infrastructure.http.dto.{*, given}
 import com.shevchyk.ride.openapi.RideSchemas.given
 import com.shevchyk.ride.openapi.RideSecure.*
-import com.shevchyk.ride.repository.RideRatingRepository
+import com.shevchyk.ride.repository.{RideRatingRepository, TariffRepository}
 import com.shevchyk.ride.validation.Validator.validate
 import com.shevchyk.ride.validation.given
 import sttp.model.{MediaType, StatusCode}
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
+
+// NOTE: The estimate endpoint uses Haversine great-circle distance (not HERE Routing) because the
+// `ride` module does not depend on `driver` (where HereRoutingService lives) and adding that
+// dependency would create a build-graph cycle. Haversine gives an appropriate straight-line distance
+// for billing estimates; duration is derived from a 50 km/h average urban speed (same fallback used
+// by EtaService when HERE is unavailable). If sub-minute accuracy is needed, a shared routing trait
+// can be extracted to `core` in a follow-up.
 
 /**
  * Tapir descriptions and server logic for the ride endpoints. Replaces the zio-http handlers in `RideRoutes`
@@ -35,7 +42,7 @@ object RideApi:
   // -- Environment ---------------------------------------------------------
   type RideEnv =
     RideService & ClientAddressService & ClientLocationService & AirportCheckpointService & ChatService &
-      RideRatingRepository & PersonRepository & JwtService
+      RideRatingRepository & PersonRepository & JwtService & TariffRepository
 
   private object AirportTimingConfig:
     val travelTimeMinutes: Int        = 45
@@ -140,6 +147,15 @@ object RideApi:
     .tag(rideTag)
     .summary("List company rides (paginated)")
 
+  // -- estimate route ------------------------------------------------------
+
+  val estimateRideEndpoint = secureEndpoint.post
+    .in("api" / "rides" / "estimate")
+    .in(jsonBody[EstimateRideRequest])
+    .out(jsonBody[EstimateRideResponse])
+    .tag(rideTag)
+    .summary("Estimate ride distance, duration and price")
+
   // -- client-location routes ----------------------------------------------
 
   val updateClientLocationEndpoint = secureEndpoint.post
@@ -218,6 +234,7 @@ object RideApi:
     updateRideEndpoint,
     getRideEndpoint,
     listRidesEndpoint,
+    estimateRideEndpoint,
     updateClientLocationEndpoint,
     getRideLocationsEndpoint,
     sendChatMessageEndpoint,
@@ -273,48 +290,73 @@ object RideApi:
 
   private val getPendingRidesServer: ZServerEndpoint[RideEnv, Any] = getPendingRidesEndpoint.serverLogic { user => _ =>
     for {
-      _          <- checkRole(user, "DISPATCHER")
-      service    <- ZIO.service[RideService]
-      personRepo <- ZIO.service[PersonRepository]
-      rides      <- service.getRidesByStatus(RideStatus.Requested).mapError(fromRideError)
-      clientIds   = rides.map(_.clientId).distinct
-      persons    <- ZIO
-                      .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
-                      .mapError(fromRideError)
-      clientMap   = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
-    } yield rides.map(r => RideDto.fromDomain(r, clientName = clientMap.get(r.clientId)))
+      _           <- checkRole(user, "DISPATCHER")
+      companyId   <- requireCompanyId(user.companyId)
+      service     <- ZIO.service[RideService]
+      personRepo  <- ZIO.service[PersonRepository]
+      ratingRepo  <- ZIO.service[RideRatingRepository]
+      rides       <- service.getRidesByStatusAndCompany(RideStatus.Requested, companyId).mapError(fromRideError)
+      clientIds    = rides.map(_.clientId).distinct
+      persons     <- ZIO
+                       .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+                       .mapError(fromRideError)
+      clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+      ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+    } yield rides.map { r =>
+      val (rating, count) = r.driverId
+        .flatMap(ratingStats.get)
+        .map { case (avg, n) => (Some(avg), Some(n)) }
+        .getOrElse((None, None))
+      RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+    }
   }
 
   private val getUnpaidRidesServer: ZServerEndpoint[RideEnv, Any] = getUnpaidRidesEndpoint.serverLogic { user => _ =>
     for {
-      _          <- checkRole(user, "DISPATCHER", "ADMIN")
-      companyId  <- requireCompanyId(user.companyId)
-      service    <- ZIO.service[RideService]
-      personRepo <- ZIO.service[PersonRepository]
-      rides      <- service.getUnpaidCompletedRides(companyId).mapError(fromRideError)
-      clientIds   = rides.map(_.clientId).distinct
-      persons    <- ZIO
-                      .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
-                      .mapError(fromRideError)
-      clientMap   = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
-    } yield rides.map(r => RideDto.fromDomain(r, clientName = clientMap.get(r.clientId)))
+      _           <- checkRole(user, "DISPATCHER", "ADMIN")
+      companyId   <- requireCompanyId(user.companyId)
+      service     <- ZIO.service[RideService]
+      personRepo  <- ZIO.service[PersonRepository]
+      ratingRepo  <- ZIO.service[RideRatingRepository]
+      rides       <- service.getUnpaidCompletedRides(companyId).mapError(fromRideError)
+      clientIds    = rides.map(_.clientId).distinct
+      persons     <- ZIO
+                       .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+                       .mapError(fromRideError)
+      clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+      ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+    } yield rides.map { r =>
+      val (rating, count) = r.driverId
+        .flatMap(ratingStats.get)
+        .map { case (avg, n) => (Some(avg), Some(n)) }
+        .getOrElse((None, None))
+      RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+    }
   }
 
   private val getDriverRidesServer: ZServerEndpoint[RideEnv, Any] = getDriverRidesEndpoint.serverLogic {
     user => driverId =>
       for {
-        driverPid  <- parsePersonId(driverId)
-        _          <- checkRoleOrOwner(user, driverPid.value, "DISPATCHER")
-        companyId  <- requireCompanyId(user.companyId)
-        service    <- ZIO.service[RideService]
-        personRepo <- ZIO.service[PersonRepository]
-        rides      <- service.getDriverRides(driverPid, companyId).mapError(fromRideError)
-        clientIds   = rides.map(_.clientId).distinct
-        persons    <- ZIO
-                        .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
-                        .mapError(fromRideError)
-        clientMap   = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
-      } yield rides.map(r => RideDto.fromDomain(r, clientName = clientMap.get(r.clientId)))
+        driverPid   <- parsePersonId(driverId)
+        _           <- checkRoleOrOwner(user, driverPid.value, "DISPATCHER")
+        companyId   <- requireCompanyId(user.companyId)
+        service     <- ZIO.service[RideService]
+        personRepo  <- ZIO.service[PersonRepository]
+        ratingRepo  <- ZIO.service[RideRatingRepository]
+        rides       <- service.getDriverRides(driverPid, companyId).mapError(fromRideError)
+        clientIds    = rides.map(_.clientId).distinct
+        persons     <- ZIO
+                         .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+                         .mapError(fromRideError)
+        clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+        ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+      } yield rides.map { r =>
+        val (rating, count) = r.driverId
+          .flatMap(ratingStats.get)
+          .map { case (avg, n) => (Some(avg), Some(n)) }
+          .getOrElse((None, None))
+        RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+      }
   }
 
   private val getClientRidesServer: ZServerEndpoint[RideEnv, Any] = getClientRidesEndpoint.serverLogic {
@@ -325,6 +367,7 @@ object RideApi:
         companyId   <- requireCompanyId(user.companyId)
         service     <- ZIO.service[RideService]
         personRepo  <- ZIO.service[PersonRepository]
+        ratingRepo  <- ZIO.service[RideRatingRepository]
         rides       <- service.getClientRides(clientPid, companyId).mapError(fromRideError)
         clientName  <- personRepo.findById(clientPid).map(_.map(_.name)).mapError(fromRideError)
         // Resolve every distinct driver name once in parallel instead of one sequential
@@ -334,9 +377,20 @@ object RideApi:
                          .foreachPar(driverIds)(id => personRepo.findById(id).map(p => id -> p.map(_.name)))
                          .map(_.toMap)
                          .mapError(fromRideError)
+        ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
         rideDtos     = rides.map { r =>
-                         val driverName = r.driverId.flatMap(driverNames.getOrElse(_, None))
-                         RideDto.fromDomain(r, clientName = clientName, driverName = driverName)
+                         val driverName          = r.driverId.flatMap(driverNames.getOrElse(_, None))
+                         val (rating, rateCount) = r.driverId
+                           .flatMap(ratingStats.get)
+                           .map { case (avg, n) => (Some(avg), Some(n)) }
+                           .getOrElse((None, None))
+                         RideDto.fromDomain(
+                           r,
+                           clientName = clientName,
+                           driverName = driverName,
+                           driverRating = rating,
+                           driverRatingCount = rateCount
+                         )
                        }
       } yield rideDtos
   }
@@ -501,18 +555,26 @@ object RideApi:
   private val listRidesServer: ZServerEndpoint[RideEnv, Any] = listRidesEndpoint.serverLogic {
     user => (offsetOpt, limitOpt) =>
       for {
-        companyId  <- requireCompanyId(user.companyId)
-        offset      = offsetOpt.getOrElse(0)
-        limit       = limitOpt.getOrElse(50)
-        service    <- ZIO.service[RideService]
-        personRepo <- ZIO.service[PersonRepository]
-        rides      <- service.getRidesByCompanyPaginated(companyId, offset, limit).mapError(fromRideError)
-        clientIds   = rides.map(_.clientId).distinct
-        persons    <- ZIO
-                        .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
-                        .mapError(fromRideError)
-        clientMap   = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
-      } yield rides.map(r => RideDto.fromDomain(r, clientName = clientMap.get(r.clientId)))
+        companyId   <- requireCompanyId(user.companyId)
+        offset       = offsetOpt.getOrElse(0)
+        limit        = limitOpt.getOrElse(50)
+        service     <- ZIO.service[RideService]
+        personRepo  <- ZIO.service[PersonRepository]
+        ratingRepo  <- ZIO.service[RideRatingRepository]
+        rides       <- service.getRidesByCompanyPaginated(companyId, offset, limit).mapError(fromRideError)
+        clientIds    = rides.map(_.clientId).distinct
+        persons     <- ZIO
+                         .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+                         .mapError(fromRideError)
+        clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+        ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+      } yield rides.map { r =>
+        val (rating, count) = r.driverId
+          .flatMap(ratingStats.get)
+          .map { case (avg, n) => (Some(avg), Some(n)) }
+          .getOrElse((None, None))
+        RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+      }
   }
 
   // -- client-location servers ---------------------------------------------
@@ -681,6 +743,62 @@ object RideApi:
       )
   }
 
+  // -- estimate server -----------------------------------------------------
+
+  // Distance and duration are computed with Haversine + 50 km/h average speed because the ride
+  // module cannot import HereRoutingService (that lives in the driver module, a sibling, not a
+  // dependency of ride). See the note at the top of the file for the full rationale.
+  private val estimateRideServer: ZServerEndpoint[RideEnv, Any] = estimateRideEndpoint.serverLogic { user => req =>
+    for {
+      _           <- checkRole(user, "DRIVER", "CLIENT", "DISPATCHER", "SECRETARY", "ADMIN")
+      companyId   <- requireCompanyId(user.companyId)
+      // Both locations must have coordinates for a meaningful estimate.
+      fromLat     <- ZIO
+                       .fromOption(req.from.latitude)
+                       .orElseFail((StatusCode.BadRequest, ApiError("from.latitude is required for estimation")))
+      fromLng     <- ZIO
+                       .fromOption(req.from.longitude)
+                       .orElseFail((StatusCode.BadRequest, ApiError("from.longitude is required for estimation")))
+      toLat       <- ZIO
+                       .fromOption(req.to.latitude)
+                       .orElseFail((StatusCode.BadRequest, ApiError("to.latitude is required for estimation")))
+      toLng       <- ZIO
+                       .fromOption(req.to.longitude)
+                       .orElseFail((StatusCode.BadRequest, ApiError("to.longitude is required for estimation")))
+      // Compute straight-line distance via Haversine (used as the billing distance).
+      distanceKm   = haversineKm(fromLat, fromLng, toLat, toLng)
+      // Duration estimate: 50 km/h average urban speed (same fallback as EtaService).
+      etaMinutes   = Math.ceil(distanceKm / 50.0 * 60.0).toInt.max(1)
+      // Load company tariff; fall back to defaults if absent.
+      tariffRepo  <- ZIO.service[TariffRepository]
+      tariff      <- tariffRepo
+                       .findByCompanyId(companyId)
+                       .map(_.getOrElse(CompanyTariff.default(companyId)))
+                       .mapError(ex => (StatusCode.InternalServerError, ApiError("Failed to load tariff")))
+      vehicleClass = VehicleClass.fromString(req.vehicleClass).getOrElse(VehicleClass.Default)
+      price        = tariff.estimate(distanceKm, req.isAirportTransfer, vehicleClass)
+    } yield EstimateRideResponse(
+      distanceKm = BigDecimal(distanceKm).setScale(2, BigDecimal.RoundingMode.HALF_UP).doubleValue,
+      durationMinutes = etaMinutes,
+      estimatedPrice = price.doubleValue,
+      currency = tariff.currency
+    )
+  }
+
+  /**
+   * Haversine great-circle distance in kilometres between two WGS-84 coordinates.
+   */
+  private def haversineKm(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double =
+    val R    = 6371.0
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLng = Math.toRadians(lng2 - lng1)
+    val a    =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    val c    = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    R * c
+
   /**
    * All server endpoints, interpreted into zio-http Routes by the api module.
    */
@@ -699,6 +817,7 @@ object RideApi:
     updateRideServer,
     getRideServer,
     listRidesServer,
+    estimateRideServer,
     updateClientLocationServer,
     getRideLocationsServer,
     sendChatMessageServer,

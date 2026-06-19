@@ -36,6 +36,7 @@ trait RideService:
   ): IO[RideError, Ride]
   def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride]
   def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]
+  def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]]
   // Company-scoped: a dispatcher can only list rides of a driver/client within their own
   // tenant. The companyId comes from the caller's JWT, never from the request path.
   def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]
@@ -584,6 +585,9 @@ class RideServiceImpl(
 
   def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]] =
     rideRepository.findByStatus(status).mapDatabaseError
+
+  def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]] =
+    rideRepository.findByStatusAndCompany(status, companyId).mapDatabaseError
 
   def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]] =
     rideRepository.findByDriverIdAndCompany(driverId, companyId).mapDatabaseError

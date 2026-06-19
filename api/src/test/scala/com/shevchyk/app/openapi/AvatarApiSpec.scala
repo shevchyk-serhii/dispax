@@ -182,6 +182,7 @@ object AvatarApiSpec extends ZIOSpecDefault:
       ): IO[RideError, Ride] = notImpl
       def assignDriver(id: RideId, did: PersonId): IO[RideError, Ride]                                          = notImpl
       def getRidesByStatus(s: RideStatus): IO[RideError, List[Ride]]                                            = notImpl
+      def getRidesByStatusAndCompany(s: RideStatus, cid: CompanyId): IO[RideError, List[Ride]]                  = notImpl
       def getDriverRides(did: PersonId, cid: CompanyId): IO[RideError, List[Ride]]                              = notImpl
       def getClientRides(clid: PersonId, cid: CompanyId): IO[RideError, List[Ride]]                             = notImpl
       def getAllRides: IO[RideError, List[Ride]]                                                                = notImpl

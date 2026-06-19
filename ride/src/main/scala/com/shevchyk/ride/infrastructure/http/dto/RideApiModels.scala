@@ -9,7 +9,8 @@ import com.shevchyk.ride.domain.{
   RideStatus,
   PaymentStatus,
   PaymentMethod,
-  UpdateRideDetailsRequest
+  UpdateRideDetailsRequest,
+  VehicleClass
 }
 import zio.*
 import zio.http.*
@@ -72,7 +73,10 @@ case class RideDto(
     cancelledBy: Option[String] = None,
     isVipRide: Boolean = false,
     preferredDriverUsed: Boolean = false,
-    poolId: Option[String] = None
+    poolId: Option[String] = None,
+    vehicleClass: String = "business",
+    driverRating: Option[Double] = None,
+    driverRatingCount: Option[Int] = None
 )
 
 given JsonEncoder[RideDto] = DeriveJsonEncoder.gen[RideDto]
@@ -96,7 +100,8 @@ case class CreateRideApiRequest(
     price: Option[Double] = None,
     notes: Option[String] = None,
     specialRequirements: Option[String] = None,
-    driverId: Option[String] = None
+    driverId: Option[String] = None,
+    vehicleClass: Option[String] = None
 ) derives JsonCodec
 
 case class UpdateRideApiRequest(
@@ -186,6 +191,22 @@ case class ValidationFieldError(
     message: String
 ) derives JsonCodec
 
+// -- Estimate DTOs ------------------------------------------------------------
+
+case class EstimateRideRequest(
+    from: LocationDto,
+    to: LocationDto,
+    vehicleClass: String = "business",
+    isAirportTransfer: Boolean = false
+) derives JsonCodec
+
+case class EstimateRideResponse(
+    distanceKm: Double,
+    durationMinutes: Int,
+    estimatedPrice: Double,
+    currency: String
+) derives JsonCodec
+
 // -- Airport checkpoint DTOs ---------------------------------------------------
 
 case class MarkCheckpointRequest(
@@ -212,6 +233,8 @@ given sttp.tapir.Schema[UpdateClientLocationRequest] = sttp.tapir.Schema.derived
 given sttp.tapir.Schema[SendChatMessageRequest]      = sttp.tapir.Schema.derived[SendChatMessageRequest]
 given sttp.tapir.Schema[MarkCheckpointRequest]       = sttp.tapir.Schema.derived[MarkCheckpointRequest]
 given sttp.tapir.Schema[CheckpointStateResponse]     = sttp.tapir.Schema.derived[CheckpointStateResponse]
+given sttp.tapir.Schema[EstimateRideRequest]         = sttp.tapir.Schema.derived[EstimateRideRequest]
+given sttp.tapir.Schema[EstimateRideResponse]        = sttp.tapir.Schema.derived[EstimateRideResponse]
 
 object LocationDto:
 
@@ -239,7 +262,9 @@ object RideDto:
       driverLng: Option[Double] = None,
       clientName: Option[String] = None,
       driverName: Option[String] = None,
-      etaMinutes: Option[Int] = None
+      etaMinutes: Option[Int] = None,
+      driverRating: Option[Double] = None,
+      driverRatingCount: Option[Int] = None
   ): RideDto =
     val (flightNumber, isAirportTransfer) =
       ride.specifics match {
@@ -299,7 +324,10 @@ object RideDto:
       cancelledBy = ride.cancelledBy.map(_.value.toString),
       isVipRide = ride.isVipRide,
       preferredDriverUsed = ride.preferredDriverUsed,
-      poolId = ride.poolId.map(_.value.toString)
+      poolId = ride.poolId.map(_.value.toString),
+      vehicleClass = VehicleClass.toDbString(ride.vehicleClass),
+      driverRating = driverRating,
+      driverRatingCount = driverRatingCount
     )
 
   private def distanceMetersHaversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Int =
@@ -330,6 +358,8 @@ object CreateRideApiRequest:
         None
       }
 
+    val parsedVehicleClass = request.vehicleClass.flatMap(VehicleClass.fromString).getOrElse(VehicleClass.Default)
+
     UuidParser.parsePersonId(request.clientId).map { clientId =>
       CreateRideRequest(
         clientId = clientId,
@@ -339,7 +369,8 @@ object CreateRideApiRequest:
         scheduledTime = scala.util.Try(Instant.parse(request.pickupDateTime)).toOption,
         notes = request.notes,
         specifics = specifics,
-        specialRequirements = request.specialRequirements
+        specialRequirements = request.specialRequirements,
+        vehicleClass = parsedVehicleClass
       )
     }
 

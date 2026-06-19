@@ -9,7 +9,8 @@ import com.shevchyk.ride.domain.{
   RideSpecifics,
   RideStatus,
   PaymentStatus,
-  PaymentMethod
+  PaymentMethod,
+  VehicleClass
 }
 import cats.data.NonEmptyList
 import cats.syntax.apply.*
@@ -117,7 +118,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         payment_status, payment_method, paid_at,
         cancellation_reason, cancellation_fee, cancelled_by,
         is_vip_ride, preferred_driver_used,
-        pool_id, tariff_id, schedule_day_id, invoice_id
+        pool_id, tariff_id, schedule_day_id, invoice_id, vehicle_class
       ) VALUES (
         ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.companyId.value}, ${ride.driverId.map(
         _.value
@@ -132,7 +133,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         ${ride.paymentStatus}, ${ride.paymentMethod}, ${ride.paidAt},
         ${ride.cancellationReason}, ${ride.cancellationFee}, ${ride.cancelledBy.map(_.value)},
         ${ride.isVipRide}, ${ride.preferredDriverUsed},
-        ${ride.poolId.map(_.value)}, ${ride.tariffId.map(_.value)}, ${ride.scheduleDayId}, ${ride.invoiceId}
+        ${ride.poolId.map(_.value)}, ${ride.tariffId.map(_.value)}, ${ride.scheduleDayId}, ${ride.invoiceId},
+        ${VehicleClass.toDbString(ride.vehicleClass)}
       )
     """.update.run
       .transact(xa)
@@ -153,7 +155,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         is_vip_ride, preferred_driver_used,
         special_requirements, pool_id,
         schedule_day_id, invoice_id,
-        flight_is_arrival, airport_checkpoint"""
+        flight_is_arrival, airport_checkpoint,
+        vehicle_class"""
   // NOTE: columns are listed explicitly (not SELECT *) to guarantee order matches rideReadBase/rideReadExtra
 
   override def findById(id: RideId): Task[Option[Ride]] = {
@@ -166,6 +169,15 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
 
   override def findByStatus(status: RideStatus): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE status = $status ORDER BY request_time DESC")
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
+  override def findByStatusAndCompany(status: RideStatus, companyId: CompanyId): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++
+      fr"FROM rides WHERE status = $status AND company_id = ${companyId.value} ORDER BY request_time DESC")
       .query[Ride]
       .to[List]
       .transact(xa)
@@ -511,18 +523,19 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
     (
         Option[PaymentStatus],
         Option[PaymentMethod],
-        Option[Instant],          // payment_status, payment_method, paid_at
+        Option[Instant],           // payment_status, payment_method, paid_at
         Option[String],
         Option[BigDecimal],
-        Option[UUID],             // cancellation_reason, cancellation_fee, cancelled_by
+        Option[UUID],              // cancellation_reason, cancellation_fee, cancelled_by
         Boolean,
-        Boolean,                  // is_vip_ride, preferred_driver_used
+        Boolean,                   // is_vip_ride, preferred_driver_used
         Option[String],
-        Option[UUID],             // special_requirements, pool_id
+        Option[UUID],              // special_requirements, pool_id
         Option[UUID],
-        Option[UUID],             // schedule_day_id, invoice_id
+        Option[UUID],              // schedule_day_id, invoice_id
         Option[Boolean],
-        Option[AirportCheckpoint] // flight_is_arrival, airport_checkpoint
+        Option[AirportCheckpoint], // flight_is_arrival, airport_checkpoint
+        Option[String]             // vehicle_class
     )
   ] =
     Read[
@@ -540,7 +553,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
           Option[UUID],
           Option[UUID],
           Option[Boolean],
-          Option[AirportCheckpoint]
+          Option[AirportCheckpoint],
+          Option[String]
       )
     ]
 
@@ -584,7 +598,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
             scheduleDayId,
             invoiceId,
             flightIsArrival,
-            airportCheckpoint
+            airportCheckpoint,
+            vehicleClassStr
           )
         ) =>
       Ride(
@@ -619,7 +634,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         scheduleDayId = scheduleDayId,
         invoiceId = invoiceId,
         flightIsArrival = flightIsArrival,
-        airportCheckpoint = airportCheckpoint
+        airportCheckpoint = airportCheckpoint,
+        vehicleClass = vehicleClassStr.flatMap(VehicleClass.fromString).getOrElse(VehicleClass.Default)
       )
   }
 

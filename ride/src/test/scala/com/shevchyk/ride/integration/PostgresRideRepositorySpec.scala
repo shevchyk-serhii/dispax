@@ -209,6 +209,42 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           completed.head.id == r2.id
         )
       },
+      test("findByStatusAndCompany does not leak rides across tenants") {
+        // Regression: getPendingRidesServer used the unscoped findByStatus, so a
+        // dispatcher saw Requested rides of every company. The scoped variant must
+        // only return rides of the given company.
+        val company2Id = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+        val client2Id  = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003"))
+        for {
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedTestData(xa)
+          _   <-
+            (for {
+              _ <-
+                sql"""INSERT INTO companies (id, name, email)
+                               VALUES (${company2Id.value}, 'Company 2 GmbH', 'c2@test.com')
+                               ON CONFLICT DO NOTHING""".update.run
+              _ <-
+                sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+                               VALUES (${client2Id.value}, 'Client 2', 'client2@test.com',
+                                       'client'::person_role, ${company2Id.value}, 'placeholder')
+                               ON CONFLICT DO NOTHING""".update.run
+            } yield ()).transact(xa)
+          _   <- cleanRides(xa)
+          repo = PostgresRideRepository(xa)
+          r1   = makeRide(status = RideStatus.Requested) // company 1
+          r2   = makeRide(status = RideStatus.Requested).copy(companyId = company2Id, clientId = client2Id)
+          _   <- repo.create(r1)
+          _   <- repo.create(r2)
+          c1  <- repo.findByStatusAndCompany(RideStatus.Requested, testCompanyId)
+          c2  <- repo.findByStatusAndCompany(RideStatus.Requested, company2Id)
+        } yield assertTrue(
+          c1.length == 1,
+          c1.head.id == r1.id,
+          c2.length == 1,
+          c2.head.id == r2.id
+        )
+      },
       test("delete removes ride") {
         for {
           xa    <- ZIO.service[Transactor[Task]]
@@ -392,6 +428,25 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           found.poolId == ride.poolId,
           found.scheduleDayId == ride.scheduleDayId,
           found.invoiceId == ride.invoiceId
+        )
+      },
+      test("vehicle_class persists and reads back correctly for all variants") {
+        for {
+          xa        <- ZIO.service[Transactor[Task]]
+          _         <- seedTestData(xa)
+          _         <- cleanRides(xa)
+          repo       = PostgresRideRepository(xa)
+          business   = makeRide().copy(vehicleClass = VehicleClass.Business)
+          van        = makeRide().copy(vehicleClass = VehicleClass.Van)
+          _         <- repo.create(business)
+          _         <- repo.create(van)
+          fBusiness <- repo.findById(business.id)
+          fVan      <- repo.findById(van.id)
+        } yield assertTrue(
+          fBusiness.isDefined,
+          fBusiness.get.vehicleClass == VehicleClass.Business,
+          fVan.isDefined,
+          fVan.get.vehicleClass == VehicleClass.Van
         )
       },
       // -------------------------------------------------------------------------
