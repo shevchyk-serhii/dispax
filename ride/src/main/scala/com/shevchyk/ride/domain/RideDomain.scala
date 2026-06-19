@@ -46,6 +46,58 @@ object AirportCheckpoint:
     toDbString
   )
 
+/**
+ * Vehicle class offered at booking time. Drives fare estimation (seats/bags capacity and the price multiplier) and is
+ * shown on the client booking screen. Stored as a plain string in the `vehicle_class` column; legacy rows are null and
+ * default to [[Business]] when read.
+ */
+enum VehicleClass:
+  case Business, Van
+
+  /**
+   * Passenger seats advertised for this class (shown on the booking tile).
+   */
+  def seats: Int =
+    this match
+      case Business => 3
+      case Van      => 6
+
+  /**
+   * Luggage capacity advertised for this class.
+   */
+  def bags: Int =
+    this match
+      case Business => 2
+      case Van      => 5
+
+  /**
+   * Fare multiplier relative to the company tariff base/per-km price.
+   */
+  def priceMultiplier: BigDecimal =
+    this match
+      case Business => BigDecimal(1.0)
+      case Van      => BigDecimal(1.4)
+
+object VehicleClass:
+
+  val Default: VehicleClass = Business
+
+  def fromString(s: String): Option[VehicleClass] =
+    s.trim.toLowerCase match
+      case "business" => Some(Business)
+      case "van"      => Some(Van)
+      case _          => None
+
+  def toDbString(c: VehicleClass): String =
+    c match
+      case Business => "business"
+      case Van      => "van"
+
+  given JsonCodec[VehicleClass] = JsonCodec.string.transformOrFail(
+    s => fromString(s).toRight(s"Unknown vehicle class: $s"),
+    toDbString
+  )
+
 enum RideStatus:
   case Requested, Assigned, InProgress, Completed, Cancelled
 
@@ -146,7 +198,8 @@ final case class Ride(
     scheduleDayId: Option[java.util.UUID] = None,
     invoiceId: Option[java.util.UUID] = None,
     flightIsArrival: Option[Boolean] = None,
-    airportCheckpoint: Option[AirportCheckpoint] = None
+    airportCheckpoint: Option[AirportCheckpoint] = None,
+    vehicleClass: VehicleClass = VehicleClass.Default
 ):
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
@@ -172,7 +225,8 @@ final case class CreateRideRequest(
     scheduledTime: Option[Instant] = None,
     notes: Option[String] = None,
     specifics: Option[RideSpecifics] = None,
-    specialRequirements: Option[String] = None
+    specialRequirements: Option[String] = None,
+    vehicleClass: VehicleClass = VehicleClass.Default
 )
 
 final case class UpdateRideStatusRequest(

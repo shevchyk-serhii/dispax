@@ -20,6 +20,7 @@ import com.shevchyk.ride.repository.{
   ExpenseRepository,
   RideTemplateRepository,
   RideRatingRepository,
+  TariffRepository,
   PostgresExpenseRepository,
   PostgresRideRatingRepository,
   PostgresRideTemplateRepository
@@ -236,6 +237,7 @@ object Application extends ZIOAppDefault:
       else LoggingEmailSmsService.layer,
       RideTemplateRepository.layer,
       RideRatingRepository.layer,
+      TariffRepository.liveLayer,
       AuditService.layer,
       CompanySettingsRepository.layer,
       GdprRepository.layer,

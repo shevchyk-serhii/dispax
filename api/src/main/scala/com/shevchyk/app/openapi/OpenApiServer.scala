@@ -44,7 +44,8 @@ import com.shevchyk.ride.repository.{
   ExpenseRepository,
   RideRatingRepository,
   RideRepository,
-  RideTemplateRepository
+  RideTemplateRepository,
+  TariffRepository
 }
 import com.shevchyk.schedule.application.ScheduleService
 import com.shevchyk.schedule.openapi.ScheduleApi
@@ -78,7 +79,7 @@ object OpenApiServer:
       CompanySettingsRepository & GeofenceRepository & GeofenceService & RidePoolRepository & EventHub &
       EmergencyReassignmentRepository & RideRatingRepository & ClientAddressService & ClientLocationService &
       AirportCheckpointService & AirportConfigService & ChatService & RideTemplateRepository & DriverLocationService &
-      HereRoutingService & GeocodingService & ClientLocationRepository & CompanyRepository
+      HereRoutingService & GeocodingService & ClientLocationRepository & CompanyRepository & TariffRepository
 
   // `ZServerEndpoint`'s environment is invariant, so module lists cannot be merged
   // into one typed list. But `zio.http.Routes` is contravariant in its environment, so

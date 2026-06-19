@@ -394,6 +394,25 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           found.invoiceId == ride.invoiceId
         )
       },
+      test("vehicle_class persists and reads back correctly for all variants") {
+        for {
+          xa        <- ZIO.service[Transactor[Task]]
+          _         <- seedTestData(xa)
+          _         <- cleanRides(xa)
+          repo       = PostgresRideRepository(xa)
+          business   = makeRide().copy(vehicleClass = VehicleClass.Business)
+          van        = makeRide().copy(vehicleClass = VehicleClass.Van)
+          _         <- repo.create(business)
+          _         <- repo.create(van)
+          fBusiness <- repo.findById(business.id)
+          fVan      <- repo.findById(van.id)
+        } yield assertTrue(
+          fBusiness.isDefined,
+          fBusiness.get.vehicleClass == VehicleClass.Business,
+          fVan.isDefined,
+          fVan.get.vehicleClass == VehicleClass.Van
+        )
+      },
       // -------------------------------------------------------------------------
       // Platform-level (cross-tenant) analytics — Testcontainers integration
       // These tests insert rides for TWO different companies and verify that the
