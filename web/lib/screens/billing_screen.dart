@@ -460,7 +460,7 @@ class _BillingScreenState extends State<BillingScreen>
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String?>(
-                  value: selectedLanguage,
+                  initialValue: selectedLanguage,
                   decoration: const InputDecoration(
                     labelText: 'Rechnungssprache',
                   ),

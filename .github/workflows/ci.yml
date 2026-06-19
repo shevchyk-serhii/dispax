@@ -133,6 +133,10 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          # Pin the exact Flutter version so CI is deterministic: a new stable
+          # release must be adopted explicitly (bump here), not auto-picked up.
+          # Keep this in sync with the version used locally (FVM / fvm use).
+          flutter-version: 3.44.2
           channel: stable
           cache: true
 
