@@ -1,5 +1,5 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check, sleep, fail } from 'k6';
 
 // Smoke load test: login → list rides → create ride.
 // Measures baseline latency for the core ride lifecycle without triggering
@@ -35,6 +35,12 @@ export function setup() {
     { headers: { 'Content-Type': 'application/json' } },
   );
   check(res, { 'login 200': (r) => r.status === 200 });
+  // Abort the whole run with a clear message if login fails — otherwise every VU
+  // would send `Bearer undefined`, producing a wall of 401s that hides the real cause
+  // (backend down, wrong BASE_URL, or dev seed missing).
+  if (res.status !== 200) {
+    fail(`login failed: status ${res.status} against ${BASE_URL} — is the backend up with the V1001 dev seed?`);
+  }
   const body = JSON.parse(res.body);
   return {
     baseUrl:   BASE_URL,
