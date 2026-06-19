@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
+import '../constants/app_colors.dart';
 import '../modules/core/date_utils.dart';
 import '../modules/core/services/api_client.dart';
 
@@ -274,33 +276,76 @@ class _CompaniesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SuperAdminCompanyBloc, SuperAdminCompanyState>(
-      builder: (context, state) {
-        if (state is CompaniesLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (state is CompaniesError) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Error: ${state.message}'),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () => context.read<SuperAdminCompanyBloc>().add(
-                    LoadCompanies(),
-                  ),
-                  child: const Text('Retry'),
-                ),
-              ],
+    return Column(
+      children: [
+        AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: AppColors.dispatcherGradient),
             ),
-          );
-        }
-        if (state is CompaniesLoaded) {
-          return _CompaniesTable(companies: state.companies);
-        }
-        return const Center(child: CircularProgressIndicator());
-      },
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                children: [
+                  const Icon(Icons.business, color: Colors.white, size: 24),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Companies',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                    onPressed: () => context.read<SuperAdminCompanyBloc>().add(
+                      LoadCompanies(),
+                    ),
+                    tooltip: 'Refresh',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: BlocBuilder<SuperAdminCompanyBloc, SuperAdminCompanyState>(
+            builder: (context, state) {
+              if (state is CompaniesLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is CompaniesError) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Error: ${state.message}'),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () =>
+                            context.read<SuperAdminCompanyBloc>().add(
+                              LoadCompanies(),
+                            ),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              if (state is CompaniesLoaded) {
+                return _CompaniesTable(companies: state.companies);
+              }
+              return const Center(child: CircularProgressIndicator());
+            },
+          ),
+        ),
+      ],
     );
   }
 }

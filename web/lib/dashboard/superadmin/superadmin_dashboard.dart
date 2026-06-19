@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
+import '../../constants/app_colors.dart';
 import '../../modules/core/models/person.dart';
 import '../../screens/superadmin_companies_screen.dart';
 import '../../screens/superadmin_analytics_screen.dart';
@@ -76,6 +78,43 @@ class _SuperAdminSettingsPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Platform Admin Settings — coming soon'));
+    return Column(
+      children: [
+        AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                children: const [
+                  Icon(Icons.settings, color: Colors.white, size: 24),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Platform Settings',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const Expanded(
+          child: Center(
+            child: Text('Platform Admin Settings — coming soon'),
+          ),
+        ),
+      ],
+    );
   }
 }

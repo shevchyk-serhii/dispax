@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
+import '../constants/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import '../modules/core/services/api_client.dart';
 import '../modules/flight_management/widgets/map_picker_widget.dart';
@@ -418,32 +420,75 @@ class _AirportExitsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SuperAdminAirportBloc, SuperAdminAirportState>(
-      builder: (context, state) {
-        if (state is AirportsLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (state is AirportsError) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Error: ${state.message}'),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () =>
-                      context.read<SuperAdminAirportBloc>().add(LoadAirports()),
-                  child: const Text('Retry'),
-                ),
-              ],
+    return Column(
+      children: [
+        AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: AppColors.dispatcherGradient),
             ),
-          );
-        }
-        if (state is AirportsLoaded) {
-          return _AirportsTable(airports: state.airports);
-        }
-        return const Center(child: CircularProgressIndicator());
-      },
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                children: [
+                  const Icon(Icons.flight_land, color: Colors.white, size: 24),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Airport Exits',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                    onPressed: () => context
+                        .read<SuperAdminAirportBloc>()
+                        .add(LoadAirports()),
+                    tooltip: 'Refresh',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: BlocBuilder<SuperAdminAirportBloc, SuperAdminAirportState>(
+            builder: (context, state) {
+              if (state is AirportsLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is AirportsError) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Error: ${state.message}'),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => context
+                            .read<SuperAdminAirportBloc>()
+                            .add(LoadAirports()),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              if (state is AirportsLoaded) {
+                return _AirportsTable(airports: state.airports);
+              }
+              return const Center(child: CircularProgressIndicator());
+            },
+          ),
+        ),
+      ],
     );
   }
 }

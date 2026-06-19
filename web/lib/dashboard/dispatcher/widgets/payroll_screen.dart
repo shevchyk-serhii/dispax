@@ -162,39 +162,42 @@ class _PayrollScreenState extends State<PayrollScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(
-              Icons.account_balance_wallet,
-              color: Colors.white,
-              size: 24,
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Driver Payroll',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(
+                Icons.account_balance_wallet,
+                color: Colors.white,
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Driver Payroll',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            if (_payrollData != null)
-              IconButton(
-                icon: const Icon(Icons.copy, color: Colors.white, size: 22),
-                onPressed: _copyPayrollCsv,
-                tooltip: 'Copy CSV',
-              ),
-          ],
+              if (_payrollData != null)
+                IconButton(
+                  icon: const Icon(Icons.copy, color: Colors.white, size: 22),
+                  onPressed: _copyPayrollCsv,
+                  tooltip: 'Copy CSV',
+                ),
+            ],
+          ),
         ),
       ),
     );
