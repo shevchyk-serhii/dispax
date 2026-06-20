@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../modules/core/auth_helper.dart';
 import '../modules/auth/widgets/widgets.dart';
-import '../theme/app_theme.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 
@@ -40,40 +40,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AppTheme.buildGradientContainer(
-        colors: AppColors.primaryGradient,
-        stops: const [0.0, 0.5, 1.0],
-        child: SafeArea(
-          child: BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, authState) {
-              if (authState.isLoading) {
-                return const Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 3,
-                  ),
-                );
-              }
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.primary,
+        body: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            if (authState.isLoading) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.accent,
+                  strokeWidth: 2.5,
+                ),
+              );
+            }
 
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+            return SafeArea(
+              bottom: false,
+              child: SingleChildScrollView(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(
-                      height:
-                          AppDimensions.paddingXXLarge +
-                          AppDimensions.paddingMedium,
-                    ),
-
-                    const AppHeader(),
-
-                    const SizedBox(
-                      height:
-                          AppDimensions.paddingXXLarge +
-                          AppDimensions.paddingMedium,
-                    ),
-
+                    // Sign-in card: graphite header + white content
                     LoginCard(
                       formKey: _formKey,
                       emailController: _emailController,
@@ -83,23 +71,31 @@ class _LoginScreenState extends State<LoginScreen> {
                       onErrorDismiss: () => AuthHelper.clearError(context),
                     ),
 
-                    const SizedBox(height: AppDimensions.paddingLarge),
-
-                    TestCredentialsSection(
-                      onCredentialTap: (email, password) {
-                        _emailController.text = email;
-                        _passwordController.text = password;
-                      },
-                      onQuickLogin: (email) =>
-                          AuthHelper.quickLogin(context, email),
+                    // Quick-access dev section on white background
+                    Container(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.surfaceDark
+                          : AppColors.surface,
+                      padding: const EdgeInsets.fromLTRB(
+                        AppDimensions.paddingLarge,
+                        0,
+                        AppDimensions.paddingLarge,
+                        AppDimensions.paddingXLarge,
+                      ),
+                      child: TestCredentialsSection(
+                        onCredentialTap: (email, password) {
+                          _emailController.text = email;
+                          _passwordController.text = password;
+                        },
+                        onQuickLogin: (email) =>
+                            AuthHelper.quickLogin(context, email),
+                      ),
                     ),
-
-                    const SizedBox(height: AppDimensions.paddingXLarge),
                   ],
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
