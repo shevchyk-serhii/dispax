@@ -50,41 +50,71 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Reports',
-          style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary),
-        ),
-        backgroundColor: AppColors.secretaryColor,
-        foregroundColor: AppColors.textOnPrimary,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-        elevation: AppDimensions.appBarElevation,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadStats),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      children: [
+        // Graphite header
+        AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Container(
+            width: double.infinity,
+            color: AppColors.primary,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.paddingMedium,
+              vertical: 14,
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Row(
                 children: [
-                  Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                  const SizedBox(height: 12),
-                  Text(_error!, style: AppStyles.bodyMedium),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
+                  const Expanded(
+                    child: Text(
+                      'Reports',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     onPressed: _loadStats,
-                    child: const Text('Retry'),
+                    tooltip: 'Refresh',
                   ),
                 ],
               ),
-            )
-          : RefreshIndicator(onRefresh: _loadStats, child: _buildContent()),
+            ),
+          ),
+        ),
+        Expanded(child: _buildBody()),
+      ],
     );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: AppColors.error),
+            const SizedBox(height: 12),
+            Text(_error!, style: AppStyles.bodyMedium),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: _loadStats, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(onRefresh: _loadStats, child: _buildContent());
   }
 
   Widget _buildContent() {
@@ -103,17 +133,17 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
     return ListView(
       padding: const EdgeInsets.all(AppDimensions.paddingMedium),
       children: [
-        // Overview cards
+        // Overview stat tiles — 2 rows of 2
         Row(
           children: [
-            _buildStatCard(
+            _buildStatTile(
               'Total Rides',
               total.toString(),
               Icons.directions_car,
               Theme.of(context).colorScheme.primary,
             ),
-            const SizedBox(width: 12),
-            _buildStatCard(
+            const SizedBox(width: 10),
+            _buildStatTile(
               'Completed',
               completed.toString(),
               Icons.check_circle,
@@ -121,17 +151,17 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           children: [
-            _buildStatCard(
+            _buildStatTile(
               'In Progress',
               inProgress.toString(),
               Icons.play_circle,
               AppColors.rideInProgress,
             ),
-            const SizedBox(width: 12),
-            _buildStatCard(
+            const SizedBox(width: 10),
+            _buildStatTile(
               'Requested',
               requested.toString(),
               Icons.pending,
@@ -139,17 +169,17 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           children: [
-            _buildStatCard(
+            _buildStatTile(
               'Assigned',
               assigned.toString(),
               Icons.assignment,
               AppColors.rideAssigned,
             ),
-            const SizedBox(width: 12),
-            _buildStatCard(
+            const SizedBox(width: 10),
+            _buildStatTile(
               'Cancelled',
               cancelled.toString(),
               Icons.cancel,
@@ -158,22 +188,23 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
           ],
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
-        // Key metrics
+        // Key metrics card
         Container(
           padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-          ),
+          decoration: AppStyles.primaryCardDecorationOf(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Key Metrics', style: AppStyles.titleSmall),
+              Text(
+                'Key Metrics',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
               const SizedBox(height: 12),
               _buildMetricRow(
                 'Cancellation Rate',
@@ -187,28 +218,29 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
               _buildMetricRow(
                 'Total Clients',
                 clients.toString(),
-                AppColors.clientColor,
+                AppColors.accent,
               ),
             ],
           ),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
-        // Status breakdown
+        // Status breakdown card
         Container(
           padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-          ),
+          decoration: AppStyles.primaryCardDecorationOf(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Status Breakdown', style: AppStyles.titleSmall),
+              Text(
+                'Status Breakdown',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
               const SizedBox(height: 16),
               if (total > 0) ...[
                 _buildStatusBar(
@@ -256,23 +288,38 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
     );
   }
 
-  Widget _buildStatCard(
+  Widget _buildStatTile(
     String label,
     String value,
     IconData icon,
     Color color,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withAlpha(15),
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-          border: Border.all(color: color.withAlpha(60)),
+          color: isDark ? AppColors.surfaceDark : AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowXs,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 28),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -282,7 +329,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
                     value,
                     style: TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: color,
                     ),
                   ),
@@ -318,7 +365,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withAlpha(20),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -358,7 +405,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
               Container(
                 height: 18,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -377,7 +424,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
         ),
         const SizedBox(width: 8),
         SizedBox(
-          width: 50,
+          width: 54,
           child: Text(
             '$value ($percentage%)',
             style: TextStyle(
