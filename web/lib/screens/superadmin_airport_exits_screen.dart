@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_dimensions.dart';
 import '../l10n/app_localizations.dart';
 import '../modules/core/services/api_client.dart';
 import '../modules/flight_management/widgets/map_picker_widget.dart';
@@ -422,44 +423,13 @@ class _AirportExitsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.light,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Row(
-                children: [
-                  const Icon(Icons.flight_land, color: Colors.white, size: 24),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Airport Exits',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.refresh,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    onPressed: () => context.read<SuperAdminAirportBloc>().add(
-                      LoadAirports(),
-                    ),
-                    tooltip: 'Refresh',
-                  ),
-                ],
-              ),
-            ),
+        _GraphiteHeader(
+          onRefresh: () =>
+              context.read<SuperAdminAirportBloc>().add(LoadAirports()),
+          onAdd: () => showDialog<void>(
+            context: context,
+            builder: (_) =>
+                _AirportFormDialog(bloc: context.read<SuperAdminAirportBloc>()),
           ),
         ),
         Expanded(
@@ -473,7 +443,12 @@ class _AirportExitsView extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Error: ${state.message}'),
+                      Text(
+                        'Error: ${state.message}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () => context
@@ -486,7 +461,7 @@ class _AirportExitsView extends StatelessWidget {
                 );
               }
               if (state is AirportsLoaded) {
-                return _AirportsTable(airports: state.airports);
+                return _AirportExitsList(airports: state.airports);
               }
               return const Center(child: CircularProgressIndicator());
             },
@@ -498,64 +473,110 @@ class _AirportExitsView extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Airports table
+// Graphite header
 // ---------------------------------------------------------------------------
 
-class _AirportsTable extends StatelessWidget {
-  final List<AirportInfo> airports;
-  const _AirportsTable({required this.airports});
-
-  void _showAddDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (_) =>
-          _AirportFormDialog(bloc: context.read<SuperAdminAirportBloc>()),
-    );
-  }
+class _GraphiteHeader extends StatelessWidget {
+  final VoidCallback onRefresh;
+  final VoidCallback onAdd;
+  const _GraphiteHeader({required this.onRefresh, required this.onAdd});
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        color: AppColors.primary,
+        padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
             children: [
-              Text(
-                'Airport Exits (${airports.length})',
-                style: Theme.of(context).textTheme.titleLarge,
+              const Icon(
+                Icons.flight_land_outlined,
+                color: Colors.white,
+                size: 20,
               ),
-              const SizedBox(height: 16),
-              if (airports.isEmpty)
-                const Center(child: Text('No airports configured'))
-              else
-                ...airports.map(
-                  (a) => _AirportCard(
-                    airport: a,
-                    bloc: context.read<SuperAdminAirportBloc>(),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'MUC exits & wait buffers',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.1,
                   ),
                 ),
-              const SizedBox(height: 80),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
+                onPressed: onRefresh,
+                tooltip: 'Refresh',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text(
+                  '+ Airport',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusMedium,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        Positioned(
-          right: 24,
-          bottom: 24,
-          child: FloatingActionButton(
-            onPressed: () => _showAddDialog(context),
-            tooltip: AppLocalizations.of(context)!.addAirport,
-            child: const Icon(Icons.add),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Airport card with expandable zones
+// Airport exits list — card per airport with expandable zones
+// ---------------------------------------------------------------------------
+
+class _AirportExitsList extends StatelessWidget {
+  final List<AirportInfo> airports;
+  const _AirportExitsList({required this.airports});
+
+  @override
+  Widget build(BuildContext context) {
+    if (airports.isEmpty) {
+      return const Center(child: Text('No airports configured'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: airports.length,
+      itemBuilder: (context, i) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: _AirportCard(
+          airport: airports[i],
+          bloc: context.read<SuperAdminAirportBloc>(),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Airport card
 // ---------------------------------------------------------------------------
 
 class _AirportCard extends StatefulWidget {
@@ -569,6 +590,95 @@ class _AirportCard extends StatefulWidget {
 
 class _AirportCardState extends State<_AirportCard> {
   bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final airport = widget.airport;
+    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderPrimary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium + 2),
+      ),
+      child: Column(
+        children: [
+          // Airport header row
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                _AirportCodeBadge(code: airport.code),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        airport.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${airport.country} · r=${airport.landingRadius}m · '
+                        '${airport.isActive ? "Active" : "Inactive"}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 17),
+                  tooltip: 'Edit airport',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) =>
+                        _AirportFormDialog(bloc: widget.bloc, airport: airport),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 17),
+                  tooltip: 'Deactivate',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => _confirmDelete(context),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                  ),
+                  tooltip: _expanded ? 'Hide zones' : 'Show zones',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => setState(() => _expanded = !_expanded),
+                ),
+              ],
+            ),
+          ),
+          // Zones list
+          if (_expanded) ...[
+            Divider(height: 1, color: borderColor),
+            _ZonesList(airport: airport, bloc: widget.bloc),
+          ],
+        ],
+      ),
+    );
+  }
 
   void _confirmDelete(BuildContext context) {
     showDialog<void>(
@@ -597,74 +707,254 @@ class _AirportCardState extends State<_AirportCard> {
       ),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Airport code badge
+// ---------------------------------------------------------------------------
+
+class _AirportCodeBadge extends StatelessWidget {
+  final String code;
+  const _AirportCodeBadge({required this.code});
 
   @override
   Widget build(BuildContext context) {
-    final airport = widget.airport;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        children: [
-          ListTile(
-            leading: Icon(
-              Icons.flight_land,
-              color: airport.isActive
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey,
-            ),
-            title: Text('${airport.code} — ${airport.name}'),
-            subtitle: Text(
-              '${airport.country} | Landing: (${airport.landingLat.toStringAsFixed(4)}, ${airport.landingLon.toStringAsFixed(4)}) r=${airport.landingRadius}m | ${airport.isActive ? "Active" : "Inactive"}',
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 18),
-                  tooltip: 'Edit airport',
-                  onPressed: () => showDialog<void>(
-                    context: context,
-                    builder: (_) =>
-                        _AirportFormDialog(bloc: widget.bloc, airport: airport),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  tooltip: 'Deactivate',
-                  onPressed: () => _confirmDelete(context),
-                ),
-                IconButton(
-                  icon: Icon(
-                    _expanded ? Icons.expand_less : Icons.expand_more,
-                    size: 18,
-                  ),
-                  tooltip: _expanded ? 'Hide zones' : 'Show zones',
-                  onPressed: () => setState(() => _expanded = !_expanded),
-                ),
-              ],
-            ),
-          ),
-          if (_expanded)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: _ZonesTable(airport: airport, bloc: widget.bloc),
-            ),
-        ],
+    // MUC gets a special gray badge; T1/T2 get accent tints; others use graphite
+    final isMUC = code == 'MUC';
+    final bg = isMUC
+        ? const Color(0xFF52525B) // zinc-600 gray
+        : AppColors.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+      ),
+      child: Text(
+        code,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Zones table within an airport card
+// Terminal badge for individual zones
 // ---------------------------------------------------------------------------
 
-class _ZonesTable extends StatelessWidget {
+class _TerminalBadge extends StatelessWidget {
+  final String terminal;
+  const _TerminalBadge({required this.terminal});
+
+  @override
+  Widget build(BuildContext context) {
+    final isT1 = terminal == 'T1';
+    final isT2 = terminal == 'T2';
+    final isMUC = terminal == 'MUC' || terminal.isEmpty;
+
+    final (bg, fg) = switch (true) {
+      _ when isT1 => (
+        AppColors.accent.withValues(alpha: 0.12),
+        AppColors.accentDark,
+      ),
+      _ when isT2 => (
+        AppColors.accent.withValues(alpha: 0.18),
+        AppColors.accent,
+      ),
+      _ when isMUC => (const Color(0xFFF4F4F5), const Color(0xFF52525B)),
+      _ => (AppColors.surfaceVariant, AppColors.textSecondary),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        terminal.isEmpty ? 'MUC' : terminal,
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: fg),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Zones list within an airport card
+// ---------------------------------------------------------------------------
+
+class _ZonesList extends StatelessWidget {
   final AirportInfo airport;
   final SuperAdminAirportBloc bloc;
-  const _ZonesTable({required this.airport, required this.bloc});
+  const _ZonesList({required this.airport, required this.bloc});
 
-  void _confirmDelete(BuildContext context, AirportZoneInfo zone) {
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderPrimary;
+    final secondaryColor = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Add zone button
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Checkpoint Zones (${airport.zones.length})',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: secondaryColor,
+                ),
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.add, size: 15),
+                label: Text(AppLocalizations.of(context)!.addZone),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.accent,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                ),
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) =>
+                      _ZoneFormDialog(bloc: bloc, airportCode: airport.code),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (airport.zones.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              'No zones configured',
+              style: TextStyle(fontSize: 12, color: secondaryColor),
+            ),
+          )
+        else
+          ...airport.zones.map(
+            (z) => Column(
+              children: [
+                Divider(height: 1, color: borderColor),
+                _ZoneRow(zone: z, bloc: bloc, airportCode: airport.code),
+              ],
+            ),
+          ),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Zone row — terminal badge + title + buffer chip
+// ---------------------------------------------------------------------------
+
+class _ZoneRow extends StatelessWidget {
+  final AirportZoneInfo zone;
+  final SuperAdminAirportBloc bloc;
+  final String airportCode;
+  const _ZoneRow({
+    required this.zone,
+    required this.bloc,
+    required this.airportCode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final secondaryColor = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    // Derive a wait buffer from radius (rough approximation: 200m ≈ +3 min)
+    final bufferMinutes = (zone.radiusMeters / 67).ceil();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          _TerminalBadge(terminal: zone.terminalCode),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  zone.displayName,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  zone.checkpointType.replaceAll('_', ' '),
+                  style: TextStyle(fontSize: 11, color: secondaryColor),
+                ),
+              ],
+            ),
+          ),
+          // Buffer chip "+N min"
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.successBg,
+              border: Border.all(color: AppColors.rideCompletedBorder),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '+$bufferMinutes min',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.successStrong,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 15),
+            tooltip: 'Edit zone',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => _ZoneFormDialog(
+                bloc: bloc,
+                airportCode: airportCode,
+                zone: zone,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 15),
+            tooltip: 'Delete zone',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => _confirmDelete(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -689,100 +979,6 @@ class _ZonesTable extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Checkpoint Zones (${airport.zones.length})',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            TextButton.icon(
-              icon: const Icon(Icons.add, size: 16),
-              label: Text(AppLocalizations.of(context)!.addZone),
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (_) =>
-                    _ZoneFormDialog(bloc: bloc, airportCode: airport.code),
-              ),
-            ),
-          ],
-        ),
-        if (airport.zones.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              'No zones configured',
-              style: TextStyle(color: Colors.grey),
-            ),
-          )
-        else
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              columnSpacing: 16,
-              columns: const [
-                DataColumn(label: Text('Terminal')),
-                DataColumn(label: Text('Type')),
-                DataColumn(label: Text('Name')),
-                DataColumn(label: Text('Lat')),
-                DataColumn(label: Text('Lon')),
-                DataColumn(label: Text('Radius')),
-                DataColumn(label: Text('Order')),
-                DataColumn(label: Text('Actions')),
-              ],
-              rows: airport.zones
-                  .map(
-                    (z) => DataRow(
-                      cells: [
-                        DataCell(Text(z.terminalCode)),
-                        DataCell(Text(z.checkpointType)),
-                        DataCell(Text(z.displayName)),
-                        DataCell(Text(z.lat.toStringAsFixed(4))),
-                        DataCell(Text(z.lon.toStringAsFixed(4))),
-                        DataCell(Text('${z.radiusMeters}m')),
-                        DataCell(Text('${z.sortOrder}')),
-                        DataCell(
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit, size: 16),
-                                tooltip: 'Edit zone',
-                                onPressed: () => showDialog<void>(
-                                  context: context,
-                                  builder: (_) => _ZoneFormDialog(
-                                    bloc: bloc,
-                                    airportCode: airport.code,
-                                    zone: z,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  size: 16,
-                                ),
-                                tooltip: 'Delete zone',
-                                onPressed: () => _confirmDelete(context, z),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-      ],
     );
   }
 }

@@ -13,6 +13,7 @@ import '../modules/billing/models/client_company.dart';
 import '../modules/billing/models/invoice.dart';
 import '../modules/billing/services/client_company_service.dart';
 import '../modules/billing/services/invoice_service.dart';
+import '../dashboard/superadmin/widgets/billing_widgets.dart';
 import 'billing_rides_screen.dart';
 
 class BillingScreen extends StatefulWidget {
@@ -105,6 +106,51 @@ class _BillingScreenState extends State<BillingScreen>
     _loadInvoices();
   }
 
+  // ─── COMPUTED STATS ───────────────────────────────────────────────────────────
+
+  double get _outstanding => _invoices
+      .where((i) => i.status == InvoiceStatus.sent)
+      .fold(0.0, (s, i) => s + i.totalAmount);
+
+  double get _paidThisMonth {
+    final now = DateTime.now();
+    return _invoices
+        .where(
+          (i) =>
+              i.status == InvoiceStatus.paid &&
+              i.paidAt != null &&
+              i.paidAt!.year == now.year &&
+              i.paidAt!.month == now.month,
+        )
+        .fold(0.0, (s, i) => s + i.totalAmount);
+  }
+
+  double get _overdue {
+    final now = DateTime.now();
+    return _invoices
+        .where(
+          (i) =>
+              i.status == InvoiceStatus.sent &&
+              i.dueDate != null &&
+              i.dueDate!.isBefore(now),
+        )
+        .fold(0.0, (s, i) => s + i.totalAmount);
+  }
+
+  /// Collection rate: paid / (paid + sent) * 100, clamped to [0, 100].
+  /// Cancelled invoices are excluded — they are neither collected nor pending.
+  String get _collectionRate {
+    final paid = _invoices.where((i) => i.status == InvoiceStatus.paid).length;
+    final total = _invoices
+        .where(
+          (i) =>
+              i.status == InvoiceStatus.paid || i.status == InvoiceStatus.sent,
+        )
+        .length;
+    if (total == 0) return '—';
+    return '${((paid / total) * 100).round()}%';
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -179,41 +225,38 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   Widget _buildHeader() {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
+    final now = DateTime.now();
+    final monthNames = [
+      'Jan',
+      'Feb',
+      'Mär',
+      'Apr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Dez',
+    ];
+    final monthLabel = '${monthNames[now.month - 1]} ${now.year}';
+    final subtitle = _loadingInvoices
+        ? monthLabel
+        : '$monthLabel · ${_invoices.length} Rechnungen';
+
+    return BillingTopBar(
+      title: 'Billing',
+      subtitle: subtitle,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+          onPressed: () {
+            _loadInvoices();
+            _loadCompanies();
+          },
         ),
-        child: SafeArea(
-          bottom: false,
-          child: Row(
-            children: [
-              const Icon(Icons.receipt_long, color: Colors.white, size: 24),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Abrechnung',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-                onPressed: () {
-                  _loadInvoices();
-                  _loadCompanies();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -222,6 +265,9 @@ class _BillingScreenState extends State<BillingScreen>
   Widget _buildInvoicesTab() {
     return Column(
       children: [
+        if (!_loadingInvoices && _invoiceError == null && _invoices.isNotEmpty)
+          _buildStatTiles(),
+        _buildTopActions(),
         _buildStatusFilters(),
         Expanded(
           child: _loadingInvoices
@@ -230,16 +276,153 @@ class _BillingScreenState extends State<BillingScreen>
               ? _buildError(_invoiceError!, _loadInvoices)
               : _invoices.isEmpty
               ? _buildEmpty('Keine Rechnungen', Icons.receipt)
-              : RefreshIndicator(
-                  onRefresh: _loadInvoices,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _invoices.length,
-                    itemBuilder: (_, i) => _buildInvoiceCard(_invoices[i]),
-                  ),
-                ),
+              : _buildInvoiceTable(),
         ),
+        _buildGoBDFooter(),
       ],
+    );
+  }
+
+  Widget _buildStatTiles() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 500;
+          final tiles = [
+            StatTile(
+              label: 'Ausstehend',
+              value: fmtEur(_outstanding),
+              variant: StatTileVariant.dark,
+            ),
+            StatTile(label: 'Bezahlt (Monat)', value: fmtEur(_paidThisMonth)),
+            StatTile(
+              label: 'Überfällig',
+              value: fmtEur(_overdue),
+              valueColor: const Color(0xFFDC2626),
+            ),
+            StatTile(label: 'Einzugsquote', value: _collectionRate),
+          ];
+          if (isWide) {
+            return Row(
+              children: tiles
+                  .map(
+                    (t) => Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: t,
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          }
+          return GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: 1.6,
+            children: tiles,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTopActions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Row(
+        children: [
+          BillingOutlinedButton(
+            onPressed: _showDatevExport,
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.download, size: 16),
+                SizedBox(width: 6),
+                Text('Export DATEV'),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          BillingGraphiteButton(
+            onPressed: _showNewInvoiceDialog,
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add, size: 16),
+                SizedBox(width: 6),
+                Text('+ Neue Rechnung'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDatevExport() {
+    // Navigate to the DATEV export tab if available, or show snackbar.
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('DATEV Export öffnen...')));
+  }
+
+  void _showNewInvoiceDialog() {
+    if (_companies.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte zuerst ein Unternehmen anlegen.')),
+      );
+      return;
+    }
+    String? selectedCompanyId = _companies.first.id;
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: const Text('Neue Rechnung'),
+          content: DropdownButtonFormField<String>(
+            initialValue: selectedCompanyId,
+            decoration: const InputDecoration(labelText: 'Unternehmen *'),
+            items: _companies
+                .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                .toList(),
+            onChanged: (v) => setDlg(() => selectedCompanyId = v),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedCompanyId == null) return;
+                Navigator.pop(ctx);
+                final now = DateTime.now();
+                try {
+                  await _invoiceService.createInvoice(
+                    CreateInvoiceRequest(
+                      clientCompanyId: selectedCompanyId!,
+                      periodFrom: DateTime(now.year, now.month, 1),
+                      periodTo: DateTime(now.year, now.month + 1, 0),
+                      taxRate: 19,
+                      currency: 'EUR',
+                    ),
+                  );
+                  await _loadInvoices();
+                } catch (e) {
+                  messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
+                }
+              },
+              child: const Text('Erstellen'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -274,96 +457,272 @@ class _BillingScreenState extends State<BillingScreen>
     );
   }
 
-  Widget _buildInvoiceCard(Invoice invoice) {
-    final statusColor = _statusColor(invoice.status);
+  /// Invoice table with themed card, header row, and per-row entries.
+  Widget _buildInvoiceTable() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return RefreshIndicator(
+      onRefresh: _loadInvoices,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+              ),
+            ),
+            child: Column(
+              children: [
+                // Header row
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.surfaceVariantDark
+                        : AppColors.surfaceVariant,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(14),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          'RECHNUNG',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textLight,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          'KUNDE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textLight,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 90,
+                        child: Text(
+                          'BETRAG',
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textLight,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const SizedBox(width: 90, child: SizedBox.shrink()),
+                      const SizedBox(width: 32),
+                    ],
+                  ),
+                ),
+                // Invoice rows
+                ...List.generate(_invoices.length, (i) {
+                  final invoice = _invoices[i];
+                  final isLast = i == _invoices.length - 1;
+                  return _buildInvoiceTableRow(invoice, isLast);
+                }),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvoiceTableRow(Invoice invoice, bool isLast) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final company = _companies
         .where((c) => c.id == invoice.clientCompanyId)
         .firstOrNull;
     final companyName =
         company?.name ?? invoice.clientCompanyId.substring(0, 8);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: statusColor.withAlpha(30),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            _statusIcon(invoice.status),
-            color: statusColor,
-            size: 20,
-          ),
-        ),
-        title: Row(
-          children: [
-            Flexible(
-              child: Text(
-                invoice.number,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            if (invoice.reminderSentAt != null) ...[
-              const SizedBox(width: 6),
-              Tooltip(
-                message: 'Zahlungserinnerung versendet',
-                child: Icon(
-                  Icons.notifications_active,
-                  size: 14,
-                  color: AppColors.info,
+    Widget statusBadge;
+    switch (invoice.status) {
+      case InvoiceStatus.paid:
+        statusBadge = BillingStatusBadge.paid(
+          label: invoice.status.displayName,
+        );
+        break;
+      case InvoiceStatus.sent:
+        // Sent = pending (not yet paid)
+        statusBadge = BillingStatusBadge.pending(
+          label: invoice.status.displayName,
+        );
+        break;
+      case InvoiceStatus.draft:
+        statusBadge = BillingStatusBadge.draft(
+          label: invoice.status.displayName,
+        );
+        break;
+      case InvoiceStatus.cancelled:
+        statusBadge = BillingStatusBadge.overdue(
+          label: invoice.status.displayName,
+        );
+        break;
+    }
+
+    // Check if overdue (sent + dueDate in past)
+    if (invoice.status == InvoiceStatus.sent &&
+        invoice.dueDate != null &&
+        invoice.dueDate!.isBefore(DateTime.now())) {
+      statusBadge = BillingStatusBadge.overdue(label: 'Überfällig');
+    }
+
+    return InkWell(
+      onTap: () => _showInvoiceDetail(invoice),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          border: isLast
+              ? null
+              : Border(
+                  bottom: BorderSide(
+                    color: isDark
+                        ? AppColors.borderDark
+                        : AppColors.borderPrimary,
+                  ),
                 ),
-              ),
-            ],
-          ],
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(
-              companyName,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 12,
+            Expanded(
+              flex: 3,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      invoice.number,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (invoice.reminderSentAt != null) ...[
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: 'Zahlungserinnerung versendet',
+                      child: Icon(
+                        Icons.notifications_active,
+                        size: 14,
+                        color: AppColors.info,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            Text(
-              '${_fmtDate(invoice.periodFrom)} – ${_fmtDate(invoice.periodTo)}',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.outlineVariant,
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '€${invoice.totalAmount.toStringAsFixed(2)}',
-              style: TextStyle(fontWeight: FontWeight.bold, color: statusColor),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: statusColor.withAlpha(20),
-                borderRadius: BorderRadius.circular(4),
-              ),
+            Expanded(
+              flex: 3,
               child: Text(
-                invoice.status.displayName,
+                companyName,
                 style: TextStyle(
-                  fontSize: 10,
-                  color: statusColor,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondary,
                 ),
+              ),
+            ),
+            SizedBox(
+              width: 90,
+              child: Text(
+                fmtEur(invoice.totalAmount),
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(width: 90, child: statusBadge),
+            SizedBox(
+              width: 32,
+              child: PopupMenuButton<String>(
+                icon: Icon(
+                  Icons.more_vert,
+                  size: 18,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondary,
+                ),
+                onSelected: (action) {
+                  if (action == 'detail') _showInvoiceDetail(invoice);
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'detail',
+                    child: ListTile(
+                      leading: Icon(Icons.open_in_new),
+                      title: Text('Details'),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        onTap: () => _showInvoiceDetail(invoice),
+      ),
+    );
+  }
+
+  Widget _buildGoBDFooter() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 14,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'GoBD-konform — Rechnungen sind unveränderlich archiviert.',
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -604,23 +963,6 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   // ─── HELPERS ─────────────────────────────────────────────────────────────────
-
-  Color _statusColor(InvoiceStatus status) => switch (status) {
-    InvoiceStatus.draft => Theme.of(context).colorScheme.onSurfaceVariant,
-    InvoiceStatus.sent => AppColors.warning,
-    InvoiceStatus.paid => AppColors.success,
-    InvoiceStatus.cancelled => AppColors.error,
-  };
-
-  IconData _statusIcon(InvoiceStatus status) => switch (status) {
-    InvoiceStatus.draft => Icons.edit_note,
-    InvoiceStatus.sent => Icons.send,
-    InvoiceStatus.paid => Icons.check_circle,
-    InvoiceStatus.cancelled => Icons.cancel,
-  };
-
-  String _fmtDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
 
   Widget _buildEmpty(String msg, IconData icon) => Center(
     child: Column(

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../modules/core/models/expense.dart';
 import '../modules/core/services/expense_service.dart';
+import '../dashboard/superadmin/widgets/billing_widgets.dart';
 
 class ExpenseScreen extends StatefulWidget {
   const ExpenseScreen({super.key});
@@ -18,6 +18,26 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   bool _isLoading = true;
   String? _error;
   late ExpenseService _expenseService;
+
+  /// Current month label derived at build time.
+  String get _monthLabel {
+    final now = DateTime.now();
+    const months = [
+      'Jan',
+      'Feb',
+      'Mär',
+      'Apr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Dez',
+    ];
+    return '${months[now.month - 1]} ${now.year}';
+  }
 
   @override
   void initState() {
@@ -56,7 +76,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Log Expense'),
+          title: const Text('Ausgabe erfassen'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -64,7 +84,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 DropdownButtonFormField<ExpenseCategory>(
                   initialValue: selectedCategory,
                   decoration: const InputDecoration(
-                    labelText: 'Category',
+                    labelText: 'Kategorie',
                     border: OutlineInputBorder(),
                   ),
                   items: ExpenseCategory.values.map((cat) {
@@ -96,9 +116,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     decimal: true,
                   ),
                   decoration: const InputDecoration(
-                    labelText: 'Amount (EUR)',
+                    labelText: 'Betrag (EUR)',
                     border: OutlineInputBorder(),
-                    prefixText: '\u20AC ',
+                    prefixText: '€ ',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -106,7 +126,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                   controller: descriptionController,
                   maxLines: 2,
                   decoration: const InputDecoration(
-                    labelText: 'Description (optional)',
+                    labelText: 'Beschreibung (optional)',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -116,7 +136,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: const Text('Abbrechen'),
             ),
             FilledButton(
               onPressed: () async {
@@ -124,7 +144,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 if (amount == null || amount <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Please enter a valid amount'),
+                      content: Text('Bitte gültigen Betrag eingeben'),
                     ),
                   );
                   return;
@@ -147,11 +167,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                   if (context.mounted) {
                     ScaffoldMessenger.of(
                       context,
-                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    ).showSnackBar(SnackBar(content: Text('Fehler: $e')));
                   }
                 }
               },
-              child: const Text('Save'),
+              child: const Text('Speichern'),
             ),
           ],
         ),
@@ -167,19 +187,19 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Expense'),
+        title: const Text('Ausgabe löschen?'),
         content: Text(
-          'Delete ${expense.category.label} expense of \u20AC${expense.amount.toStringAsFixed(2)}?',
+          '${expense.category.label} · €${expense.amount.toStringAsFixed(2)} wird gelöscht.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text('Abbrechen'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete'),
+            child: const Text('Löschen'),
           ),
         ],
       ),
@@ -193,25 +213,37 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          ).showSnackBar(SnackBar(content: Text('Fehler: $e')));
         }
       }
     }
   }
 
+  double get _totalAmount => _expenses.fold<double>(0, (s, e) => s + e.amount);
+
   @override
   Widget build(BuildContext context) {
-    final totalAmount = _expenses.fold<double>(0, (sum, e) => sum + e.amount);
-    final byCategory = <ExpenseCategory, double>{};
-    for (final e in _expenses) {
-      byCategory[e.category] = (byCategory[e.category] ?? 0) + e.amount;
-    }
-
     return Column(
       children: [
-        _buildHeader(),
-        if (!_isLoading && _error == null && _expenses.isNotEmpty)
-          _buildSummary(totalAmount, byCategory),
+        BillingTopBar(
+          title: 'Ausgaben · $_monthLabel',
+          subtitle: _isLoading
+              ? null
+              : _expenses.isEmpty
+              ? null
+              : fmtEur(_totalAmount),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add, color: Colors.white, size: 24),
+              onPressed: _showCreateExpenseDialog,
+              tooltip: 'Ausgabe erfassen',
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+              onPressed: _loadExpenses,
+            ),
+          ],
+        ),
         Expanded(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -230,7 +262,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: _loadExpenses,
-                        child: const Text('Retry'),
+                        child: const Text('Wiederholen'),
                       ),
                     ],
                   ),
@@ -247,7 +279,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No expenses yet',
+                        'Keine Ausgaben',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -258,153 +290,111 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               : RefreshIndicator(
                   onRefresh: _loadExpenses,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
                     itemCount: _expenses.length,
                     itemBuilder: (context, index) =>
-                        _buildExpenseCard(_expenses[index]),
+                        _buildExpenseRow(_expenses[index]),
                   ),
                 ),
         ),
+        if (!_isLoading && _error == null && _expenses.isNotEmpty)
+          _buildTotalFooter(),
       ],
     );
   }
 
-  Widget _buildHeader() {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: AppColors.driverGradient),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Row(
-            children: [
-              const Icon(Icons.receipt_long, color: Colors.white, size: 24),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Expenses',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.add_circle_outline,
-                  color: Colors.white,
-                  size: 24,
-                ),
-                onPressed: _showCreateExpenseDialog,
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-                onPressed: _loadExpenses,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildExpenseRow(Expense expense) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final catColor = _categoryColor(expense.category);
+    final hasMissingReceipt = expense.receiptUrl == null;
 
-  Widget _buildSummary(double total, Map<ExpenseCategory, double> byCategory) {
     return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withAlpha(15),
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withAlpha(60),
+          color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Total Expenses',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                '\u20AC${total.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: byCategory.entries.map((entry) {
-              return Chip(
-                avatar: Icon(
-                  _categoryIcon(entry.key),
-                  size: 16,
-                  color: _categoryColor(entry.key),
-                ),
-                label: Text(
-                  '${entry.key.label}: \u20AC${entry.value.toStringAsFixed(0)}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExpenseCard(Expense expense) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _categoryColor(expense.category).withAlpha(30),
-          child: Icon(
-            _categoryIcon(expense.category),
-            color: _categoryColor(expense.category),
-          ),
-        ),
-        title: Text(expense.category.label),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
           children: [
-            if (expense.description != null)
-              Text(
-                expense.description!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+            // Category icon box — amber-tinted when receipt is missing
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: hasMissingReceipt
+                    ? AppColors.warningBg
+                    : catColor.withAlpha(25),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: hasMissingReceipt
+                      ? AppColors.warningBorder
+                      : catColor.withAlpha(60),
                 ),
               ),
-            Text(
-              '${expense.createdAt.day}.${expense.createdAt.month}.${expense.createdAt.year}',
-              style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(context).colorScheme.outlineVariant,
+              child: Icon(
+                _categoryIcon(expense.category),
+                size: 20,
+                color: hasMissingReceipt ? AppColors.warningStrong : catColor,
               ),
             ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    expense.category.label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    expense.description ??
+                        '${expense.createdAt.day.toString().padLeft(2, '0')}.'
+                            '${expense.createdAt.month.toString().padLeft(2, '0')}.'
+                            '${expense.createdAt.year}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                  if (hasMissingReceipt)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        'Kein Beleg',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.warningStrong,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
             Text(
-              '\u20AC${expense.amount.toStringAsFixed(2)}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              fmtEur(expense.amount),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimary,
+              ),
             ),
             const SizedBox(width: 4),
             IconButton(
@@ -417,6 +407,41 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTotalFooter() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Gesamt',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+            ),
+          ),
+          Text(
+            fmtEur(_totalAmount),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -438,8 +463,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     }
   }
 
-  Color _categoryColor(ExpenseCategory cat) {
-    switch (cat) {
+  Color _categoryColor(ExpenseCategory c) {
+    switch (c) {
       case ExpenseCategory.fuel:
         return AppColors.warning;
       case ExpenseCategory.parking:

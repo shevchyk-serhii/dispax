@@ -42,9 +42,14 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       label: 'Airport Exits',
     ),
     NavigationDestination(
-      icon: Icon(Icons.settings_outlined),
-      selectedIcon: Icon(Icons.settings),
-      label: 'Settings',
+      icon: Icon(Icons.people_outline),
+      selectedIcon: Icon(Icons.people),
+      label: 'Users & Roles',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.history_outlined),
+      selectedIcon: Icon(Icons.history),
+      label: 'Audit Log',
     ),
   ];
 
@@ -54,7 +59,8 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     SuperAdminCompaniesScreen(),
     SuperAdminAnalyticsScreen(),
     SuperAdminAirportExitsScreen(),
-    _SuperAdminSettingsPlaceholder(),
+    _SuperAdminUsersRolesPlaceholder(),
+    _SuperAdminAuditLogPlaceholder(),
   ];
 
   @override
@@ -80,35 +86,40 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   }
 }
 
-class _SuperAdminSettingsPlaceholder extends StatelessWidget {
-  const _SuperAdminSettingsPlaceholder();
+// ---------------------------------------------------------------------------
+// Users & Roles placeholder
+// TODO: Add /superadmin/users endpoint in backend to list all platform users
+//       across tenants. Until then this screen is a placeholder.
+// ---------------------------------------------------------------------------
+
+class _SuperAdminUsersRolesPlaceholder extends StatelessWidget {
+  const _SuperAdminUsersRolesPlaceholder();
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: [
         AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle.light,
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-            ),
+            color: AppColors.primary,
+            padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
             child: SafeArea(
               bottom: false,
               child: Row(
                 children: const [
-                  Icon(Icons.settings, color: Colors.white, size: 24),
+                  Icon(Icons.people_outline, color: Colors.white, size: 20),
                   SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Platform Settings',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  Text(
+                    'Users & Roles',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.1,
                     ),
                   ),
                 ],
@@ -116,8 +127,147 @@ class _SuperAdminSettingsPlaceholder extends StatelessWidget {
             ),
           ),
         ),
-        const Expanded(
-          child: Center(child: Text('Platform Admin Settings — coming soon')),
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.people_outline,
+                  size: 48,
+                  color: isDark ? AppColors.textLightDark : AppColors.textLight,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Users & Roles',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Requires a /superadmin/users endpoint (not yet available).',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'TODO: will show Name | Email | Role | Status table\n'
+                  'with role badges (Dispatcher amber, Secretary purple, Driver blue).',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppColors.textLightDark
+                        : AppColors.textLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Audit Log placeholder
+// TODO: Add /superadmin/audit endpoint in backend to expose platform audit log.
+//       Until then this screen is a placeholder.
+// ---------------------------------------------------------------------------
+
+class _SuperAdminAuditLogPlaceholder extends StatelessWidget {
+  const _SuperAdminAuditLogPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      children: [
+        AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Container(
+            width: double.infinity,
+            color: AppColors.primary,
+            padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                children: const [
+                  Icon(Icons.history_outlined, color: Colors.white, size: 20),
+                  SizedBox(width: 10),
+                  Text(
+                    'Audit Log',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.history_outlined,
+                  size: 48,
+                  color: isDark ? AppColors.textLightDark : AppColors.textLight,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Audit Log',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Requires a /superadmin/audit endpoint (not yet available).',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'TODO: will show timeline rows with colored dots\n'
+                  '(green/blue/amber/red) + title + timestamp subtitle.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppColors.textLightDark
+                        : AppColors.textLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );

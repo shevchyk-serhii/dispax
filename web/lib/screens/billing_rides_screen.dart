@@ -12,6 +12,7 @@ import '../modules/billing/models/client_company.dart';
 import '../modules/billing/models/invoice.dart';
 import '../modules/billing/services/client_company_service.dart';
 import '../modules/billing/services/invoice_service.dart';
+import '../dashboard/superadmin/widgets/billing_widgets.dart';
 
 /// Per-ride billing: pick a client company, select its completed unbilled rides,
 /// and create a draft Rechnung from exactly those rides. The company dropdown
@@ -287,9 +288,42 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final selCount = _selectedRideIds.length;
+    final subtitle = _selectedCompany == null
+        ? 'Fahrten auswählen'
+        : selCount > 0
+        ? '$selCount ausgewählt'
+        : '${_rides.length} Fahrten';
+
     return Column(
       children: [
+        BillingTopBar(
+          title: 'Nicht fakturierte Fahrten',
+          subtitle: subtitle,
+          actions: selCount > 0
+              ? [
+                  Container(
+                    margin: const EdgeInsets.only(right: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      '$selCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ]
+              : [],
+        ),
         Padding(
           padding: const EdgeInsets.all(12),
           child: _loadingCompanies
@@ -308,13 +342,16 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                   onChanged: _creating ? null : _onCompanySelected,
                 ),
         ),
-        Expanded(child: _buildBody(colorScheme)),
-        if (_selectedCompany != null) _buildSummaryBar(colorScheme),
+        Expanded(child: _buildBody()),
+        if (_selectedCompany != null) _buildSummaryBar(),
       ],
     );
   }
 
-  Widget _buildBody(ColorScheme colorScheme) {
+  Widget _buildBody() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (_error != null) {
       return Center(
         child: Padding(
@@ -352,46 +389,94 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       itemCount: _rides.length,
       itemBuilder: (context, index) {
         final ride = _rides[index];
         final selected = _selectedRideIds.contains(ride.rideId);
-        return CheckboxListTile(
-          value: selected,
-          onChanged: _creating
-              ? null
-              : (v) => setState(() {
-                  if (v == true) {
-                    _selectedRideIds.add(ride.rideId);
-                  } else {
-                    _selectedRideIds.remove(ride.rideId);
-                  }
-                }),
-          title: Text('${ride.pickupAddress} → ${ride.dropoffAddress}'),
-          subtitle: Text(_fmtDateTime(ride.pickupDatetime)),
-          secondary: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '€${ride.price.toStringAsFixed(2)}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                tooltip: 'Quittung',
-                icon: const Icon(Icons.receipt_long),
-                onPressed: _creating ? null : () => _previewReceipt(ride),
-              ),
-            ],
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          decoration: BoxDecoration(
+            color: selected
+                ? (isDark
+                      ? AppColors.surfaceVariantDark
+                      : AppColors.surfaceVariant)
+                : (isDark ? AppColors.surfaceDark : AppColors.surface),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent.withAlpha(80)
+                  : (isDark ? AppColors.borderDark : AppColors.borderPrimary),
+            ),
           ),
-          controlAffinity: ListTileControlAffinity.leading,
-          dense: true,
+          child: CheckboxListTile(
+            value: selected,
+            onChanged: _creating
+                ? null
+                : (v) => setState(() {
+                    if (v == true) {
+                      _selectedRideIds.add(ride.rideId);
+                    } else {
+                      _selectedRideIds.remove(ride.rideId);
+                    }
+                  }),
+            title: Text(
+              '${ride.pickupAddress} → ${ride.dropoffAddress}',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: selected
+                    ? (isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimary)
+                    : (isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary),
+              ),
+            ),
+            subtitle: Text(
+              _fmtDateTime(ride.pickupDatetime),
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondary,
+              ),
+            ),
+            secondary: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  fmtEur(ride.price),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: selected
+                        ? (isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimary)
+                        : (isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Quittung',
+                  icon: const Icon(Icons.receipt_long),
+                  onPressed: _creating ? null : () => _previewReceipt(ride),
+                ),
+              ],
+            ),
+            controlAffinity: ListTileControlAffinity.leading,
+            dense: true,
+          ),
         );
       },
     );
   }
 
-  Widget _buildSummaryBar(ColorScheme colorScheme) {
+  Widget _buildSummaryBar() {
+    final colorScheme = Theme.of(context).colorScheme;
     final count = _selectedRideIds.length;
     final total = _selectedSubtotal + _selectedTax;
     return Material(
@@ -405,8 +490,10 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    '$count Fahrten · Netto €${_selectedSubtotal.toStringAsFixed(2)} · '
-                    'MwSt €${_selectedTax.toStringAsFixed(2)} · Gesamt €${total.toStringAsFixed(2)}',
+                    count > 0
+                        ? 'Ausgewählt: ${fmtEur(_selectedSubtotal)} netto · '
+                              '${fmtEur(total)} gesamt'
+                        : 'Keine Fahrten ausgewählt',
                     style: TextStyle(
                       color: colorScheme.onSurfaceVariant,
                       fontSize: 13,
@@ -431,16 +518,18 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
-              child: FilledButton.icon(
+              child: BillingGraphiteButton(
                 onPressed: (count == 0 || _creating) ? null : _createInvoice,
-                icon: _creating
+                child: _creating
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
-                    : const Icon(Icons.receipt_long),
-                label: const Text('Rechnung erstellen'),
+                    : const Text('Rechnung erstellen'),
               ),
             ),
           ],
