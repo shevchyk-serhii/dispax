@@ -7,6 +7,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../modules/billing/csv_download_stub.dart'
     if (dart.library.html) '../modules/billing/csv_download_web.dart';
+import '../dashboard/superadmin/widgets/billing_widgets.dart';
 
 class DatevExportScreen extends StatefulWidget {
   const DatevExportScreen({super.key});
@@ -115,7 +116,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
 
   void _copyAll() {
     final buffer = StringBuffer();
-    buffer.writeln('=== Erl\u00f6se ===');
+    buffer.writeln('=== Erlöse ===');
     buffer.writeln(_revenueCsv);
     buffer.writeln();
     buffer.writeln('=== Ausgaben ===');
@@ -168,7 +169,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
     final monthNames = [
       'Jan',
       'Feb',
-      'M\u00e4r',
+      'Mär',
       'Apr',
       'Mai',
       'Jun',
@@ -184,46 +185,19 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
 
     return Column(
       children: [
-        _buildHeader(),
+        BillingTopBar(
+          title: 'DATEV Export',
+          subtitle: monthLabel,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+              onPressed: _loadData,
+            ),
+          ],
+        ),
         _buildMonthSelector(monthLabel),
         Expanded(child: _buildBody(monthLabel)),
       ],
-    );
-  }
-
-  Widget _buildHeader() {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Row(
-            children: [
-              const Icon(Icons.account_balance, color: Colors.white, size: 24),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'DATEV Export',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-                onPressed: _loadData,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -295,7 +269,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Keine Daten f\u00fcr $monthLabel',
+              'Keine Daten für $monthLabel',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -327,15 +301,28 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   // --- Revenue Section ---
 
   Widget _buildRevenueSection() {
-    return Card(
-      margin: EdgeInsets.zero,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+        ),
+      ),
       child: ExpansionTile(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+        ),
+        collapsedShape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+        ),
         leading: CircleAvatar(
           backgroundColor: AppColors.success.withAlpha(30),
           child: const Icon(Icons.trending_up, color: AppColors.success),
         ),
         title: const Text(
-          'Erl\u00f6se',
+          'Erlöse',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text('$_revenueRows Zeilen'),
@@ -343,9 +330,9 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '\u20AC${_revenueAmount.toStringAsFixed(2)}',
+              fmtEur(_revenueAmount),
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: AppColors.success,
               ),
@@ -354,7 +341,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             IconButton(
               icon: const Icon(Icons.copy, size: 18),
               tooltip: 'CSV kopieren',
-              onPressed: () => _copyToClipboard(_revenueCsv, 'Erl\u00f6se CSV'),
+              onPressed: () => _copyToClipboard(_revenueCsv, 'Erlöse CSV'),
             ),
           ],
         ),
@@ -387,9 +374,22 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   // --- Expenses Section ---
 
   Widget _buildExpensesSection() {
-    return Card(
-      margin: EdgeInsets.zero,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+        ),
+      ),
       child: ExpansionTile(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+        ),
+        collapsedShape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+        ),
         leading: CircleAvatar(
           backgroundColor: AppColors.error.withAlpha(30),
           child: const Icon(Icons.trending_down, color: AppColors.error),
@@ -403,9 +403,9 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '\u20AC${_expensesAmount.toStringAsFixed(2)}',
+              fmtEur(_expensesAmount),
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: AppColors.error,
               ),
@@ -447,9 +447,22 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   // --- Summary Section ---
 
   Widget _buildSummarySection() {
-    return Card(
-      margin: EdgeInsets.zero,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+        ),
+      ),
       child: ExpansionTile(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+        ),
+        collapsedShape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+        ),
         leading: CircleAvatar(
           backgroundColor: AppColors.info.withAlpha(30),
           child: const Icon(Icons.summarize, color: AppColors.info),
@@ -459,7 +472,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          'Ergebnis: \u20AC${_netIncome.toStringAsFixed(2)}',
+          'Ergebnis: ${fmtEur(_netIncome)}',
           style: TextStyle(
             color: _netIncome >= 0 ? AppColors.success : AppColors.error,
             fontWeight: FontWeight.w600,
@@ -497,7 +510,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
         children: [
           Text(label, style: const TextStyle(fontSize: 13)),
           Text(
-            '\u20AC${amount.toStringAsFixed(2)}',
+            fmtEur(amount),
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
         ],
@@ -523,7 +536,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              '\u20AC${_netIncome.toStringAsFixed(2)}',
+              fmtEur(_netIncome),
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
@@ -559,35 +572,44 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             Row(
               children: [
                 Expanded(
-                  child: FilledButton.icon(
+                  child: BillingOutlinedButton(
                     onPressed: _copyAll,
-                    icon: const Icon(Icons.copy_all),
-                    label: const Text('Alles kopieren'),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.copy_all, size: 16),
+                        SizedBox(width: 6),
+                        Text('Alles kopieren'),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _isDownloading ? null : _downloadExtf,
-                    icon: _isDownloading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.download),
-                    label: const Text('Download .csv (EXTF)'),
-                    style: AppStyles.accentButtonStyle,
+                  child: SizedBox(
+                    height: 38,
+                    child: FilledButton.icon(
+                      onPressed: _isDownloading ? null : _downloadExtf,
+                      icon: _isDownloading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.download, size: 16),
+                      label: const Text('Download .csv (EXTF)'),
+                      style: AppStyles.accentButtonStyle,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 6),
             Text(
-              'DATEV Buchungsstapel Format \u2013 Import via DATEV Unternehmen Online',
+              'DATEV Buchungsstapel Format – Import via DATEV Unternehmen Online',
               style: TextStyle(
                 fontSize: 11,
                 color: Theme.of(context).colorScheme.outlineVariant,

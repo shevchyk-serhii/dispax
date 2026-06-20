@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../blocs/auth/auth_bloc.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_dimensions.dart';
 import '../modules/core/services/api_client.dart';
 
 // ---------------------------------------------------------------------------
@@ -205,51 +208,13 @@ class _AnalyticsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.light,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Row(
-                children: [
-                  const Icon(Icons.analytics, color: Colors.white, size: 24),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Platform Analytics',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.refresh,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    onPressed: () {
-                      final now = DateTime.now();
-                      context.read<SuperAdminAnalyticsBloc>().add(
-                        LoadAnalytics(
-                          from: DateTime(now.year, now.month, 1),
-                          to: now,
-                        ),
-                      );
-                    },
-                    tooltip: 'Refresh',
-                  ),
-                ],
-              ),
-            ),
-          ),
+        _GraphiteHeader(
+          onRefresh: () {
+            final now = DateTime.now();
+            context.read<SuperAdminAnalyticsBloc>().add(
+              LoadAnalytics(from: DateTime(now.year, now.month, 1), to: now),
+            );
+          },
         ),
         Expanded(
           child: BlocBuilder<SuperAdminAnalyticsBloc, SuperAdminAnalyticsState>(
@@ -262,7 +227,12 @@ class _AnalyticsView extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Error: ${state.message}'),
+                      Text(
+                        'Error: ${state.message}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
@@ -292,52 +262,305 @@ class _AnalyticsView extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Graphite header
+// ---------------------------------------------------------------------------
+
+class _GraphiteHeader extends StatelessWidget {
+  final VoidCallback onRefresh;
+  const _GraphiteHeader({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        color: AppColors.primary,
+        padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              const Icon(
+                Icons.analytics_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Platform Analytics',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
+                onPressed: onRefresh,
+                tooltip: 'Refresh',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Analytics dashboard
+// ---------------------------------------------------------------------------
+
 class _AnalyticsDashboard extends StatelessWidget {
   final AnalyticsBundle data;
   const _AnalyticsDashboard({required this.data});
 
   @override
   Widget build(BuildContext context) {
+    final totalRides = data.rides.ridesByCompany.values.fold(
+      0,
+      (a, b) => a + b,
+    );
+    final completedRides = data.rides.byStatus['Completed'] ?? 0;
+    final onTimePct = totalRides > 0
+        ? (completedRides / totalRides * 100).toStringAsFixed(1)
+        : '—';
+
+    // Avg slack: not provided by backend — show placeholder
+    // GMV: totalRevenue from rides analytics
+    final eurFmt = NumberFormat.currency(locale: 'de_DE', symbol: '€');
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Platform Analytics',
-            style: Theme.of(context).textTheme.titleLarge,
+          // ── Stat tiles (2×2 grid) ──────────────────────────────────────
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth > 520;
+              if (wide) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _StatTile.dark(
+                        label: 'Total Rides',
+                        value: '$totalRides',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatTile.light(
+                        label: 'On-time',
+                        value: totalRides > 0 ? '$onTimePct %' : '—',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatTile.light(
+                        label: 'Avg Slack',
+                        // TODO: avg slack not in PlatformRideStats; add when backend supports it
+                        value: '—',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatTile.light(
+                        label: 'GMV',
+                        value: eurFmt.format(data.rides.totalRevenue),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatTile.dark(
+                          label: 'Total Rides',
+                          value: '$totalRides',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatTile.light(
+                          label: 'On-time',
+                          value: totalRides > 0 ? '$onTimePct %' : '—',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatTile.light(label: 'Avg Slack', value: '—'),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatTile.light(
+                          label: 'GMV',
+                          value: eurFmt.format(data.rides.totalRevenue),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: 16),
-          _SummaryCards(data: data),
+
           const SizedBox(height: 24),
-          Text(
-            'Ride Status Breakdown',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          if (data.rides.byStatus.isEmpty)
-            const Text('No ride data for selected period')
-          else
-            ...data.rides.byStatus.entries.map(
-              (e) => ListTile(
-                title: Text(e.key),
-                trailing: Text(
-                  '${e.value}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+
+          // ── Bar chart: Rides by company ────────────────────────────────
+          if (data.rides.ridesByCompany.isNotEmpty) ...[
+            Text(
+              'Rides by Tenant',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            _RidesBarChart(ridesByCompany: data.rides.ridesByCompany),
+            const SizedBox(height: 24),
+          ],
+
+          // ── Status breakdown ───────────────────────────────────────────
+          if (data.rides.byStatus.isNotEmpty) ...[
+            Text(
+              'Ride Status Breakdown',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _StatusBreakdown(byStatus: data.rides.byStatus),
+            const SizedBox(height: 24),
+          ],
+
+          // ── Active sessions ───────────────────────────────────────────
           Text(
             'Active Connections',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
-          ListTile(
-            title: const Text('Active Sessions (Platform)'),
-            trailing: Text(
-              '${data.connections.activeSessions}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+          _ActiveSessions(connections: data.connections),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Stat tile
+// ---------------------------------------------------------------------------
+
+class _StatTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isDarkTile;
+
+  const _StatTile._({
+    required this.label,
+    required this.value,
+    required this.isDarkTile,
+  });
+
+  factory _StatTile.dark({required String label, required String value}) =>
+      _StatTile._(label: label, value: value, isDarkTile: true);
+
+  factory _StatTile.light({required String label, required String value}) =>
+      _StatTile._(label: label, value: value, isDarkTile: false);
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (isDarkTile) {
+      // Dark graphite tile — always graphite regardless of app theme
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium + 2),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textLight,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Light tile — follows theme
+    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderPrimary;
+    final labelColor = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+    final valueColor = isDark
+        ? AppColors.textPrimaryDark
+        : AppColors.textPrimary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium + 2),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: labelColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              color: valueColor,
             ),
           ),
         ],
@@ -346,71 +569,219 @@ class _AnalyticsDashboard extends StatelessWidget {
   }
 }
 
-class _SummaryCards extends StatelessWidget {
-  final AnalyticsBundle data;
-  const _SummaryCards({required this.data});
+// ---------------------------------------------------------------------------
+// Rides bar chart
+// ---------------------------------------------------------------------------
+
+class _RidesBarChart extends StatelessWidget {
+  final Map<String, int> ridesByCompany;
+  const _RidesBarChart({required this.ridesByCompany});
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _StatCard(
-          label: 'Platform Revenue',
-          value: '€${data.rides.totalRevenue.toStringAsFixed(2)}',
-          icon: Icons.euro,
-        ),
-        _StatCard(
-          label: 'Active Connections',
-          value: '${data.connections.activeSessions}',
-          icon: Icons.people,
-        ),
-        _StatCard(
-          label: 'Companies with Overdue',
-          value: '${data.billing.overdueByCompany.length}',
-          icon: Icons.warning_amber,
-        ),
-      ],
+    if (ridesByCompany.isEmpty) return const SizedBox.shrink();
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final entries = ridesByCompany.entries.toList();
+    final maxVal = entries.map((e) => e.value).reduce(math.max);
+    bool isLatest(int idx) => idx == entries.length - 1;
+
+    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderPrimary;
+    final barBg = isDark
+        ? AppColors.surfaceVariantDark
+        : AppColors.surfaceVariant;
+    final labelColor = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium + 2),
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 140,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (int i = 0; i < entries.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 6),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${entries[i].value}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isLatest(i) ? AppColors.accent : labelColor,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 400),
+                          height: maxVal > 0
+                              ? (entries[i].value / maxVal * 100).clamp(
+                                  4.0,
+                                  100.0,
+                                )
+                              : 4,
+                          decoration: BoxDecoration(
+                            color: isLatest(i) ? AppColors.accent : barBg,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(6),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (int i = 0; i < entries.length; i++) ...[
+                if (i > 0) const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _shortLabel(entries[i].key),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10, color: labelColor),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _shortLabel(String company) {
+    if (company.length <= 8) return company;
+    return '${company.substring(0, 6)}…';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Status breakdown list
+// ---------------------------------------------------------------------------
+
+class _StatusBreakdown extends StatelessWidget {
+  final Map<String, int> byStatus;
+  const _StatusBreakdown({required this.byStatus});
+
+  static const _statusColors = <String, Color>{
+    'Completed': AppColors.rideCompleted,
+    'Requested': AppColors.rideRequested,
+    'Assigned': AppColors.rideAssigned,
+    'InProgress': AppColors.rideInProgress,
+    'Cancelled': AppColors.rideCancelled,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderPrimary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium + 2),
+      ),
+      child: Column(
+        children: byStatus.entries.map((e) {
+          final color = _statusColors[e.key] ?? AppColors.textSecondary;
+          return ListTile(
+            dense: true,
+            leading: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            title: Text(e.key, style: const TextStyle(fontSize: 13)),
+            trailing: Text(
+              '${e.value}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
+// ---------------------------------------------------------------------------
+// Active sessions
+// ---------------------------------------------------------------------------
 
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
+class _ActiveSessions extends StatelessWidget {
+  final PlatformConnectionStats connections;
+  const _ActiveSessions({required this.connections});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: Theme.of(context).textTheme.bodySmall),
-                Text(
-                  value,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderPrimary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium + 2),
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.people_outline, size: 18),
+            title: const Text(
+              'Platform Active Sessions',
+              style: TextStyle(fontSize: 13),
+            ),
+            trailing: Text(
+              '${connections.activeSessions}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+          ),
+          if (connections.activeSessionsByCompany.isNotEmpty) ...[
+            const Divider(height: 1),
+            ...connections.activeSessionsByCompany.entries.map(
+              (e) => ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 0,
                 ),
-              ],
+                title: Text(
+                  e.key,
+                  style: const TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Text(
+                  '${e.value}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }

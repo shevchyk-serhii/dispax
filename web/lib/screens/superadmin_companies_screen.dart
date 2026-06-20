@@ -5,7 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
 import '../constants/app_colors.dart';
-import '../modules/core/date_utils.dart';
+import '../constants/app_dimensions.dart';
+import '../constants/app_styles.dart';
 import '../modules/core/services/api_client.dart';
 
 // ---------------------------------------------------------------------------
@@ -278,45 +279,9 @@ class _CompaniesView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.light,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Row(
-                children: [
-                  const Icon(Icons.business, color: Colors.white, size: 24),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Companies',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.refresh,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    onPressed: () => context.read<SuperAdminCompanyBloc>().add(
-                      LoadCompanies(),
-                    ),
-                    tooltip: 'Refresh',
-                  ),
-                ],
-              ),
-            ),
-          ),
+        _GraphiteHeader(
+          onRefresh: () =>
+              context.read<SuperAdminCompanyBloc>().add(LoadCompanies()),
         ),
         Expanded(
           child: BlocBuilder<SuperAdminCompanyBloc, SuperAdminCompanyState>(
@@ -329,7 +294,12 @@ class _CompaniesView extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Error: ${state.message}'),
+                      Text(
+                        'Error: ${state.message}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () => context
@@ -353,9 +323,82 @@ class _CompaniesView extends StatelessWidget {
   }
 }
 
-class _CompaniesTable extends StatelessWidget {
-  final List<CompanyInfo> companies;
-  const _CompaniesTable({required this.companies});
+// ---------------------------------------------------------------------------
+// Graphite header
+// ---------------------------------------------------------------------------
+
+class _GraphiteHeader extends StatelessWidget {
+  final VoidCallback onRefresh;
+  const _GraphiteHeader({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SuperAdminCompanyBloc, SuperAdminCompanyState>(
+      builder: (context, state) {
+        final count = state is CompaniesLoaded ? state.companies.length : null;
+        final title = count != null ? 'Tenants · $count companies' : 'Tenants';
+
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Container(
+            width: double.infinity,
+            color: AppColors.primary,
+            padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.business_outlined,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    onPressed: onRefresh,
+                    tooltip: 'Refresh',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 8),
+                  Builder(
+                    builder: (ctx) => FilledButton.icon(
+                      onPressed: () => _showAddDialog(ctx),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text(
+                        '+ Onboard',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: AppStyles.accentButtonStyle,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   void _showAddDialog(BuildContext context) {
     showDialog<void>(
@@ -364,114 +407,214 @@ class _CompaniesTable extends StatelessWidget {
           _CompanyFormDialog(bloc: context.read<SuperAdminCompanyBloc>()),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Companies table
+// ---------------------------------------------------------------------------
+
+class _CompaniesTable extends StatelessWidget {
+  final List<CompanyInfo> companies;
+  const _CompaniesTable({required this.companies});
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.borderPrimary;
+    final headerBg = isDark
+        ? AppColors.surfaceVariantDark
+        : AppColors.surfaceVariant;
+    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 960),
+        child: Column(
+          children: [
+            // Column header row
+            Container(
+              color: headerBg,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
                 children: [
-                  Text(
-                    'Companies (${companies.length})',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  if (companies.isEmpty)
-                    const Center(child: Text('No companies found'))
-                  else
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('Name')),
-                          DataColumn(label: Text('Email')),
-                          DataColumn(label: Text('Status')),
-                          DataColumn(label: Text('Plan')),
-                          DataColumn(label: Text('Created')),
-                          DataColumn(label: Text('Actions')),
-                        ],
-                        rows: companies
-                            .map((c) => _buildRow(context, c))
-                            .toList(),
-                      ),
-                    ),
-                  // bottom padding so FAB doesn't obscure last row
-                  const SizedBox(height: 80),
+                  const Expanded(flex: 4, child: _ColHeader('COMPANY')),
+                  const Expanded(flex: 2, child: _ColHeader('PLAN')),
+                  const Expanded(flex: 2, child: _ColHeader('DRIVERS')),
+                  const Expanded(flex: 2, child: _ColHeader('RIDES / MO')),
+                  const Expanded(flex: 2, child: _ColHeader('STATUS')),
+                  const SizedBox(width: 72), // actions column
                 ],
               ),
             ),
-          ),
+            Divider(height: 1, color: borderColor),
+            // Data rows
+            Expanded(
+              child: companies.isEmpty
+                  ? const Center(child: Text('No tenants found'))
+                  : ListView.separated(
+                      itemCount: companies.length,
+                      separatorBuilder: (_, __) =>
+                          Divider(height: 1, color: borderColor),
+                      itemBuilder: (context, i) => _CompanyRow(
+                        company: companies[i],
+                        surfaceColor: surfaceColor,
+                        borderColor: borderColor,
+                      ),
+                    ),
+            ),
+          ],
         ),
-        Positioned(
-          right: 24,
-          bottom: 24,
-          child: FloatingActionButton(
-            onPressed: () => _showAddDialog(context),
-            tooltip: 'Add Company',
-            child: const Icon(Icons.add),
-          ),
-        ),
-      ],
+      ),
     );
   }
+}
 
-  DataRow _buildRow(BuildContext context, CompanyInfo c) {
-    return DataRow(
-      cells: [
-        DataCell(Text(c.name)),
-        DataCell(Text(c.email)),
-        DataCell(_StatusChip(status: c.status)),
-        DataCell(Text(c.subscriptionPlan)),
-        DataCell(Text(_formatCreated(c.createdAt))),
-        DataCell(
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.edit, size: 18),
-                tooltip: 'Edit',
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => _CompanyFormDialog(
-                    bloc: context.read<SuperAdminCompanyBloc>(),
-                    company: c,
+class _ColHeader extends StatelessWidget {
+  final String text;
+  const _ColHeader(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.4,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+}
+
+class _CompanyRow extends StatelessWidget {
+  final CompanyInfo company;
+  final Color surfaceColor;
+  final Color borderColor;
+  const _CompanyRow({
+    required this.company,
+    required this.surfaceColor,
+    required this.borderColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      color: surfaceColor,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          // Company (avatar + name)
+          Expanded(
+            flex: 4,
+            child: Row(
+              children: [
+                _CompanyAvatar(name: company.name),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        company.name,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        company.email,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18),
-                tooltip: 'Deactivate',
-                onPressed: () => _confirmDelete(context, c),
-              ),
-              PopupMenuButton<String>(
-                tooltip: 'Change status',
-                onSelected: (newStatus) => context
-                    .read<SuperAdminCompanyBloc>()
-                    .add(UpdateCompanyStatus(c.id, newStatus)),
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'Active', child: Text('Set Active')),
-                  PopupMenuItem(value: 'Trial', child: Text('Set Trial')),
-                  PopupMenuItem(value: 'Suspended', child: Text('Suspend')),
-                ],
-                child: const Icon(Icons.more_vert),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+          // Plan
+          Expanded(flex: 2, child: _PlanBadge(plan: company.subscriptionPlan)),
+          // Drivers — not provided by backend
+          const Expanded(
+            flex: 2,
+            child: Text(
+              '—',
+              style: TextStyle(fontSize: 13),
+              // TODO: driversCount not in CompanyResponse; add when backend supports it
+            ),
+          ),
+          // Rides/mo — not provided by backend
+          const Expanded(
+            flex: 2,
+            child: Text(
+              '—',
+              style: TextStyle(fontSize: 13),
+              // TODO: ridesMonth not in CompanyResponse; add when backend supports it
+            ),
+          ),
+          // Status badge
+          Expanded(flex: 2, child: _StatusBadge(status: company.status)),
+          // Actions
+          SizedBox(
+            width: 72,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 17),
+                  tooltip: 'Edit',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => _CompanyFormDialog(
+                      bloc: context.read<SuperAdminCompanyBloc>(),
+                      company: company,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                PopupMenuButton<String>(
+                  tooltip: 'More actions',
+                  icon: const Icon(Icons.more_vert, size: 17),
+                  onSelected: (val) {
+                    if (val == 'delete') {
+                      _confirmDelete(context, company);
+                    } else {
+                      context.read<SuperAdminCompanyBloc>().add(
+                        UpdateCompanyStatus(company.id, val),
+                      );
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'Active', child: Text('Set Active')),
+                    PopupMenuItem(value: 'Trial', child: Text('Set Trial')),
+                    PopupMenuItem(value: 'Suspended', child: Text('Suspend')),
+                    PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(
+                        'Deactivate',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
-  }
-
-  String _formatCreated(String? iso) {
-    if (iso == null) return '-';
-    final dt = DateTime.tryParse(iso);
-    return dt == null ? iso : AppDateUtils.formatDateTime(dt.toLocal());
   }
 
   void _confirmDelete(BuildContext context, CompanyInfo c) {
@@ -499,6 +642,115 @@ class _CompaniesTable extends StatelessWidget {
             child: const Text('Deactivate'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Avatar
+// ---------------------------------------------------------------------------
+
+class _CompanyAvatar extends StatelessWidget {
+  final String name;
+  const _CompanyAvatar({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initials,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Plan badge
+// ---------------------------------------------------------------------------
+
+class _PlanBadge extends StatelessWidget {
+  final String plan;
+  const _PlanBadge({required this.plan});
+
+  static const _colors = <String, Color>{
+    'Enterprise': Color(0xFF6D28D9),
+    'Professional': AppColors.accentDark,
+    'Starter': Color(0xFF0891B2),
+    'Free': AppColors.textSecondary,
+    'Trial': Color(0xFFD97706),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colors[plan] ?? AppColors.textSecondary;
+    return Text(
+      plan,
+      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Status badge pill
+// ---------------------------------------------------------------------------
+
+class _StatusBadge extends StatelessWidget {
+  final String status;
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, border, text) = switch (status) {
+      'Active' => (
+        AppColors.successBg,
+        AppColors.rideCompletedBorder,
+        AppColors.successStrong,
+      ),
+      'Trial' => (
+        AppColors.warningBg,
+        AppColors.rideRequestedBorder,
+        AppColors.warningStrong,
+      ),
+      'Suspended' => (
+        AppColors.errorBg,
+        AppColors.rideCancelledBorder,
+        AppColors.errorStrong,
+      ),
+      _ => (
+        AppColors.surfaceVariant,
+        AppColors.borderPrimary,
+        AppColors.textSecondary,
+      ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: text,
+        ),
       ),
     );
   }
@@ -586,7 +838,7 @@ class _CompanyFormDialogState extends State<_CompanyFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_isEdit ? 'Edit Company' : 'Add Company'),
+      title: Text(_isEdit ? 'Edit Company' : 'Onboard Company'),
       content: SizedBox(
         width: 480,
         child: Form(
@@ -661,34 +913,6 @@ class _CompanyFormDialogState extends State<_CompanyFormDialog> {
           child: Text(_isEdit ? 'Save' : 'Create'),
         ),
       ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Status chip widget
-// ---------------------------------------------------------------------------
-
-class _StatusChip extends StatelessWidget {
-  final String status;
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = switch (status) {
-      'Active' => Colors.green,
-      'Suspended' => Colors.red,
-      'Trial' => Colors.orange,
-      _ => Colors.grey,
-    };
-    return Chip(
-      label: Text(
-        status,
-        style: const TextStyle(color: Colors.white, fontSize: 12),
-      ),
-      backgroundColor: color,
-      padding: EdgeInsets.zero,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 }
