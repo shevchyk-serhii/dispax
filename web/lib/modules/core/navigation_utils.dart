@@ -100,28 +100,6 @@ class NavigationUtils {
     }
   }
 
-  static Future<void> openWazeNavigation(Location destination) async {
-    String wazeUrl;
-    if (destination.latitude != null && destination.longitude != null) {
-      wazeUrl =
-          'https://waze.com/ul?ll=${destination.latitude},${destination.longitude}&navigate=yes';
-    } else {
-      final address = Uri.encodeComponent(destination.address);
-      wazeUrl = 'https://waze.com/ul?q=$address&navigate=yes';
-    }
-
-    try {
-      final Uri uri = Uri.parse(wazeUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Could not launch Waze';
-      }
-    } catch (e) {
-      throw 'Could not open Waze: $e';
-    }
-  }
-
   static Future<void> openGoogleMapsLocation(Location location) async {
     final address = Uri.encodeComponent(location.address);
 

@@ -176,13 +176,6 @@ class RideQuickActions extends StatelessWidget {
                   subtitle: const Text('Google Maps — Drop-off'),
                 ),
               ),
-              SimpleDialogOption(
-                onPressed: () => Navigator.of(context).pop('waze_pickup'),
-                child: const ListTile(
-                  leading: Icon(Icons.map, color: AppColors.accent),
-                  title: Text('Waze — Pickup'),
-                ),
-              ),
             ],
           );
         },
@@ -195,8 +188,6 @@ class RideQuickActions extends StatelessWidget {
           await NavigationUtils.openGoogleMapsNavigation(ride.from);
         case 'destination':
           await NavigationUtils.openGoogleMapsNavigation(ride.to);
-        case 'waze_pickup':
-          await NavigationUtils.openWazeNavigation(ride.from);
       }
 
       if (context.mounted) {

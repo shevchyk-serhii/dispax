@@ -493,14 +493,6 @@ class DayViewWidget extends StatelessWidget {
                 subtitle: const Text('Drop-off location'),
               ),
             ),
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, 'waze_pickup'),
-              child: const ListTile(
-                leading: Icon(Icons.map, color: AppColors.accent),
-                title: Text('Open in Waze'),
-                subtitle: Text('Pickup location'),
-              ),
-            ),
           ],
         ),
       );
@@ -512,8 +504,6 @@ class DayViewWidget extends StatelessWidget {
           await NavigationUtils.openGoogleMapsNavigation(ride.from);
         case 'dropoff':
           await NavigationUtils.openGoogleMapsNavigation(ride.to);
-        case 'waze_pickup':
-          await NavigationUtils.openWazeNavigation(ride.from);
       }
     } catch (e) {
       if (context.mounted) {
