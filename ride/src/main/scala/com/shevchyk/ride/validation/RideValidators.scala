@@ -147,6 +147,24 @@ given assignDriverRequestValidator: Validator[AssignDriverRequest] with
       .orElseFail(RideError.ValidationError(s"Invalid driver ID format: $driverId"))
       .unit
 
+given cancelRideApiRequestValidator: Validator[CancelRideApiRequest] with
+  type Error = RideError
+
+  def validate(request: CancelRideApiRequest): IO[RideError, CancelRideApiRequest] =
+    for {
+      _ <- validateFee(request.fee)
+    } yield request
+
+  // A cancellation fee is a charge to the client, never a refund: a negative
+  // value would credit the client instead of charging them. Zero is allowed
+  // (free cancellation).
+  private def validateFee(fee: Option[Double]): IO[RideError, Unit] =
+    ZIO
+      .when(fee.exists(f => f.isNaN || f < 0))(
+        ZIO.fail(RideError.ValidationError("Cancellation fee cannot be negative"))
+      )
+      .unit
+
 given rideStatusUpdateRequestValidator: Validator[RideStatusUpdateRequest] with
   type Error = RideError
 

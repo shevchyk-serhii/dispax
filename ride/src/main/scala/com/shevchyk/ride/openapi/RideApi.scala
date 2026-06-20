@@ -540,13 +540,14 @@ object RideApi:
       for {
         _            <- checkRole(user, "DRIVER", "DISPATCHER", "CLIENT")
         parsedRideId <- parseRideId(rideId)
+        validated    <- cancelReq.validate.mapError(fromRideError)
         service      <- ZIO.service[RideService]
         ride         <- service
                           .cancelRideWithReason(
                             parsedRideId,
                             PersonId(user.userId),
                             toPersonRole(user.role),
-                            CancelRideRequest(cancelReq.reason, cancelReq.fee.map(BigDecimal(_)))
+                            CancelRideRequest(validated.reason, validated.fee.map(BigDecimal(_)))
                           )
                           .mapError(fromRideError)
       } yield RideDto.fromDomain(ride)

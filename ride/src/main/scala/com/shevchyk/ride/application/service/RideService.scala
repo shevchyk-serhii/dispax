@@ -253,6 +253,13 @@ class RideServiceImpl(
       _    <- ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.status == RideStatus.Completed).unit
       // Ownership: client can only cancel own rides, driver only assigned rides, dispatcher can cancel any
       _    <- validateCancelPermission(ride, userId, userRole)
+      // A cancellation fee charges the client; a negative value would credit them instead.
+      // Guard here too (not only at the HTTP validator) so direct callers can't bypass it.
+      _    <-
+        ZIO
+          .fail(RideError.ValidationError("Cancellation fee cannot be negative"))
+          .when(request.fee.exists(_ < 0))
+          .unit
 
       updatedRide    = ride
                          .focus(_.status)
