@@ -142,7 +142,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       final typeParam = _selectedFilter != 'all'
           ? '&type=$_selectedFilter'
           : '';
-      // Fetch list and unread-count in parallel instead of sequentially.
       final responses = await Future.wait([
         apiClient.get('/notifications?limit=50$typeParam'),
         apiClient.get('/notifications/unread-count'),
@@ -182,7 +181,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.put('/notifications/$id/read', {});
-      // Update locally instead of refetching the whole list + count.
       if (!mounted) return;
       setState(() {
         var decremented = false;
@@ -281,7 +279,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _buildHeader(),
+        _buildGraphiteHeader(),
         TabBar(
           controller: _tabController,
           labelColor: Theme.of(context).colorScheme.primary,
@@ -329,68 +327,70 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     );
   }
 
-  Widget _buildHeader() {
+  // ─── Graphite header with "Mark all read" accent link ─────────────────────
+
+  Widget _buildGraphiteHeader() {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-        ),
+        color: AppColors.primary,
         child: SafeArea(
           bottom: false,
-          child: Row(
-            children: [
-              const Icon(Icons.notifications, color: Colors.white, size: 24),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Notification Center',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Notifications',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
                   ),
                 ),
-              ),
-              if (_unreadCount > 0)
-                IconButton(
+                if (_unreadCount > 0)
+                  TextButton(
+                    onPressed: _markAllAsRead,
+                    child: const Text(
+                      'Mark all read',
+                      style: TextStyle(
+                        color: AppColors.accent,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                PopupMenuButton<String>(
                   icon: const Icon(
-                    Icons.done_all,
+                    Icons.more_vert,
                     color: Colors.white,
                     size: 22,
                   ),
-                  onPressed: _markAllAsRead,
-                  tooltip: 'Mark all as read',
-                ),
-              PopupMenuButton<String>(
-                icon: const Icon(
-                  Icons.more_vert,
-                  color: Colors.white,
-                  size: 22,
-                ),
-                onSelected: (value) {
-                  if (value == 'delete_all') _deleteAll();
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'delete_all',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.delete_sweep,
-                          size: 18,
-                          color: AppColors.error,
-                        ),
-                        SizedBox(width: 8),
-                        Text('Clear All'),
-                      ],
+                  onSelected: (value) {
+                    if (value == 'delete_all') _deleteAll();
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'delete_all',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.delete_sweep,
+                            size: 18,
+                            color: AppColors.error,
+                          ),
+                          SizedBox(width: 8),
+                          Text('Clear All'),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -420,10 +420,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                     setState(() => _selectedFilter = entry.key);
                     _loadNotifications();
                   },
-                  selectedColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.withAlpha(30),
-                  checkmarkColor: Theme.of(context).colorScheme.primary,
+                  selectedColor: AppColors.accent.withAlpha(30),
+                  checkmarkColor: AppColors.accent,
                 ),
               );
             }).toList(),
@@ -482,9 +480,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     );
   }
 
-  // Cache of the date-grouped notifications. Recomputed only when the underlying
-  // _notifications list reference changes (it is reassigned on every mutation), so we
-  // neither regroup on every build nor pay the O(n) entries.elementAt() per list item.
+  // ─── Grouped list cache ───────────────────────────────────────────────────
+
   List<_Notification>? _groupedSource;
   List<MapEntry<String, List<_Notification>>> _groupedEntries = const [];
 
@@ -530,12 +527,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.fromLTRB(2, 12, 2, 6),
               child: Text(
                 entry.key,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.6,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -547,7 +545,11 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     );
   }
 
+  // ─── Notification card — new design ───────────────────────────────────────
+
   Widget _buildNotificationCard(_Notification n) {
+    final cardStyle = _cardStyle(n.notificationType);
+
     return Dismissible(
       key: Key(n.id),
       direction: DismissDirection.endToStart,
@@ -558,75 +560,149 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       onDismissed: (_) => _deleteNotification(n.id),
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 4),
-        color: n.isRead ? null : AppColors.rideAssignedBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: n.isRead
-              ? BorderSide.none
-              : BorderSide(
-                  color: Theme.of(context).colorScheme.primary.withAlpha(30),
-                ),
-        ),
-        child: ListTile(
-          leading: CircleAvatar(
-            radius: 18,
-            backgroundColor: _typeColor(n.notificationType).withAlpha(20),
-            child: Icon(
-              _typeIcon(n.notificationType),
-              size: 18,
-              color: _typeColor(n.notificationType),
-            ),
-          ),
-          title: Text(
-            n.title,
-            style: TextStyle(
-              fontWeight: n.isRead ? FontWeight.normal : FontWeight.bold,
-              fontSize: 13,
-            ),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(n.body, style: const TextStyle(fontSize: 12), maxLines: 2),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _typeColor(n.notificationType).withAlpha(15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _typeLabel(n.notificationType),
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: _typeColor(n.notificationType),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _timeAgo(n.createdAt),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                    ),
-                  ),
-                ],
+      child: GestureDetector(
+        onTap: n.isRead ? null : () => _markAsRead(n.id),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(13),
+            border: Border(
+              left: BorderSide(color: cardStyle.leftBorder, width: 3),
+              top: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : AppColors.borderPrimary,
               ),
-            ],
+              right: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : AppColors.borderPrimary,
+              ),
+              bottom: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : AppColors.borderPrimary,
+              ),
+            ),
           ),
-          onTap: n.isRead ? null : () => _markAsRead(n.id),
+          child: Padding(
+            padding: const EdgeInsets.all(13),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon box 34x34
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: cardStyle.iconBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    _typeIcon(n.notificationType),
+                    size: 17,
+                    color: cardStyle.iconColor,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              n.title,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: n.isRead
+                                    ? FontWeight.w600
+                                    : FontWeight.w700,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          if (!n.isRead) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: AppColors.accent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        n.body,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _timeAgo(n.createdAt),
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
+  }
+
+  // ─── Card style by type ───────────────────────────────────────────────────
+
+  _CardStyle _cardStyle(String type) {
+    switch (type) {
+      case 'ride':
+      case 'ride_assigned':
+      case 'ride_status':
+        // alert — red border-left
+        return _CardStyle(
+          leftBorder: const Color(0xFFEF4444),
+          iconBg: AppColors.errorBg,
+          iconColor: const Color(0xFFEF4444),
+        );
+      case 'chat':
+      case 'pool':
+        // info — blue
+        return _CardStyle(
+          leftBorder: const Color(0xFF3B82F6),
+          iconBg: AppColors.infoBg,
+          iconColor: const Color(0xFF3B82F6),
+        );
+      case 'geofence':
+      case 'driver_approaching':
+        // success — green
+        return _CardStyle(
+          leftBorder: const Color(0xFF22C55E),
+          iconBg: AppColors.successBg,
+          iconColor: const Color(0xFF22C55E),
+        );
+      default:
+        // neutral
+        return _CardStyle(
+          leftBorder: AppColors.borderSecondary,
+          iconBg: AppColors.primarySurface,
+          iconColor: AppColors.textSecondary,
+        );
+    }
   }
 
   IconData _typeIcon(String type) {
@@ -648,44 +724,6 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     }
   }
 
-  Color _typeColor(String type) {
-    switch (type) {
-      case 'ride':
-      case 'ride_assigned':
-      case 'ride_status':
-        return Theme.of(context).colorScheme.primary;
-      case 'chat':
-        return AppColors.accent;
-      case 'geofence':
-        return AppColors.warning;
-      case 'driver_approaching':
-        return AppColors.warning;
-      case 'pool':
-        return AppColors.info;
-      default:
-        return Theme.of(context).colorScheme.onSurfaceVariant;
-    }
-  }
-
-  String _typeLabel(String type) {
-    switch (type) {
-      case 'ride':
-      case 'ride_assigned':
-      case 'ride_status':
-        return 'Ride';
-      case 'chat':
-        return 'Chat';
-      case 'geofence':
-        return 'Geofence';
-      case 'driver_approaching':
-        return 'Approaching';
-      case 'pool':
-        return 'Pool';
-      default:
-        return 'System';
-    }
-  }
-
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 1) return 'Just now';
@@ -695,6 +733,20 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     return DateFormat('MMM d').format(dt);
   }
 }
+
+class _CardStyle {
+  final Color leftBorder;
+  final Color iconBg;
+  final Color iconColor;
+
+  const _CardStyle({
+    required this.leftBorder,
+    required this.iconBg,
+    required this.iconColor,
+  });
+}
+
+// ─── Notification settings tab (unchanged logic, same adaptive switches) ──
 
 class _NotificationSettingsTab extends StatefulWidget {
   @override

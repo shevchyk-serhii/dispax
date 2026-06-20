@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 
+/// Quick-login role buttons for the dev/testing section on the sign-in screen.
+///
+/// The section now sits on a light surface (login redesign) so tokens follow
+/// the app's textPrimary / borderPrimary ramp rather than the former
+/// white-on-dark glass style.
 class QuickLoginButtons extends StatelessWidget {
   final Function(String email) onQuickLogin;
 
@@ -8,78 +13,90 @@ class QuickLoginButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 2.2,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 2.4,
       children: [
+        _buildButton(context, 'Client', 'client1@bmw.de', Icons.person, isDark),
         _buildButton(
-          'Client',
-          'client1@bmw.de',
-          Icons.person,
-          AppColors.clientColor,
-        ),
-        _buildButton(
+          context,
           'Driver',
           'driver1@dispax.de',
           Icons.drive_eta,
-          AppColors.driverColor,
+          isDark,
         ),
         _buildButton(
+          context,
           'Secretary',
           'secretary@dispax.de',
           Icons.business_center,
-          AppColors.secretaryColor,
+          isDark,
         ),
         _buildButton(
+          context,
           'Dispatcher',
           'dispatcher@dispax.de',
           Icons.dashboard,
-          AppColors.dispatcherColor,
+          isDark,
         ),
         _buildButton(
+          context,
           'SuperAdmin',
           'superadmin@dispax.de',
           Icons.admin_panel_settings,
-          AppColors.superAdminColor,
+          isDark,
         ),
       ],
     );
   }
 
-  Widget _buildButton(String role, String email, IconData icon, Color color) {
+  Widget _buildButton(
+    BuildContext context,
+    String role,
+    String email,
+    IconData icon,
+    bool isDark,
+  ) {
+    final borderColor = isDark
+        ? AppColors.borderSecondaryDark
+        : AppColors.borderSecondary;
+    final bgColor = isDark
+        ? AppColors.surfaceVariantDark
+        : AppColors.surfaceVariant;
+    final textColor = isDark
+        ? AppColors.textPrimaryDark
+        : AppColors.textPrimary;
+    final iconColor = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
     return Container(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => onQuickLogin(email),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // The login screen sits on a fixed dark gradient (the label is
-                // hardcoded white), and the role colors are graphite — drawing
-                // the icon in `color` made it invisible. Match the label.
-                Icon(
-                  icon,
-                  color: Colors.white.withValues(alpha: 0.9),
-                  size: 22,
-                ),
+                Icon(icon, color: iconColor, size: 20),
                 const SizedBox(height: 4),
                 Text(
                   role,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: textColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
