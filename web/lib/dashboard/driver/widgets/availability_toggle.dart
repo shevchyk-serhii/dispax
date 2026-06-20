@@ -1,10 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
+import '../../../modules/driver_management/services/driver_availability_service.dart';
 
 class AvailabilityToggle extends StatefulWidget {
   const AvailabilityToggle({super.key});
@@ -24,21 +24,14 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
   }
 
   Future<void> _loadStatus() async {
-    try {
-      final user = context.read<AuthBloc>().state.user;
-      if (user == null) return;
-
-      final apiClient = context.read<AuthBloc>().apiClient;
-      final response = await apiClient.get('/drivers/${user.id}/availability');
-
-      if (response.statusCode == 200 && mounted) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _isAvailable = data['status'] == 'Available';
-        });
-      }
-    } catch (_) {
-      // Silently handle - default to offline
+    final user = context.read<AuthBloc>().state.user;
+    if (user == null) return;
+    final service = DriverAvailabilityService(
+      context.read<AuthBloc>().apiClient,
+    );
+    final available = await service.isAvailable(user.id.toString());
+    if (mounted) {
+      setState(() => _isAvailable = available);
     }
   }
 
@@ -50,12 +43,11 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
     setState(() => _isUpdating = true);
 
     try {
-      final apiClient = context.read<AuthBloc>().apiClient;
-      final response = await apiClient.put('/drivers/${user.id}/availability', {
-        'status': value ? 'Available' : 'Offline',
-      });
-
-      if (response.statusCode == 200 && mounted) {
+      final service = DriverAvailabilityService(
+        context.read<AuthBloc>().apiClient,
+      );
+      final ok = await service.setAvailable(user.id.toString(), value);
+      if (ok && mounted) {
         setState(() {
           _isAvailable = value;
         });

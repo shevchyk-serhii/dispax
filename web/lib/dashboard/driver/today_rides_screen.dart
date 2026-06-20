@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../modules/ride_management/services/ride_service.dart';
+import '../../modules/driver_management/services/driver_availability_service.dart';
 import '../../modules/driver_management/widgets/widgets.dart';
 import '../../modules/core/widgets/widgets.dart';
 import '../../modules/core/navigation_helper.dart';
@@ -603,20 +603,13 @@ class _AvailabilityPillState extends State<_AvailabilityPill> {
   }
 
   Future<void> _loadStatus() async {
-    try {
-      final user = context.read<AuthBloc>().state.user;
-      if (user == null) return;
-      final apiClient = context.read<AuthBloc>().apiClient;
-      final response = await apiClient.get('/drivers/${user.id}/availability');
-      if (response.statusCode == 200 && mounted) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        setState(() {
-          _isAvailable = data['status'] == 'Available';
-        });
-      }
-    } catch (_) {
-      // Silently handle - default to offline
-    }
+    final user = context.read<AuthBloc>().state.user;
+    if (user == null) return;
+    final service = DriverAvailabilityService(
+      context.read<AuthBloc>().apiClient,
+    );
+    final available = await service.isAvailable(user.id.toString());
+    if (mounted) setState(() => _isAvailable = available);
   }
 
   Future<void> _toggleAvailability(bool value) async {
@@ -625,11 +618,11 @@ class _AvailabilityPillState extends State<_AvailabilityPill> {
     if (user == null) return;
     setState(() => _isUpdating = true);
     try {
-      final apiClient = context.read<AuthBloc>().apiClient;
-      final response = await apiClient.put('/drivers/${user.id}/availability', {
-        'status': value ? 'Available' : 'Offline',
-      });
-      if (response.statusCode == 200 && mounted) {
+      final service = DriverAvailabilityService(
+        context.read<AuthBloc>().apiClient,
+      );
+      final ok = await service.setAvailable(user.id.toString(), value);
+      if (ok && mounted) {
         setState(() => _isAvailable = value);
       }
     } catch (e) {
@@ -1278,28 +1271,33 @@ class _EtaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Accent-tinted chip that stays legible on both light and dark cards.
+    final fill = isDark
+        ? AppColors.accent.withValues(alpha: 0.16)
+        : const Color(0xFFF0F9FF);
+    final border = isDark
+        ? AppColors.accent.withValues(alpha: 0.40)
+        : const Color(0xFFBAE6FD);
+    final fg = isDark ? AppColors.accentLight : const Color(0xFF075985);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F9FF),
+        color: fill,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFBAE6FD), width: 1),
+        border: Border.all(color: border, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.access_time_rounded,
-            size: 13,
-            color: AppColors.accentDark,
-          ),
+          Icon(Icons.access_time_rounded, size: 13, color: fg),
           const SizedBox(width: 5),
           Text(
             'Arriving in $etaMinutes min',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF075985),
+              color: fg,
             ),
           ),
         ],

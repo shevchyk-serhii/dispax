@@ -306,10 +306,10 @@ class UpcomingRidesScreen extends StatelessWidget {
                 ),
                 Text(
                   DateFormat.Hm().format(ride.pickupDateTime),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
