@@ -51,6 +51,7 @@ import com.shevchyk.ride.application.service.{
   ChatService,
   ClientAddressService,
   ClientLocationService,
+  RideEstimateService,
   RideService
 }
 import com.shevchyk.ride.domain.{
@@ -77,9 +78,11 @@ import com.shevchyk.ride.repository.{
   ClientLocationRepository,
   ExpenseRepository,
   InMemoryChatMessageRepository,
+  InMemoryTariffRepository,
   RideRatingRepository,
   RideRepository,
   RideTemplateRepository,
+  TariffRepository,
   TimeBucket
 }
 import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
@@ -1248,6 +1251,8 @@ object TestApplication extends ZIOAppDefault:
       // Ride
       inMemoryRideRepositoryLayer,
       inMemoryExpenseRepositoryLayer,
+      ZLayer.succeed[TariffRepository](new InMemoryTariffRepository()),
+      RideEstimateService.live,
       ZLayer.succeed[RideRatingRepository] {
         // Pre-seed a rating for the test ride
         val rating = RideRating(

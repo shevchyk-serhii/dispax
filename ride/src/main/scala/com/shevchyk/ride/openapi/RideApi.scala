@@ -9,6 +9,7 @@ import com.shevchyk.ride.application.service.{
   ChatService,
   ClientAddressService,
   ClientLocationService,
+  RideEstimateService,
   RideService
 }
 import com.shevchyk.ride.domain.*
@@ -42,7 +43,7 @@ object RideApi:
   // -- Environment ---------------------------------------------------------
   type RideEnv =
     RideService & ClientAddressService & ClientLocationService & AirportCheckpointService & ChatService &
-      RideRatingRepository & PersonRepository & JwtService & TariffRepository
+      RideRatingRepository & PersonRepository & JwtService & TariffRepository & RideEstimateService
 
   private object AirportTimingConfig:
     val travelTimeMinutes: Int        = 45
@@ -746,59 +747,37 @@ object RideApi:
 
   // -- estimate server -----------------------------------------------------
 
-  // Distance and duration are computed with Haversine + 50 km/h average speed because the ride
-  // module cannot import HereRoutingService (that lives in the driver module, a sibling, not a
-  // dependency of ride). See the note at the top of the file for the full rationale.
+  // Estimation logic (Haversine distance + 50 km/h duration + tariff lookup) lives in the
+  // application-layer RideEstimateService; the handler only maps role/companyId/DTO ↔ domain.
   private val estimateRideServer: ZServerEndpoint[RideEnv, Any] = estimateRideEndpoint.serverLogic { user => req =>
     for {
       _           <- checkRole(user, "DRIVER", "CLIENT", "DISPATCHER", "SECRETARY", "ADMIN")
       companyId   <- requireCompanyId(user.companyId)
-      // Both locations must have coordinates for a meaningful estimate.
-      fromLat     <- ZIO
-                       .fromOption(req.from.latitude)
-                       .orElseFail((StatusCode.BadRequest, ApiError("from.latitude is required for estimation")))
-      fromLng     <- ZIO
-                       .fromOption(req.from.longitude)
-                       .orElseFail((StatusCode.BadRequest, ApiError("from.longitude is required for estimation")))
-      toLat       <- ZIO
-                       .fromOption(req.to.latitude)
-                       .orElseFail((StatusCode.BadRequest, ApiError("to.latitude is required for estimation")))
-      toLng       <- ZIO
-                       .fromOption(req.to.longitude)
-                       .orElseFail((StatusCode.BadRequest, ApiError("to.longitude is required for estimation")))
-      // Compute straight-line distance via Haversine (used as the billing distance).
-      distanceKm   = haversineKm(fromLat, fromLng, toLat, toLng)
-      // Duration estimate: 50 km/h average urban speed (same fallback as EtaService).
-      etaMinutes   = Math.ceil(distanceKm / 50.0 * 60.0).toInt.max(1)
-      // Load company tariff; fall back to defaults if absent.
-      tariffRepo  <- ZIO.service[TariffRepository]
-      tariff      <- tariffRepo
-                       .findByCompanyId(companyId)
-                       .map(_.getOrElse(CompanyTariff.default(companyId)))
-                       .mapError(ex => (StatusCode.InternalServerError, ApiError("Failed to load tariff")))
+      service     <- ZIO.service[RideEstimateService]
       vehicleClass = VehicleClass.fromString(req.vehicleClass).getOrElse(VehicleClass.Default)
-      price        = tariff.estimate(distanceKm, req.isAirportTransfer, vehicleClass)
+      pickupTime   = req.pickupDateTime.flatMap(s => scala.util.Try(java.time.Instant.parse(s)).toOption)
+      result      <- service
+                       .estimate(
+                         companyId,
+                         LocationDto.toDomain(req.from),
+                         LocationDto.toDomain(req.to),
+                         vehicleClass,
+                         req.isAirportTransfer,
+                         pickupTime
+                       )
+                       .mapError {
+                         case RideEstimateService.EstimateError.MissingCoordinates(field) =>
+                           (StatusCode.BadRequest, ApiError(s"$field is required for estimation"))
+                         case RideEstimateService.EstimateError.TariffLoadFailed(_)       =>
+                           (StatusCode.InternalServerError, ApiError("Failed to load tariff"))
+                       }
     } yield EstimateRideResponse(
-      distanceKm = BigDecimal(distanceKm).setScale(2, BigDecimal.RoundingMode.HALF_UP).doubleValue,
-      durationMinutes = etaMinutes,
-      estimatedPrice = price.doubleValue,
-      currency = tariff.currency
+      distanceKm = result.distanceKm.doubleValue,
+      durationMinutes = result.durationMinutes,
+      estimatedPrice = result.estimatedPrice.doubleValue,
+      currency = result.currency
     )
   }
-
-  /**
-   * Haversine great-circle distance in kilometres between two WGS-84 coordinates.
-   */
-  private def haversineKm(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double =
-    val R    = 6371.0
-    val dLat = Math.toRadians(lat2 - lat1)
-    val dLng = Math.toRadians(lng2 - lng1)
-    val a    =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
-        Math.sin(dLng / 2) * Math.sin(dLng / 2)
-    val c    = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    R * c
 
   /**
    * All server endpoints, interpreted into zio-http Routes by the api module.

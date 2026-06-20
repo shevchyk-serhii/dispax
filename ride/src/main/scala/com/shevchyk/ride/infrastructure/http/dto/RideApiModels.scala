@@ -197,7 +197,10 @@ case class EstimateRideRequest(
     from: LocationDto,
     to: LocationDto,
     vehicleClass: String = "business",
-    isAirportTransfer: Boolean = false
+    isAirportTransfer: Boolean = false,
+    // Optional ISO-8601 pickup time; when present and within night hours
+    // (22:00–06:00 Europe/Berlin) the night surcharge is applied.
+    pickupDateTime: Option[String] = None
 ) derives JsonCodec
 
 case class EstimateRideResponse(
