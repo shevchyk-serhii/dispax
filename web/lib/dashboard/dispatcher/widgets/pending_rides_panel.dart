@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
@@ -11,6 +10,7 @@ import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../utils/ride_status_styles.dart';
 import '../utils/conflict_detector.dart';
 import '../../../widgets/common/notification_bell.dart';
 import 'assignment_dialog.dart';
@@ -56,8 +56,6 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     super.dispose();
   }
 
-  // Debounce search input so we re-filter once the user pauses typing instead of
-  // running the full filter/sort on every keystroke.
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
@@ -71,7 +69,6 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         : RideStatus.assigned;
     var filtered = rides.where((r) => r.status == statusFilter).toList();
 
-    // Apply filter
     switch (_filterMode) {
       case _FilterMode.today:
         final now = DateTime.now();
@@ -89,7 +86,6 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         break;
     }
 
-    // Apply search
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       filtered = filtered
@@ -103,7 +99,6 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           .toList();
     }
 
-    // Apply sort
     switch (_sortMode) {
       case _SortMode.timeAsc:
         filtered.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
@@ -164,19 +159,27 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                   );
                 },
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.paddingMedium,
+                    vertical: AppDimensions.paddingSmall,
+                  ),
                   itemCount: rides.length,
                   itemBuilder: (context, index) {
                     final ride = rides[index];
+                    final isAtRisk = widget.etaAlerts.any(
+                      (a) => a.rideId == ride.id,
+                    );
                     if (_tabIndex == 1) {
-                      return _AssignedRideCard(
+                      return _RideRow(
                         key: ValueKey(ride.id),
                         ride: ride,
-                        onReassign: () => _showDriverSelectionSheet(
+                        isAtRisk: isAtRisk,
+                        onAction: () => _showDriverSelectionSheet(
                           context,
                           ride,
                           isReassign: true,
                         ),
+                        isReassign: true,
                       );
                     }
                     return Draggable<Ride>(
@@ -187,16 +190,33 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                         borderRadius: BorderRadius.circular(12),
                         child: SizedBox(
                           width: 280,
-                          child: _PendingRideCard(ride: ride, isDragging: true),
+                          child: _RideRow(
+                            ride: ride,
+                            isDragging: true,
+                            isAtRisk: false,
+                            onAction: null,
+                            isReassign: false,
+                          ),
                         ),
                       ),
                       childWhenDragging: Opacity(
                         opacity: 0.4,
-                        child: _PendingRideCard(ride: ride),
+                        child: _RideRow(
+                          ride: ride,
+                          isAtRisk: isAtRisk,
+                          onAction: null,
+                          isReassign: false,
+                        ),
                       ),
                       child: GestureDetector(
                         onTap: () => _showDriverSelectionSheet(context, ride),
-                        child: _PendingRideCard(ride: ride),
+                        child: _RideRow(
+                          ride: ride,
+                          isAtRisk: isAtRisk,
+                          onAction: () =>
+                              _showDriverSelectionSheet(context, ride),
+                          isReassign: false,
+                        ),
                       ),
                     );
                   },
@@ -241,8 +261,6 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              // AppColors.primary is near-black graphite and disappears on the
-              // dark theme; use the accent so the selected tab stays visible.
               color: selected ? AppColors.accent : Colors.transparent,
               width: 2,
             ),
@@ -290,7 +308,6 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
       color: colorScheme.surface,
       child: Column(
         children: [
-          // Search
           SizedBox(
             height: 36,
             child: TextField(
@@ -319,7 +336,6 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             ),
           ),
           const SizedBox(height: 6),
-          // Filter chips + sort
           Row(
             children: [
               _buildFilterChip('All', _FilterMode.all),
@@ -406,72 +422,84 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     );
   }
 
+  /// Builds the panel header. In mobile view this is the full-width graphite
+  /// gradient banner; in the desktop split-view the top bar is handled by
+  /// [DispatcherDashboard._buildSplitViewContent], so this header is a
+  /// compact theme-aware panel header with an amber unassigned-count badge.
   Widget _buildHeader() {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: AppColors.dispatcherGradient),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: BlocBuilder<RideBloc, RideState>(
-            builder: (context, state) {
-              final pendingCount = state.rides
-                  .where((r) => r.status == RideStatus.requested)
-                  .length;
-              final assignedCount = state.rides
-                  .where((r) => r.status == RideStatus.assigned)
-                  .length;
-              return Row(
-                children: [
-                  const Icon(
-                    Icons.pending_actions,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Ride Management',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '$pendingCount pending · $assignedCount assigned',
-                          style: TextStyle(
-                            color: Colors.white.withAlpha(200),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const NotificationBell(),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.refresh,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    onPressed: () => context.read<RideBloc>().add(
-                      const RideLoadPendingRequested(),
-                    ),
-                  ),
-                ],
-              );
-            },
+    return BlocBuilder<RideBloc, RideState>(
+      builder: (context, state) {
+        final unassignedCount = state.rides
+            .where((r) => r.status == RideStatus.requested)
+            .length;
+        final colorScheme = Theme.of(context).colorScheme;
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: Border(
+              bottom: BorderSide(color: colorScheme.outlineVariant),
+            ),
           ),
-        ),
-      ),
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(
+                        'Pending requests',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (unassignedCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.warningBg,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.rideRequestedBorder,
+                            ),
+                          ),
+                          child: Text(
+                            '$unassignedCount unassigned',
+                            style: const TextStyle(
+                              color: AppColors.warningStrong,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const NotificationBell(),
+                IconButton(
+                  icon: Icon(
+                    Icons.refresh,
+                    size: 20,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  onPressed: () => context.read<RideBloc>().add(
+                    const RideLoadPendingRequested(),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -561,226 +589,164 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   }
 }
 
-class _PendingRideCard extends StatelessWidget {
+// ─── Redesigned Ride Row (replaces _PendingRideCard + _AssignedRideCard) ───
+
+class _RideRow extends StatelessWidget {
   final Ride ride;
+  final bool isAtRisk;
+  final VoidCallback? onAction;
+  final bool isReassign;
   final bool isDragging;
 
-  const _PendingRideCard({required this.ride, this.isDragging = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: isDragging ? 8 : 2,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: AppColors.rideRequested,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      DateFormat('dd.MM HH:mm').format(ride.pickupDateTime),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.rideRequestedBg,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.rideRequestedBorder),
-                  ),
-                  child: Text(
-                    'PENDING',
-                    style: TextStyle(
-                      color: AppColors.rideRequestedText,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(context, Icons.person, ride.clientName),
-            const SizedBox(height: 4),
-            _buildInfoRow(context, Icons.location_on, ride.from.address),
-            const SizedBox(height: 4),
-            _buildInfoRow(context, Icons.flag, ride.to.address),
-            if (ride.isAirportTransfer && ride.flightNumber != null) ...[
-              const SizedBox(height: 4),
-              _buildInfoRow(
-                context,
-                ride.isArrival ? Icons.flight_land : Icons.flight_takeoff,
-                ride.flightNumber!,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(BuildContext context, IconData icon, String value) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 14,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AssignedRideCard extends StatelessWidget {
-  final Ride ride;
-  final VoidCallback onReassign;
-
-  const _AssignedRideCard({
+  const _RideRow({
     super.key,
     required this.ride,
-    required this.onReassign,
+    required this.isAtRisk,
+    required this.onAction,
+    required this.isReassign,
+    this.isDragging = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+    final brightness = Theme.of(context).brightness;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = brightness == Brightness.dark;
+
+    // At-risk rows get a subtle red tint
+    final rowBg = isAtRisk
+        ? AppColors.error.withValues(alpha: isDark ? 0.08 : 0.04)
+        : Colors.transparent;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: rowBg,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        border: Border.all(
+          color: isAtRisk
+              ? AppColors.errorBorder
+              : (isDark ? AppColors.borderDark : AppColors.borderPrimary),
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: AppColors.infoStrong,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      DateFormat('dd.MM HH:mm').format(ride.pickupDateTime),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.infoBg,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.infoBorder),
-                  ),
-                  child: Text(
-                    'ASSIGNED',
-                    style: TextStyle(
-                      color: AppColors.infoStrong,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
+            // Status badge
+            RideStatusStyles.createStatusBadge(
+              ride.status,
+              context: context,
+              fontSize: 10,
+              iconSize: 12,
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             ),
-            const SizedBox(height: 8),
-            _buildInfoRow(context, Icons.person, ride.clientName),
-            if (ride.driverName != null) ...[
-              const SizedBox(height: 4),
-              _buildInfoRow(context, Icons.drive_eta, ride.driverName!),
-            ],
-            const SizedBox(height: 4),
-            _buildInfoRow(context, Icons.location_on, ride.from.address),
-            const SizedBox(height: 4),
-            _buildInfoRow(context, Icons.flag, ride.to.address),
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: onReassign,
-                icon: const Icon(Icons.swap_horiz, size: 16),
-                label: const Text('Reassign'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.warningStrong,
-                  side: BorderSide(color: AppColors.warning),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+            const SizedBox(width: 10),
+            // Route + meta
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Route: A → B
+                  Text(
+                    '${_shortAddress(ride.from.address)} → ${_shortAddress(ride.to.address)}',
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 3),
+                  // Meta: time · client [· driver]
+                  Text(
+                    _buildMetaLine(),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
+                ],
               ),
             ),
+            // Action button
+            if (onAction != null) ...[
+              const SizedBox(width: 8),
+              _buildActionButton(context),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(BuildContext context, IconData icon, String value) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 14,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+  Widget _buildActionButton(BuildContext context) {
+    if (isReassign) {
+      // Soft-red "Reassign" button
+      return SizedBox(
+        height: 32,
+        child: OutlinedButton(
+          onPressed: onAction,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.errorStrong,
+            side: const BorderSide(color: AppColors.errorBorder),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            textStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
+          child: const Text('Reassign'),
         ),
-      ],
-    );
+      );
+    } else {
+      // Graphite "Assign" button
+      return SizedBox(
+        height: 32,
+        child: FilledButton(
+          onPressed: onAction,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            textStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text('Assign'),
+        ),
+      );
+    }
+  }
+
+  String _buildMetaLine() {
+    final time = DateFormat('dd.MM HH:mm').format(ride.pickupDateTime);
+    final parts = [time, ride.clientName];
+    if (ride.driverName != null) parts.add(ride.driverName!);
+    if (ride.isAirportTransfer && ride.flightNumber != null) {
+      parts.add(ride.flightNumber!);
+    }
+    return parts.join(' · ');
+  }
+
+  /// Truncates a long address to roughly 25 chars to keep the route line brief.
+  String _shortAddress(String address) {
+    if (address.length <= 25) return address;
+    return '${address.substring(0, 22)}…';
   }
 }
+
+// ─── Driver Selection Sheet (unchanged business logic, restyled header) ────
 
 class _DriverSelectionSheet extends StatefulWidget {
   final Ride ride;

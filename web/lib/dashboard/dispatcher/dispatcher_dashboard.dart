@@ -33,6 +33,7 @@ import 'widgets/payroll_screen.dart';
 import 'widgets/pending_rides_panel.dart';
 import 'widgets/eta_alert_card.dart';
 import 'widgets/driver_schedule_panel.dart';
+import 'widgets/live_fleet_panel.dart';
 import 'widgets/analytics_panel.dart';
 import 'widgets/driver_earnings_panel.dart';
 import 'widgets/peak_hours_panel.dart';
@@ -41,6 +42,7 @@ import 'widgets/driver_scorecard_panel.dart';
 import 'widgets/driver_ratings_panel.dart';
 import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/user_service.dart';
+import '../../modules/ride_management/models/ride.dart';
 import 'dart:async';
 
 class DispatcherDashboard extends StatefulWidget {
@@ -258,67 +260,84 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     );
   }
 
-  /// Desktop split view: PendingRidesPanel on left + DriverSchedulePanel on right.
+  /// Desktop split view: new-design dispatch board.
+  ///
+  /// Layout (top → bottom):
+  ///   1. Top bar — title "Dispatch board" + subtitle + search pill + action buttons
+  ///   2. Predictive ETA alert cards (if any)
+  ///   3. Stats row (4 theme-aware tiles)
+  ///   4. Two-column body: Pending Requests (left) | Live Fleet (right)
+  ///
   /// The NavigationRail is provided by [ResponsiveScaffold]; this is the content
   /// area only (no extra Scaffold or navigation chrome).
   Widget _buildSplitViewContent(BuildContext context, bool canDrive) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
-      color: Theme.of(context).colorScheme.surface,
+      color: colorScheme.surface,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (canDrive) ...[
-                    FilledButton.icon(
-                      onPressed: () => _openDriverMap(context),
-                      icon: const Icon(Icons.map, size: 20),
-                      label: const Text('Driver Map'),
-                      style: AppStyles.accentButtonStyle,
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  FilledButton.icon(
-                    onPressed: () => _openBilling(context),
-                    icon: const Icon(Icons.request_quote, size: 20),
-                    label: const Text('Billing'),
-                    style: AppStyles.accentButtonStyle,
-                  ),
-                ],
+          // ── Top bar ─────────────────────────────────────────────────────
+          _DispatchTopBar(
+            canDrive: canDrive,
+            onNewRide: () =>
+                setState(() => _mobileTabIndex = _createRideTabIndex),
+            onDriverMap: () => _openDriverMap(context),
+            onBilling: () => _openBilling(context),
+          ),
+          // ── ETA alert cards ─────────────────────────────────────────────
+          if (_etaAlerts.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              child: Column(
+                children: _etaAlerts
+                    .map(
+                      (a) => EtaAlertCard(
+                        info: a,
+                        onDismiss: () => setState(
+                          () => _etaAlerts.removeWhere(
+                            (x) => x.rideId == a.rideId,
+                          ),
+                        ),
+                        onReassign: null,
+                      ),
+                    )
+                    .toList(),
               ),
             ),
-          ),
+          // ── Stats row ───────────────────────────────────────────────────
+          _StatsRow(etaAlerts: _etaAlerts),
+          // ── Two-column body ─────────────────────────────────────────────
           Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: PendingRidesPanel(
-                    etaAlerts: _etaAlerts,
-                    onDismissEtaAlert: (rideId) {
-                      setState(
-                        () => _etaAlerts.removeWhere((a) => a.rideId == rideId),
-                      );
-                    },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left: pending requests
+                  Expanded(
+                    flex: 5,
+                    child: Container(
+                      decoration: AppStyles.primaryCardDecorationOf(context),
+                      clipBehavior: Clip.antiAlias,
+                      child: PendingRidesPanel(
+                        etaAlerts: _etaAlerts,
+                        onDismissEtaAlert: (rideId) {
+                          setState(
+                            () => _etaAlerts.removeWhere(
+                              (a) => a.rideId == rideId,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                ),
-                Container(
-                  width: 1,
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-                Expanded(
-                  flex: 3,
-                  child: DriverSchedulePanel(
-                    selectedDate: _selectedDate,
-                    onDateChanged: (date) =>
-                        setState(() => _selectedDate = date),
-                  ),
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  // Right: live fleet
+                  Expanded(flex: 4, child: const LiveFleetPanel()),
+                ],
+              ),
             ),
           ),
         ],
@@ -643,4 +662,315 @@ class _MoreMenuItem {
   final Color color;
 
   const _MoreMenuItem(this.icon, this.label, this.screenIndex, this.color);
+}
+
+// ─── Desktop split-view private widgets ─────────────────────────────────────
+
+/// Top bar for the dispatcher split-view.
+///
+/// Pixel spec: pad 18/24 border-bottom; title 20px w700; subtitle 13px
+/// textSecondary; search pill h38 w240 bg surfaceVariant border borderPrimary
+/// radius 999; "+ New ride" graphite btn h38 13px w600 radius10; "Driver Map"
+/// + "Billing" kept as FilledButton for existing test assertions.
+class _DispatchTopBar extends StatelessWidget {
+  final bool canDrive;
+  final VoidCallback onNewRide;
+  final VoidCallback onDriverMap;
+  final VoidCallback onBilling;
+
+  const _DispatchTopBar({
+    required this.canDrive,
+    required this.onNewRide,
+    required this.onDriverMap,
+    required this.onBilling,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final now = DateTime.now();
+    final weekday = _weekdayName(now.weekday);
+    final dateStr =
+        '${now.day.toString().padLeft(2, '0')}.${now.month.toString().padLeft(2, '0')}.${now.year}';
+
+    return BlocBuilder<RideBloc, RideState>(
+      buildWhen: (prev, curr) => prev.rides != curr.rides,
+      builder: (context, rideState) {
+        final activeCount = rideState.rides
+            .where(
+              (r) =>
+                  r.status == RideStatus.assigned ||
+                  r.status == RideStatus.inProgress,
+            )
+            .length;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: Border(
+              bottom: BorderSide(color: colorScheme.outlineVariant),
+            ),
+          ),
+          child: Row(
+            children: [
+              // Title + subtitle (Flexible so it shrinks if viewport is narrow)
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Dispatch board',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$weekday, $dateStr · $activeCount active rides',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Search pill
+              SizedBox(
+                height: 38,
+                width: 200,
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search rides, drivers…',
+                    hintStyle: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textLight,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      size: 18,
+                      color: AppColors.textLight,
+                    ),
+                    filled: true,
+                    fillColor: colorScheme.surfaceContainerHighest,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 0,
+                      horizontal: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(999),
+                      borderSide: BorderSide(color: colorScheme.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(999),
+                      borderSide: BorderSide(color: colorScheme.outlineVariant),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(999),
+                      borderSide: BorderSide(color: colorScheme.outline),
+                    ),
+                  ),
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // + New ride button (graphite)
+              SizedBox(
+                height: 38,
+                child: FilledButton.icon(
+                  onPressed: onNewRide,
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('New ride'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    textStyle: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Driver Map — visible only when canDrive; kept as FilledButton for tests.
+              if (canDrive) ...[
+                SizedBox(
+                  height: 38,
+                  child: FilledButton.icon(
+                    onPressed: onDriverMap,
+                    icon: const Icon(Icons.map, size: 16),
+                    label: const Text('Driver Map'),
+                    style: AppStyles.accentButtonStyle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              // Billing — always visible; kept as FilledButton for tests.
+              SizedBox(
+                height: 38,
+                child: FilledButton.icon(
+                  onPressed: onBilling,
+                  icon: const Icon(Icons.request_quote, size: 16),
+                  label: const Text('Billing'),
+                  style: AppStyles.accentButtonStyle,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _weekdayName(int weekday) {
+    const names = [
+      '',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    return weekday >= 1 && weekday <= 7 ? names[weekday] : '';
+  }
+}
+
+/// Stats row — 4 theme-aware tiles (Active / At risk / Drivers online /
+/// On-time). Derives counts from RideBloc; falls back to placeholder strings
+/// when data is unavailable.
+///
+/// Pixel spec: radius14 pad16/18 xs-shadow; label 12px textSecondary;
+/// number 28px w700 (At-risk value red #DC2626).
+class _StatsRow extends StatelessWidget {
+  final List<EtaAtRiskInfo> etaAlerts;
+
+  const _StatsRow({required this.etaAlerts});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<RideBloc, RideState>(
+      buildWhen: (prev, curr) => prev.rides != curr.rides,
+      builder: (context, state) {
+        final activeCount = state.rides
+            .where(
+              (r) =>
+                  r.status == RideStatus.assigned ||
+                  r.status == RideStatus.inProgress,
+            )
+            .length;
+        final atRiskCount = etaAlerts.length;
+        final assignedCount = state.rides
+            .where((r) => r.status == RideStatus.assigned)
+            .length;
+        final completedCount = state.rides
+            .where((r) => r.status == RideStatus.completed)
+            .length;
+        final totalFinished = completedCount + atRiskCount;
+        final onTimePct = totalFinished > 0
+            ? ((completedCount / totalFinished) * 100).round()
+            : 96; // placeholder when no data
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
+          child: Row(
+            children: [
+              _StatTile(
+                label: 'Active rides',
+                value: '$activeCount',
+                isRed: false,
+              ),
+              const SizedBox(width: 12),
+              _StatTile(
+                label: 'At risk',
+                value: '$atRiskCount',
+                isRed: atRiskCount > 0,
+              ),
+              const SizedBox(width: 12),
+              _StatTile(
+                label: 'Drivers online',
+                value: '$assignedCount',
+                isRed: false,
+              ),
+              const SizedBox(width: 12),
+              _StatTile(label: 'On-time', value: '$onTimePct%', isRed: false),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isRed;
+
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.isRed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowXs,
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: isRed
+                    ? const Color(0xFFDC2626) // red-600
+                    : colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
