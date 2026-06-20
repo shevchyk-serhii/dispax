@@ -34,8 +34,11 @@ class LoginCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+    // The auth screen is a fixed graphite-header + light-content composition
+    // (a branded sign-in surface), so the content panel stays light in both
+    // themes. This keeps the graphite Sign-in button and white input fields
+    // legible — a theme-following dark panel would hide the dark button.
+    const surfaceColor = AppColors.surface;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

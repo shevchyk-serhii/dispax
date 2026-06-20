@@ -25,32 +25,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _themeMode = 'system';
   String _language = 'en';
   bool _pushEnabled = true;
-  bool _rideUpdates = true;
-  bool _chatNotifications = true;
-  int _reminderMinutes = 60;
-  bool _savingReminder = false;
   bool _uploadingAvatar = false;
+  int _sessionCount = 1;
 
   @override
   void initState() {
     super.initState();
     _loadPreferences();
+    _loadSessionCount();
   }
 
   Future<void> _loadPreferences() async {
-    final user = context.read<AuthBloc>().state.user;
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
       _themeMode = prefs.getString('theme_mode') ?? 'system';
       _language = prefs.getString('language') ?? 'en';
       _pushEnabled = prefs.getBool('push_enabled') ?? true;
-      _rideUpdates = prefs.getBool('ride_updates') ?? true;
-      _chatNotifications = prefs.getBool('chat_notifications') ?? true;
-      // Take from the user profile (authoritative source), SharedPreferences as fallback
-      _reminderMinutes =
-          user?.reminderMinutes ?? prefs.getInt('reminder_minutes') ?? 60;
     });
+  }
+
+  Future<void> _loadSessionCount() async {
+    try {
+      final apiClient = context.read<AuthBloc>().apiClient;
+      final resp = await apiClient.get('/sessions');
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        final body = resp.body.trim();
+        if (body.startsWith('[')) {
+          final items = body.split(RegExp(r'\},\s*\{')).length;
+          setState(() => _sessionCount = items.clamp(1, 999));
+        }
+      }
+    } catch (_) {
+      // Non-critical; keep default of 1
+    }
   }
 
   Future<void> _savePreference(String key, dynamic value) async {
@@ -62,12 +71,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // ─── Header ───────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    // Rebuild only when the fields this screen actually reads change, instead of on
-    // every AuthState emission (context.watch subscribes to the whole state).
-    // The selected record compares structurally, so unrelated AuthState changes
-    // (e.g. transient status flags) no longer rebuild the settings tree.
     final authState = context.select(
       (AuthBloc bloc) => (
         user: bloc.state.user,
@@ -78,136 +85,607 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final user = authState.user;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-        elevation: 0,
-      ),
-      body: ListView(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: Column(
         children: [
-          if (user != null) _buildProfileSection(user),
-          if (user?.role == PersonRole.driver) _buildEarningsSection(),
-          _buildAccountSection(user),
-          _buildNotificationsSection(),
-          if (user?.role == PersonRole.driver) _buildReminderSection(),
-          _buildAppearanceSection(),
-          _buildLanguageSection(),
-          _buildSecuritySection(
-            biometricAvailable: authState.biometricAvailable,
-            biometricEnabled: authState.biometricEnabled,
-            userId: user?.id,
+          _buildGraphiteHeader(),
+          Expanded(
+            child: ListView(
+              children: [
+                if (user != null) _buildUserCard(user),
+                const SizedBox(height: 8),
+                _buildPreferencesSection(
+                  biometricAvailable: authState.biometricAvailable,
+                  biometricEnabled: authState.biometricEnabled,
+                  userId: user?.id,
+                ),
+                const SizedBox(height: 8),
+                _buildGeneralSection(),
+                if (user?.role == PersonRole.driver) ...[
+                  const SizedBox(height: 8),
+                  _buildEarningsSection(),
+                ],
+                const SizedBox(height: 8),
+                _buildPrivacySection(),
+                const SizedBox(height: 24),
+                _buildSignOutRow(),
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
-          _buildPrivacySection(),
-          _buildAboutSection(),
-          const SizedBox(height: 24),
-          _buildLogoutButton(),
-          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileSection(Person user) {
-    final apiClient = context.read<AuthBloc>().apiClient;
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: _roleGradient(user.role)),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-      ),
-      child: Row(
-        children: [
-          Stack(
-            children: [
-              AvatarCircle(user: user, apiClient: apiClient, radius: 30),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: _uploadingAvatar
-                      ? null
-                      : () => _pickAndUploadAvatar(user),
-                  child: Container(
-                    width: 22,
-                    height: 22,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: _uploadingAvatar
-                        ? const Padding(
-                            padding: EdgeInsets.all(3),
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(
-                            Icons.camera_alt,
-                            size: 14,
-                            color: Colors.black54,
-                          ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildGraphiteHeader() {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        color: AppColors.primary,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Row(
               children: [
-                Text(
-                  user.name,
-                  style: const TextStyle(
+                // Back button if we can pop
+                if (Navigator.of(context).canPop())
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: const Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                const Text(
+                  'Settings',
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user.email,
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(200),
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  user.role.name.toUpperCase(),
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(180),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
                   ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
-            onPressed: () => _showEditProfileDialog(user),
+        ),
+      ),
+    );
+  }
+
+  // ─── User card ────────────────────────────────────────────────────────────
+
+  Widget _buildUserCard(Person user) {
+    final apiClient = context.read<AuthBloc>().apiClient;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark
+        ? AppColors.accent.withAlpha(25)
+        : AppColors.accent.withAlpha(12);
+    final cardBorder = AppColors.accent.withAlpha(isDark ? 50 : 35);
+
+    return GestureDetector(
+      onTap: () => _showEditProfileDialog(user),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+          border: Border.all(color: cardBorder),
+        ),
+        child: Row(
+          children: [
+            // Avatar 46
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(23),
+                  child: SizedBox(
+                    width: 46,
+                    height: 46,
+                    child: AvatarCircle(
+                      user: user,
+                      apiClient: apiClient,
+                      radius: 23,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: _uploadingAvatar
+                        ? null
+                        : () => _pickAndUploadAvatar(user),
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: _uploadingAvatar
+                          ? const Padding(
+                              padding: EdgeInsets.all(2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.camera_alt,
+                              size: 10,
+                              color: Colors.white,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _roleLocationLabel(user),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _roleLocationLabel(Person user) {
+    final role = _roleDisplayName(user.role);
+    // Person has no city field; use email domain as location fallback
+    return role;
+  }
+
+  String _roleDisplayName(PersonRole role) {
+    switch (role) {
+      case PersonRole.driver:
+        return 'Driver';
+      case PersonRole.client:
+        return 'Client';
+      case PersonRole.secretary:
+        return 'Secretary';
+      case PersonRole.clientSecretary:
+        return 'Client Secretary';
+      case PersonRole.dispatcher:
+        return 'Dispatcher';
+      case PersonRole.admin:
+        return 'Admin';
+      case PersonRole.superAdmin:
+        return 'Super Admin';
+    }
+  }
+
+  // ─── Section label ────────────────────────────────────────────────────────
+
+  Widget _buildSectionLabel(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  // ─── Preferences card ─────────────────────────────────────────────────────
+
+  Widget _buildPreferencesSection({
+    required bool biometricAvailable,
+    required bool biometricEnabled,
+    required String? userId,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel('Preferences'),
+        _buildSettingsCard([
+          _buildToggleRow(
+            icon: Icons.notifications_outlined,
+            label: 'Push notifications',
+            value: _pushEnabled,
+            onChanged: (v) {
+              setState(() => _pushEnabled = v);
+              _savePreference('push_enabled', v);
+            },
+          ),
+          _buildDivider(context),
+          if (biometricAvailable) ...[
+            _buildToggleRow(
+              icon: Icons.face_outlined,
+              label: 'Face ID unlock',
+              value: biometricEnabled,
+              onChanged: (v) {
+                context.read<AuthBloc>().add(
+                  AuthBiometricSetupRequested(enabled: v, userId: userId),
+                );
+              },
+            ),
+            _buildDivider(context),
+          ],
+          _buildToggleRow(
+            icon: Icons.dark_mode_outlined,
+            label: 'Dark mode',
+            value: _themeMode == 'dark',
+            onChanged: (v) {
+              final mode = v ? 'dark' : 'light';
+              setState(() => _themeMode = mode);
+              _savePreference('theme_mode', mode);
+              themeModeNotifier.value = themeFromString(mode);
+            },
+          ),
+        ]),
+      ],
+    );
+  }
+
+  // ─── General card ─────────────────────────────────────────────────────────
+
+  Widget _buildGeneralSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel('General'),
+        _buildSettingsCard([
+          _buildNavRow(
+            icon: Icons.language,
+            label: 'Language',
+            trailing: Text(
+              _languageLabel(_language),
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            onTap: _showLanguagePicker,
+          ),
+          _buildDivider(context),
+          _buildNavRow(
+            icon: Icons.devices_outlined,
+            label: 'Active sessions',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$_sessionCount device${_sessionCount != 1 ? 's' : ''}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.accent,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const SessionManagementScreen(),
+              ),
+            ),
+          ),
+          _buildDivider(context),
+          _buildNavRow(
+            icon: Icons.lock_outline,
+            label: 'Change password',
+            trailing: Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            onTap: _showChangePasswordDialog,
+          ),
+        ]),
+      ],
+    );
+  }
+
+  // ─── Earnings section (driver only) ───────────────────────────────────────
+
+  Widget _buildEarningsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel('Earnings'),
+        _buildSettingsCard([
+          _buildNavRow(
+            icon: Icons.bar_chart_outlined,
+            label: 'My Earnings',
+            trailing: Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EarningsScreen()),
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+
+  // ─── Privacy section ──────────────────────────────────────────────────────
+
+  Widget _buildPrivacySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel('Privacy'),
+        _buildSettingsCard([
+          _buildNavRow(
+            icon: Icons.privacy_tip_outlined,
+            label: 'Privacy & Data (GDPR)',
+            trailing: Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const GdprScreen()),
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+
+  // ─── Sign out ─────────────────────────────────────────────────────────────
+
+  Widget _buildSignOutRow() {
+    return Center(
+      child: GestureDetector(
+        onTap: _confirmSignOut,
+        child: const Text(
+          'Sign out',
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFDC2626),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmSignOut() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Sign out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<AuthBloc>().add(const AuthLogoutRequested());
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: const Text(
+              'Sign out',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
     );
   }
+
+  // ─── Row builders ─────────────────────────────────────────────────────────
+
+  Widget _buildSettingsCard(List<Widget> rows) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+        ),
+      ),
+      child: Column(children: rows),
+    );
+  }
+
+  Widget _buildDivider(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Divider(
+      height: 1,
+      thickness: 1,
+      indent: 56,
+      endIndent: 0,
+      color: isDark ? AppColors.borderDark : const Color(0xFFF4F4F5),
+    );
+  }
+
+  Widget _buildIconBox(IconData icon) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Icon(
+        icon,
+        size: 17,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
+    );
+  }
+
+  Widget _buildToggleRow({
+    required IconData icon,
+    required String label,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+      child: Row(
+        children: [
+          _buildIconBox(icon),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: Colors.white,
+            activeTrackColor: AppColors.accent,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavRow({
+    required IconData icon,
+    required String label,
+    required Widget trailing,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+        child: Row(
+          children: [
+            _buildIconBox(icon),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+            trailing,
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Language picker ──────────────────────────────────────────────────────
+
+  String _languageLabel(String code) {
+    switch (code) {
+      case 'de':
+        return 'Deutsch';
+      case 'uk':
+        return 'Ukrainian';
+      default:
+        return 'English';
+    }
+  }
+
+  void _showLanguagePicker() {
+    showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.borderSecondary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (final entry in {
+              'en': 'English',
+              'de': 'Deutsch',
+              'uk': 'Ukrainian',
+            }.entries)
+              ListTile(
+                title: Text(entry.value),
+                trailing: _language == entry.key
+                    ? const Icon(Icons.check, color: AppColors.accent)
+                    : null,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() => _language = entry.key);
+                  _savePreference('language', entry.key);
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Avatar upload ────────────────────────────────────────────────────────
 
   Future<void> _pickAndUploadAvatar(Person user) async {
     final picker = ImagePicker();
@@ -292,309 +770,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Widget _buildEarningsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('Earnings'),
-        ListTile(
-          leading: const Icon(Icons.bar_chart_outlined),
-          title: const Text('My Earnings'),
-          subtitle: const Text('Revenue, expenses and trends'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const EarningsScreen()),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAccountSection(Person? user) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('Account'),
-        ListTile(
-          leading: const Icon(Icons.lock_outline),
-          title: const Text('Change Password'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _showChangePasswordDialog(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNotificationsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('Notifications'),
-        SwitchListTile(
-          secondary: const Icon(Icons.notifications_outlined),
-          title: const Text('Push Notifications'),
-          value: _pushEnabled,
-          onChanged: (v) {
-            setState(() => _pushEnabled = v);
-            _savePreference('push_enabled', v);
-          },
-        ),
-        SwitchListTile(
-          secondary: const Icon(Icons.directions_car_outlined),
-          title: const Text('Ride Updates'),
-          value: _rideUpdates,
-          onChanged: (v) {
-            setState(() => _rideUpdates = v);
-            _savePreference('ride_updates', v);
-          },
-        ),
-        SwitchListTile(
-          secondary: const Icon(Icons.chat_outlined),
-          title: const Text('Chat Messages'),
-          value: _chatNotifications,
-          onChanged: (v) {
-            setState(() => _chatNotifications = v);
-            _savePreference('chat_notifications', v);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReminderSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('Ride Reminder'),
-        ListTile(
-          leading: const Icon(Icons.alarm_outlined),
-          title: const Text('Remind me before ride'),
-          subtitle: const Text('Push notification to leave on time'),
-          trailing: _savingReminder
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : DropdownButton<int>(
-                  value: _reminderMinutes,
-                  underline: const SizedBox(),
-                  items: const [
-                    DropdownMenuItem(value: 15, child: Text('15 min')),
-                    DropdownMenuItem(value: 30, child: Text('30 min')),
-                    DropdownMenuItem(value: 60, child: Text('1 hour')),
-                    DropdownMenuItem(value: 90, child: Text('1.5 hours')),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) _saveReminderMinutes(v);
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _saveReminderMinutes(int minutes) async {
-    setState(() => _savingReminder = true);
-    try {
-      final apiClient = context.read<AuthBloc>().apiClient;
-      await apiClient.put('/users/reminder-minutes', {'minutes': minutes});
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('reminder_minutes', minutes);
-      if (mounted) setState(() => _reminderMinutes = minutes);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _savingReminder = false);
-    }
-  }
-
-  Widget _buildAppearanceSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('Appearance'),
-        ListTile(
-          leading: const Icon(Icons.palette_outlined),
-          title: const Text('Theme'),
-          trailing: DropdownButton<String>(
-            value: _themeMode,
-            underline: const SizedBox(),
-            items: const [
-              DropdownMenuItem(value: 'light', child: Text('Light')),
-              DropdownMenuItem(value: 'dark', child: Text('Dark')),
-              DropdownMenuItem(value: 'system', child: Text('System')),
-            ],
-            onChanged: (v) {
-              if (v != null) {
-                setState(() => _themeMode = v);
-                _savePreference('theme_mode', v);
-                themeModeNotifier.value = themeFromString(v);
-              }
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLanguageSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('Language'),
-        ListTile(
-          leading: const Icon(Icons.language),
-          title: const Text('Language'),
-          trailing: DropdownButton<String>(
-            value: _language,
-            underline: const SizedBox(),
-            items: const [
-              DropdownMenuItem(value: 'en', child: Text('English')),
-              DropdownMenuItem(value: 'de', child: Text('Deutsch')),
-              DropdownMenuItem(value: 'uk', child: Text('Ukrainian')),
-            ],
-            onChanged: (v) {
-              if (v != null) {
-                setState(() => _language = v);
-                _savePreference('language', v);
-              }
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSecuritySection({
-    required bool biometricAvailable,
-    required bool biometricEnabled,
-    required String? userId,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('Security'),
-        if (biometricAvailable)
-          SwitchListTile(
-            secondary: const Icon(Icons.fingerprint),
-            title: const Text('Biometric Login'),
-            value: biometricEnabled,
-            onChanged: (v) {
-              context.read<AuthBloc>().add(
-                AuthBiometricSetupRequested(enabled: v, userId: userId),
-              );
-            },
-          ),
-        ListTile(
-          leading: const Icon(Icons.devices),
-          title: const Text('Active Sessions'),
-          subtitle: const Text(
-            'Manage logged-in devices',
-            style: TextStyle(fontSize: 12),
-          ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SessionManagementScreen()),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPrivacySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('Privacy'),
-        ListTile(
-          leading: const Icon(Icons.privacy_tip_outlined),
-          title: const Text('Privacy & Data (GDPR)'),
-          subtitle: const Text(
-            'Manage consent, export & delete data',
-            style: TextStyle(fontSize: 12),
-          ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const GdprScreen()),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAboutSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('About'),
-        ListTile(
-          leading: const Icon(Icons.info_outline),
-          title: const Text('Version'),
-          trailing: Text(
-            '1.0.0',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLogoutButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ElevatedButton.icon(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('Logout'),
-              content: const Text('Are you sure you want to logout?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.error,
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    context.read<AuthBloc>().add(const AuthLogoutRequested());
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
-                  child: const Text(
-                    'Logout',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-        icon: const Icon(Icons.logout),
-        label: const Text('Logout'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.error,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 48),
-        ),
-      ),
-    );
-  }
+  // ─── Dialogs ──────────────────────────────────────────────────────────────
 
   void _showChangePasswordDialog() {
     final currentCtrl = TextEditingController();
@@ -732,6 +908,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 });
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (mounted) {
+                  context.read<AuthBloc>().add(
+                    const AuthProfileRefreshRequested(),
+                  );
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Profile updated')),
                   );
@@ -749,23 +928,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-  }
-
-  List<Color> _roleGradient(PersonRole role) {
-    switch (role) {
-      case PersonRole.driver:
-        return AppColors.driverGradient;
-      case PersonRole.client:
-        return AppColors.clientGradient;
-      case PersonRole.secretary:
-      case PersonRole.clientSecretary:
-        return AppColors.secretaryGradient;
-      case PersonRole.dispatcher:
-        return AppColors.dispatcherGradient;
-      case PersonRole.admin:
-        return AppColors.dispatcherGradient;
-      case PersonRole.superAdmin:
-        return AppColors.dispatcherGradient;
-    }
   }
 }
