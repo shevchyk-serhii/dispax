@@ -19,7 +19,23 @@ object ApiStepDefinitions {
 
   def startServerIfNeeded(): Unit = synchronized {
     if (!serverStarted) {
-      println("🚀 Starting test server for Cucumber tests...")
+      // Fail fast if port 8080 is already held by a *foreign* server (a stale
+      // TestApplication from another branch/worktree without `/test/reset`, a
+      // `make dev` instance, etc.). If we don't, ZIO's `Server.serve` silently
+      // fails to bind (port in use) on the forked fiber, `waitForServer` sees
+      // the foreign server answer `/health` 200, and every scenario's
+      // `resetTestState()` then 404s on `/test/reset` → no reset → state leaks
+      // → mass flaky failures. Detect this and abort with a clear message.
+      if (foreignServerOnPort()) {
+        throw new RuntimeException(
+          "Port 8080 is already in use by a server that does NOT expose /test/reset. " +
+            "This is almost certainly a stale TestApplication (from another worktree/branch) or a `make dev` " +
+            "instance. The Cucumber suite needs to own port 8080 so it can reset in-memory state between " +
+            "scenarios. Free the port (e.g. `lsof -nP -iTCP:8080 -sTCP:LISTEN` then kill it) and re-run."
+        )
+      }
+
+      println("Starting test server for Cucumber tests...")
 
       val serverApp = com.shevchyk.TestApplication.run
         .provide(ZIOAppArgs.empty)
@@ -36,28 +52,44 @@ object ApiStepDefinitions {
         stopServer()
       }
 
-      println("✅ Test server started successfully")
+      println("Test server started successfully")
     }
   }
 
+  /**
+   * Returns true if port 8080 is already occupied by a server that does NOT expose `/test/reset` (i.e. not our
+   * TestApplication). If `/health` is unreachable the port is free → false. If `/health` answers but `/test/reset` does
+   * not return 204 → a foreign server is squatting the port → true.
+   */
+  private def foreignServerOnPort(): Boolean =
+    if (!healthOk())
+      false
+    else
+      resetStatus() != 204
+
+  /**
+   * Waits until OUR test server is fully ready, i.e. `/test/reset` returns 204 (not merely `/health` 200). `/health`
+   * and `/test/reset` are bound in the same Routes object and served atomically, but polling the reset route is the
+   * authoritative readiness signal and also rules out a foreign server.
+   */
   private def waitForServer(maxWaitMs: Int, intervalMs: Int): Unit = {
-    val deadline  = java.lang.System.currentTimeMillis() + maxWaitMs
-    var connected = false
-    while (!connected && java.lang.System.currentTimeMillis() < deadline) {
-      connected = tryConnect()
-      if (!connected)
-        Thread.sleep(intervalMs)
+    val deadline = java.lang.System.currentTimeMillis() + maxWaitMs
+    var ready    = false
+    while (!ready && java.lang.System.currentTimeMillis() < deadline) {
+      ready = resetStatus() == 204
+      if (!ready)
+        Thread.sleep(intervalMs.toLong)
     }
-    if (!connected)
+    if (!ready)
       throw new RuntimeException(
-        s"❌ Failed to connect to test server after ${maxWaitMs}ms"
+        s"Failed to reach a ready test server (POST /test/reset -> 204) after ${maxWaitMs}ms"
       )
   }
 
-  private def tryConnect(): Boolean = {
-    import java.net.HttpURLConnection
+  private def healthOk(): Boolean = {
+    import java.net.{HttpURLConnection, URL}
     try {
-      val url        = java.net.URI.create("http://localhost:8080/health").toURL
+      val url        = new URL("http://localhost:8080/health")
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("GET")
       connection.setConnectTimeout(1000)
@@ -71,9 +103,57 @@ object ApiStepDefinitions {
     }
   }
 
+  /**
+   * POSTs to `/test/reset` and returns the HTTP status, or -1 if the server is unreachable.
+   */
+  private def resetStatus(): Int = {
+    import java.net.{HttpURLConnection, URL}
+    try {
+      val url        = new URL("http://localhost:8080/test/reset")
+      val connection = url.openConnection().asInstanceOf[HttpURLConnection]
+      connection.setRequestMethod("POST")
+      connection.setConnectTimeout(2000)
+      connection.setReadTimeout(2000)
+      connection.setDoOutput(true)
+      connection.getOutputStream.close()
+      val code       = connection.getResponseCode
+      connection.disconnect()
+      code
+    }
+    catch {
+      case _: Exception => -1
+    }
+  }
+
+  /**
+   * Test-only: reset all in-memory state to its initial seed via the `/test/reset` endpoint (exists only in
+   * TestApplication). Called before each Cucumber scenario so every scenario starts from an identical state and the
+   * suite is not order-dependent / flaky.
+   *
+   * FAIL-FAST: if reset does not return 204 (after a short retry to absorb any transient start race), this throws so
+   * the scenario fails loudly on reset rather than silently running on dirty/leaked state — which previously masked the
+   * real problem behind a sea of unrelated assertion failures.
+   */
+  def resetTestState(): Unit = {
+    val maxAttempts = 5
+    var attempt     = 0
+    var code        = resetStatus()
+    while (code != 204 && attempt < maxAttempts - 1) {
+      attempt += 1
+      Thread.sleep(200L)
+      code = resetStatus()
+    }
+    if (code != 204)
+      throw new RuntimeException(
+        s"/test/reset returned $code (expected 204) after $maxAttempts attempts. " +
+          "The test server is not the resettable TestApplication (stale/foreign server on port 8080?) -- " +
+          "aborting so state does not leak between scenarios."
+      )
+  }
+
   def stopServer(): Unit = synchronized {
     if (serverStarted) {
-      println("🛑 Shutting down test server...")
+      println("Shutting down test server...")
       serverFiber.foreach { fiber =>
         try {
           Unsafe.unsafe { implicit u =>
@@ -86,14 +166,14 @@ object ApiStepDefinitions {
       }
       serverFiber = None
       serverStarted = false
-      println("✅ Test server shut down")
+      println("Test server shut down")
     }
   }
 }
 
 class ApiStepDefinitions extends ScalaDsl with EN {
 
-  println("🥒 ApiStepDefinitions loaded successfully!")
+  println("ApiStepDefinitions loaded successfully!")
 
   private var lastResponse: Response          = _
   private var lastResponseBody: String        = ""
@@ -102,6 +182,14 @@ class ApiStepDefinitions extends ScalaDsl with EN {
   private val testData                        = mutable.Map[String, Any]()
 
   import ApiStepDefinitions._
+
+  // Ensure the server is up and reset all in-memory state before every scenario.
+  // This makes the Cucumber suite order-independent: each scenario starts from
+  // the same seed regardless of what previous (mutating) scenarios did.
+  Before { (_: io.cucumber.scala.Scenario) =>
+    startServerIfNeeded()
+    resetTestState()
+  }
 
   Given("""^the API is running$""") { () =>
     startServerIfNeeded()

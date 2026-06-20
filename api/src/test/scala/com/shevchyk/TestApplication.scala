@@ -40,8 +40,8 @@ import com.shevchyk.core.repository.{
   SessionRepository
 }
 import com.shevchyk.notification.application.{FcmService, LoggingEmailSmsService}
-import com.shevchyk.notification.domain.{AppNotification, AppNotificationId}
-import com.shevchyk.notification.repository.{InMemoryFcmTokenRepository, NotificationRepository}
+import com.shevchyk.notification.domain.{AppNotification, AppNotificationId, FcmToken}
+import com.shevchyk.notification.repository.{FcmTokenRepository, NotificationRepository}
 import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.repository.DriverLocationRepository
@@ -56,6 +56,8 @@ import com.shevchyk.ride.application.service.{
 }
 import com.shevchyk.ride.domain.{
   AirportCheckpoint,
+  ChatMessage,
+  ChatMessageId,
   ClientAddress,
   ClientAddressId,
   ClientLocation,
@@ -77,7 +79,6 @@ import com.shevchyk.ride.repository.{
   ClientAddressRepository,
   ClientLocationRepository,
   ExpenseRepository,
-  InMemoryChatMessageRepository,
   InMemoryTariffRepository,
   RideRatingRepository,
   RideRepository,
@@ -101,6 +102,17 @@ import scala.jdk.CollectionConverters.*
 object TestApplication extends ZIOAppDefault:
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
+
+  // ─── Test-only state reset registry ───────────────────────────────────────
+  // Each mutable in-memory repository registers a thunk that restores its
+  // initial seed (re-seed, not just clear). The `/test/reset` route runs them
+  // all between Cucumber scenarios so every scenario starts from an identical
+  // state. This lives ONLY in TestApplication — never in production.
+  private val resetEffects = new java.util.concurrent.CopyOnWriteArrayList[zio.UIO[Unit]]()
+
+  private def registerReset(effect: zio.UIO[Unit]): Unit = { resetEffects.add(effect); () }
+
+  private val resetAll: zio.UIO[Unit] = ZIO.foreachDiscard(resetEffects.asScala.toList)(identity)
 
   private def hashPassword(password: String): String = BCrypt.hashpw(password, BCrypt.gensalt(12))
 
@@ -324,9 +336,23 @@ object TestApplication extends ZIOAppDefault:
     }
   }
 
-  private val noopFcmServiceLayer: ZLayer[Any, Nothing, FcmService] =
-    InMemoryFcmTokenRepository.layer >>> ZLayer {
-      for tokenRepo <- ZIO.service[com.shevchyk.notification.repository.FcmTokenRepository]
+  private val resettableFcmTokenRepositoryLayer: ZLayer[Any, Nothing, FcmTokenRepository] = ZLayer.succeed {
+    new FcmTokenRepository:
+      private val store                                            = new ConcurrentHashMap[String, FcmToken]()
+      registerReset(ZIO.succeed(store.clear()))
+      def save(token: FcmToken): Task[Unit]                        = ZIO.succeed { store.put(token.token, token); () }
+      def findByPersonId(personId: PersonId): Task[List[FcmToken]] = ZIO.succeed(
+        store.values.asScala.filter(_.personId == personId).toList
+      )
+      def deleteByToken(token: String): Task[Unit]                 = ZIO.succeed { store.remove(token); () }
+      def deleteByPersonId(personId: PersonId): Task[Unit]         = ZIO.succeed {
+        store.values.asScala.filter(_.personId == personId).map(_.token).foreach(store.remove); ()
+      }
+  }
+
+  private val resettableFcmServiceLayer: ZLayer[Any, Nothing, FcmService] =
+    resettableFcmTokenRepositoryLayer >>> ZLayer {
+      for tokenRepo <- ZIO.service[FcmTokenRepository]
       yield FcmService.FcmServiceImpl(tokenRepo, None)
     }
 
@@ -484,24 +510,25 @@ object TestApplication extends ZIOAppDefault:
     specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH456", isArrival = true))
   )
 
+  private def rideSeed: Map[RideId, Ride] = Map[RideId, Ride](
+    testRideId                   -> testRideAssigned,
+    testRideRequested.id         -> testRideRequested,
+    testRideInProgress.id        -> testRideInProgress,
+    testRideCompleted.id         -> testRideCompleted,
+    testRideAssigned2.id         -> testRideAssigned2,
+    testRideRequested2.id        -> testRideRequested2,
+    testRideRequested3.id        -> testRideRequested3,
+    testRideRequested4.id        -> testRideRequested4,
+    testRideAirportCheckpoint.id -> testRideAirportCheckpoint,
+    testRideForDispDrvAssign.id  -> testRideForDispDrvAssign,
+    testRideForPureDispAssign.id -> testRideForPureDispAssign
+  )
+
   private val inMemoryRideRepositoryLayer: ZLayer[Any, Nothing, RideRepository] = ZLayer.fromZIO(
     Ref.Synchronized
-      .make(
-        Map[RideId, Ride](
-          testRideId                   -> testRideAssigned,
-          testRideRequested.id         -> testRideRequested,
-          testRideInProgress.id        -> testRideInProgress,
-          testRideCompleted.id         -> testRideCompleted,
-          testRideAssigned2.id         -> testRideAssigned2,
-          testRideRequested2.id        -> testRideRequested2,
-          testRideRequested3.id        -> testRideRequested3,
-          testRideRequested4.id        -> testRideRequested4,
-          testRideAirportCheckpoint.id -> testRideAirportCheckpoint,
-          testRideForDispDrvAssign.id  -> testRideForDispDrvAssign,
-          testRideForPureDispAssign.id -> testRideForPureDispAssign
-        )
-      )
+      .make(rideSeed)
       .map { ridesRef =>
+        registerReset(ridesRef.set(rideSeed))
         new RideRepository:
           def create(ride: Ride): Task[Ride]                                                                    =
             val r = ride.copy(id = RideId.generate())
@@ -677,10 +704,12 @@ object TestApplication extends ZIOAppDefault:
     address = "Leopoldstraße 1, Munich"
   )
 
+  private def clientAddressSeed: Map[ClientAddressId, ClientAddress] = Map(testClientAddressId -> testClientAddress)
+
   private val inMemoryClientAddressRepositoryLayer: ZLayer[Any, Nothing, ClientAddressRepository] = ZLayer.succeed {
     new ClientAddressRepository:
-      private val store                                                                       =
-        new ConcurrentHashMap[ClientAddressId, ClientAddress](Map(testClientAddressId -> testClientAddress).asJava)
+      private val store                                                                       = new ConcurrentHashMap[ClientAddressId, ClientAddress](clientAddressSeed.asJava)
+      registerReset(ZIO.succeed { store.clear(); store.putAll(clientAddressSeed.asJava) })
       def findByClient(clientId: PersonId): Task[List[ClientAddress]]                         = ZIO.succeed(
         store.values.asScala.filter(_.clientId == clientId).toList
       )
@@ -706,6 +735,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val inMemoryScheduleDayRepositoryLayer: ZLayer[Any, Nothing, ScheduleDayRepository] = ZLayer.fromZIO(
     Ref.Synchronized.make(Map.empty[ScheduleDayId, ScheduleDay]).map { store =>
+      registerReset(store.set(Map.empty[ScheduleDayId, ScheduleDay]))
       new ScheduleDayRepository:
         def create(scheduleDay: ScheduleDay): Task[ScheduleDay]                                                      = store.get.flatMap { current =>
           if current.values.exists(d => d.driverId == scheduleDay.driverId && d.date == scheduleDay.date)
@@ -744,13 +774,15 @@ object TestApplication extends ZIOAppDefault:
     address = Some("Petuelring 130, 80788 München")
   )
 
+  private def billingSeed: Map[ClientCompanyId, ClientCompany] = Map(
+    testBillingClientCompanyId -> testBillingClientCompany
+  )
+
   private val inMemoryBillingClientCompanyRepositoryLayer: ZLayer[Any, Nothing, BillingClientCompanyRepository] = ZLayer
     .succeed {
       new BillingClientCompanyRepository:
-        private val store                                                                          =
-          new ConcurrentHashMap[ClientCompanyId, ClientCompany](
-            Map(testBillingClientCompanyId -> testBillingClientCompany).asJava
-          )
+        private val store                                                                          = new ConcurrentHashMap[ClientCompanyId, ClientCompany](billingSeed.asJava)
+        registerReset(ZIO.succeed { store.clear(); store.putAll(billingSeed.asJava) })
         def findById(id: ClientCompanyId): Task[Option[ClientCompany]]                             = ZIO.succeed(Option(store.get(id)))
         def findByTaxiCompany(taxiCompanyId: CompanyId): Task[List[ClientCompany]]                 = ZIO.succeed(
           store.values.asScala.filter(_.taxiCompanyId == taxiCompanyId).toList
@@ -798,10 +830,13 @@ object TestApplication extends ZIOAppDefault:
     totalAmount = BigDecimal("119.00")
   )
 
+  private def invoiceSeed: Map[InvoiceId, Invoice] = Map(testInvoiceId -> testInvoice)
+
   private val inMemoryInvoiceRepositoryLayer: ZLayer[Any, Nothing, InvoiceRepository] = ZLayer.succeed {
     new InvoiceRepository:
-      private val store                                                                                      = new ConcurrentHashMap[InvoiceId, Invoice](Map(testInvoiceId -> testInvoice).asJava)
+      private val store                                                                                      = new ConcurrentHashMap[InvoiceId, Invoice](invoiceSeed.asJava)
       private val itemsStore                                                                                 = new ConcurrentHashMap[InvoiceId, List[InvoiceItem]]()
+      registerReset(ZIO.succeed { store.clear(); store.putAll(invoiceSeed.asJava); itemsStore.clear() })
       def nextInvoiceNumber(taxiCompanyId: CompanyId, year: Int): Task[String]                               = ZIO.succeed(
         s"INV-$year-${UUID.randomUUID().toString.take(8)}"
       )
@@ -858,6 +893,7 @@ object TestApplication extends ZIOAppDefault:
     ZLayer.succeed {
       new CompanyBillingProfileRepository:
         private val store                                                                                      = new ConcurrentHashMap[CompanyId, CompanyBillingProfile]()
+        registerReset(ZIO.succeed(store.clear()))
         def findByCompany(companyId: CompanyId): Task[Option[CompanyBillingProfile]]                           = ZIO.succeed(
           Option(store.get(companyId))
         )
@@ -890,6 +926,7 @@ object TestApplication extends ZIOAppDefault:
     new DriverLocationRepository:
       private val locations                                                                   = new ConcurrentHashMap[PersonId, DriverLocation]()
       private val availability                                                                = new ConcurrentHashMap[PersonId, String]()
+      registerReset(ZIO.succeed { locations.clear(); availability.clear() })
       def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO.succeed(
         locations.put(driverId, DriverLocation(driverId, latitude, longitude))
       )
@@ -914,6 +951,7 @@ object TestApplication extends ZIOAppDefault:
   private val inMemoryClientLocationRepositoryLayer: ZLayer[Any, Nothing, ClientLocationRepository] = ZLayer.succeed {
     new ClientLocationRepository:
       private val store                                                                                       = new ConcurrentHashMap[RideId, ClientLocation]()
+      registerReset(ZIO.succeed(store.clear()))
       def updateLocation(rideId: RideId, clientId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO
         .succeed(store.put(rideId, ClientLocation(rideId, clientId, latitude, longitude)))
       def getLocation(rideId: RideId): Task[Option[ClientLocation]]                                           = ZIO.succeed(Option(store.get(rideId)))
@@ -935,6 +973,10 @@ object TestApplication extends ZIOAppDefault:
     for {
       poolsRef   <- Ref.Synchronized.make(Map[RidePoolId, RidePool](testPoolId -> testPool))
       membersRef <- Ref.Synchronized.make(List.empty[RidePoolMember])
+      _           = registerReset(
+                      poolsRef.set(Map[RidePoolId, RidePool](testPoolId -> testPool)) *>
+                        membersRef.set(List.empty[RidePoolMember])
+                    )
     } yield new RidePoolRepository:
       def create(pool: RidePool): Task[RidePool]                                                          = poolsRef.update(_.updated(pool.id, pool)).as(pool)
       def findById(id: RidePoolId): Task[Option[RidePool]]                                                = poolsRef.get.map(_.get(id))
@@ -982,6 +1024,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val inMemorySessionRepositoryLayer: ZLayer[Any, Nothing, SessionRepository] = ZLayer.fromZIO(
     Ref.Synchronized.make(List[Session](testSession)).map { store =>
+      registerReset(store.set(List[Session](testSession)))
       new SessionRepository:
         def create(s: Session): Task[Session]                                             = store.update(_ :+ s).as(s)
         def findByUserId(userId: PersonId): Task[List[Session]]                           = store.get
@@ -1024,6 +1067,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val inMemoryExpenseRepositoryLayer: ZLayer[Any, Nothing, ExpenseRepository] = ZLayer.fromZIO(
     Ref.Synchronized.make(Map[ExpenseId, Expense](testExpenseId -> testExpense)).map { store =>
+      registerReset(store.set(Map[ExpenseId, Expense](testExpenseId -> testExpense)))
       new ExpenseRepository:
         def create(e: Expense): Task[Expense]                                                                   = store.update(_.updated(e.id, e)).as(e)
         def findById(id: ExpenseId): Task[Option[Expense]]                                                      = store.get.map(_.get(id))
@@ -1069,6 +1113,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val inMemoryRideTemplateRepositoryLayer: ZLayer[Any, Nothing, RideTemplateRepository] = ZLayer.fromZIO(
     Ref.Synchronized.make(Map[RideTemplateId, RideTemplate](testRideTemplateId -> testRideTemplate)).map { store =>
+      registerReset(store.set(Map[RideTemplateId, RideTemplate](testRideTemplateId -> testRideTemplate)))
       new RideTemplateRepository:
         def create(t: RideTemplate): Task[RideTemplate]                           = store.update(_.updated(t.id, t)).as(t)
         def findById(id: RideTemplateId): Task[Option[RideTemplate]]              = store.get.map(_.get(id))
@@ -1115,6 +1160,10 @@ object TestApplication extends ZIOAppDefault:
     for {
       geofencesRef <- Ref.Synchronized.make(Map[GeofenceId, Geofence](testGeofenceId -> testGeofence))
       alertsRef    <- Ref.Synchronized.make(List.empty[GeofenceAlert])
+      _             = registerReset(
+                        geofencesRef.set(Map[GeofenceId, Geofence](testGeofenceId -> testGeofence)) *>
+                          alertsRef.set(List.empty[GeofenceAlert])
+                      )
     } yield new GeofenceRepository:
       def create(g: Geofence): Task[Geofence]                                              = geofencesRef.update(_.updated(g.id, g)).as(g)
       def findByCompanyId(companyId: CompanyId): Task[List[Geofence]]                      = geofencesRef.get.map(
@@ -1154,6 +1203,7 @@ object TestApplication extends ZIOAppDefault:
 
   private val inMemoryBlacklistRepositoryLayer: ZLayer[Any, Nothing, BlacklistRepository] = ZLayer.fromZIO(
     Ref.Synchronized.make(List[BlacklistEntry](testBlacklistEntry)).map { store =>
+      registerReset(store.set(List[BlacklistEntry](testBlacklistEntry)))
       new BlacklistRepository:
         def create(entry: BlacklistEntry): Task[BlacklistEntry]                   = store
           .update(es => es.filterNot(e => e.clientId == entry.clientId && e.driverId == entry.driverId) :+ entry)
@@ -1193,6 +1243,7 @@ object TestApplication extends ZIOAppDefault:
   private val inMemoryNotificationRepositoryLayer: ZLayer[Any, Nothing, NotificationRepository] = ZLayer.fromZIO(
     Ref.Synchronized.make(Map[AppNotificationId, AppNotification](testNotificationId -> testNotification)).map {
       store =>
+        registerReset(store.set(Map[AppNotificationId, AppNotification](testNotificationId -> testNotification)))
         new NotificationRepository:
           def save(n: AppNotification): Task[AppNotification]                                          = store.update(_.updated(n.id, n)).as(n)
           def findByPersonId(personId: PersonId, limit: Int, offset: Int): Task[List[AppNotification]] = store.get.map(
@@ -1223,6 +1274,129 @@ object TestApplication extends ZIOAppDefault:
     }
   )
 
+  // ─── Resettable replacements for production *.inMemory layers ──────────────
+  // These production layers start empty and only accumulate state; tests
+  // mutate them across scenarios. We provide local, behaviour-identical
+  // implementations that also register a reset (clear to the empty seed).
+
+  private val resettableAuditServiceLayer: ZLayer[Any, Nothing, AuditService] = ZLayer.succeed {
+    new AuditService:
+      private val store                                                                           = new ConcurrentHashMap[AuditLogId, AuditLogEntry]()
+      registerReset(ZIO.succeed(store.clear()))
+      def log(entry: AuditLogEntry): Task[Unit]                                                   = ZIO.succeed { store.put(entry.id, entry); () }
+      def findByEntity(entityType: String, entityId: UUID): Task[List[AuditLogEntry]]             = ZIO.succeed(
+        store.values.asScala
+          .filter(e => e.entityType == entityType && e.entityId == entityId)
+          .toList
+          .sortBy(_.createdAt)(using Ordering[java.time.Instant].reverse)
+      )
+      def findByCompany(companyId: CompanyId, limit: Int, offset: Int): Task[List[AuditLogEntry]] = ZIO.succeed(
+        store.values.asScala
+          .filter(_.companyId == companyId)
+          .toList
+          .sortBy(_.createdAt)(using Ordering[java.time.Instant].reverse)
+          .drop(offset)
+          .take(limit)
+      )
+  }
+
+  private val resettableEmergencyRepositoryLayer: ZLayer[Any, Nothing, EmergencyReassignmentRepository] = ZLayer
+    .fromZIO(
+      Ref.Synchronized.make(List.empty[EmergencyReassignment]).map { store =>
+        registerReset(store.set(List.empty[EmergencyReassignment]))
+        new EmergencyReassignmentRepository:
+          def create(reassignment: EmergencyReassignment): Task[EmergencyReassignment] = store
+            .update(_ :+ reassignment)
+            .as(reassignment)
+          def findByCompanyId(companyId: CompanyId): Task[List[EmergencyReassignment]] = store.get.map(
+            _.filter(_.companyId == companyId).sortBy(_.createdAt).reverse
+          )
+          def findByRideId(rideId: RideId): Task[List[EmergencyReassignment]]          = store.get
+            .map(_.filter(_.rideId == rideId))
+          def updateStatus(
+              id: EmergencyReassignmentId,
+              status: ReassignmentStatus,
+              newDriverId: Option[PersonId]
+          ): Task[Boolean] = store.modify { rs =>
+            val idx = rs.indexWhere(_.id == id)
+            if idx >= 0 then
+              (
+                true,
+                rs.updated(idx, rs(idx).copy(status = status, newDriverId = newDriverId.orElse(rs(idx).newDriverId)))
+              )
+            else (false, rs)
+          }
+      }
+    )
+
+  private val resettableGdprRepositoryLayer: ZLayer[Any, Nothing, GdprRepository] = ZLayer.fromZIO(
+    for {
+      consentsRef <- Ref.Synchronized.make(List.empty[GdprConsent])
+      requestsRef <- Ref.Synchronized.make(List.empty[GdprRequest])
+      _            = registerReset(
+                       consentsRef.set(List.empty[GdprConsent]) *> requestsRef.set(List.empty[GdprRequest])
+                     )
+    } yield new GdprRepository:
+      def createConsent(consent: GdprConsent): Task[GdprConsent]                                  = consentsRef
+        .update(cs => cs.filterNot(c => c.userId == consent.userId && c.consentType == consent.consentType) :+ consent)
+        .as(consent)
+      def findConsentsByUserId(userId: PersonId): Task[List[GdprConsent]]                         = consentsRef.get.map(
+        _.filter(_.userId == userId)
+      )
+      def revokeConsent(userId: PersonId, consentType: ConsentType): Task[Boolean]                = consentsRef.modify { cs =>
+        val idx = cs.indexWhere(c => c.userId == userId && c.consentType == consentType && c.revokedAt.isEmpty)
+        if idx >= 0 then (true, cs.updated(idx, cs(idx).copy(revokedAt = Some(Instant.now())))) else (false, cs)
+      }
+      def createRequest(request: GdprRequest): Task[GdprRequest]                                  = requestsRef.update(_ :+ request).as(request)
+      def findRequestsByUserId(userId: PersonId): Task[List[GdprRequest]]                         = requestsRef.get.map(
+        _.filter(_.userId == userId)
+      )
+      def findAllRequests(companyId: CompanyId): Task[List[GdprRequest]]                          = requestsRef.get
+      def updateRequestStatus(requestId: GdprRequestId, status: GdprRequestStatus): Task[Boolean] = requestsRef.modify {
+        rs =>
+          val idx = rs.indexWhere(_.id == requestId)
+          if idx >= 0 then
+            val completedAt = if status == GdprRequestStatus.COMPLETED then Some(Instant.now()) else None
+            (true, rs.updated(idx, rs(idx).copy(status = status, completedAt = completedAt)))
+          else (false, rs)
+      }
+  )
+
+  private val resettableCompanySettingsRepositoryLayer: ZLayer[Any, Nothing, CompanySettingsRepository] = ZLayer
+    .succeed {
+      new CompanySettingsRepository:
+        private val store                                                        = new ConcurrentHashMap[CompanyId, CompanySettings]()
+        registerReset(ZIO.succeed(store.clear()))
+        def findByCompanyId(companyId: CompanyId): Task[Option[CompanySettings]] = ZIO.succeed(
+          Option(store.get(companyId))
+        )
+        def upsert(settings: CompanySettings): Task[CompanySettings]             = ZIO.succeed {
+          store.put(settings.companyId, settings); settings
+        }
+    }
+
+  private val resettableNotificationPreferenceRepositoryLayer: ZLayer[Any, Nothing, NotificationPreferenceRepository] =
+    ZLayer.fromZIO(
+      Ref.Synchronized.make(Map.empty[PersonId, NotificationPreference]).map { store =>
+        registerReset(store.set(Map.empty[PersonId, NotificationPreference]))
+        new NotificationPreferenceRepository:
+          def findByPersonId(personId: PersonId): Task[Option[NotificationPreference]] = store.get.map(_.get(personId))
+          def upsert(pref: NotificationPreference): Task[NotificationPreference]       = store
+            .update(_.updated(pref.personId, pref))
+            .as(pref)
+      }
+    )
+
+  private val resettableChatMessageRepositoryLayer: ZLayer[Any, Nothing, ChatMessageRepository] = ZLayer.succeed {
+    new ChatMessageRepository:
+      private val store                                         = new ConcurrentHashMap[ChatMessageId, ChatMessage]()
+      registerReset(ZIO.succeed(store.clear()))
+      def save(message: ChatMessage): Task[ChatMessage]         = ZIO.succeed { store.put(message.id, message); message }
+      def findByRideId(rideId: RideId): Task[List[ChatMessage]] = ZIO.succeed(
+        store.values.asScala.filter(_.rideId == rideId).toList.sortBy(_.sentAt)
+      )
+  }
+
   // ─── Routes aggregation ───────────────────────────────────────────────────
 
   // Mount the same Tapir-described endpoints the production server uses
@@ -1231,7 +1405,11 @@ object TestApplication extends ZIOAppDefault:
   // health check and the WebSocket upgrade remain as plain zio-http routes.
   private val allRoutes =
     Routes(
-      Method.GET / "health" -> handler(Response.text("Dispax Modular API - OK"))
+      Method.GET / "health"          -> handler(Response.text("Dispax Modular API - OK")),
+      // Test-only: reset all mutable in-memory state to the initial seed.
+      // Called by the Cucumber @Before hook so every scenario starts clean.
+      // This route exists ONLY in TestApplication, never in production.
+      Method.POST / "test" / "reset" -> handler(resetAll.as(Response.status(Status.NoContent)))
     ) ++
       com.shevchyk.app.openapi.OpenApiServer.routes ++
       WebSocketRoutes.wsRoutes
@@ -1257,7 +1435,6 @@ object TestApplication extends ZIOAppDefault:
       // Ride
       inMemoryRideRepositoryLayer,
       inMemoryExpenseRepositoryLayer,
-      ZLayer.succeed[TariffRepository](new InMemoryTariffRepository()),
       RideEstimateService.live,
       ZLayer.succeed[RideRatingRepository] {
         // Pre-seed a rating for the test ride
@@ -1270,7 +1447,9 @@ object TestApplication extends ZIOAppDefault:
           rating = 5,
           comment = Some("Great ride!")
         )
-        val store  = new ConcurrentHashMap[RideRatingId, RideRating](Map(rating.id -> rating).asJava)
+        val seed   = Map(rating.id -> rating)
+        val store  = new ConcurrentHashMap[RideRatingId, RideRating](seed.asJava)
+        registerReset(ZIO.succeed { store.clear(); store.putAll(seed.asJava) })
         new RideRatingRepository:
           def create(r: RideRating): Task[RideRating]                                              = ZIO.succeed { store.put(r.id, r); r }
           def findByRideId(rideId: RideId): Task[Option[RideRating]]                               = ZIO
@@ -1296,6 +1475,7 @@ object TestApplication extends ZIOAppDefault:
       inMemoryScheduleDayRepositoryLayer,
       ZLayer.fromZIO(
         Ref.Synchronized.make(Map.empty[PersonId, DriverScheduleVisibility]).map { store =>
+          registerReset(store.set(Map.empty[PersonId, DriverScheduleVisibility]))
           new DriverScheduleVisibilityRepository:
             def findByDriver(driverId: PersonId): Task[Option[DriverScheduleVisibility]]     = store.get
               .map(_.get(driverId))
@@ -1309,18 +1489,18 @@ object TestApplication extends ZIOAppDefault:
       ScheduleSvc.layer,
       // Notification
       inMemoryNotificationRepositoryLayer,
-      NotificationPreferenceRepository.inMemory,
-      noopFcmServiceLayer,
+      resettableNotificationPreferenceRepositoryLayer,
+      resettableFcmServiceLayer,
       LoggingEmailSmsService.layer,
       // Core infra
       EventHub.layer,
-      AuditService.inMemory,
+      resettableAuditServiceLayer,
       inMemoryBlacklistRepositoryLayer,
-      EmergencyReassignmentRepository.inMemory,
+      resettableEmergencyRepositoryLayer,
       inMemoryRidePoolRepositoryLayer,
       inMemorySessionRepositoryLayer,
-      GdprRepository.inMemory,
-      CompanySettingsRepository.inMemory,
+      resettableGdprRepositoryLayer,
+      resettableCompanySettingsRepositoryLayer,
       inMemoryGeofenceRepositoryLayer,
       GeofenceService.layer,
       GeocodingService.noop,
@@ -1345,9 +1525,10 @@ object TestApplication extends ZIOAppDefault:
           Some("+4989382-0"),
           Some("Petuelring 130, 80788 München")
         )
+        val ccSeed = Map(testBillingClientCompanyId -> seeded)
         new ClientCompanyRepository:
-          private val store                                                          =
-            new ConcurrentHashMap[ClientCompanyId, ClientCompany](Map(testBillingClientCompanyId -> seeded).asJava)
+          private val store                                                          = new ConcurrentHashMap[ClientCompanyId, ClientCompany](ccSeed.asJava)
+          registerReset(ZIO.succeed { store.clear(); store.putAll(ccSeed.asJava) })
           def findById(id: ClientCompanyId): Task[Option[ClientCompany]]             = ZIO.succeed(Option(store.get(id)))
           def findByTaxiCompany(taxiCompanyId: CompanyId): Task[List[ClientCompany]] = ZIO
             .succeed(store.values.asScala.filter(_.taxiCompanyId == taxiCompanyId).toList)
@@ -1433,7 +1614,7 @@ object TestApplication extends ZIOAppDefault:
       AirportCheckpointService.layer,
       ClientLocationService.layer,
       // Chat + templates
-      InMemoryChatMessageRepository.layer,
+      resettableChatMessageRepositoryLayer,
       ChatService.layer,
       inMemoryRideTemplateRepositoryLayer,
       inMemoryTariffRepositoryLayer,
