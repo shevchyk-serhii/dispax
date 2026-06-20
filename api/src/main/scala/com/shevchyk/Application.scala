@@ -2,6 +2,7 @@ package com.shevchyk
 
 import com.shevchyk.ride.application.service.{
   RideService,
+  RideEstimateService,
   ClientLocationService,
   AirportCheckpointService,
   AirportConfigService,
@@ -238,6 +239,7 @@ object Application extends ZIOAppDefault:
       RideTemplateRepository.layer,
       RideRatingRepository.layer,
       TariffRepository.liveLayer,
+      RideEstimateService.live,
       AuditService.layer,
       CompanySettingsRepository.layer,
       GdprRepository.layer,

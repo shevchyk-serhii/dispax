@@ -51,6 +51,7 @@ import com.shevchyk.ride.application.service.{
   ChatService,
   ClientAddressService,
   ClientLocationService,
+  RideEstimateService,
   RideService
 }
 import com.shevchyk.ride.domain.{
@@ -1256,6 +1257,8 @@ object TestApplication extends ZIOAppDefault:
       // Ride
       inMemoryRideRepositoryLayer,
       inMemoryExpenseRepositoryLayer,
+      ZLayer.succeed[TariffRepository](new InMemoryTariffRepository()),
+      RideEstimateService.live,
       ZLayer.succeed[RideRatingRepository] {
         // Pre-seed a rating for the test ride
         val rating = RideRating(

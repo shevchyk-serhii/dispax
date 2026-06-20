@@ -151,6 +151,31 @@ object VehicleClassEstimateSpec extends ZIOSpecDefault:
           // van / business should equal 1.4
           val ratio         = vanPrice / businessPrice
           assertTrue((ratio - BigDecimal(1.4)).abs < BigDecimal("0.001"))
+        },
+        test("night surcharge added when isNight=true") {
+          // base=5, perKm=2.5, dist=10km, night=5 → (5 + 25 + 5) * 1.0 = 35.00
+          val tariff = CompanyTariff(
+            companyId = companyId,
+            basePriceAmount = BigDecimal(5.0),
+            pricePerKmAmount = BigDecimal(2.5),
+            airportSurchargeAmount = BigDecimal(10.0),
+            nightSurchargeAmount = BigDecimal(5.0)
+          )
+          val day    = tariff.estimate(10.0, isAirportTransfer = false, VehicleClass.Business, isNight = false)
+          val night  = tariff.estimate(10.0, isAirportTransfer = false, VehicleClass.Business, isNight = true)
+          assertTrue(day == BigDecimal("30.00"), night == BigDecimal("35.00"))
+        },
+        test("airport + night surcharges stack and scale by vehicle class") {
+          // (5 + 25 + 10 + 5) * 1.4 = 63.00
+          val tariff = CompanyTariff(
+            companyId = companyId,
+            basePriceAmount = BigDecimal(5.0),
+            pricePerKmAmount = BigDecimal(2.5),
+            airportSurchargeAmount = BigDecimal(10.0),
+            nightSurchargeAmount = BigDecimal(5.0)
+          )
+          val price  = tariff.estimate(10.0, isAirportTransfer = true, VehicleClass.Van, isNight = true)
+          assertTrue(price == BigDecimal("63.00"))
         }
       )
     )

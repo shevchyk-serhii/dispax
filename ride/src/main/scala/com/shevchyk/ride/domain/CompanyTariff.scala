@@ -18,17 +18,23 @@ final case class CompanyTariff(
 ):
 
   /**
-   * Estimate a fare for a given distance, optionally applying the airport surcharge, and scaled by the vehicle-class
-   * price multiplier.
+   * Estimate a fare for a given distance, applying the airport surcharge for airport transfers and the night surcharge
+   * for night-time pickups, scaled by the vehicle-class price multiplier.
    *
-   * Formula: (basePriceAmount + pricePerKmAmount × distanceKm + (isAirport ? airportSurchargeAmount : 0)) ×
-   * vehicleClass.priceMultiplier
+   * Formula: (basePriceAmount + pricePerKmAmount × distanceKm + (isAirport ? airportSurchargeAmount : 0) + (isNight ?
+   * nightSurchargeAmount : 0)) × vehicleClass.priceMultiplier
    */
-  def estimate(distanceKm: Double, isAirportTransfer: Boolean, vehicleClass: VehicleClass): BigDecimal =
+  def estimate(
+      distanceKm: Double,
+      isAirportTransfer: Boolean,
+      vehicleClass: VehicleClass,
+      isNight: Boolean = false
+  ): BigDecimal =
     val base     = basePriceAmount
     val perKm    = pricePerKmAmount * BigDecimal(distanceKm)
     val airport  = if isAirportTransfer then airportSurchargeAmount else BigDecimal(0)
-    val subtotal = base + perKm + airport
+    val night    = if isNight then nightSurchargeAmount else BigDecimal(0)
+    val subtotal = base + perKm + airport + night
     (subtotal * vehicleClass.priceMultiplier).setScale(2, BigDecimal.RoundingMode.HALF_UP)
 
 object CompanyTariff:
