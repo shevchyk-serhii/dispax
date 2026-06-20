@@ -77,9 +77,11 @@ import com.shevchyk.ride.repository.{
   ClientLocationRepository,
   ExpenseRepository,
   InMemoryChatMessageRepository,
+  InMemoryTariffRepository,
   RideRatingRepository,
   RideRepository,
   RideTemplateRepository,
+  TariffRepository,
   TimeBucket
 }
 import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
@@ -1087,6 +1089,12 @@ object TestApplication extends ZIOAppDefault:
     }
   )
 
+  // In-memory tariff repo seeded with the default tariff for the test company, so the
+  // /estimate endpoint and ride pricing resolve a tariff without a DB.
+  private val inMemoryTariffRepositoryLayer: ZLayer[Any, Nothing, TariffRepository] = ZLayer.succeed(
+    InMemoryTariffRepository.withDefaults(testCompanyId1)
+  )
+
   // ─── Seeded test Geofence ─────────────────────────────────────────────────
 
   private val testGeofenceId = GeofenceId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
@@ -1425,6 +1433,7 @@ object TestApplication extends ZIOAppDefault:
       InMemoryChatMessageRepository.layer,
       ChatService.layer,
       inMemoryRideTemplateRepositoryLayer,
+      inMemoryTariffRepositoryLayer,
       // Avatar
       AvatarService.layer
     )
