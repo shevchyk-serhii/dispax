@@ -203,19 +203,8 @@ object PushNotificationListener:
         // Chat messages are delivered via WebSocket, no push needed.
         ZIO.unit
 
-      case WebSocketEvent.GeofenceTriggered(geofenceId, geofenceName, driverId, alertType, lat, lng, companyId) =>
-        val actionText   = if alertType == "entry" then "entered" else "exited"
-        val notification = PushNotification(
-          title = "Geofence Alert",
-          body = s"Driver $actionText geofence: $geofenceName",
-          data = Map(
-            "type"         -> "geofence_triggered",
-            "geofenceId"   -> geofenceId.toString,
-            "geofenceName" -> geofenceName,
-            "driverId"     -> driverId.toString,
-            "alertType"    -> alertType
-          )
-        )
+      case WebSocketEvent.GeofenceTriggered(geofenceId, geofenceName, driverId, alertType, _, _, companyId) =>
+        val actionText = if alertType == "entry" then "entered" else "exited"
         // Send to dispatchers via the notification - they subscribe to company events
         // For now, we log it. In production, we'd query dispatchers for the company.
         ZIO.logInfo(s"Geofence alert: driver $driverId $actionText '$geofenceName'").unit

@@ -41,6 +41,15 @@ object AirportCheckpoint:
       case ArrivalsHall => "arrivals_hall"
       case TerminalExit => "terminal_exit"
 
+  /**
+   * Static fallback display name when the configurable airport config is unavailable.
+   */
+  def defaultDisplayName(c: AirportCheckpoint): String =
+    c match
+      case Landed       => "Landed"
+      case ArrivalsHall => "Arrivals Hall"
+      case TerminalExit => "Terminal Exit"
+
   given JsonCodec[AirportCheckpoint] = JsonCodec.string.transformOrFail(
     s => fromString(s).toRight(s"Unknown airport checkpoint: $s"),
     toDbString
@@ -126,7 +135,7 @@ object RideSpecifics:
   ) extends RideSpecifics
 
   // Circe JSON codecs for PostgreSQL JSONB
-  import io.circe.{Codec, Decoder, Encoder}
+  import io.circe.{Decoder, Encoder}
   import io.circe.generic.semiauto.*
   import io.circe.syntax.*
 

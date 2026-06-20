@@ -1,7 +1,7 @@
 package com.shevchyk.ride.infrastructure.http.dto
 
 import com.shevchyk.auth.middleware.UuidParser
-import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId, RidePoolId}
+import com.shevchyk.core.domain.{Location, CompanyId}
 import com.shevchyk.ride.domain.{
   Ride,
   CreateRideRequest,
@@ -16,7 +16,6 @@ import zio.*
 import zio.http.*
 import zio.json.*
 import java.time.Instant
-import java.util.UUID
 
 given JsonCodec[RideStatus] = JsonCodec.string.transform(
   str => RideStatus.valueOf(str),

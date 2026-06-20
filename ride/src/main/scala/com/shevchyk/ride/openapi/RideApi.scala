@@ -741,7 +741,7 @@ object RideApi:
         _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId).mapError(fromRideError)
       } yield CheckpointStateResponse(
         checkpoint = ride.airportCheckpoint.map(AirportCheckpoint.toDbString),
-        checkpointName = ride.airportCheckpoint.map(MucCheckpoints.displayName)
+        checkpointName = ride.airportCheckpoint.map(AirportCheckpoint.defaultDisplayName)
       )
   }
 

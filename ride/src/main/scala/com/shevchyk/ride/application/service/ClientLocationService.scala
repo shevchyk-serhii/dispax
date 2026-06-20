@@ -2,7 +2,7 @@ package com.shevchyk.ride.application.service
 
 import com.shevchyk.core.domain.{PersonId, RideId, DriverLocationProvider, WebSocketEvent}
 import com.shevchyk.core.application.EventHub
-import com.shevchyk.ride.domain.{ClientLocation, RideError}
+import com.shevchyk.ride.domain.RideError
 import com.shevchyk.ride.domain.RepositoryExtensions.*
 import com.shevchyk.ride.repository.{ClientLocationRepository, RideRepository}
 import zio.*
