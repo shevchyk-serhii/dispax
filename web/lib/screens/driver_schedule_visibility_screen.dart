@@ -7,6 +7,7 @@ import '../modules/core/models/person.dart';
 import '../modules/core/services/api_client.dart';
 import '../modules/schedule_management/services/schedule_service.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_dimensions.dart';
 
 /// Dispatcher/Admin screen: manage which drivers may view other drivers' full
 /// schedules. Each driver gets a toggle switch; changes are saved immediately
@@ -108,21 +109,49 @@ class _DriverScheduleVisibilityScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Schedule Visibility'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _loadData,
-          ),
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(child: _buildBody()),
         ],
       ),
-      body: _buildBody(),
+    );
+  }
+
+  Widget _buildHeader() {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        width: double.infinity,
+        color: AppColors.primary,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.paddingMedium,
+          vertical: 14,
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              Expanded(
+                child: const Text(
+                  'Who can see whom',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
+                onPressed: _loadData,
+                tooltip: 'Refresh',
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -145,48 +174,24 @@ class _DriverScheduleVisibilityScreenState
       );
     }
     if (_drivers.isEmpty) {
-      return const Center(child: Text('No drivers in your company.'));
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          color: AppColors.accent.withAlpha(20),
-          child: Text(
-            'Allow drivers to view full schedules of their colleagues. '
-            'Enabled drivers see a driver selector in their calendar screen.',
-            style: Theme.of(context).textTheme.bodyMedium,
+      return Center(
+        child: Text(
+          'No drivers in your company.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: _drivers.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final driver = _drivers[index];
-              final canView = _visibilityMap[driver.id] ?? false;
-              return SwitchListTile.adaptive(
-                title: Text(driver.name),
-                subtitle: Text(driver.email),
-                secondary: CircleAvatar(
-                  backgroundColor: canView
-                      ? AppColors.accent.withAlpha(30)
-                      : Colors.grey.withAlpha(30),
-                  child: Icon(
-                    Icons.person,
-                    color: canView ? AppColors.accent : Colors.grey,
-                  ),
-                ),
-                value: canView,
-                activeTrackColor: AppColors.accent,
-                onChanged: (value) => _setVisibility(driver.id, value),
-              );
-            },
-          ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+      children: [
+        _VisibilityListCard(
+          drivers: _drivers,
+          visibilityMap: _visibilityMap,
+          onToggle: _setVisibility,
         ),
       ],
     );
@@ -196,5 +201,166 @@ class _DriverScheduleVisibilityScreenState
   void dispose() {
     _scheduleService.dispose();
     super.dispose();
+  }
+}
+
+// ─── Visibility List Card ─────────────────────────────────────────────────────
+
+class _VisibilityListCard extends StatelessWidget {
+  final List<Person> drivers;
+  final Map<String, bool> visibilityMap;
+  final void Function(String, bool) onToggle;
+
+  const _VisibilityListCard({
+    required this.drivers,
+    required this.visibilityMap,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowXs,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: drivers.asMap().entries.map((entry) {
+          final i = entry.key;
+          final driver = entry.value;
+          final canView = visibilityMap[driver.id] ?? false;
+          return _VisibilityRow(
+            driver: driver,
+            canView: canView,
+            isLast: i == drivers.length - 1,
+            onToggle: (value) => onToggle(driver.id, value),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _VisibilityRow extends StatelessWidget {
+  final Person driver;
+  final bool canView;
+  final bool isLast;
+  final ValueChanged<bool> onToggle;
+
+  const _VisibilityRow({
+    required this.driver,
+    required this.canView,
+    required this.isLast,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final initials = driver.name.isNotEmpty
+        ? driver.name
+              .trim()
+              .split(' ')
+              .take(2)
+              .map((p) => p.isNotEmpty ? p[0].toUpperCase() : '')
+              .join()
+        : '?';
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Avatar 34px
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: canView
+                      ? AppColors.accent.withValues(alpha: 0.15)
+                      : (isDark
+                            ? AppColors.surfaceVariantDark
+                            : AppColors.surfaceVariant),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    initials,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: canView
+                          ? AppColors.accent
+                          : (isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondary),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Name + scope
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      driver.name,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      canView
+                          ? 'Visible to all dispatchers'
+                          : 'Schedule hidden from others',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDark
+                            ? AppColors.textLightDark
+                            : AppColors.textLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Accent toggle
+              Switch.adaptive(
+                value: canView,
+                activeTrackColor: AppColors.accent,
+                onChanged: onToggle,
+              ),
+            ],
+          ),
+        ),
+        if (!isLast)
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: isDark ? AppColors.borderDark : const Color(0xFFF4F4F5),
+            indent: 18,
+            endIndent: 18,
+          ),
+      ],
+    );
   }
 }

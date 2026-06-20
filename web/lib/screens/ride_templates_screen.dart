@@ -317,7 +317,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secretaryColor,
+                backgroundColor: AppColors.accent,
                 foregroundColor: Colors.white,
               ),
               child: const Text('Create'),
@@ -337,11 +337,6 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
           Expanded(child: _buildBody()),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateDialog,
-        backgroundColor: AppColors.secretaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 
@@ -350,29 +345,35 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
       value: SystemUiOverlayStyle.light,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: AppColors.secretaryGradient),
+        color: AppColors.primary,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.paddingMedium,
+          vertical: 14,
         ),
         child: SafeArea(
           bottom: false,
           child: Row(
             children: [
-              const Icon(Icons.repeat, color: Colors.white, size: 24),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Ride Templates',
+              Expanded(
+                child: const Text(
+                  'Saved templates',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
                   ),
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
                 onPressed: _loadData,
+                tooltip: 'Refresh',
+              ),
+              IconButton(
+                icon: const Icon(Icons.add, color: Colors.white, size: 22),
+                onPressed: _showCreateDialog,
+                tooltip: 'Add template',
               ),
             ],
           ),
@@ -401,9 +402,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
       );
     }
 
-    final activeTemplates = _templates.where((t) => t.isActive).toList();
-
-    if (activeTemplates.isEmpty) {
+    if (_templates.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -415,7 +414,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'No active templates',
+              'No templates yet',
               style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -430,6 +429,16 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                 color: Theme.of(context).colorScheme.outlineVariant,
               ),
             ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: _showCreateDialog,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add template'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+              ),
+            ),
           ],
         ),
       );
@@ -437,175 +446,279 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
 
     return RefreshIndicator(
       onRefresh: () async => _loadData(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-        itemCount: activeTemplates.length,
-        itemBuilder: (context, index) {
-          final template = activeTemplates[index];
-          final clientName =
-              _clients
-                  .where((c) => c.id == template.clientId)
-                  .map((c) => c.name)
-                  .firstOrNull ??
-              'Unknown';
+      child: _TemplateListCard(
+        templates: _templates,
+        clients: _clients,
+        onGenerate: _generateRides,
+        onDeactivate: _deactivateTemplate,
+      ),
+    );
+  }
+}
 
-          return Card(
-            margin: const EdgeInsets.only(bottom: 10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          template.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+// ─── Template List Card ───────────────────────────────────────────────────────
+
+class _TemplateListCard extends StatelessWidget {
+  final List<RideTemplate> templates;
+  final List<Person> clients;
+  final void Function(String) onGenerate;
+  final void Function(String) onDeactivate;
+
+  const _TemplateListCard({
+    required this.templates,
+    required this.clients,
+    required this.onGenerate,
+    required this.onDeactivate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ListView(
+      padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadowXs,
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: templates.asMap().entries.map((entry) {
+              final i = entry.key;
+              final template = entry.value;
+              final clientName =
+                  clients
+                      .where((c) => c.id == template.clientId)
+                      .map((c) => c.name)
+                      .firstOrNull ??
+                  'Unknown';
+              return _TemplateRow(
+                template: template,
+                clientName: clientName,
+                isLast: i == templates.length - 1,
+                onGenerate: () => onGenerate(template.id),
+                onDeactivate: () => onDeactivate(template.id),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TemplateRow extends StatelessWidget {
+  final RideTemplate template;
+  final String clientName;
+  final bool isLast;
+  final VoidCallback onGenerate;
+  final VoidCallback onDeactivate;
+
+  const _TemplateRow({
+    required this.template,
+    required this.clientName,
+    required this.isLast,
+    required this.onGenerate,
+    required this.onDeactivate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isAirport = template.isAirportTransfer;
+
+    // Icon box: accent-tint for airport/active, surfaceVariant otherwise
+    final iconBgColor = (isAirport || template.isActive)
+        ? AppColors.accent.withValues(alpha: 0.12)
+        : (isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant);
+    final iconColor = (isAirport || template.isActive)
+        ? AppColors.accent
+        : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary);
+
+    final scheduleLabel =
+        '${template.recurrencePattern} ${template.pickupTime}';
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Icon box 36px
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  isAirport ? Icons.flight : Icons.repeat,
+                  size: 18,
+                  color: iconColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Name + schedule
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      template.name,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimary,
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.secretaryColor.withAlpha(30),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          template.recurrencePattern,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.secretaryColor,
-                          ),
-                        ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$scheduleLabel · $clientName',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDark
+                            ? AppColors.textLightDark
+                            : AppColors.textLight,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person,
-                        size: 14,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        clientName,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.schedule,
-                        size: 14,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        template.pickupTime,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 14,
-                        color: AppColors.successStrong,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '${template.fromAddress} -> ${template.toAddress}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (template.price != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.euro,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          template.price!.toStringAsFixed(2),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _generateRides(template.id),
-                          icon: const Icon(Icons.auto_awesome, size: 16),
-                          label: const Text('Generate Rides'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.secretaryColor,
-                            side: const BorderSide(
-                              color: AppColors.secretaryColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton.icon(
-                        onPressed: () => _deactivateTemplate(template.id),
-                        icon: const Icon(Icons.block, size: 16),
-                        label: const Text('Deactivate'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.error,
-                          side: const BorderSide(color: AppColors.error),
-                        ),
-                      ),
-                    ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Status badge + actions
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _TemplateBadge(isActive: template.isActive),
+                  const SizedBox(width: 4),
+                  _TemplateActionsMenu(
+                    onGenerate: onGenerate,
+                    onDeactivate: onDeactivate,
                   ),
                 ],
               ),
-            ),
-          );
-        },
+            ],
+          ),
+        ),
+        if (!isLast)
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: isDark ? AppColors.borderDark : const Color(0xFFF4F4F5),
+            indent: 18,
+            endIndent: 18,
+          ),
+      ],
+    );
+  }
+}
+
+class _TemplateBadge extends StatelessWidget {
+  final bool isActive;
+
+  const _TemplateBadge({required this.isActive});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (isActive) {
+      return _badge(
+        label: 'Active',
+        bg: isDark ? AppColors.rideCompletedBgDark : const Color(0xFFF0FDF4),
+        border: isDark
+            ? AppColors.rideCompletedBgDark
+            : const Color(0xFF86EFAC),
+        fg: isDark ? AppColors.rideCompletedTextDark : const Color(0xFF166534),
+      );
+    }
+    return _badge(
+      label: 'Paused',
+      bg: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF4F4F5),
+      border: isDark ? AppColors.borderDark : const Color(0xFFE4E4E7),
+      fg: isDark ? AppColors.textSecondaryDark : const Color(0xFFA1A1AA),
+    );
+  }
+
+  Widget _badge({
+    required String label,
+    required Color bg,
+    required Color border,
+    required Color fg,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
       ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
+      ),
+    );
+  }
+}
+
+class _TemplateActionsMenu extends StatelessWidget {
+  final VoidCallback onGenerate;
+  final VoidCallback onDeactivate;
+
+  const _TemplateActionsMenu({
+    required this.onGenerate,
+    required this.onDeactivate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: Icon(
+        Icons.more_vert,
+        size: 18,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+      onSelected: (value) {
+        if (value == 'generate') onGenerate();
+        if (value == 'deactivate') onDeactivate();
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'generate',
+          child: Row(
+            children: [
+              Icon(Icons.auto_awesome, size: 16),
+              SizedBox(width: 8),
+              Text('Generate rides'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'deactivate',
+          child: Row(
+            children: [
+              Icon(Icons.block, size: 16, color: AppColors.error),
+              const SizedBox(width: 8),
+              Text('Deactivate', style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
