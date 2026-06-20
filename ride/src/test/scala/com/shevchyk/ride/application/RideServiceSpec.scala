@@ -654,6 +654,35 @@ object RideServiceSpec extends ZIOSpecDefault {
               cancelled.cancelledBy.contains(testClientId)
           )
         }.provide(standardLayers),
+        // Regression: a negative cancellation fee would credit the client instead
+        // of charging them. The service must reject it even when called directly
+        // (the ride stays in its original status, not cancelled with a bad fee).
+        test("rejects a negative fee") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B")
+                         )
+                       )
+            result  <-
+              service
+                .cancelRideWithReason(
+                  ride.id,
+                  testClientId,
+                  PersonRole.Client,
+                  CancelRideRequest("no_show", Some(BigDecimal(-100.00)))
+                )
+                .exit
+            after   <- service.getRideById(ride.id)
+          } yield assertTrue(
+            result.isFailure,
+            after.status != RideStatus.Cancelled
+          )
+        }.provide(standardLayers),
         test("fails when Completed") {
           for {
             service   <- ZIO.service[RideService]

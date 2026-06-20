@@ -265,11 +265,34 @@ object RideValidatorsSpec extends ZIOSpecDefault {
       }
     )
 
+  def suite_cancelRideApiRequest =
+    suite("CancelRideApiRequest validator")(
+      test("accepts None fee") {
+        val req = CancelRideApiRequest(reason = "Client request")
+        summon[Validator[CancelRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("accepts zero fee (free cancellation)") {
+        val req = CancelRideApiRequest(reason = "Client request", fee = Some(0.0))
+        summon[Validator[CancelRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("accepts positive fee") {
+        val req = CancelRideApiRequest(reason = "No show", fee = Some(25.0))
+        summon[Validator[CancelRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("rejects negative fee") {
+        val req = CancelRideApiRequest(reason = "No show", fee = Some(-100.0))
+        summon[Validator[CancelRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("negative"))
+        }
+      }
+    )
+
   def spec =
     suite("RideValidators")(
       suite_createRideApiRequest,
       suite_assignDriverRequest,
       suite_rideStatusUpdateRequest,
-      suite_updateRideApiRequest
+      suite_updateRideApiRequest,
+      suite_cancelRideApiRequest
     )
 }
