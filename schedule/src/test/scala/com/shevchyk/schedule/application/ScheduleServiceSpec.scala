@@ -610,6 +610,61 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
               cause.failureOption.exists(_.isInstanceOf[ScheduleError.InvalidStatusTransition])
             case _                   => false
           })
+        }.provide(standardLayers),
+        test("update to an inverted time range is rejected") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            day     <- service.createScheduleDay(
+                         CreateScheduleDayRequest(
+                           driverId = testDriverId,
+                           companyId = testCompanyId,
+                           date = futureDate.plusDays(42),
+                           startTime = LocalTime.of(8, 0),
+                           endTime = LocalTime.of(17, 0)
+                         )
+                       )
+            // new startTime (18:00) is after the existing endTime (17:00)
+            result  <-
+              service
+                .updateScheduleDay(
+                  day.id,
+                  UpdateScheduleDayRequest(startTime = Some(LocalTime.of(18, 0))),
+                  testCompanyId
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ScheduleError.ValidationError(msg) => msg.contains("before")
+                case _                                  => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("update under another company is rejected (tenant isolation)") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            day     <- service.createScheduleDay(
+                         CreateScheduleDayRequest(
+                           driverId = testDriverId,
+                           companyId = testCompanyId,
+                           date = futureDate.plusDays(43),
+                           startTime = LocalTime.of(8, 0),
+                           endTime = LocalTime.of(17, 0)
+                         )
+                       )
+            result  <-
+              service
+                .updateScheduleDay(
+                  day.id,
+                  UpdateScheduleDayRequest(notes = Some("hijack")),
+                  otherCompanyId
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.CompanyMismatch])
+            case _                   => false
+          })
         }.provide(standardLayers)
       ),
       suite("getScheduleForDateRange")(

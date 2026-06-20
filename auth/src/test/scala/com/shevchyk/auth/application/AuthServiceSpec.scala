@@ -228,6 +228,91 @@ object AuthServiceSpec extends ZIOSpecDefault {
               user.role == "DRIVER"
           )
         }.provide(layers),
+        test("invalid phone returns ValidationError(\"phone\")") {
+          for {
+            service <- ZIO.service[AuthService]
+            result  <-
+              service
+                .createUser(
+                  CreateUserRequest(
+                    email = "phone2@example.com",
+                    name = "Bad Phone",
+                    role = "CLIENT",
+                    password = "Secure123",
+                    phone = Some("abc")
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ValidationError("phone", _) => true
+                case _                           => false
+              }
+            case _                   => false
+          })
+        }.provide(layers),
+        test("password without uppercase returns WeakPassword") {
+          for {
+            service <- ZIO.service[AuthService]
+            result  <-
+              service
+                .createUser(
+                  CreateUserRequest(
+                    email = "noupper@example.com",
+                    name = "No Upper",
+                    role = "CLIENT",
+                    password = "secure123"
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[WeakPassword])
+            case _                   => false
+          })
+        }.provide(layers),
+        test("password without a digit returns WeakPassword") {
+          for {
+            service <- ZIO.service[AuthService]
+            result  <-
+              service
+                .createUser(
+                  CreateUserRequest(
+                    email = "nodigit@example.com",
+                    name = "No Digit",
+                    role = "CLIENT",
+                    password = "SecurePass"
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[WeakPassword])
+            case _                   => false
+          })
+        }.provide(layers),
+        test("email without a dotted domain returns ValidationError(\"email\")") {
+          for {
+            service <- ZIO.service[AuthService]
+            result  <-
+              service
+                .createUser(
+                  CreateUserRequest(
+                    email = "user@localhost",
+                    name = "No Dot",
+                    role = "CLIENT",
+                    password = "Secure123"
+                  )
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ValidationError("email", _) => true
+                case _                           => false
+              }
+            case _                   => false
+          })
+        }.provide(layers),
         // ── multi-role (dispatcher-can-drive) ──────────────────────────────
         test("createUser with roles=[DISPATCHER,DRIVER] stores both and primary is in set") {
           for {
