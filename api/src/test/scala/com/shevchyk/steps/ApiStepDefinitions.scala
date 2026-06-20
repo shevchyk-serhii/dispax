@@ -440,6 +440,16 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     )
   }
 
+  // Tenant isolation: a company-B DATEV/EXTF export must never leak company-A ride data.
+  // "Viktualienmarkt München" is the dropoff of company A's completed ride (testRideCompleted),
+  // a marker unique to company A's exportable data.
+  Then("""^the response body should not contain company A ride data$""") { () =>
+    assert(
+      !lastResponseBody.contains("Viktualienmarkt"),
+      s"Company B export leaked company A ride data: '$lastResponseBody'"
+    )
+  }
+
   Then("""^the response should contain (.+) details$""") { (entityType: String) =>
     assert(lastResponseBody.nonEmpty, s"Response should contain $entityType details")
   }
@@ -1421,6 +1431,13 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     val testUuid = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd")
     currentUserId = Some(PersonId(testUuid))
     authToken = Some("valid-token-dd")
+  }
+
+  // A dispatcher belonging to the second tenant (company B) — 26_export tenant isolation
+  Given("""^I am authenticated as a dispatcher for company B$""") { () =>
+    val testUuid = UUID.fromString("2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b2b")
+    currentUserId = Some(PersonId(testUuid))
+    authToken = Some("valid-token-b")
   }
 
   Given("""^I am authenticated as driver with ID (\d+)$""") { (driverId: String) =>

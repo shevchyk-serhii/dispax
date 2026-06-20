@@ -45,6 +45,10 @@ Feature: Ride Pool Management
 
   Scenario: Remove ride from pool
     Given I am authenticated as a dispatcher
+    And I send a POST request to "/api/pools/11111111-1111-1111-1111-111111111111/rides" with body:
+      """
+      {"rideId":"22222222-2222-2222-2222-222222222222"}
+      """
     When I send a DELETE request to "/api/pools/11111111-1111-1111-1111-111111111111/rides/22222222-2222-2222-2222-222222222222"
     Then the response status should be 204
 

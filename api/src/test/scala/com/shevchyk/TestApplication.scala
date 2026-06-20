@@ -125,6 +125,10 @@ object TestApplication extends ZIOAppDefault:
   // Dispatcher who also has the Driver role — used in 37_dispatcher_can_drive BDD
   private val testPersonIdDispDrv = PersonId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"))
   private val testCompanyId1      = CompanyId(UUID.fromString("10101010-1010-1010-1010-101010101010"))
+  // Second tenant ("company B") — used by 26_export tenant-isolation BDD to prove a
+  // company-B token sees only its own (empty) DATEV/EXTF data, never company A's.
+  private val testCompanyId2      = CompanyId(UUID.fromString("20202020-2020-2020-2020-202020202020"))
+  private val testPersonIdDispB   = PersonId(UUID.fromString("2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b2b"))
 
   private val mockPersonRepository: PersonRepository =
     new PersonRepository {
@@ -193,6 +197,16 @@ object TestApplication extends ZIOAppDefault:
           phone = Some("+6666666666"),
           companyId = Some(testCompanyId1),
           roles = Set(PersonRole.Dispatcher, PersonRole.Driver)
+        ),
+        // Dispatcher of the second tenant (company B) — used in 26_export tenant isolation
+        testPersonIdDispB   -> Person(
+          testPersonIdDispB,
+          "Dispatcher B",
+          "dispatcher.b@example.com",
+          PersonRole.Dispatcher,
+          passwordHash = hashPassword("Password123"),
+          phone = Some("+7777777777"),
+          companyId = Some(testCompanyId2)
         )
       )
 
@@ -240,7 +254,8 @@ object TestApplication extends ZIOAppDefault:
         "valid-token-99" -> testPersonId99.value,
         "valid-token-33" -> testPersonId33.value,
         "valid-token-44" -> testPersonId44.value,
-        "valid-token-dd" -> testPersonIdDispDrv.value
+        "valid-token-dd" -> testPersonIdDispDrv.value,
+        "valid-token-b"  -> testPersonIdDispB.value
       )
 
       def create(token: String, userId: UUID): Task[Unit]      = ZIO.unit
@@ -318,6 +333,16 @@ object TestApplication extends ZIOAppDefault:
         iat,
         exp,
         roles = Some(List(PersonRole.Dispatcher, PersonRole.Driver))
+      ),
+      // Dispatcher token for the second tenant (company B) — 26_export tenant isolation
+      "valid-token-b"  -> JwtPayload(
+        testPersonIdDispB.value,
+        "dispatcher.b@example.com",
+        PersonRole.Dispatcher,
+        Some(testCompanyId2.value),
+        None,
+        iat,
+        exp
       )
     )
   }
