@@ -5,17 +5,52 @@ import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
+import '../../../constants/app_styles.dart';
+import '../../../constants/app_dimensions.dart';
+
+// ─── Driver candidate model ──────────────────────────────────────────────────
+
+enum _CandidateFit { best, alternative, late }
+
+class _DriverCandidate {
+  final String driverId;
+  final String label;
+  final int etaDeltaMinutes; // positive = adds delay, negative = time to spare
+  final int slackMinutes;
+  final _CandidateFit fit;
+  final String scheduleRange;
+
+  const _DriverCandidate({
+    required this.driverId,
+    required this.label,
+    required this.etaDeltaMinutes,
+    required this.slackMinutes,
+    required this.fit,
+    required this.scheduleRange,
+  });
+}
+
+// ─── BulkReassignDialog ───────────────────────────────────────────────────────
 
 class BulkReassignDialog extends StatefulWidget {
   final String fromDriverId;
   final String fromDriverLabel;
   final List<Ride> rides;
 
+  /// If provided, these are the rides where delay is the trigger.
+  /// The first ride is shown as the "failing" ride in the alert banner.
+  final Ride? failingRide;
+
+  /// Slack in minutes for the failing ride (negative = will be late).
+  final int? slackMinutes;
+
   const BulkReassignDialog({
     super.key,
     required this.fromDriverId,
     required this.fromDriverLabel,
     required this.rides,
+    this.failingRide,
+    this.slackMinutes,
   });
 
   @override
@@ -34,147 +69,188 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
     _selectedRideIds.addAll(widget.rides.map((r) => r.id));
   }
 
+  // ── Candidate ranking ──────────────────────────────────────────────────────
+
+  List<_DriverCandidate> _buildCandidates(
+    List<ScheduleDay> scheduleDays,
+    List<Ride> allRides,
+  ) {
+    final candidates = <_DriverCandidate>[];
+
+    final others = scheduleDays
+        .where(
+          (d) =>
+              d.driverId != widget.fromDriverId &&
+              d.status != ScheduleDayStatus.cancelled,
+        )
+        .toList();
+
+    for (final schedule in others) {
+      final currentRideCount = allRides
+          .where(
+            (r) =>
+                r.driverId == schedule.driverId &&
+                r.status != RideStatus.cancelled &&
+                r.status != RideStatus.completed,
+          )
+          .length;
+
+      // Estimate slack from current ride load:
+      // 0 rides → plenty of slack; more rides → tighter schedule
+      final etaDelta = currentRideCount == 0
+          ? 4
+          : currentRideCount == 1
+          ? 12
+          : currentRideCount * 8;
+      final slack = currentRideCount == 0 ? 28 : 45 - (currentRideCount * 12);
+
+      _CandidateFit fit;
+      if (currentRideCount == 0) {
+        fit = _CandidateFit.best;
+      } else if (slack > 0) {
+        fit = _CandidateFit.alternative;
+      } else {
+        fit = _CandidateFit.late;
+      }
+
+      final label = schedule.notes?.isNotEmpty == true
+          ? schedule.notes!
+          : 'Driver ${schedule.driverId.length > 8 ? schedule.driverId.substring(0, 8) : schedule.driverId}…';
+
+      candidates.add(
+        _DriverCandidate(
+          driverId: schedule.driverId,
+          label: label,
+          etaDeltaMinutes: etaDelta,
+          slackMinutes: slack,
+          fit: fit,
+          scheduleRange: '${schedule.startTime}–${schedule.endTime}',
+        ),
+      );
+    }
+
+    // Sort: best first, then alternative, then late; within group by eta delta
+    candidates.sort((a, b) {
+      final fitOrder = a.fit.index.compareTo(b.fit.index);
+      if (fitOrder != 0) return fitOrder;
+      return a.etaDeltaMinutes.compareTo(b.etaDeltaMinutes);
+    });
+
+    return candidates;
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final scheduleState = context.read<ScheduleBloc>().state;
-    final otherDrivers =
-        scheduleState.scheduleDays
-            .where(
-              (d) =>
-                  d.driverId != widget.fromDriverId &&
-                  d.status != ScheduleDayStatus.cancelled,
-            )
-            .toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final rideState = context.read<RideBloc>().state;
+    final candidates = _buildCandidates(
+      scheduleState.scheduleDays,
+      rideState.rides,
+    );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final rideId = widget.rides.isNotEmpty
+        ? widget.rides.first.id.substring(
+            0,
+            widget.rides.first.id.length.clamp(0, 8),
+          )
+        : '?';
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 660),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
+            // ── Graphite header ──────────────────────────────────────────────
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.errorStrong,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.paddingMedium,
+                vertical: AppDimensions.paddingMedium,
+              ),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppDimensions.radiusMedium),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  const Text(
-                    'Bulk Reassign Rides',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  const Icon(Icons.swap_horiz, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Reassign ride #$rideId',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'From: ${widget.fromDriverLabel}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  GestureDetector(
+                    onTap: _isReassigning ? null : () => Navigator.pop(context),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white70,
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
             ),
 
+            // ── Scrollable body ──────────────────────────────────────────────
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppDimensions.paddingMedium),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Failing-ride alert banner
+                    if (widget.failingRide != null ||
+                        widget.slackMinutes != null)
+                      _buildAlertBanner(isDark),
+
                     // Ride selection
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Select rides to reassign (${_selectedRideIds.length}/${widget.rides.length})',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              if (_selectedRideIds.length ==
-                                  widget.rides.length) {
-                                _selectedRideIds.clear();
-                              } else {
-                                _selectedRideIds.addAll(
-                                  widget.rides.map((r) => r.id),
-                                );
-                              }
-                            });
-                          },
-                          child: Text(
-                            _selectedRideIds.length == widget.rides.length
-                                ? 'Deselect All'
-                                : 'Select All',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ...widget.rides.map(
-                      (ride) => CheckboxListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        value: _selectedRideIds.contains(ride.id),
-                        onChanged: (v) {
-                          setState(() {
-                            if (v == true) {
-                              _selectedRideIds.add(ride.id);
-                            } else {
-                              _selectedRideIds.remove(ride.id);
-                            }
-                          });
-                        },
-                        title: Text(
-                          '${DateFormat('HH:mm').format(ride.pickupDateTime)} — ${ride.clientName}',
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                        subtitle: Text(
-                          '${ride.from.address} → ${ride.to.address}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
+                    if (widget.rides.length > 1) ...[
+                      const SizedBox(height: 4),
+                      _buildRideSelector(isDark),
+                      const SizedBox(height: 12),
+                      const Divider(height: 1),
+                      const SizedBox(height: 12),
+                    ],
 
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    const SizedBox(height: 8),
-
-                    // Target driver selection
-                    const Text(
-                      'Reassign to:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                    // Section label
+                    Text(
+                      'NEAREST AVAILABLE DRIVERS · RANKED BY ETA',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textLight,
+                        letterSpacing: 0.7,
                       ),
                     ),
                     const SizedBox(height: 8),
 
-                    if (otherDrivers.isEmpty)
+                    // Candidate list
+                    if (candidates.isEmpty)
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.warningBg,
-                          borderRadius: BorderRadius.circular(8),
+                          color: isDark
+                              ? AppColors.surfaceVariantDark
+                              : AppColors.warningBg,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusMedium,
+                          ),
                           border: Border.all(color: AppColors.warningBorder),
                         ),
                         child: const Text(
@@ -186,99 +262,24 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                         ),
                       )
                     else
-                      ...otherDrivers.map((schedule) {
-                        final rideState = context.read<RideBloc>().state;
-                        final rideCount = rideState.rides
-                            .where(
-                              (r) =>
-                                  r.driverId == schedule.driverId &&
-                                  r.status != RideStatus.cancelled &&
-                                  r.status != RideStatus.completed,
-                            )
-                            .length;
-                        final loadColor = rideCount == 0
-                            ? AppColors.success
-                            : rideCount <= 2
-                            ? AppColors.warning
-                            : AppColors.error;
-                        final label = schedule.notes?.isNotEmpty == true
-                            ? schedule.notes!
-                            : 'Driver ${schedule.driverId.length > 8 ? schedule.driverId.substring(0, 8) : schedule.driverId}...';
-                        final isSelected =
-                            _selectedDriverId == schedule.driverId;
-
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 6),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: isSelected
-                                ? BorderSide(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                    width: 2,
-                                  )
-                                : BorderSide.none,
-                          ),
-                          color: isSelected ? AppColors.rideAssignedBg : null,
-                          child: ListTile(
-                            dense: true,
-                            leading: CircleAvatar(
-                              radius: 16,
-                              backgroundColor: loadColor.withAlpha(40),
-                              child: Icon(
-                                Icons.person,
-                                color: loadColor,
-                                size: 18,
-                              ),
-                            ),
-                            title: Text(
-                              label,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '$rideCount ride${rideCount == 1 ? '' : 's'} • ${schedule.startTime}–${schedule.endTime}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            trailing: isSelected
-                                ? Icon(
-                                    Icons.check_circle,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  )
-                                : null,
-                            onTap: () {
-                              setState(() {
-                                _selectedDriverId = schedule.driverId;
-                                _selectedDriverLabel = label;
-                              });
-                            },
-                          ),
-                        );
-                      }),
+                      ...candidates.map((c) => _buildCandidateCard(c, isDark)),
                   ],
                 ),
               ),
             ),
 
-            // Actions
+            // ── Footer actions ───────────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.paddingMedium,
+                vertical: 12,
+              ),
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
+                    color: isDark
+                        ? AppColors.borderDark
+                        : AppColors.borderPrimary,
                   ),
                 ),
               ),
@@ -286,17 +287,15 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
+                    style: AppStyles.textButtonStyle,
                     onPressed: _isReassigning
                         ? null
                         : () => Navigator.pop(context),
                     child: const Text('Cancel'),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.errorStrong,
-                      foregroundColor: Colors.white,
-                    ),
+                  FilledButton.icon(
+                    style: AppStyles.accentButtonStyle,
                     onPressed:
                         _selectedRideIds.isEmpty ||
                             _selectedDriverId == null ||
@@ -312,10 +311,10 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(Icons.swap_horiz),
+                        : const Icon(Icons.swap_horiz, size: 18),
                     label: Text(
                       _isReassigning
-                          ? 'Reassigning...'
+                          ? 'Reassigning…'
                           : 'Reassign ${_selectedRideIds.length} ride${_selectedRideIds.length == 1 ? '' : 's'}',
                     ),
                   ),
@@ -327,6 +326,389 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
       ),
     );
   }
+
+  // ── Alert banner ─────────────────────────────────────────────────────────
+
+  Widget _buildAlertBanner(bool isDark) {
+    final slack = widget.slackMinutes ?? -5;
+    final driverLabel = widget.fromDriverLabel;
+    final failingRide = widget.failingRide;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.errorBg,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        border: Border.all(color: AppColors.rideCancelledBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.error,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$driverLabel is delayed — slack ${slack < 0 ? slack : '+$slack'} min',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.errorStrong,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (failingRide != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${DateFormat('HH:mm').format(failingRide.pickupDateTime)} · '
+              '${failingRide.clientName} · '
+              '${failingRide.from.address} → ${failingRide.to.address}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.rideCancelledText,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Ride selector ────────────────────────────────────────────────────────
+
+  Widget _buildRideSelector(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Rides to reassign (${_selectedRideIds.length}/${widget.rides.length})',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(60, 28),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () {
+                setState(() {
+                  if (_selectedRideIds.length == widget.rides.length) {
+                    _selectedRideIds.clear();
+                  } else {
+                    _selectedRideIds.addAll(widget.rides.map((r) => r.id));
+                  }
+                });
+              },
+              child: Text(
+                _selectedRideIds.length == widget.rides.length
+                    ? 'Deselect all'
+                    : 'Select all',
+                style: const TextStyle(fontSize: 12, color: AppColors.accent),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ...widget.rides.map(
+          (ride) => CheckboxListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            activeColor: AppColors.accent,
+            value: _selectedRideIds.contains(ride.id),
+            onChanged: (v) {
+              setState(() {
+                if (v == true) {
+                  _selectedRideIds.add(ride.id);
+                } else {
+                  _selectedRideIds.remove(ride.id);
+                }
+              });
+            },
+            title: Text(
+              '${DateFormat('HH:mm').format(ride.pickupDateTime)} — ${ride.clientName}',
+              style: const TextStyle(fontSize: 13),
+            ),
+            subtitle: Text(
+              '${ride.from.address} → ${ride.to.address}',
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Candidate card ────────────────────────────────────────────────────────
+
+  Widget _buildCandidateCard(_DriverCandidate c, bool isDark) {
+    final isSelected = _selectedDriverId == c.driverId;
+    final isBest = c.fit == _CandidateFit.best;
+    final isLate = c.fit == _CandidateFit.late;
+
+    // ETA label colour
+    final etaColor = isLate
+        ? const Color(0xFFDC2626)
+        : isBest
+        ? AppColors.accent
+        : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimary);
+
+    // Slack label
+    final slackText = isLate
+        ? 'still late'
+        : isBest
+        ? 'slack restored'
+        : 'tight';
+
+    final slackColor = isLate
+        ? const Color(0xFFDC2626)
+        : isBest
+        ? AppColors.success
+        : AppColors.warning;
+
+    // Border
+    final borderColor = isSelected
+        ? AppColors.accent
+        : isBest
+        ? AppColors.accent.withValues(alpha: 0.35)
+        : (isDark ? AppColors.borderDark : AppColors.borderPrimary);
+    final borderWidth = (isSelected || isBest) ? 2.0 : 1.0;
+
+    // Card surface
+    final cardColor = isSelected
+        ? (isDark
+              ? AppColors.accent.withValues(alpha: 0.12)
+              : AppColors.rideAssignedBg)
+        : (isDark ? AppColors.surfaceDark : AppColors.surface);
+
+    return GestureDetector(
+      onTap: isLate
+          ? null
+          : () {
+              setState(() {
+                _selectedDriverId = c.driverId;
+                _selectedDriverLabel = c.label;
+              });
+            },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+          border: Border.all(color: borderColor, width: borderWidth),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Driver avatar
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: isLate
+                  ? const Color(0xFFDC2626).withValues(alpha: 0.12)
+                  : isBest
+                  ? AppColors.accent.withValues(alpha: 0.12)
+                  : (isDark
+                        ? AppColors.surfaceVariantDark
+                        : AppColors.primarySurface),
+              child: Icon(
+                Icons.person_outline,
+                size: 18,
+                color: isLate
+                    ? const Color(0xFFDC2626)
+                    : isBest
+                    ? AppColors.accent
+                    : (isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary),
+              ),
+            ),
+            const SizedBox(width: 10),
+
+            // Info column
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          c.label,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      // Best match badge
+                      if (isBest)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0F9FF),
+                            border: Border.all(color: const Color(0xFFBAE6FD)),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Best match',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0284C7),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    c.scheduleRange,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+
+            // Right column: ETA + action
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // ETA delta
+                Text(
+                  '+${c.etaDeltaMinutes} min',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: etaColor,
+                  ),
+                ),
+                // Slack label
+                Text(
+                  slackText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: slackColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // Action button
+                if (isLate)
+                  OutlinedButton(
+                    onPressed: null,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFDC2626),
+                      side: const BorderSide(color: Color(0xFFDC2626)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: const Size(80, 28),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Reassign'),
+                  )
+                else if (isBest)
+                  FilledButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedDriverId = c.driverId;
+                        _selectedDriverLabel = c.label;
+                      });
+                    },
+                    style: AppStyles.accentButtonStyle.copyWith(
+                      minimumSize: const WidgetStatePropertyAll(Size(80, 28)),
+                      padding: const WidgetStatePropertyAll(
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      ),
+                      textStyle: const WidgetStatePropertyAll(
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                      shape: WidgetStatePropertyAll(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                    child: const Text('Reassign'),
+                  )
+                else
+                  OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedDriverId = c.driverId;
+                        _selectedDriverLabel = c.label;
+                      });
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimary,
+                      side: BorderSide(
+                        color: isDark
+                            ? AppColors.borderDark
+                            : AppColors.borderSecondary,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: const Size(80, 28),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Reassign'),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Execute reassign ──────────────────────────────────────────────────────
 
   void _executeBulkReassign() {
     setState(() => _isReassigning = true);

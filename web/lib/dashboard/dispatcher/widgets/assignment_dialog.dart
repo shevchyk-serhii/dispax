@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
+import '../../../constants/app_styles.dart';
+import '../../../constants/app_dimensions.dart';
 
 class AssignmentDialog extends StatelessWidget {
   final Ride ride;
@@ -22,133 +24,366 @@ class AssignmentDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Assign Ride'),
-      content: SingleChildScrollView(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasConflicts = conflicts.isNotEmpty;
+    final shortId = ride.id.length > 8 ? ride.id.substring(0, 8) : ride.id;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSection('Ride Details', [
-              _buildRow(context, 'Client', ride.clientName),
-              _buildRow(
-                context,
-                'Time',
-                DateFormat('dd.MM.yyyy HH:mm').format(ride.pickupDateTime),
+            // ── Graphite header ──────────────────────────────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.paddingMedium,
+                vertical: AppDimensions.paddingMedium,
               ),
-              _buildRow(context, 'From', ride.from.address),
-              _buildRow(context, 'To', ride.to.address),
-              if (ride.flightNumber != null)
-                _buildRow(context, 'Flight', ride.flightNumber!),
-            ]),
-            const SizedBox(height: 16),
-            _buildSection('Assign To', [
-              _buildRow(context, 'Driver', driverLabel),
-            ]),
-            if (conflicts.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.rideCancelledBg,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.rideCancelledBorder),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppDimensions.radiusMedium),
                 ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.person_pin_circle_outlined,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Assign Ride #$shortId',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white70,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Body ────────────────────────────────────────────────────────
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppDimensions.paddingMedium),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.warning, color: AppColors.error, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Schedule Conflicts',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.rideCancelledText,
+                    // Ride details card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: AppStyles.glassCardDecorationOf(context),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _sectionLabel('Ride details'),
+                          const SizedBox(height: 8),
+                          _infoRow(
+                            context,
+                            icon: Icons.person_outline,
+                            label: 'Client',
+                            value: ride.clientName,
+                            isDark: isDark,
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ...conflicts.map(
-                      (c) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          '${DateFormat('HH:mm').format(c.pickupDateTime)} - ${c.from.address} -> ${c.to.address}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.rideCancelledText,
+                          _infoRow(
+                            context,
+                            icon: Icons.access_time_outlined,
+                            label: 'Time',
+                            value: DateFormat(
+                              'dd.MM.yyyy HH:mm',
+                            ).format(ride.pickupDateTime),
+                            isDark: isDark,
                           ),
-                        ),
+                          _infoRow(
+                            context,
+                            icon: Icons.place_outlined,
+                            label: 'From',
+                            value: ride.from.address,
+                            isDark: isDark,
+                          ),
+                          _infoRow(
+                            context,
+                            icon: Icons.flag_outlined,
+                            label: 'To',
+                            value: ride.to.address,
+                            isDark: isDark,
+                          ),
+                          if (ride.flightNumber != null)
+                            _infoRow(
+                              context,
+                              icon: Icons.flight,
+                              label: 'Flight',
+                              value: ride.flightNumber!,
+                              isDark: isDark,
+                            ),
+                          if (ride.price != null)
+                            _infoRow(
+                              context,
+                              icon: Icons.euro_outlined,
+                              label: 'Fare',
+                              value: '€${ride.price!.toStringAsFixed(2)}',
+                              isDark: isDark,
+                              accent: true,
+                            ),
+                        ],
                       ),
                     ),
+
+                    const SizedBox(height: 12),
+
+                    // Assign-to card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.rideAssignedBgDark
+                            : AppColors.rideAssignedBg,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMedium,
+                        ),
+                        border: Border.all(color: AppColors.rideAssignedBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: AppColors.accent.withValues(
+                              alpha: 0.15,
+                            ),
+                            child: const Icon(
+                              Icons.directions_car_outlined,
+                              color: AppColors.accent,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Assigning to',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.rideAssignedText,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  driverLabel,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Conflict warning
+                    if (hasConflicts) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorBg,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusMedium,
+                          ),
+                          border: Border.all(
+                            color: AppColors.rideCancelledBorder,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: AppColors.error,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Schedule conflicts (${conflicts.length})',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: AppColors.errorStrong,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ...conflicts.map(
+                              (c) => Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text(
+                                  '${DateFormat('HH:mm').format(c.pickupDateTime)} — '
+                                  '${c.from.address} → ${c.to.address}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.rideCancelledText,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-            ],
+            ),
+
+            // ── Footer ───────────────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.paddingMedium,
+                vertical: 12,
+              ),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: isDark
+                        ? AppColors.borderDark
+                        : AppColors.borderPrimary,
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    style: AppStyles.textButtonStyle,
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    style: hasConflicts
+                        ? FilledButton.styleFrom(
+                            backgroundColor: AppColors.warning,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusMedium,
+                              ),
+                            ),
+                          )
+                        : AppStyles.accentButtonStyle,
+                    icon: Icon(
+                      hasConflicts ? Icons.warning_amber_rounded : Icons.check,
+                      size: 18,
+                    ),
+                    label: Text(
+                      hasConflicts ? 'Assign anyway' : 'Assign driver',
+                    ),
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.of(context).pop();
+                      onConfirm();
+                    },
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            HapticFeedback.selectionClick();
-            Navigator.of(context).pop();
-            onConfirm();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: conflicts.isNotEmpty
-                ? AppColors.warning
-                : Theme.of(context).colorScheme.primary,
-          ),
-          child: Text(
-            conflicts.isNotEmpty ? 'Assign Anyway' : 'Assign',
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-      ],
     );
   }
 
-  Widget _buildSection(String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-        ),
-        const SizedBox(height: 8),
-        ...children,
-      ],
+  Widget _sectionLabel(String text) {
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textLight,
+        letterSpacing: 0.8,
+      ),
     );
   }
 
-  Widget _buildRow(BuildContext context, String label, String value) {
+  Widget _infoRow(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isDark,
+    bool accent = false,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(
+            icon,
+            size: 15,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 6),
           SizedBox(
-            width: 60,
+            width: 52,
             child: Text(
-              '$label:',
+              label,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 13,
+                fontSize: 12,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondary,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: accent
+                    ? AppColors.accent
+                    : (isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimary),
+              ),
             ),
           ),
         ],

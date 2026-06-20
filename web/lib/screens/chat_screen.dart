@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_dimensions.dart';
 import '../modules/core/services/websocket_service.dart';
 import '../modules/ride_management/models/ride.dart';
 
@@ -98,163 +99,127 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  // ─── Build ─────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = context.read<AuthBloc>().state.user?.id;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isChatAvailable =
         widget.ride.status == RideStatus.assigned ||
         widget.ride.status == RideStatus.inProgress;
 
+    final rideShortId = widget.ride.id.length > 8
+        ? widget.ride.id.substring(0, 8)
+        : widget.ride.id;
+
     return Scaffold(
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.surfaceVariant,
       appBar: AppBar(
-        title: Text('Chat - ${widget.ride.clientName}'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.light,
         elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // Ride info bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: AppColors.rideAssignedBg,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.directions_car,
-                  size: 16,
-                  color: AppColors.rideAssigned,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${widget.ride.from.address} → ${widget.ride.to.address}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            // Driver avatar placeholder
+            CircleAvatar(
+              radius: 17,
+              backgroundColor: AppColors.accent.withValues(alpha: 0.25),
+              child: const Icon(
+                Icons.person_outline,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.ride.driverName ?? widget.ride.clientName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                  Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: AppColors.success,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Online · on ride #$rideShortId',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          // Messages
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          // ── Messages thread ────────────────────────────────────────────────
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _messages.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.chat_bubble_outline,
-                          size: 56,
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No messages yet',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Start the conversation',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
+                ? _buildEmptyState(context)
                 : ListView.builder(
                     controller: _scrollCtrl,
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _messages.length,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    itemCount: _messages.length + 1, // +1 for date separator
                     itemBuilder: (context, index) {
-                      final msg = _messages[index];
+                      // First item = date separator
+                      if (index == 0) return _buildDateSeparator();
+                      final msg = _messages[index - 1];
                       final isMe = msg.senderId == currentUserId;
                       return _buildMessageBubble(msg, isMe);
                     },
                   ),
           ),
-          // Input
+
+          // ── Input bar ──────────────────────────────────────────────────────
           if (isChatAvailable)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                border: Border(
-                  top: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                  ),
-                ),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _messageCtrl,
-                        decoration: InputDecoration(
-                          hintText: 'Type a message...',
-                          hintStyle: TextStyle(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outlineVariant,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                        ),
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendMessage(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.send,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          size: 20,
-                        ),
-                        onPressed: _sendMessage,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
+            _buildInputBar(isDark)
           else
             Container(
-              padding: const EdgeInsets.all(16),
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+              color: isDark
+                  ? AppColors.surfaceVariantDark
+                  : AppColors.surfaceVariant,
               child: Text(
                 'Chat is available only during active rides',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondary,
                 ),
               ),
             ),
@@ -263,29 +228,114 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // ── Date separator "Today" ────────────────────────────────────────────────
+
+  Widget _buildDateSeparator() {
+    final cs = Theme.of(context).colorScheme;
+    final lineColor = cs.outlineVariant;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: lineColor, height: 1)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Today',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          Expanded(child: Divider(color: lineColor, height: 1)),
+        ],
+      ),
+    );
+  }
+
+  // ── Empty state ───────────────────────────────────────────────────────────
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 40,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No messages yet',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Start the conversation with the driver',
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Message bubble ────────────────────────────────────────────────────────
+  // dispatcher (isMe) = right, graphite background, white text
+  // driver (!isMe)    = left, white/surface background, dark text
+
   Widget _buildMessageBubble(_ChatMsg msg, bool isMe) {
+    // Dispatcher bubble: graphite (#18181B) with white text, radius 14/14/4/14
+    // Driver bubble: white/surface with border, radius 14/14/14/4
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+          maxWidth: MediaQuery.of(context).size.width * 0.72,
         ),
         decoration: BoxDecoration(
           color: isMe
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.surfaceContainerHighest,
+              ? AppColors.primary
+              : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: isMe
-                ? const Radius.circular(16)
-                : const Radius.circular(4),
-            bottomRight: isMe
-                ? const Radius.circular(4)
-                : const Radius.circular(16),
+            topLeft: const Radius.circular(14),
+            topRight: const Radius.circular(14),
+            bottomLeft: Radius.circular(isMe ? 14 : 4),
+            bottomRight: Radius.circular(isMe ? 4 : 14),
           ),
+          border: isMe
+              ? null
+              : Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowXs,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: isMe
@@ -296,9 +346,10 @@ class _ChatScreenState extends State<ChatScreen> {
               msg.message,
               style: TextStyle(
                 color: isMe
-                    ? Theme.of(context).colorScheme.onPrimary
+                    ? Colors.white
                     : Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
+                height: 1.4,
               ),
             ),
             const SizedBox(height: 4),
@@ -306,9 +357,88 @@ class _ChatScreenState extends State<ChatScreen> {
               _formatTime(msg.sentAt),
               style: TextStyle(
                 color: isMe
-                    ? Theme.of(context).colorScheme.onPrimary.withAlpha(180)
+                    ? Colors.white.withValues(alpha: 0.6)
                     : Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Input pill ────────────────────────────────────────────────────────────
+
+  Widget _buildInputBar(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.surfaceVariantDark
+                      : AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: TextField(
+                  controller: _messageCtrl,
+                  decoration: InputDecoration(
+                    hintText: 'Type a message…',
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 11,
+                    ),
+                    isDense: true,
+                  ),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimary,
+                  ),
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _sendMessage(),
+                  maxLines: 4,
+                  minLines: 1,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Accent circular send button
+            Material(
+              color: AppColors.accent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: _sendMessage,
+                child: const Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
             ),
           ],
@@ -321,6 +451,8 @@ class _ChatScreenState extends State<ChatScreen> {
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }
+
+// ─── Model ────────────────────────────────────────────────────────────────────
 
 class _ChatMsg {
   final String id;
