@@ -300,6 +300,9 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
                             (x) => x.rideId == a.rideId,
                           ),
                         ),
+                        // Reassign is driven from the pending-requests panel
+                        // below (the at-risk row's Reassign button); the
+                        // top-of-board alert is dismiss-only by design.
                         onReassign: null,
                       ),
                     )
@@ -731,9 +734,9 @@ class _DispatchTopBar extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       '$weekday, $dateStr · $activeCount active rides',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

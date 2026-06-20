@@ -231,30 +231,32 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Date separator "Today" ────────────────────────────────────────────────
 
   Widget _buildDateSeparator() {
+    final cs = Theme.of(context).colorScheme;
+    final lineColor = cs.outlineVariant;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Expanded(child: Divider(color: AppColors.borderPrimary, height: 1)),
+          Expanded(child: Divider(color: lineColor, height: 1)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.borderPrimary,
+                color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Text(
+              child: Text(
                 'Today',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                  color: cs.onSurfaceVariant,
                 ),
               ),
             ),
           ),
-          Expanded(child: Divider(color: AppColors.borderPrimary, height: 1)),
+          Expanded(child: Divider(color: lineColor, height: 1)),
         ],
       ),
     );
@@ -270,7 +272,9 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.borderPrimary.withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -322,7 +326,9 @@ class _ChatScreenState extends State<ChatScreen> {
             bottomLeft: Radius.circular(isMe ? 14 : 4),
             bottomRight: Radius.circular(isMe ? 4 : 14),
           ),
-          border: isMe ? null : Border.all(color: AppColors.borderPrimary),
+          border: isMe
+              ? null
+              : Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           boxShadow: [
             BoxShadow(
               color: AppColors.shadowXs,
