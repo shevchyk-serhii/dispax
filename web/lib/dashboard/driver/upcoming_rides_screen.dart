@@ -8,6 +8,8 @@ import '../../widgets/widgets.dart';
 import '../../modules/core/navigation_helper.dart';
 import '../../utils/ride_status_styles.dart';
 import '../../constants/app_colors.dart';
+import '../../constants/app_styles.dart';
+import '../../constants/app_dimensions.dart';
 
 class UpcomingRidesScreen extends StatelessWidget {
   const UpcomingRidesScreen({super.key});
@@ -55,42 +57,63 @@ class UpcomingRidesScreen extends StatelessWidget {
     );
   }
 
+  // ─── Header ────────────────────────────────────────────────────────────────
+
   Widget _buildHeader(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: AppColors.driverGradient),
-        ),
+        color: AppColors.primary,
         child: SafeArea(
           bottom: false,
-          child: Row(
-            children: [
-              const Icon(Icons.event_note, color: Colors.white, size: 24),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Upcoming Rides',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 16, 20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Upcoming',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Next 7 days',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-                onPressed: () => refreshRides(context),
-                tooltip: 'Refresh',
-              ),
-            ],
+                IconButton(
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  onPressed: () => refreshRides(context),
+                  tooltip: 'Refresh',
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  // ─── Body ──────────────────────────────────────────────────────────────────
 
   Widget buildBody(BuildContext context, RideState rideState) {
     if (rideState.status == RideStateStatus.initial) {
@@ -100,9 +123,7 @@ class UpcomingRidesScreen extends StatelessWidget {
     }
 
     if (rideState.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+      return const LoadingWidget();
     }
 
     if (rideState.hasError && rideState.rides.isEmpty) {
@@ -117,173 +138,64 @@ class UpcomingRidesScreen extends StatelessWidget {
     final groupedRides = groupRidesByDate(upcomingRides);
 
     if (upcomingRides.isEmpty) {
-      return buildEmptyState();
+      return _buildEmptyState(context);
     }
 
     return RefreshIndicator(
       onRefresh: () async => refreshRides(context),
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: buildUpcomingStats(context, upcomingRides)),
+          const SliverToBoxAdapter(
+            child: SizedBox(height: AppDimensions.paddingMedium),
+          ),
           ...groupedRides.entries.map((entry) {
             return SliverToBoxAdapter(
-              child: buildDateGroup(context, entry.key, entry.value),
+              child: _buildDateGroup(context, entry.key, entry.value),
             );
           }),
+          const SliverToBoxAdapter(
+            child: SizedBox(height: AppDimensions.paddingXLarge),
+          ),
         ],
       ),
     );
   }
 
-  Widget buildEmptyState() {
+  // ─── Empty state ───────────────────────────────────────────────────────────
+
+  Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.schedule, size: 80, color: AppColors.info),
-          const SizedBox(height: 24),
+          Icon(
+            Icons.schedule,
+            size: AppDimensions.iconLogo,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: AppDimensions.paddingLarge),
           Text(
             'No upcoming rides',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.infoStrong,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'All caught up for now!',
-            style: TextStyle(fontSize: 16, color: AppColors.info),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildUpcomingStats(BuildContext context, List<Ride> upcomingRides) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final next7Days = upcomingRides.where((ride) {
-      final difference = ride.pickupDateTime.difference(DateTime.now()).inDays;
-      return difference <= 7;
-    }).length;
-
-    final thisWeek = upcomingRides.where((ride) {
-      final now = DateTime.now();
-      final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-      final endOfWeek = startOfWeek.add(const Duration(days: 7));
-      return ride.pickupDateTime.isAfter(startOfWeek) &&
-          ride.pickupDateTime.isBefore(endOfWeek);
-    }).length;
-
-    final thisMonth = upcomingRides.where((ride) {
-      final now = DateTime.now();
-      return ride.pickupDateTime.year == now.year &&
-          ride.pickupDateTime.month == now.month;
-    }).length;
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(15),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Upcoming Overview',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            style: AppStyles.headlineSmall.copyWith(
               color: colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              buildStatItem(
-                context: context,
-                icon: Icons.today,
-                count: next7Days,
-                label: 'Next 7 Days',
-                color: AppColors.warning,
-              ),
-              buildStatItem(
-                context: context,
-                icon: Icons.view_week,
-                count: thisWeek,
-                label: 'This Week',
-                color: AppColors.info,
-              ),
-              buildStatItem(
-                context: context,
-                icon: Icons.calendar_month,
-                count: thisMonth,
-                label: 'This Month',
-                color: AppColors.success,
-              ),
-              buildStatItem(
-                context: context,
-                icon: Icons.event,
-                count: upcomingRides.length,
-                label: 'Total',
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ],
+          const SizedBox(height: AppDimensions.paddingSmall),
+          Text(
+            'All caught up for now!',
+            style: AppStyles.bodyLarge.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget buildStatItem({
-    required BuildContext context,
-    required IconData icon,
-    required int count,
-    required String label,
-    required Color color,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: color.withAlpha(25),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          count.toString(),
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
+  // ─── Date group section ────────────────────────────────────────────────────
 
-  Widget buildDateGroup(
+  Widget _buildDateGroup(
     BuildContext context,
     String dateKey,
     List<Ride> rides,
@@ -302,61 +214,36 @@ class UpcomingRidesScreen extends StatelessWidget {
     } else if (isTomorrow) {
       dateLabel = 'Tomorrow';
     } else {
-      dateLabel = DateFormat.yMMMEd().format(date);
+      dateLabel = DateFormat('EEE d MMMM').format(date);
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          margin: const EdgeInsets.only(top: 8),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: isToday || isTomorrow
-                      ? AppColors.infoStrong
-                      : colorScheme.onSurfaceVariant,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  dateLabel,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${rides.length} rides',
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppDimensions.paddingMedium,
+            AppDimensions.paddingSmall,
+            AppDimensions.paddingMedium,
+            AppDimensions.paddingSmall,
+          ),
+          child: Text(
+            dateLabel.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurfaceVariant,
+              letterSpacing: 0.8,
+            ),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.paddingMedium,
+          ),
           child: Column(
             children: rides
-                .map((ride) => buildUpcomingRideCard(context, ride))
+                .map((ride) => _buildRideCard(context, ride))
                 .toList(),
           ),
         ),
@@ -364,118 +251,101 @@ class UpcomingRidesScreen extends StatelessWidget {
     );
   }
 
-  Widget buildUpcomingRideCard(BuildContext context, Ride ride) {
-    final statusColor = RideStatusStyles.getStatusColor(ride.status);
-    final daysUntilRide = ride.pickupDateTime.difference(DateTime.now()).inDays;
+  // ─── Ride card ─────────────────────────────────────────────────────────────
+
+  Widget _buildRideCard(BuildContext context, Ride ride) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Build detail line: flight info, pax, ride type
+    final detailParts = <String>[];
+    if (ride.isAirportTransfer && ride.flightNumber != null) {
+      detailParts.add('✈ ${ride.flightNumber}');
+    }
+    // specialRequirements as "pax" proxy if present
+    if (ride.specialRequirements != null &&
+        ride.specialRequirements!.isNotEmpty) {
+      detailParts.add(ride.specialRequirements!);
+    }
+    if (ride.isVipRide) {
+      detailParts.add('VIP');
+    }
+    final detailLine = detailParts.join(' · ');
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: statusColor.withAlpha(51), width: 1),
+      margin: const EdgeInsets.only(bottom: AppDimensions.paddingSmall),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colorScheme.outline),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowSm,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.schedule, color: statusColor, size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        DateFormat.Hm().format(ride.pickupDateTime),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: statusColor,
-                        ),
-                      ),
-                      if (daysUntilRide <= 1)
-                        Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.error,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'Soon',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top row: status badge + pickup time
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                RideStatusStyles.createStatusBadge(
+                  ride.status,
+                  context: context,
+                  fontSize: 10,
+                  iconSize: AppDimensions.iconSmall,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withAlpha(25),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      RideStatusStyles.getStatusLabel(ride.status),
-                      style: TextStyle(
-                        color: statusColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                ),
+                Text(
+                  DateFormat.Hm().format(ride.pickupDateTime),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Route
+            Text(
+              '${ride.from.address} → ${ride.to.address}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
               ),
-              const SizedBox(height: 12),
-              buildCompactRideInfo(context, Icons.person, ride.clientName),
-              const SizedBox(height: 6),
-              buildCompactRideInfo(
-                context,
-                Icons.location_on,
-                ride.from.address,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            // Detail line
+            if (detailLine.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                detailLine,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 6),
-              buildCompactRideInfo(context, Icons.flag, ride.to.address),
             ],
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget buildCompactRideInfo(
-    BuildContext context,
-    IconData icon,
-    String text,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
+  // ─── Data helpers ──────────────────────────────────────────────────────────
 
   List<Ride> getUpcomingRides(List<Ride> rides) {
     final now = DateTime.now();
