@@ -636,41 +636,43 @@ class _TemplateBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isActive) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF0FDF4),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF86EFAC)),
-        ),
-        child: const Text(
-          'Active',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF166534),
-          ),
-        ),
-      );
-    } else {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF4F4F5),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE4E4E7)),
-        ),
-        child: const Text(
-          'Paused',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFFA1A1AA),
-          ),
-        ),
+      return _badge(
+        label: 'Active',
+        bg: isDark ? AppColors.rideCompletedBgDark : const Color(0xFFF0FDF4),
+        border: isDark
+            ? AppColors.rideCompletedBgDark
+            : const Color(0xFF86EFAC),
+        fg: isDark ? AppColors.rideCompletedTextDark : const Color(0xFF166534),
       );
     }
+    return _badge(
+      label: 'Paused',
+      bg: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF4F4F5),
+      border: isDark ? AppColors.borderDark : const Color(0xFFE4E4E7),
+      fg: isDark ? AppColors.textSecondaryDark : const Color(0xFFA1A1AA),
+    );
+  }
+
+  Widget _badge({
+    required String label,
+    required Color bg,
+    required Color border,
+    required Color fg,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
+      ),
+    );
   }
 }
 

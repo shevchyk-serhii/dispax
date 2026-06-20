@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +9,7 @@ import '../../modules/ride_management/models/ride.dart';
 import '../../screens/create_ride_screen.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
+import 'secretary_front_desk_stats.dart';
 import '../../screens/settings_screen.dart';
 import '../../utils/ride_status_styles.dart';
 import '../../widgets/common/notification_bell.dart';
@@ -77,9 +79,11 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
     return BlocProvider<ClientBloc>(
       create: (context) {
         final authBloc = context.read<AuthBloc>();
+        // Load clients up-front so the "Active clients" stat tile populates —
+        // the client list panel is no longer in the IndexedStack to trigger it.
         return ClientBloc(
           userService: UserService(apiClient: authBloc.apiClient),
-        );
+        )..add(const ClientLoadRequested());
       },
       child: ResponsiveScaffold(
         destinations: _destinations,
@@ -207,20 +211,12 @@ class _StatTilesRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final todayRides = rideState.isLoaded
-        ? rideState.rides.where((r) {
-            final d = r.pickupDateTime;
-            return d.year == today.year &&
-                d.month == today.month &&
-                d.day == today.day;
-          }).toList()
+    final bookedToday = rideState.isLoaded
+        ? SecretaryFrontDeskStats.bookedCount(rideState.rides)
         : null;
-
-    final bookedToday = todayRides?.length;
-    final awaitingConfirm = todayRides
-        ?.where((r) => r.status == RideStatus.requested)
-        .length;
+    final awaitingConfirm = rideState.isLoaded
+        ? SecretaryFrontDeskStats.awaitingConfirmCount(rideState.rides)
+        : null;
     final activeClients = clientState.isLoaded
         ? clientState.clients.length
         : null;
@@ -340,30 +336,12 @@ class _TemplatesStatTileState extends State<_TemplatesStatTile> {
       final apiClient = context.read<AuthBloc>().apiClient;
       final resp = await apiClient.get('/ride-templates');
       if (resp.statusCode == 200 && mounted) {
-        // avoid importing dart:convert by parsing manually — just count commas
-        // at the top level, or parse properly:
-        final body = resp.body;
-        // Count items: safe light parse using json
-        final count = _countJsonArrayItems(body);
+        final decoded = jsonDecode(resp.body);
+        final count = decoded is List ? decoded.length : null;
         setState(() => _count = count);
       }
     } catch (_) {
       // Graceful degradation — show '—'
-    }
-  }
-
-  int? _countJsonArrayItems(String json) {
-    try {
-      // Quick heuristic: count only active templates is not possible without
-      // full parse, but we can parse the length at least.
-      final trimmed = json.trim();
-      if (trimmed == '[]') return 0;
-      // Use basic split — safe enough for an array of objects
-      // We rely on dart's built-in JSON; import at top level would conflict
-      // so we use a simple approach: count '{"id"' occurrences
-      return '{"id"'.allMatches(trimmed).length;
-    } catch (_) {
-      return null;
     }
   }
 
@@ -421,14 +399,8 @@ class _TodaysBookingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final today = DateTime.now();
     final todayRides = rideState.isLoaded
-        ? rideState.rides.where((r) {
-            final d = r.pickupDateTime;
-            return d.year == today.year &&
-                d.month == today.month &&
-                d.day == today.day;
-          }).toList()
+        ? SecretaryFrontDeskStats.ridesOn(rideState.rides)
         : <Ride>[];
 
     // Sort by pickup time ascending
@@ -462,7 +434,11 @@ class _TodaysBookingsCard extends StatelessWidget {
               ),
             ),
           ),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFF4F4F5)),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: isDark ? AppColors.borderDark : const Color(0xFFF4F4F5),
+          ),
           if (rideState.isLoading)
             const Padding(
               padding: EdgeInsets.all(24),
