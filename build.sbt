@@ -285,10 +285,12 @@ lazy val root = (project in file("."))
       new TestFramework("com.novocode.junit.JUnitFramework")
     ),
     // Keep the BDD suite out of the default `test` task: CucumberRunner is a JUnit
-    // test in this module, so a plain `sbt test` would otherwise pull it in. It runs
-    // only via the `cucumber` alias (testOnly bypasses this filter) and the dedicated
-    // CI `bdd` job. This keeps `test` (and `make test`) fast and focused on ZIO specs.
-    Test / testOptions += Tests.Filter(name => !name.endsWith("CucumberRunner")),
+    // test in this module, so a plain `sbt test` would otherwise pull it in. The filter
+    // is scoped to the `test` task ONLY (not all of `testOptions`), so the `cucumber`
+    // alias (`testOnly *CucumberRunner`) and the CI `bdd` job still run the suite. Scoping
+    // to `Test / testOptions` instead would also suppress `testOnly`, silently making
+    // `make test-bdd` a no-op. This keeps `test` (and `make test`) focused on ZIO specs.
+    Test / test / testOptions += Tests.Filter(name => !name.endsWith("CucumberRunner")),
     Compile / mainClass         := Some("com.shevchyk.Application"),
     assembly / mainClass        := Some("com.shevchyk.Application"),
     assembly / assemblyJarName  := "dispax-server.jar",

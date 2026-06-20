@@ -11,7 +11,7 @@ Feature: User profile photo upload
 
   @avatar @upload
   Scenario: User uploads their own profile photo
-    Given I am authenticated as a client
+    Given I am authenticated as a client with ID 50
     When I upload a JPEG image to "/api/users/50505050-5050-5050-5050-505050505050/avatar"
     Then the response status should be 200
     And the response should contain "true"
@@ -39,7 +39,7 @@ Feature: User profile photo upload
 
   @avatar @delete
   Scenario: User deletes own profile photo
-    Given I am authenticated as a client
+    Given I am authenticated as a client with ID 50
     When I send a DELETE request to "/api/users/50505050-5050-5050-5050-505050505050/avatar"
     Then the response status should be 204
 

@@ -259,7 +259,9 @@ object RidePoolApi:
                             .orElseFail((StatusCode.NotFound, ApiError("Pool not found")): Err)
           parsedRideId <- parseRideId(rideId)
           removed      <- repo.removeMember(pool.id, parsedRideId).mapError(internal)
-          _            <- ZIO.fail(internal(new RuntimeException("Ride not in pool"))).when(!removed)
+          // A ride that is not part of the pool is a client addressing error, not a
+          // server fault — respond NotFound (404) rather than InternalServerError (500).
+          _            <- ZIO.fail((StatusCode.NotFound, ApiError("Ride not in pool")): Err).when(!removed)
           _            <- repo
                             .update(
                               pool.copy(
