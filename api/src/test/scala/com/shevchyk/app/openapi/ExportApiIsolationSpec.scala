@@ -140,7 +140,7 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
           role: PersonRole,
           cid: Option[CompanyId]
       ): IO[RideError, Ride] = notImplemented
-      def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride]                           = notImplemented
+      def reassignDriver(rideId: RideId, newDriverId: PersonId, ov: Boolean): IO[RideError, Ride]              = notImplemented
       def markPayment(
           rideId: RideId,
           ps: PaymentStatus,

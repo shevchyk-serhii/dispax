@@ -197,7 +197,7 @@ object AvatarApiSpec extends ZIOSpecDefault:
           role: PersonRole,
           cid: Option[CompanyId]
       ): IO[RideError, Ride] = notImpl
-      def reassignDriver(id: RideId, nd: PersonId): IO[RideError, Ride]                                         = notImpl
+      def reassignDriver(id: RideId, nd: PersonId, ov: Boolean): IO[RideError, Ride]                            = notImpl
       def markPayment(id: RideId, ps: PaymentStatus, pm: Option[PaymentMethod]): IO[RideError, Ride]            = notImpl
       def getUnpaidCompletedRides(cid: CompanyId): IO[RideError, List[Ride]]                                    = notImpl
       def getRideCountsByStatus(cid: CompanyId): IO[RideError, Map[String, Int]]                                = ZIO.succeed(Map.empty)

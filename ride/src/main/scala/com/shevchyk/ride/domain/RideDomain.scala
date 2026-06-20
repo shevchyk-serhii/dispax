@@ -267,6 +267,7 @@ enum RideError extends Throwable:
   case UnauthorizedAccess(userId: PersonId, rideId: RideId)
   case InvalidStatusTransition(from: RideStatus, to: RideStatus)
   case RideAlreadyAssigned(rideId: RideId, driverId: PersonId)
+  case ScheduleConflict(message: String)
   case DatabaseError(cause: Throwable)
   case ExternalServiceError(service: String, cause: Throwable)
   case BusinessRuleViolation(rule: String, message: String)

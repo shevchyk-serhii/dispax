@@ -192,39 +192,36 @@ class RideService {
   }
 
   Future<Ride> assignDriver(String rideId, String driverId) async {
-    try {
-      final response = await privateApiClient.put(
-        '/rides/$rideId/assign-driver',
-        {'driverId': driverId},
-      );
+    final response = await privateApiClient.put(
+      '/rides/$rideId/assign-driver',
+      {'driverId': driverId},
+    );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> json = jsonDecode(response.body);
-        return Ride.fromJson(json);
-      } else {
-        throw ApiException('Failed to assign driver: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw ApiException('Error assigning driver: $e');
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      return Ride.fromJson(json);
     }
+    // Surface the backend's `{"error": ...}` message (and status code) instead
+    // of a bare "400", so the UI can show the real reason and react to conflicts.
+    throw ApiException.fromResponse(response, 'Failed to assign driver');
   }
 
-  Future<Ride> reassignDriver(String rideId, String newDriverId) async {
-    try {
-      final response = await privateApiClient.put(
-        '/rides/$rideId/reassign-driver',
-        {'driverId': newDriverId},
-      );
+  Future<Ride> reassignDriver(
+    String rideId,
+    String newDriverId, {
+    bool overrideScheduleConflict = false,
+  }) async {
+    final response = await privateApiClient
+        .put('/rides/$rideId/reassign-driver', {
+          'driverId': newDriverId,
+          'overrideScheduleConflict': overrideScheduleConflict,
+        });
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> json = jsonDecode(response.body);
-        return Ride.fromJson(json);
-      } else {
-        throw ApiException('Failed to reassign driver: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw ApiException('Error reassigning driver: $e');
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      return Ride.fromJson(json);
     }
+    throw ApiException.fromResponse(response, 'Failed to reassign driver');
   }
 
   Future<void> updateDriverLocation(

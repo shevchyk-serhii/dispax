@@ -91,13 +91,18 @@ class RideReassignRequested extends RideEvent {
   final String rideId;
   final String newDriverId;
 
+  /// When true, the dispatcher has confirmed reassignment despite a schedule
+  /// conflict; the backend skips the conflict check for this request.
+  final bool overrideScheduleConflict;
+
   const RideReassignRequested({
     required this.rideId,
     required this.newDriverId,
+    this.overrideScheduleConflict = false,
   });
 
   @override
-  List<Object> get props => [rideId, newDriverId];
+  List<Object> get props => [rideId, newDriverId, overrideScheduleConflict];
 }
 
 /// Locally applies a status change received via WebSocket — no HTTP call.

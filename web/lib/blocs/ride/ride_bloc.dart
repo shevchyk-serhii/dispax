@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../modules/ride_management/services/ride_service.dart';
+import '../../modules/core/services/api_client.dart';
 import 'ride_event.dart';
 import 'ride_state.dart';
 
@@ -177,11 +178,33 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       final updatedRide = await privateRideService.reassignDriver(
         event.rideId,
         event.newDriverId,
+        overrideScheduleConflict: event.overrideScheduleConflict,
       );
       final updatedRides = state.rides.map((ride) {
         return ride.id == updatedRide.id ? updatedRide : ride;
       }).toList();
       emit(RideState.loaded(updatedRides));
+    } on ApiException catch (e) {
+      // A 409 means the new driver has a schedule conflict. Unless the
+      // dispatcher already chose to override, surface a distinct state so the
+      // UI can offer to reassign anyway.
+      if (e.statusCode == 409 && !event.overrideScheduleConflict) {
+        emit(
+          state.copyWith(
+            status: RideStateStatus.reassignConflict,
+            errorMessage: e.message,
+            conflictRideId: event.rideId,
+            conflictDriverId: event.newDriverId,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            status: RideStateStatus.error,
+            errorMessage: e.message,
+          ),
+        );
+      }
     } catch (e) {
       emit(
         state.copyWith(

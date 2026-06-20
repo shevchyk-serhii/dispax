@@ -450,8 +450,8 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.BusinessRuleViolation("schedule_conflict", _) => true
-                case _                                                       => false
+                case RideError.ScheduleConflict(_) => true
+                case _                             => false
               }
             case _                   => false
           })

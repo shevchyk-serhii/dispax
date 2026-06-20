@@ -113,6 +113,67 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<RideBloc, RideState>(
+      listenWhen: (prev, curr) =>
+          curr.status == RideStateStatus.reassignConflict &&
+          prev.status != RideStateStatus.reassignConflict,
+      listener: (context, state) {
+        if (state.hasReassignConflict) {
+          _showReassignConflictDialog(
+            context,
+            rideId: state.conflictRideId!,
+            driverId: state.conflictDriverId!,
+            message: state.errorMessage,
+          );
+        }
+      },
+      child: _buildBody(),
+    );
+  }
+
+  /// Shown when the backend rejects a reassignment with a schedule conflict the
+  /// client didn't detect locally. Lets the dispatcher reassign anyway.
+  void _showReassignConflictDialog(
+    BuildContext context, {
+    required String rideId,
+    required String driverId,
+    String? message,
+  }) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+        title: const Text('Driver is busy'),
+        content: Text(
+          message ??
+              'The selected driver already has a ride at this time. '
+                  'Reassign anyway?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
+            onPressed: () {
+              Navigator.of(dialogCtx).pop();
+              context.read<RideBloc>().add(
+                RideReassignRequested(
+                  rideId: rideId,
+                  newDriverId: driverId,
+                  overrideScheduleConflict: true,
+                ),
+              );
+            },
+            child: const Text('Reassign anyway'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
     return Column(
       children: [
         _buildHeader(),
@@ -540,10 +601,14 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               conflicts: conflicts,
               onConfirm: () {
                 if (isReassign) {
+                  // If the dispatcher already saw locally-detected conflicts and
+                  // confirmed ("Assign anyway"), tell the backend to override so
+                  // it doesn't reject the reassignment.
                   context.read<RideBloc>().add(
                     RideReassignRequested(
                       rideId: ride.id,
                       newDriverId: driverId,
+                      overrideScheduleConflict: conflicts.isNotEmpty,
                     ),
                   );
                 } else {

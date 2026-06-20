@@ -436,7 +436,9 @@ object RideApi:
         parsedRideId   <- parseRideId(rideId)
         parsedDriverId <- parsePersonId(validated.driverId)
         service        <- ZIO.service[RideService]
-        ride           <- service.reassignDriver(parsedRideId, parsedDriverId).mapError(fromRideError)
+        ride           <- service
+                            .reassignDriver(parsedRideId, parsedDriverId, validated.overrideScheduleConflict)
+                            .mapError(fromRideError)
       } yield RideDto.fromDomain(ride)
   }
 

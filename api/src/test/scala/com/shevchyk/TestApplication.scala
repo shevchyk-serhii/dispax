@@ -1257,7 +1257,6 @@ object TestApplication extends ZIOAppDefault:
       // Ride
       inMemoryRideRepositoryLayer,
       inMemoryExpenseRepositoryLayer,
-      ZLayer.succeed[TariffRepository](new InMemoryTariffRepository()),
       RideEstimateService.live,
       ZLayer.succeed[RideRatingRepository] {
         // Pre-seed a rating for the test ride

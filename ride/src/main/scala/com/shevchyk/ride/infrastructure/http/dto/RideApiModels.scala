@@ -164,7 +164,10 @@ case class UpdateClientLocationRequest(
 ) derives JsonCodec
 
 case class AssignDriverRequest(
-    driverId: String
+    driverId: String,
+    // When true, a dispatcher knowingly reassigns a driver despite a schedule conflict.
+    // Only honoured by the reassign endpoint; defaulted for backward compatibility.
+    overrideScheduleConflict: Boolean = false
 ) derives JsonCodec
 
 case class SendChatMessageRequest(

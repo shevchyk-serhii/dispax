@@ -1245,8 +1245,8 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.BusinessRuleViolation("schedule_conflict", _) => true
-                case _                                                       => false
+                case RideError.ScheduleConflict(_) => true
+                case _                             => false
               }
             case _                   => false
           })
@@ -1307,8 +1307,8 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.BusinessRuleViolation("schedule_conflict", _) => true
-                case _                                                       => false
+                case RideError.ScheduleConflict(_) => true
+                case _                             => false
               }
             case _                   => false
           })
@@ -1341,7 +1341,59 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.BusinessRuleViolation("schedule_conflict", _) => true
+                case RideError.ScheduleConflict(_) => true
+                case _                             => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("reassignDriver with overrideScheduleConflict bypasses the conflict") {
+          val pickupAt = Instant.now().plusSeconds(7200)
+          for {
+            service    <- ZIO.service[RideService]
+            ride1      <- service.createRide(
+                            CreateRideRequest(
+                              clientId = testClientId,
+                              companyId = testCompanyId,
+                              pickupLocation = Location("A"),
+                              dropoffLocation = Location("B"),
+                              scheduledTime = Some(pickupAt)
+                            )
+                          )
+            _          <- service.assignDriver(ride1.id, testDriver2Id)
+            ride2      <- service.createRide(
+                            CreateRideRequest(
+                              clientId = vipClientId,
+                              companyId = testCompanyId,
+                              pickupLocation = Location("C"),
+                              dropoffLocation = Location("D"),
+                              scheduledTime = Some(pickupAt.plusSeconds(300)) // 5 min later
+                            )
+                          )
+            _          <- service.assignDriver(ride2.id, testDriverId)
+            reassigned <- service.reassignDriver(ride2.id, testDriver2Id, overrideScheduleConflict = true)
+          } yield assertTrue(reassigned.driverId.contains(testDriver2Id))
+        }.provide(standardLayers),
+        test("override does not bypass company isolation") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(
+                          CreateRideRequest(
+                            clientId = testClientId,
+                            companyId = testCompanyId,
+                            pickupLocation = Location("A"),
+                            dropoffLocation = Location("B")
+                          )
+                        )
+            assigned <- service.assignDriver(ride.id, testDriverId)
+            result   <-
+              service
+                .reassignDriver(assigned.id, wrongCompanyDriver.id, overrideScheduleConflict = true)
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation("company_isolation", _) => true
                 case _                                                       => false
               }
             case _                   => false
@@ -1630,8 +1682,8 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.BusinessRuleViolation("schedule_conflict", _) => true
-                case _                                                       => false
+                case RideError.ScheduleConflict(_) => true
+                case _                             => false
               }
             case _                   => false
           })
@@ -1661,8 +1713,8 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.BusinessRuleViolation("schedule_conflict", _) => true
-                case _                                                       => false
+                case RideError.ScheduleConflict(_) => true
+                case _                             => false
               }
             case _                   => false
           })

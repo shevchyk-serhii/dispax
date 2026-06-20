@@ -9,6 +9,9 @@ enum RideStateStatus {
   error,
   deleting,
   assigning,
+  // The backend rejected a reassignment because the new driver's schedule
+  // conflicts; the dispatcher may retry with override.
+  reassignConflict,
 }
 
 class RideState extends Equatable {
@@ -17,11 +20,19 @@ class RideState extends Equatable {
   final String? errorMessage;
   final String? deletingRideId;
 
+  /// Set together with [RideStateStatus.reassignConflict]: identifies the ride
+  /// and the driver the dispatcher tried to assign, so the UI can offer to
+  /// override the schedule conflict.
+  final String? conflictRideId;
+  final String? conflictDriverId;
+
   const RideState({
     this.status = RideStateStatus.initial,
     this.rides = const [],
     this.errorMessage,
     this.deletingRideId,
+    this.conflictRideId,
+    this.conflictDriverId,
   });
 
   factory RideState.initial() {
@@ -45,12 +56,16 @@ class RideState extends Equatable {
     List<Ride>? rides,
     String? errorMessage,
     String? deletingRideId,
+    String? conflictRideId,
+    String? conflictDriverId,
   }) {
     return RideState(
       status: status ?? this.status,
       rides: rides ?? this.rides,
       errorMessage: errorMessage,
       deletingRideId: deletingRideId,
+      conflictRideId: conflictRideId,
+      conflictDriverId: conflictDriverId,
     );
   }
 
@@ -61,7 +76,18 @@ class RideState extends Equatable {
   bool get isEmpty => rides.isEmpty && isLoaded;
   bool get isDeleting => status == RideStateStatus.deleting;
   bool get isAssigning => status == RideStateStatus.assigning;
+  bool get hasReassignConflict =>
+      status == RideStateStatus.reassignConflict &&
+      conflictRideId != null &&
+      conflictDriverId != null;
 
   @override
-  List<Object?> get props => [status, rides, errorMessage, deletingRideId];
+  List<Object?> get props => [
+    status,
+    rides,
+    errorMessage,
+    deletingRideId,
+    conflictRideId,
+    conflictDriverId,
+  ];
 }

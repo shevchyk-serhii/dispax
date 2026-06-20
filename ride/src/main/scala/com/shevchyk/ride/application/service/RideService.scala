@@ -59,7 +59,12 @@ trait RideService:
       userRole: PersonRole,
       companyId: Option[CompanyId]
   ): IO[RideError, Ride]
-  def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride]
+
+  def reassignDriver(
+      rideId: RideId,
+      newDriverId: PersonId,
+      overrideScheduleConflict: Boolean = false
+  ): IO[RideError, Ride]
 
   def markPayment(
       rideId: RideId,
@@ -528,7 +533,11 @@ class RideServiceImpl(
           .ignore
     } yield persistedRide
 
-  def reassignDriver(rideId: RideId, newDriverId: PersonId): IO[RideError, Ride] =
+  def reassignDriver(
+      rideId: RideId,
+      newDriverId: PersonId,
+      overrideScheduleConflict: Boolean = false
+  ): IO[RideError, Ride] =
     for {
       ride <- getRideById(rideId)
       _    <-
@@ -547,8 +556,9 @@ class RideServiceImpl(
       blocked <- blacklistRepository.isBlacklisted(ride.clientId, newDriverId).mapDatabaseError
       _       <- failRule("blacklist", "This driver is blacklisted for the ride's client").when(blocked).unit
 
-      // Check scheduling conflicts (exclude current ride from conflict check)
-      _ <- checkScheduleConflict(newDriverId, ride)
+      // Check scheduling conflicts (exclude current ride from conflict check).
+      // A dispatcher can knowingly override the conflict; tenant/role/blacklist checks above still apply.
+      _ <- checkScheduleConflict(newDriverId, ride).unless(overrideScheduleConflict)
 
       updatedRide   = ride
                         .focus(_.driverId)
@@ -759,7 +769,7 @@ class RideServiceImpl(
               s"Driver already has ride ${conflicting.id.value} " +
                 s"at ${conflictTime} — time windows overlap (buffer ${MinBufferMinutes} min)"
             ZIO.logWarning(s"assignDriver rejected: rule=schedule_conflict msg=$msg") *>
-              ZIO.fail(RideError.BusinessRuleViolation("schedule_conflict", msg))
+              ZIO.fail(RideError.ScheduleConflict(msg))
           case None              => ZIO.unit
     } yield ()
 

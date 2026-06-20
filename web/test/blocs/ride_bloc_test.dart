@@ -291,7 +291,11 @@ void main() {
           status: RideStatus.assigned,
         );
         when(
-          () => mockRideService.reassignDriver('ride-1', 'driver-2'),
+          () => mockRideService.reassignDriver(
+            'ride-1',
+            'driver-2',
+            overrideScheduleConflict: any(named: 'overrideScheduleConflict'),
+          ),
         ).thenAnswer((_) async => reassigned);
         return buildBloc();
       },
@@ -309,7 +313,11 @@ void main() {
       'RideReassignRequested emits error on failure',
       build: () {
         when(
-          () => mockRideService.reassignDriver(any(), any()),
+          () => mockRideService.reassignDriver(
+            any(),
+            any(),
+            overrideScheduleConflict: any(named: 'overrideScheduleConflict'),
+          ),
         ).thenThrow(ApiException('fail'));
         return buildBloc();
       },
@@ -321,6 +329,78 @@ void main() {
         isA<RideState>().having((s) => s.isAssigning, 'isAssigning', true),
         isA<RideState>().having((s) => s.hasError, 'hasError', true),
       ],
+    );
+
+    blocTest<RideBloc, RideState>(
+      'RideReassignRequested surfaces a schedule conflict (409) as '
+      'reassignConflict, not a bare error',
+      build: () {
+        when(
+          () => mockRideService.reassignDriver(
+            'ride-1',
+            'driver-2',
+            overrideScheduleConflict: false,
+          ),
+        ).thenThrow(
+          ApiException(
+            'Failed to reassign driver: Driver already has a ride',
+            statusCode: 409,
+          ),
+        );
+        return buildBloc();
+      },
+      seed: () => RideState.loaded([testRide]),
+      act: (bloc) => bloc.add(
+        const RideReassignRequested(rideId: 'ride-1', newDriverId: 'driver-2'),
+      ),
+      expect: () => [
+        isA<RideState>().having((s) => s.isAssigning, 'isAssigning', true),
+        isA<RideState>()
+            .having((s) => s.hasReassignConflict, 'hasReassignConflict', true)
+            .having((s) => s.conflictRideId, 'conflictRideId', 'ride-1')
+            .having((s) => s.conflictDriverId, 'conflictDriverId', 'driver-2')
+            .having((s) => s.hasError, 'hasError', false),
+      ],
+    );
+
+    blocTest<RideBloc, RideState>(
+      'RideReassignRequested with override passes the flag and succeeds even '
+      'on conflict',
+      build: () {
+        final reassigned = testRide.copyWith(
+          driverId: 'driver-2',
+          status: RideStatus.assigned,
+        );
+        when(
+          () => mockRideService.reassignDriver(
+            'ride-1',
+            'driver-2',
+            overrideScheduleConflict: true,
+          ),
+        ).thenAnswer((_) async => reassigned);
+        return buildBloc();
+      },
+      seed: () => RideState.loaded([testRide]),
+      act: (bloc) => bloc.add(
+        const RideReassignRequested(
+          rideId: 'ride-1',
+          newDriverId: 'driver-2',
+          overrideScheduleConflict: true,
+        ),
+      ),
+      expect: () => [
+        isA<RideState>().having((s) => s.isAssigning, 'isAssigning', true),
+        isA<RideState>().having((s) => s.isLoaded, 'isLoaded', true),
+      ],
+      verify: (_) {
+        verify(
+          () => mockRideService.reassignDriver(
+            'ride-1',
+            'driver-2',
+            overrideScheduleConflict: true,
+          ),
+        ).called(1);
+      },
     );
 
     group('RideStatusReceived (task 12: local WS status update)', () {
