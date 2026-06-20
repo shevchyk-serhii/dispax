@@ -14,6 +14,9 @@ import java.time.{ZoneOffset, format => _}
 
 object PdfGenerator:
 
+  // iText's `Document.add` / `PdfPTable.addCell` return a value we intentionally ignore.
+  extension [A](a: A) private def discard: Unit = ()
+
   private val dateFormatter     = DateTimeFormatter.ofPattern("dd.MM.yyyy")
   private val dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
   private val monthFormatter    = DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.GERMAN)
@@ -183,13 +186,13 @@ object PdfGenerator:
     dateCell.setHorizontalAlignment(Element.ALIGN_RIGHT)
     table.addCell(dateCell)
 
-    doc.add(table)
+    doc.add(table).discard
 
   private def addReceiptTitle(doc: Document): Unit =
     val title = new Paragraph("Quittung / Rechnung", fontTitle)
     title.setAlignment(Element.ALIGN_RIGHT)
-    doc.add(title)
-    doc.add(new LineSeparator(1f, 100f, colorPrimary, Element.ALIGN_CENTER, 0f))
+    doc.add(title).discard
+    doc.add(new LineSeparator(1f, 100f, colorPrimary, Element.ALIGN_CENTER, 0f)).discard
 
   private def addReceiptRecipient(doc: Document, receiptNumber: String, recipient: ClientCompany): Unit =
     val table = new PdfPTable(2)
@@ -210,7 +213,7 @@ object PdfGenerator:
     nrCell.addElement(new Phrase(receiptNumber, fontHeading))
     table.addCell(nrCell)
 
-    doc.add(table)
+    doc.add(table).discard
 
   private def addReceiptRideDetails(
       doc: Document,
@@ -230,7 +233,7 @@ object PdfGenerator:
       val vc = new PdfPCell(new Phrase(value, fontNormal))
       vc.setBorder(Rectangle.NO_BORDER)
       vc.setPaddingTop(4)
-      table.addCell(vc)
+      table.addCell(vc).discard
 
     row("Fahrtart:", "Stadtfahrt")
     row("Fahrt von:", pickupAddress)
@@ -238,7 +241,7 @@ object PdfGenerator:
     row("Datum/Uhrzeit:", pickupDatetime.atOffset(ZoneOffset.UTC).toLocalDateTime.format(dateTimeFormatter))
     row("Zahlungsart:", "Bar")
 
-    doc.add(table)
+    doc.add(table).discard
 
   // Brutto (gross) in → Netto and MwSt derived. Same HALF_UP rounding as the invoice path.
   private def addReceiptAmounts(doc: Document, grossPrice: BigDecimal, taxRatePct: BigDecimal): Unit =
@@ -259,19 +262,19 @@ object PdfGenerator:
       vc.setBorder(Rectangle.NO_BORDER)
       vc.setPaddingTop(6)
       vc.setHorizontalAlignment(Element.ALIGN_RIGHT)
-      table.addCell(vc)
+      table.addCell(vc).discard
 
     totalRow("Netto-Fahrpreis", formatMoney(net))
     if taxRatePct > 0 then totalRow(s"MwSt. $taxRatePct%", formatMoney(tax))
     totalRow("= Brutto-Fahrpreis", formatMoney(gross), bold = true)
 
-    doc.add(table)
+    doc.add(table).discard
 
   private def addReceiptSignature(doc: Document): Unit =
     val line = new Paragraph("____________________________", fontNormal)
     line.setSpacingBefore(28f)
     doc.add(line)
-    doc.add(new Paragraph("Datum, Unterschrift des Fahrers", fontSmall))
+    doc.add(new Paragraph("Datum, Unterschrift des Fahrers", fontSmall)).discard
 
   // Issuer block (top-left) + invoice date (top-right), mirroring the sample Rechnung.
   private def addIssuerHeader(doc: Document, invoice: Invoice, profile: CompanyBillingProfile): Unit =
@@ -293,13 +296,13 @@ object PdfGenerator:
     dateCell.setHorizontalAlignment(Element.ALIGN_RIGHT)
     table.addCell(dateCell)
 
-    doc.add(table)
+    doc.add(table).discard
 
   private def addTitle(doc: Document): Unit =
     val title = new Paragraph("Rechnung", fontTitle)
     title.setAlignment(Element.ALIGN_RIGHT)
     doc.add(title)
-    doc.add(new LineSeparator(1f, 100f, colorPrimary, Element.ALIGN_CENTER, 0f))
+    doc.add(new LineSeparator(1f, 100f, colorPrimary, Element.ALIGN_CENTER, 0f)).discard
 
   // Recipient (client company) on the left, invoice number on the right.
   private def addRecipient(doc: Document, invoice: Invoice, clientCompany: ClientCompany): Unit =
@@ -320,7 +323,7 @@ object PdfGenerator:
     nrCell.addElement(new Phrase(invoice.number, fontHeading))
     table.addCell(nrCell)
 
-    doc.add(table)
+    doc.add(table).discard
 
   private def addCostHeading(doc: Document, invoice: Invoice, profile: CompanyBillingProfile): Unit =
     val heading = new Paragraph("Kostenrechnung", fontSubHead)
@@ -330,7 +333,7 @@ object PdfGenerator:
     profile.invoiceIntro.foreach(intro => doc.add(new Phrase(intro, fontNormal)))
     doc.add(PdfChunk.NEWLINE)
     val period  = invoice.periodFrom.format(monthFormatter)
-    doc.add(new Phrase(s"Auftragsfahrten v. $period", fontNormal))
+    doc.add(new Phrase(s"Auftragsfahrten v. $period", fontNormal)).discard
 
   private def addTotals(doc: Document, invoice: Invoice): Unit =
     val table = new PdfPTable(2)
@@ -346,19 +349,19 @@ object PdfGenerator:
       vc.setBorder(Rectangle.NO_BORDER)
       vc.setPaddingTop(6)
       vc.setHorizontalAlignment(Element.ALIGN_RIGHT)
-      table.addCell(vc)
+      table.addCell(vc).discard
 
     totalRow("Nettozwischensumme", formatMoney(invoice.subtotalAmount))
     if invoice.taxRate > 0 then totalRow(s"MwSt. ${invoice.taxRate}%", formatMoney(invoice.taxAmount))
     totalRow(s"= Rechnungsbetrag (${invoice.currency})", formatMoney(invoice.totalAmount), bold = true)
 
-    doc.add(table)
+    doc.add(table).discard
 
   private def addPaymentTerms(doc: Document, profile: CompanyBillingProfile): Unit =
     val p1 = new Paragraph("Bitte überweisen Sie den ausgewiesenen Betrag.", fontNormal)
     p1.setSpacingBefore(16f)
     doc.add(p1)
-    doc.add(new Paragraph(s"Zahlbar innerhalb von ${profile.paymentTermsDays} Tagen.", fontSmall))
+    doc.add(new Paragraph(s"Zahlbar innerhalb von ${profile.paymentTermsDays} Tagen.", fontSmall)).discard
 
   private def addSignature(doc: Document, profile: CompanyBillingProfile): Unit =
     val greet = new Paragraph("Mit freundlichen Grüßen", fontNormal)
@@ -409,13 +412,13 @@ object PdfGenerator:
       table.addCell(dataCell(formatMoney(item.total), Element.ALIGN_RIGHT))
     }
 
-    doc.add(table)
+    doc.add(table).discard
 
   private def addNotes(doc: Document, notes: String): Unit =
     val head = new Paragraph("Anmerkungen", fontHeading)
     head.setSpacingBefore(16f)
     doc.add(head)
-    doc.add(new Paragraph(notes, fontNormal))
+    doc.add(new Paragraph(notes, fontNormal)).discard
 
   // Footer: contact + tax IDs (left column) and bank details (right column), as in the sample.
   private def addFooter(doc: Document, profile: CompanyBillingProfile): Unit =
@@ -451,7 +454,7 @@ object PdfGenerator:
     kv(right, "BIC", profile.bic)
     table.addCell(right)
 
-    doc.add(table)
+    doc.add(table).discard
 
   // German number format: comma decimal separator, e.g. "171,50 €".
   private def formatMoney(amount: BigDecimal): String =

@@ -6,11 +6,9 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
-import cats.effect.IO
 import zio.interop.catz.*
 import java.time.Instant
 import java.util.UUID
-import com.github.f4b6a3.uuid.UuidCreator
 
 final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonRepository {
 

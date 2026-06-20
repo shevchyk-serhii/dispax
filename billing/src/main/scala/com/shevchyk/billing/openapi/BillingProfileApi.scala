@@ -4,7 +4,6 @@ import com.shevchyk.auth.service.JwtService
 import com.shevchyk.billing.domain.{CompanyBillingProfile, UpdateCompanyBillingProfileRequest}
 import com.shevchyk.billing.openapi.BillingSecure.*
 import com.shevchyk.billing.repository.CompanyBillingProfileRepository
-import com.shevchyk.core.openapi.ApiError
 import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*

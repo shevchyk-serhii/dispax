@@ -2,7 +2,7 @@ package com.shevchyk.ride.application.service
 
 import com.shevchyk.core.application.EventHub
 import com.shevchyk.core.domain.{PersonId, WebSocketEvent}
-import com.shevchyk.ride.domain.{AirportCheckpoint, MucCheckpoints, Ride, RideError, RideSpecifics, RideStatus}
+import com.shevchyk.ride.domain.{AirportCheckpoint, Ride, RideError, RideSpecifics, RideStatus}
 import com.shevchyk.ride.repository.RideRepository
 import zio.*
 
@@ -100,10 +100,10 @@ class AirportCheckpointServiceImpl(
       // Uses the airport code from the ride specifics; gracefully defaults when config is unavailable.
       displayName     <-
         extractAirportCode(ride)
-          .fold(ZIO.succeed(MucCheckpoints.displayName(requestedCheckpoint))) { code =>
+          .fold(ZIO.succeed(AirportCheckpoint.defaultDisplayName(requestedCheckpoint))) { code =>
             airportConfigService
               .getCheckpointDisplayName(code, requestedCheckpoint)
-              .catchAll(_ => ZIO.succeed(MucCheckpoints.displayName(requestedCheckpoint)))
+              .catchAll(_ => ZIO.succeed(AirportCheckpoint.defaultDisplayName(requestedCheckpoint)))
           }
       // Publish event only when a driverId is present; skip when None to avoid phantom dedup entries
       // and silently-failing FCM pushes to a non-existent recipient.
