@@ -114,33 +114,23 @@ object RideRepositoryMetricsSpec extends ZIOSpecDefault {
           } yield assertTrue(avg == 0.0)).provide(freshRepo)
         }
       ),
-      suite("getUnpaidCompletedRides filter")(
-        test("keeps only Completed + Unpaid rides") {
-          (for {
-            all   <-
-              seed(
-                ride(status = RideStatus.Completed, payment = PaymentStatus.Unpaid),
-                ride(status = RideStatus.Completed, payment = PaymentStatus.Paid),
-                ride(status = RideStatus.InProgress, payment = PaymentStatus.Unpaid),
-                ride(status = RideStatus.Cancelled, payment = PaymentStatus.Unpaid)
-              ) *> ZIO.serviceWithZIO[RideRepository](_.findByCompanyId(companyA))
-            unpaid = all.filter(r => r.status == RideStatus.Completed && r.paymentStatus == PaymentStatus.Unpaid)
-          } yield assertTrue(unpaid.size == 1)).provide(freshRepo)
-        }
-      ),
       suite("countDailyStatsByCompany")(
         test("buckets rides per day with total/completed/cancelled counts") {
           val day = Instant.now().minusSeconds(86400) // 1 day ago, within a 7-day window
+          // Distinct counts (2 completed, 1 cancelled, 1 requested) so that swapping the
+          // completed/cancelled tallies would change the result — guards against a metric
+          // that conflates the two statuses.
           (for {
             stats <-
               seed(
+                ride(status = RideStatus.Completed, requestTime = day),
                 ride(status = RideStatus.Completed, requestTime = day),
                 ride(status = RideStatus.Cancelled, requestTime = day),
                 ride(status = RideStatus.Requested, requestTime = day)
               ) *> ZIO.serviceWithZIO[RideRepository](_.countDailyStatsByCompany(companyA, 7))
           } yield {
             val (_, total, completed, cancelled) = stats.head
-            assertTrue(stats.size == 1, total == 3, completed == 1, cancelled == 1)
+            assertTrue(stats.size == 1, total == 4, completed == 2, cancelled == 1)
           }).provide(freshRepo)
         },
         test("excludes rides older than the requested window") {

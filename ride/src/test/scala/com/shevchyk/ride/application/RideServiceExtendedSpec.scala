@@ -548,6 +548,24 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
               total >= 3 && completed >= 1 && cancelled >= 1
             }
           )
+        }.provide(standardLayers),
+        test("getUnpaidCompletedRides returns only Completed + Unpaid rides") {
+          for {
+            service    <- ZIO.service[RideService]
+            // Completed + Unpaid (default payment) — should be returned
+            unpaidDone <- createCompletedRide(service)
+            // Completed + Paid — excluded
+            paidDone   <- createCompletedRide(service)
+            _          <- service.markPayment(paidDone.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
+            // Assigned (not completed) — excluded even though Unpaid
+            _          <- createAssignedRide(service)
+            unpaid     <- service.getUnpaidCompletedRides(testCompanyId)
+          } yield assertTrue(
+            unpaid.size == 1 &&
+              unpaid.head.id == unpaidDone.id &&
+              unpaid.head.status == RideStatus.Completed &&
+              unpaid.head.paymentStatus == PaymentStatus.Unpaid
+          )
         }.provide(standardLayers)
       ),
       // ────────────────────────────────────────────────────────────────────
