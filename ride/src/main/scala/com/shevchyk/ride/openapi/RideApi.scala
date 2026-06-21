@@ -424,7 +424,15 @@ object RideApi:
         validated      <- apiRequest.validate.mapError(fromRideError)
         parsedRideId   <- parseRideId(rideId)
         parsedDriverId <- parsePersonId(validated.driverId)
+        companyId      <- requireCompanyId(user.companyId)
         service        <- ZIO.service[RideService]
+        existing       <- service.getRideById(parsedRideId).mapError(fromRideError)
+        // Company isolation: a dispatcher may only assign drivers to rides of their own company.
+        // Hide cross-tenant rides as not found instead of leaking their existence.
+        _              <- ZIO
+                            .fail(RideError.RideNotFound(parsedRideId))
+                            .when(existing.companyId != companyId)
+                            .mapError(fromRideError)
         ride           <- service.assignDriver(parsedRideId, parsedDriverId).mapError(fromRideError)
       } yield RideDto.fromDomain(ride)
   }
@@ -436,7 +444,14 @@ object RideApi:
         validated      <- apiRequest.validate.mapError(fromRideError)
         parsedRideId   <- parseRideId(rideId)
         parsedDriverId <- parsePersonId(validated.driverId)
+        companyId      <- requireCompanyId(user.companyId)
         service        <- ZIO.service[RideService]
+        existing       <- service.getRideById(parsedRideId).mapError(fromRideError)
+        // Company isolation: a dispatcher may only reassign drivers on rides of their own company.
+        _              <- ZIO
+                            .fail(RideError.RideNotFound(parsedRideId))
+                            .when(existing.companyId != companyId)
+                            .mapError(fromRideError)
         ride           <- service
                             .reassignDriver(parsedRideId, parsedDriverId, validated.overrideScheduleConflict)
                             .mapError(fromRideError)
