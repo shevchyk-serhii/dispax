@@ -1,6 +1,7 @@
 package com.shevchyk.ride.openapi
 
 import com.shevchyk.auth.service.JwtService
+import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.core.domain.PersonId
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.PersonRepository
@@ -43,7 +44,7 @@ object RideApi:
   // -- Environment ---------------------------------------------------------
   type RideEnv =
     RideService & ClientAddressService & ClientLocationService & AirportCheckpointService & ChatService &
-      RideRatingRepository & PersonRepository & JwtService & TariffRepository & RideEstimateService
+      RideRatingRepository & PersonRepository & JwtService & TariffRepository & RideEstimateService & GeocodingService
 
   private object AirportTimingConfig:
     val travelTimeMinutes: Int        = 45
@@ -756,13 +757,22 @@ object RideApi:
       _           <- checkRole(user, "DRIVER", "CLIENT", "DISPATCHER", "SECRETARY", "ADMIN")
       companyId   <- requireCompanyId(user.companyId)
       service     <- ZIO.service[RideEstimateService]
+      geocoding   <- ZIO.service[GeocodingService]
       vehicleClass = VehicleClass.fromString(req.vehicleClass).getOrElse(VehicleClass.Default)
       pickupTime   = req.pickupDateTime.flatMap(s => scala.util.Try(java.time.Instant.parse(s)).toOption)
+      // The client sends free-text addresses without coordinates; geocode them here (same
+      // enrichLocation flow RideService.createRide uses) so distance/price can be computed.
+      from        <- geocoding
+                       .enrichLocation(LocationDto.toDomain(req.from))
+                       .orElse(ZIO.succeed(LocationDto.toDomain(req.from)))
+      to          <- geocoding
+                       .enrichLocation(LocationDto.toDomain(req.to))
+                       .orElse(ZIO.succeed(LocationDto.toDomain(req.to)))
       result      <- service
                        .estimate(
                          companyId,
-                         LocationDto.toDomain(req.from),
-                         LocationDto.toDomain(req.to),
+                         from,
+                         to,
                          vehicleClass,
                          req.isAirportTransfer,
                          pickupTime

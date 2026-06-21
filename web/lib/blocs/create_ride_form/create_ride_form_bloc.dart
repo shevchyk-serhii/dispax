@@ -297,21 +297,24 @@ class CreateRideFormBloc
     EstimateReceived event,
     Emitter<CreateRideFormState> emit,
   ) {
-    if (event.vehicleClass == VehicleClass.van) {
-      emit(
-        state.copyWith(
-          estimateVan: event.estimate,
-          clearEstimateVan: event.estimate == null,
-        ),
-      );
-    } else {
-      emit(
-        state.copyWith(
-          estimateBusiness: event.estimate,
-          clearEstimateBusiness: event.estimate == null,
-        ),
-      );
-    }
+    final next = event.vehicleClass == VehicleClass.van
+        ? state.copyWith(
+            estimateVan: event.estimate,
+            clearEstimateVan: event.estimate == null,
+          )
+        : state.copyWith(
+            estimateBusiness: event.estimate,
+            clearEstimateBusiness: event.estimate == null,
+          );
+    // The two vehicle classes are estimated in parallel; flag "unavailable" only
+    // once neither class produced an estimate, so the UI can explain the missing
+    // price instead of showing a silent "—".
+    emit(
+      next.copyWith(
+        estimateUnavailable:
+            next.estimateBusiness == null && next.estimateVan == null,
+      ),
+    );
   }
 
   CreateRideFormState _checkAirportTransfer(CreateRideFormState currentState) {

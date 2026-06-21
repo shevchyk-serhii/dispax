@@ -18,11 +18,21 @@ Feature: Ride fare estimate
     And the response should contain "distanceKm"
     And the response should contain "durationMinutes"
 
-  Scenario: Estimate fails without coordinates
+  Scenario: Estimate a fare from free-text addresses (server geocodes them)
     Given I am authenticated as a client
     When I send a POST request to "/api/rides/estimate" with body:
       """
-      {"from":{"address":"Marienplatz"},"to":{"address":"Munich Airport"},"vehicleClass":"business"}
+      {"from":{"address":"Marienplatz, München"},"to":{"address":"Flughafen München"},"vehicleClass":"business","isAirportTransfer":true}
+      """
+    Then the response status should be 200
+    And the response should contain "estimatedPrice"
+    And the response should contain "distanceKm"
+
+  Scenario: Estimate fails when the address cannot be geocoded
+    Given I am authenticated as a client
+    When I send a POST request to "/api/rides/estimate" with body:
+      """
+      {"from":{"address":"Nonexistent place 99999"},"to":{"address":"Another unknown place 88888"},"vehicleClass":"business"}
       """
     Then the response status should be 400
 

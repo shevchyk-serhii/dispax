@@ -841,6 +841,10 @@ class _Footer extends StatelessWidget {
     final total = estimate != null
         ? '€${estimate.estimatedPrice.toStringAsFixed(2)}'
         : '—';
+    final showEstimateHint = estimate == null &&
+        state.estimateUnavailable &&
+        state.fromAddress.trim().isNotEmpty &&
+        state.toAddress.trim().isNotEmpty;
 
     final cs = Theme.of(context).colorScheme;
     return Container(
@@ -869,6 +873,14 @@ class _Footer extends StatelessWidget {
               ),
             ],
           ),
+          if (showEstimateHint) ...[
+            const SizedBox(height: 6),
+            Text(
+              "We couldn't estimate the price for this address. "
+              'You can still book — the fare will be confirmed afterwards.',
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            ),
+          ],
           const SizedBox(height: 14),
           SizedBox(
             height: 52,
