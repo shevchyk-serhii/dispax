@@ -359,11 +359,15 @@ class InvoiceServiceImpl(
     } yield ()
 
   private def recalculate(invoice: Invoice): UIO[Invoice] = ZIO.succeed {
+    // Each ride's price is GROSS (Brutto, incl. MwSt) — see `rideToItem` and `generateRideReceipt`.
+    // So the line totals sum to the gross invoice amount; Netto and MwSt are DERIVED from it
+    // (net = gross / (1 + rate)), matching the receipt path in PdfGenerator. Previously this treated
+    // the sum as Netto and added tax on top, double-charging MwSt and overstating the total.
     // Round monetary values to 2 decimals (HALF_UP) so stored amounts match the PDF/DATEV output.
-    val subtotal = invoice.items.map(_.total).sum.setScale(2, BigDecimal.RoundingMode.HALF_UP)
-    val tax      = (subtotal * invoice.taxRate / 100).setScale(2, BigDecimal.RoundingMode.HALF_UP)
-    val total    = (subtotal + tax).setScale(2, BigDecimal.RoundingMode.HALF_UP)
-    invoice.copy(subtotalAmount = subtotal, taxAmount = tax, totalAmount = total)
+    val gross = invoice.items.map(_.total).sum.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    val net   = (gross / (1 + invoice.taxRate / 100)).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    val tax   = (gross - net).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    invoice.copy(subtotalAmount = net, taxAmount = tax, totalAmount = gross)
   }
 
 object InvoiceService:

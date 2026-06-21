@@ -306,21 +306,32 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           filled.totalAmount == filled.subtotalAmount
         )
       },
-      test("autoFillFromPeriod rounds fractional tax to 2 decimals (HALF_UP)") {
-        // 33.33 * 19% = 6.3327 → rounded to 6.33; total 33.33 + 6.33 = 39.66.
+      test("autoFillFromPeriod treats ride price as GROSS and derives Netto/MwSt (Brutto-in)") {
+        // Ride price is gross (Brutto, incl. MwSt). For 119.00 @ 19%:
+        // net = 119.00 / 1.19 = 100.00, tax = 119.00 - 100.00 = 19.00, total (gross) = 119.00.
+        // (Previously the sum was treated as Netto and tax added on top → total 141.61. That was wrong.)
+        // Use an isolated period (February 2026) so autoFillFromPeriod only picks up THIS ride — the
+        // other tests' rides live in January/March and the shared `rides` table is not cleared between cases.
+        val periodFrom = LocalDate.of(2026, 2, 1)
+        val periodTo   = LocalDate.of(2026, 2, 28)
         for {
           xa     <- ZIO.service[Transactor[Task]]
           _      <- seedTestData(xa)
           _      <- cleanData(xa)
           _      <- linkClientToCompany(xa)
-          _      <- insertCompletedRide(xa, BigDecimal("33.33"), LocalDate.of(2026, 1, 12))
+          _      <- insertCompletedRide(xa, BigDecimal("119.00"), LocalDate.of(2026, 2, 12))
           svc     = makeService(xa)
-          inv    <- svc.createInvoice(testCompanyId, makeRequest(taxRate = BigDecimal("19")))
+          inv    <- svc.createInvoice(
+                      testCompanyId,
+                      makeRequest(taxRate = BigDecimal("19"), from = periodFrom, to = periodTo)
+                    )
           filled <- svc.autoFillFromPeriod(inv.id, testCompanyId)
         } yield assertTrue(
-          filled.subtotalAmount == BigDecimal("33.33"),
-          filled.taxAmount == BigDecimal("6.33"),
-          filled.totalAmount == BigDecimal("39.66"),
+          filled.subtotalAmount == BigDecimal("100.00"),
+          filled.taxAmount == BigDecimal("19.00"),
+          filled.totalAmount == BigDecimal("119.00"),
+          // The gross total must equal the sum of ride prices — MwSt is never added on top.
+          filled.totalAmount == filled.items.map(_.total).sum.setScale(2, BigDecimal.RoundingMode.HALF_UP),
           // Rounded values must carry exactly 2 decimal places.
           filled.taxAmount.scale == 2,
           filled.totalAmount.scale == 2
@@ -406,7 +417,9 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           link2  <- rideInvoiceId(xa, ride2)
         } yield assertTrue(
           filled.items.length == 1,
-          filled.subtotalAmount == BigDecimal("40.00"),
+          // Ride price 40.00 is GROSS (Brutto) @ 19%: gross stays 40.00, net = 40.00/1.19 = 33.61.
+          filled.totalAmount == BigDecimal("40.00"),
+          filled.subtotalAmount == BigDecimal("33.61"),
           link1.contains(inv.id.value),
           link2.isEmpty
         )
