@@ -75,6 +75,9 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
                 Navigator.of(context).pop();
               }
             } else if (state.status == RideStateStatus.error) {
+              // Leave the submitting state so the "Create Ride" button
+              // re-enables and the user can fix the field and retry.
+              context.read<CreateRideFormBloc>().add(const SubmissionFailed());
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.errorMessage ?? 'Failed to create ride'),

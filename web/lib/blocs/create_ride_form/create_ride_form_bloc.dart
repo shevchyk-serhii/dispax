@@ -25,6 +25,7 @@ class CreateRideFormBloc
     on<SpecialRequirementToggled>(_onSpecialRequirementToggled);
     on<FormCleared>(_onFormCleared);
     on<FormSubmitted>(_onFormSubmitted);
+    on<SubmissionFailed>(_onSubmissionFailed);
     on<AddressesSwapped>(_onAddressesSwapped);
     on<NewClientModeToggled>(_onNewClientModeToggled);
     on<NewClientPhoneChanged>(_onNewClientPhoneChanged);
@@ -132,7 +133,9 @@ class CreateRideFormBloc
     FromAddressChanged event,
     Emitter<CreateRideFormState> emit,
   ) {
-    final newState = state.copyWith(fromAddress: event.fromAddress);
+    final newState = _clearSubmitting(
+      state.copyWith(fromAddress: event.fromAddress),
+    );
     emit(_checkAirportTransfer(newState));
   }
 
@@ -140,7 +143,9 @@ class CreateRideFormBloc
     ToAddressChanged event,
     Emitter<CreateRideFormState> emit,
   ) {
-    final newState = state.copyWith(toAddress: event.toAddress);
+    final newState = _clearSubmitting(
+      state.copyWith(toAddress: event.toAddress),
+    );
     emit(_checkAirportTransfer(newState));
   }
 
@@ -247,6 +252,22 @@ class CreateRideFormBloc
       emit(state.copyWith(status: CreateRideFormStatus.submitting));
     }
   }
+
+  void _onSubmissionFailed(
+    SubmissionFailed event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    emit(_clearSubmitting(state));
+  }
+
+  /// Returns [s] back to the initial status if it is currently submitting.
+  /// The "Create Ride" button is disabled while submitting; without this the
+  /// form would stay stuck after a failed submit and the button would never
+  /// re-enable, even once the user fixes the offending field.
+  CreateRideFormState _clearSubmitting(CreateRideFormState s) =>
+      s.status == CreateRideFormStatus.submitting
+      ? s.copyWith(status: CreateRideFormStatus.initial)
+      : s;
 
   void _onVehicleClassSelected(
     VehicleClassSelected event,
