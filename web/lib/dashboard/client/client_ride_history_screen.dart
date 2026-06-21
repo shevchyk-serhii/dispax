@@ -677,7 +677,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
     final user = context.read<AuthBloc>().state.user;
     final messenger = ScaffoldMessenger.of(context);
 
-    final result = await showDialog<Map<String, dynamic>?>(
+    final result = await showAdaptiveDialog<Map<String, dynamic>?>(
       context: context,
       builder: (_) => RateRideDialog(rideId: ride.id),
     );

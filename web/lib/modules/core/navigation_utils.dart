@@ -128,7 +128,7 @@ class NavigationUtils {
     BuildContext context,
     Ride ride,
   ) async {
-    return showDialog<Ride>(
+    return showAdaptiveDialog<Ride>(
       context: context,
       builder: (ctx) => _EditRideDialog(ride: ride),
     );

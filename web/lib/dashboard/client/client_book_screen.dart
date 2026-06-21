@@ -841,7 +841,8 @@ class _Footer extends StatelessWidget {
     final total = estimate != null
         ? '€${estimate.estimatedPrice.toStringAsFixed(2)}'
         : '—';
-    final showEstimateHint = estimate == null &&
+    final showEstimateHint =
+        estimate == null &&
         state.estimateUnavailable &&
         state.fromAddress.trim().isNotEmpty &&
         state.toAddress.trim().isNotEmpty;

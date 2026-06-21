@@ -27,7 +27,9 @@ class _AppNotification {
     // {"value": "uuid"}. Tolerate both so the screen never crashes with
     // "type '_Map<String, dynamic>' is not a subtype of type 'String'".
     final rawId = json['id'];
-    final id = rawId is Map ? (rawId['value']?.toString() ?? '') : (rawId?.toString() ?? '');
+    final id = rawId is Map
+        ? (rawId['value']?.toString() ?? '')
+        : (rawId?.toString() ?? '');
     final rawCreatedAt = json['createdAt'];
     final createdAt = rawCreatedAt is String
         ? DateTime.tryParse(rawCreatedAt) ?? DateTime.now()
@@ -153,7 +155,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
 
     if (_error != null) {

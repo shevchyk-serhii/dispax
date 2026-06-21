@@ -41,7 +41,9 @@ class _Notification {
     // Tolerate both the flat-string id ("uuid") and the legacy {"value": "uuid"}
     // object form so deserialization never crashes.
     final rawId = json['id'];
-    final id = rawId is Map ? (rawId['value']?.toString() ?? '') : (rawId?.toString() ?? '');
+    final id = rawId is Map
+        ? (rawId['value']?.toString() ?? '')
+        : (rawId?.toString() ?? '');
     final rawCreatedAt = json['createdAt'];
     final createdAt = rawCreatedAt is String
         ? DateTime.tryParse(rawCreatedAt) ?? DateTime.now()
@@ -246,7 +248,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
   }
 
   Future<void> _deleteAll() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Notifications'),
@@ -435,7 +437,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
         ),
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
               ? Center(
                   child: Column(
@@ -838,7 +840,7 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
 
     final prefs = _prefs!;

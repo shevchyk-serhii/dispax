@@ -237,7 +237,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
         _buildGraphiteHeader(isDesktop),
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
               ? _buildError()
               : isDesktop

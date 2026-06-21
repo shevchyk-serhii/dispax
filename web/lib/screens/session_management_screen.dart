@@ -57,7 +57,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
   }
 
   Future<void> _revokeSession(String sessionId) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Revoke Session'),
@@ -97,7 +97,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
   }
 
   Future<void> _revokeAllOtherSessions() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Revoke All Other Sessions'),
@@ -161,7 +161,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator.adaptive())
           : _error != null
           ? Center(
               child: Column(

@@ -106,7 +106,7 @@ class _CreateRideDriverSectionState extends State<CreateRideDriverSection> {
                 ),
                 const SizedBox(height: AppDimensions.paddingMedium),
                 if (_loading)
-                  const Center(child: CircularProgressIndicator())
+                  Center(child: CircularProgressIndicator.adaptive())
                 else if (_errorMessage != null)
                   Row(
                     children: [

@@ -223,7 +223,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
     bool notifyOnEntry = true;
     bool notifyOnExit = false;
 
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => Dialog(
@@ -619,7 +619,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
 
   Widget _buildGeofenceList(bool isDark) {
     if (_isLoadingGeofences) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
 
     if (_geofenceError != null) {
@@ -719,7 +719,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         child: const Icon(Icons.delete_outline, color: Colors.white, size: 20),
       ),
       confirmDismiss: (_) async {
-        return await showDialog<bool>(
+        return await showAdaptiveDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(
                 title: const Text('Delete zone'),
@@ -891,7 +891,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
 
   Widget _buildAlertsList(bool isDark) {
     if (_isLoadingAlerts) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
 
     if (_alertError != null) {

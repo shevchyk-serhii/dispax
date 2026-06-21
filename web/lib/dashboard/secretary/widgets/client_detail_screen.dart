@@ -195,7 +195,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
 
   Widget _buildRideHistory() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
 
     if (_error != null) {
@@ -395,7 +395,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     final apiClient = context.read<AuthBloc>().apiClient;
     final userService = UserService(apiClient: apiClient);
 
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(

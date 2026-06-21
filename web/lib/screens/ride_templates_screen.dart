@@ -132,7 +132,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
     String recurrencePattern = 'Daily';
     final formKey = GlobalKey<FormState>();
 
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
@@ -384,7 +384,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
 
     if (_error != null) {

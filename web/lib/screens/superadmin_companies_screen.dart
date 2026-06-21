@@ -287,7 +287,7 @@ class _CompaniesView extends StatelessWidget {
           child: BlocBuilder<SuperAdminCompanyBloc, SuperAdminCompanyState>(
             builder: (context, state) {
               if (state is CompaniesLoading) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(child: CircularProgressIndicator.adaptive());
               }
               if (state is CompaniesError) {
                 return Center(
@@ -314,7 +314,7 @@ class _CompaniesView extends StatelessWidget {
               if (state is CompaniesLoaded) {
                 return _CompaniesTable(companies: state.companies);
               }
-              return const Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator.adaptive());
             },
           ),
         ),
@@ -401,7 +401,7 @@ class _GraphiteHeader extends StatelessWidget {
   }
 
   void _showAddDialog(BuildContext context) {
-    showDialog<void>(
+    showAdaptiveDialog<void>(
       context: context,
       builder: (_) =>
           _CompanyFormDialog(bloc: context.read<SuperAdminCompanyBloc>()),
@@ -574,7 +574,7 @@ class _CompanyRow extends StatelessWidget {
                   tooltip: 'Edit',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  onPressed: () => showDialog<void>(
+                  onPressed: () => showAdaptiveDialog<void>(
                     context: context,
                     builder: (_) => _CompanyFormDialog(
                       bloc: context.read<SuperAdminCompanyBloc>(),
@@ -619,7 +619,7 @@ class _CompanyRow extends StatelessWidget {
 
   void _confirmDelete(BuildContext context, CompanyInfo c) {
     final bloc = context.read<SuperAdminCompanyBloc>();
-    showDialog<void>(
+    showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Deactivate Company?'),

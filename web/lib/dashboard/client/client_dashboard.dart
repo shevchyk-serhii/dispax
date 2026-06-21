@@ -63,7 +63,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   Future<bool> _confirmLeaveCreateRide(BuildContext context) async {
     if (!_createRideFormBloc.state.isModified) return true;
-    final result = await showDialog<bool>(
+    final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Discard changes?'),
@@ -371,7 +371,7 @@ class MyRidesTab extends StatelessWidget {
   }
 
   Future<void> _cancelRide(BuildContext context, Ride ride) async {
-    final result = await showDialog<Map<String, dynamic>?>(
+    final result = await showAdaptiveDialog<Map<String, dynamic>?>(
       context: context,
       builder: (_) => const CancelRideDialog(isDispatcher: false),
     );

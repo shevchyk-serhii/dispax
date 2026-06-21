@@ -165,7 +165,7 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
           child: BlocBuilder<ScheduleBloc, ScheduleState>(
             builder: (context, scheduleState) {
               if (scheduleState.isLoading) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(child: CircularProgressIndicator.adaptive());
               }
 
               if (scheduleState.hasError) {
@@ -650,7 +650,7 @@ void showReassignSheet(
                     trailing: const Icon(Icons.swap_horiz, size: 20),
                     onTap: () {
                       Navigator.pop(ctx);
-                      showDialog(
+                      showAdaptiveDialog(
                         context: context,
                         builder: (_) => AlertDialog(
                           title: const Text('Confirm Reassignment'),
@@ -738,7 +738,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
             final conflicts = ConflictDetector.findConflicts(ride, driverRides);
             final driverLabel = resolveDriverLabel(scheduleDay, driverNames);
 
-            showDialog(
+            showAdaptiveDialog(
               context: context,
               builder: (_) => AssignmentDialog(
                 ride: ride,
@@ -808,7 +808,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                             if (rideCount > 0)
                               GestureDetector(
                                 onTap: () {
-                                  showDialog(
+                                  showAdaptiveDialog(
                                     context: context,
                                     builder: (_) => BulkReassignDialog(
                                       fromDriverId: scheduleDay.driverId,
@@ -1006,7 +1006,7 @@ class _DriverScheduleColumn extends StatelessWidget {
             final conflicts = ConflictDetector.findConflicts(ride, driverRides);
             final driverLabel = resolveDriverLabel(scheduleDay, driverNames);
 
-            showDialog(
+            showAdaptiveDialog(
               context: context,
               builder: (_) => AssignmentDialog(
                 ride: ride,
@@ -1147,7 +1147,7 @@ class _DriverScheduleColumn extends StatelessWidget {
               if (rideCount > 0)
                 GestureDetector(
                   onTap: () {
-                    showDialog(
+                    showAdaptiveDialog(
                       context: context,
                       builder: (_) => BulkReassignDialog(
                         fromDriverId: scheduleDay.driverId,

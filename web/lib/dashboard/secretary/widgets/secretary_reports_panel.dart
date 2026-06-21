@@ -98,7 +98,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
     if (_error != null) {
       return Center(

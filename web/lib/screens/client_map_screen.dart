@@ -697,11 +697,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             // Action buttons
             Row(
               children: [
-                // Call button (graphite filled)
+                // Call button (accent — the one live action per screen, HANDOFF §5)
                 Expanded(
                   child: SizedBox(
                     height: 46,
-                    child: ElevatedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: () {
                         // TODO: launch tel: URL when driver phone is available
                       },
@@ -713,11 +713,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.accent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusButton,
+                          ),
                         ),
                         elevation: 0,
                         padding: EdgeInsets.zero,

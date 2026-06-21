@@ -98,7 +98,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
             child: BlocBuilder<ClientBloc, ClientState>(
               builder: (context, state) {
                 if (state.isLoading && state.clients.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(child: CircularProgressIndicator.adaptive());
                 }
 
                 if (state.hasError && state.clients.isEmpty) {
@@ -262,7 +262,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
     final phoneController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
@@ -352,7 +352,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
     final phoneController = TextEditingController(text: client.phone ?? '');
     final formKey = GlobalKey<FormState>();
 
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
@@ -438,7 +438,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
   }
 
   void _showDeactivateConfirmation(BuildContext context, Person client) {
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(

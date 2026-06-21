@@ -98,6 +98,15 @@ class AppStyles {
     color: AppColors.textSecondary,
   );
 
+  /// Uppercase "eyebrow" label (HANDOFF §4 — Label S, 11/600 with tracking).
+  /// Use for the small all-caps section labels above headings/cards.
+  static const TextStyle eyebrow = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.66,
+    color: AppColors.textSecondary,
+  );
+
   static TextStyle glassHeadlineLarge = headlineLarge.copyWith(
     color: AppColors.glassText,
   );

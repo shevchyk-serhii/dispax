@@ -139,7 +139,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     required String driverId,
     String? message,
   }) {
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
@@ -204,7 +204,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                 prev.rides != curr.rides || prev.isLoading != curr.isLoading,
             builder: (context, state) {
               if (state.isLoading) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(child: CircularProgressIndicator.adaptive());
               }
 
               final rides = _applyFiltersAndSort(state.rides);
@@ -592,7 +592,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         isReassign: isReassign,
         onAssign: (driverId, driverLabel, conflicts) {
           Navigator.pop(ctx);
-          showDialog(
+          showAdaptiveDialog(
             context: context,
             builder: (_) => AssignmentDialog(
               ride: ride,
@@ -924,7 +924,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
       );
     }
     if (_drivers == null) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
     if (_drivers!.isEmpty) {
       return const Center(child: Text('No drivers found'));
