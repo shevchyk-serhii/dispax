@@ -219,6 +219,27 @@ object AvatarApiSpec extends ZIOSpecDefault:
       yield FcmService.FcmServiceImpl(tokenRepo, None)
     }
 
+  // Company A is registered; company B is not, so findById(companyB) returns None.
+  private val companyA: Company = Company(
+    id = companyAId,
+    name = "Acme Taxi",
+    email = "ops@acme.de",
+    phone = "+49 89 0",
+    address = "München"
+  )
+
+  private val stubCompanyRepoLayer: ZLayer[Any, Nothing, com.shevchyk.core.repository.CompanyRepository] = ZLayer
+    .succeed(
+      new com.shevchyk.core.repository.CompanyRepository:
+        private def notImpl                                  = ZIO.die(new NotImplementedError("AvatarApiSpec CompanyRepository stub"))
+        def findById(id: CompanyId): Task[Option[Company]]   = ZIO.succeed(Option.when(id == companyAId)(companyA))
+        def findAll(): Task[List[Company]]                   = ZIO.succeed(List(companyA))
+        def create(company: Company): Task[Company]          = notImpl
+        def update(company: Company): Task[Company]          = notImpl
+        def countByStatus(): Task[Map[CompanyStatus, Int]]   = ZIO.succeed(Map.empty)
+        def softDelete(id: CompanyId): Task[Option[Company]] = notImpl
+    )
+
   // ---------------------------------------------------------------------------
   // Route runner
   // ---------------------------------------------------------------------------
@@ -250,6 +271,7 @@ object AvatarApiSpec extends ZIOSpecDefault:
       stubFcmServiceLayer ++
       stubRideServiceLayer ++
       RateLimiter.layer ++
+      stubCompanyRepoLayer ++
       (stubPersonRepoLayer >>> AvatarService.layer)
 
   // ---------------------------------------------------------------------------
@@ -430,6 +452,45 @@ object AvatarApiSpec extends ZIOSpecDefault:
         },
         test("DELETE avatar without authentication → 401") {
           val req = Request.delete(URL.decode(s"/api/users/${userAId.value}/avatar").toOption.get)
+          run(req).map(resp => assertTrue(resp.status == Status.Unauthorized))
+        }
+      ),
+
+      // ── Profile ──────────────────────────────────────────────────────────────
+      suite("GET /api/users/profile")(
+        // userA belongs to company A ("Acme Taxi"), which is registered in the company repo,
+        // so the profile must carry the resolved companyName instead of the raw id.
+        test("returns resolved companyName when the user's company is registered") {
+          for {
+            token   <- generateToken(userA)
+            req      = Request
+                         .get(URL.decode("/api/users/profile").toOption.get)
+                         .addHeader(Header.Authorization.Bearer(token))
+            resp    <- run(req)
+            bodyStr <- resp.body.asString
+          } yield assertTrue(
+            resp.status == Status.Ok,
+            bodyStr.contains("\"companyName\":\"Acme Taxi\"")
+          )
+        },
+
+        // userB belongs to company B, which is NOT registered in the company repo,
+        // so findById returns None and companyName must be absent from the payload.
+        test("omits companyName when the company is not found") {
+          for {
+            token   <- generateToken(userB)
+            req      = Request
+                         .get(URL.decode("/api/users/profile").toOption.get)
+                         .addHeader(Header.Authorization.Bearer(token))
+            resp    <- run(req)
+            bodyStr <- resp.body.asString
+          } yield assertTrue(
+            resp.status == Status.Ok,
+            !bodyStr.contains("companyName")
+          )
+        },
+        test("profile without authentication → 401") {
+          val req = Request.get(URL.decode("/api/users/profile").toOption.get)
           run(req).map(resp => assertTrue(resp.status == Status.Unauthorized))
         }
       )

@@ -172,7 +172,9 @@ final case class PersonDto(
     reminderMinutes: Int = 60,
     roles: Set[PersonRole] = Set.empty,
     // true when the person has a profile photo; raw bytes are served separately via GET /api/users/{id}/avatar
-    hasAvatar: Boolean = false
+    hasAvatar: Boolean = false,
+    // resolved company display name — populated by the profile endpoint only (lookup via CompanyRepository)
+    companyName: Option[String] = None
 ) derives JsonCodec
 
 object PersonDto:
