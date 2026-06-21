@@ -23,14 +23,21 @@ class _AppNotification {
   });
 
   factory _AppNotification.fromJson(Map<String, dynamic> json) {
+    // The backend serializes ids as a flat string, but older builds emitted
+    // {"value": "uuid"}. Tolerate both so the screen never crashes with
+    // "type '_Map<String, dynamic>' is not a subtype of type 'String'".
+    final rawId = json['id'];
+    final id = rawId is Map ? (rawId['value']?.toString() ?? '') : (rawId?.toString() ?? '');
+    final rawCreatedAt = json['createdAt'];
+    final createdAt = rawCreatedAt is String
+        ? DateTime.tryParse(rawCreatedAt) ?? DateTime.now()
+        : DateTime.now();
     return _AppNotification(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      body: json['body'] ?? '',
-      createdAt: DateTime.parse(
-        json['createdAt'] ?? DateTime.now().toIso8601String(),
-      ),
-      isRead: json['isRead'] ?? false,
+      id: id,
+      title: json['title']?.toString() ?? '',
+      body: json['body']?.toString() ?? '',
+      createdAt: createdAt,
+      isRead: json['isRead'] == true,
     );
   }
 }

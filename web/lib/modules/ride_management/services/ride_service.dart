@@ -80,6 +80,7 @@ class RideService {
         );
       }
     } catch (e) {
+      if (e is UnauthorizedException) rethrow;
       throw ApiException('Error fetching driver earnings: $e');
     }
   }
