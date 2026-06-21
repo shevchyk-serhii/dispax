@@ -471,6 +471,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.secretaryColor,
+                    foregroundColor: AppColors.textOnPrimary,
                   ),
                   onPressed: () {
                     if (formKey.currentState!.validate()) {

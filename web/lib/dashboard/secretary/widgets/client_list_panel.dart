@@ -320,6 +320,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.secretaryColor,
+                foregroundColor: AppColors.textOnPrimary,
               ),
               onPressed: () {
                 if (formKey.currentState!.validate()) {
@@ -409,6 +410,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.secretaryColor,
+                foregroundColor: AppColors.textOnPrimary,
               ),
               onPressed: () {
                 if (formKey.currentState!.validate()) {
