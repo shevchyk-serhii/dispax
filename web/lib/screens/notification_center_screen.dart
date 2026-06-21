@@ -38,15 +38,21 @@ class _Notification {
   }
 
   factory _Notification.fromJson(Map<String, dynamic> json) {
+    // Tolerate both the flat-string id ("uuid") and the legacy {"value": "uuid"}
+    // object form so deserialization never crashes.
+    final rawId = json['id'];
+    final id = rawId is Map ? (rawId['value']?.toString() ?? '') : (rawId?.toString() ?? '');
+    final rawCreatedAt = json['createdAt'];
+    final createdAt = rawCreatedAt is String
+        ? DateTime.tryParse(rawCreatedAt) ?? DateTime.now()
+        : DateTime.now();
     return _Notification(
-      id: json['id']?['value'] ?? json['id'] ?? '',
-      title: json['title'] ?? '',
-      body: json['body'] ?? '',
-      notificationType: json['notificationType'] ?? '',
-      createdAt: DateTime.parse(
-        json['createdAt'] ?? DateTime.now().toIso8601String(),
-      ),
-      isRead: json['isRead'] ?? false,
+      id: id,
+      title: json['title']?.toString() ?? '',
+      body: json['body']?.toString() ?? '',
+      notificationType: json['notificationType']?.toString() ?? '',
+      createdAt: createdAt,
+      isRead: json['isRead'] == true,
       data: json['data'] != null
           ? (json['data'] is String ? jsonDecode(json['data']) : json['data'])
           : null,
