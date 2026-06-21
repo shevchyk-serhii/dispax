@@ -13,8 +13,9 @@ import com.github.f4b6a3.uuid.UuidCreator
 case class AppNotificationId(value: UUID)
 
 object AppNotificationId:
-  def generate(): AppNotificationId = AppNotificationId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): AppNotificationId    = AppNotificationId(UuidCreator.getTimeOrderedEpoch())
   given JsonEncoder[AppNotificationId] = JsonEncoder[String].contramap(_.value.toString)
+
   given JsonDecoder[AppNotificationId] = JsonDecoder[String].mapOrFail(s =>
     scala.util.Try(UUID.fromString(s)).toEither.left.map(_ => s"Invalid UUID: $s").map(AppNotificationId.apply)
   )

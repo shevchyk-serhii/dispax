@@ -92,7 +92,11 @@ class ProfileDialog extends StatelessWidget {
 
   // ─── User card ──────────────────────────────────────────────────────────────
 
-  Widget _buildUserCard(BuildContext context, ApiClient apiClient, bool isDark) {
+  Widget _buildUserCard(
+    BuildContext context,
+    ApiClient apiClient,
+    bool isDark,
+  ) {
     final cardBg = isDark
         ? AppColors.accent.withAlpha(25)
         : AppColors.accent.withAlpha(12);

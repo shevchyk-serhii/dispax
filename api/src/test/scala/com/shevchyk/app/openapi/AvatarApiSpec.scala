@@ -220,20 +220,24 @@ object AvatarApiSpec extends ZIOSpecDefault:
     }
 
   // Company A is registered; company B is not, so findById(companyB) returns None.
-  private val companyA: Company =
-    Company(id = companyAId, name = "Acme Taxi", email = "ops@acme.de", phone = "+49 89 0", address = "München")
+  private val companyA: Company = Company(
+    id = companyAId,
+    name = "Acme Taxi",
+    email = "ops@acme.de",
+    phone = "+49 89 0",
+    address = "München"
+  )
 
-  private val stubCompanyRepoLayer: ZLayer[Any, Nothing, com.shevchyk.core.repository.CompanyRepository] =
-    ZLayer.succeed(
+  private val stubCompanyRepoLayer: ZLayer[Any, Nothing, com.shevchyk.core.repository.CompanyRepository] = ZLayer
+    .succeed(
       new com.shevchyk.core.repository.CompanyRepository:
-        private def notImpl                                       = ZIO.die(new NotImplementedError("AvatarApiSpec CompanyRepository stub"))
-        def findById(id: CompanyId): Task[Option[Company]]       =
-          ZIO.succeed(Option.when(id == companyAId)(companyA))
-        def findAll(): Task[List[Company]]                       = ZIO.succeed(List(companyA))
-        def create(company: Company): Task[Company]              = notImpl
-        def update(company: Company): Task[Company]              = notImpl
-        def countByStatus(): Task[Map[CompanyStatus, Int]]       = ZIO.succeed(Map.empty)
-        def softDelete(id: CompanyId): Task[Option[Company]]     = notImpl
+        private def notImpl                                  = ZIO.die(new NotImplementedError("AvatarApiSpec CompanyRepository stub"))
+        def findById(id: CompanyId): Task[Option[Company]]   = ZIO.succeed(Option.when(id == companyAId)(companyA))
+        def findAll(): Task[List[Company]]                   = ZIO.succeed(List(companyA))
+        def create(company: Company): Task[Company]          = notImpl
+        def update(company: Company): Task[Company]          = notImpl
+        def countByStatus(): Task[Map[CompanyStatus, Int]]   = ZIO.succeed(Map.empty)
+        def softDelete(id: CompanyId): Task[Option[Company]] = notImpl
     )
 
   // ---------------------------------------------------------------------------

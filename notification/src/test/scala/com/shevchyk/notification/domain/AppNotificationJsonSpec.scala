@@ -9,12 +9,11 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Regression for the Flutter notifications screen crash
- * `type '_Map<String, dynamic>' is not a subtype of type 'String'`.
+ * Regression for the Flutter notifications screen crash `type '_Map<String, dynamic>' is not a subtype of type
+ * 'String'`.
  *
- * Root cause: `AppNotificationId` derived its JsonCodec, serializing as an object
- * `{"value":"uuid"}` instead of the flat string the clients expect (like
- * `PersonId`/`CompanyId`). The client read `id` as a plain String and crashed.
+ * Root cause: `AppNotificationId` derived its JsonCodec, serializing as an object `{"value":"uuid"}` instead of the
+ * flat string the clients expect (like `PersonId`/`CompanyId`). The client read `id` as a plain String and crashed.
  */
 object AppNotificationJsonSpec extends ZIOSpecDefault {
 
@@ -34,28 +33,29 @@ object AppNotificationJsonSpec extends ZIOSpecDefault {
     createdAt = Instant.parse("2026-06-21T18:07:00Z")
   )
 
-  def spec = suite("AppNotification JSON")(
-    test("id serializes as a flat string, not an object") {
-      val ast = sample.toJsonAST.toOption.get
-      val idField = ast.asObject.flatMap(_.get("id")).get
-      assertTrue(idField == Json.Str(id.value.toString))
-    },
-    test("the id field is never a nested object") {
-      val ast = sample.toJsonAST.toOption.get
-      val idField = ast.asObject.flatMap(_.get("id")).get
-      assertTrue(idField.asObject.isEmpty)
-    },
-    test("round-trips through JSON") {
-      val decoded = sample.toJson.fromJson[AppNotification]
-      assertTrue(decoded == Right(sample))
-    },
-    test("decodes an id given as a flat string") {
-      val json =
-        s"""{"id":"${id.value}","personId":"${personId.value}","companyId":"${companyId.value}",
-           |"title":"t","body":"b","notificationType":"ride_assigned","data":null,
-           |"isRead":false,"createdAt":"2026-06-21T18:07:00Z"}""".stripMargin
-      val decoded = json.fromJson[AppNotification]
-      assertTrue(decoded.map(_.id) == Right(id))
-    }
-  )
+  def spec =
+    suite("AppNotification JSON")(
+      test("id serializes as a flat string, not an object") {
+        val ast     = sample.toJsonAST.toOption.get
+        val idField = ast.asObject.flatMap(_.get("id")).get
+        assertTrue(idField == Json.Str(id.value.toString))
+      },
+      test("the id field is never a nested object") {
+        val ast     = sample.toJsonAST.toOption.get
+        val idField = ast.asObject.flatMap(_.get("id")).get
+        assertTrue(idField.asObject.isEmpty)
+      },
+      test("round-trips through JSON") {
+        val decoded = sample.toJson.fromJson[AppNotification]
+        assertTrue(decoded == Right(sample))
+      },
+      test("decodes an id given as a flat string") {
+        val json    =
+          s"""{"id":"${id.value}","personId":"${personId.value}","companyId":"${companyId.value}",
+             |"title":"t","body":"b","notificationType":"ride_assigned","data":null,
+             |"isRead":false,"createdAt":"2026-06-21T18:07:00Z"}""".stripMargin
+        val decoded = json.fromJson[AppNotification]
+        assertTrue(decoded.map(_.id) == Right(id))
+      }
+    )
 }
