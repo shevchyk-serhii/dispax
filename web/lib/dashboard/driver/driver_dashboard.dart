@@ -36,7 +36,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
   Future<bool> _confirmLeaveCreateRide(BuildContext context) async {
     if (!_createRideFormBloc.state.isModified) return true;
-    final result = await showDialog<bool>(
+    final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Discard changes?'),

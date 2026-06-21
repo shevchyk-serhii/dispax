@@ -233,7 +233,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
 
   Widget _buildBody(String monthLabel) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
 
     if (_error != null) {

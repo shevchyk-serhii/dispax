@@ -202,7 +202,7 @@ class BiometricSetupDialog extends StatelessWidget {
   }
 
   static Future<void> show(BuildContext context, {String? userId}) {
-    return showDialog<void>(
+    return showAdaptiveDialog<void>(
       context: context,
       builder: (context) => BiometricSetupDialog(userId: userId),
     );

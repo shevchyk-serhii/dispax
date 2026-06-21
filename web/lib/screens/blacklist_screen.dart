@@ -61,7 +61,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
     final driverIdCtrl = TextEditingController();
     final reasonCtrl = TextEditingController();
 
-    final result = await showDialog<bool>(
+    final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add Blacklist Entry'),
@@ -137,7 +137,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
   }
 
   Future<void> _removeEntry(String id) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Remove Blacklist Entry'),
@@ -179,7 +179,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
         _buildHeader(),
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
               ? Center(
                   child: Column(

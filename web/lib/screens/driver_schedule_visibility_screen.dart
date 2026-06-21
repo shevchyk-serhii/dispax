@@ -157,7 +157,7 @@ class _DriverScheduleVisibilityScreenState
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
     if (_error != null) {
       return Center(

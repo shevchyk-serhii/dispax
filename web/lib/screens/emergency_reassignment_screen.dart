@@ -81,7 +81,7 @@ class _EmergencyReassignmentScreenState
       'Other': Icons.more_horiz,
     };
 
-    final result = await showDialog<bool>(
+    final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -293,7 +293,7 @@ class _EmergencyReassignmentScreenState
         _buildHeader(),
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
               ? Center(
                   child: Column(

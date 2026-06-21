@@ -49,7 +49,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
     final directionCtrl = TextEditingController();
     int maxPassengers = 4;
 
-    final result = await showDialog<bool>(
+    final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -173,7 +173,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
 
       if (!mounted) return;
 
-      showDialog(
+      showAdaptiveDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: Row(
@@ -306,7 +306,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
         _buildHeader(),
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
               ? Center(
                   child: Column(

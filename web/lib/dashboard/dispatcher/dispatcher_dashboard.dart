@@ -138,7 +138,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   Future<bool> _confirmLeaveCreateRide(BuildContext context) async {
     if (!_createRideFormBloc.state.isModified) return true;
-    final result = await showDialog<bool>(
+    final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Discard changes?'),

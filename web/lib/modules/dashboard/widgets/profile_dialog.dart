@@ -12,7 +12,7 @@ class ProfileDialog extends StatelessWidget {
   const ProfileDialog({super.key, required this.user});
 
   static void show(BuildContext context, Person user) {
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (context) => ProfileDialog(user: user),
     );

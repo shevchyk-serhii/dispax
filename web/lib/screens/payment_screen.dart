@@ -61,7 +61,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Future<void> _markAsPaid(Ride ride) async {
     String selectedMethod = 'Cash';
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
@@ -211,7 +211,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
 
     if (_error != null) {

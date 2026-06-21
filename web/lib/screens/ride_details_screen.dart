@@ -73,7 +73,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator.adaptive())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -484,7 +484,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     final authState = context.read<AuthBloc>().state;
     final isDispatcher = authState.user?.role == PersonRole.dispatcher;
 
-    final result = await showDialog<Map<String, dynamic>?>(
+    final result = await showAdaptiveDialog<Map<String, dynamic>?>(
       context: context,
       builder: (_) => CancelRideDialog(isDispatcher: isDispatcher),
     );
@@ -517,7 +517,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   Future<void> _rateRide(BuildContext context) async {
     final apiClient = context.read<AuthBloc>().apiClient;
 
-    final result = await showDialog<Map<String, dynamic>?>(
+    final result = await showAdaptiveDialog<Map<String, dynamic>?>(
       context: context,
       builder: (_) => RateRideDialog(rideId: _currentRide.id),
     );
@@ -631,7 +631,7 @@ Status: ${_currentRide.status.name}
     String title,
     String message,
   ) async {
-    return await showDialog<bool>(
+    return await showAdaptiveDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: Text(title),

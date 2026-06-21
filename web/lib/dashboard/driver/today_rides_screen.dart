@@ -104,7 +104,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
 
   // ── Preserved verbatim ────────────────────────────────────────────────────
   Future<void> _showRideAssignedDialog(String rideId) async {
-    final accepted = await showDialog<bool>(
+    final accepted = await showAdaptiveDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
@@ -244,7 +244,25 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
               },
               child: BlocBuilder<RideBloc, RideState>(
                 builder: (context, rideState) {
-                  return _buildTabContent(context, rideState);
+                  final content = _buildTabContent(context, rideState);
+                  // HANDOFF §11: on web/desktop (>= 800) constrain the content
+                  // width so ride cards don't stretch across a wide viewport.
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth >=
+                          AppDimensions.breakpointDesktop) {
+                        return Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: AppDimensions.maxContentWidth,
+                            ),
+                            child: content,
+                          ),
+                        );
+                      }
+                      return content;
+                    },
+                  );
                 },
               ),
             ),
@@ -370,7 +388,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     }
 
     if (rideState.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
 
     if (rideState.hasError && rideState.rides.isEmpty) {
@@ -533,7 +551,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
   }
 
   void _handleCompleteRide(BuildContext context, Ride ride) {
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Complete Ride'),
@@ -1060,7 +1078,7 @@ class _LiveRideCard extends StatelessWidget {
 
   static void _handleNavigate(BuildContext context, Ride ride) async {
     try {
-      final choice = await showDialog<String>(
+      final choice = await showAdaptiveDialog<String>(
         context: context,
         builder: (BuildContext ctx) => SimpleDialog(
           title: const Text('Navigate to'),
@@ -1522,7 +1540,7 @@ class _EmbeddedHistoryTab extends StatelessWidget {
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) {
         if (rideState.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator.adaptive());
         }
         final finished =
             rideState.rides
