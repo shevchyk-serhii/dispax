@@ -94,12 +94,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }) : _storage = storage ?? _TokenStorage(),
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();
-    privateApiClient.onUnauthorized = () => add(AuthLogoutRequested());
+    privateApiClient.onUnauthorized = () => add(const AuthSessionExpired());
     privateBiometricService = biometricService ?? BiometricService();
 
     on<AuthInitializeRequested>(_onInitializeRequested);
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
+    on<AuthSessionExpired>(_onSessionExpired);
     on<AuthErrorCleared>(_onErrorCleared);
     on<AuthBiometricLoginRequested>(_onBiometricLoginRequested);
     on<AuthBiometricSetupRequested>(_onBiometricSetupRequested);
@@ -228,21 +229,44 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthState.loading());
 
     try {
-      await _storage.delete(privateUserKey);
-      await _storage.delete(privateTokenKey);
-
-      privateApiClient.clearAuthToken();
-
-      /// Disconnect WebSocket
-      WebSocketService.instance.disconnect();
-
-      /// Unregister FCM token
-      await PushNotificationService.instance.unregisterToken();
-
+      await _clearSession();
       emit(AuthState.unauthenticated());
     } catch (e) {
       emit(AuthState.error('Logout error: $e'));
     }
+  }
+
+  /// Forced logout on a 401 (expired/invalid token). Clears the session and
+  /// surfaces a "session expired" message on the login screen so the user knows
+  /// why they were signed out, instead of silently dropping to it.
+  Future<void> _onSessionExpired(
+    AuthSessionExpired event,
+    Emitter<AuthState> emit,
+  ) async {
+    // Ignore if we are not (or no longer) authenticated — avoids clobbering a
+    // fresh login screen with a stale "session expired" message.
+    if (!state.isAuthenticated) return;
+    try {
+      await _clearSession();
+    } catch (_) {
+      // Best-effort cleanup; we still want to surface the expiry below.
+    }
+    emit(AuthState.error('Session expired. Please sign in again.'));
+  }
+
+  /// Tears down all session state: stored token/user, in-memory token, the
+  /// WebSocket connection, and the FCM registration.
+  Future<void> _clearSession() async {
+    await _storage.delete(privateUserKey);
+    await _storage.delete(privateTokenKey);
+
+    privateApiClient.clearAuthToken();
+
+    /// Disconnect WebSocket
+    WebSocketService.instance.disconnect();
+
+    /// Unregister FCM token
+    await PushNotificationService.instance.unregisterToken();
   }
 
   void _onErrorCleared(AuthErrorCleared event, Emitter<AuthState> emit) {
