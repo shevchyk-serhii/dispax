@@ -159,9 +159,13 @@ object UserApi:
   //
   // All server endpoints share one environment (incl. JwtService from the secure
   // security logic) so they can be interpreted together.
-  type UserEnv                     = JwtService & AuthService & PersonRepositoryDep & FcmService & RideService & RateLimiter & AvatarService
+  type UserEnv                      =
+    JwtService & AuthService & PersonRepositoryDep & FcmService & RideService & RateLimiter & AvatarService &
+      CompanyRepositoryDep
   // PersonRepository lives in core; alias keeps the type readable.
-  private type PersonRepositoryDep = com.shevchyk.core.repository.PersonRepository
+  private type PersonRepositoryDep  = com.shevchyk.core.repository.PersonRepository
+  // CompanyRepository lives in core; used by the profile endpoint to resolve the company name.
+  private type CompanyRepositoryDep = com.shevchyk.core.repository.CompanyRepository
 
   // -- Authenticated base ---------------------------------------------------
   //
@@ -518,9 +522,13 @@ object UserApi:
 
   private val getProfileServer: ZServerEndpoint[UserEnv, Any] = getProfileEndpoint.serverLogic[UserEnv] { user => _ =>
     for {
-      personRepo <- ZIO.service[PersonRepositoryDep]
-      person     <- personRepo.findById(PersonId(user.userId)).mapError(internal).someOrFail(notFound)
-    } yield PersonDto.fromPerson(person)
+      personRepo  <- ZIO.service[PersonRepositoryDep]
+      person      <- personRepo.findById(PersonId(user.userId)).mapError(internal).someOrFail(notFound)
+      companyRepo <- ZIO.service[CompanyRepositoryDep]
+      companyName <- ZIO
+                       .foreach(person.companyId)(cid => companyRepo.findById(cid).mapError(internal))
+                       .map(_.flatten.map(_.name))
+    } yield PersonDto.fromPerson(person).copy(companyName = companyName)
   }
 
   private val updateProfileServer: ZServerEndpoint[UserEnv, Any] = updateProfileEndpoint.serverLogic[UserEnv] {

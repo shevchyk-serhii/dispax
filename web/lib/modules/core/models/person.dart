@@ -63,6 +63,11 @@ class Person {
   /// Raw bytes are fetched separately via ApiClient.getBytes('/users/$id/avatar').
   final bool hasAvatar;
 
+  /// Human-readable company name, resolved server-side. Populated only by the
+  /// profile endpoint (`GET /users/profile`); null elsewhere or when the
+  /// company is unknown. Shown instead of the raw [companyId].
+  final String? companyName;
+
   Person({
     required this.id,
     required this.name,
@@ -78,6 +83,7 @@ class Person {
     this.reminderMinutes = 60,
     Set<PersonRole>? roles,
     this.hasAvatar = false,
+    this.companyName,
   }) : roles = roles != null ? {...roles, role} : {role};
 
   /// Returns true when the person carries [r] as one of their roles.
@@ -123,6 +129,7 @@ class Person {
       reminderMinutes: (json['reminderMinutes'] as int?) ?? 60,
       roles: parsedRoles,
       hasAvatar: json['hasAvatar'] as bool? ?? false,
+      companyName: json['companyName']?.toString(),
     );
   }
 
@@ -141,6 +148,7 @@ class Person {
       'preferredDriverId': preferredDriverId,
       'status': status,
       'hasAvatar': hasAvatar,
+      'companyName': companyName,
     };
   }
 
