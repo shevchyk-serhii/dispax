@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/driver_earnings.dart';
+import '../../modules/ride_management/services/ride_service.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
@@ -14,11 +15,14 @@ class EarningsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.read<AuthBloc>().state.user;
+    final authBloc = context.read<AuthBloc>();
+    final user = authBloc.state.user;
 
     return BlocProvider(
       create: (_) {
-        final cubit = EarningsCubit();
+        final cubit = EarningsCubit(
+          rideService: RideService(apiClient: authBloc.apiClient),
+        );
         if (user != null) cubit.load(user.id.toString());
         return cubit;
       },
