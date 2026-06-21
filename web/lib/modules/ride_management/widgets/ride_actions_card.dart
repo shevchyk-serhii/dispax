@@ -186,7 +186,10 @@ class RideActionsCard extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: 20),
-        label: Text(label, style: AppStyles.labelLarge),
+        label: Text(
+          label,
+          style: AppStyles.labelLarge.copyWith(color: Colors.white),
+        ),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
