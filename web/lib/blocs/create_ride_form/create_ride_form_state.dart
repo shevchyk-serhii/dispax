@@ -43,6 +43,11 @@ class CreateRideFormState extends Equatable {
   /// Estimate returned for the van vehicle class.
   final RideEstimate? estimateVan;
 
+  /// True when an estimate was requested (addresses filled) but the backend
+  /// could not return one — e.g. the address could not be geocoded. Drives a
+  /// hint in the UI instead of a silent "—".
+  final bool estimateUnavailable;
+
   const CreateRideFormState({
     required this.clientName,
     this.selectedClientId,
@@ -69,6 +74,7 @@ class CreateRideFormState extends Equatable {
     this.isScheduled = true,
     this.estimateBusiness,
     this.estimateVan,
+    this.estimateUnavailable = false,
   });
 
   factory CreateRideFormState.initial() {
@@ -93,6 +99,7 @@ class CreateRideFormState extends Equatable {
       isScheduled: true,
       estimateBusiness: null,
       estimateVan: null,
+      estimateUnavailable: false,
     );
   }
 
@@ -128,6 +135,7 @@ class CreateRideFormState extends Equatable {
     bool clearEstimateBusiness = false,
     RideEstimate? estimateVan,
     bool clearEstimateVan = false,
+    bool? estimateUnavailable,
   }) {
     return CreateRideFormState(
       clientName: clientName ?? this.clientName,
@@ -165,6 +173,7 @@ class CreateRideFormState extends Equatable {
           ? null
           : (estimateBusiness ?? this.estimateBusiness),
       estimateVan: clearEstimateVan ? null : (estimateVan ?? this.estimateVan),
+      estimateUnavailable: estimateUnavailable ?? this.estimateUnavailable,
     );
   }
 
@@ -222,5 +231,6 @@ class CreateRideFormState extends Equatable {
     isScheduled,
     estimateBusiness,
     estimateVan,
+    estimateUnavailable,
   ];
 }

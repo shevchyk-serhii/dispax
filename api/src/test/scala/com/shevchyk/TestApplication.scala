@@ -973,6 +973,20 @@ object TestApplication extends ZIOAppDefault:
         .succeed(Some(10))
   )
 
+  // Deterministic geocoder for BDD: resolves a few known Munich addresses to fixed coordinates
+  // (so /api/rides/estimate can compute a fare from a free-text address with no coordinates) and
+  // returns None for anything else (so the "address cannot be geocoded → 400" path stays covered).
+  private val stubGeocodingServiceLayer: ZLayer[Any, Nothing, GeocodingService] = ZLayer.succeed(
+    new GeocodingService:
+      def geocode(address: String): Task[Option[(Double, Double)]] =
+        val a      = address.toLowerCase
+        val coords =
+          if a.contains("marienplatz") then Some((48.1374, 11.5755))
+          else if a.contains("airport") || a.contains("flughafen") then Some((48.3537, 11.7750))
+          else None
+        ZIO.succeed(coords)
+  )
+
   private val inMemoryClientLocationRepositoryLayer: ZLayer[Any, Nothing, ClientLocationRepository] = ZLayer.succeed {
     new ClientLocationRepository:
       private val store                                                                                       = new ConcurrentHashMap[RideId, ClientLocation]()
@@ -1528,7 +1542,7 @@ object TestApplication extends ZIOAppDefault:
       resettableCompanySettingsRepositoryLayer,
       inMemoryGeofenceRepositoryLayer,
       GeofenceService.layer,
-      GeocodingService.noop,
+      stubGeocodingServiceLayer,
       // SuperAdmin CompanyRepository stub (platform-level; not exercised in BDD tests)
       ZLayer.succeed[CompanyRepository] {
         import com.shevchyk.core.domain.{Company, CompanyId, CompanyStatus, SubscriptionPlan}
