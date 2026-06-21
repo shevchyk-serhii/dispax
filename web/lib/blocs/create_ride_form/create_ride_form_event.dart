@@ -172,6 +172,13 @@ class FormSubmitted extends CreateRideFormEvent {
   const FormSubmitted();
 }
 
+/// Emitted when the backend rejects a submission (validation/server error).
+/// Moves the form out of the submitting state so the "Create Ride" button
+/// re-enables and the user can fix the offending field and retry.
+class SubmissionFailed extends CreateRideFormEvent {
+  const SubmissionFailed();
+}
+
 class AddressesSwapped extends CreateRideFormEvent {
   const AddressesSwapped();
 }
