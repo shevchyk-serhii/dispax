@@ -271,7 +271,7 @@ class _BillingScreenState extends State<BillingScreen>
         _buildStatusFilters(),
         Expanded(
           child: _loadingInvoices
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator.adaptive())
               : _invoiceError != null
               ? _buildError(_invoiceError!, _loadInvoices)
               : _invoices.isEmpty
@@ -380,7 +380,7 @@ class _BillingScreenState extends State<BillingScreen>
     }
     String? selectedCompanyId = _companies.first.id;
     final messenger = ScaffoldMessenger.of(context);
-    showDialog<void>(
+    showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlg) => AlertDialog(
@@ -748,7 +748,7 @@ class _BillingScreenState extends State<BillingScreen>
     return Stack(
       children: [
         _loadingCompanies
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator.adaptive())
             : _companyError != null
             ? _buildError(_companyError!, _loadCompanies)
             : _companies.isEmpty
@@ -839,7 +839,7 @@ class _BillingScreenState extends State<BillingScreen>
     String? selectedLanguage = existing?.preferredLanguage;
     final messenger = ScaffoldMessenger.of(context);
 
-    showDialog<void>(
+    showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
@@ -934,7 +934,7 @@ class _BillingScreenState extends State<BillingScreen>
 
   void _confirmDeleteCompany(ClientCompany company) {
     final messenger = ScaffoldMessenger.of(context);
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Unternehmen löschen?'),
@@ -1073,7 +1073,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
       if (mounted) setState(() => _loading = false);
     }
     if (!mounted) return;
-    await showDialog<void>(
+    await showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => Dialog(
         insetPadding: const EdgeInsets.all(24),
@@ -1204,7 +1204,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
             _TotalRow('Gesamt (${inv.currency})', inv.totalAmount, bold: true),
             const SizedBox(height: 16),
             if (_loading)
-              const Center(child: CircularProgressIndicator())
+              Center(child: CircularProgressIndicator.adaptive())
             else
               Column(
                 children: [

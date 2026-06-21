@@ -220,7 +220,7 @@ class _AnalyticsView extends StatelessWidget {
           child: BlocBuilder<SuperAdminAnalyticsBloc, SuperAdminAnalyticsState>(
             builder: (context, state) {
               if (state is AnalyticsLoading) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(child: CircularProgressIndicator.adaptive());
               }
               if (state is AnalyticsError) {
                 return Center(
@@ -253,7 +253,7 @@ class _AnalyticsView extends StatelessWidget {
               if (state is AnalyticsLoaded) {
                 return _AnalyticsDashboard(data: state.data);
               }
-              return const Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator.adaptive());
             },
           ),
         ),

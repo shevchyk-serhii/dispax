@@ -493,7 +493,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _confirmSignOut() {
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Sign out'),
@@ -778,7 +778,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Change Password'),
@@ -864,7 +864,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final nameCtrl = TextEditingController(text: user.name);
     final phoneCtrl = TextEditingController(text: user.phone ?? '');
 
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Edit Profile'),

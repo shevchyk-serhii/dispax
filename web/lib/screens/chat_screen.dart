@@ -186,7 +186,7 @@ class _ChatScreenState extends State<ChatScreen> {
           // ── Messages thread ────────────────────────────────────────────────
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator.adaptive())
                 : _messages.isEmpty
                 ? _buildEmptyState(context)
                 : ListView.builder(

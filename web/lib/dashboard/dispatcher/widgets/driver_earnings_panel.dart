@@ -83,7 +83,7 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
         _buildHeader(),
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
               ? Center(
                   child: Column(

@@ -442,7 +442,7 @@ class _TodaysBookingsCard extends StatelessWidget {
           if (rideState.isLoading)
             const Padding(
               padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: CircularProgressIndicator.adaptive()),
             )
           else if (todayRides.isEmpty)
             Padding(

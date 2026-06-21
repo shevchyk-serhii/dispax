@@ -249,7 +249,7 @@ class _FlightScreenState extends State<FlightScreen>
         // ── Body ────────────────────────────────────────────────────────────
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator.adaptive())
               : TabBarView(
                   controller: _tabController,
                   children: [

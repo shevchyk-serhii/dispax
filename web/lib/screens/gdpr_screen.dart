@@ -117,7 +117,7 @@ class _GdprScreenState extends State<GdprScreen> {
   }
 
   Future<void> _requestDeletion() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Request Data Deletion'),
@@ -173,7 +173,7 @@ class _GdprScreenState extends State<GdprScreen> {
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator.adaptive())
           : _error != null
           ? Center(
               child: Column(

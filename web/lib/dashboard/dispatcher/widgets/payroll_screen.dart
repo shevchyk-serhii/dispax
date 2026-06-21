@@ -205,7 +205,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
 
   Widget _buildBody() {
     if (_isLoadingDrivers) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator.adaptive());
     }
 
     return SingleChildScrollView(
@@ -290,7 +290,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
           ),
           const SizedBox(height: AppDimensions.paddingLarge),
 
-          if (_isLoading) const Center(child: CircularProgressIndicator()),
+          if (_isLoading) Center(child: CircularProgressIndicator.adaptive()),
 
           if (_error != null)
             Center(

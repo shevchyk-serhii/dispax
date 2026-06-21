@@ -151,7 +151,7 @@ class RideQuickActions extends StatelessWidget {
 
   static void _handleNavigation(BuildContext context, Ride ride) async {
     try {
-      final choice = await showDialog<String>(
+      final choice = await showAdaptiveDialog<String>(
         context: context,
         builder: (BuildContext context) {
           return SimpleDialog(

@@ -426,7 +426,7 @@ class _AirportExitsView extends StatelessWidget {
         _GraphiteHeader(
           onRefresh: () =>
               context.read<SuperAdminAirportBloc>().add(LoadAirports()),
-          onAdd: () => showDialog<void>(
+          onAdd: () => showAdaptiveDialog<void>(
             context: context,
             builder: (_) =>
                 _AirportFormDialog(bloc: context.read<SuperAdminAirportBloc>()),
@@ -436,7 +436,7 @@ class _AirportExitsView extends StatelessWidget {
           child: BlocBuilder<SuperAdminAirportBloc, SuperAdminAirportState>(
             builder: (context, state) {
               if (state is AirportsLoading) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(child: CircularProgressIndicator.adaptive());
               }
               if (state is AirportsError) {
                 return Center(
@@ -463,7 +463,7 @@ class _AirportExitsView extends StatelessWidget {
               if (state is AirportsLoaded) {
                 return _AirportExitsList(airports: state.airports);
               }
-              return const Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator.adaptive());
             },
           ),
         ),
@@ -642,7 +642,7 @@ class _AirportCardState extends State<_AirportCard> {
                   tooltip: 'Edit airport',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  onPressed: () => showDialog<void>(
+                  onPressed: () => showAdaptiveDialog<void>(
                     context: context,
                     builder: (_) =>
                         _AirportFormDialog(bloc: widget.bloc, airport: airport),
@@ -681,7 +681,7 @@ class _AirportCardState extends State<_AirportCard> {
   }
 
   void _confirmDelete(BuildContext context) {
-    showDialog<void>(
+    showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(AppLocalizations.of(ctx)!.deleteAirport),
@@ -829,7 +829,7 @@ class _ZonesList extends StatelessWidget {
                     vertical: 6,
                   ),
                 ),
-                onPressed: () => showDialog<void>(
+                onPressed: () => showAdaptiveDialog<void>(
                   context: context,
                   builder: (_) =>
                       _ZoneFormDialog(bloc: bloc, airportCode: airport.code),
@@ -932,7 +932,7 @@ class _ZoneRow extends StatelessWidget {
             tooltip: 'Edit zone',
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            onPressed: () => showDialog<void>(
+            onPressed: () => showAdaptiveDialog<void>(
               context: context,
               builder: (_) => _ZoneFormDialog(
                 bloc: bloc,
@@ -955,7 +955,7 @@ class _ZoneRow extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context) {
-    showDialog<void>(
+    showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(AppLocalizations.of(ctx)!.deleteZone),

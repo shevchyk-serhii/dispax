@@ -180,7 +180,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final passwordCtrl = TextEditingController();
     String selectedRole = 'client';
 
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
@@ -274,7 +274,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         _buildSearchAndFilter(),
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
               ? Center(
                   child: Column(

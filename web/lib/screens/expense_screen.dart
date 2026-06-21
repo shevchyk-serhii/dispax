@@ -72,7 +72,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     final descriptionController = TextEditingController();
     ExpenseCategory selectedCategory = ExpenseCategory.fuel;
 
-    final result = await showDialog<bool>(
+    final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -184,7 +184,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Future<void> _deleteExpense(Expense expense) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Ausgabe löschen?'),
@@ -246,7 +246,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         ),
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
               ? Center(
                   child: Column(

@@ -147,7 +147,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
   }
 
   void _showCreatedDialog(Invoice invoice) {
-    showDialog<void>(
+    showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Rechnung erstellt'),
@@ -202,7 +202,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
       return;
     }
     if (!mounted) return;
-    await showDialog<void>(
+    await showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => Dialog(
         insetPadding: const EdgeInsets.all(24),
@@ -250,7 +250,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     }
     if (!mounted) return;
     final fileName = 'quittung-${ride.rideId}.pdf';
-    await showDialog<void>(
+    await showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => Dialog(
         insetPadding: const EdgeInsets.all(24),
@@ -368,7 +368,9 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
         ),
       );
     }
-    if (_loadingRides) return const Center(child: CircularProgressIndicator());
+    if (_loadingRides) {
+      return Center(child: CircularProgressIndicator.adaptive());
+    }
     if (_rides.isEmpty) {
       return Center(
         child: Column(

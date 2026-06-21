@@ -307,7 +307,7 @@ Future<bool?> showLocationClarificationDialog({
   required BuildContext context,
   required Ride ride,
 }) {
-  return showDialog<bool>(
+  return showAdaptiveDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (context) => LocationClarificationDialog(ride: ride),

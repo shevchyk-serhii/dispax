@@ -13,7 +13,7 @@ class DeleteConfirmationDialog extends StatelessWidget {
   });
 
   static void show(BuildContext context, Ride ride, VoidCallback onConfirm) {
-    showDialog(
+    showAdaptiveDialog(
       context: context,
       builder: (context) =>
           DeleteConfirmationDialog(ride: ride, onConfirm: onConfirm),

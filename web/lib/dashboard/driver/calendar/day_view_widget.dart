@@ -469,7 +469,7 @@ class DayViewWidget extends StatelessWidget {
 
   void _handleNavigation(BuildContext context, Ride ride) async {
     try {
-      final choice = await showDialog<String>(
+      final choice = await showAdaptiveDialog<String>(
         context: context,
         builder: (ctx) => SimpleDialog(
           title: const Text('Navigate to'),
