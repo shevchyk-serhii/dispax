@@ -590,23 +590,21 @@ dev-roles: free-port
 # RELOAD / HOT RESTART work: press `r` (hot reload) or `R` (hot restart) in this
 # terminal and the change lands on ALL THREE simulators at once. Trade-off vs
 # `dev-roles`: one foreground flutter process drives all devices (no per-device
-# control), and ALL booted simulators are shut down first so `-d all` targets
-# exactly our three named 17 Pro Max devices.
+# control).
 #
-# Use `dev-roles` when you just want the apps running; use `dev-roles-live` when
-# you're actively editing Dart and want r/R. Quit with `q` (stops flutter), then
-# `make stop-dev` for the backend.
+# `-d all` targets every booted simulator, so to keep it to our three we shut
+# down only the OTHER booted simulators (foreign ones) — our three are left
+# running between invocations so re-running this is fast (no cold boot). Use
+# `dev-roles` when you just want the apps running; use `dev-roles-live` when
+# you're actively editing Dart and want r/R. Quit with `q`, then `make stop-dev`.
 dev-roles-live: free-port
 	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
 	@echo "⏳ Waiting for backend on :8080..."
 	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
 	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
 	@sleep $(FLUTTER_STARTUP_DELAY)
-	@echo "🧹 Shutting down all simulators so -d all targets only our 3..."
-	@xcrun simctl shutdown all 2>/dev/null || true
 	@ensure_sim() { \
-		local name="$$1"; \
-		local udid; \
+		local name="$$1"; local udid; \
 		udid=$$(xcrun simctl list devices 2>/dev/null | grep -F "$$name (" | grep -oE '[0-9A-F-]{36}' | head -1); \
 		if [ -z "$$udid" ]; then \
 			echo "📲 Creating simulator \"$$name\" (17 Pro Max)..." 1>&2; \
@@ -614,9 +612,16 @@ dev-roles-live: free-port
 		fi; \
 		echo "$$udid"; \
 	}; \
+	OURS=""; \
 	for role in "$(SIM_NAME_CLIENT)" "$(SIM_NAME_DRIVER)" "$(SIM_NAME_DISPATCHER)"; do \
-		udid=$$(ensure_sim "$$role"); \
-		echo "🚀 Booting $$role → $$udid"; \
+		udid=$$(ensure_sim "$$role"); OURS="$$OURS $$udid"; \
+	done; \
+	echo "🧹 Shutting down only FOREIGN booted simulators (keeping our 3 alive)..."; \
+	for booted in $$(xcrun simctl list devices booted 2>/dev/null | grep -oE '[0-9A-F-]{36}'); do \
+		case " $$OURS " in *" $$booted "*) ;; *) echo "   ⏹  $$booted"; xcrun simctl shutdown "$$booted" 2>/dev/null || true ;; esac; \
+	done; \
+	for udid in $$OURS; do \
+		echo "🚀 Booting (if needed) $$udid"; \
 		xcrun simctl boot "$$udid" 2>/dev/null || true; \
 	done
 	@open -a Simulator
