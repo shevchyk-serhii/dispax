@@ -284,6 +284,76 @@ object RideValidatorsSpec extends ZIOSpecDefault {
         summon[Validator[CancelRideApiRequest]].validate(req).flip.map { err =>
           assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("negative"))
         }
+      },
+      // [MEDIUM] fee guard `fee.exists(f => f.isNaN || f < 0)`: removing isNaN allows NaN to slip through.
+      // NaN is neither < 0 nor >= 0, so the `f < 0` branch alone would not catch it.
+      test("rejects NaN fee (isNaN guard is distinct from negative guard)") {
+        val req = CancelRideApiRequest(reason = "No show", fee = Some(Double.NaN))
+        summon[Validator[CancelRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.isInstanceOf[RideError.ValidationError])
+        }
+      }
+    )
+
+  // [LOW] coordinate boundary tests: inclusive limits (±90 lat, ±180 lon) must be valid;
+  // values just beyond the boundary must be rejected.  These close the <= vs < mutation gap.
+  def suite_coordinateBoundaries =
+    suite("Coordinate boundary values")(
+      test("latitude 90.0 is valid (inclusive upper bound)") {
+        val req = validCreateRequest(from =
+          LocationDto(address = "North Pole", latitude = Some(90.0), longitude = Some(0.0))
+        )
+        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("latitude -90.0 is valid (inclusive lower bound)") {
+        val req = validCreateRequest(from =
+          LocationDto(address = "South Pole", latitude = Some(-90.0), longitude = Some(0.0))
+        )
+        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("longitude 180.0 is valid (inclusive upper bound)") {
+        val req = validCreateRequest(from =
+          LocationDto(address = "Date line", latitude = Some(0.0), longitude = Some(180.0))
+        )
+        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("longitude -180.0 is valid (inclusive lower bound)") {
+        val req = validCreateRequest(from =
+          LocationDto(address = "Date line W", latitude = Some(0.0), longitude = Some(-180.0))
+        )
+        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("latitude 90.001 is invalid (just above upper bound)") {
+        val req = validCreateRequest(from =
+          LocationDto(address = "Over North", latitude = Some(90.001), longitude = Some(0.0))
+        )
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.isInstanceOf[RideError.ValidationError])
+        }
+      },
+      test("latitude -90.001 is invalid (just below lower bound)") {
+        val req = validCreateRequest(from =
+          LocationDto(address = "Over South", latitude = Some(-90.001), longitude = Some(0.0))
+        )
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.isInstanceOf[RideError.ValidationError])
+        }
+      },
+      test("longitude 180.001 is invalid (just above upper bound)") {
+        val req = validCreateRequest(from =
+          LocationDto(address = "Over Date", latitude = Some(0.0), longitude = Some(180.001))
+        )
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.isInstanceOf[RideError.ValidationError])
+        }
+      },
+      test("longitude -180.001 is invalid (just below lower bound)") {
+        val req = validCreateRequest(from =
+          LocationDto(address = "Over Date W", latitude = Some(0.0), longitude = Some(-180.001))
+        )
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.isInstanceOf[RideError.ValidationError])
+        }
       }
     )
 
@@ -293,6 +363,7 @@ object RideValidatorsSpec extends ZIOSpecDefault {
       suite_assignDriverRequest,
       suite_rideStatusUpdateRequest,
       suite_updateRideApiRequest,
-      suite_cancelRideApiRequest
+      suite_cancelRideApiRequest,
+      suite_coordinateBoundaries
     )
 }
