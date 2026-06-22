@@ -477,114 +477,130 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // Keyboard inset is applied to the Confirm button's bottom padding (below)
-    // rather than wrapping the whole DraggableScrollableSheet, which otherwise
-    // double-counts the inset and overflows the sheet by a few pixels.
-    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
-      builder: (ctx, scrollCtrl) => Column(
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.borderPrimary,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              controller: _ctrl,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: widget.isFrom
-                    ? 'Enter pick-up address'
-                    : 'Enter drop-off address',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.borderPrimary),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
+    // The sheet height is made keyboard-aware: we reserve the keyboard inset
+    // via the outer Padding AND cap the content to 90% of the *visible* (above
+    // the keyboard) height. This keeps the search field, the results list and
+    // the Confirm button sharing the space above the keyboard, so the list does
+    // not collapse to a single row. (A previous attempt wrapped a full-height
+    // DraggableScrollableSheet in this padding, which double-counted the inset
+    // and overflowed by a few pixels — that's why the cap below is required.)
+    final screenHeight = MediaQuery.of(context).size.height;
+    // Clamp the inset to the screen height so an over-large reported keyboard
+    // (or test geometry) can't drive the sheet height negative and trip a
+    // BoxConstraints assertion, nor push the bottom padding past the screen.
+    final keyboardInset = MediaQuery.of(
+      context,
+    ).viewInsets.bottom.clamp(0.0, screenHeight);
+    // Height available above the keyboard, capped at 90% of it.
+    final maxSheetHeight = (screenHeight - keyboardInset) * 0.9;
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxSheetHeight),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.borderPrimary,
+                borderRadius: BorderRadius.circular(2),
               ),
-              onChanged: _onQueryChanged,
-              onSubmitted: (v) {
-                if (v.trim().isNotEmpty) Navigator.of(context).pop(v.trim());
-              },
             ),
-          ),
-          if (_loading) const LinearProgressIndicator(minHeight: 2),
-          Expanded(
-            child: ListView(
-              controller: scrollCtrl,
-              padding: EdgeInsets.zero,
-              children: [
-                if (_suggestions.isNotEmpty) ...[
-                  _sectionLabel('Suggestions'),
-                  ..._suggestions.map(
-                    (s) => ListTile(
-                      leading: const Icon(
-                        Icons.location_on_outlined,
-                        color: AppColors.accent,
-                      ),
-                      title: Text(s),
-                      onTap: () => Navigator.of(context).pop(s),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: TextField(
+                controller: _ctrl,
+                autofocus: true,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: widget.isFrom
+                      ? 'Enter pick-up address'
+                      : 'Enter drop-off address',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AppColors.borderPrimary,
                     ),
                   ),
-                ],
-                if (widget.savedPlaces.isNotEmpty) ...[
-                  _sectionLabel('Saved places'),
-                  ...widget.savedPlaces.map(
-                    (p) => ListTile(
-                      leading: const Icon(
-                        Icons.bookmark_outline,
-                        color: AppColors.accent,
-                      ),
-                      title: Text(p),
-                      onTap: () => Navigator.of(context).pop(p),
-                    ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
                   ),
-                ],
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + keyboardInset),
-            child: SizedBox(
-              width: double.infinity,
-              child: Builder(
-                builder: (context) {
-                  final cs = Theme.of(context).colorScheme;
-                  return ElevatedButton(
-                    onPressed: () {
-                      final v = _ctrl.text.trim();
-                      if (v.isNotEmpty) Navigator.of(context).pop(v);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: cs.primary,
-                      foregroundColor: cs.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text('Confirm'),
-                  );
+                ),
+                onChanged: _onQueryChanged,
+                onSubmitted: (v) {
+                  if (v.trim().isNotEmpty) Navigator.of(context).pop(v.trim());
                 },
               ),
             ),
-          ),
-        ],
+            if (_loading) const LinearProgressIndicator(minHeight: 2),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  if (_suggestions.isNotEmpty) ...[
+                    _sectionLabel('Suggestions'),
+                    ..._suggestions.map(
+                      (s) => ListTile(
+                        leading: const Icon(
+                          Icons.location_on_outlined,
+                          color: AppColors.accent,
+                        ),
+                        title: Text(s),
+                        onTap: () => Navigator.of(context).pop(s),
+                      ),
+                    ),
+                  ],
+                  if (widget.savedPlaces.isNotEmpty) ...[
+                    _sectionLabel('Saved places'),
+                    ...widget.savedPlaces.map(
+                      (p) => ListTile(
+                        leading: const Icon(
+                          Icons.bookmark_outline,
+                          color: AppColors.accent,
+                        ),
+                        title: Text(p),
+                        onTap: () => Navigator.of(context).pop(p),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Padding(
+              // Keyboard inset is reserved by the outer Padding, so the button
+              // only needs its own bottom margin here (no double counting).
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: Builder(
+                  builder: (context) {
+                    final cs = Theme.of(context).colorScheme;
+                    return ElevatedButton(
+                      onPressed: () {
+                        final v = _ctrl.text.trim();
+                        if (v.isNotEmpty) Navigator.of(context).pop(v);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Confirm'),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
