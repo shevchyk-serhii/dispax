@@ -4,7 +4,7 @@
         patrol-test-android patrol-test-ios \
         emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
-        dev-all dev-sim dev-roles free-port stop-dev \
+        dev-all dev-sim dev-roles dev-roles-live free-port stop-dev \
         deploy logs setup-hooks \
         load-test
 
@@ -585,6 +585,46 @@ dev-roles: free-port
 	@echo "   Log in via 'Quick Access for Testing' or: dispatcher@dispax.de / driver1@dispax.de / client1@bmw.de (password123)."
 	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
 	@wait
+
+# Like `dev-roles`, but runs the app via a single `flutter run -d all` so HOT
+# RELOAD / HOT RESTART work: press `r` (hot reload) or `R` (hot restart) in this
+# terminal and the change lands on ALL THREE simulators at once. Trade-off vs
+# `dev-roles`: one foreground flutter process drives all devices (no per-device
+# control), and ALL booted simulators are shut down first so `-d all` targets
+# exactly our three named 17 Pro Max devices.
+#
+# Use `dev-roles` when you just want the apps running; use `dev-roles-live` when
+# you're actively editing Dart and want r/R. Quit with `q` (stops flutter), then
+# `make stop-dev` for the backend.
+dev-roles-live: free-port
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
+	@echo "⏳ Waiting for backend on :8080..."
+	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
+	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
+	@sleep $(FLUTTER_STARTUP_DELAY)
+	@echo "🧹 Shutting down all simulators so -d all targets only our 3..."
+	@xcrun simctl shutdown all 2>/dev/null || true
+	@ensure_sim() { \
+		local name="$$1"; \
+		local udid; \
+		udid=$$(xcrun simctl list devices 2>/dev/null | grep -F "$$name (" | grep -oE '[0-9A-F-]{36}' | head -1); \
+		if [ -z "$$udid" ]; then \
+			echo "📲 Creating simulator \"$$name\" (17 Pro Max)..." 1>&2; \
+			udid=$$(xcrun simctl create "$$name" "$(SIM_DEVICE_TYPE)" "$(SIM_RUNTIME)"); \
+		fi; \
+		echo "$$udid"; \
+	}; \
+	for role in "$(SIM_NAME_CLIENT)" "$(SIM_NAME_DRIVER)" "$(SIM_NAME_DISPATCHER)"; do \
+		udid=$$(ensure_sim "$$role"); \
+		echo "🚀 Booting $$role → $$udid"; \
+		xcrun simctl boot "$$udid" 2>/dev/null || true; \
+	done
+	@open -a Simulator
+	@echo "▶️  flutter run -d all — press 'r' hot reload, 'R' hot restart, 'q' quit."
+	@echo "   Log in via 'Quick Access for Testing' or dispatcher@/driver1@dispax.de, client1@bmw.de (password123)."
+	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d all \
+		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
+		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
 
 # Kill all dev processes (backend + flutter)
 stop-dev:
