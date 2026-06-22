@@ -33,5 +33,23 @@ object ServerConfig {
       .map(envPort => ServerConfig(port = envPort.flatMap(_.toIntOption).getOrElse(ServerConfig().port)))
   )
 
-  val liveLayer: ZLayer[Any, Throwable, ServerConfig] = layer.catchAll(_ => defaultLayer)
+  /**
+   * Overrides [config]'s port with the `PORT` env var when it is set. Cloud Run and the e2e test backend (`PORT=8090
+   * sbt run`) both bind via `PORT`; without this override the env var is ignored and the server always binds the
+   * config/default port (8080), colliding with a running dev server.
+   */
+  private def withEnvPort(config: ServerConfig): ZIO[Any, Nothing, ServerConfig] = System
+    .env("PORT")
+    .orElseSucceed(None)
+    .map(envPort => envPort.flatMap(_.toIntOption).fold(config)(p => config.copy(port = p)))
+
+  /**
+   * Resolves the base config from the resource path, falling back to the default on any failure — including config
+   * parsing *defects* (e.g. an unresolved `${...}` substitution), which `catchAll` alone would let escape.
+   */
+  private val baseConfig: ZIO[Any, Nothing, ServerConfig] = ZIO
+    .suspendSucceed(read(configDescriptor.from(ConfigProvider.fromResourcePath())))
+    .catchAllCause(_ => ZIO.succeed(ServerConfig()))
+
+  val liveLayer: ZLayer[Any, Nothing, ServerConfig] = ZLayer.fromZIO(baseConfig.flatMap(withEnvPort))
 }
