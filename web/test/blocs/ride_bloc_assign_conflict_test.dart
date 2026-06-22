@@ -77,9 +77,7 @@ void main() {
             'driver-1',
             overrideScheduleConflict: true,
           ),
-        ).thenThrow(
-          ApiException('Some other server error', statusCode: 409),
-        );
+        ).thenThrow(ApiException('Some other server error', statusCode: 409));
         return buildBloc();
       },
       seed: () => RideState.loaded([testRide]),
@@ -134,11 +132,7 @@ void main() {
               'ride status',
               RideStatus.assigned,
             )
-            .having(
-              (s) => s.rides.first.driverId,
-              'ride driverId',
-              'driver-1',
-            ),
+            .having((s) => s.rides.first.driverId, 'ride driverId', 'driver-1'),
       ],
       verify: (_) {
         verify(
@@ -167,10 +161,7 @@ void main() {
       },
       seed: () => RideState.loaded([testRide]),
       act: (bloc) => bloc.add(
-        const RideAssignRequested(
-          rideId: 'ride-1',
-          driverId: 'driver-1',
-        ),
+        const RideAssignRequested(rideId: 'ride-1', driverId: 'driver-1'),
       ),
       expect: () => [
         isA<RideState>().having((s) => s.isAssigning, 'isAssigning', true),
