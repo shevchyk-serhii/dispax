@@ -12,10 +12,11 @@ import zio.*
 import java.time.Instant
 import java.util.UUID
 
-/** Unit tests for RideService.setRidePrice and getDriverRides (company-isolation).
-  *
-  * All tests use InMemoryRideRepository — no database, no containers.
-  */
+/**
+ * Unit tests for RideService.setRidePrice, getDriverRides (company-isolation), and getRidesByDrivers.
+ *
+ * All tests use InMemoryRideRepository — no database, no containers.
+ */
 object RideServicePriceSpec extends ZIOSpecDefault {
 
   // ── IDs ────────────────────────────────────────────────────────────────────
@@ -70,32 +71,40 @@ object RideServicePriceSpec extends ZIOSpecDefault {
 
   // ── Person repo ────────────────────────────────────────────────────────────
   final case class TestPersonRepository(persons: Map[PersonId, Person]) extends PersonRepository {
-    override def create(person: Person): Task[Person]         = ZIO.succeed(person)
-    override def findById(id: PersonId): Task[Option[Person]] = ZIO.succeed(persons.get(id))
-    override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]] =
-      ZIO.succeed(persons.get(id).filter(_.companyId.contains(companyId)))
-    override def findByEmail(email: String): Task[Option[Person]] =
-      ZIO.succeed(persons.values.find(_.email == email))
-    override def findByRole(role: PersonRole): Task[List[Person]] =
-      ZIO.succeed(persons.values.filter(_.role == role).toList)
-    override def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] =
-      ZIO.succeed(persons.values.filter(p => p.hasRole(role) && p.companyId.contains(companyId)).toList)
-    override def findByCompanyId(companyId: CompanyId): Task[List[Person]] =
-      ZIO.succeed(persons.values.filter(_.companyId.contains(companyId)).toList)
-    override def findAll(): Task[List[Person]] = ZIO.succeed(persons.values.toList)
-    override def update(person: Person): Task[Person] = ZIO.succeed(person)
-    override def delete(id: PersonId): Task[Unit]     = ZIO.unit
-    override def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit] = ZIO.unit
-    override def findByStatus(status: UserStatus): Task[List[Person]] =
-      ZIO.succeed(persons.values.filter(_.status == status).toList)
-    override def searchByQuery(query: String): Task[List[Person]] = ZIO.succeed(Nil)
-    override def updateLastLogin(id: PersonId): Task[Unit]        = ZIO.unit
-    override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] =
-      ZIO.succeed(Nil)
-    override def upsertDriverRow(personId: PersonId): Task[Unit] = ZIO.unit
-    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]] = ZIO.succeed(None)
-    override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
-    override def deleteAvatar(id: PersonId): Task[Unit] = ZIO.unit
+    override def create(person: Person): Task[Person]                                             = ZIO.succeed(person)
+    override def findById(id: PersonId): Task[Option[Person]]                                     = ZIO.succeed(persons.get(id))
+
+    override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]     = ZIO.succeed(
+      persons.get(id).filter(_.companyId.contains(companyId))
+    )
+    override def findByEmail(email: String): Task[Option[Person]]                                 = ZIO.succeed(persons.values.find(_.email == email))
+
+    override def findByRole(role: PersonRole): Task[List[Person]]                                 = ZIO.succeed(
+      persons.values.filter(_.role == role).toList
+    )
+
+    override def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
+      persons.values.filter(p => p.hasRole(role) && p.companyId.contains(companyId)).toList
+    )
+
+    override def findByCompanyId(companyId: CompanyId): Task[List[Person]]                        = ZIO.succeed(
+      persons.values.filter(_.companyId.contains(companyId)).toList
+    )
+    override def findAll(): Task[List[Person]]                                                    = ZIO.succeed(persons.values.toList)
+    override def update(person: Person): Task[Person]                                             = ZIO.succeed(person)
+    override def delete(id: PersonId): Task[Unit]                                                 = ZIO.unit
+    override def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                  = ZIO.unit
+
+    override def findByStatus(status: UserStatus): Task[List[Person]]                             = ZIO.succeed(
+      persons.values.filter(_.status == status).toList
+    )
+    override def searchByQuery(query: String): Task[List[Person]]                                 = ZIO.succeed(Nil)
+    override def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
+    override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]        = ZIO.succeed(Nil)
+    override def upsertDriverRow(personId: PersonId): Task[Unit]                                  = ZIO.unit
+    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                     = ZIO.succeed(None)
+    override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]     = ZIO.unit
+    override def deleteAvatar(id: PersonId): Task[Unit]                                           = ZIO.unit
   }
 
   val testPersonRepo = TestPersonRepository(
@@ -136,7 +145,9 @@ object RideServicePriceSpec extends ZIOSpecDefault {
     dropoffLocation = Location("B")
   )
 
-  /** Create a ride and assign testDriver to it. */
+  /**
+   * Create a ride and assign testDriver to it.
+   */
   private def createAssignedRide(service: RideService) =
     for {
       ride     <- service.createRide(mkRide())
@@ -210,12 +221,12 @@ object RideServicePriceSpec extends ZIOSpecDefault {
             service  <- ZIO.service[RideService]
             assigned <- createAssignedRide(service)
             // Caller claims to be from otherCompanyId, but ride belongs to testCompanyId.
-            result   <- service
-                          .setRidePrice(assigned.id, 50.0, dispatcherId, PersonRole.Dispatcher, otherCompanyId)
-                          .exit
+            result   <-
+              service
+                .setRidePrice(assigned.id, 50.0, dispatcherId, PersonRole.Dispatcher, otherCompanyId)
+                .exit
           } yield assertTrue(result match {
-            case Exit.Failure(cause) =>
-              cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
             case _                   => false
           })
         }.provide(standardLayers),
@@ -223,9 +234,10 @@ object RideServicePriceSpec extends ZIOSpecDefault {
           for {
             service  <- ZIO.service[RideService]
             assigned <- createAssignedRide(service)
-            _        <- service
-                          .setRidePrice(assigned.id, 50.0, dispatcherId, PersonRole.Dispatcher, otherCompanyId)
-                          .exit
+            _        <-
+              service
+                .setRidePrice(assigned.id, 50.0, dispatcherId, PersonRole.Dispatcher, otherCompanyId)
+                .exit
             fetched  <- service.getRideById(assigned.id)
           } yield assertTrue(fetched.finalPrice.isEmpty)
         }.provide(standardLayers)
@@ -239,8 +251,7 @@ object RideServicePriceSpec extends ZIOSpecDefault {
             assigned <- createAssignedRide(service)
             result   <- service.setRidePrice(assigned.id, 30.0, testDriver2Id, PersonRole.Driver, testCompanyId).exit
           } yield assertTrue(result match {
-            case Exit.Failure(cause) =>
-              cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
             case _                   => false
           })
         }.provide(standardLayers),
@@ -251,8 +262,7 @@ object RideServicePriceSpec extends ZIOSpecDefault {
             ride    <- service.createRide(mkRide())
             result  <- service.setRidePrice(ride.id, 20.0, testDriverId, PersonRole.Driver, testCompanyId).exit
           } yield assertTrue(result match {
-            case Exit.Failure(cause) =>
-              cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
             case _                   => false
           })
         }.provide(standardLayers),
@@ -263,6 +273,86 @@ object RideServicePriceSpec extends ZIOSpecDefault {
             _        <- service.setRidePrice(assigned.id, 30.0, testDriver2Id, PersonRole.Driver, testCompanyId).exit
             fetched  <- service.getRideById(assigned.id)
           } yield assertTrue(fetched.finalPrice.isEmpty)
+        }.provide(standardLayers)
+      ),
+      // ── getRidesByDrivers ──────────────────────────────────────────────────
+      suite("getRidesByDrivers")(
+        test("single valid driver returns their rides") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(mkRide())
+            assigned <- service.assignDriver(ride.id, testDriverId)
+            result   <- service.getRidesByDrivers(List(testDriverId), None, None, testCompanyId)
+          } yield assertTrue(result.exists(_.id == assigned.id))
+        }.provide(standardLayers),
+        test("foreign driverId (other company) returns empty list — no data leak") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            _       <- service.assignDriver(ride.id, testDriverId)
+            // wrongCompanyDriver belongs to otherCompanyId; queried under testCompanyId → empty.
+            result  <- service.getRidesByDrivers(List(wrongCompanyDriver.id), None, None, testCompanyId)
+          } yield assertTrue(result.isEmpty)
+        }.provide(standardLayers),
+        test("malformed 'from' date string fails with ValidationError") {
+          for {
+            service <- ZIO.service[RideService]
+            result  <- service.getRidesByDrivers(List(testDriverId), Some("not-a-date"), None, testCompanyId).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.ValidationError(_) => true
+                case _                            => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("malformed 'to' date string fails with ValidationError") {
+          for {
+            service <- ZIO.service[RideService]
+            result  <- service.getRidesByDrivers(List(testDriverId), None, Some("bad"), testCompanyId).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.ValidationError(_) => true
+                case _                            => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("date range filter excludes rides outside the window") {
+          import java.time.LocalDate
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            _       <- service.assignDriver(ride.id, testDriverId)
+            // A past date range that excludes a future ride (pickupDateTime is in the future by default).
+            result  <- service.getRidesByDrivers(
+                         List(testDriverId),
+                         Some("2000-01-01"),
+                         Some("2000-01-02"),
+                         testCompanyId
+                       )
+          } yield assertTrue(result.isEmpty)
+        }.provide(standardLayers),
+        test("two drivers — rides are returned for both") {
+          for {
+            service   <- ZIO.service[RideService]
+            ride1     <- service.createRide(mkRide())
+            assigned1 <- service.assignDriver(ride1.id, testDriverId)
+            ride2     <- service.createRide(mkRide())
+            assigned2 <- service.assignDriver(ride2.id, testDriver2Id)
+            result    <- service.getRidesByDrivers(List(testDriverId, testDriver2Id), None, None, testCompanyId)
+          } yield assertTrue(
+            result.exists(_.id == assigned1.id),
+            result.exists(_.id == assigned2.id)
+          )
+        }.provide(standardLayers),
+        test("empty driverIds list returns empty result") {
+          for {
+            service <- ZIO.service[RideService]
+            result  <- service.getRidesByDrivers(Nil, None, None, testCompanyId)
+          } yield assertTrue(result.isEmpty)
         }.provide(standardLayers)
       ),
       // ── getDriverRides tenant isolation ────────────────────────────────────

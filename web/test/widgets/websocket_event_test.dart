@@ -25,29 +25,28 @@ Map<String, dynamic> _etaAtRiskJson({
   int minutesUntilPickup = 7,
   int slackMinutes = -5,
   String companyId = 'company-99',
-}) =>
-    {
-      'EtaAtRisk': {
-        'rideId': rideId,
-        'driverId': driverId,
-        'clientId': clientId,
-        'etaMinutes': etaMinutes,
-        'minutesUntilPickup': minutesUntilPickup,
-        'slackMinutes': slackMinutes,
-        'companyId': companyId,
-      },
-    };
+}) => {
+  'EtaAtRisk': {
+    'rideId': rideId,
+    'driverId': driverId,
+    'clientId': clientId,
+    'etaMinutes': etaMinutes,
+    'minutesUntilPickup': minutesUntilPickup,
+    'slackMinutes': slackMinutes,
+    'companyId': companyId,
+  },
+};
 
 /// A non-EtaAtRisk event for negative-type assertions.
 Map<String, dynamic> _rideStatusChangedJson() => {
-      'RideStatusChanged': {
-        'rideId': 'ride-001',
-        'newStatus': 'Assigned',
-        'driverId': 'driver-001',
-        'clientId': 'client-001',
-        'companyId': 'company-01',
-      },
-    };
+  'RideStatusChanged': {
+    'rideId': 'ride-001',
+    'newStatus': 'Assigned',
+    'driverId': 'driver-001',
+    'clientId': 'client-001',
+    'companyId': 'company-01',
+  },
+};
 
 void main() {
   group('WebSocketEvent.isEtaAtRisk', () {
@@ -92,8 +91,11 @@ void main() {
 
     test('slackMinutes returns slackMinutes (negative = at risk)', () {
       expect(event.slackMinutes, equals(-5));
-      expect(event.slackMinutes! < 0, isTrue,
-          reason: 'negative slack means driver is late');
+      expect(
+        event.slackMinutes! < 0,
+        isTrue,
+        reason: 'negative slack means driver is late',
+      );
     });
 
     // ------------------------------------------------------------------
@@ -157,9 +159,7 @@ void main() {
 
     test('etaMinutes works when value is an integer JSON number', () {
       // ZIO-JSON always encodes Int as a JSON number; toInt() must handle it.
-      final event = WebSocketEvent.fromJson(
-        _etaAtRiskJson(etaMinutes: 3),
-      );
+      final event = WebSocketEvent.fromJson(_etaAtRiskJson(etaMinutes: 3));
       expect(event.etaMinutes, equals(3));
     });
 

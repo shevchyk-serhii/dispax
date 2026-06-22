@@ -99,6 +99,21 @@ trait RideService:
       companyId: CompanyId
   ): IO[RideError, Ride]
 
+  /**
+   * Fetch rides for a list of drivers within a company, optionally filtered to the inclusive date range [from, to]. The
+   * `from` and `to` strings must be ISO-8601 date strings (YYYY-MM-DD); a malformed value fails with
+   * `RideError.ValidationError` so the route can return HTTP 400.
+   *
+   * Tenant isolation: each driver's rides are fetched via `getDriverRides` which already scopes by `companyId`, so a
+   * foreign `driverId` simply returns an empty list — no data leak.
+   */
+  def getRidesByDrivers(
+      driverIds: List[PersonId],
+      from: Option[String],
+      to: Option[String],
+      companyId: CompanyId
+  ): IO[RideError, List[Ride]]
+
 class RideServiceImpl(
     rideRepository: RideRepository,
     personRepository: PersonRepository,
@@ -818,6 +833,42 @@ class RideServiceImpl(
       updatedRide = ride.focus(_.finalPrice).replace(Some(BigDecimal(price)))
       persisted  <- rideRepository.update(updatedRide).mapDatabaseError
     } yield persisted
+
+  def getRidesByDrivers(
+      driverIds: List[PersonId],
+      from: Option[String],
+      to: Option[String],
+      companyId: CompanyId
+  ): IO[RideError, List[Ride]] =
+    for {
+      // Validate date strings up-front so a malformed value returns 400, not silent no-filter.
+      fromInstantOpt <-
+        ZIO
+          .foreach(from) { s =>
+            ZIO
+              .attempt(LocalDate.parse(s).atStartOfDay(ZoneOffset.UTC).toInstant)
+              .orElseFail(RideError.ValidationError(s"Invalid date format for 'from': $s"))
+          }
+      toInstantOpt   <-
+        ZIO
+          .foreach(to) { s =>
+            ZIO
+              .attempt(LocalDate.parse(s).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant)
+              .orElseFail(RideError.ValidationError(s"Invalid date format for 'to': $s"))
+          }
+      // Fetch rides for each driver in parallel; getDriverRides scopes by companyId so a
+      // foreign driverId simply returns empty — no data leak.
+      allRides       <- ZIO.foreachPar(driverIds)(id => getDriverRides(id, companyId))
+      flatRides       = allRides.flatten
+      // Apply the optional inclusive date filter (the to-instant is exclusive end-of-day).
+      filtered        =
+        (fromInstantOpt, toInstantOpt) match
+          case (Some(fromI), Some(toI)) =>
+            flatRides.filter(r => !r.pickupDateTime.isBefore(fromI) && r.pickupDateTime.isBefore(toI))
+          case (Some(fromI), None)      => flatRides.filter(r => !r.pickupDateTime.isBefore(fromI))
+          case (None, Some(toI))        => flatRides.filter(r => r.pickupDateTime.isBefore(toI))
+          case _                        => flatRides
+    } yield filtered
 
   /**
    * Computes the half-open interval [from, to) and the bucket granularity for the period. All boundaries are in UTC to

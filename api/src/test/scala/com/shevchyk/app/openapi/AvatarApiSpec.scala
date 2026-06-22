@@ -216,6 +216,19 @@ object AvatarApiSpec extends ZIOSpecDefault:
           p: EarningsPeriod,
           a: java.time.LocalDate
       ): IO[RideError, DriverEarningsReport] = notImpl
+      def setRidePrice(
+          id: RideId,
+          price: Double,
+          uid: PersonId,
+          role: PersonRole,
+          cid: CompanyId
+      ): IO[RideError, Ride] = notImpl
+      def getRidesByDrivers(
+          ids: List[PersonId],
+          from: Option[String],
+          to: Option[String],
+          cid: CompanyId
+      ): IO[RideError, List[Ride]] = notImpl
   )
 
   private val stubFcmServiceLayer: ZLayer[Any, Nothing, FcmService] =

@@ -11,16 +11,16 @@ import 'package:dispax/constants/lucide_compat.dart';
 // ---------------------------------------------------------------------------
 
 Ride _ride(RideStatus status) => Ride(
-      id: 'test-id',
-      clientId: 'client',
-      creatorId: 'creator',
-      companyId: 'company',
-      pickupDateTime: DateTime(2025, 1, 1, 9, 0),
-      from: const Location(address: 'A'),
-      to: const Location(address: 'B'),
-      status: status,
-      clientName: 'Test Client',
-    );
+  id: 'test-id',
+  clientId: 'client',
+  creatorId: 'creator',
+  companyId: 'company',
+  pickupDateTime: DateTime(2025, 1, 1, 9, 0),
+  from: const Location(address: 'A'),
+  to: const Location(address: 'B'),
+  status: status,
+  clientName: 'Test Client',
+);
 
 Widget _wrap(Widget child, {Brightness brightness = Brightness.light}) {
   return MaterialApp(
@@ -153,37 +153,40 @@ void main() {
     });
 
     // For `inProgress` (index 2): steps 0 and 1 completed → 2 checkmarks.
-    testWidgets('inProgress: exactly 2 checkmarks (Requested + Assigned done)',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.inProgress))),
-      );
-      await tester.pump(Duration.zero);
-      expect(
-        _countIcons(tester, LucideCompat.check),
-        equals(2),
-        reason: 'Requested and Assigned are completed; InProgress is current',
-      );
-    });
+    testWidgets(
+      'inProgress: exactly 2 checkmarks (Requested + Assigned done)',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.inProgress))),
+        );
+        await tester.pump(Duration.zero);
+        expect(
+          _countIcons(tester, LucideCompat.check),
+          equals(2),
+          reason: 'Requested and Assigned are completed; InProgress is current',
+        );
+      },
+    );
 
     // For `completed` (index 3): steps 0, 1, 2 have isCompleted=true
     // (i < _currentStepIndex=3) → 3 checkmarks.
     // Step 3 (Completed itself) is isCurrent=true → pulsing dot, no checkmark.
     testWidgets(
-        'completed: exactly 3 checkmarks (steps 0-2 done; step 3 is current)',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.completed))),
-      );
-      await tester.pump(Duration.zero);
-      expect(
-        _countIcons(tester, LucideCompat.check),
-        equals(3),
-        reason:
-            'steps 0,1,2 (Requested,Assigned,InProgress) are completed; '
-            'step 3 (Completed) is the current step and shows a pulsing dot',
-      );
-    });
+      'completed: exactly 3 checkmarks (steps 0-2 done; step 3 is current)',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.completed))),
+        );
+        await tester.pump(Duration.zero);
+        expect(
+          _countIcons(tester, LucideCompat.check),
+          equals(3),
+          reason:
+              'steps 0,1,2 (Requested,Assigned,InProgress) are completed; '
+              'step 3 (Completed) is the current step and shows a pulsing dot',
+        );
+      },
+    );
 
     // For `cancelled`: the cancelled indicator uses LucideCompat.x, not check.
     testWidgets('cancelled: shows X icon (not check), no checkmarks', (
@@ -216,9 +219,9 @@ void main() {
       await tester.pump(Duration.zero);
 
       // The cancelled dot is a 20×20 circle Container with AppColors.rideCancelled.
-      final dots = tester
-          .widgetList<Container>(find.byType(Container))
-          .where((c) {
+      final dots = tester.widgetList<Container>(find.byType(Container)).where((
+        c,
+      ) {
         final deco = c.decoration;
         if (deco is BoxDecoration) {
           return deco.shape == BoxShape.circle &&
@@ -246,105 +249,110 @@ void main() {
     // Cancelled → 2 total ABs (2 framework, 0 stepper pulse).
 
     Widget baseline() => MaterialApp(
-          theme: ThemeData(useMaterial3: true),
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: SizedBox(),
-              ),
-            ),
-          ),
-        );
+      theme: ThemeData(useMaterial3: true),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: const Padding(padding: EdgeInsets.all(16), child: SizedBox()),
+        ),
+      ),
+    );
 
     int abCount(WidgetTester t) =>
         t.widgetList<AnimatedBuilder>(find.byType(AnimatedBuilder)).length;
 
     testWidgets(
-        'requested: one extra AnimatedBuilder vs baseline (pulsing dot present)',
-        (tester) async {
-      await tester.pumpWidget(baseline());
-      final baselineCount = abCount(tester);
+      'requested: one extra AnimatedBuilder vs baseline (pulsing dot present)',
+      (tester) async {
+        await tester.pumpWidget(baseline());
+        final baselineCount = abCount(tester);
 
-      await tester.pumpWidget(
-        _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.requested))),
-      );
-      await tester.pump(Duration.zero);
+        await tester.pumpWidget(
+          _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.requested))),
+        );
+        await tester.pump(Duration.zero);
 
-      expect(
-        abCount(tester),
-        equals(baselineCount + 1),
-        reason: 'requested is the current step — one pulsing AnimatedBuilder added',
-      );
-    });
-
-    testWidgets(
-        'completed: one extra AnimatedBuilder (Completed step is current/pulsing)',
-        (tester) async {
-      await tester.pumpWidget(baseline());
-      final baselineCount = abCount(tester);
-
-      await tester.pumpWidget(
-        _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.completed))),
-      );
-      await tester.pump(Duration.zero);
-
-      expect(
-        abCount(tester),
-        equals(baselineCount + 1),
-        reason:
-            'completed is the current step (index 3); it shows a pulsing dot '
-            '— one extra AnimatedBuilder present',
-      );
-    });
+        expect(
+          abCount(tester),
+          equals(baselineCount + 1),
+          reason:
+              'requested is the current step — one pulsing AnimatedBuilder added',
+        );
+      },
+    );
 
     testWidgets(
-        'cancelled: NO extra AnimatedBuilder vs baseline (no pulsing dot)',
-        (tester) async {
-      await tester.pumpWidget(baseline());
-      final baselineCount = abCount(tester);
+      'completed: one extra AnimatedBuilder (Completed step is current/pulsing)',
+      (tester) async {
+        await tester.pumpWidget(baseline());
+        final baselineCount = abCount(tester);
 
-      await tester.pumpWidget(
-        _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.cancelled))),
-      );
-      await tester.pump(Duration.zero);
+        await tester.pumpWidget(
+          _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.completed))),
+        );
+        await tester.pump(Duration.zero);
 
-      expect(
-        abCount(tester),
-        equals(baselineCount),
-        reason:
-            'cancelled uses the special indicator widget (no AnimatedBuilder step dot)',
-      );
-    });
+        expect(
+          abCount(tester),
+          equals(baselineCount + 1),
+          reason:
+              'completed is the current step (index 3); it shows a pulsing dot '
+              '— one extra AnimatedBuilder present',
+        );
+      },
+    );
+
+    testWidgets(
+      'cancelled: NO extra AnimatedBuilder vs baseline (no pulsing dot)',
+      (tester) async {
+        await tester.pumpWidget(baseline());
+        final baselineCount = abCount(tester);
+
+        await tester.pumpWidget(
+          _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.cancelled))),
+        );
+        await tester.pump(Duration.zero);
+
+        expect(
+          abCount(tester),
+          equals(baselineCount),
+          reason:
+              'cancelled uses the special indicator widget (no AnimatedBuilder step dot)',
+        );
+      },
+    );
   });
 
   group('RideLifecycleStepperWidget — isClientView sub-labels', () {
-    testWidgets('isClientView: shows "Waiting for driver assignment" for requested',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrap(
-          RideLifecycleStepperWidget(
-            ride: _ride(RideStatus.requested),
-            isClientView: true,
+    testWidgets(
+      'isClientView: shows "Waiting for driver assignment" for requested',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            RideLifecycleStepperWidget(
+              ride: _ride(RideStatus.requested),
+              isClientView: true,
+            ),
           ),
-        ),
-      );
-      await tester.pump(Duration.zero);
-      expect(find.text('Waiting for driver assignment'), findsOneWidget);
-    });
+        );
+        await tester.pump(Duration.zero);
+        expect(find.text('Waiting for driver assignment'), findsOneWidget);
+      },
+    );
 
-    testWidgets('default (driver) view: shows "Awaiting assignment" for requested',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrap(
-          RideLifecycleStepperWidget(
-            ride: _ride(RideStatus.requested),
-            isClientView: false,
+    testWidgets(
+      'default (driver) view: shows "Awaiting assignment" for requested',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            RideLifecycleStepperWidget(
+              ride: _ride(RideStatus.requested),
+              isClientView: false,
+            ),
           ),
-        ),
-      );
-      await tester.pump(Duration.zero);
-      expect(find.text('Awaiting assignment'), findsOneWidget);
-    });
+        );
+        await tester.pump(Duration.zero);
+        expect(find.text('Awaiting assignment'), findsOneWidget);
+      },
+    );
   });
 }

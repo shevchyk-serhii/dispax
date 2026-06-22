@@ -849,7 +849,8 @@ object RideApi:
       for {
         _           <- checkRole(user, "DISPATCHER", "DRIVER")
         companyId   <- requireCompanyId(user.companyId)
-        // Parse comma-separated driver IDs, cap to 10 to avoid abuse.
+        // Parse comma-separated driver IDs — request-parsing concern stays in the handler.
+        // Cap to 10 to guard against DoS via very long ID lists.
         driverPids  <-
           ZIO
             .foreach(
@@ -863,24 +864,9 @@ object RideApi:
         service     <- ZIO.service[RideService]
         personRepo  <- ZIO.service[PersonRepository]
         ratingRepo  <- ZIO.service[RideRatingRepository]
-        // Fetch rides for each driver in parallel; getDriverRides already filters by company,
-        // so a cross-tenant driverId simply returns empty (no existence leak).
-        allRides    <- ZIO.foreachPar(driverPids)(id => service.getDriverRides(id, companyId).mapError(fromRideError))
-        flatRides    = allRides.flatten
-        // Apply optional date filter (inclusive on both ends).
-        filtered     =
-          (fromDateOpt, toDateOpt) match
-            case (Some(fromStr), Some(toStr)) =>
-              (
-                scala.util.Try(java.time.LocalDate.parse(fromStr)).toOption,
-                scala.util.Try(java.time.LocalDate.parse(toStr)).toOption
-              ) match
-                case (Some(fromDate), Some(toDate)) =>
-                  val fromInstant = fromDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant
-                  val toInstant   = toDate.plusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant
-                  flatRides.filter(r => !r.pickupDateTime.isBefore(fromInstant) && r.pickupDateTime.isBefore(toInstant))
-                case _                              => flatRides
-            case _                            => flatRides
+        // Business logic (parallel fetch + date-filter) lives in the service layer.
+        filtered    <- service.getRidesByDrivers(driverPids, fromDateOpt, toDateOpt, companyId).mapError(fromRideError)
+        // DTO enrichment: client names and per-driver rating stats (presentational, not business logic).
         clientIds    = filtered.map(_.clientId).distinct
         persons     <- ZIO
                          .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
@@ -912,9 +898,13 @@ object RideApi:
     markPaymentServer,
     cancelRideServer,
     updateRideServer,
+    // Literal-path endpoints must precede generic path[String] endpoints so that
+    // Tapir does not absorb them into the dynamic-segment handler first.
+    estimateRideServer,
+    setRidePriceServer,
+    getRidesByDriversServer,
     getRideServer,
     listRidesServer,
-    estimateRideServer,
     updateClientLocationServer,
     getRideLocationsServer,
     sendChatMessageServer,
@@ -922,7 +912,5 @@ object RideApi:
     rateRideServer,
     getRatingServer,
     markAirportCheckpointServer,
-    getAirportCheckpointServer,
-    setRidePriceServer,
-    getRidesByDriversServer
+    getAirportCheckpointServer
   )
