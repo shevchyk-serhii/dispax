@@ -11,6 +11,7 @@ import '../constants/app_dimensions.dart';
 import '../modules/core/models/person.dart';
 import '../modules/core/widgets/avatar_circle.dart';
 import '../main.dart' show themeModeNotifier, themeFromString;
+import '../locale_notifier.dart' show localeNotifier, localeFromString;
 import '../l10n/app_localizations.dart';
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
@@ -143,9 +144,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ),
-                const Text(
-                  'Settings',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.settingsTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -271,21 +272,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   String _roleDisplayName(PersonRole role) {
+    final l10n = AppLocalizations.of(context)!;
     switch (role) {
       case PersonRole.driver:
-        return 'Driver';
+        return l10n.roleDriver;
       case PersonRole.client:
-        return 'Client';
+        return l10n.roleClient;
       case PersonRole.secretary:
-        return 'Secretary';
+        return l10n.roleSecretary;
       case PersonRole.clientSecretary:
-        return 'Client Secretary';
+        return l10n.roleClientSecretary;
       case PersonRole.dispatcher:
-        return 'Dispatcher';
+        return l10n.roleDispatcher;
       case PersonRole.admin:
-        return 'Admin';
+        return l10n.roleAdmin;
       case PersonRole.superAdmin:
-        return 'Super Admin';
+        return l10n.roleSuperAdmin;
     }
   }
 
@@ -313,14 +315,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool biometricEnabled,
     required String? userId,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Preferences'),
+        _buildSectionLabel(l10n.preferences),
         _buildSettingsCard([
           _buildToggleRow(
             icon: Icons.notifications_outlined,
-            label: 'Push notifications',
+            label: l10n.pushNotifications,
             value: _pushEnabled,
             onChanged: (v) {
               setState(() => _pushEnabled = v);
@@ -331,7 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (biometricAvailable) ...[
             _buildToggleRow(
               icon: Icons.face_outlined,
-              label: 'Face ID unlock',
+              label: l10n.faceIdUnlock,
               value: biometricEnabled,
               onChanged: (v) {
                 context.read<AuthBloc>().add(
@@ -343,7 +346,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
           _buildToggleRow(
             icon: Icons.dark_mode_outlined,
-            label: 'Dark mode',
+            label: l10n.darkMode,
             value: _themeMode == 'dark',
             onChanged: (v) {
               final mode = v ? 'dark' : 'light';
@@ -360,14 +363,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ─── General card ─────────────────────────────────────────────────────────
 
   Widget _buildGeneralSection() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('General'),
+        _buildSectionLabel(l10n.general),
         _buildSettingsCard([
           _buildNavRow(
             icon: Icons.language,
-            label: 'Language',
+            label: l10n.language,
             trailing: Text(
               _languageLabel(_language),
               style: TextStyle(
@@ -380,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildDivider(context),
           _buildNavRow(
             icon: Icons.devices_outlined,
-            label: 'Active sessions',
+            label: l10n.activeSessions,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -410,7 +414,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildDivider(context),
           _buildNavRow(
             icon: Icons.lock_outline,
-            label: 'Change password',
+            label: l10n.changePassword,
             trailing: Icon(
               Icons.chevron_right,
               size: 18,
@@ -426,14 +430,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ─── Earnings section (driver only) ───────────────────────────────────────
 
   Widget _buildEarningsSection() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Earnings'),
+        _buildSectionLabel(l10n.earnings),
         _buildSettingsCard([
           _buildNavRow(
             icon: Icons.bar_chart_outlined,
-            label: 'My Earnings',
+            label: l10n.myEarnings,
             trailing: Icon(
               Icons.chevron_right,
               size: 18,
@@ -452,14 +457,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ─── Privacy section ──────────────────────────────────────────────────────
 
   Widget _buildPrivacySection() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Privacy'),
+        _buildSectionLabel(l10n.privacy),
         _buildSettingsCard([
           _buildNavRow(
             icon: Icons.privacy_tip_outlined,
-            label: 'Privacy & Data (GDPR)',
+            label: l10n.privacyDataGdpr,
             trailing: Icon(
               Icons.chevron_right,
               size: 18,
@@ -478,12 +484,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ─── Sign out ─────────────────────────────────────────────────────────────
 
   Widget _buildSignOutRow() {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: GestureDetector(
         onTap: _confirmSignOut,
-        child: const Text(
-          'Sign out',
-          style: TextStyle(
+        child: Text(
+          l10n.signOut,
+          style: const TextStyle(
             fontSize: 13.5,
             fontWeight: FontWeight.w600,
             color: Color(0xFFDC2626),
@@ -494,15 +501,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _confirmSignOut() {
+    final l10n = AppLocalizations.of(context)!;
     showAdaptiveDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Sign out'),
-        content: const Text('Are you sure you want to sign out?'),
+        title: Text(l10n.signOut),
+        content: Text(l10n.signOutConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
@@ -511,9 +519,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context.read<AuthBloc>().add(const AuthLogoutRequested());
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
-            child: const Text(
-              'Sign out',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              l10n.signOut,
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -633,17 +641,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ─── Language picker ──────────────────────────────────────────────────────
 
   String _languageLabel(String code) {
+    final l10n = AppLocalizations.of(context)!;
     switch (code) {
       case 'de':
-        return 'Deutsch';
+        return l10n.german;
       case 'uk':
-        return 'Ukrainian';
+        return l10n.ukrainian;
       default:
-        return 'English';
+        return l10n.english;
     }
   }
 
   void _showLanguagePicker() {
+    final user = context.read<AuthBloc>().state.user;
     showModalBottomSheet<String>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -677,6 +687,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Navigator.pop(ctx);
                   setState(() => _language = entry.key);
                   _savePreference('language', entry.key);
+                  // Apply locale immediately — mirrors theme live-switch pattern.
+                  localeNotifier.value = localeFromString(entry.key);
+                  // Persist on the backend so the preference follows the user.
+                  if (user != null) {
+                    context.read<AuthBloc>().apiClient.put(
+                      '/users/${user.id}',
+                      {'preferredLanguage': entry.key},
+                    );
+                  }
                 },
               ),
             const SizedBox(height: 8),
@@ -778,156 +797,165 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final newCtrl = TextEditingController();
     final confirmCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    final l10n = AppLocalizations.of(context)!;
 
     showAdaptiveDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Change Password'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: currentCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Current Password',
+      builder: (ctx) {
+        final ctxL10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(ctxL10n.changePassword),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: currentCtrl,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: ctxL10n.currentPassword,
+                  ),
+                  validator: (v) =>
+                      v == null || v.isEmpty ? ctxL10n.required : null,
                 ),
-                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: newCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'New Password'),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Required';
-                  if (v.length < 6) return 'At least 6 characters';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: confirmCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Confirm New Password',
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: newCtrl,
+                  obscureText: true,
+                  decoration: InputDecoration(labelText: ctxL10n.newPassword),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return ctxL10n.required;
+                    if (v.length < 6) return ctxL10n.passwordTooShort;
+                    return null;
+                  },
                 ),
-                validator: (v) {
-                  if (v != newCtrl.text) return 'Passwords do not match';
-                  return null;
-                },
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: confirmCtrl,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: ctxL10n.confirmNewPassword,
+                  ),
+                  validator: (v) {
+                    if (v != newCtrl.text) return ctxL10n.passwordsDoNotMatch;
+                    return null;
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                try {
-                  final authBloc = context.read<AuthBloc>();
-                  final apiClient = authBloc.apiClient;
-                  await apiClient.put('/users/change-password', {
-                    'currentPassword': currentCtrl.text,
-                    'newPassword': newCtrl.text,
-                  });
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Password changed successfully'),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to change password: $e')),
-                    );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(ctxL10n.cancel),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  try {
+                    final authBloc = context.read<AuthBloc>();
+                    final apiClient = authBloc.apiClient;
+                    await apiClient.put('/users/change-password', {
+                      'currentPassword': currentCtrl.text,
+                      'newPassword': newCtrl.text,
+                    });
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.passwordChanged)),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${l10n.failedToChangePassword}: $e'),
+                        ),
+                      );
+                    }
                   }
                 }
-              }
-            },
-            child: const Text('Change'),
-          ),
-        ],
-      ),
+              },
+              child: Text(ctxL10n.change),
+            ),
+          ],
+        );
+      },
     );
   }
 
   void _showEditProfileDialog(Person user) {
     final nameCtrl = TextEditingController(text: user.name);
     final phoneCtrl = TextEditingController(text: user.phone ?? '');
+    final l10n = AppLocalizations.of(context)!;
 
     showAdaptiveDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Profile'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Name'),
+      builder: (ctx) {
+        final ctxL10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(ctxL10n.editProfile),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(labelText: ctxL10n.name),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phoneCtrl,
+                decoration: InputDecoration(labelText: ctxL10n.phone),
+                keyboardType: TextInputType.phone,
+              ),
+            ],
+          ),
+          actions: [
+            if (user.hasAvatar)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _deleteAvatar(user);
+                },
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                child: Text(ctxL10n.removePhoto),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(ctxL10n.cancel),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: phoneCtrl,
-              decoration: const InputDecoration(labelText: 'Phone'),
-              keyboardType: TextInputType.phone,
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final authBloc = context.read<AuthBloc>();
+                  final apiClient = authBloc.apiClient;
+                  await apiClient.put('/users/${user.id}', {
+                    'name': nameCtrl.text,
+                    'phone': phoneCtrl.text,
+                  });
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (mounted) {
+                    context.read<AuthBloc>().add(
+                      const AuthProfileRefreshRequested(),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.profileUpdated)),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to update profile: $e')),
+                    );
+                  }
+                }
+              },
+              child: Text(ctxL10n.save),
             ),
           ],
-        ),
-        actions: [
-          if (user.hasAvatar)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _deleteAvatar(user);
-              },
-              style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              child: Text(AppLocalizations.of(ctx)!.removePhoto),
-            ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                final authBloc = context.read<AuthBloc>();
-                final apiClient = authBloc.apiClient;
-                await apiClient.put('/users/${user.id}', {
-                  'name': nameCtrl.text,
-                  'phone': phoneCtrl.text,
-                });
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (mounted) {
-                  context.read<AuthBloc>().add(
-                    const AuthProfileRefreshRequested(),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Profile updated')),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to update profile: $e')),
-                  );
-                }
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

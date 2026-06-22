@@ -563,4 +563,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noUnavailability => 'No unavailability windows';
+
+  @override
+  String get preferences => 'Preferences';
+
+  @override
+  String get faceIdUnlock => 'Face ID unlock';
+
+  @override
+  String get darkMode => 'Dark mode';
+
+  @override
+  String get general => 'General';
+
+  @override
+  String get activeSessions => 'Active sessions';
+
+  @override
+  String get earnings => 'Earnings';
+
+  @override
+  String get myEarnings => 'My Earnings';
+
+  @override
+  String get privacy => 'Privacy';
+
+  @override
+  String get privacyDataGdpr => 'Privacy & Data (GDPR)';
+
+  @override
+  String get signOut => 'Sign out';
+
+  @override
+  String get signOutConfirm => 'Are you sure you want to sign out?';
+
+  @override
+  String get required => 'Required';
+
+  @override
+  String get change => 'Change';
+
+  @override
+  String get failedToChangePassword => 'Failed to change password';
+
+  @override
+  String get welcomeBack => 'Welcome back';
+
+  @override
+  String get signInSubtitle => 'Sign in to your dispatch account.';
+
+  @override
+  String get signIn => 'Sign in';
+
+  @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get faceId => 'Face ID';
+
+  @override
+  String get roleDriver => 'Driver';
+
+  @override
+  String get roleClient => 'Client';
+
+  @override
+  String get roleSecretary => 'Secretary';
+
+  @override
+  String get roleClientSecretary => 'Client Secretary';
+
+  @override
+  String get roleDispatcher => 'Dispatcher';
+
+  @override
+  String get roleAdmin => 'Admin';
+
+  @override
+  String get roleSuperAdmin => 'Super Admin';
 }

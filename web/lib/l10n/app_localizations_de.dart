@@ -567,4 +567,82 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noUnavailability => 'Keine Nicht-Verfügbarkeiten';
+
+  @override
+  String get preferences => 'Einstellungen';
+
+  @override
+  String get faceIdUnlock => 'Face ID entsperren';
+
+  @override
+  String get darkMode => 'Dunkelmodus';
+
+  @override
+  String get general => 'Allgemein';
+
+  @override
+  String get activeSessions => 'Aktive Sitzungen';
+
+  @override
+  String get earnings => 'Einnahmen';
+
+  @override
+  String get myEarnings => 'Meine Einnahmen';
+
+  @override
+  String get privacy => 'Datenschutz';
+
+  @override
+  String get privacyDataGdpr => 'Datenschutz & Daten (DSGVO)';
+
+  @override
+  String get signOut => 'Abmelden';
+
+  @override
+  String get signOutConfirm => 'Möchten Sie sich wirklich abmelden?';
+
+  @override
+  String get required => 'Pflichtfeld';
+
+  @override
+  String get change => 'Ändern';
+
+  @override
+  String get failedToChangePassword => 'Passwort konnte nicht geändert werden';
+
+  @override
+  String get welcomeBack => 'Willkommen zurück';
+
+  @override
+  String get signInSubtitle => 'Melden Sie sich bei Ihrem Dispatch-Konto an.';
+
+  @override
+  String get signIn => 'Anmelden';
+
+  @override
+  String get forgotPassword => 'Passwort vergessen?';
+
+  @override
+  String get faceId => 'Face ID';
+
+  @override
+  String get roleDriver => 'Fahrer';
+
+  @override
+  String get roleClient => 'Kunde';
+
+  @override
+  String get roleSecretary => 'Sekretärin';
+
+  @override
+  String get roleClientSecretary => 'Kundensekretärin';
+
+  @override
+  String get roleDispatcher => 'Disponent';
+
+  @override
+  String get roleAdmin => 'Admin';
+
+  @override
+  String get roleSuperAdmin => 'Super Admin';
 }

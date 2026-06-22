@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../modules/core/models/person.dart';
 import '../../modules/core/services/api_client.dart';
+import '../../locale_notifier.dart';
 import '../../modules/core/services/location_clarification_service.dart';
 import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/push_notification_service.dart';
@@ -144,6 +145,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final user = Person.fromJson(userJson);
         privateApiClient.setAuthToken(token);
 
+        // Apply the user's preferred language — backend is the source of truth.
+        if (user.preferredLanguage != null) {
+          final locale = localeFromString(user.preferredLanguage);
+          if (locale != null) {
+            localeNotifier.value = locale;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('language', user.preferredLanguage!);
+          }
+        }
+
         /// Configure services with authenticated API client
         AirportTimingService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
@@ -212,6 +223,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
 
         final user = Person.fromJson(loginResponse['person']);
+
+        // Apply the user's preferred language — backend is the source of truth.
+        if (user.preferredLanguage != null) {
+          final locale = localeFromString(user.preferredLanguage);
+          if (locale != null) {
+            localeNotifier.value = locale;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('language', user.preferredLanguage!);
+          }
+        }
+
         emit(AuthState.authenticated(user));
       } else {
         emit(AuthState.error('Invalid email or password'));

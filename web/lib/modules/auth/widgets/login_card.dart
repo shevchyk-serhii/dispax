@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 import 'login_form.dart';
 import 'error_message_card.dart';
 
@@ -147,9 +148,9 @@ class _GraphiteHeader extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Title — 24px w700 white
-          const Text(
-            'Welcome back',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.welcomeBack,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -161,9 +162,9 @@ class _GraphiteHeader extends StatelessWidget {
           const SizedBox(height: 6),
 
           // Subtitle — 13px #A1A1AA (textLight)
-          const Text(
-            'Sign in to your dispatch account.',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.signInSubtitle,
+            style: const TextStyle(
               color: AppColors.textLight,
               fontSize: 13,
               fontWeight: FontWeight.w400,

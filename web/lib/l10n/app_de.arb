@@ -220,5 +220,34 @@
   "assignAnyway": "Trotzdem zuweisen",
   "unavailabilityCreated": "Nicht-Verfügbarkeit erfolgreich markiert",
   "unavailabilityDeleted": "Nicht-Verfügbarkeit entfernt",
-  "noUnavailability": "Keine Nicht-Verfügbarkeiten"
+  "noUnavailability": "Keine Nicht-Verfügbarkeiten",
+
+  "preferences": "Einstellungen",
+  "faceIdUnlock": "Face ID entsperren",
+  "darkMode": "Dunkelmodus",
+  "general": "Allgemein",
+  "activeSessions": "Aktive Sitzungen",
+  "earnings": "Einnahmen",
+  "myEarnings": "Meine Einnahmen",
+  "privacy": "Datenschutz",
+  "privacyDataGdpr": "Datenschutz & Daten (DSGVO)",
+  "signOut": "Abmelden",
+  "signOutConfirm": "Möchten Sie sich wirklich abmelden?",
+  "required": "Pflichtfeld",
+  "change": "Ändern",
+  "failedToChangePassword": "Passwort konnte nicht geändert werden",
+
+  "welcomeBack": "Willkommen zurück",
+  "signInSubtitle": "Melden Sie sich bei Ihrem Dispatch-Konto an.",
+  "signIn": "Anmelden",
+  "forgotPassword": "Passwort vergessen?",
+  "faceId": "Face ID",
+
+  "roleDriver": "Fahrer",
+  "roleClient": "Kunde",
+  "roleSecretary": "Sekretärin",
+  "roleClientSecretary": "Kundensekretärin",
+  "roleDispatcher": "Disponent",
+  "roleAdmin": "Admin",
+  "roleSuperAdmin": "Super Admin"
 }
