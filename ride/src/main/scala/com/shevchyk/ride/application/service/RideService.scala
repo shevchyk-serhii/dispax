@@ -202,13 +202,18 @@ class RideServiceImpl(
           .when(!driver.companyId.contains(ride.companyId))
           .unit
 
-      updatedRide = ride
-                      .focus(_.status)
-                      .replace(RideStatus.InProgress)
-                      .focus(_.startTime)
-                      .replace(Some(Instant.now()))
+      updatedRide   = ride
+                        .focus(_.status)
+                        .replace(RideStatus.InProgress)
+                        .focus(_.startTime)
+                        .replace(Some(Instant.now()))
 
-      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
+      // Atomic compare-and-set: only start while the ride is still `Assigned`. Guards against a
+      // concurrent cancel/reassign racing this start — the loser gets InvalidStatusTransition
+      // instead of silently overwriting the winner.
+      applied      <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Assigned)).mapDatabaseError
+      _            <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.InProgress)).when(!applied).unit
+      persistedRide = updatedRide
     } yield persistedRide
 
   def completeRide(rideId: RideId): IO[RideError, Ride] =
@@ -217,13 +222,18 @@ class RideServiceImpl(
       _    <-
         ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Completed)).when(!ride.canBeCompleted).unit
 
-      updatedRide = ride
-                      .focus(_.status)
-                      .replace(RideStatus.Completed)
-                      .focus(_.endTime)
-                      .replace(Some(Instant.now()))
+      updatedRide   = ride
+                        .focus(_.status)
+                        .replace(RideStatus.Completed)
+                        .focus(_.endTime)
+                        .replace(Some(Instant.now()))
 
-      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
+      // Atomic compare-and-set: only complete while the ride is still `InProgress`. Guards against
+      // a concurrent cancel racing this completion — the loser gets InvalidStatusTransition instead
+      // of silently overwriting the winner.
+      applied      <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.InProgress)).mapDatabaseError
+      _            <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Completed)).when(!applied).unit
+      persistedRide = updatedRide
     } yield persistedRide
 
   def cancelRide(rideId: RideId, userId: PersonId, userRole: PersonRole): IO[RideError, Ride] =
@@ -238,8 +248,16 @@ class RideServiceImpl(
       // Ownership: client can only cancel own rides, driver only assigned rides, dispatcher can cancel any
       _    <- validateCancelPermission(ride, userId, userRole)
 
-      updatedRide    = ride.focus(_.status).replace(RideStatus.Cancelled)
-      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
+      updatedRide   = ride.focus(_.status).replace(RideStatus.Cancelled)
+      // Atomic compare-and-set: only cancel from a still-cancellable status. Guards against a
+      // concurrent start/complete/reassign racing this cancel — the loser gets
+      // InvalidStatusTransition instead of silently overwriting the winner.
+      applied      <-
+        rideRepository
+          .updateIfStatus(updatedRide, Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress))
+          .mapDatabaseError
+      _            <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled)).when(!applied).unit
+      persistedRide = updatedRide
     } yield persistedRide
 
   def cancelRideWithReason(
@@ -266,17 +284,27 @@ class RideServiceImpl(
           .when(request.fee.exists(_ < 0))
           .unit
 
-      updatedRide    = ride
-                         .focus(_.status)
-                         .replace(RideStatus.Cancelled)
-                         .focus(_.cancellationReason)
-                         .replace(Some(request.reason))
-                         .focus(_.cancellationFee)
-                         .replace(request.fee)
-                         .focus(_.cancelledBy)
-                         .replace(Some(userId))
-      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
-      _             <-
+      updatedRide   = ride
+                        .focus(_.status)
+                        .replace(RideStatus.Cancelled)
+                        .focus(_.cancellationReason)
+                        .replace(Some(request.reason))
+                        .focus(_.cancellationFee)
+                        .replace(request.fee)
+                        .focus(_.cancelledBy)
+                        .replace(Some(userId))
+      // Atomic compare-and-set: only cancel from a still-cancellable status. Guards against a
+      // concurrent start/complete/reassign racing this cancel — the loser gets
+      // InvalidStatusTransition instead of silently overwriting the winner.
+      applied      <-
+        rideRepository
+          .updateIfStatus(updatedRide, Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress))
+          .mapDatabaseError
+      _            <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled)).when(!applied).unit
+      persistedRide = updatedRide
+      // Side-effects only fire once the cancel actually applied, so we never emit a
+      // RideStatusChanged/audit entry for a cancellation that lost the race.
+      _            <-
         eventHub
           .publish(
             WebSocketEvent.RideStatusChanged(
@@ -288,7 +316,7 @@ class RideServiceImpl(
             )
           )
           .ignore
-      _             <-
+      _            <-
         auditService
           .log(
             AuditLogEntry.record(
@@ -321,19 +349,19 @@ class RideServiceImpl(
       ride <- getRideById(rideId)
 
       // Authorization: driver can only update own rides, dispatcher can update any
-      _ <-
+      _               <-
         ZIO
           .fail(RideError.UnauthorizedAccess(userId, rideId))
           .when(userRole == PersonRole.Driver && !ride.driverId.contains(userId))
           .unit
-      _ <-
+      _               <-
         ZIO
           .fail(RideError.UnauthorizedAccess(userId, rideId))
           .when(userRole != PersonRole.Driver && userRole != PersonRole.Dispatcher)
           .unit
 
       // Validate transition
-      _ <-
+      _               <-
         request.status match
           case RideStatus.InProgress =>
             ZIO
@@ -352,18 +380,38 @@ class RideServiceImpl(
               .unit
           case target                => ZIO.fail(RideError.InvalidStatusTransition(ride.status, target))
 
-      updatedRide = ride
-                      .focus(_.status)
-                      .replace(request.status)
-                      .focus(_.notes)
-                      .replace(request.notes.orElse(ride.notes))
-                      .focus(_.startTime)
-                      .replace(if request.status == RideStatus.InProgress then Some(Instant.now()) else ride.startTime)
-                      .focus(_.endTime)
-                      .replace(if request.status == RideStatus.Completed then Some(Instant.now()) else ride.endTime)
+      // Statuses the ride must still be in for this transition to apply. Mirrors the per-target
+      // guards above so the atomic CAS rejects exactly the transitions the in-memory checks would.
+      // The `case _` arm is unreachable: any other target already failed via `case target =>`
+      // above. It maps to the *full* status set (never an empty set) so that, even if a future
+      // refactor lets it through, the CAS still guards on a status rather than silently degrading
+      // to "always apply" (an empty set becomes `WHERE ... AND TRUE` in updateIfStatus).
+      expectedStatuses =
+        request.status match
+          case RideStatus.InProgress => Set(RideStatus.Assigned)
+          case RideStatus.Completed  => Set(RideStatus.InProgress)
+          case RideStatus.Cancelled  => Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress)
+          case _                     => RideStatus.values.toSet
 
-      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
-      _             <-
+      updatedRide   = ride
+                        .focus(_.status)
+                        .replace(request.status)
+                        .focus(_.notes)
+                        .replace(request.notes.orElse(ride.notes))
+                        .focus(_.startTime)
+                        .replace(if request.status == RideStatus.InProgress then Some(Instant.now()) else ride.startTime)
+                        .focus(_.endTime)
+                        .replace(if request.status == RideStatus.Completed then Some(Instant.now()) else ride.endTime)
+
+      // Atomic compare-and-set: only transition while the ride is still in an expected status.
+      // Guards against a concurrent transition racing this one — the loser gets
+      // InvalidStatusTransition instead of silently overwriting the winner.
+      applied      <- rideRepository.updateIfStatus(updatedRide, expectedStatuses).mapDatabaseError
+      _            <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, request.status)).when(!applied).unit
+      persistedRide = updatedRide
+      // Side-effects only fire once the transition actually applied, so we never emit a
+      // RideStatusChanged/audit entry for a transition that lost the race.
+      _            <-
         eventHub
           .publish(
             WebSocketEvent.RideStatusChanged(
@@ -375,7 +423,7 @@ class RideServiceImpl(
             )
           )
           .ignore
-      _             <-
+      _            <-
         auditService
           .log(
             AuditLogEntry.record(
@@ -658,7 +706,24 @@ class RideServiceImpl(
                              if alreadyPaid then ride.paidAt else Some(Instant.now())
                            else ride.paidAt
                          )
-      persistedRide <- rideRepository.update(updatedRide).mapDatabaseError
+      // Marking a ride `Paid` is the only payment transition gated on status (it requires the ride
+      // to be Completed). For that case use an atomic compare-and-set so a concurrent cancel racing
+      // the payment cannot let a non-Completed ride flip to Paid. Other payment statuses
+      // (Pending/Unpaid/...) are legal in any ride status, so they take the plain update.
+      // NOTE: the CAS guards the ride status only — two concurrent markPayment(Paid) calls on the
+      // same Completed ride can still lost-update each other's payment fields. A field-level CAS
+      // (version column) would be needed to close that, and is out of scope here.
+      persistedRide <-
+        if paymentStatus == PaymentStatus.Paid then
+          for {
+            applied <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Completed)).mapDatabaseError
+            _       <-
+              ZIO
+                .fail(RideError.BusinessRuleViolation("payment_status", "Only a completed ride can be marked paid"))
+                .when(!applied)
+                .unit
+          } yield updatedRide
+        else rideRepository.update(updatedRide).mapDatabaseError
     } yield persistedRide
 
   def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]] = rideRepository
