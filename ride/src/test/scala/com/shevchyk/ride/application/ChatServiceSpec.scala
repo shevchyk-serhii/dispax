@@ -96,6 +96,32 @@ object ChatServiceSpec extends ZIOSpecDefault {
                        } yield e
                      }
           } yield assertTrue(event.isInstanceOf[WebSocketEvent.ChatMessageSent])
+        }.provide(layers),
+
+        // ─── Mutation-kill: companyId field hardcoded as rideId.value, senderId→rideId, message→"MUTATED" ─
+
+        test("published ChatMessageSent event carries correct companyId, senderId and message") {
+          for {
+            hub   <- ZIO.service[EventHub]
+            ride  <- createRide(RideStatus.Assigned)
+            svc   <- ZIO.service[ChatService]
+            event <- ZIO.scoped {
+                       for {
+                         queue <- hub.subscribe
+                         _     <- svc.sendMessage(ride.id, clientId, "hello mutation")
+                         e     <- queue.take.map(_.asInstanceOf[WebSocketEvent.ChatMessageSent])
+                       } yield e
+                     }
+          } yield assertTrue(
+            // companyId must equal ride.companyId.value, NOT rideId.value
+            event.companyId == companyId.value,
+            // senderId must equal the sender's PersonId, NOT the rideId
+            event.senderId == clientId.value,
+            // message must be the original text, not a mutation placeholder
+            event.message == "hello mutation",
+            // rideId sanity check
+            event.rideId == ride.id.value
+          )
         }.provide(layers)
       ),
       suite("getMessages")(

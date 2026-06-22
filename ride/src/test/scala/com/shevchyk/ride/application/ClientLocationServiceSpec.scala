@@ -102,6 +102,22 @@ object ClientLocationServiceSpec extends ZIOSpecDefault {
             result <- svc.updateClientLocation(ride.id, otherClient, 48.1, 11.5).exit
           } yield assertTrue(result.isFailure)
         }.provide(layers),
+        test("unauthorized access error is specifically RideError.UnauthorizedAccess, not RideNotFound") {
+          // Mutation-kill: mutant changes ZIO.fail(RideError.UnauthorizedAccess) → ZIO.fail(RideError.RideNotFound)
+          // This test distinguishes the two by checking the exact error type.
+          for {
+            ride   <- createRide()
+            svc    <- ZIO.service[ClientLocationService]
+            result <- svc.updateClientLocation(ride.id, otherClient, 48.1, 11.5).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case _: RideError.UnauthorizedAccess => true
+                case _                               => false
+              }
+            case _                   => false
+          })
+        }.provide(layers),
         test("fails with RideNotFound for unknown ride") {
           for {
             svc    <- ZIO.service[ClientLocationService]

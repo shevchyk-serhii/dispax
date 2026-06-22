@@ -97,6 +97,25 @@ object ClientAddressServiceSpec extends ZIOSpecDefault {
             list.head.address == "New Usage Street",
             list.head.label == "Office"
           )
+        },
+
+        // ─── Mutation-kill: lat/lng swap and useCount=999 in create branch ─────
+
+        test("recordUsage create-branch stores correct latitude, longitude (not swapped) and useCount=1") {
+          // Mutants: swap lat→lng/lng→lat assignments, or set useCount to a wrong constant.
+          // This test pins exact field values so those mutations are killed.
+          for {
+            svc  <- ZIO.service[ClientAddressService]
+            _    <- svc.recordUsage(clientId, "Coord Check Street", "Home", Some(52.5), Some(13.4))
+            list <- svc.getAddresses(clientId)
+          } yield assertTrue(
+            list.length == 1,
+            // latitude and longitude must NOT be swapped
+            list.head.latitude.contains(52.5),
+            list.head.longitude.contains(13.4),
+            // initial useCount must be 1 (ClientAddress default), not 0 or any other value
+            list.head.useCount == 1
+          )
         }
       ),
       suite("deleteAddress")(
