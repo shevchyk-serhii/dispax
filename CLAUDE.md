@@ -35,17 +35,17 @@ core  auth  ride  driver  schedule  notification  billing
 
 ## Module Map
 
-| Module | Purpose |
-|--------|-----------|
-| `core` | Shared domain: IDs (UUID v7), Location, Person, Company, sessions, DB utils, config |
-| `auth` | JWT authentication, user management, rate limiting |
-| `ride` | Ride lifecycle: CRUD, driver assignment, status machine, ratings, expenses |
-| `driver` | Driver location tracking, proximity calculation |
-| `schedule` | Driver schedules (days, shifts, availability) |
-| `notification` | Firebase Cloud Messaging, notification orchestration |
-| `billing` | Invoices, client companies, DATEV export |
-| `api` | HTTP entry point: route aggregation (14 route files), DI wiring in `Application.scala` |
-| `web` | Flutter app: BLoC, screens, services, theme, localization (DE/EN/UK) |
+| Module         | Purpose                                                                                |
+|----------------|----------------------------------------------------------------------------------------|
+| `core`         | Shared domain: IDs (UUID v7), Location, Person, Company, sessions, DB utils, config    |
+| `auth`         | JWT authentication, user management, rate limiting                                     |
+| `ride`         | Ride lifecycle: CRUD, driver assignment, status machine, ratings, expenses             |
+| `driver`       | Driver location tracking, proximity calculation                                        |
+| `schedule`     | Driver schedules (days, shifts, availability)                                          |
+| `notification` | Firebase Cloud Messaging, notification orchestration                                   |
+| `billing`      | Invoices, client companies, DATEV export                                               |
+| `api`          | HTTP entry point: route aggregation (14 route files), DI wiring in `Application.scala` |
+| `web`          | Flutter app: BLoC, screens, services, theme, localization (DE/EN/UK)                   |
 
 ---
 
@@ -126,6 +126,12 @@ make flutter-test-integration # Flutter integration tests → local TestApplicat
 
 **Test data:** the Flyway migration `V1001__Insert_dev_data.sql` (dev environment only)
 
+**Fix / change functionality → tests rule:**
+Before fixing or changing any functionality, verify that tests covering that functionality exist —
+**at minimum a unit test** (in-memory double). If none exist, add them before/alongside the change.
+If the existing tests are wrong or no longer match the new requirements, rewrite them to the new
+requirements (when such a change is requested) instead of leaving stale assertions.
+
 **Bug → regression test rule:**
 When a bug is found, first check whether a test already covers that case. If none exists, add one
 **before/alongside the fix — a unit test first** (in-memory double); add an integration/BDD test
@@ -196,3 +202,4 @@ PORT=8080
 - Do not put business logic in route handlers — only in the application layer
 - Do not hardcode secrets — only via env vars
 - Do not fix a bug without adding a regression test for it (a unit test first)
+- Do not fix or change functionality without first verifying tests exist for it (at minimum a unit test); if the tests are wrong, rewrite them to the new requirements
