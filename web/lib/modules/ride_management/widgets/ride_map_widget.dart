@@ -42,6 +42,7 @@ class _RideMapWidgetState extends State<RideMapWidget> {
           key: ValueKey(
             'map_${widget.fromLocation?.address}_${widget.toLocation?.address}',
           ),
+          styleUri: MapboxStyles.MAPBOX_STREETS,
           viewport: _createInitialViewport(),
           onMapCreated: _onMapCreated,
         ),

@@ -444,6 +444,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               // ── Full-bleed map ──────────────────────────────────────────────
               MapWidget(
                 key: const ValueKey('client_map'),
+                // Pin the style explicitly: relying on the SDK default left the
+                // map black whenever the style failed to resolve. Streets-v12
+                // is the classic colour street map used by most ride apps.
+                styleUri: MapboxStyles.MAPBOX_STREETS,
                 onMapCreated: _onMapCreated,
               ),
 

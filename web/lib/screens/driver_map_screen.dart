@@ -613,6 +613,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             children: [
               MapWidget(
                 key: const ValueKey('driver_map'),
+                styleUri: MapboxStyles.MAPBOX_STREETS,
                 onMapCreated: _onMapCreated,
               ),
 
