@@ -146,11 +146,14 @@ void main() {
     );
   });
 
-  // Regression: the address-picker bottom sheet overflowed by a few pixels when
-  // the keyboard appeared ("BOTTOM OVERFLOWED BY 6.4 PIXELS"), clipping the
-  // Confirm button. The whole DraggableScrollableSheet was wrapped in a
-  // Padding(bottom: viewInsets), double-counting the keyboard inset. The fix
-  // applies the inset only to the Confirm button's bottom padding.
+  // Regression: with the keyboard open the address-picker sheet collapsed the
+  // results list to a single row — the sheet height was a fraction of the FULL
+  // screen (DraggableScrollableSheet) and ignored the keyboard, so the list +
+  // Confirm button were pushed behind the keyboard. The fix subtracts the
+  // keyboard inset from the sheet's own height, so the search field, the list
+  // and the Confirm button share the space ABOVE the keyboard and the list
+  // keeps its room. (An earlier attempt wrapped a full-height sheet in
+  // Padding(bottom: inset), which overflowed by ~6px — hence the height cap.)
   group('Address picker sheet survives the keyboard', () {
     late _MockAuthBloc authBloc;
     late _MockRideBloc rideBloc;
@@ -183,47 +186,50 @@ void main() {
 
     tearDown(() => formBloc.close());
 
-    testWidgets('builds without exceptions when the keyboard is open', (
-      tester,
-    ) async {
-      // Simulate a small viewport with the keyboard occupying the bottom —
-      // this is exactly the condition that triggered the overflow.
-      tester.view.physicalSize = const Size(1206, 2622);
-      tester.view.devicePixelRatio = 3.0;
-      tester.view.viewInsets = const FakeViewPadding(bottom: 1000);
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'keyboard open: no overflow, and the results list keeps multiple rows',
+      (tester) async {
+        // iPhone-class viewport (≈874 logical tall) with a realistic keyboard
+        // inset (~336 logical) occupying the bottom — the condition shown in the
+        // bug report where the list collapsed to a single row.
+        tester.view.physicalSize = const Size(1206, 2622);
+        tester.view.devicePixelRatio = 3.0;
+        tester.view.viewInsets = const FakeViewPadding(bottom: 1008); // ≈336 dp
+        addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MultiBlocProvider(
-              providers: [
-                BlocProvider<AuthBloc>.value(value: authBloc),
-                BlocProvider<SavedPlacesBloc>.value(value: savedPlacesBloc),
-              ],
-              child: ClientBookScreen(formBloc: formBloc, rideBloc: rideBloc),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: MultiBlocProvider(
+                providers: [
+                  BlocProvider<AuthBloc>.value(value: authBloc),
+                  BlocProvider<SavedPlacesBloc>.value(value: savedPlacesBloc),
+                ],
+                child: ClientBookScreen(formBloc: formBloc, rideBloc: rideBloc),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Open the address picker via the FROM field.
-      await tester.tap(find.text('Pick up location'));
-      await tester.pumpAndSettle();
+        // Open the address picker via the FROM field.
+        await tester.tap(find.text('Pick up location'));
+        await tester.pumpAndSettle();
 
-      // The sheet is up (its search field is visible) and the Confirm button
-      // renders. The keyboard inset is now applied to the button's bottom
-      // padding instead of wrapping the whole sheet, so the button stays above
-      // the keyboard. (The exact ~6px overflow is device-geometry-specific and
-      // is best caught by a golden/manual check; this is a smoke test that the
-      // keyboard-aware sheet builds and lays out without exceptions.)
-      expect(find.text('Enter pick-up address'), findsOneWidget);
-      expect(find.widgetWithText(ElevatedButton, 'Confirm'), findsOneWidget);
-      // No RenderFlex overflow (or any other) exception was thrown while the
-      // keyboard inset is applied.
-      expect(tester.takeException(), isNull);
-    });
+        // Search field and Confirm button are visible above the keyboard.
+        expect(find.text('Enter pick-up address'), findsOneWidget);
+        expect(find.widgetWithText(ElevatedButton, 'Confirm'), findsOneWidget);
+
+        // The list is not collapsed: with 3 seeded saved places, the keyboard-
+        // aware sheet height leaves the Expanded list enough room to show more
+        // than one entry. All three München addresses must be in the tree.
+        expect(find.textContaining('München'), findsAtLeastNWidgets(2));
+
+        // No RenderFlex overflow (or any other) exception while laying out with
+        // the keyboard inset applied.
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   // Regression: after a ride was created successfully, the form was left with
