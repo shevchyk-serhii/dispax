@@ -22,7 +22,15 @@ import com.shevchyk.billing.repository.{
   CompanyBillingProfileRepository,
   InvoiceRepository
 }
-import com.shevchyk.core.application.{AuditService, AvatarService, EventHub, GeocodingService, GeofenceService}
+import com.shevchyk.core.application.{
+  AuditService,
+  AvatarService,
+  DriverAvailabilityChecker,
+  EventHub,
+  GeocodingService,
+  GeofenceService,
+  UnavailabilitySlot
+}
 import com.shevchyk.core.config.ServerConfig
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.domain.{RidePool, RidePoolId, RidePoolMember, PoolStatus, PoolMemberStatus, Session, SessionId}
@@ -87,8 +95,12 @@ import com.shevchyk.ride.repository.{
   TimeBucket
 }
 import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
-import com.shevchyk.schedule.domain.{DriverScheduleVisibility, ScheduleDay, ScheduleError}
-import com.shevchyk.schedule.repository.{DriverScheduleVisibilityRepository, ScheduleDayRepository}
+import com.shevchyk.schedule.domain.{DriverUnavailability, DriverScheduleVisibility, ScheduleDay, ScheduleError}
+import com.shevchyk.schedule.repository.{
+  DriverScheduleVisibilityRepository,
+  DriverUnavailabilityRepository,
+  ScheduleDayRepository
+}
 import org.mindrot.jbcrypt.BCrypt
 import zio.*
 import zio.http.*
@@ -1509,6 +1521,16 @@ object TestApplication extends ZIOAppDefault:
       },
       ClientAddressService.layer,
       inMemoryClientAddressRepositoryLayer,
+      // DriverAvailabilityChecker: noop for tests (no unavailability windows set up by default)
+      ZLayer.succeed[DriverAvailabilityChecker](
+        new DriverAvailabilityChecker:
+          def overlappingUnavailability(
+              driverId: com.shevchyk.core.domain.PersonId,
+              companyId: com.shevchyk.core.domain.CompanyId,
+              from: java.time.Instant,
+              to: java.time.Instant
+          ): zio.Task[List[UnavailabilitySlot]] = ZIO.succeed(Nil)
+      ),
       RideService.layer,
       // Schedule
       inMemoryScheduleDayRepositoryLayer,
@@ -1523,6 +1545,44 @@ object TestApplication extends ZIOAppDefault:
               .as(visibility)
             def findByCompany(companyId: CompanyId): Task[List[DriverScheduleVisibility]]    = store.get
               .map(_.values.filter(_.companyId == companyId).toList)
+        }
+      ),
+      // DriverUnavailabilityRepository: in-memory for tests
+      ZLayer.fromZIO(
+        Ref.Synchronized.make(Map.empty[com.shevchyk.core.domain.DriverUnavailabilityId, DriverUnavailability]).map {
+          store =>
+            registerReset(store.set(Map.empty))
+            new DriverUnavailabilityRepository:
+              import com.shevchyk.core.domain.{DriverUnavailabilityId, PersonId, CompanyId}
+              import java.time.Instant
+              def create(u: DriverUnavailability): Task[DriverUnavailability]                              = store.update(_.updated(u.id, u)).as(u)
+              def findById(id: DriverUnavailabilityId): Task[Option[DriverUnavailability]]                 = store.get.map(_.get(id))
+              def findByDriver(driverId: PersonId, companyId: CompanyId): Task[List[DriverUnavailability]] = store.get
+                .map(_.values.filter(u => u.driverId == driverId && u.companyId == companyId).toList.sortBy(_.fromTime))
+              def findByCompanyAndRange(companyId: CompanyId, from: Instant, to: Instant)
+                  : Task[List[DriverUnavailability]] = store.get.map(
+                _.values
+                  .filter(u => u.companyId == companyId && u.fromTime.isBefore(to) && from.isBefore(u.toTime))
+                  .toList
+                  .sortBy(_.fromTime)
+              )
+              def findOverlapping(driverId: PersonId, companyId: CompanyId, from: Instant, to: Instant)
+                  : Task[List[DriverUnavailability]] = store.get.map(
+                _.values
+                  .filter(u =>
+                    u.driverId == driverId && u.companyId == companyId && u.fromTime.isBefore(to) && from
+                      .isBefore(u.toTime)
+                  )
+                  .toList
+              )
+              def delete(id: DriverUnavailabilityId, driverId: PersonId, companyId: CompanyId): Task[Unit] =
+                store
+                  .update(m =>
+                    m.get(id)
+                      .filter(u => u.driverId == driverId && u.companyId == companyId)
+                      .fold(m)(_ => m.removed(id))
+                  )
+                  .unit
         }
       ),
       ScheduleSvc.layer,

@@ -3,7 +3,11 @@ package com.shevchyk.schedule.application
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.{PersonRepository, InMemoryPersonRepository}
 import com.shevchyk.schedule.domain.*
-import com.shevchyk.schedule.repository.{InMemoryScheduleDayRepository, InMemoryDriverScheduleVisibilityRepository}
+import com.shevchyk.schedule.repository.{
+  InMemoryDriverUnavailabilityRepository,
+  InMemoryScheduleDayRepository,
+  InMemoryDriverScheduleVisibilityRepository
+}
 import zio.test.*
 import zio.*
 import java.time.{Instant, LocalDate, LocalTime}
@@ -32,6 +36,7 @@ object ScheduleServiceStatusSpec extends ZIOSpecDefault {
   val standardLayers =
     InMemoryScheduleDayRepository.layer ++
       InMemoryDriverScheduleVisibilityRepository.layer ++
+      InMemoryDriverUnavailabilityRepository.layer ++
       testPersonRepoLayer >>>
       ScheduleService.layer
 

@@ -3,7 +3,12 @@ package com.shevchyk.schedule.application
 import com.shevchyk.core.domain.*
 import com.shevchyk.schedule.domain.*
 import com.shevchyk.schedule.domain.RepositoryExtensions.*
-import com.shevchyk.schedule.repository.{DriverScheduleVisibilityRepository, ScheduleDayRepository}
+import com.shevchyk.schedule.domain.{CreateDriverUnavailabilityRequest, DriverUnavailability}
+import com.shevchyk.schedule.repository.{
+  DriverScheduleVisibilityRepository,
+  DriverUnavailabilityRepository,
+  ScheduleDayRepository
+}
 import com.shevchyk.core.repository.PersonRepository
 import zio.*
 import java.time.{Instant, LocalDate}
@@ -56,10 +61,54 @@ trait ScheduleService:
       canView: Boolean
   ): IO[ScheduleError, DriverScheduleVisibility]
 
+  // -- Driver unavailability management -----------------------------------
+
+  /**
+   * Creates a manual unavailability window. Driver-only-self: requesterId must equal driverId and requesterRole must be
+   * DRIVER. Validates from < to and driver belongs to company.
+   */
+  def createUnavailability(
+      req: CreateDriverUnavailabilityRequest,
+      requesterId: PersonId,
+      requesterRole: String
+  ): IO[ScheduleError, DriverUnavailability]
+
+  /**
+   * Returns all unavailability windows for the given driver. Access-controlled: mirrors getDriverScheduleAs (self
+   * always; dispatcher/admin/secretary always; other driver only if canViewOtherSchedules).
+   */
+  def getDriverUnavailability(
+      driverId: PersonId,
+      companyId: CompanyId,
+      requesterId: PersonId,
+      requesterRole: String
+  ): IO[ScheduleError, List[DriverUnavailability]]
+
+  /**
+   * Company-wide unavailability in a time range. For the dispatcher day/range view.
+   */
+  def getCompanyUnavailability(
+      companyId: CompanyId,
+      from: Instant,
+      to: Instant
+  ): IO[ScheduleError, List[DriverUnavailability]]
+
+  /**
+   * Deletes an unavailability window. Owner-only: requesterId must match the record's driverId, or role must be
+   * DISPATCHER/ADMIN.
+   */
+  def deleteUnavailability(
+      id: DriverUnavailabilityId,
+      requesterId: PersonId,
+      requesterRole: String,
+      companyId: CompanyId
+  ): IO[ScheduleError, Unit]
+
 class ScheduleServiceImpl(
     scheduleDayRepository: ScheduleDayRepository,
     visibilityRepository: DriverScheduleVisibilityRepository,
-    personRepository: PersonRepository
+    personRepository: PersonRepository,
+    unavailabilityRepository: DriverUnavailabilityRepository
 ) extends ScheduleService:
 
   def createScheduleDay(req: CreateScheduleDayRequest): IO[ScheduleError, ScheduleDay] =
@@ -261,6 +310,98 @@ class ScheduleServiceImpl(
       )
       .unit
 
+  // -- Driver unavailability -----------------------------------------------
+
+  def createUnavailability(
+      req: CreateDriverUnavailabilityRequest,
+      requesterId: PersonId,
+      requesterRole: String
+  ): IO[ScheduleError, DriverUnavailability] =
+    val roleUpper = requesterRole.toUpperCase
+    for {
+      _         <-
+        ZIO
+          .when(requesterId != req.driverId || roleUpper != "DRIVER")(
+            ZIO.fail(ScheduleError.AccessDenied("Only the driver may mark their own unavailability"))
+          )
+          .unit
+      _         <- validateInstantRange(req.fromTime, req.toTime)
+      _         <- validateDriverBelongsToCompany(req.driverId, req.companyId)
+      u          = DriverUnavailability(
+                     id = DriverUnavailabilityId.generate(),
+                     driverId = req.driverId,
+                     companyId = req.companyId,
+                     fromTime = req.fromTime,
+                     toTime = req.toTime,
+                     reason = req.reason,
+                     note = req.note,
+                     createdAt = Instant.now()
+                   )
+      persisted <- unavailabilityRepository.create(u).mapDatabaseError
+    } yield persisted
+
+  def getDriverUnavailability(
+      driverId: PersonId,
+      companyId: CompanyId,
+      requesterId: PersonId,
+      requesterRole: String
+  ): IO[ScheduleError, List[DriverUnavailability]] =
+    val roleUpper = requesterRole.toUpperCase
+    if requesterId == driverId then unavailabilityRepository.findByDriver(driverId, companyId).mapDatabaseError
+    else if roleUpper == "DRIVER" then
+      for {
+        allowed <- canDriverViewOthers(requesterId, companyId)
+        _       <-
+          ZIO.unless(allowed)(
+            ZIO.fail(ScheduleError.AccessDenied("You are not allowed to view other drivers' unavailability"))
+          )
+        result  <- unavailabilityRepository.findByDriver(driverId, companyId).mapDatabaseError
+      } yield result
+    else unavailabilityRepository.findByDriver(driverId, companyId).mapDatabaseError
+
+  def getCompanyUnavailability(
+      companyId: CompanyId,
+      from: Instant,
+      to: Instant
+  ): IO[ScheduleError, List[DriverUnavailability]] =
+    unavailabilityRepository.findByCompanyAndRange(companyId, from, to).mapDatabaseError
+
+  def deleteUnavailability(
+      id: DriverUnavailabilityId,
+      requesterId: PersonId,
+      requesterRole: String,
+      companyId: CompanyId
+  ): IO[ScheduleError, Unit] =
+    val roleUpper = requesterRole.toUpperCase
+    for {
+      existing <- unavailabilityRepository.findById(id).mapDatabaseError.flatMap {
+                    case Some(u) => ZIO.succeed(u)
+                    case None    => ZIO.fail(ScheduleError.UnavailabilityNotFound(id))
+                  }
+      _        <-
+        ZIO
+          .when(existing.companyId != companyId)(
+            ZIO.fail(ScheduleError.AccessDenied("Unavailability belongs to a different company"))
+          )
+          .unit
+      _        <-
+        ZIO
+          .when(existing.driverId != requesterId && roleUpper != "DISPATCHER" && roleUpper != "ADMIN")(
+            ZIO.fail(
+              ScheduleError.AccessDenied("Only the owning driver, dispatcher, or admin may delete this unavailability")
+            )
+          )
+          .unit
+      _        <- unavailabilityRepository.delete(id, existing.driverId, companyId).mapDatabaseError
+    } yield ()
+
+  private def validateInstantRange(from: Instant, to: Instant): IO[ScheduleError, Unit] =
+    ZIO
+      .when(!from.isBefore(to))(
+        ZIO.fail(ScheduleError.ValidationError("from_time must be before to_time"))
+      )
+      .unit
+
   private def validateStatusTransition(from: ScheduleDayStatus, to: ScheduleDayStatus): IO[ScheduleError, Unit] =
     if (from == to) ZIO.unit
     else
@@ -281,5 +422,5 @@ class ScheduleServiceImpl(
 object ScheduleService:
 
   val layer
-      : ZLayer[ScheduleDayRepository & DriverScheduleVisibilityRepository & PersonRepository, Nothing, ScheduleService] =
+      : ZLayer[ScheduleDayRepository & DriverScheduleVisibilityRepository & PersonRepository & DriverUnavailabilityRepository, Nothing, ScheduleService] =
     ZLayer.fromFunction(ScheduleServiceImpl.apply)
