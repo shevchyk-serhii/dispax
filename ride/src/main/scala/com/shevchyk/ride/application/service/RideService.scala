@@ -125,6 +125,16 @@ class RideServiceImpl(
           .fail(RideError.ValidationError("Pickup and dropoff addresses must be different"))
           .when(request.pickupLocation.address == request.dropoffLocation.address)
           .unit
+      // Company isolation: the ride's client must belong to the same company the ride is created for.
+      // companyId comes from the creator's JWT (see RideApi.createRideServer), so this prevents a
+      // secretary/dispatcher of company A from creating a ride that references a client of company B.
+      clientOpt       <- personRepository.findById(request.clientId).mapDatabaseError
+      client          <- ZIO.fromOption(clientOpt).orElseFail(RideError.PersonNotFound(request.clientId))
+      _               <-
+        ZIO
+          .fail(RideError.BusinessRuleViolation("company_isolation", "Client belongs to a different company"))
+          .when(!client.companyId.contains(request.companyId))
+          .unit
       enrichedPickup  <- geocodingService
                            .enrichLocation(request.pickupLocation)
                            .orElse(ZIO.succeed(request.pickupLocation))
