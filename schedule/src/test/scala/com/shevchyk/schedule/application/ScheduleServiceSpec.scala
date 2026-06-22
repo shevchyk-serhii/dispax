@@ -763,6 +763,27 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
                        )
             days    <- service.getDriverSchedule(otherDriverId, testCompanyId)
           } yield assertTrue(days.isEmpty)
+        }.provide(standardLayers),
+        // ── Mutant 1: tenant-filter guard ──────────────────────────────────────
+        // Verifies that removing `.filter(_.companyId == companyId)` is caught:
+        // a schedule created for testDriverId under testCompanyId must NOT be
+        // visible when the same driverId is queried with otherCompanyId.
+        test("tenant isolation: own-company schedule is invisible to other company") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            date     = futureDate.plusDays(71)
+            _       <- service.createScheduleDay(
+                         CreateScheduleDayRequest(
+                           driverId = testDriverId,
+                           companyId = testCompanyId,
+                           date = date,
+                           startTime = LocalTime.of(8, 0),
+                           endTime = LocalTime.of(17, 0)
+                         )
+                       )
+            // Same driverId, but queried under the OTHER company — must return nothing
+            days    <- service.getDriverSchedule(testDriverId, otherCompanyId)
+          } yield assertTrue(days.isEmpty)
         }.provide(standardLayers)
       )
     )
