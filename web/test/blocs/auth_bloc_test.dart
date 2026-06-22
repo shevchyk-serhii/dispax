@@ -344,5 +344,7 @@ void main() {
         await bloc.close();
       },
     );
+
   });
 }
+

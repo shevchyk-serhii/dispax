@@ -132,6 +132,87 @@ void main() {
       expect(person.phone, isNull);
       expect(person.vehicleInfo, isNull);
     });
+
+    // ── preferredLanguage (user-language-selection feature) ───────────────
+    test('fromJson parses preferredLanguage "de"', () {
+      final json = TestFixtures.personJson()..['preferredLanguage'] = 'de';
+      final person = Person.fromJson(json);
+      expect(person.preferredLanguage, 'de');
+    });
+
+    test('fromJson parses preferredLanguage "en"', () {
+      final json = TestFixtures.personJson()..['preferredLanguage'] = 'en';
+      final person = Person.fromJson(json);
+      expect(person.preferredLanguage, 'en');
+    });
+
+    test('fromJson parses preferredLanguage "uk"', () {
+      final json = TestFixtures.personJson()..['preferredLanguage'] = 'uk';
+      final person = Person.fromJson(json);
+      expect(person.preferredLanguage, 'uk');
+    });
+
+    test('fromJson leaves preferredLanguage null when field is absent', () {
+      final json = TestFixtures.personJson();
+      // personJson() does not include preferredLanguage
+      final person = Person.fromJson(json);
+      expect(person.preferredLanguage, isNull);
+    });
+
+    test('fromJson leaves preferredLanguage null when field is null', () {
+      final json = TestFixtures.personJson()..['preferredLanguage'] = null;
+      final person = Person.fromJson(json);
+      expect(person.preferredLanguage, isNull);
+    });
+
+    test('toJson includes preferredLanguage when set', () {
+      final person = Person(
+        id: 'p1',
+        name: 'Lang User',
+        email: 'lang@test.com',
+        role: PersonRole.client,
+        preferredLanguage: 'de',
+      );
+      final json = person.toJson();
+      expect(json['preferredLanguage'], 'de');
+    });
+
+    test('toJson preserves null preferredLanguage', () {
+      final person = Person(
+        id: 'p1',
+        name: 'No Lang',
+        email: 'nolang@test.com',
+        role: PersonRole.client,
+        // preferredLanguage not set — defaults to null
+      );
+      final json = person.toJson();
+      // Key must be present and null (not omitted) so the backend can clear the value.
+      expect(json.containsKey('preferredLanguage'), isTrue);
+      expect(json['preferredLanguage'], isNull);
+    });
+
+    test('fromJson/toJson round-trip preserves preferredLanguage "uk"', () {
+      final person = Person(
+        id: 'roundtrip-1',
+        name: 'RT',
+        email: 'rt@test.com',
+        role: PersonRole.client,
+        preferredLanguage: 'uk',
+      );
+      final restored = Person.fromJson(person.toJson());
+      expect(restored.preferredLanguage, 'uk');
+    });
+
+    test('fromJson/toJson round-trip preserves null preferredLanguage', () {
+      final person = Person(
+        id: 'roundtrip-2',
+        name: 'RT2',
+        email: 'rt2@test.com',
+        role: PersonRole.client,
+      );
+      final restored = Person.fromJson(person.toJson());
+      expect(restored.preferredLanguage, isNull);
+    });
   });
 
   group('VehicleInfo', () {

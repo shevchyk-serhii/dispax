@@ -370,6 +370,112 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           !found.get.avatarPresent
         )
       },
+      // ── preferredLanguage round-trips (user-language-selection feature) ──
+      test("create with preferredLanguage=Some(\"de\") — findById returns it") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "lang-de@test.com").copy(preferredLanguage = Some("de"))
+          _     <- repo.create(person)
+          found <- repo.findById(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.preferredLanguage == Some("de")
+        )
+      },
+      test("create with preferredLanguage=None — findById returns None") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "lang-none@test.com").copy(preferredLanguage = None)
+          _     <- repo.create(person)
+          found <- repo.findById(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.preferredLanguage.isEmpty
+        )
+      },
+      test("update changes preferredLanguage from None to Some(\"uk\") — findById sees new value") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedCompany(xa)
+          _      <- cleanPersons(xa)
+          repo    = PostgresPersonRepository(xa)
+          person  = makePerson(email = "lang-update@test.com").copy(preferredLanguage = None)
+          _      <- repo.create(person)
+          updated = person.copy(preferredLanguage = Some("uk"))
+          _      <- repo.update(updated)
+          found  <- repo.findById(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.preferredLanguage == Some("uk")
+        )
+      },
+      test("update changes preferredLanguage from Some(\"en\") to Some(\"de\")") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedCompany(xa)
+          _      <- cleanPersons(xa)
+          repo    = PostgresPersonRepository(xa)
+          person  = makePerson(email = "lang-change@test.com").copy(preferredLanguage = Some("en"))
+          _      <- repo.create(person)
+          updated = person.copy(preferredLanguage = Some("de"))
+          _      <- repo.update(updated)
+          found  <- repo.findById(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.preferredLanguage == Some("de")
+        )
+      },
+      test("update can clear preferredLanguage back to None") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedCompany(xa)
+          _      <- cleanPersons(xa)
+          repo    = PostgresPersonRepository(xa)
+          person  = makePerson(email = "lang-clear@test.com").copy(preferredLanguage = Some("en"))
+          _      <- repo.create(person)
+          updated = person.copy(preferredLanguage = None)
+          _      <- repo.update(updated)
+          found  <- repo.findById(person.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.preferredLanguage.isEmpty
+        )
+      },
+      // Tenant-isolation integration guard: update is company-scoped (IS NOT DISTINCT FROM).
+      // A person in another company must not have their language changed even when the ID is guessed.
+      test("update is company-scoped — preferredLanguage update does not touch different-company row") {
+        val companyA = CompanyId(UUID.randomUUID())
+        val companyB = CompanyId(UUID.randomUUID())
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          // Seed companyA via the shared seedCompany (testCompanyId), then seed companyB manually.
+          _       <- seedCompany(xa)
+          _       <- sql"""INSERT INTO companies (id, name, email)
+                           VALUES (${companyB.value}, 'Company B', 'b@example.com')
+                           ON CONFLICT DO NOTHING""".update.run.transact(xa)
+          _       <- cleanPersons(xa)
+          repo     = PostgresPersonRepository(xa)
+          // Person belongs to companyA.
+          personA  = makePerson(email = "isolated-lang@test.com")
+                       .copy(companyId = Some(testCompanyId), preferredLanguage = Some("en"))
+          _       <- repo.create(personA)
+          // Attacker tries to update via a Person object referencing companyB.
+          attacker = personA.copy(companyId = Some(companyB), preferredLanguage = Some("de"))
+          _       <- repo.update(attacker)
+          found   <- repo.findById(personA.id)
+        } yield assertTrue(
+          // Row must still have company A's language (SQL WHERE company_id IS NOT DISTINCT FROM
+          // blocked the update because companyB != companyA).
+          found.isDefined,
+          found.get.preferredLanguage == Some("en")
+        )
+      },
       test("setAvatar stores different MIME types correctly (PNG, WebP)") {
         for {
           xa     <- ZIO.service[Transactor[Task]]
