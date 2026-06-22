@@ -6,10 +6,11 @@ import java.time.Instant
 import java.util.UUID
 import com.github.f4b6a3.uuid.UuidCreator
 
-case class ClientAddressId(value: UUID) derives JsonCodec
+case class ClientAddressId(value: UUID)
 
 object ClientAddressId:
-  def generate(): ClientAddressId = ClientAddressId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): ClientAddressId  = ClientAddressId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[ClientAddressId] = JsonCodec[UUID].transform(ClientAddressId(_), _.value)
 
 final case class ClientAddress(
     id: ClientAddressId,

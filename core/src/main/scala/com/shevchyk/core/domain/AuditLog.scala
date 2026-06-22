@@ -5,10 +5,11 @@ import java.time.Instant
 import java.util.UUID
 import com.github.f4b6a3.uuid.UuidCreator
 
-case class AuditLogId(value: UUID) derives JsonCodec
+case class AuditLogId(value: UUID)
 
 object AuditLogId:
-  def generate(): AuditLogId = AuditLogId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): AuditLogId  = AuditLogId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[AuditLogId] = JsonCodec[UUID].transform(AuditLogId(_), _.value)
 
 enum AuditAction derives JsonCodec:
 

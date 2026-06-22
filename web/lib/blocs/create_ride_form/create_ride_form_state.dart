@@ -188,7 +188,8 @@ class CreateRideFormState extends Equatable {
     return clientOk &&
         fromAddress.trim().isNotEmpty &&
         toAddress.trim().isNotEmpty &&
-        (!isAirportTransfer || flightNumber.trim().isNotEmpty);
+        (!isAirportTransfer || flightNumber.trim().isNotEmpty) &&
+        fromAddress.trim().toLowerCase() != toAddress.trim().toLowerCase();
   }
 
   /// The form is "modified" only when it differs from the baseline snapshot.

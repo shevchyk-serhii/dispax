@@ -5,10 +5,11 @@ import java.time.Instant
 import java.util.UUID
 import com.github.f4b6a3.uuid.UuidCreator
 
-case class NotificationPreferenceId(value: UUID) derives JsonCodec
+case class NotificationPreferenceId(value: UUID)
 
 object NotificationPreferenceId:
-  def generate(): NotificationPreferenceId = NotificationPreferenceId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): NotificationPreferenceId  = NotificationPreferenceId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[NotificationPreferenceId] = JsonCodec[UUID].transform(NotificationPreferenceId(_), _.value)
 
 final case class NotificationPreference(
     id: NotificationPreferenceId,

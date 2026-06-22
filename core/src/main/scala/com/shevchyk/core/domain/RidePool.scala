@@ -5,18 +5,20 @@ import java.time.Instant
 import java.util.UUID
 import com.github.f4b6a3.uuid.UuidCreator
 
-case class RidePoolId(value: UUID) derives JsonCodec
+case class RidePoolId(value: UUID)
 
 object RidePoolId:
-  def generate(): RidePoolId = RidePoolId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): RidePoolId  = RidePoolId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[RidePoolId] = JsonCodec[UUID].transform(RidePoolId(_), _.value)
 
 enum PoolStatus derives JsonCodec:
   case Open, Full, InProgress, Completed, Cancelled
 
-case class RidePoolMemberId(value: UUID) derives JsonCodec
+case class RidePoolMemberId(value: UUID)
 
 object RidePoolMemberId:
-  def generate(): RidePoolMemberId = RidePoolMemberId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): RidePoolMemberId  = RidePoolMemberId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[RidePoolMemberId] = JsonCodec[UUID].transform(RidePoolMemberId(_), _.value)
 
 enum PoolMemberStatus derives JsonCodec:
   case Pending, Confirmed, PickedUp, DroppedOff, Cancelled

@@ -5,10 +5,11 @@ import java.time.Instant
 import java.util.UUID
 import com.github.f4b6a3.uuid.UuidCreator
 
-case class EmergencyReassignmentId(value: UUID) derives JsonCodec
+case class EmergencyReassignmentId(value: UUID)
 
 object EmergencyReassignmentId:
-  def generate(): EmergencyReassignmentId = EmergencyReassignmentId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): EmergencyReassignmentId  = EmergencyReassignmentId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[EmergencyReassignmentId] = JsonCodec[UUID].transform(EmergencyReassignmentId(_), _.value)
 
 enum EmergencyReason derives JsonCodec:
   case DriverIllness, VehicleBreakdown, DriverNoShow, Accident, PersonalEmergency, Other
