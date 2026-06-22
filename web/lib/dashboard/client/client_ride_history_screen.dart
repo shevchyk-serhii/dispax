@@ -10,8 +10,11 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
 import '../../utils/ride_status_styles.dart';
+import 'calendar/client_calendar_view.dart';
 
 enum _ClientPeriodFilter { today, week, month, all }
+
+enum _ClientRidesView { list, calendar }
 
 class ClientRideHistoryScreen extends StatefulWidget {
   const ClientRideHistoryScreen({super.key});
@@ -23,6 +26,7 @@ class ClientRideHistoryScreen extends StatefulWidget {
 
 class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
   _ClientPeriodFilter _period = _ClientPeriodFilter.all;
+  _ClientRidesView _view = _ClientRidesView.list;
 
   void _loadRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
@@ -115,6 +119,25 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
             );
           }
 
+          // Calendar view: show header + full-screen calendar.
+          if (_view == _ClientRidesView.calendar) {
+            return Column(
+              children: [
+                _buildHeader(context),
+                Expanded(
+                  child: ClientCalendarView(
+                    onRideSelected: (ride) => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            RideDetailsScreen(ride: ride, isClientView: true),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
           final clientId = authState.user?.id.toString();
           final upcoming = clientId != null
               ? _upcomingRides(rideState.rides, clientId)
@@ -164,6 +187,41 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // List / Calendar toggle
+              SegmentedButton<_ClientRidesView>(
+                segments: const [
+                  ButtonSegment(
+                    value: _ClientRidesView.list,
+                    label: Text('List'),
+                    icon: Icon(Icons.list),
+                  ),
+                  ButtonSegment(
+                    value: _ClientRidesView.calendar,
+                    label: Text('Calendar'),
+                    icon: Icon(Icons.calendar_month),
+                  ),
+                ],
+                selected: {_view},
+                onSelectionChanged: (selection) {
+                  setState(() => _view = selection.first);
+                },
+                style: ButtonStyle(
+                  foregroundColor: WidgetStateProperty.resolveWith(
+                    (states) => states.contains(WidgetState.selected)
+                        ? AppColors.primary
+                        : Colors.white70,
+                  ),
+                  backgroundColor: WidgetStateProperty.resolveWith(
+                    (states) => states.contains(WidgetState.selected)
+                        ? Colors.white
+                        : Colors.transparent,
+                  ),
+                  side: WidgetStateProperty.all(
+                    const BorderSide(color: Colors.white54),
+                  ),
                 ),
               ),
             ],
