@@ -59,7 +59,7 @@ Feature: Extended Ride Operations
     Given I am authenticated as a dispatcher
     When I send a PUT request to "/api/rides/66666666-6666-6666-6666-666666666666/cancel" with body:
       """
-      {"reason":"Client request"}
+      {"reason":"client_request"}
       """
     Then the response status should be 200
     And the response should contain ride details
