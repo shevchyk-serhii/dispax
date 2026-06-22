@@ -18,6 +18,12 @@ GCP_REGION := europe-west1
 GCP_SERVICE := dispax
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/dispax-docker/dispax-server:latest
 FLUTTER_DIR    := web
+# Mapbox public token (geocoding/address autocomplete + maps SDK). Read from
+# .env.dev and passed to every `flutter run`/`build` via --dart-define so the
+# in-app MapboxService.suggestAddresses/geocodeAddress actually work. Empty when
+# .env.dev is absent (e.g. CI) — the app degrades gracefully (no suggestions).
+MAPBOX_TOKEN  := $(shell grep -E '^MAPBOX_ACCESS_TOKEN=' .env.dev 2>/dev/null | cut -d= -f2-)
+MAPBOX_DEFINE := --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_TOKEN)
 # Run Flutter/Dart through FVM when it is installed and the project pins a
 # version (web/.fvmrc → Flutter 3.44.2, matching .github/workflows/ci.yml), so
 # `make fmt`/test targets use the same formatter/SDK as CI. Falls back to the
@@ -409,51 +415,59 @@ logs:
 # can't reach localhost) use `flutter-dev-device`, which targets the Mac's LAN IP.
 flutter-dev:
 	cd $(FLUTTER_DIR) && $(FLUTTER) run \
-		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api
+		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
+		$(MAPBOX_DEFINE)
 
 # Run Flutter on a physical device against the local backend over the LAN.
 # Requires the phone and Mac to share a WiFi network and en0/en1 to be up.
 flutter-dev-device:
 	cd $(FLUTTER_DIR) && $(FLUTTER) run \
-		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api \
+		$(MAPBOX_DEFINE)
 
 # Run Flutter on Android emulator against local backend
 flutter-dev-android:
 	cd $(FLUTTER_DIR) && $(FLUTTER) run -d emulator-5554 \
-		--dart-define=API_BASE_URL=http://10.0.2.2:8080/api
+		--dart-define=API_BASE_URL=http://10.0.2.2:8080/api \
+		$(MAPBOX_DEFINE)
 
 # Run Flutter on iOS simulator against local backend
 flutter-dev-ios:
 	cd $(FLUTTER_DIR) && $(FLUTTER) run -d 09021E1A-BC6A-4D86-A2EA-06A5894E4AEC \
-		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api \
+		$(MAPBOX_DEFINE)
 
 # Run Flutter against production backend
 flutter-prod:
 	cd $(FLUTTER_DIR) && $(FLUTTER) run \
-		--dart-define=API_BASE_URL=$(PROD_URL)/api
+		--dart-define=API_BASE_URL=$(PROD_URL)/api \
+		$(MAPBOX_DEFINE)
 
 # Build Android APK for production
 flutter-prod-android:
 	cd $(FLUTTER_DIR) && $(FLUTTER) build apk --release \
-		--dart-define=API_BASE_URL=$(PROD_URL)/api
+		--dart-define=API_BASE_URL=$(PROD_URL)/api \
+		$(MAPBOX_DEFINE)
 	@echo "✅ APK: $(FLUTTER_DIR)/build/app/outputs/flutter-apk/app-release.apk"
 
 # Run Flutter on Sergii's iPhone (wireless) against local backend
 flutter-dev-iphone-sergii:
 	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
-		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api \
+		$(MAPBOX_DEFINE)
 
 # Run Flutter on Sergii's Android (wireless) against local backend
 flutter-dev-android-sergii:
 	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
-		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api \
+		$(MAPBOX_DEFINE)
 
 # Run Flutter on both Sergii's devices simultaneously (wireless)
 flutter-dev-sergii:
 	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
-		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api $(MAPBOX_DEFINE) & \
 	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
-		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api $(MAPBOX_DEFINE) & \
 	wait
 
 # Kill whatever is listening on :8080 so a stale backend never causes
@@ -477,9 +491,9 @@ dev-all: free-port
 	@sleep $(FLUTTER_STARTUP_DELAY)
 	@echo "🚀 Starting Flutter on both devices"
 	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
-		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api $(MAPBOX_DEFINE) & \
 	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
-		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
+		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api $(MAPBOX_DEFINE) & \
 	wait
 
 # Start local backend + Flutter on the booted iOS simulator in one command.
@@ -494,7 +508,8 @@ dev-sim: free-port
 	@sleep $(FLUTTER_STARTUP_DELAY)
 	@echo "🚀 Starting Flutter on iOS simulator $(IOS_SIM)"
 	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(IOS_SIM) \
-		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api
+		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
+		$(MAPBOX_DEFINE)
 
 # Kill all dev processes (backend + flutter)
 stop-dev:

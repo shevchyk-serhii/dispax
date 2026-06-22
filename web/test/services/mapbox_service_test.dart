@@ -74,6 +74,47 @@ void main() {
     });
   });
 
+  group('MapboxService.parseGeocodeSuggestions', () {
+    test('returns the place_name of each feature, in order', () {
+      final data = {
+        'features': [
+          {'place_name': 'Marienplatz, 80331 München'},
+          {'place_name': 'Marienstraße 1, 80333 München'},
+        ],
+      };
+
+      expect(MapboxService.parseGeocodeSuggestions(data), [
+        'Marienplatz, 80331 München',
+        'Marienstraße 1, 80333 München',
+      ]);
+    });
+
+    test('skips features without a usable string place_name', () {
+      final data = {
+        'features': [
+          {'place_name': 'Keep me, München'},
+          {'text': 'no place_name'},
+          {'place_name': 42},
+          {'place_name': '   '},
+          'not a map',
+        ],
+      };
+
+      expect(MapboxService.parseGeocodeSuggestions(data), ['Keep me, München']);
+    });
+
+    test('returns [] instead of throwing on malformed shapes', () {
+      expect(MapboxService.parseGeocodeSuggestions(null), isEmpty);
+      expect(MapboxService.parseGeocodeSuggestions('nonsense'), isEmpty);
+      expect(MapboxService.parseGeocodeSuggestions({}), isEmpty);
+      expect(MapboxService.parseGeocodeSuggestions({'features': []}), isEmpty);
+      expect(
+        MapboxService.parseGeocodeSuggestions({'features': 'not a list'}),
+        isEmpty,
+      );
+    });
+  });
+
   group('MapboxService marker colours', () {
     test('createDriverMarker uses the provided status colour', () {
       final marker = MapboxService.createDriverMarker(
