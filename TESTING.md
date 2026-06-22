@@ -19,13 +19,13 @@ Flutter analyze+test). Деплой делается вручную: `make deplo
 
 ## Уровни тестов
 
-| Уровень | Где | Чем | Нужен Docker |
-|---------|-----|-----|--------------|
-| **Unit** | `*/src/test` (in-memory репозитории) | ZIO Test | нет |
-| **Integration** | `*/src/test` со специями, помеченными тегом `integration` | ZIO Test + Testcontainers (реальный Postgres) | **да** |
-| **BDD** | `api/src/test/.../app/` + `*.feature` | Cucumber 7.15 | да |
-| **Flutter unit/widget** | `web/test/` | `flutter_test` + `bloc_test` + `mocktail` | нет (нужен Flutter SDK) |
-| **Flutter e2e** | `web/integration_test/` | живой backend (TestApplication) | да |
+| Уровень                 | Где                                                       | Чем                                           | Нужен Docker            |
+|-------------------------|-----------------------------------------------------------|-----------------------------------------------|-------------------------|
+| **Unit**                | `*/src/test` (in-memory репозитории)                      | ZIO Test                                      | нет                     |
+| **Integration**         | `*/src/test` со специями, помеченными тегом `integration` | ZIO Test + Testcontainers (реальный Postgres) | **да**                  |
+| **BDD**                 | `api/src/test/.../app/` + `*.feature`                     | Cucumber 7.15                                 | да                      |
+| **Flutter unit/widget** | `web/test/`                                               | `flutter_test` + `bloc_test` + `mocktail`     | нет (нужен Flutter SDK) |
+| **Flutter e2e**         | `web/integration_test/`                                   | живой backend (TestApplication)               | да                      |
 
 **Ключевой механизм:** unit и integration живут в одних модулях и различаются
 **тегом** `@@ TestAspect.tag("integration")`, а не папкой. Фильтрация:
