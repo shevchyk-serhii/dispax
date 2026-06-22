@@ -6,7 +6,7 @@ import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.RideService
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, RideRepository}
 import zio.test.*
 import zio.*
 import java.time.Instant
@@ -442,13 +442,18 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
               !assigned.preferredDriverUsed
           )
         }.provide(standardLayers),
-        test("a ride whose client cannot be found is not flagged VIP") {
-          // Guards the VIP check against `forall` (vacuously true on None): an unknown client
-          // must yield isVipRide=false, not a spurious VIP flag.
+        test("assigning a ride whose client is no longer found is not flagged VIP") {
+          // Guards the VIP check in assignDriver against `forall` (vacuously true on None): when the
+          // client cannot be resolved at assignment time, the ride must yield isVipRide=false, not a
+          // spurious VIP flag. createRide now rejects an unknown client (company isolation), so we
+          // seed the ride directly through the repository to model a client that was removed after
+          // the ride was created, then assign — exercising the clientOpt=None branch in assignDriver.
           val unknownClient = PersonId(UUID.fromString("00000064-0000-0000-0000-0000000000ff"))
           for {
             service  <- ZIO.service[RideService]
-            ride     <- service.createRide(mkRide(clientId = unknownClient))
+            repo     <- ZIO.service[RideRepository]
+            seeded    = RideMapper.fromRequest(mkRide(clientId = unknownClient))
+            ride     <- repo.create(seeded).orDie
             assigned <- service.assignDriver(ride.id, testDriverId)
           } yield assertTrue(
             !assigned.isVipRide &&

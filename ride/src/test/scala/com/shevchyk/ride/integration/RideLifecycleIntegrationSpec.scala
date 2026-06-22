@@ -212,6 +212,51 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
             reassigned.driverId.contains(testDriver2Id) &&
             reassigned.status == RideStatus.Assigned
         )
+      }.provide(standardLayers),
+      // Regression: status transitions now persist through the atomic updateIfStatus, which must
+      // write the FULL row — start_time/end_time/cancellation_*/paid_at included. An earlier
+      // updateIfStatus only set 4 columns, so these transition fields would silently vanish in the
+      // DB while the service's returned object still looked correct. Re-read from Postgres (not the
+      // returned object) to prove the columns actually landed.
+      test("transition fields persist in DB via updateIfStatus (start/end/paid)") {
+        for {
+          service       <- ZIO.service[RideService]
+          ride          <- createTestRide(service)
+          assigned      <- service.assignDriver(ride.id, testDriverId)
+          _             <- service.startRide(assigned.id, testDriverId)
+          afterStart    <- service.getRideById(ride.id)
+          _             <- service.completeRide(ride.id)
+          afterComplete <- service.getRideById(ride.id)
+          _             <- service.markPayment(ride.id, PaymentStatus.Paid, Some(PaymentMethod.Card))
+          afterPaid     <- service.getRideById(ride.id)
+        } yield assertTrue(
+          afterStart.status == RideStatus.InProgress,
+          afterStart.startTime.isDefined,
+          afterComplete.status == RideStatus.Completed,
+          afterComplete.endTime.isDefined,
+          afterPaid.paymentStatus == PaymentStatus.Paid,
+          afterPaid.paymentMethod.contains(PaymentMethod.Card),
+          afterPaid.paidAt.isDefined
+        )
+      }.provide(standardLayers),
+      test("cancellation fields persist in DB via updateIfStatus (reason/fee/cancelledBy)") {
+        for {
+          service   <- ZIO.service[RideService]
+          ride      <- createTestRide(service)
+          assigned  <- service.assignDriver(ride.id, testDriverId)
+          _         <- service.cancelRideWithReason(
+                         assigned.id,
+                         testClientId,
+                         PersonRole.Client,
+                         CancelRideRequest("client_no_show", Some(BigDecimal(5.00)))
+                       )
+          persisted <- service.getRideById(ride.id)
+        } yield assertTrue(
+          persisted.status == RideStatus.Cancelled,
+          persisted.cancellationReason.contains("client_no_show"),
+          persisted.cancellationFee.contains(BigDecimal(5.00)),
+          persisted.cancelledBy.contains(testClientId)
+        )
       }.provide(standardLayers)
     ) @@ TestAspect.tag("integration")
 }
