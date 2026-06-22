@@ -64,7 +64,7 @@ Feature: Frontend Ride Management API Expectations
     Given I am authenticated as a dispatcher
     When I send a PUT request to "/api/rides/77777777-7777-7777-7777-777777777777/cancel" with body:
       """
-      {"reason":"Client request"}
+      {"reason":"client_request"}
       """
     Then the response status should be 200
 

@@ -107,6 +107,56 @@ object VehicleClass:
     toDbString
   )
 
+/**
+ * Reason a ride was cancelled. Some reasons are role-specific: a client cancelling their own ride can only state a
+ * client-side reason (they changed their mind, weather, or something else), whereas operational reasons such as the
+ * client not showing up, the driver being unavailable, or a vehicle fault are reported by staff (driver/dispatcher/
+ * secretary/admin). Stored as the canonical wire string in `cancellation_reason`.
+ */
+enum CancellationReason:
+  case ClientNoShow, ClientRequest, DriverUnavailable, Weather, VehicleIssue, Other
+
+object CancellationReason:
+
+  def fromString(s: String): Option[CancellationReason] =
+    s.trim.toLowerCase match
+      case "client_no_show"     => Some(ClientNoShow)
+      case "client_request"     => Some(ClientRequest)
+      case "driver_unavailable" => Some(DriverUnavailable)
+      case "weather"            => Some(Weather)
+      case "vehicle_issue"      => Some(VehicleIssue)
+      case "other"              => Some(Other)
+      case _                    => None
+
+  def toWire(r: CancellationReason): String =
+    r match
+      case ClientNoShow      => "client_no_show"
+      case ClientRequest     => "client_request"
+      case DriverUnavailable => "driver_unavailable"
+      case Weather           => "weather"
+      case VehicleIssue      => "vehicle_issue"
+      case Other             => "other"
+
+  /**
+   * Reasons a client is allowed to state when cancelling their own ride. Operational reasons (no-show, driver
+   * unavailable, vehicle issue) are staff-only; a client cancelling because they "didn't show up" is nonsensical.
+   */
+  private val clientAllowed: Set[CancellationReason] = Set(ClientRequest, Weather, Other)
+
+  /**
+   * Whether `role` may cancel a ride citing this reason. Staff (driver/dispatcher/secretary/admin/super-admin) may use
+   * any reason; clients are restricted to [[clientAllowed]].
+   */
+  def allowedFor(reason: CancellationReason, role: PersonRole): Boolean =
+    role match
+      case PersonRole.Client => clientAllowed.contains(reason)
+      case _                 => true
+
+  given JsonCodec[CancellationReason] = JsonCodec.string.transformOrFail(
+    s => fromString(s).toRight(s"Unknown cancellation reason: $s"),
+    toWire
+  )
+
 enum RideStatus:
   case Requested, Assigned, InProgress, Completed, Cancelled
 

@@ -212,11 +212,11 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
                          assigned.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("client_no_show", Some(BigDecimal(5.00)))
+                         CancelRideRequest("client_request", Some(BigDecimal(5.00)))
                        )
         } yield assertTrue(
           cancelled.status == RideStatus.Cancelled &&
-            cancelled.cancellationReason.contains("client_no_show") &&
+            cancelled.cancellationReason.contains("client_request") &&
             cancelled.cancellationFee.contains(BigDecimal(5.00)) &&
             cancelled.cancelledBy.contains(testClientId)
         )
@@ -268,12 +268,12 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
                          assigned.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("client_no_show", Some(BigDecimal(5.00)))
+                         CancelRideRequest("client_request", Some(BigDecimal(5.00)))
                        )
           persisted <- service.getRideById(ride.id)
         } yield assertTrue(
           persisted.status == RideStatus.Cancelled,
-          persisted.cancellationReason.contains("client_no_show"),
+          persisted.cancellationReason.contains("client_request"),
           persisted.cancellationFee.contains(BigDecimal(5.00)),
           persisted.cancelledBy.contains(testClientId)
         )
