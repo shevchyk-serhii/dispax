@@ -14,10 +14,12 @@ class MapboxService {
   );
 
   static String get accessToken {
-    assert(
-      _accessToken.isNotEmpty,
-      'MAPBOX_ACCESS_TOKEN must be set via --dart-define',
-    );
+    // Use a real check (not assert) so a missing token also surfaces in
+    // release builds, where asserts are stripped and an empty token would
+    // otherwise leave the map silently blank.
+    if (_accessToken.isEmpty) {
+      throw StateError('MAPBOX_ACCESS_TOKEN must be set via --dart-define');
+    }
     return _accessToken;
   }
 
