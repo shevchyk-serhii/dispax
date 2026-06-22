@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
@@ -30,8 +29,12 @@ class ClientDayViewWidget extends StatelessWidget {
         final dayRides = getRidesForDay(rideState.rides, selectedDay);
         dayRides.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
 
+        // The selected date already shows in CalendarControls above, so the
+        // day card no longer repeats a large "Weekday / Date" header — that
+        // freed vertical space goes to the ride cards. A small "Today" chip is
+        // kept (only when the selected day is today) as a quick visual cue.
         return Container(
-          margin: const EdgeInsets.all(16),
+          margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
           decoration: BoxDecoration(
             color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
@@ -47,7 +50,7 @@ class ClientDayViewWidget extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              buildDayHeader(context),
+              if (isSameDay(selectedDay, DateTime.now())) buildTodayChip(),
               Expanded(
                 child: dayRides.isEmpty
                     ? buildEmptyState(context)
@@ -60,57 +63,23 @@ class ClientDayViewWidget extends StatelessWidget {
     );
   }
 
-  Widget buildDayHeader(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withAlpha(60),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
+  Widget buildTodayChip() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.warning,
+          borderRadius: BorderRadius.circular(20),
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                DateFormat.EEEE().format(selectedDay),
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              Text(
-                DateFormat.yMMMd().format(selectedDay),
-                style: TextStyle(
-                  fontSize: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+        child: const Text(
+          'Today',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
           ),
-          if (isSameDay(selectedDay, DateTime.now()))
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.warning,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                'Today',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
