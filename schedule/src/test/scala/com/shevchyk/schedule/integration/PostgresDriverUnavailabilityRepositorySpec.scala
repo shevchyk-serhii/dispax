@@ -15,8 +15,8 @@ import java.time.{Instant, temporal}
 import java.util.UUID
 
 /**
- * Integration tests for PostgresDriverUnavailabilityRepository against a real PostgreSQL database
- * running inside a Testcontainer, after migration V10 is applied.
+ * Integration tests for PostgresDriverUnavailabilityRepository against a real PostgreSQL database running inside a
+ * Testcontainer, after migration V10 is applied.
  *
  * Covers:
  *   - create / findById round-trip
@@ -55,8 +55,9 @@ object PostgresDriverUnavailabilityRepositorySpec extends ZIOSpecDefault {
   private def cleanUnavailability(xa: Transactor[Task]): Task[Unit] =
     sql"DELETE FROM driver_unavailability".update.run.transact(xa).unit
 
-  private def ts(epochSeconds: Long): Instant =
-    Instant.ofEpochSecond(epochSeconds).truncatedTo(temporal.ChronoUnit.MICROS)
+  private def ts(epochSeconds: Long): Instant = Instant
+    .ofEpochSecond(epochSeconds)
+    .truncatedTo(temporal.ChronoUnit.MICROS)
 
   private def makeRecord(
       id: DriverUnavailabilityId = DriverUnavailabilityId(UUID.randomUUID()),
@@ -66,17 +67,16 @@ object PostgresDriverUnavailabilityRepositorySpec extends ZIOSpecDefault {
       to: Instant = ts(1_804_000),
       reason: DriverUnavailabilityReason = DriverUnavailabilityReason.Lunch,
       note: Option[String] = None
-  ): DriverUnavailability =
-    DriverUnavailability(
-      id = id,
-      driverId = driverId,
-      companyId = companyId,
-      fromTime = from,
-      toTime = to,
-      reason = reason,
-      note = note,
-      createdAt = Instant.now().truncatedTo(temporal.ChronoUnit.MICROS)
-    )
+  ): DriverUnavailability = DriverUnavailability(
+    id = id,
+    driverId = driverId,
+    companyId = companyId,
+    fromTime = from,
+    toTime = to,
+    reason = reason,
+    note = note,
+    createdAt = Instant.now().truncatedTo(temporal.ChronoUnit.MICROS)
+  )
 
   def spec =
     suite("PostgresDriverUnavailabilityRepository")(
@@ -112,19 +112,19 @@ object PostgresDriverUnavailabilityRepositorySpec extends ZIOSpecDefault {
       },
       test("all three reason values round-trip correctly") {
         for {
-          xa       <- ZIO.service[Transactor[Task]]
-          _        <- seedTestData(xa)
-          _        <- cleanUnavailability(xa)
-          repo      = PostgresDriverUnavailabilityRepository(xa)
-          lunch     = makeRecord(reason = DriverUnavailabilityReason.Lunch, from = ts(2_000_000), to = ts(2_001_000))
-          vacation  = makeRecord(reason = DriverUnavailabilityReason.Vacation, from = ts(2_001_000), to = ts(2_002_000))
-          personal  = makeRecord(reason = DriverUnavailabilityReason.Personal, from = ts(2_002_000), to = ts(2_003_000))
-          _        <- repo.create(lunch)
-          _        <- repo.create(vacation)
-          _        <- repo.create(personal)
-          foundL   <- repo.findById(lunch.id)
-          foundV   <- repo.findById(vacation.id)
-          foundP   <- repo.findById(personal.id)
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanUnavailability(xa)
+          repo     = PostgresDriverUnavailabilityRepository(xa)
+          lunch    = makeRecord(reason = DriverUnavailabilityReason.Lunch, from = ts(2_000_000), to = ts(2_001_000))
+          vacation = makeRecord(reason = DriverUnavailabilityReason.Vacation, from = ts(2_001_000), to = ts(2_002_000))
+          personal = makeRecord(reason = DriverUnavailabilityReason.Personal, from = ts(2_002_000), to = ts(2_003_000))
+          _       <- repo.create(lunch)
+          _       <- repo.create(vacation)
+          _       <- repo.create(personal)
+          foundL  <- repo.findById(lunch.id)
+          foundV  <- repo.findById(vacation.id)
+          foundP  <- repo.findById(personal.id)
         } yield assertTrue(
           foundL.get.reason == DriverUnavailabilityReason.Lunch,
           foundV.get.reason == DriverUnavailabilityReason.Vacation,
@@ -135,17 +135,17 @@ object PostgresDriverUnavailabilityRepositorySpec extends ZIOSpecDefault {
       // ── findByDriver (tenant-scoped) ────────────────────────────────────────
       test("findByDriver returns only that driver's records for the given company") {
         for {
-          xa    <- ZIO.service[Transactor[Task]]
-          _     <- seedTestData(xa)
-          _     <- cleanUnavailability(xa)
-          repo   = PostgresDriverUnavailabilityRepository(xa)
-          r1     = makeRecord(driverId = driverAId, companyId = testCompanyId, from = ts(3_000_000), to = ts(3_001_000))
-          r2     = makeRecord(driverId = driverAId, companyId = testCompanyId, from = ts(3_001_000), to = ts(3_002_000))
-          r3     = makeRecord(driverId = driverBId, companyId = testCompanyId, from = ts(3_000_000), to = ts(3_001_000))
-          _     <- repo.create(r1)
-          _     <- repo.create(r2)
-          _     <- repo.create(r3)
-          mine  <- repo.findByDriver(driverAId, testCompanyId)
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- seedTestData(xa)
+          _    <- cleanUnavailability(xa)
+          repo  = PostgresDriverUnavailabilityRepository(xa)
+          r1    = makeRecord(driverId = driverAId, companyId = testCompanyId, from = ts(3_000_000), to = ts(3_001_000))
+          r2    = makeRecord(driverId = driverAId, companyId = testCompanyId, from = ts(3_001_000), to = ts(3_002_000))
+          r3    = makeRecord(driverId = driverBId, companyId = testCompanyId, from = ts(3_000_000), to = ts(3_001_000))
+          _    <- repo.create(r1)
+          _    <- repo.create(r2)
+          _    <- repo.create(r3)
+          mine <- repo.findByDriver(driverAId, testCompanyId)
         } yield assertTrue(
           mine.length == 2,
           mine.forall(_.driverId == driverAId),

@@ -381,11 +381,15 @@ object ScheduleApi:
     }
 
   /**
-   * GET /api/schedules/unavailability?from=&to= — company-wide unavailability range view (dispatcher/admin).
+   * GET /api/schedules/unavailability?from=&to= — company-wide unavailability range view (dispatcher/admin only).
+   *
+   * Role guard mirrors `getCompanyVisibilityServer`: `requireDispatcherOrAdmin` runs first (already in the
+   * `(StatusCode, ApiError)` error channel), then the inner business logic runs in `ScheduleError` and is converted to
+   * `(StatusCode, ApiError)` via `.mapError(toError)`.
    */
   private val getCompanyUnavailabilityServer: ZServerEndpoint[ScheduleEnv, Any] = getCompanyUnavailabilityEndpoint
     .serverLogic { user => (fromOpt, toOpt) =>
-      (for {
+      requireDispatcherOrAdmin(user) *> (for {
         companyId <- requireCompanyId(user)
         fromParam <- ZIO
                        .fromOption(fromOpt)

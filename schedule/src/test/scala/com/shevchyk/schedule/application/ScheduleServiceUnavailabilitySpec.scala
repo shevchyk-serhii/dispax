@@ -16,8 +16,8 @@ import java.util.UUID
 /**
  * Unit tests for ScheduleService unavailability methods (new in driver-busy-time-assign-guard).
  *
- * Covers all business branches with negative tests (AccessDenied, ValidationError, tenant isolation).
- * All tests use in-memory doubles — no real database.
+ * Covers all business branches with negative tests (AccessDenied, ValidationError, tenant isolation). All tests use
+ * in-memory doubles — no real database.
  */
 object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
 
@@ -87,7 +87,9 @@ object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
     } yield repo
   }
 
-  /** Fresh in-memory layers for every test. */
+  /**
+   * Fresh in-memory layers for every test.
+   */
   def layers: ZLayer[Any, Nothing, ScheduleService] =
     InMemoryScheduleDayRepository.layer ++
       InMemoryDriverScheduleVisibilityRepository.layer ++
@@ -96,8 +98,8 @@ object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
       ScheduleService.layer
 
   // Anchor: 1 hour from now.
-  val baseTime: Instant = Instant.now().plusSeconds(3600)
-  val oneHourLater: Instant = baseTime.plusSeconds(3600)
+  val baseTime: Instant      = Instant.now().plusSeconds(3600)
+  val oneHourLater: Instant  = baseTime.plusSeconds(3600)
   val twoHoursLater: Instant = baseTime.plusSeconds(7200)
 
   private def makeReq(
@@ -239,12 +241,11 @@ object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
         test("optional note is persisted when provided") {
           for {
             service <- ZIO.service[ScheduleService]
-            result  <-
-              service.createUnavailability(
-                makeReq(note = Some("Doctor appointment")),
-                requesterId = driverAId,
-                requesterRole = "DRIVER"
-              )
+            result  <- service.createUnavailability(
+                         makeReq(note = Some("Doctor appointment")),
+                         requesterId = driverAId,
+                         requesterRole = "DRIVER"
+                       )
           } yield assertTrue(result.note.contains("Doctor appointment"))
         }.provide(layers)
       ),
@@ -255,51 +256,44 @@ object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
         test("driver reading own unavailability — always allowed") {
           for {
             service <- ZIO.service[ScheduleService]
-            _       <-
-              service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
-            result  <-
-              service.getDriverUnavailability(
-                driverId = driverAId,
-                companyId = companyA,
-                requesterId = driverAId,
-                requesterRole = "DRIVER"
-              )
+            _       <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
+            result  <- service.getDriverUnavailability(
+                         driverId = driverAId,
+                         companyId = companyA,
+                         requesterId = driverAId,
+                         requesterRole = "DRIVER"
+                       )
           } yield assertTrue(result.nonEmpty && result.forall(_.driverId == driverAId))
         }.provide(layers),
         test("DISPATCHER reading another driver's unavailability — always allowed") {
           for {
             service <- ZIO.service[ScheduleService]
-            _       <-
-              service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
-            result  <-
-              service.getDriverUnavailability(
-                driverId = driverAId,
-                companyId = companyA,
-                requesterId = dispatcherAId,
-                requesterRole = "DISPATCHER"
-              )
+            _       <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
+            result  <- service.getDriverUnavailability(
+                         driverId = driverAId,
+                         companyId = companyA,
+                         requesterId = dispatcherAId,
+                         requesterRole = "DISPATCHER"
+                       )
           } yield assertTrue(result.nonEmpty)
         }.provide(layers),
         test("ADMIN reading another driver's unavailability — always allowed") {
           for {
             service <- ZIO.service[ScheduleService]
-            _       <-
-              service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
-            result  <-
-              service.getDriverUnavailability(
-                driverId = driverAId,
-                companyId = companyA,
-                requesterId = adminAId,
-                requesterRole = "ADMIN"
-              )
+            _       <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
+            result  <- service.getDriverUnavailability(
+                         driverId = driverAId,
+                         companyId = companyA,
+                         requesterId = adminAId,
+                         requesterRole = "ADMIN"
+                       )
           } yield assertTrue(result.nonEmpty)
         }.provide(layers),
         // Negative: a driver without the canViewOtherSchedules flag cannot see other driver's unavailability.
         test("DRIVER without canViewOthers reading another driver's unavailability → AccessDenied") {
           for {
             service <- ZIO.service[ScheduleService]
-            _       <-
-              service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
+            _       <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
             result  <-
               service
                 .getDriverUnavailability(
@@ -318,15 +312,13 @@ object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
           for {
             service <- ZIO.service[ScheduleService]
             _       <- service.setDriverVisibility(driverBId, companyA, canView = true)
-            _       <-
-              service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
-            result  <-
-              service.getDriverUnavailability(
-                driverId = driverAId,
-                companyId = companyA,
-                requesterId = driverBId,
-                requesterRole = "DRIVER"
-              )
+            _       <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
+            result  <- service.getDriverUnavailability(
+                         driverId = driverAId,
+                         companyId = companyA,
+                         requesterId = driverBId,
+                         requesterRole = "DRIVER"
+                       )
           } yield assertTrue(result.nonEmpty)
         }.provide(layers)
       ),
@@ -337,43 +329,42 @@ object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
         test("returns records in the given time range") {
           for {
             service <- ZIO.service[ScheduleService]
-            _       <-
-              service.createUnavailability(
-                makeReq(from = baseTime, to = oneHourLater),
-                requesterId = driverAId,
-                requesterRole = "DRIVER"
-              )
-            result  <-
-              service.getCompanyUnavailability(
-                companyId = companyA,
-                from = baseTime.minusSeconds(1),
-                to = twoHoursLater
-              )
+            _       <- service.createUnavailability(
+                         makeReq(from = baseTime, to = oneHourLater),
+                         requesterId = driverAId,
+                         requesterRole = "DRIVER"
+                       )
+            result  <- service.getCompanyUnavailability(
+                         companyId = companyA,
+                         from = baseTime.minusSeconds(1),
+                         to = twoHoursLater
+                       )
           } yield assertTrue(result.nonEmpty && result.forall(_.companyId == companyA))
         }.provide(layers),
         // Negative tenant isolation: querying with companyB must not return companyA records.
         test("tenant isolation: companyB query never returns companyA records") {
           for {
             service <- ZIO.service[ScheduleService]
-            _       <-
-              service.createUnavailability(makeReq(companyId = companyA), requesterId = driverAId, requesterRole = "DRIVER")
-            result  <-
-              service.getCompanyUnavailability(
-                companyId = companyB,
-                from = baseTime.minusSeconds(1),
-                to = twoHoursLater
-              )
+            _       <- service.createUnavailability(
+                         makeReq(companyId = companyA),
+                         requesterId = driverAId,
+                         requesterRole = "DRIVER"
+                       )
+            result  <- service.getCompanyUnavailability(
+                         companyId = companyB,
+                         from = baseTime.minusSeconds(1),
+                         to = twoHoursLater
+                       )
           } yield assertTrue(result.isEmpty)
         }.provide(layers),
         test("returns empty list when no records exist in range") {
           for {
             service <- ZIO.service[ScheduleService]
-            result  <-
-              service.getCompanyUnavailability(
-                companyId = companyA,
-                from = twoHoursLater.plusSeconds(3600),
-                to = twoHoursLater.plusSeconds(7200)
-              )
+            result  <- service.getCompanyUnavailability(
+                         companyId = companyA,
+                         from = twoHoursLater.plusSeconds(3600),
+                         to = twoHoursLater.plusSeconds(7200)
+                       )
           } yield assertTrue(result.isEmpty)
         }.provide(layers)
       ),
@@ -383,62 +374,56 @@ object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
       suite("deleteUnavailability")(
         test("owning driver can delete own unavailability") {
           for {
-            service  <- ZIO.service[ScheduleService]
-            created  <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
-            _        <-
-              service.deleteUnavailability(
-                id = created.id,
-                requesterId = driverAId,
-                requesterRole = "DRIVER",
-                companyId = companyA
-              )
-            remaining <-
-              service.getDriverUnavailability(
-                driverId = driverAId,
-                companyId = companyA,
-                requesterId = driverAId,
-                requesterRole = "DRIVER"
-              )
+            service   <- ZIO.service[ScheduleService]
+            created   <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
+            _         <- service.deleteUnavailability(
+                           id = created.id,
+                           requesterId = driverAId,
+                           requesterRole = "DRIVER",
+                           companyId = companyA
+                         )
+            remaining <- service.getDriverUnavailability(
+                           driverId = driverAId,
+                           companyId = companyA,
+                           requesterId = driverAId,
+                           requesterRole = "DRIVER"
+                         )
           } yield assertTrue(remaining.isEmpty)
         }.provide(layers),
         test("DISPATCHER can delete any driver's unavailability") {
           for {
-            service  <- ZIO.service[ScheduleService]
-            created  <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
-            _        <-
-              service.deleteUnavailability(
-                id = created.id,
-                requesterId = dispatcherAId,
-                requesterRole = "DISPATCHER",
-                companyId = companyA
-              )
-            remaining <-
-              service.getDriverUnavailability(
-                driverId = driverAId,
-                companyId = companyA,
-                requesterId = driverAId,
-                requesterRole = "DRIVER"
-              )
+            service   <- ZIO.service[ScheduleService]
+            created   <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
+            _         <- service.deleteUnavailability(
+                           id = created.id,
+                           requesterId = dispatcherAId,
+                           requesterRole = "DISPATCHER",
+                           companyId = companyA
+                         )
+            remaining <- service.getDriverUnavailability(
+                           driverId = driverAId,
+                           companyId = companyA,
+                           requesterId = driverAId,
+                           requesterRole = "DRIVER"
+                         )
           } yield assertTrue(remaining.isEmpty)
         }.provide(layers),
         test("ADMIN can delete any driver's unavailability") {
           for {
-            service  <- ZIO.service[ScheduleService]
-            created  <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
-            _        <-
-              service.deleteUnavailability(
-                id = created.id,
-                requesterId = adminAId,
-                requesterRole = "ADMIN",
-                companyId = companyA
-              )
-            remaining <-
-              service.getDriverUnavailability(
-                driverId = driverAId,
-                companyId = companyA,
-                requesterId = driverAId,
-                requesterRole = "DRIVER"
-              )
+            service   <- ZIO.service[ScheduleService]
+            created   <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
+            _         <- service.deleteUnavailability(
+                           id = created.id,
+                           requesterId = adminAId,
+                           requesterRole = "ADMIN",
+                           companyId = companyA
+                         )
+            remaining <- service.getDriverUnavailability(
+                           driverId = driverAId,
+                           companyId = companyA,
+                           requesterId = driverAId,
+                           requesterRole = "DRIVER"
+                         )
           } yield assertTrue(remaining.isEmpty)
         }.provide(layers),
         // Negative: a different driver (non-owner, non-dispatcher) must be denied.
@@ -471,7 +456,7 @@ object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
                   id = created.id,
                   requesterId = driverAId, // correct owner
                   requesterRole = "DRIVER",
-                  companyId = companyB // wrong company
+                  companyId = companyB     // wrong company
                 )
                 .exit
           } yield assertTrue(result match {
@@ -534,7 +519,7 @@ object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
             // Query the right driver but wrong company — must return empty.
             result  <- service.getDriverUnavailability(
                          driverId = driverAId,
-                         companyId = companyB,   // wrong company
+                         companyId = companyB, // wrong company
                          requesterId = driverAId,
                          requesterRole = "DRIVER"
                        )

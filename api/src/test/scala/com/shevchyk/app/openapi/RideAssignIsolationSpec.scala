@@ -140,7 +140,11 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           case Some(r) => ZIO.succeed(r)
           case None    => ZIO.fail(RideError.RideNotFound(rideId))
 
-      def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride] =
+      def assignDriver(
+          rideId: RideId,
+          driverId: PersonId,
+          overrideScheduleConflict: Boolean = false
+      ): IO[RideError, Ride] =
         assignedRef.set(true) *> {
           rides.get(rideId) match
             case Some(r) => ZIO.succeed(r.copy(driverId = Some(driverId), status = RideStatus.Assigned))

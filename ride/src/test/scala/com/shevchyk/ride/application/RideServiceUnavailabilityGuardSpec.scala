@@ -23,11 +23,11 @@ import java.util.UUID
 /**
  * Unit tests for the new DriverAvailabilityChecker integration in RideService.assignDriver.
  *
- * Uses a configurable stub DriverAvailabilityChecker backed by a Ref so each test can inject a
- * fixed overlap list without touching the schedule module.
+ * Uses a configurable stub DriverAvailabilityChecker backed by a Ref so each test can inject a fixed overlap list
+ * without touching the schedule module.
  *
- * Every blocking branch has a corresponding "succeeds if guard is absent" companion test so that the
- * tests are mutation-aware — they would fail if the guard were removed.
+ * Every blocking branch has a corresponding "succeeds if guard is absent" companion test so that the tests are
+ * mutation-aware — they would fail if the guard were removed.
  */
 object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
 
@@ -144,7 +144,9 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
     def sendInvoiceEmail(data: com.shevchyk.core.application.InvoiceEmailData): Task[Unit] = ZIO.unit
   )
 
-  /** A noop checker that always reports no overlap. */
+  /**
+   * A noop checker that always reports no overlap.
+   */
   private val noopAvailabilityChecker: ZLayer[Any, Nothing, DriverAvailabilityChecker] = ZLayer.succeed(
     new DriverAvailabilityChecker:
       def overlappingUnavailability(
@@ -156,17 +158,18 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
   )
 
   /**
-   * Builds a ZLayer[Any, Nothing, DriverAvailabilityChecker] that always returns the supplied slots.
-   * This lets each test inject an exact conflict scenario without involving the schedule module.
+   * Builds a ZLayer[Any, Nothing, DriverAvailabilityChecker] that always returns the supplied slots. This lets each
+   * test inject an exact conflict scenario without involving the schedule module.
    */
-  private def stubbedChecker(slots: List[UnavailabilitySlot]): ZLayer[Any, Nothing, DriverAvailabilityChecker] =
-    ZLayer.succeed(new DriverAvailabilityChecker:
-      def overlappingUnavailability(
-          driverId: PersonId,
-          companyId: CompanyId,
-          from: Instant,
-          to: Instant
-      ): Task[List[UnavailabilitySlot]] = ZIO.succeed(slots)
+  private def stubbedChecker(slots: List[UnavailabilitySlot]): ZLayer[Any, Nothing, DriverAvailabilityChecker] = ZLayer
+    .succeed(
+      new DriverAvailabilityChecker:
+        def overlappingUnavailability(
+            driverId: PersonId,
+            companyId: CompanyId,
+            from: Instant,
+            to: Instant
+        ): Task[List[UnavailabilitySlot]] = ZIO.succeed(slots)
     )
 
   private def buildLayers(
@@ -278,12 +281,12 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
         test("override does NOT bypass Requested-status guard") {
           buildLayers(stubbedChecker(List(lunchSlot))).build.flatMap { env =>
             (for {
-              service  <- ZIO.service[RideService]
-              ride     <- service.createRide(mkRide())
+              service <- ZIO.service[RideService]
+              ride    <- service.createRide(mkRide())
               // First assign (succeeds)
-              _        <- service.assignDriver(ride.id, testDriverId, overrideScheduleConflict = true)
+              _       <- service.assignDriver(ride.id, testDriverId, overrideScheduleConflict = true)
               // Second assign on the now-Assigned ride (must fail)
-              result   <- service.assignDriver(ride.id, testDriver2Id, overrideScheduleConflict = true).exit
+              result  <- service.assignDriver(ride.id, testDriver2Id, overrideScheduleConflict = true).exit
             } yield assertTrue(result match {
               case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition])
               case _                   => false
@@ -323,7 +326,9 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
             service <- ZIO.service[RideService]
             ride1   <- service.createRide(mkRide(scheduledTime = Some(pickupAt)))
             _       <- service.assignDriver(ride1.id, testDriverId)
-            ride2   <- service.createRide(mkRide(scheduledTime = Some(pickupAt.plusSeconds(600)))) // 10 min gap — inside 90-min window
+            ride2   <- service.createRide(
+                         mkRide(scheduledTime = Some(pickupAt.plusSeconds(600)))
+                       ) // 10 min gap — inside 90-min window
             result  <- service.assignDriver(ride2.id, testDriverId).exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
@@ -373,7 +378,9 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
                   to: Instant
               ): Task[List[UnavailabilitySlot]] =
                 if companyId == otherCompanyId then
-                  ZIO.fail(new RuntimeException("checker was called with a foreign companyId — tenant isolation breach"))
+                  ZIO.fail(
+                    new RuntimeException("checker was called with a foreign companyId — tenant isolation breach")
+                  )
                 else ZIO.succeed(Nil)
           )
           buildLayers(guardedChecker).build.flatMap { env =>
