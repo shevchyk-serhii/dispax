@@ -5,10 +5,11 @@ import java.time.Instant
 import java.util.UUID
 import com.github.f4b6a3.uuid.UuidCreator
 
-case class GdprConsentId(value: UUID) derives JsonCodec
+case class GdprConsentId(value: UUID)
 
 object GdprConsentId:
-  def generate(): GdprConsentId = GdprConsentId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): GdprConsentId  = GdprConsentId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[GdprConsentId] = JsonCodec[UUID].transform(GdprConsentId(_), _.value)
 
 enum ConsentType derives JsonCodec:
   case DataProcessing, Marketing, Analytics, ThirdPartySharing
@@ -22,10 +23,11 @@ case class GdprConsent(
     ipAddress: Option[String] = None
 ) derives JsonCodec
 
-case class GdprRequestId(value: UUID) derives JsonCodec
+case class GdprRequestId(value: UUID)
 
 object GdprRequestId:
-  def generate(): GdprRequestId = GdprRequestId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): GdprRequestId  = GdprRequestId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[GdprRequestId] = JsonCodec[UUID].transform(GdprRequestId(_), _.value)
 
 enum GdprRequestType derives JsonCodec:
   case EXPORT, DELETION

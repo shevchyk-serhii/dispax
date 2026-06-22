@@ -5,10 +5,11 @@ import java.time.Instant
 import java.util.UUID
 import com.github.f4b6a3.uuid.UuidCreator
 
-case class GeofenceId(value: UUID) derives JsonCodec
+case class GeofenceId(value: UUID)
 
 object GeofenceId:
-  def generate(): GeofenceId = GeofenceId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): GeofenceId  = GeofenceId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[GeofenceId] = JsonCodec[UUID].transform(GeofenceId(_), _.value)
 
 enum GeofenceType derives JsonCodec:
   case Airport, ServiceArea, ClientPickup, CustomZone

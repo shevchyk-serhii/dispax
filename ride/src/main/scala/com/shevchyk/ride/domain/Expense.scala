@@ -5,10 +5,11 @@ import zio.json.*
 import java.time.Instant
 import java.util.UUID
 
-case class ExpenseId(value: UUID) derives JsonCodec
+case class ExpenseId(value: UUID)
 
 object ExpenseId:
-  def generate(): ExpenseId = ExpenseId(com.github.f4b6a3.uuid.UuidCreator.getTimeOrderedEpoch())
+  def generate(): ExpenseId  = ExpenseId(com.github.f4b6a3.uuid.UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[ExpenseId] = JsonCodec[UUID].transform(ExpenseId(_), _.value)
 
 enum ExpenseCategory derives JsonCodec:
   case Fuel, Parking, Tolls, Cleaning, Maintenance, Other

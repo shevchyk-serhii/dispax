@@ -5,10 +5,11 @@ import java.time.Instant
 import java.util.UUID
 import com.github.f4b6a3.uuid.UuidCreator
 
-case class SessionId(value: UUID) derives JsonCodec
+case class SessionId(value: UUID)
 
 object SessionId:
-  def generate(): SessionId = SessionId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): SessionId  = SessionId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[SessionId] = JsonCodec[UUID].transform(SessionId(_), _.value)
 
 case class Session(
     id: SessionId,

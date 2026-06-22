@@ -5,10 +5,11 @@ import java.time.Instant
 import java.util.UUID
 import com.github.f4b6a3.uuid.UuidCreator
 
-case class BlacklistEntryId(value: UUID) derives JsonCodec
+case class BlacklistEntryId(value: UUID)
 
 object BlacklistEntryId:
-  def generate(): BlacklistEntryId = BlacklistEntryId(UuidCreator.getTimeOrderedEpoch())
+  def generate(): BlacklistEntryId  = BlacklistEntryId(UuidCreator.getTimeOrderedEpoch())
+  given JsonCodec[BlacklistEntryId] = JsonCodec[UUID].transform(BlacklistEntryId(_), _.value)
 
 case class BlacklistEntry(
     id: BlacklistEntryId,
