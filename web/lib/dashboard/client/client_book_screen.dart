@@ -472,116 +472,114 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final vp = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: vp),
-      child: DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        builder: (ctx, scrollCtrl) => Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.borderPrimary,
-                borderRadius: BorderRadius.circular(2),
-              ),
+    // Keyboard inset is applied to the Confirm button's bottom padding (below)
+    // rather than wrapping the whole DraggableScrollableSheet, which otherwise
+    // double-counts the inset and overflows the sheet by a few pixels.
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      builder: (ctx, scrollCtrl) => Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.borderPrimary,
+              borderRadius: BorderRadius.circular(2),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: TextField(
-                controller: _ctrl,
-                autofocus: true,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText: widget.isFrom
-                      ? 'Enter pick-up address'
-                      : 'Enter drop-off address',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.borderPrimary,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _ctrl,
+              autofocus: true,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: widget.isFrom
+                    ? 'Enter pick-up address'
+                    : 'Enter drop-off address',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.borderPrimary),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+              onChanged: _onQueryChanged,
+              onSubmitted: (v) {
+                if (v.trim().isNotEmpty) Navigator.of(context).pop(v.trim());
+              },
+            ),
+          ),
+          if (_loading) const LinearProgressIndicator(minHeight: 2),
+          Expanded(
+            child: ListView(
+              controller: scrollCtrl,
+              padding: EdgeInsets.zero,
+              children: [
+                if (_suggestions.isNotEmpty) ...[
+                  _sectionLabel('Suggestions'),
+                  ..._suggestions.map(
+                    (s) => ListTile(
+                      leading: const Icon(
+                        Icons.location_on_outlined,
+                        color: AppColors.accent,
+                      ),
+                      title: Text(s),
+                      onTap: () => Navigator.of(context).pop(s),
                     ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                ],
+                if (widget.savedPlaces.isNotEmpty) ...[
+                  _sectionLabel('Saved places'),
+                  ...widget.savedPlaces.map(
+                    (p) => ListTile(
+                      leading: const Icon(
+                        Icons.bookmark_outline,
+                        color: AppColors.accent,
+                      ),
+                      title: Text(p),
+                      onTap: () => Navigator.of(context).pop(p),
+                    ),
                   ),
-                ),
-                onChanged: _onQueryChanged,
-                onSubmitted: (v) {
-                  if (v.trim().isNotEmpty) Navigator.of(context).pop(v.trim());
+                ],
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + keyboardInset),
+            child: SizedBox(
+              width: double.infinity,
+              child: Builder(
+                builder: (context) {
+                  final cs = Theme.of(context).colorScheme;
+                  return ElevatedButton(
+                    onPressed: () {
+                      final v = _ctrl.text.trim();
+                      if (v.isNotEmpty) Navigator.of(context).pop(v);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cs.primary,
+                      foregroundColor: cs.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Confirm'),
+                  );
                 },
               ),
             ),
-            if (_loading) const LinearProgressIndicator(minHeight: 2),
-            Expanded(
-              child: ListView(
-                controller: scrollCtrl,
-                padding: EdgeInsets.zero,
-                children: [
-                  if (_suggestions.isNotEmpty) ...[
-                    _sectionLabel('Suggestions'),
-                    ..._suggestions.map(
-                      (s) => ListTile(
-                        leading: const Icon(
-                          Icons.location_on_outlined,
-                          color: AppColors.accent,
-                        ),
-                        title: Text(s),
-                        onTap: () => Navigator.of(context).pop(s),
-                      ),
-                    ),
-                  ],
-                  if (widget.savedPlaces.isNotEmpty) ...[
-                    _sectionLabel('Saved places'),
-                    ...widget.savedPlaces.map(
-                      (p) => ListTile(
-                        leading: const Icon(
-                          Icons.bookmark_outline,
-                          color: AppColors.accent,
-                        ),
-                        title: Text(p),
-                        onTap: () => Navigator.of(context).pop(p),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: Builder(
-                  builder: (context) {
-                    final cs = Theme.of(context).colorScheme;
-                    return ElevatedButton(
-                      onPressed: () {
-                        final v = _ctrl.text.trim();
-                        if (v.isNotEmpty) Navigator.of(context).pop(v);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: cs.primary,
-                        foregroundColor: cs.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text('Confirm'),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
