@@ -257,6 +257,39 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition])
             case _                   => false
           })
+        }.provide(standardLayers),
+        test("a client cannot cancel another client's ride") {
+          for {
+            service <- ZIO.service[RideService]
+            // ride owned by testClientId; a different client (vipClientId) tries to cancel
+            ride    <- service.createRide(mkRide())
+            result  <-
+              service
+                .cancelRideWithReason(ride.id, vipClientId, PersonRole.Client, CancelRideRequest("not_mine"))
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("a driver not assigned to the ride cannot cancel it") {
+          for {
+            service  <- ZIO.service[RideService]
+            // assigned to testDriverId; a different driver (testDriver2Id) tries to cancel
+            assigned <- createAssignedRide(service)
+            result   <-
+              service
+                .cancelRideWithReason(
+                  assigned.id,
+                  testDriver2Id,
+                  PersonRole.Driver,
+                  CancelRideRequest("not_my_ride")
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+            case _                   => false
+          })
         }.provide(standardLayers)
       ),
       // ────────────────────────────────────────────────────────────────────
@@ -328,11 +361,20 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
               pending.paidAt.isEmpty
           )
         }.provide(standardLayers),
-        test("cannot mark a non-completed ride as Paid") {
+        test("cannot mark a Requested ride as Paid") {
           for {
             service <- ZIO.service[RideService]
             ride    <- service.createRide(mkRide())
             result  <- service.markPayment(ride.id, PaymentStatus.Paid, Some(PaymentMethod.Cash)).exit
+          } yield assertTrue(result.isFailure)
+        }.provide(standardLayers),
+        test("cannot mark an InProgress ride as Paid") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(mkRide())
+            assigned <- service.assignDriver(ride.id, testDriverId)
+            started  <- service.startRide(assigned.id, testDriverId) // InProgress, not Completed
+            result   <- service.markPayment(started.id, PaymentStatus.Paid, Some(PaymentMethod.Cash)).exit
           } yield assertTrue(result.isFailure)
         }.provide(standardLayers),
         test("re-paying a paid ride is idempotent (paidAt unchanged)") {
@@ -523,10 +565,15 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                          PersonRole.Client,
                          CancelRideRequest("changed_mind")
                        )
+            // A completed (non-cancelled) ride must NOT leak into cancellation stats.
+            // Its cancellationReason is None, so an unfiltered impl would bucket it as "unknown".
+            _       <- createCompletedRide(service)
             stats   <- service.getCancellationStats(testCompanyId)
           } yield assertTrue(
             stats.getOrElse("no_show", 0) == 2 &&
-              stats.getOrElse("changed_mind", 0) == 1
+              stats.getOrElse("changed_mind", 0) == 1 &&
+              stats.getOrElse("unknown", 0) == 0 &&
+              stats.values.sum == 3
           )
         }.provide(standardLayers),
         test("getDailyStats returns per-day breakdown") {
@@ -614,7 +661,42 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             assigned.status == RideStatus.Assigned &&
               assigned.driverId.contains(testDriverId)
           )
-        }.provide(standardLayers)
+        }.provide(standardLayers),
+        test("reassignment fails when the new driver is blacklisted for the client") {
+          for {
+            blacklistRepo <- ZIO.service[BlacklistRepository]
+            // testDriver2Id is blacklisted for testClientId
+            _             <- blacklistRepo.create(
+                               BlacklistEntry(
+                                 id = BlacklistEntryId.generate(),
+                                 companyId = testCompanyId,
+                                 clientId = testClientId,
+                                 driverId = testDriver2Id,
+                                 reason = Some("bad experience"),
+                                 createdBy = dispatcherId
+                               )
+                             )
+            service       <- ZIO.service[RideService]
+            ride          <- service.createRide(mkRide())
+            _             <- service.assignDriver(ride.id, testDriverId) // first driver is fine
+            result        <- service.reassignDriver(ride.id, testDriver2Id).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation("blacklist", _) => true
+                case _                                               => false
+              }
+            case _                   => false
+          })
+        }.provide(
+          (InMemoryRideRepository.layer ++
+            ZLayer.succeed[PersonRepository](testPersonRepo) ++
+            EventHub.layer ++
+            noopEmailSms ++
+            AuditService.inMemory ++
+            BlacklistRepository.inMemory ++
+            GeocodingService.noop ++ ExpenseRepository.inMemory) >+> RideService.layer
+        )
       ),
 
       // ────────────────────────────────────────────────────────────────────

@@ -431,6 +431,29 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
             assigned.isVipRide &&
               assigned.preferredDriverUsed
           )
+        }.provide(standardLayers),
+        test("assignment to an ordinary (non-VIP) client does NOT set isVipRide") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(mkRide(clientId = testClientId)) // ordinary client (exists, isVip=false)
+            assigned <- service.assignDriver(ride.id, testDriverId)
+          } yield assertTrue(
+            !assigned.isVipRide &&
+              !assigned.preferredDriverUsed
+          )
+        }.provide(standardLayers),
+        test("a ride whose client cannot be found is not flagged VIP") {
+          // Guards the VIP check against `forall` (vacuously true on None): an unknown client
+          // must yield isVipRide=false, not a spurious VIP flag.
+          val unknownClient = PersonId(UUID.fromString("00000064-0000-0000-0000-0000000000ff"))
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(mkRide(clientId = unknownClient))
+            assigned <- service.assignDriver(ride.id, testDriverId)
+          } yield assertTrue(
+            !assigned.isVipRide &&
+              !assigned.preferredDriverUsed
+          )
         }.provide(standardLayers)
       ),
       // ────────────────────────────────────────────────────────────────────
@@ -470,6 +493,36 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
             assigned.status == RideStatus.Assigned &&
               assigned.driverId.contains(testDriverId)
           )
+        }.provide(standardLayers),
+        test("a ride already InProgress still blocks an overlapping new assignment") {
+          val baseTime = Instant.now().plusSeconds(7200)
+          for {
+            service <- ZIO.service[RideService]
+            ride1   <- service.createRide(mkScheduledRide(baseTime))
+            _       <- service.assignDriver(ride1.id, testDriverId)
+            _       <- service.startRide(ride1.id, testDriverId) // ride1 → InProgress, not Assigned
+            ride2   <- service.createRide(mkScheduledRide(baseTime.plusSeconds(1800)))
+            result  <- service.assignDriver(ride2.id, testDriverId).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.ScheduleConflict])
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("the 30-min buffer is the deciding factor in the 60-90 min band") {
+          // ride1 occupies [baseTime, baseTime + 60min]; the buffer extends the blocked window to
+          // baseTime + 90min. A candidate 75 min later conflicts ONLY because of the buffer —
+          // with a zero buffer (occupied window = 60 min) it would be accepted.
+          val baseTime = Instant.now().plusSeconds(7200)
+          for {
+            service <- ZIO.service[RideService]
+            ride1   <- service.createRide(mkScheduledRide(baseTime))
+            _       <- service.assignDriver(ride1.id, testDriverId)
+            ride2   <- service.createRide(mkScheduledRide(baseTime.plusSeconds(75 * 60)))
+            result  <- service.assignDriver(ride2.id, testDriverId).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.ScheduleConflict])
+            case _                   => false
+          })
         }.provide(standardLayers)
       )
     )
