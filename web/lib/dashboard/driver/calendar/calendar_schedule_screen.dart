@@ -311,10 +311,16 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
   }
 
   Widget buildCalendarView(CalendarViewType viewType, DateTime selectedDay) {
+    // Markers must follow the driver picked in the AppBar dropdown. "My
+    // Schedule" (_selectedDriverId == null) falls back to the current user's
+    // own id, so the calendar only ever shows the selected driver's rides.
+    final myId = context.read<AuthBloc>().state.user?.id;
+    final filterDriverId = _selectedDriverId ?? myId;
     switch (viewType) {
       case CalendarViewType.month:
         return MonthViewWidget(
           selectedDay: selectedDay,
+          driverIdFilter: filterDriverId,
           onDaySelected: (day) {
             selectedDayNotifier.value = day;
             viewTypeNotifier.value = CalendarViewType.day;
@@ -326,6 +332,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       case CalendarViewType.week:
         return WeekViewWidget(
           selectedDay: selectedDay,
+          driverIdFilter: filterDriverId,
           onDaySelected: (day) {
             selectedDayNotifier.value = day;
             viewTypeNotifier.value = CalendarViewType.day;
@@ -337,6 +344,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       case CalendarViewType.day:
         return DayViewWidget(
           selectedDay: selectedDay,
+          driverIdFilter: filterDriverId,
           onRideSelected: _openRideDetails,
         );
       case CalendarViewType.multiColumn:

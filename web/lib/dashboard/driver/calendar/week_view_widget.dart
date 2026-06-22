@@ -12,11 +12,16 @@ class WeekViewWidget extends StatelessWidget {
   final Function(DateTime) onDaySelected;
   final Function(DateTime) onWeekChanged;
 
+  /// When set, only rides assigned to this driver are shown. Null shows all
+  /// rides (back-compat). Follows the schedule screen's driver dropdown.
+  final String? driverIdFilter;
+
   const WeekViewWidget({
     super.key,
     required this.selectedDay,
     required this.onDaySelected,
     required this.onWeekChanged,
+    this.driverIdFilter,
   });
 
   @override
@@ -269,6 +274,9 @@ class WeekViewWidget extends StatelessWidget {
 
   List<Ride> getRidesForDay(List<Ride> rides, DateTime day) {
     return rides.where((ride) {
+      if (driverIdFilter != null && ride.driverId != driverIdFilter) {
+        return false;
+      }
       final rideDate = DateTime(
         ride.pickupDateTime.year,
         ride.pickupDateTime.month,
