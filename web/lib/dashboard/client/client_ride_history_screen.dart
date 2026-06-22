@@ -167,64 +167,43 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'ALL TRIPS',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.06 * 11,
-                  color: AppColors.textLight,
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+          // The "My Rides" title already lives in the top app bar, so the
+          // graphite header only carries the centered List / Calendar toggle.
+          child: Center(
+            child: SegmentedButton<_ClientRidesView>(
+              segments: const [
+                ButtonSegment(
+                  value: _ClientRidesView.list,
+                  label: Text('List'),
+                  icon: Icon(Icons.list),
+                ),
+                ButtonSegment(
+                  value: _ClientRidesView.calendar,
+                  label: Text('Calendar'),
+                  icon: Icon(Icons.calendar_month),
+                ),
+              ],
+              selected: {_view},
+              onSelectionChanged: (selection) {
+                setState(() => _view = selection.first);
+              },
+              style: ButtonStyle(
+                foregroundColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? AppColors.primary
+                      : Colors.white70,
+                ),
+                backgroundColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? Colors.white
+                      : Colors.transparent,
+                ),
+                side: WidgetStateProperty.all(
+                  const BorderSide(color: Colors.white54),
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'My rides',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              // List / Calendar toggle
-              SegmentedButton<_ClientRidesView>(
-                segments: const [
-                  ButtonSegment(
-                    value: _ClientRidesView.list,
-                    label: Text('List'),
-                    icon: Icon(Icons.list),
-                  ),
-                  ButtonSegment(
-                    value: _ClientRidesView.calendar,
-                    label: Text('Calendar'),
-                    icon: Icon(Icons.calendar_month),
-                  ),
-                ],
-                selected: {_view},
-                onSelectionChanged: (selection) {
-                  setState(() => _view = selection.first);
-                },
-                style: ButtonStyle(
-                  foregroundColor: WidgetStateProperty.resolveWith(
-                    (states) => states.contains(WidgetState.selected)
-                        ? AppColors.primary
-                        : Colors.white70,
-                  ),
-                  backgroundColor: WidgetStateProperty.resolveWith(
-                    (states) => states.contains(WidgetState.selected)
-                        ? Colors.white
-                        : Colors.transparent,
-                  ),
-                  side: WidgetStateProperty.all(
-                    const BorderSide(color: Colors.white54),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

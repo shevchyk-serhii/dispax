@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart' as geo;
+import '../../../../constants/app_colors.dart';
 import '../../../../modules/ride_management/models/ride.dart';
 import '../../../../utils/ride_status_styles.dart';
 import 'ride_badges.dart';
@@ -11,11 +12,12 @@ import 'ride_badges.dart';
 /// [onPriceEdited] on confirm. When [showActions] is false (board view) the
 /// Start/Complete action buttons are hidden.
 ///
-/// When [compact] is true the card uses reduced padding, a stacked header
-/// (time above price/status), single-line truncated location rows, and hides
-/// the estimated-duration chip and requirements badge. This prevents layout
-/// overflow in the multi-column board view where each column is only ~1/3 of
-/// the screen width.
+/// When [compact] is true the card shows only the essentials — pickup time and
+/// price — with reduced padding. The ride status is conveyed by the card's
+/// border/background colour rather than a badge, and the client/location rows,
+/// status chips and requirements are omitted entirely. Full details open on
+/// tap. This prevents layout overflow in the narrow multi-column board view
+/// where each column is only a fraction of the screen width.
 class RideCalendarCard extends StatelessWidget {
   final Ride ride;
 
@@ -32,9 +34,10 @@ class RideCalendarCard extends StatelessWidget {
   /// Supplied by the parent so this card has no direct dependency on RideBloc.
   final Widget? actionsWidget;
 
-  /// When true, applies a compact layout: reduced padding, stacked header,
-  /// single-line text truncation, and hidden duration chip / requirements.
-  /// Defaults to false so the day-view is byte-for-byte unchanged.
+  /// When true, applies a compact layout for the narrow board view: reduced
+  /// padding and only time + price (status as the card colour); client/location
+  /// rows, chips and requirements are omitted. Defaults to false so the day-view
+  /// is byte-for-byte unchanged.
   final bool compact;
 
   const RideCalendarCard({
@@ -220,100 +223,102 @@ class RideCalendarCard extends StatelessWidget {
                   ],
                 )
               else
-                // Compact header: time on first line, price + status on second.
+                // Compact body for the narrow board column: time (+ an airport
+                // flag), price, the client name and the From → To route. Status
+                // is still conveyed by the card's border/background colour. Rows
+                // are kept terse (small font, single line, ellipsis) so the card
+                // stays readable without overflowing the column.
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      DateFormat.Hm().format(ride.pickupDateTime),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                    Row(
                       children: [
-                        if (ride.price != null || onPriceEdited != null)
-                          GestureDetector(
-                            onTap: onPriceEdited != null
-                                ? () => _showPriceDialog(context)
-                                : null,
-                            child: ride.price != null
-                                ? Text(
-                                    '€${ride.price!.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: colorScheme.onSurfaceVariant,
-                                      decoration: onPriceEdited != null
-                                          ? TextDecoration.underline
-                                          : null,
-                                    ),
-                                  )
-                                : Text(
-                                    'Set price',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontStyle: FontStyle.italic,
-                                      color: colorScheme.onSurfaceVariant
-                                          .withAlpha(153),
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                          ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            statusText,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        Text(
+                          DateFormat.Hm().format(ride.pickupDateTime),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
                           ),
                         ),
+                        // Airport-transfer flag: the pickup may shift with the
+                        // flight, so the dispatcher must spot it at a glance.
+                        if (ride.isAirportTransfer) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            ride.flightIconData ?? Icons.flight,
+                            size: 14,
+                            color: AppColors.info,
+                          ),
+                        ],
                       ],
+                    ),
+                    if (ride.price != null || onPriceEdited != null) ...[
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: onPriceEdited != null
+                            ? () => _showPriceDialog(context)
+                            : null,
+                        child: ride.price != null
+                            ? Text(
+                                '€${ride.price!.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onSurfaceVariant,
+                                  decoration: onPriceEdited != null
+                                      ? TextDecoration.underline
+                                      : null,
+                                ),
+                              )
+                            : Text(
+                                'Set price',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
+                                  color: colorScheme.onSurfaceVariant.withAlpha(
+                                    153,
+                                  ),
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    _compactInfoRow(
+                      context,
+                      Icons.person_outline,
+                      ride.clientName,
+                    ),
+                    const SizedBox(height: 4),
+                    _compactInfoRow(
+                      context,
+                      Icons.trip_origin,
+                      ride.from.address,
+                    ),
+                    const SizedBox(height: 2),
+                    _compactInfoRow(
+                      context,
+                      Icons.place_outlined,
+                      ride.to.address,
                     ),
                   ],
                 ),
-              RideBadges.chips(context, ride),
-              const SizedBox(height: 12),
-              _locationRow(
-                context,
-                Icons.person,
-                'Client',
-                ride.clientName,
-                compact: compact,
-              ),
-              const SizedBox(height: 8),
-              _locationRow(
-                context,
-                Icons.location_on,
-                'From',
-                ride.from.address,
-                compact: compact,
-              ),
-              const SizedBox(height: 8),
-              _locationRow(
-                context,
-                Icons.flag,
-                'To',
-                ride.to.address,
-                compact: compact,
-              ),
-              if (!compact) RideBadges.requirements(context, ride),
+              if (!compact) ...[
+                RideBadges.chips(context, ride),
+                const SizedBox(height: 12),
+                _locationRow(context, Icons.person, 'Client', ride.clientName),
+                const SizedBox(height: 8),
+                _locationRow(
+                  context,
+                  Icons.location_on,
+                  'From',
+                  ride.from.address,
+                ),
+                const SizedBox(height: 8),
+                _locationRow(context, Icons.flag, 'To', ride.to.address),
+                RideBadges.requirements(context, ride),
+              ],
               if (showActions && actionsWidget != null) ...[
                 const SizedBox(height: 12),
                 actionsWidget!,
@@ -325,29 +330,46 @@ class RideCalendarCard extends StatelessWidget {
     );
   }
 
+  /// A terse single-line icon + text row for the compact board card (client
+  /// name, pickup, dropoff). Truncates with an ellipsis so a long address can
+  /// never push the card past the column width.
+  Widget _compactInfoRow(BuildContext context, IconData icon, String value) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: colorScheme.onSurfaceVariant),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _locationRow(
     BuildContext context,
     IconData icon,
     String label,
-    String value, {
-    bool compact = false,
-  }) {
+    String value,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
-    // In compact mode the label prefix text is omitted so the Row fits in a
-    // narrow column — only the icon identifies the field.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 8),
-        if (!compact)
-          Text(
-            '$label: ',
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
           ),
+        ),
         Expanded(
           child: Text(
             value,
@@ -355,8 +377,6 @@ class RideCalendarCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
               color: colorScheme.onSurface,
             ),
-            maxLines: compact ? 1 : null,
-            overflow: compact ? TextOverflow.ellipsis : null,
           ),
         ),
       ],

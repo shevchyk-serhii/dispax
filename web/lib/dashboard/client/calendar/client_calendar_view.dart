@@ -77,22 +77,31 @@ class _ClientCalendarViewState extends State<ClientCalendarView> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // View type segmented button
+        // View type segmented button — stretched to the full width so the
+        // three segments share the row evenly (otherwise "Month" is wider than
+        // "Day" and the control looks misaligned).
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: SegmentedButton<CalendarViewType>(
-            segments: const [
-              ButtonSegment(
-                value: CalendarViewType.month,
-                label: Text('Month'),
-              ),
-              ButtonSegment(value: CalendarViewType.week, label: Text('Week')),
-              ButtonSegment(value: CalendarViewType.day, label: Text('Day')),
-            ],
-            selected: {_viewType},
-            onSelectionChanged: (selection) {
-              setState(() => _viewType = selection.first);
-            },
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<CalendarViewType>(
+              expandedInsets: EdgeInsets.zero,
+              segments: const [
+                ButtonSegment(
+                  value: CalendarViewType.month,
+                  label: Text('Month'),
+                ),
+                ButtonSegment(
+                  value: CalendarViewType.week,
+                  label: Text('Week'),
+                ),
+                ButtonSegment(value: CalendarViewType.day, label: Text('Day')),
+              ],
+              selected: {_viewType},
+              onSelectionChanged: (selection) {
+                setState(() => _viewType = selection.first);
+              },
+            ),
           ),
         ),
 

@@ -15,6 +15,7 @@ import 'client_ride_history_screen.dart';
 import 'client_home_screen.dart';
 import 'client_book_screen.dart';
 import '../../widgets/common/cancel_ride_dialog.dart';
+import '../../modules/core/models/person.dart';
 import '../../widgets/common/responsive_scaffold.dart';
 import '../../modules/ride_management/services/ride_service.dart';
 import '../../modules/ride_management/services/client_address_service.dart';
@@ -373,7 +374,7 @@ class MyRidesTab extends StatelessWidget {
   Future<void> _cancelRide(BuildContext context, Ride ride) async {
     final result = await showAdaptiveDialog<Map<String, dynamic>?>(
       context: context,
-      builder: (_) => const CancelRideDialog(isDispatcher: false),
+      builder: (_) => const CancelRideDialog(role: PersonRole.client),
     );
     if (result != null && context.mounted) {
       final rideService = RideService(

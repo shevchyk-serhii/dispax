@@ -283,10 +283,15 @@ void main() {
             body: SizedBox(
               width: 120,
               height: 400,
-              child: RideCalendarCard(
-                ride: ride,
-                compact: compact,
-                showActions: false,
+              // Mirror the real board: cards live in a vertically-scrolling
+              // list, so card height is intrinsic (never clipped). The 120 px
+              // width still exercises the HORIZONTAL overflow guard.
+              child: SingleChildScrollView(
+                child: RideCalendarCard(
+                  ride: ride,
+                  compact: compact,
+                  showActions: false,
+                ),
               ),
             ),
           ),
@@ -304,34 +309,23 @@ void main() {
       },
     );
 
-    testWidgets(
-      'long address is truncated (not rendered in full) in compact mode',
-      (tester) async {
-        await pumpCompact(tester, compact: true);
-        // The Text widgets for address/client have overflow:ellipsis set (i.e.
-        // they are configured for single-line truncation). Flutter's find.text()
-        // matches by the widget's data string, not by what is visually rendered,
-        // so we verify truncation by inspecting the Text widget's overflow
-        // property rather than checking find.text(longAddress) → findsNothing.
-        final overflowTexts = tester
-            .widgetList<Text>(find.byType(Text))
-            .where((t) => t.overflow == TextOverflow.ellipsis)
-            .toList();
-        expect(
-          overflowTexts,
-          isNotEmpty,
-          reason: 'compact mode must set overflow:ellipsis on value Text',
-        );
-        // All ellipsis texts must also have maxLines:1 enforced.
-        for (final t in overflowTexts) {
-          expect(
-            t.maxLines,
-            equals(1),
-            reason: 'compact Text must be single-line',
-          );
-        }
-      },
-    );
+    testWidgets('compact mode shows client name and route (single-line)', (
+      tester,
+    ) async {
+      // Compact cards now surface the client and the From → To route so the
+      // dispatcher can triage without opening details. The long unbreakable
+      // strings must still render WITHOUT overflow (Expanded + ellipsis),
+      // which the overflow guard above asserts; here we assert they're present.
+      await pumpCompact(tester, compact: true);
+      expect(find.text(longClientName), findsOneWidget);
+      // Both From and To use the same long address fixture, so it appears twice.
+      expect(find.text(longAddress), findsNWidgets(2));
+      // Each compact info row is capped at one line with an ellipsis.
+      for (final t in tester.widgetList<Text>(find.text(longAddress))) {
+        expect(t.maxLines, 1);
+        expect(t.overflow, TextOverflow.ellipsis);
+      }
+    });
 
     testWidgets(
       'compact false (default) at narrow width raises overflow (opt-in guard)',
@@ -352,6 +346,56 @@ void main() {
         pickupDateTime: DateTime(2026, 6, 22, 9, 30),
       );
       expect(find.text('09:30'), findsWidgets);
+    });
+
+    testWidgets('compact shows an airport flag for airport transfers', (
+      tester,
+    ) async {
+      final ride = Ride(
+        id: 'compact-air',
+        clientId: 'c1',
+        creatorId: 'u1',
+        companyId: 'co1',
+        pickupDateTime: DateTime(2026, 6, 22, 11, 0),
+        from: const Location(address: 'Hotel'),
+        to: const Location(address: 'MUC'),
+        clientName: 'Air Client',
+        status: RideStatus.assigned,
+        isAirportTransfer: true,
+        isArrival: true,
+        flightNumber: 'LH123',
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(useMaterial3: true),
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              height: 400,
+              child: RideCalendarCard(
+                ride: ride,
+                compact: true,
+                showActions: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      // A flight icon (arrival/departure or the generic flight) is shown.
+      final hasFlightIcon = find
+          .byIcon(ride.flightIconData ?? Icons.flight)
+          .evaluate()
+          .isNotEmpty;
+      expect(hasFlightIcon, isTrue);
+    });
+
+    testWidgets('compact shows NO airport flag for a normal ride', (
+      tester,
+    ) async {
+      await pumpCompact(tester, compact: true);
+      expect(find.byIcon(Icons.flight), findsNothing);
+      expect(find.byIcon(Icons.flight_land), findsNothing);
+      expect(find.byIcon(Icons.flight_takeoff), findsNothing);
     });
 
     testWidgets('compact with showActions:false renders no actionsWidget', (

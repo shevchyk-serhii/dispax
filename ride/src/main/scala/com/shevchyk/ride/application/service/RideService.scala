@@ -363,28 +363,42 @@ class RideServiceImpl(
       request: CancelRideRequest
   ): IO[RideError, Ride] =
     for {
-      ride <- getRideById(rideId)
-      _    <-
+      ride         <- getRideById(rideId)
+      _            <-
         ZIO
           .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled))
           .when(ride.status == RideStatus.Cancelled)
           .unit
-      _    <- ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.status == RideStatus.Completed).unit
+      _            <- ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.status == RideStatus.Completed).unit
       // Ownership: client can only cancel own rides, driver only assigned rides, dispatcher can cancel any
-      _    <- validateCancelPermission(ride, userId, userRole)
+      _            <- validateCancelPermission(ride, userId, userRole)
+      // The reason must be a known value and one this role is allowed to state. Defense-in-depth: the
+      // Flutter dialog already hides staff-only reasons from clients, but a forged request must be
+      // rejected here too (e.g. a client cannot cancel citing client_no_show or driver_unavailable).
+      reason       <- ZIO
+                        .fromOption(CancellationReason.fromString(request.reason))
+                        .orElseFail(RideError.ValidationError(s"Unknown cancellation reason: ${request.reason}"))
+      _            <-
+        ZIO
+          .fail(
+            RideError.ValidationError(s"Cancellation reason '${request.reason}' is not allowed for this role")
+          )
+          .when(!CancellationReason.allowedFor(reason, userRole))
+          .unit
       // A cancellation fee charges the client; a negative value would credit them instead.
       // Guard here too (not only at the HTTP validator) so direct callers can't bypass it.
-      _    <-
+      _            <-
         ZIO
           .fail(RideError.ValidationError("Cancellation fee cannot be negative"))
           .when(request.fee.exists(_ < 0))
           .unit
 
+      // Persist the canonical wire form so statistics group cleanly regardless of input casing.
       updatedRide   = ride
                         .focus(_.status)
                         .replace(RideStatus.Cancelled)
                         .focus(_.cancellationReason)
-                        .replace(Some(request.reason))
+                        .replace(Some(CancellationReason.toWire(reason)))
                         .focus(_.cancellationFee)
                         .replace(request.fee)
                         .focus(_.cancelledBy)

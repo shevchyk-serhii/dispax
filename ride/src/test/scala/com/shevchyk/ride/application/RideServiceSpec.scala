@@ -801,11 +801,11 @@ object RideServiceSpec extends ZIOSpecDefault {
                            ride.id,
                            testClientId,
                            PersonRole.Client,
-                           CancelRideRequest("no_show", Some(BigDecimal(10.00)))
+                           CancelRideRequest("client_request", Some(BigDecimal(10.00)))
                          )
           } yield assertTrue(
             cancelled.status == RideStatus.Cancelled &&
-              cancelled.cancellationReason.contains("no_show") &&
+              cancelled.cancellationReason.contains("client_request") &&
               cancelled.cancellationFee.contains(BigDecimal(10.00)) &&
               cancelled.cancelledBy.contains(testClientId)
           )
@@ -830,7 +830,7 @@ object RideServiceSpec extends ZIOSpecDefault {
                   ride.id,
                   testClientId,
                   PersonRole.Client,
-                  CancelRideRequest("no_show", Some(BigDecimal(-100.00)))
+                  CancelRideRequest("client_request", Some(BigDecimal(-100.00)))
                 )
                 .exit
             after   <- service.getRideById(ride.id)
@@ -860,7 +860,7 @@ object RideServiceSpec extends ZIOSpecDefault {
                                  ride.id,
                                  testClientId,
                                  PersonRole.Client,
-                                 CancelRideRequest("client_no_show", Some(BigDecimal(10.00)))
+                                 CancelRideRequest("client_request", Some(BigDecimal(10.00)))
                                )
                                .exit,
                              service
@@ -868,20 +868,20 @@ object RideServiceSpec extends ZIOSpecDefault {
                                  ride.id,
                                  pureDispatcherId,
                                  PersonRole.Dispatcher,
-                                 CancelRideRequest("dispatcher_cancel", Some(BigDecimal(25.00)))
+                                 CancelRideRequest("client_no_show", Some(BigDecimal(25.00)))
                                )
                                .exit
                            )
                          )
             finalRide <- service.getRideById(ride.id)
           } yield {
-            // The winner is fully self-consistent: client→no_show/10, dispatcher→cancel/25.
+            // The winner is fully self-consistent: client→client_request/10, dispatcher→client_no_show/25.
             val clientWon     =
-              finalRide.cancellationReason.contains("client_no_show") &&
+              finalRide.cancellationReason.contains("client_request") &&
                 finalRide.cancellationFee.contains(BigDecimal(10.00)) &&
                 finalRide.cancelledBy.contains(testClientId)
             val dispatcherWon =
-              finalRide.cancellationReason.contains("dispatcher_cancel") &&
+              finalRide.cancellationReason.contains("client_no_show") &&
                 finalRide.cancellationFee.contains(BigDecimal(25.00)) &&
                 finalRide.cancelledBy.contains(pureDispatcherId)
             assertTrue(
@@ -908,9 +908,93 @@ object RideServiceSpec extends ZIOSpecDefault {
             completed <- service.completeRide(started.id)
             result    <-
               service
-                .cancelRideWithReason(completed.id, testClientId, PersonRole.Client, CancelRideRequest("late"))
+                .cancelRideWithReason(
+                  completed.id,
+                  testClientId,
+                  PersonRole.Client,
+                  CancelRideRequest("client_request")
+                )
                 .exit
           } yield assertTrue(result.isFailure)
+        }.provide(standardLayers),
+        // A client may only state client-side reasons. Operational reasons (client no-show, driver
+        // unavailable, vehicle issue) are staff-only — a forged client request citing them must be
+        // rejected, and the ride must stay in its original status.
+        test("rejects a staff-only reason from a client") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B")
+                         )
+                       )
+            result  <-
+              service
+                .cancelRideWithReason(
+                  ride.id,
+                  testClientId,
+                  PersonRole.Client,
+                  CancelRideRequest("client_no_show")
+                )
+                .exit
+            after   <- service.getRideById(ride.id)
+          } yield assertTrue(
+            result.isFailure,
+            after.status != RideStatus.Cancelled
+          )
+        }.provide(standardLayers),
+        // The same operational reason a client is forbidden from stating is allowed for staff.
+        test("allows a staff-only reason from a dispatcher") {
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            cancelled <- service.cancelRideWithReason(
+                           ride.id,
+                           pureDispatcherId,
+                           PersonRole.Dispatcher,
+                           CancelRideRequest("client_no_show")
+                         )
+          } yield assertTrue(
+            cancelled.status == RideStatus.Cancelled,
+            cancelled.cancellationReason.contains("client_no_show")
+          )
+        }.provide(standardLayers),
+        // An unknown reason string is rejected for any role, leaving the ride unchanged.
+        test("rejects an unknown reason") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B")
+                         )
+                       )
+            result  <-
+              service
+                .cancelRideWithReason(
+                  ride.id,
+                  pureDispatcherId,
+                  PersonRole.Dispatcher,
+                  CancelRideRequest("not_a_real_reason")
+                )
+                .exit
+            after   <- service.getRideById(ride.id)
+          } yield assertTrue(
+            result.isFailure,
+            after.status != RideStatus.Cancelled
+          )
         }.provide(standardLayers)
       ),
       suite("updateRideStatus")(
@@ -1958,10 +2042,20 @@ object RideServiceSpec extends ZIOSpecDefault {
                            dropoffLocation = Location("D")
                          )
                        )
-            _       <- service.cancelRideWithReason(ride1.id, testClientId, PersonRole.Client, CancelRideRequest("no_show"))
-            _       <- service.cancelRideWithReason(ride2.id, testClientId, PersonRole.Client, CancelRideRequest("no_show"))
+            _       <- service.cancelRideWithReason(
+                         ride1.id,
+                         testClientId,
+                         PersonRole.Client,
+                         CancelRideRequest("client_request")
+                       )
+            _       <- service.cancelRideWithReason(
+                         ride2.id,
+                         testClientId,
+                         PersonRole.Client,
+                         CancelRideRequest("client_request")
+                       )
             stats   <- service.getCancellationStats(testCompanyId)
-          } yield assertTrue(stats.getOrElse("no_show", 0) >= 2)
+          } yield assertTrue(stats.getOrElse("client_request", 0) >= 2)
         }.provide(standardLayers)
       ),
       // -- Edge cases added by test audit 2026-06 -------------------------------

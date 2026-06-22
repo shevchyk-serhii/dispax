@@ -140,6 +140,11 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
                   backgroundColor: AppColors.success,
                 ),
               );
+              // The ride is persisted, so the form holds no unsaved details
+              // anymore. Clear it before navigating away, otherwise isModified
+              // stays true and the "Discard changes?" dialog wrongly appears on
+              // the next leave from the Book tab.
+              ctx.read<CreateRideFormBloc>().add(const FormCleared());
               widget.onCreated?.call();
             } else if (state.status == RideStateStatus.error) {
               ScaffoldMessenger.of(ctx).showSnackBar(
@@ -474,15 +479,28 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final vp = MediaQuery.of(context).viewInsets.bottom;
+    // The sheet height is made keyboard-aware: we reserve the keyboard inset
+    // via the outer Padding AND cap the content to 90% of the *visible* (above
+    // the keyboard) height. This keeps the search field, the results list and
+    // the Confirm button sharing the space above the keyboard, so the list does
+    // not collapse to a single row. (A previous attempt wrapped a full-height
+    // DraggableScrollableSheet in this padding, which double-counted the inset
+    // and overflowed by a few pixels — that's why the cap below is required.)
+    final screenHeight = MediaQuery.of(context).size.height;
+    // Clamp the inset to the screen height so an over-large reported keyboard
+    // (or test geometry) can't drive the sheet height negative and trip a
+    // BoxConstraints assertion, nor push the bottom padding past the screen.
+    final keyboardInset = MediaQuery.of(
+      context,
+    ).viewInsets.bottom.clamp(0.0, screenHeight);
+    // Height available above the keyboard, capped at 90% of it.
+    final maxSheetHeight = (screenHeight - keyboardInset) * 0.9;
     return Padding(
-      padding: EdgeInsets.only(bottom: vp),
-      child: DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        builder: (ctx, scrollCtrl) => Column(
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxSheetHeight),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
             Container(
@@ -524,7 +542,6 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
             if (_loading) const LinearProgressIndicator(minHeight: 2),
             Expanded(
               child: ListView(
-                controller: scrollCtrl,
                 padding: EdgeInsets.zero,
                 children: [
                   if (_suggestions.isNotEmpty) ...[
@@ -557,6 +574,8 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
               ),
             ),
             Padding(
+              // Keyboard inset is reserved by the outer Padding, so the button
+              // only needs its own bottom margin here (no double counting).
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: SizedBox(
                 width: double.infinity,

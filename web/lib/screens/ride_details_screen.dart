@@ -534,11 +534,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
   Future<void> _cancelRide(BuildContext context) async {
     final authState = context.read<AuthBloc>().state;
-    final isDispatcher = authState.user?.role == PersonRole.dispatcher;
+    // Default to the most-restricted role (client) when unknown, so a missing
+    // role never unlocks staff-only cancellation reasons.
+    final role = authState.user?.role ?? PersonRole.client;
 
     final result = await showAdaptiveDialog<Map<String, dynamic>?>(
       context: context,
-      builder: (_) => CancelRideDialog(isDispatcher: isDispatcher),
+      builder: (_) => CancelRideDialog(role: role),
     );
 
     if (result != null && mounted) {

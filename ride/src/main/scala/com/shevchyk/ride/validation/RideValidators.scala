@@ -198,8 +198,17 @@ given cancelRideApiRequestValidator: Validator[CancelRideApiRequest] with
 
   def validate(request: CancelRideApiRequest): IO[RideError, CancelRideApiRequest] =
     for {
+      _ <- validateReason(request.reason)
       _ <- validateFee(request.fee)
     } yield request
+
+  // The reason must be one of the known CancellationReason values. Role-specific allowance
+  // (clients cannot state staff-only reasons) is enforced in RideService, which knows the caller's role.
+  private def validateReason(reason: String): IO[RideError, Unit] =
+    ZIO
+      .fromOption(CancellationReason.fromString(reason))
+      .orElseFail(RideError.ValidationError(s"Unknown cancellation reason: $reason"))
+      .unit
 
   // A cancellation fee is a charge to the client, never a refund: a negative
   // value would credit the client instead of charging them. Zero is allowed

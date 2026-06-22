@@ -4,7 +4,7 @@
         patrol-test-android patrol-test-ios \
         emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
-        dev-all dev-sim free-port stop-dev \
+        dev-all dev-sim dev-roles free-port stop-dev \
         deploy logs setup-hooks \
         load-test
 
@@ -45,6 +45,17 @@ FLUTTER_STARTUP_DELAY := 8
 # Booted iOS simulator UDID used by `make dev-sim`. Override if you boot a
 # different simulator: `make dev-sim IOS_SIM=<udid>` (find it via `flutter devices`).
 IOS_SIM        := 09021E1A-BC6A-4D86-A2EA-06A5894E4AEC
+# `make dev-roles` runs the app on three dedicated, NAMED iPhone 17 Pro Max
+# simulators so each role is instantly recognisable by the simulator window
+# title (otherwise three identical 17 Pro Max devices are impossible to tell
+# apart). The simulators are created on first use and reused afterwards — see the
+# `_ensure_sim` shell helper inside the dev-roles recipe. Override the device
+# model or iOS runtime if needed.
+SIM_DEVICE_TYPE := com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max
+SIM_RUNTIME     := com.apple.CoreSimulator.SimRuntime.iOS-26-1
+SIM_NAME_CLIENT     := Dispax Client
+SIM_NAME_DRIVER     := Dispax Driver
+SIM_NAME_DISPATCHER := Dispax Dispatcher
 PATROL         := $(HOME)/.pub-cache/bin/patrol
 ADB            := $(HOME)/Library/Android/sdk/platform-tools/adb
 # AVD launched by `emulator-up` if no device is connected. Override: ANDROID_AVD=Pixel_7 make e2e-fast
@@ -522,6 +533,58 @@ dev-sim: free-port
 	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(IOS_SIM) \
 		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
+
+# Start local backend + the app on THREE dedicated iPhone 17 Pro Max simulators
+# at once (client / driver / dispatcher) so all roles can be tested side by side
+# from one command. Each simulator is NAMED ("Dispax Client/Driver/Dispatcher")
+# so the role is obvious from the simulator window title — three identical
+# 17 Pro Max devices are otherwise indistinguishable. The simulators are created
+# on first run and reused after.
+#
+# The MAPBOX_ACCESS_TOKEN + API_BASE_URL are baked into the build via
+# --dart-define, which is why the map/geocoding work here but fail when the app
+# is launched from the IDE without those defines (Mapbox returns 401).
+#
+# Each simulator gets its OWN build carrying --dart-define=DEV_AUTOLOGIN=<role>,
+# so the app auto-logs-in the matching test account and opens straight into that
+# role — no manual login. (The role is baked into the binary, hence one build per
+# role.) API_BASE_URL + MAPBOX_ACCESS_TOKEN are baked in too, so map/geocoding
+# work — they fail when launched from the IDE without these defines (Mapbox 401).
+# Builds are sequential (Flutter shares one build dir); the simulators stay
+# booted between runs so re-running is faster. Stop with `make stop-dev`.
+dev-roles: free-port
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
+	@echo "⏳ Waiting for backend on :8080..."
+	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
+	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
+	@sleep $(FLUTTER_STARTUP_DELAY)
+	@ensure_sim() { \
+		local name="$$1"; local udid; \
+		udid=$$(xcrun simctl list devices --json 2>/dev/null | python3 -c "import sys,json; n=sys.argv[1]; t='$(SIM_DEVICE_TYPE)'; d=json.load(sys.stdin); print(next((x['udid'] for rt in d['devices'].values() for x in rt if x['name']==n and x.get('deviceTypeIdentifier')==t), ''))" "$$name"); \
+		if [ -z "$$udid" ]; then \
+			echo "📲 Creating simulator \"$$name\" (17 Pro Max)..." 1>&2; \
+			udid=$$(xcrun simctl create "$$name" "$(SIM_DEVICE_TYPE)" "$(SIM_RUNTIME)"); \
+		fi; \
+		echo "$$udid"; \
+	}; \
+	APP="$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app"; \
+	for pair in "$(SIM_NAME_CLIENT):client" "$(SIM_NAME_DRIVER):driver" "$(SIM_NAME_DISPATCHER):dispatcher"; do \
+		name="$${pair%:*}"; autorole="$${pair##*:}"; \
+		udid=$$(ensure_sim "$$name"); \
+		echo "🔨 Building for $$name (autologin=$$autorole)..."; \
+		( cd $(FLUTTER_DIR) && $(FLUTTER) build ios --debug --simulator \
+			--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
+			--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) \
+			--dart-define=DEV_AUTOLOGIN=$$autorole ); \
+		echo "🚀 $$name → $$udid"; \
+		xcrun simctl boot "$$udid" 2>/dev/null || true; \
+		xcrun simctl install "$$udid" "$$APP"; \
+		xcrun simctl launch "$$udid" de.dispax.app; \
+	done; \
+	open -a Simulator
+	@echo "✅ App running on 3 named simulators, each auto-logged-in to its role."
+	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
+	@wait
 
 # Kill all dev processes (backend + flutter)
 stop-dev:
