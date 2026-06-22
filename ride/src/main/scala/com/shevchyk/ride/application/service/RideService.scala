@@ -85,6 +85,20 @@ trait RideService:
       anchorDate: java.time.LocalDate
   ): IO[RideError, DriverEarningsReport]
 
+  /**
+   * Set the final price on a ride.
+   *
+   * Authorization: Dispatcher may set price on any company ride; a Driver may set price only on a ride assigned to
+   * them. Tenant isolation: companyId comes from JWT, never from the request.
+   */
+  def setRidePrice(
+      rideId: RideId,
+      price: Double,
+      userId: PersonId,
+      userRole: PersonRole,
+      companyId: CompanyId
+  ): IO[RideError, Ride]
+
 class RideServiceImpl(
     rideRepository: RideRepository,
     personRepository: PersonRepository,
@@ -777,6 +791,33 @@ class RideServiceImpl(
       cancelledRides = earnings.cancelledRides,
       buckets = rawBuckets.map((start, amount) => EarningsBucket(start, amount))
     )
+
+  def setRidePrice(
+      rideId: RideId,
+      price: Double,
+      userId: PersonId,
+      userRole: PersonRole,
+      companyId: CompanyId
+  ): IO[RideError, Ride] =
+    for {
+      // Reject negative price (a price of zero is allowed to clear a disputed charge).
+      _          <- ZIO.fail(RideError.ValidationError("Price cannot be negative")).when(price < 0).unit
+      ride       <- getRideById(rideId)
+      // Tenant isolation: the ride must belong to the caller's company.
+      _          <-
+        ZIO
+          .fail(RideError.UnauthorizedAccess(userId, rideId))
+          .when(ride.companyId != companyId)
+          .unit
+      // Authorization: a Driver may only set price on a ride assigned to them.
+      _          <-
+        ZIO
+          .fail(RideError.UnauthorizedAccess(userId, rideId))
+          .when(userRole == PersonRole.Driver && !ride.driverId.contains(userId))
+          .unit
+      updatedRide = ride.focus(_.finalPrice).replace(Some(BigDecimal(price)))
+      persisted  <- rideRepository.update(updatedRide).mapDatabaseError
+    } yield persisted
 
   /**
    * Computes the half-open interval [from, to) and the bucket granularity for the period. All boundaries are in UTC to

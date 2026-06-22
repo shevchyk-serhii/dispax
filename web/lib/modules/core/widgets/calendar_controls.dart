@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum CalendarViewType { month, week, day }
+enum CalendarViewType { month, week, day, multiColumn }
 
 class CalendarControls extends StatelessWidget {
   final DateTime selectedDay;
@@ -82,6 +82,7 @@ class CalendarControls extends StatelessWidget {
           return '${_getMonthName(startOfWeek.month)} ${startOfWeek.day} - ${_getMonthName(endOfWeek.month)} ${endOfWeek.day}, ${startOfWeek.year}';
         }
       case CalendarViewType.day:
+      case CalendarViewType.multiColumn:
         return '${_getDayName(date.weekday)}, ${_getMonthName(date.month)} ${date.day}, ${date.year}';
     }
   }
@@ -94,6 +95,8 @@ class CalendarControls extends StatelessWidget {
         return 'Week View';
       case CalendarViewType.day:
         return 'Day View';
+      case CalendarViewType.multiColumn:
+        return 'Board';
     }
   }
 
