@@ -40,9 +40,7 @@ Future<void> _pump(WidgetTester tester, _MockRideBloc rideBloc) async {
       theme: ThemeData(useMaterial3: true),
       home: BlocProvider<RideBloc>.value(
         value: rideBloc,
-        child: const Scaffold(
-          body: ClientCalendarView(onRideSelected: _noop),
-        ),
+        child: const Scaffold(body: ClientCalendarView(onRideSelected: _noop)),
       ),
     ),
   );
@@ -78,20 +76,23 @@ void main() {
       expect(find.byType(MonthViewWidget), findsOneWidget);
     });
 
-    testWidgets('does not render WeekViewWidget or ClientDayViewWidget initially',
-        (tester) async {
-      addTearDown(tester.view.resetPhysicalSize);
-      await _pump(tester, rideBloc);
-      expect(find.byType(WeekViewWidget), findsNothing);
-      expect(find.byType(ClientDayViewWidget), findsNothing);
-    });
+    testWidgets(
+      'does not render WeekViewWidget or ClientDayViewWidget initially',
+      (tester) async {
+        addTearDown(tester.view.resetPhysicalSize);
+        await _pump(tester, rideBloc);
+        expect(find.byType(WeekViewWidget), findsNothing);
+        expect(find.byType(ClientDayViewWidget), findsNothing);
+      },
+    );
   });
 
   // ── View-type switching ────────────────────────────────────────────────────
 
   group('ClientCalendarView — view-type segmented button', () {
-    testWidgets("tapping 'Week' segment switches to WeekViewWidget",
-        (tester) async {
+    testWidgets("tapping 'Week' segment switches to WeekViewWidget", (
+      tester,
+    ) async {
       addTearDown(tester.view.resetPhysicalSize);
       await _pump(tester, rideBloc);
 
@@ -102,8 +103,9 @@ void main() {
       expect(find.byType(MonthViewWidget), findsNothing);
     });
 
-    testWidgets("tapping 'Day' segment switches to ClientDayViewWidget",
-        (tester) async {
+    testWidgets("tapping 'Day' segment switches to ClientDayViewWidget", (
+      tester,
+    ) async {
       addTearDown(tester.view.resetPhysicalSize);
       await _pump(tester, rideBloc);
 
@@ -114,20 +116,22 @@ void main() {
       expect(find.byType(MonthViewWidget), findsNothing);
     });
 
-    testWidgets("tapping 'Month' after switching view returns to MonthViewWidget",
-        (tester) async {
-      addTearDown(tester.view.resetPhysicalSize);
-      await _pump(tester, rideBloc);
+    testWidgets(
+      "tapping 'Month' after switching view returns to MonthViewWidget",
+      (tester) async {
+        addTearDown(tester.view.resetPhysicalSize);
+        await _pump(tester, rideBloc);
 
-      // Switch to Day first, then back to Month.
-      await tester.tap(find.text('Day'));
-      await tester.pumpAndSettle();
-      expect(find.byType(ClientDayViewWidget), findsOneWidget);
+        // Switch to Day first, then back to Month.
+        await tester.tap(find.text('Day'));
+        await tester.pumpAndSettle();
+        expect(find.byType(ClientDayViewWidget), findsOneWidget);
 
-      await tester.tap(find.text('Month'));
-      await tester.pumpAndSettle();
-      expect(find.byType(MonthViewWidget), findsOneWidget);
-    });
+        await tester.tap(find.text('Month'));
+        await tester.pumpAndSettle();
+        expect(find.byType(MonthViewWidget), findsOneWidget);
+      },
+    );
   });
 
   // ── CalendarControls navigation in month view ──────────────────────────────
@@ -139,22 +143,20 @@ void main() {
       // Make sure we are in month view (default).
       expect(find.byType(MonthViewWidget), findsOneWidget);
 
-      // Read the current month label from CalendarControls.
+      // The month label appears exactly once now — TableCalendar's built-in
+      // header is hidden, so only CalendarControls renders "June 2026".
       final now = DateTime.now();
       final currentMonthYear = _monthYear(now);
-      // The month label may appear in both CalendarControls and
-      // MonthViewWidget/TableCalendar header — at least one occurrence is enough.
-      expect(find.text(currentMonthYear), findsWidgets);
+      expect(find.text(currentMonthYear), findsOneWidget);
 
-      // Tap the next (chevron_right) button in CalendarControls.
-      // Use .first because MonthViewWidget (TableCalendar) also contains
-      // a chevron_right icon for its own header navigation.
-      await tester.tap(find.byIcon(Icons.chevron_right).first);
+      // There is a single next (chevron_right) arrow — the one in
+      // CalendarControls.
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.chevron_right));
       await tester.pumpAndSettle();
 
       final nextMonth = DateTime(now.year, now.month + 1, 1);
-      // Next month appears somewhere in the tree.
-      expect(find.text(_monthYear(nextMonth)), findsWidgets);
+      expect(find.text(_monthYear(nextMonth)), findsOneWidget);
       // Current month label is no longer present.
       expect(find.text(currentMonthYear), findsNothing);
     });
@@ -165,14 +167,14 @@ void main() {
 
       final now = DateTime.now();
       final currentMonthYear = _monthYear(now);
-      expect(find.text(currentMonthYear), findsWidgets);
+      expect(find.text(currentMonthYear), findsOneWidget);
 
-      // Use .first for the same reason as chevron_right above.
-      await tester.tap(find.byIcon(Icons.chevron_left).first);
+      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pumpAndSettle();
 
       final prevMonth = DateTime(now.year, now.month - 1, 1);
-      expect(find.text(_monthYear(prevMonth)), findsWidgets);
+      expect(find.text(_monthYear(prevMonth)), findsOneWidget);
       expect(find.text(currentMonthYear), findsNothing);
     });
   });
