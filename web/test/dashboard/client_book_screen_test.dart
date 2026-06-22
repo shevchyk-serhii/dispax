@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dispax/blocs/auth/auth_bloc.dart';
 import 'package:dispax/blocs/auth/auth_event.dart';
@@ -222,5 +224,92 @@ void main() {
       // keyboard inset is applied.
       expect(tester.takeException(), isNull);
     });
+  });
+
+  // Regression: after a ride was created successfully, the form was left with
+  // the entered addresses, so isModified stayed true and the "Discard changes?"
+  // dialog wrongly appeared the next time the user left the Book tab. The screen
+  // must clear the form (FormCleared) when RideBloc reports `created`.
+  group('Form is cleared after a successful booking', () {
+    late _MockAuthBloc authBloc;
+    late _MockRideBloc rideBloc;
+    late _MockApiClient apiClient;
+    late CreateRideFormBloc formBloc;
+
+    setUp(() {
+      authBloc = _MockAuthBloc();
+      rideBloc = _MockRideBloc();
+      apiClient = _MockApiClient();
+      formBloc = CreateRideFormBloc();
+
+      when(() => authBloc.apiClient).thenReturn(apiClient);
+      when(() => authBloc.state).thenReturn(AuthState.authenticated(_client()));
+      when(
+        () => apiClient.post(any(), any()),
+      ).thenAnswer((_) async => http.Response('{}', 200));
+    });
+
+    tearDown(() => formBloc.close());
+
+    testWidgets(
+      'RideStateStatus.created clears the form (no unsaved details)',
+      (tester) async {
+        // Drive RideBloc's state stream by hand so we control exactly when the
+        // `created` transition happens — and so we can close it cleanly at the
+        // end (a Stream.fromIterable races MockBloc's own sink on teardown).
+        final rideStates = StreamController<RideState>.broadcast();
+        addTearDown(rideStates.close);
+        whenListen(
+          rideBloc,
+          rideStates.stream,
+          initialState: RideState.loaded(const []),
+        );
+
+        var onCreatedCalls = 0;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BlocProvider<AuthBloc>.value(
+                value: authBloc,
+                child: ClientBookScreen(
+                  formBloc: formBloc,
+                  rideBloc: rideBloc,
+                  onCreated: () => onCreatedCalls++,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The form starts dirty: the client is preselected on mount and both
+        // addresses are filled, exactly as it is right before a successful
+        // booking. Use a plain pump (not pumpAndSettle) — the estimate calls
+        // fire-and-forget futures that pumpAndSettle would wait on forever.
+        formBloc.add(const FromAddressChanged('Maximilianstraße 10'));
+        formBloc.add(const ToAddressChanged('Flughafen München Terminal 2'));
+        await tester.pump();
+        expect(
+          formBloc.state.isModified,
+          isTrue,
+          reason: 'precondition: the form has unsaved details before booking',
+        );
+
+        // RideBloc reports a successful creation.
+        rideStates.add(const RideState(status: RideStateStatus.created));
+        await tester.pump();
+
+        // The booking flow ran: the success callback fired and, crucially, the
+        // form was reset so nothing counts as unsaved anymore.
+        expect(onCreatedCalls, 1);
+        expect(
+          formBloc.state.isModified,
+          isFalse,
+          reason: 'a persisted ride leaves no unsaved details to discard',
+        );
+        expect(formBloc.state.fromAddress, isEmpty);
+        expect(formBloc.state.toAddress, isEmpty);
+      },
+    );
   });
 }
