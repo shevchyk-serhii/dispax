@@ -18,6 +18,12 @@ GCP_REGION := europe-west1
 GCP_SERVICE := dispax
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/dispax-docker/dispax-server:latest
 FLUTTER_DIR    := web
+# Mapbox public token (geocoding/address autocomplete + maps SDK). Read from
+# .env.dev and passed to every `flutter run`/`build` via --dart-define so the
+# in-app MapboxService.suggestAddresses/geocodeAddress actually work. Override
+# from the environment or the make CLI (`make flutter-dev MAPBOX_ACCESS_TOKEN=…`);
+# empty when .env.dev is absent (e.g. CI) — the app degrades gracefully.
+MAPBOX_ACCESS_TOKEN ?= $(shell grep -E '^MAPBOX_ACCESS_TOKEN=' .env.dev 2>/dev/null | cut -d= -f2-)
 # Run Flutter/Dart through FVM when it is installed and the project pins a
 # version (web/.fvmrc → Flutter 3.44.2, matching .github/workflows/ci.yml), so
 # `make fmt`/test targets use the same formatter/SDK as CI. Falls back to the

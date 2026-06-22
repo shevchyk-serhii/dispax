@@ -19,9 +19,9 @@ import 'dashboard/dashboard_screen.dart';
 import 'modules/ride_management/services/ride_service.dart';
 import 'modules/ride_management/models/ride.dart';
 import 'modules/schedule_management/services/schedule_service.dart';
+import 'modules/core/services/mapbox_service.dart';
 import 'modules/core/services/websocket_service.dart';
 import 'modules/core/services/push_notification_service.dart';
-import 'modules/core/services/mapbox_service.dart';
 
 import 'blocs/app_state/app_state_bloc.dart';
 import 'theme/app_theme.dart';
@@ -84,8 +84,8 @@ void main() async {
   // Mapbox Maps is not supported on web; its initializer calls
   // bool.fromEnvironment non-const, which throws on the DDC/web compiler
   // and crashes main() before runApp (white screen). Skip it on web.
-  if (!kIsWeb) {
-    MapboxOptions.setAccessToken(MapboxService.accessToken);
+  if (!kIsWeb && MapboxService.accessTokenOrEmpty.isNotEmpty) {
+    MapboxOptions.setAccessToken(MapboxService.accessTokenOrEmpty);
   }
 
   try {
