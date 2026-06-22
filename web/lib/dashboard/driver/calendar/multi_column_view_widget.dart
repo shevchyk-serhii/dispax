@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
+import '../../../constants/app_dimensions.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../modules/core/navigation_helper.dart';
 import 'widgets/ride_calendar_card.dart';
 
-/// Multi-column calendar board: shows up to 3 drivers' rides side by side for a
-/// given day. Each column is headed by the driver's name.
+/// Multi-column calendar board: shows drivers' rides side by side for a given
+/// day. Each column is headed by the driver's name.
+///
+/// Layout is responsive: on wide screens (>= [AppDimensions.breakpointDesktop])
+/// up to 3 columns share the full width via [Expanded] and a "+N more" indicator
+/// is shown when more drivers exist. On narrow screens (phones) every driver is
+/// rendered as a fixed-width column inside a horizontal scroll view, so the
+/// columns stay wide enough for the compact ride cards to fit.
 ///
 /// Uses a local [FutureBuilder] (not [RideBloc]) so it doesn't interfere with
 /// the live-ETA stream. The future is re-fetched when [selectedDay] or [drivers]
@@ -36,6 +43,11 @@ class MultiColumnViewWidget extends StatefulWidget {
 
 class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
   static const int _maxColumns = 3;
+
+  /// Fixed column width used on narrow screens. Keeps each column wide enough
+  /// for the compact ride card (time + price) and lets ~2 columns show at once,
+  /// with the rest reachable by horizontal scroll.
+  static const double _narrowColumnWidth = 200;
 
   late Future<List<Ride>> _ridesFuture;
   late RideService _rideService;
@@ -65,7 +77,9 @@ class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
   }
 
   Future<List<Ride>> _fetchRides() {
-    final ids = widget.drivers.take(_maxColumns).map((d) => d.id).toList();
+    // Fetch for every driver: on narrow screens all columns are shown (scrolled
+    // horizontally), so we must not cap the fetch to the first few.
+    final ids = widget.drivers.map((d) => d.id).toList();
     return _rideService.getRidesByDrivers(ids, widget.selectedDay);
   }
 
@@ -93,7 +107,13 @@ class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final visibleDrivers = widget.drivers.take(_maxColumns).toList();
+    final isNarrow =
+        MediaQuery.of(context).size.width < AppDimensions.breakpointDesktop;
+    // Narrow screens scroll horizontally and show every driver; wide screens
+    // cap to [_maxColumns] columns that share the full width.
+    final visibleDrivers = isNarrow
+        ? widget.drivers
+        : widget.drivers.take(_maxColumns).toList();
     final extraCount = widget.drivers.length - visibleDrivers.length;
 
     return Column(
@@ -146,24 +166,44 @@ class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
                 );
               }
               final allRides = snapshot.data ?? [];
+
+              List<Ride> ridesFor(Person driver) =>
+                  allRides.where((r) => r.driverId == driver.id).toList()..sort(
+                    (a, b) => a.pickupDateTime.compareTo(b.pickupDateTime),
+                  );
+
+              _DriverColumn columnFor(Person driver) => _DriverColumn(
+                driver: driver,
+                rides: ridesFor(driver),
+                onRideSelected: widget.onRideSelected,
+                onPriceEdited: _handlePriceEdited,
+              );
+
+              if (isNarrow) {
+                // Fixed-width columns inside a horizontal scroll view so each
+                // column stays wide enough and overflowing drivers are reachable
+                // by scrolling instead of being hidden behind "+N more".
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: visibleDrivers
+                        .map(
+                          (driver) => SizedBox(
+                            width: _narrowColumnWidth,
+                            child: columnFor(driver),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                );
+              }
+
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: visibleDrivers.map((driver) {
-                  final driverRides =
-                      allRides.where((r) => r.driverId == driver.id).toList()
-                        ..sort(
-                          (a, b) =>
-                              a.pickupDateTime.compareTo(b.pickupDateTime),
-                        );
-                  return Expanded(
-                    child: _DriverColumn(
-                      driver: driver,
-                      rides: driverRides,
-                      onRideSelected: widget.onRideSelected,
-                      onPriceEdited: _handlePriceEdited,
-                    ),
-                  );
-                }).toList(),
+                children: visibleDrivers
+                    .map((driver) => Expanded(child: columnFor(driver)))
+                    .toList(),
               );
             },
           ),
