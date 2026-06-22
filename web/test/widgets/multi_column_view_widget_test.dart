@@ -350,7 +350,7 @@ void main() {
       },
     );
 
-    testWidgets('time rail renders HH:mm text beside each card', (
+    testWidgets('each card shows the pickup HH:mm in its header', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(400, 800);
@@ -369,7 +369,9 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      // "14:00" must appear — either from the time rail or the compact card header.
+      // The left time rail was removed (it was redundant and caused the card to
+      // overflow on the right); the pickup time now comes from the compact card
+      // header only.
       expect(find.text('14:00'), findsWidgets);
     });
   });

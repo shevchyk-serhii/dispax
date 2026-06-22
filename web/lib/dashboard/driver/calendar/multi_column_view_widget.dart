@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/ride_management/models/ride.dart';
@@ -238,38 +237,16 @@ class _DriverColumn extends StatelessWidget {
                     itemCount: rides.length,
                     itemBuilder: (context, index) {
                       final ride = rides[index];
-                      final colorScheme = Theme.of(context).colorScheme;
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Left time rail: shows pickup time anchored to each card.
-                          SizedBox(
-                            width: 36,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 10),
-                              child: Text(
-                                DateFormat.Hm().format(ride.pickupDateTime),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Card takes remaining column width.
-                          Expanded(
-                            child: RideCalendarCard(
-                              ride: ride,
-                              onTap: () => onRideSelected(ride),
-                              onPriceEdited: (price) =>
-                                  onPriceEdited(ride, price),
-                              showActions: false,
-                              compact: true,
-                            ),
-                          ),
-                        ],
+                      // The card spans the full column width — the pickup time
+                      // is already shown inside the card, so the old left time
+                      // rail was redundant (and stealing 36px, which caused the
+                      // card content to overflow on the right).
+                      return RideCalendarCard(
+                        ride: ride,
+                        onTap: () => onRideSelected(ride),
+                        onPriceEdited: (price) => onPriceEdited(ride, price),
+                        showActions: false,
+                        compact: true,
                       );
                     },
                   ),
