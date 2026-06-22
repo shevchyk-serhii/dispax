@@ -304,34 +304,20 @@ void main() {
       },
     );
 
-    testWidgets(
-      'long address is truncated (not rendered in full) in compact mode',
-      (tester) async {
-        await pumpCompact(tester, compact: true);
-        // The Text widgets for address/client have overflow:ellipsis set (i.e.
-        // they are configured for single-line truncation). Flutter's find.text()
-        // matches by the widget's data string, not by what is visually rendered,
-        // so we verify truncation by inspecting the Text widget's overflow
-        // property rather than checking find.text(longAddress) → findsNothing.
-        final overflowTexts = tester
-            .widgetList<Text>(find.byType(Text))
-            .where((t) => t.overflow == TextOverflow.ellipsis)
-            .toList();
-        expect(
-          overflowTexts,
-          isNotEmpty,
-          reason: 'compact mode must set overflow:ellipsis on value Text',
-        );
-        // All ellipsis texts must also have maxLines:1 enforced.
-        for (final t in overflowTexts) {
-          expect(
-            t.maxLines,
-            equals(1),
-            reason: 'compact Text must be single-line',
-          );
-        }
-      },
-    );
+    testWidgets('compact mode renders no client name or address text at all', (
+      tester,
+    ) async {
+      // Compact cards show only time + price; the client/location rows are
+      // omitted entirely (they open on tap). This is the regression guard:
+      // the long unbreakable client/address strings that used to stack one
+      // letter per line must not be in the tree.
+      await pumpCompact(tester, compact: true);
+      expect(find.textContaining(longClientName), findsNothing);
+      expect(find.textContaining(longAddress), findsNothing);
+      expect(find.textContaining('Client'), findsNothing);
+      expect(find.textContaining('From'), findsNothing);
+      expect(find.textContaining('To'), findsNothing);
+    });
 
     testWidgets(
       'compact false (default) at narrow width raises overflow (opt-in guard)',

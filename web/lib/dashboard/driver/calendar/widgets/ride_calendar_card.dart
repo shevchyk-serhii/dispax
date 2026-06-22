@@ -11,11 +11,12 @@ import 'ride_badges.dart';
 /// [onPriceEdited] on confirm. When [showActions] is false (board view) the
 /// Start/Complete action buttons are hidden.
 ///
-/// When [compact] is true the card uses reduced padding, a stacked header
-/// (time above price/status), single-line truncated location rows, and hides
-/// the estimated-duration chip and requirements badge. This prevents layout
-/// overflow in the multi-column board view where each column is only ~1/3 of
-/// the screen width.
+/// When [compact] is true the card shows only the essentials — pickup time and
+/// price — with reduced padding. The ride status is conveyed by the card's
+/// border/background colour rather than a badge, and the client/location rows,
+/// status chips and requirements are omitted entirely. Full details open on
+/// tap. This prevents layout overflow in the narrow multi-column board view
+/// where each column is only a fraction of the screen width.
 class RideCalendarCard extends StatelessWidget {
   final Ride ride;
 
@@ -32,9 +33,10 @@ class RideCalendarCard extends StatelessWidget {
   /// Supplied by the parent so this card has no direct dependency on RideBloc.
   final Widget? actionsWidget;
 
-  /// When true, applies a compact layout: reduced padding, stacked header,
-  /// single-line text truncation, and hidden duration chip / requirements.
-  /// Defaults to false so the day-view is byte-for-byte unchanged.
+  /// When true, applies a compact layout for the narrow board view: reduced
+  /// padding and only time + price (status as the card colour); client/location
+  /// rows, chips and requirements are omitted. Defaults to false so the day-view
+  /// is byte-for-byte unchanged.
   final bool compact;
 
   const RideCalendarCard({
@@ -220,7 +222,10 @@ class RideCalendarCard extends StatelessWidget {
                   ],
                 )
               else
-                // Compact header: time on first line, price + status on second.
+                // Compact body: only time + price. Status is shown via the
+                // card's border/background colour; full details open on tap.
+                // Nothing else is rendered so the card never overflows a narrow
+                // board column.
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -232,88 +237,54 @@ class RideCalendarCard extends StatelessWidget {
                         color: colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (ride.price != null || onPriceEdited != null)
-                          GestureDetector(
-                            onTap: onPriceEdited != null
-                                ? () => _showPriceDialog(context)
-                                : null,
-                            child: ride.price != null
-                                ? Text(
-                                    '€${ride.price!.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: colorScheme.onSurfaceVariant,
-                                      decoration: onPriceEdited != null
-                                          ? TextDecoration.underline
-                                          : null,
-                                    ),
-                                  )
-                                : Text(
-                                    'Set price',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontStyle: FontStyle.italic,
-                                      color: colorScheme.onSurfaceVariant
-                                          .withAlpha(153),
-                                      decoration: TextDecoration.underline,
-                                    ),
+                    if (ride.price != null || onPriceEdited != null) ...[
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: onPriceEdited != null
+                            ? () => _showPriceDialog(context)
+                            : null,
+                        child: ride.price != null
+                            ? Text(
+                                '€${ride.price!.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onSurfaceVariant,
+                                  decoration: onPriceEdited != null
+                                      ? TextDecoration.underline
+                                      : null,
+                                ),
+                              )
+                            : Text(
+                                'Set price',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
+                                  color: colorScheme.onSurfaceVariant.withAlpha(
+                                    153,
                                   ),
-                          ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            statusText,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                      ),
+                    ],
                   ],
                 ),
-              RideBadges.chips(context, ride),
-              const SizedBox(height: 12),
-              _locationRow(
-                context,
-                Icons.person,
-                'Client',
-                ride.clientName,
-                compact: compact,
-              ),
-              const SizedBox(height: 8),
-              _locationRow(
-                context,
-                Icons.location_on,
-                'From',
-                ride.from.address,
-                compact: compact,
-              ),
-              const SizedBox(height: 8),
-              _locationRow(
-                context,
-                Icons.flag,
-                'To',
-                ride.to.address,
-                compact: compact,
-              ),
-              if (!compact) RideBadges.requirements(context, ride),
+              if (!compact) ...[
+                RideBadges.chips(context, ride),
+                const SizedBox(height: 12),
+                _locationRow(context, Icons.person, 'Client', ride.clientName),
+                const SizedBox(height: 8),
+                _locationRow(
+                  context,
+                  Icons.location_on,
+                  'From',
+                  ride.from.address,
+                ),
+                const SizedBox(height: 8),
+                _locationRow(context, Icons.flag, 'To', ride.to.address),
+                RideBadges.requirements(context, ride),
+              ],
               if (showActions && actionsWidget != null) ...[
                 const SizedBox(height: 12),
                 actionsWidget!,
@@ -329,25 +300,21 @@ class RideCalendarCard extends StatelessWidget {
     BuildContext context,
     IconData icon,
     String label,
-    String value, {
-    bool compact = false,
-  }) {
+    String value,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
-    // In compact mode the label prefix text is omitted so the Row fits in a
-    // narrow column — only the icon identifies the field.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 8),
-        if (!compact)
-          Text(
-            '$label: ',
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
           ),
+        ),
         Expanded(
           child: Text(
             value,
@@ -355,8 +322,6 @@ class RideCalendarCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
               color: colorScheme.onSurface,
             ),
-            maxLines: compact ? 1 : null,
-            overflow: compact ? TextOverflow.ellipsis : null,
           ),
         ),
       ],
