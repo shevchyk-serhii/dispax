@@ -284,6 +284,99 @@ object AirportConfigServiceSpec extends ZIOSpecDefault {
             bad     = zone.copy(checkpointType = "NOT_VALID")
             result <- svc.updateZone(zone.id, bad).exit
           } yield assertTrue(result.isFailure)
+        },
+
+        // ─── updateAirport validation (mutation-kill for removing validateAirportCoords) ─
+
+        test("updateAirport rejects latitude out of range") {
+          for {
+            svc    <- ZIO.service[AirportConfigService]
+            _      <- svc.createAirport(makeAirport("MUC"))
+            bad     = makeAirport("MUC").copy(landingLat = 91.0)
+            result <- svc.updateAirport("MUC", bad).exit
+          } yield assertTrue(
+            result.isFailure,
+            result.causeOption.exists(_.squash match {
+              case RideError.ValidationError(msg) => msg.contains("Latitude")
+              case _                              => false
+            })
+          )
+        },
+        test("updateAirport rejects longitude out of range") {
+          for {
+            svc    <- ZIO.service[AirportConfigService]
+            _      <- svc.createAirport(makeAirport("MUC"))
+            bad     = makeAirport("MUC").copy(landingLon = 181.0)
+            result <- svc.updateAirport("MUC", bad).exit
+          } yield assertTrue(
+            result.isFailure,
+            result.causeOption.exists(_.squash match {
+              case RideError.ValidationError(msg) => msg.contains("Longitude")
+              case _                              => false
+            })
+          )
+        },
+        test("updateAirport rejects non-positive landing radius") {
+          for {
+            svc    <- ZIO.service[AirportConfigService]
+            _      <- svc.createAirport(makeAirport("MUC"))
+            bad     = makeAirport("MUC").copy(landingRadius = 0)
+            result <- svc.updateAirport("MUC", bad).exit
+          } yield assertTrue(
+            result.isFailure,
+            result.causeOption.exists(_.squash match {
+              case RideError.ValidationError(msg) => msg.toLowerCase.contains("radius")
+              case _                              => false
+            })
+          )
+        },
+
+        // ─── updateZone validation (mutation-kill for removing validateZoneCoords) ─
+
+        test("updateZone rejects latitude out of range") {
+          for {
+            svc    <- ZIO.service[AirportConfigService]
+            _      <- svc.createAirport(makeAirport("MUC"))
+            zone   <- svc.createZone(makeZone("MUC", "arrivals_hall", "T1 Hall"))
+            bad     = zone.copy(lat = -91.0)
+            result <- svc.updateZone(zone.id, bad).exit
+          } yield assertTrue(
+            result.isFailure,
+            result.causeOption.exists(_.squash match {
+              case RideError.ValidationError(msg) => msg.contains("Latitude")
+              case _                              => false
+            })
+          )
+        },
+        test("updateZone rejects longitude out of range") {
+          for {
+            svc    <- ZIO.service[AirportConfigService]
+            _      <- svc.createAirport(makeAirport("MUC"))
+            zone   <- svc.createZone(makeZone("MUC", "arrivals_hall", "T1 Hall"))
+            bad     = zone.copy(lon = 181.0)
+            result <- svc.updateZone(zone.id, bad).exit
+          } yield assertTrue(
+            result.isFailure,
+            result.causeOption.exists(_.squash match {
+              case RideError.ValidationError(msg) => msg.contains("Longitude")
+              case _                              => false
+            })
+          )
+        },
+        test("updateZone rejects non-positive radius") {
+          for {
+            svc    <- ZIO.service[AirportConfigService]
+            _      <- svc.createAirport(makeAirport("MUC"))
+            zone   <- svc.createZone(makeZone("MUC", "arrivals_hall", "T1 Hall"))
+            bad     = zone.copy(radiusMeters = 0)
+            result <- svc.updateZone(zone.id, bad).exit
+          } yield assertTrue(
+            result.isFailure,
+            result.causeOption.exists(_.squash match {
+              case RideError.ValidationError(msg) => msg.toLowerCase.contains("radius")
+              case _                              => false
+            })
+          )
         }
       ).provide(freshServiceLayer)
     ) @@ TestAspect.sequential
