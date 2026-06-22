@@ -13,7 +13,10 @@ object RideMapperSpec extends ZIOSpecDefault {
   private val pickup    = Location("Marienplatz 1, Munich", Some(48.137), Some(11.575))
   private val dropoff   = Location("Munich Airport", Some(48.353), Some(11.786))
 
-  private def makeRequest(scheduledTime: Option[Instant] = None) = CreateRideRequest(
+  private def makeRequest(
+      scheduledTime: Option[Instant] = None,
+      vehicleClass: VehicleClass = VehicleClass.Default
+  ) = CreateRideRequest(
     clientId = clientId,
     companyId = companyId,
     pickupLocation = pickup,
@@ -21,7 +24,8 @@ object RideMapperSpec extends ZIOSpecDefault {
     scheduledTime = scheduledTime,
     notes = Some("Test note"),
     specifics = None,
-    specialRequirements = Some("Wheelchair")
+    specialRequirements = Some("Wheelchair"),
+    vehicleClass = vehicleClass
   )
 
   def spec =
@@ -68,6 +72,24 @@ object RideMapperSpec extends ZIOSpecDefault {
         val req  = makeRequest().copy(specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123")))
         val ride = RideMapper.fromRequest(req)
         assertTrue(ride.specifics.contains(RideSpecifics.AirportTransfer("MUC", "LH123")))
+      },
+      // [HIGH] vehicleClass = request.vehicleClass — mutation to VehicleClass.Default survives the existing tests
+      // because they all use the default.  This test uses Van (a non-default class) so the mutation is caught.
+      test("preserves non-default vehicleClass from request") {
+        val ride = RideMapper.fromRequest(makeRequest(vehicleClass = VehicleClass.Van))
+        assertTrue(ride.vehicleClass == VehicleClass.Van)
+      },
+      // [MEDIUM] requestTime = Instant.now() — mutation to Instant.EPOCH survives existing tests.
+      // We verify that requestTime is not the epoch and is within a 10-second window around now().
+      test("requestTime is close to now, not epoch") {
+        val before = Instant.now().minusSeconds(5)
+        val ride   = RideMapper.fromRequest(makeRequest())
+        val after  = Instant.now().plusSeconds(5)
+        assertTrue(
+          ride.requestTime != Instant.EPOCH,
+          !ride.requestTime.isBefore(before),
+          !ride.requestTime.isAfter(after)
+        )
       }
     )
 }

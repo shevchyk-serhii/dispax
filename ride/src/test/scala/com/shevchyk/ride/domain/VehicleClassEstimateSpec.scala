@@ -177,5 +177,57 @@ object VehicleClassEstimateSpec extends ZIOSpecDefault:
           val price  = tariff.estimate(10.0, isAirportTransfer = true, VehicleClass.Van, isNight = true)
           assertTrue(price == BigDecimal("63.00"))
         }
+      ),
+      suite("CompanyTariff.default numeric values")(
+        // [HIGH] basePriceAmount 5.0→99.0, pricePerKmAmount 2.5→7.7 survive because no test checks the
+        // exact default amounts.  Pin every field so any single mutation is caught.
+        test("default() has exact canonical amounts: base=5.0, perKm=2.5, airportSurcharge=10.0, nightSurcharge=5.0") {
+          val t = CompanyTariff.default(companyId)
+          assertTrue(
+            t.basePriceAmount == BigDecimal(5.0),
+            t.pricePerKmAmount == BigDecimal(2.5),
+            t.airportSurchargeAmount == BigDecimal(10.0),
+            t.nightSurchargeAmount == BigDecimal(5.0)
+          )
+        },
+        test("default() currency is EUR") {
+          assertTrue(CompanyTariff.default(companyId).currency == "EUR")
+        }
+      ),
+      suite("CompanyTariff.estimate rounding")(
+        // [MEDIUM] setScale(2,HALF_UP) → setScale(0,...) or HALF_UP→DOWN.
+        // Choose a distance that produces a fractional cent whose rounding differs between HALF_UP and DOWN,
+        // and between 2 decimal places and 0 decimal places.
+        // dist = 0.1 km, perKm = 2.5 → 0.25; base = 5.0 → subtotal = 5.25; × 1.0 → 5.25
+        // setScale(0, HALF_UP) → 5;  setScale(2, DOWN) = 5.25 (same here so we need a subtly different case)
+        // Use dist = 0.3 km → perKm = 0.75; base = 5.0 → subtotal = 5.75; × 1.0 = 5.75
+        //   setScale(0, HALF_UP) → 6  (different from 5.75) ← catches scale mutation
+        //   setScale(2, DOWN)    → 5.75 (same as HALF_UP for .75) — need a .X5 case for DOWN vs HALF_UP
+        // Use perKm=0.015 (1.5 cents/km, dist=1.0) → subtotal base=0 + 0.015 = 0.015; ×1.0 = 0.015
+        //   HALF_UP(2) → 0.02;  DOWN(2) → 0.01 ← catches rounding-mode mutation
+        test("rounds to 2 decimal places using HALF_UP (not DOWN)") {
+          // 0.015 rounds up to 0.02 with HALF_UP, but down to 0.01 with DOWN
+          val tariff = CompanyTariff(
+            companyId = companyId,
+            basePriceAmount = BigDecimal(0),
+            pricePerKmAmount = BigDecimal("0.015"),
+            airportSurchargeAmount = BigDecimal(0),
+            nightSurchargeAmount = BigDecimal(0)
+          )
+          val price  = tariff.estimate(1.0, isAirportTransfer = false, VehicleClass.Business)
+          assertTrue(price == BigDecimal("0.02"))
+        },
+        test("rounds to exactly 2 decimal places (not 0)") {
+          // base=5, perKm=2.5, dist=0.3 → subtotal=5.75; setScale(0,HALF_UP)=6, setScale(2,HALF_UP)=5.75
+          val tariff = CompanyTariff(
+            companyId = companyId,
+            basePriceAmount = BigDecimal(5),
+            pricePerKmAmount = BigDecimal("2.5"),
+            airportSurchargeAmount = BigDecimal(0),
+            nightSurchargeAmount = BigDecimal(0)
+          )
+          val price  = tariff.estimate(0.3, isAirportTransfer = false, VehicleClass.Business)
+          assertTrue(price == BigDecimal("5.75"))
+        }
       )
     )
