@@ -200,6 +200,15 @@
     }
   },
 
+  "flightDepartureTime": "Час відправлення рейсу",
+  "manualPickupTimeOptional": "Час подачі (необов'язково — буде розраховано, якщо не вказано)",
+  "confirmedPickupTime": "Підтверджена подача: {time}",
+  "@confirmedPickupTime": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "pickupTimeComputedAuto": "Розраховано автоматично на основі часу відправлення рейсу",
   "markUnavailable": "Позначити як недоступний",
   "driverUnavailable": "Водій недоступний",
   "unavailabilityReason": "Причина",

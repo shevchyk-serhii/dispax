@@ -75,7 +75,11 @@ case class RideDto(
     poolId: Option[String] = None,
     vehicleClass: String = "business",
     driverRating: Option[Double] = None,
-    driverRatingCount: Option[Int] = None
+    driverRatingCount: Option[Int] = None,
+    // For airport departure rides: the backend-computed pickup time (same as pickupDateTime
+    // for auto-computed rides). Included as a convenience field so the frontend can display
+    // the computed value without re-parsing pickupDateTime.
+    recommendedPickupDateTime: Option[String] = None
 )
 
 given JsonEncoder[RideDto] = DeriveJsonEncoder.gen[RideDto]
@@ -85,12 +89,17 @@ case class CreateRideApiRequest(
     clientId: String,
     creatorId: String,
     scheduleDayId: Option[String] = None,
-    pickupDateTime: String,
+    // pickupDateTime is optional for airport departure rides: an absent value signals
+    // "compute it automatically from flightTime". For all other ride types it is required.
+    // A present value is always respected verbatim (manual override wins).
+    pickupDateTime: Option[String] = None,
     from: LocationDto,
     to: LocationDto,
     status: String = "requested",
     clientName: String,
     flightNumber: Option[String] = None,
+    // flightTime carries the flight departure date-time (ISO-8601 UTC) for departure rides.
+    // Required when isAirportTransfer=true && isArrival=false && pickupDateTime is absent.
     flightTime: Option[String] = None,
     isAirportTransfer: Boolean = false,
     isArrival: Boolean = false,
@@ -276,11 +285,18 @@ object RideDto:
       driverRating: Option[Double] = None,
       driverRatingCount: Option[Int] = None
   ): RideDto =
-    val (flightNumber, isAirportTransfer) =
+    val (flightNumber, isAirportTransfer, isArrival) =
       ride.specifics match {
-        case Some(RideSpecifics.AirportTransfer(_, flight, _)) => (Some(flight), true)
-        case None                                              => (None, false)
+        case Some(RideSpecifics.AirportTransfer(_, flight, arr)) => (Some(flight), true, arr)
+        case None                                                => (None, false, false)
       }
+
+    // For airport departure rides, surface the computed pickup time as a convenience field.
+    val recommendedPickupTime =
+      if (isAirportTransfer && !isArrival)
+        Some(ride.pickupDateTime.toString)
+      else
+        None
 
     val driverLoc =
       for {
@@ -314,7 +330,7 @@ object RideDto:
       flightNumber = flightNumber,
       flightTime = ride.scheduledTime.map(_.toString),
       isAirportTransfer = isAirportTransfer,
-      isArrival = flightNumber.isDefined,
+      isArrival = isArrival,
       gate = None,
       terminal = None,
       flightStatus = None,
@@ -337,7 +353,8 @@ object RideDto:
       poolId = ride.poolId.map(_.value.toString),
       vehicleClass = VehicleClass.toDbString(ride.vehicleClass),
       driverRating = driverRating,
-      driverRatingCount = driverRatingCount
+      driverRatingCount = driverRatingCount,
+      recommendedPickupDateTime = recommendedPickupTime
     )
 
   private def distanceMetersHaversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Int =
@@ -353,14 +370,22 @@ object RideDto:
 
 object CreateRideApiRequest:
 
+  private def parseInstantOpt(s: String): Option[Instant] =
+    scala.util
+      .Try(Instant.parse(s))
+      .orElse(scala.util.Try(java.time.LocalDateTime.parse(s).toInstant(java.time.ZoneOffset.UTC)))
+      .toOption
+
   def toDomain(request: CreateRideApiRequest, companyId: CompanyId): IO[Response, CreateRideRequest] =
-    // Create AirportTransfer if either isAirportTransfer is true OR flightNumber is provided
+    // Create AirportTransfer specifics when the ride is flagged as an airport transfer
+    // or when a flight number is supplied.
     val specifics =
       if (request.isAirportTransfer || request.flightNumber.isDefined) {
         request.flightNumber.map { flight =>
           RideSpecifics.AirportTransfer(
-            airportCode = extractAirportCode(request), // Could be extracted from location
-            flightNumber = flight
+            airportCode = extractAirportCode(request),
+            flightNumber = flight,
+            isArrival = request.isArrival
           )
         }
       }
@@ -370,17 +395,26 @@ object CreateRideApiRequest:
 
     val parsedVehicleClass = request.vehicleClass.flatMap(VehicleClass.fromString).getOrElse(VehicleClass.Default)
 
+    // pickupDateTime: parse the operator-supplied value when present; pass None otherwise.
+    // A None signals "compute automatically" for airport departure rides.
+    val parsedPickupDateTime: Option[Instant] = request.pickupDateTime.flatMap(parseInstantOpt)
+
+    // scheduledTime: for airport transfers this carries the flight time (departure or arrival).
+    // For regular rides it mirrors the pickup time.
+    val parsedScheduledTime: Option[Instant] = request.flightTime.flatMap(parseInstantOpt)
+
     UuidParser.parsePersonId(request.clientId).map { clientId =>
       CreateRideRequest(
         clientId = clientId,
         companyId = companyId,
         pickupLocation = LocationDto.toDomain(request.from),
         dropoffLocation = LocationDto.toDomain(request.to),
-        scheduledTime = scala.util.Try(Instant.parse(request.pickupDateTime)).toOption,
+        scheduledTime = parsedScheduledTime,
         notes = request.notes,
         specifics = specifics,
         specialRequirements = request.specialRequirements,
-        vehicleClass = parsedVehicleClass
+        vehicleClass = parsedVehicleClass,
+        pickupDateTime = parsedPickupDateTime
       )
     }
 

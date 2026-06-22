@@ -15,7 +15,10 @@ final case class CompanySettings(
     updatedAt: Instant = Instant.now(),
     datevBeraternummer: Option[String] = None,
     datevMandantennummer: Option[String] = None,
-    datevSachkontenlaenge: Option[Int] = None
+    datevSachkontenlaenge: Option[Int] = None,
+    // Airport departure pickup timing overrides (NULL = use global default).
+    airportBufferMinutes: Option[Int] = None,
+    airportCheckInCloseMinutes: Option[Int] = None
 ) derives JsonCodec
 
 final case class UpdateCompanySettingsRequest(
@@ -28,7 +31,10 @@ final case class UpdateCompanySettingsRequest(
     autoAssignEnabled: Option[Boolean] = None,
     datevBeraternummer: Option[String] = None,
     datevMandantennummer: Option[String] = None,
-    datevSachkontenlaenge: Option[Int] = None
+    datevSachkontenlaenge: Option[Int] = None,
+    // Airport departure pickup timing overrides (absent = leave unchanged).
+    airportBufferMinutes: Option[Int] = None,
+    airportCheckInCloseMinutes: Option[Int] = None
 ) derives JsonCodec:
 
   /**
@@ -45,5 +51,7 @@ final case class UpdateCompanySettingsRequest(
     datevBeraternummer = datevBeraternummer.orElse(current.datevBeraternummer),
     datevMandantennummer = datevMandantennummer.orElse(current.datevMandantennummer),
     datevSachkontenlaenge = datevSachkontenlaenge.orElse(current.datevSachkontenlaenge),
+    airportBufferMinutes = airportBufferMinutes.orElse(current.airportBufferMinutes),
+    airportCheckInCloseMinutes = airportCheckInCloseMinutes.orElse(current.airportCheckInCloseMinutes),
     updatedAt = Instant.now()
   )

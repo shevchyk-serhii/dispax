@@ -119,7 +119,11 @@ class CreateRideFormHelper {
       clientId: clientId,
       creatorId: authState.user!.id,
       companyId: authState.user!.companyId ?? '',
-      pickupDateTime: formState.pickupDateTime,
+      // manualPickupDateTime: null for departure rides without an explicit override
+      // signals "compute automatically" to the backend. For all other ride types
+      // it carries the operator-selected pickup time.
+      manualPickupDateTime: formState.manualPickupDateTime,
+      flightDepartureTime: formState.flightDepartureTime,
       from: Location(address: formState.fromAddress.trim()),
       to: Location(address: formState.toAddress.trim()),
       clientName: formState.clientName.trim(),
@@ -131,6 +135,7 @@ class CreateRideFormHelper {
           ? formState.flightNumber.trim()
           : null,
       isAirportTransfer: formState.isAirportTransfer,
+      isArrival: formState.isArrival,
       notes: formState.notes.trim().isNotEmpty ? formState.notes.trim() : null,
       specialRequirements: formState.specialRequirements.isNotEmpty
           ? formState.specialRequirements

@@ -19,7 +19,7 @@ object RideValidatorsSpec extends ZIOSpecDefault {
   def validCreateRequest(
       from: LocationDto = validLocation(),
       to: LocationDto = validLocation("Airport MUC"),
-      pickupDateTime: String = futureDateTime,
+      pickupDateTime: Option[String] = Some(futureDateTime),
       clientId: String = validClientId,
       isAirportTransfer: Boolean = false,
       flightNumber: Option[String] = None,
@@ -62,13 +62,13 @@ object RideValidatorsSpec extends ZIOSpecDefault {
         }
       },
       test("rejects past datetime") {
-        val req = validCreateRequest(pickupDateTime = pastDateTime)
+        val req = validCreateRequest(pickupDateTime = Some(pastDateTime))
         summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
           assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("past"))
         }
       },
       test("rejects invalid datetime format") {
-        val req = validCreateRequest(pickupDateTime = "2024-13-45 bad")
+        val req = validCreateRequest(pickupDateTime = Some("2024-13-45 bad"))
         summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
           assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Invalid datetime"))
         }
@@ -268,19 +268,19 @@ object RideValidatorsSpec extends ZIOSpecDefault {
   def suite_cancelRideApiRequest =
     suite("CancelRideApiRequest validator")(
       test("accepts None fee") {
-        val req = CancelRideApiRequest(reason = "Client request")
+        val req = CancelRideApiRequest(reason = "client_request")
         summon[Validator[CancelRideApiRequest]].validate(req).map(r => assertTrue(r == req))
       },
       test("accepts zero fee (free cancellation)") {
-        val req = CancelRideApiRequest(reason = "Client request", fee = Some(0.0))
+        val req = CancelRideApiRequest(reason = "client_request", fee = Some(0.0))
         summon[Validator[CancelRideApiRequest]].validate(req).map(r => assertTrue(r == req))
       },
       test("accepts positive fee") {
-        val req = CancelRideApiRequest(reason = "No show", fee = Some(25.0))
+        val req = CancelRideApiRequest(reason = "client_no_show", fee = Some(25.0))
         summon[Validator[CancelRideApiRequest]].validate(req).map(r => assertTrue(r == req))
       },
       test("rejects negative fee") {
-        val req = CancelRideApiRequest(reason = "No show", fee = Some(-100.0))
+        val req = CancelRideApiRequest(reason = "client_no_show", fee = Some(-100.0))
         summon[Validator[CancelRideApiRequest]].validate(req).flip.map { err =>
           assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("negative"))
         }
@@ -288,9 +288,16 @@ object RideValidatorsSpec extends ZIOSpecDefault {
       // [MEDIUM] fee guard `fee.exists(f => f.isNaN || f < 0)`: removing isNaN allows NaN to slip through.
       // NaN is neither < 0 nor >= 0, so the `f < 0` branch alone would not catch it.
       test("rejects NaN fee (isNaN guard is distinct from negative guard)") {
-        val req = CancelRideApiRequest(reason = "No show", fee = Some(Double.NaN))
+        val req = CancelRideApiRequest(reason = "client_no_show", fee = Some(Double.NaN))
         summon[Validator[CancelRideApiRequest]].validate(req).flip.map { err =>
           assertTrue(err.isInstanceOf[RideError.ValidationError])
+        }
+      },
+      // [HIGH] unknown reason is rejected: CancellationReason.fromString returns None for free-text values.
+      test("rejects unknown cancellation reason") {
+        val req = CancelRideApiRequest(reason = "No show")
+        summon[Validator[CancelRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Unknown cancellation reason"))
         }
       }
     )

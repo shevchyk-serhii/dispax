@@ -13,7 +13,7 @@ import com.shevchyk.core.application.{
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.application.service.RideService
+import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
 import zio.test.*
 import zio.*
@@ -183,6 +183,7 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
       BlacklistRepository.inMemory ++
       GeocodingService.noop ++
       ExpenseRepository.inMemory ++
+      PickupTimeService.noopLayer ++
       availabilityChecker) >+> RideService.layer
 
   val standardLayers = buildLayers()

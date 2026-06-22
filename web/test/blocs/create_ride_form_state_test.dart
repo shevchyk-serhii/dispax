@@ -99,6 +99,8 @@ void main() {
       String toAddress = 'To',
       String flightNumber = '',
       bool isAirportTransfer = false,
+      bool isArrival = false,
+      DateTime? flightDepartureTime,
     }) {
       return CreateRideFormState(
         clientName: clientName,
@@ -106,9 +108,10 @@ void main() {
         fromAddress: fromAddress,
         toAddress: toAddress,
         flightNumber: flightNumber,
-        pickupDateTime: DateTime(2026, 3, 15),
+        manualPickupDateTime: DateTime(2026, 3, 15),
+        flightDepartureTime: flightDepartureTime,
         isAirportTransfer: isAirportTransfer,
-        isArrival: false,
+        isArrival: isArrival,
       );
     }
 
@@ -149,12 +152,53 @@ void main() {
       );
     });
 
-    test('airport transfer with flight number returns true', () {
-      expect(
-        makeState(isAirportTransfer: true, flightNumber: 'LH123').isValid,
-        isTrue,
-      );
-    });
+    // Airport DEPARTURE (isAirportTransfer=true, isArrival=false): flightDepartureTime required.
+    test(
+      'airport departure with flight number and flightDepartureTime returns true',
+      () {
+        expect(
+          makeState(
+            isAirportTransfer: true,
+            flightNumber: 'LH123',
+            flightDepartureTime: DateTime(2026, 3, 15, 8, 0),
+          ).isValid,
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'airport departure with flight number but no flightDepartureTime returns false',
+      () {
+        // flightDepartureTime is required for departure auto-compute rides;
+        // a flight number alone is not sufficient.
+        expect(
+          makeState(
+            isAirportTransfer: true,
+            flightNumber: 'LH123',
+            flightDepartureTime: null,
+          ).isValid,
+          isFalse,
+        );
+      },
+    );
+
+    // Airport ARRIVAL (isAirportTransfer=true, isArrival=true): uses manualPickupDateTime,
+    // not flightDepartureTime — same rule as a regular ride.
+    test(
+      'airport arrival with flight number and manualPickupDateTime returns true',
+      () {
+        expect(
+          makeState(
+            isAirportTransfer: true,
+            isArrival: true,
+            flightNumber: 'LH123',
+            // manualPickupDateTime is set by default inside makeState
+          ).isValid,
+          isTrue,
+        );
+      },
+    );
 
     test('non-airport transfer does not require flight number', () {
       expect(

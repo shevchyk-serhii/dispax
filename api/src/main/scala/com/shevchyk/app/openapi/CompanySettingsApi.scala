@@ -85,19 +85,7 @@ object CompanySettingsApi:
         repo      <- ZIO.service[CompanySettingsRepository]
         existing  <- repo.findByCompanyId(companyId).mapError(internal)
         current    = existing.getOrElse(CompanySettings(companyId = companyId))
-        updated    = current.copy(
-                       commissionRate = updateReq.commissionRate.getOrElse(current.commissionRate),
-                       workingHoursStart = updateReq.workingHoursStart.getOrElse(current.workingHoursStart),
-                       workingHoursEnd = updateReq.workingHoursEnd.getOrElse(current.workingHoursEnd),
-                       defaultCurrency = updateReq.defaultCurrency.getOrElse(current.defaultCurrency),
-                       cancellationFeeDefault = updateReq.cancellationFeeDefault.getOrElse(current.cancellationFeeDefault),
-                       noShowFee = updateReq.noShowFee.getOrElse(current.noShowFee),
-                       autoAssignEnabled = updateReq.autoAssignEnabled.getOrElse(current.autoAssignEnabled),
-                       datevBeraternummer = updateReq.datevBeraternummer.orElse(current.datevBeraternummer),
-                       datevMandantennummer = updateReq.datevMandantennummer.orElse(current.datevMandantennummer),
-                       datevSachkontenlaenge = updateReq.datevSachkontenlaenge.orElse(current.datevSachkontenlaenge),
-                       updatedAt = Instant.now()
-                     )
+        updated    = updateReq.applyTo(current)
         saved     <- repo.upsert(updated).mapError(internal)
       } yield saved
     }

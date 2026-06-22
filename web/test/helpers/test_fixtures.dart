@@ -177,7 +177,7 @@ class TestFixtures {
       clientId: clientId,
       creatorId: creatorId,
       companyId: companyId,
-      pickupDateTime: pickupDateTime ?? DateTime(2026, 3, 15, 10, 0),
+      manualPickupDateTime: pickupDateTime ?? DateTime(2026, 3, 15, 10, 0),
       from: from ?? location(address: 'Pickup St'),
       to: to ?? location(address: 'Dropoff St'),
       clientName: clientName,

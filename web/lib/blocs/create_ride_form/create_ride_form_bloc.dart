@@ -16,6 +16,8 @@ class CreateRideFormBloc
     on<ToAddressChanged>(_onToAddressChanged);
     on<FlightNumberChanged>(_onFlightNumberChanged);
     on<PickupDateTimeChanged>(_onPickupDateTimeChanged);
+    on<ManualPickupTimeChanged>(_onManualPickupTimeChanged);
+    on<FlightDepartureTimeChanged>(_onFlightDepartureTimeChanged);
     on<AirportTransferToggled>(_onAirportTransferToggled);
     on<ArrivalToggled>(_onArrivalToggled);
     on<GateSelected>(_onGateSelected);
@@ -160,7 +162,30 @@ class CreateRideFormBloc
     PickupDateTimeChanged event,
     Emitter<CreateRideFormState> emit,
   ) {
-    emit(state.copyWith(pickupDateTime: event.pickupDateTime));
+    // Legacy handler: forward to manualPickupDateTime.
+    emit(state.copyWith(manualPickupDateTime: event.pickupDateTime));
+  }
+
+  void _onManualPickupTimeChanged(
+    ManualPickupTimeChanged event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    if (event.pickupDateTime == null) {
+      emit(state.copyWith(clearManualPickupDateTime: true));
+    } else {
+      emit(state.copyWith(manualPickupDateTime: event.pickupDateTime));
+    }
+  }
+
+  void _onFlightDepartureTimeChanged(
+    FlightDepartureTimeChanged event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    if (event.flightDepartureTime == null) {
+      emit(state.copyWith(clearFlightDepartureTime: true));
+    } else {
+      emit(state.copyWith(flightDepartureTime: event.flightDepartureTime));
+    }
   }
 
   void _onAirportTransferToggled(
@@ -281,13 +306,18 @@ class CreateRideFormBloc
     Emitter<CreateRideFormState> emit,
   ) {
     if (!event.scheduled) {
-      // ASAP → set pickupDateTime to now so the backend treats it as immediate.
-      emit(state.copyWith(isScheduled: false, pickupDateTime: DateTime.now()));
+      // ASAP → set manualPickupDateTime to now so the backend treats it as immediate.
+      emit(
+        state.copyWith(
+          isScheduled: false,
+          manualPickupDateTime: DateTime.now(),
+        ),
+      );
     } else {
       emit(
         state.copyWith(
           isScheduled: true,
-          pickupDateTime: DateTime.now().add(const Duration(hours: 1)),
+          manualPickupDateTime: DateTime.now().add(const Duration(hours: 1)),
         ),
       );
     }

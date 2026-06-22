@@ -13,7 +13,7 @@ import com.shevchyk.core.application.{
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.application.service.RideService
+import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, RideRepository}
 import zio.test.*
 import zio.*
@@ -154,6 +154,7 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
       BlacklistRepository.inMemory ++
       GeocodingService.noop ++
       ExpenseRepository.inMemory ++
+      PickupTimeService.noopLayer ++
       noopAvailabilityChecker) >+> RideService.layer
 
   // ── Helpers ───────────────────────────────────────────────────────────

@@ -95,7 +95,10 @@ object ClientCompanyApi:
                        taxiCompanyId = companyId,
                        email = req.email,
                        phone = req.phone,
-                       address = req.address
+                       address = req.address,
+                       preferredLanguage = req.preferredLanguage,
+                       airportBufferMinutes = req.airportBufferMinutes,
+                       airportCheckInCloseMinutes = req.airportCheckInCloseMinutes
                      )
         created   <- repo.create(company).mapError(internal)
       } yield created
@@ -135,7 +138,10 @@ object ClientCompanyApi:
                                    name = req.name,
                                    email = req.email,
                                    phone = req.phone,
-                                   address = req.address
+                                   address = req.address,
+                                   preferredLanguage = req.preferredLanguage,
+                                   airportBufferMinutes = req.airportBufferMinutes,
+                                   airportCheckInCloseMinutes = req.airportCheckInCloseMinutes
                                  )
                                )
                                .mapError(internal)

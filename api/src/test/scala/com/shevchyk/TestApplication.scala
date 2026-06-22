@@ -59,6 +59,7 @@ import com.shevchyk.ride.application.service.{
   ChatService,
   ClientAddressService,
   ClientLocationService,
+  PickupTimeService,
   RideEstimateService,
   RideService
 }
@@ -1523,6 +1524,7 @@ object TestApplication extends ZIOAppDefault:
       },
       ClientAddressService.layer,
       inMemoryClientAddressRepositoryLayer,
+      PickupTimeService.noopLayer,
       // DriverAvailabilityChecker: noop for tests (no unavailability windows set up by default)
       ZLayer.succeed[DriverAvailabilityChecker](
         new DriverAvailabilityChecker:

@@ -11,7 +11,16 @@ class CreateRideFormState extends Equatable {
   final String fromAddress;
   final String toAddress;
   final String flightNumber;
-  final DateTime pickupDateTime;
+
+  /// Explicit pickup time set by the operator. When null for airport departure rides
+  /// the backend computes it automatically from [flightDepartureTime]. For all other
+  /// ride types this field must be non-null before submission.
+  final DateTime? manualPickupDateTime;
+
+  /// Flight departure date-time for airport departure rides.
+  /// Required when [isAirportTransfer] = true and [isArrival] = false.
+  final DateTime? flightDepartureTime;
+
   final bool isAirportTransfer;
   final bool isArrival;
   final String? selectedGate;
@@ -55,7 +64,8 @@ class CreateRideFormState extends Equatable {
     required this.fromAddress,
     required this.toAddress,
     required this.flightNumber,
-    required this.pickupDateTime,
+    this.manualPickupDateTime,
+    this.flightDepartureTime,
     required this.isAirportTransfer,
     required this.isArrival,
     this.selectedGate,
@@ -85,7 +95,8 @@ class CreateRideFormState extends Equatable {
       fromAddress: '',
       toAddress: '',
       flightNumber: '',
-      pickupDateTime: DateTime.now().add(const Duration(hours: 1)),
+      manualPickupDateTime: DateTime.now().add(const Duration(hours: 1)),
+      flightDepartureTime: null,
       isAirportTransfer: false,
       isArrival: false,
       selectedGate: null,
@@ -112,7 +123,10 @@ class CreateRideFormState extends Equatable {
     String? fromAddress,
     String? toAddress,
     String? flightNumber,
-    DateTime? pickupDateTime,
+    DateTime? manualPickupDateTime,
+    bool clearManualPickupDateTime = false,
+    DateTime? flightDepartureTime,
+    bool clearFlightDepartureTime = false,
     bool? isAirportTransfer,
     bool? isArrival,
     String? selectedGate,
@@ -148,7 +162,12 @@ class CreateRideFormState extends Equatable {
       fromAddress: fromAddress ?? this.fromAddress,
       toAddress: toAddress ?? this.toAddress,
       flightNumber: flightNumber ?? this.flightNumber,
-      pickupDateTime: pickupDateTime ?? this.pickupDateTime,
+      manualPickupDateTime: clearManualPickupDateTime
+          ? null
+          : (manualPickupDateTime ?? this.manualPickupDateTime),
+      flightDepartureTime: clearFlightDepartureTime
+          ? null
+          : (flightDepartureTime ?? this.flightDepartureTime),
       isAirportTransfer: isAirportTransfer ?? this.isAirportTransfer,
       isArrival: isArrival ?? this.isArrival,
       selectedGate: selectedGate ?? this.selectedGate,
@@ -181,15 +200,24 @@ class CreateRideFormState extends Equatable {
   RideEstimate? get activeEstimate =>
       selectedVehicleClass == VehicleClass.van ? estimateVan : estimateBusiness;
 
+  /// True when the departure auto-compute path is active (no manual pickup needed).
+  bool get isDepartureAutoCompute => isAirportTransfer && !isArrival;
+
   bool get isValid {
     final clientOk = isNewClient
         ? clientName.trim().isNotEmpty
         : selectedClientId != null;
+    // For departure rides: flightDepartureTime is required; manualPickupDateTime is optional.
+    // For all other rides: manualPickupDateTime is required.
+    final pickupOk = isDepartureAutoCompute
+        ? flightDepartureTime != null
+        : manualPickupDateTime != null;
     return clientOk &&
         fromAddress.trim().isNotEmpty &&
         toAddress.trim().isNotEmpty &&
         (!isAirportTransfer || flightNumber.trim().isNotEmpty) &&
-        fromAddress.trim().toLowerCase() != toAddress.trim().toLowerCase();
+        fromAddress.trim().toLowerCase() != toAddress.trim().toLowerCase() &&
+        pickupOk;
   }
 
   /// The form is "modified" only when it differs from the baseline snapshot.
@@ -213,7 +241,8 @@ class CreateRideFormState extends Equatable {
     fromAddress,
     toAddress,
     flightNumber,
-    pickupDateTime,
+    manualPickupDateTime,
+    flightDepartureTime,
     isAirportTransfer,
     isArrival,
     selectedGate,

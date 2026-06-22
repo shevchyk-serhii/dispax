@@ -200,6 +200,15 @@
     }
   },
 
+  "flightDepartureTime": "Abflugzeit",
+  "manualPickupTimeOptional": "Abholzeit (optional — wird berechnet, falls leer)",
+  "confirmedPickupTime": "Bestätigte Abholung: {time}",
+  "@confirmedPickupTime": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "pickupTimeComputedAuto": "Automatisch basierend auf dem Abflugzeitpunkt berechnet",
   "markUnavailable": "Als nicht verfügbar markieren",
   "driverUnavailable": "Fahrer nicht verfügbar",
   "unavailabilityReason": "Grund",

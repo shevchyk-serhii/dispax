@@ -77,6 +77,29 @@ class FlightNumberChanged extends CreateRideFormEvent {
   List<Object?> get props => [flightNumber];
 }
 
+/// Emitted when the operator explicitly sets or clears a manual pickup time.
+/// For airport departure rides a null value means "compute automatically".
+class ManualPickupTimeChanged extends CreateRideFormEvent {
+  final DateTime? pickupDateTime;
+
+  const ManualPickupTimeChanged(this.pickupDateTime);
+
+  @override
+  List<Object?> get props => [pickupDateTime];
+}
+
+/// Emitted when the flight departure date-time changes (airport departure rides only).
+class FlightDepartureTimeChanged extends CreateRideFormEvent {
+  final DateTime? flightDepartureTime;
+
+  const FlightDepartureTimeChanged(this.flightDepartureTime);
+
+  @override
+  List<Object?> get props => [flightDepartureTime];
+}
+
+// Legacy alias kept for backward compatibility with any existing usages that
+// reference PickupDateTimeChanged. New code should use ManualPickupTimeChanged.
 class PickupDateTimeChanged extends CreateRideFormEvent {
   final DateTime pickupDateTime;
 

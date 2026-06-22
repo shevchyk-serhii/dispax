@@ -178,7 +178,9 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
                       const SizedBox(height: 12),
                       _WhenToggle(
                         isScheduled: state.isScheduled,
-                        pickupDateTime: state.pickupDateTime,
+                        pickupDateTime:
+                            state.manualPickupDateTime ??
+                            DateTime.now().add(const Duration(hours: 1)),
                       ),
                       const SizedBox(height: 16),
                       _VehicleClassSection(state: state),
