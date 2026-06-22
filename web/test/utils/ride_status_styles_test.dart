@@ -112,6 +112,18 @@ void main() {
         AppColors.rideCompleted,
       );
     });
+
+    test('getStatusColorValue matches getStatusColor as ARGB int', () {
+      // The map driver marker colours its dot from this int; it must stay the
+      // single source of truth (same value as the Flutter Color).
+      for (final status in RideStatus.values) {
+        expect(
+          RideStatusStyles.getStatusColorValue(status),
+          RideStatusStyles.getStatusColor(status).toARGB32(),
+          reason: '${status.value} marker colour must match the status palette',
+        );
+      }
+    });
   });
 
   group('createStatusBadge', () {
