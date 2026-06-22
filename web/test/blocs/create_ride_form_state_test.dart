@@ -106,7 +106,7 @@ void main() {
         fromAddress: fromAddress,
         toAddress: toAddress,
         flightNumber: flightNumber,
-        pickupDateTime: DateTime(2026, 3, 15),
+        manualPickupDateTime: DateTime(2026, 3, 15),
         isAirportTransfer: isAirportTransfer,
         isArrival: false,
       );

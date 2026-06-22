@@ -35,7 +35,15 @@ class CreateRideFormSections extends StatelessWidget {
               const CreateRideDriverSection(),
             ],
             const SizedBox(height: AppDimensions.paddingMedium),
-            CreateRideScheduleSection(pickupDateTime: state.pickupDateTime),
+            // For departure rides the pickup time is computed from the flight
+            // departure; a separate picker is shown inside the airport section.
+            // For all other rides the operator must set the pickup time manually.
+            if (!state.isDepartureAutoCompute)
+              CreateRideScheduleSection(
+                pickupDateTime:
+                    state.manualPickupDateTime ??
+                    DateTime.now().add(const Duration(hours: 1)),
+              ),
             const SizedBox(height: AppDimensions.paddingMedium),
             CreateRideAirportSection(
               isAirportTransfer: state.isAirportTransfer,
@@ -43,6 +51,9 @@ class CreateRideFormSections extends StatelessWidget {
               flightNumber: state.flightNumber,
               selectedGate: state.selectedGate,
               selectedTerminal: state.selectedTerminal,
+              isDepartureAutoCompute: state.isDepartureAutoCompute,
+              flightDepartureTime: state.flightDepartureTime,
+              manualPickupDateTime: state.manualPickupDateTime,
             ),
             const SizedBox(height: AppDimensions.paddingMedium),
             _NotesSectionToggle(state: state),
