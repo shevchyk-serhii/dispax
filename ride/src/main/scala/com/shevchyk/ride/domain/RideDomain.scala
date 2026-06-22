@@ -235,7 +235,13 @@ final case class CreateRideRequest(
     notes: Option[String] = None,
     specifics: Option[RideSpecifics] = None,
     specialRequirements: Option[String] = None,
-    vehicleClass: VehicleClass = VehicleClass.Default
+    vehicleClass: VehicleClass = VehicleClass.Default,
+    // pickupDateTime carries the operator-supplied pickup time (when Some) or "compute it" (when
+    // None, for airport departure rides only). For all other ride types this field is always Some.
+    pickupDateTime: Option[Instant] = None,
+    // clientCompanyId is resolved from the client Person and used by PickupTimeService to apply
+    // client-level airport timing overrides. May be None when the client has no company affiliation.
+    clientCompanyId: Option[ClientCompanyId] = None
 )
 
 final case class UpdateRideStatusRequest(

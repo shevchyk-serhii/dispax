@@ -21,7 +21,8 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
     sql"""
       SELECT company_id, commission_rate, working_hours_start::text, working_hours_end::text,
              default_currency, cancellation_fee_default, no_show_fee, auto_assign_enabled, updated_at,
-             datev_beraternummer, datev_mandantennummer, datev_sachkontenlaenge
+             datev_beraternummer, datev_mandantennummer, datev_sachkontenlaenge,
+             airport_buffer_minutes, airport_checkin_close_minutes
       FROM company_settings
       WHERE company_id = ${companyId.value}
     """
@@ -33,12 +34,14 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
     sql"""
       INSERT INTO company_settings (company_id, commission_rate, working_hours_start, working_hours_end,
                                      default_currency, cancellation_fee_default, no_show_fee, auto_assign_enabled, updated_at,
-                                     datev_beraternummer, datev_mandantennummer, datev_sachkontenlaenge)
+                                     datev_beraternummer, datev_mandantennummer, datev_sachkontenlaenge,
+                                     airport_buffer_minutes, airport_checkin_close_minutes)
       VALUES (${settings.companyId.value}, ${settings.commissionRate},
               ${settings.workingHoursStart}::time, ${settings.workingHoursEnd}::time,
               ${settings.defaultCurrency}, ${settings.cancellationFeeDefault}, ${settings.noShowFee},
               ${settings.autoAssignEnabled}, NOW(),
-              ${settings.datevBeraternummer}, ${settings.datevMandantennummer}, ${settings.datevSachkontenlaenge})
+              ${settings.datevBeraternummer}, ${settings.datevMandantennummer}, ${settings.datevSachkontenlaenge},
+              ${settings.airportBufferMinutes}, ${settings.airportCheckInCloseMinutes})
       ON CONFLICT (company_id) DO UPDATE SET
         commission_rate = ${settings.commissionRate},
         working_hours_start = ${settings.workingHoursStart}::time,
@@ -50,7 +53,9 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
         updated_at = NOW(),
         datev_beraternummer = ${settings.datevBeraternummer},
         datev_mandantennummer = ${settings.datevMandantennummer},
-        datev_sachkontenlaenge = ${settings.datevSachkontenlaenge}
+        datev_sachkontenlaenge = ${settings.datevSachkontenlaenge},
+        airport_buffer_minutes = ${settings.airportBufferMinutes},
+        airport_checkin_close_minutes = ${settings.airportCheckInCloseMinutes}
     """.update.run
       .transact(xa)
       .as(settings.copy(updatedAt = Instant.now()))
@@ -69,6 +74,8 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
           Instant,
           Option[String],
           Option[String],
+          Option[Int],
+          Option[Int],
           Option[Int]
       )
     ].map {
@@ -84,7 +91,9 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
             updatedAt,
             datevBeraternummer,
             datevMandantennummer,
-            datevSachkontenlaenge
+            datevSachkontenlaenge,
+            airportBufferMinutes,
+            airportCheckInCloseMinutes
           ) =>
         CompanySettings(
           companyId = CompanyId(companyId),
@@ -98,7 +107,9 @@ final class PostgresCompanySettingsRepository(xa: Transactor[Task]) extends Comp
           updatedAt = updatedAt,
           datevBeraternummer = datevBeraternummer,
           datevMandantennummer = datevMandantennummer,
-          datevSachkontenlaenge = datevSachkontenlaenge
+          datevSachkontenlaenge = datevSachkontenlaenge,
+          airportBufferMinutes = airportBufferMinutes,
+          airportCheckInCloseMinutes = airportCheckInCloseMinutes
         )
     }
 

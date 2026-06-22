@@ -93,7 +93,8 @@ class RideServiceImpl(
     auditService: AuditService,
     blacklistRepository: BlacklistRepository,
     geocodingService: GeocodingService,
-    expenseRepository: ExpenseRepository
+    expenseRepository: ExpenseRepository,
+    pickupTimeService: PickupTimeService
 ) extends RideService:
 
   /**
@@ -132,7 +133,62 @@ class RideServiceImpl(
                            .enrichLocation(request.dropoffLocation)
                            .orElse(ZIO.succeed(request.dropoffLocation))
       enrichedRequest  = request.copy(pickupLocation = enrichedPickup, dropoffLocation = enrichedDropoff)
-      ride            <- ZIO.succeed(RideMapper.fromRequest(enrichedRequest))
+      // Auto-compute pickup time for airport departure rides when the operator did NOT supply one.
+      // Guard conditions: departure (isArrival=false), no manual pickupDateTime, flightTime present.
+      adjustedRequest <-
+        enrichedRequest.specifics match
+          case Some(RideSpecifics.AirportTransfer(_, _, false)) if enrichedRequest.pickupDateTime.isEmpty =>
+            enrichedRequest.scheduledTime match
+              case Some(flightDep) =>
+                (for {
+                  fromLat <- ZIO
+                               .fromOption(enrichedPickup.latitude)
+                               .orElseFail(PickupTimeService.Error.MissingCoordinates)
+                  fromLng <- ZIO
+                               .fromOption(enrichedPickup.longitude)
+                               .orElseFail(PickupTimeService.Error.MissingCoordinates)
+                  toLat   <- ZIO
+                               .fromOption(enrichedDropoff.latitude)
+                               .orElseFail(PickupTimeService.Error.MissingCoordinates)
+                  toLng   <- ZIO
+                               .fromOption(enrichedDropoff.longitude)
+                               .orElseFail(PickupTimeService.Error.MissingCoordinates)
+                  result  <- pickupTimeService.computePickupTime(
+                               taxiCompanyId = enrichedRequest.companyId,
+                               clientCompanyId = enrichedRequest.clientCompanyId,
+                               flightDeparture = flightDep,
+                               fromLat = fromLat,
+                               fromLng = fromLng,
+                               toLat = toLat,
+                               toLng = toLng
+                             )
+                  _       <-
+                    ZIO.when(result.travelTimeFallback)(
+                      ZIO.logWarning(
+                        s"pickup-time: HERE unavailable, used Haversine for ride creation " +
+                          s"(company=${enrichedRequest.companyId.value})"
+                      )
+                    )
+                } yield enrichedRequest.copy(pickupDateTime = Some(result.pickupDateTime)))
+                  .mapError(e =>
+                    RideError.ExternalServiceError(
+                      "PickupTimeService",
+                      e match
+                        case PickupTimeService.Error.SettingsLoadFailed(cause) => cause
+                        case PickupTimeService.Error.MissingCoordinates        =>
+                          new RuntimeException("Missing geocoded coordinates for pickup-time calculation")
+                    )
+                  )
+                  .orElse(ZIO.succeed(enrichedRequest)) // any error → keep original, don't block ride creation
+              case None            =>
+                ZIO.logWarning(
+                  "Airport departure ride has no flightTime; using supplied pickupDateTime as-is"
+                ) *>
+                  ZIO.succeed(enrichedRequest)
+          case _                                                                                          =>
+            // Arrivals, regular rides, or rides with a manual pickup time: pass through unchanged.
+            ZIO.succeed(enrichedRequest)
+      ride            <- ZIO.succeed(RideMapper.fromRequest(adjustedRequest))
       persistedRide   <- rideRepository.create(ride).mapDatabaseError
       _               <-
         eventHub
@@ -800,8 +856,10 @@ class RideServiceImpl(
 
 object RideService:
 
-  val layer
-      : ZLayer[RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository, Nothing, RideService] =
-    ZLayer.fromFunction(
-      RideServiceImpl.apply
-    )
+  val layer: ZLayer[
+    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService,
+    Nothing,
+    RideService
+  ] = ZLayer.fromFunction(
+    RideServiceImpl.apply
+  )

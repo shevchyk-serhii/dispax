@@ -19,7 +19,7 @@ object RideValidatorsSpec extends ZIOSpecDefault {
   def validCreateRequest(
       from: LocationDto = validLocation(),
       to: LocationDto = validLocation("Airport MUC"),
-      pickupDateTime: String = futureDateTime,
+      pickupDateTime: Option[String] = Some(futureDateTime),
       clientId: String = validClientId,
       isAirportTransfer: Boolean = false,
       flightNumber: Option[String] = None,
@@ -62,13 +62,13 @@ object RideValidatorsSpec extends ZIOSpecDefault {
         }
       },
       test("rejects past datetime") {
-        val req = validCreateRequest(pickupDateTime = pastDateTime)
+        val req = validCreateRequest(pickupDateTime = Some(pastDateTime))
         summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
           assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("past"))
         }
       },
       test("rejects invalid datetime format") {
-        val req = validCreateRequest(pickupDateTime = "2024-13-45 bad")
+        val req = validCreateRequest(pickupDateTime = Some("2024-13-45 bad"))
         summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
           assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Invalid datetime"))
         }

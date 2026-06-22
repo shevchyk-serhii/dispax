@@ -10,11 +10,24 @@ import java.util.UUID
 
 final class PostgresClientCompanyRepository(xa: Transactor[Task]) extends ClientCompanyRepository:
 
-  private val selectColumns = fr"id, name, taxi_company_id, email, phone, address, preferred_language"
+  private val selectColumns =
+    fr"id, name, taxi_company_id, email, phone, address, preferred_language, airport_buffer_minutes, airport_checkin_close_minutes"
 
   implicit val clientCompanyRead: Read[ClientCompany] =
-    Read[(UUID, String, UUID, Option[String], Option[String], Option[String], Option[String])].map {
-      case (id, name, taxiCompanyId, email, phone, address, preferredLanguage) =>
+    Read[
+      (UUID, String, UUID, Option[String], Option[String], Option[String], Option[String], Option[Int], Option[Int])
+    ].map {
+      case (
+            id,
+            name,
+            taxiCompanyId,
+            email,
+            phone,
+            address,
+            preferredLanguage,
+            airportBufferMinutes,
+            airportCheckInCloseMinutes
+          ) =>
         ClientCompany(
           id = ClientCompanyId(id),
           name = name,
@@ -22,15 +35,19 @@ final class PostgresClientCompanyRepository(xa: Transactor[Task]) extends Client
           email = email,
           phone = phone,
           address = address,
-          preferredLanguage = preferredLanguage
+          preferredLanguage = preferredLanguage,
+          airportBufferMinutes = airportBufferMinutes,
+          airportCheckInCloseMinutes = airportCheckInCloseMinutes
         )
     }
 
   override def create(company: ClientCompany): Task[ClientCompany] =
     sql"""
-      INSERT INTO client_companies (id, name, taxi_company_id, email, phone, address, preferred_language)
+      INSERT INTO client_companies (id, name, taxi_company_id, email, phone, address, preferred_language,
+                                    airport_buffer_minutes, airport_checkin_close_minutes)
       VALUES (${company.id.value}, ${company.name}, ${company.taxiCompanyId.value},
-              ${company.email}, ${company.phone}, ${company.address}, ${company.preferredLanguage})
+              ${company.email}, ${company.phone}, ${company.address}, ${company.preferredLanguage},
+              ${company.airportBufferMinutes}, ${company.airportCheckInCloseMinutes})
     """.update.run
       .transact(xa)
       .as(company)
@@ -55,6 +72,8 @@ final class PostgresClientCompanyRepository(xa: Transactor[Task]) extends Client
           phone = ${company.phone},
           address = ${company.address},
           preferred_language = ${company.preferredLanguage},
+          airport_buffer_minutes = ${company.airportBufferMinutes},
+          airport_checkin_close_minutes = ${company.airportCheckInCloseMinutes},
           updated_at = NOW()
       WHERE id = ${company.id.value} AND taxi_company_id = ${company.taxiCompanyId.value}
     """.update.run

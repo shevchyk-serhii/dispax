@@ -5,7 +5,7 @@ import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, R
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.{PersonRepository, InMemoryPersonRepository}
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.application.service.RideService
+import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
 import zio.test.*
 import zio.*
@@ -155,7 +155,9 @@ object RideServiceSpec extends ZIOSpecDefault {
       noopEmailSms ++
       AuditService.inMemory ++
       BlacklistRepository.inMemory ++
-      GeocodingService.noop ++ ExpenseRepository.inMemory) >+> RideService.layer
+      GeocodingService.noop ++
+      ExpenseRepository.inMemory ++
+      PickupTimeService.noopLayer) >+> RideService.layer
 
   def spec =
     suite("RideService")(
@@ -174,6 +176,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           BlacklistRepository.inMemory,
           GeocodingService.noop,
           ExpenseRepository.inMemory,
+          PickupTimeService.noopLayer,
           RideService.layer
         )
       ),
@@ -206,6 +209,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           BlacklistRepository.inMemory,
           GeocodingService.noop,
           ExpenseRepository.inMemory,
+          PickupTimeService.noopLayer,
           RideService.layer
         ),
         test("should create airport transfer ride") {
@@ -235,6 +239,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           BlacklistRepository.inMemory,
           GeocodingService.noop,
           ExpenseRepository.inMemory,
+          PickupTimeService.noopLayer,
           RideService.layer
         )
       ),
@@ -435,7 +440,9 @@ object RideServiceSpec extends ZIOSpecDefault {
               noopEmailSms ++
               AuditService.inMemory ++
               BlacklistRepository.inMemory ++
-              GeocodingService.noop ++ ExpenseRepository.inMemory) >+> RideService.layer
+              GeocodingService.noop ++
+              ExpenseRepository.inMemory ++
+              PickupTimeService.noopLayer) >+> RideService.layer
 
           (for {
             service <- ZIO.service[RideService]

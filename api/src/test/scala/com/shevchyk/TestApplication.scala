@@ -51,6 +51,7 @@ import com.shevchyk.ride.application.service.{
   ChatService,
   ClientAddressService,
   ClientLocationService,
+  PickupTimeService,
   RideEstimateService,
   RideService
 }
@@ -1509,6 +1510,7 @@ object TestApplication extends ZIOAppDefault:
       },
       ClientAddressService.layer,
       inMemoryClientAddressRepositoryLayer,
+      PickupTimeService.noopLayer,
       RideService.layer,
       // Schedule
       inMemoryScheduleDayRepositoryLayer,

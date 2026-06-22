@@ -229,7 +229,10 @@ final case class ClientCompany(
     email: Option[String] = None,
     phone: Option[String] = None,
     address: Option[String] = None,
-    preferredLanguage: Option[String] = None
+    preferredLanguage: Option[String] = None,
+    // Airport departure pickup timing overrides (NULL = inherit from company or global default).
+    airportBufferMinutes: Option[Int] = None,
+    airportCheckInCloseMinutes: Option[Int] = None
 ) derives JsonCodec
 
 final case class CreateClientCompanyRequest(
@@ -237,5 +240,35 @@ final case class CreateClientCompanyRequest(
     email: Option[String] = None,
     phone: Option[String] = None,
     address: Option[String] = None,
-    preferredLanguage: Option[String] = None
+    preferredLanguage: Option[String] = None,
+    // Airport departure pickup timing overrides (absent = no override; uses company or global default).
+    airportBufferMinutes: Option[Int] = None,
+    airportCheckInCloseMinutes: Option[Int] = None
 ) derives JsonCodec
+
+/**
+ * PATCH payload for updating a client company. Absent fields are left unchanged (merge-patch semantics).
+ */
+final case class UpdateClientCompanyRequest(
+    name: Option[String] = None,
+    email: Option[String] = None,
+    phone: Option[String] = None,
+    address: Option[String] = None,
+    preferredLanguage: Option[String] = None,
+    // Airport departure pickup timing overrides (absent = leave unchanged).
+    airportBufferMinutes: Option[Int] = None,
+    airportCheckInCloseMinutes: Option[Int] = None
+) derives JsonCodec:
+
+  /**
+   * Apply the patch onto an existing ClientCompany. Unset fields keep their current value.
+   */
+  def applyTo(current: ClientCompany): ClientCompany = current.copy(
+    name = name.getOrElse(current.name),
+    email = email.orElse(current.email),
+    phone = phone.orElse(current.phone),
+    address = address.orElse(current.address),
+    preferredLanguage = preferredLanguage.orElse(current.preferredLanguage),
+    airportBufferMinutes = airportBufferMinutes.orElse(current.airportBufferMinutes),
+    airportCheckInCloseMinutes = airportCheckInCloseMinutes.orElse(current.airportCheckInCloseMinutes)
+  )

@@ -46,6 +46,10 @@ object RideApi:
     RideService & ClientAddressService & ClientLocationService & AirportCheckpointService & ChatService &
       RideRatingRepository & PersonRepository & JwtService & TariffRepository & RideEstimateService & GeocodingService
 
+  // NOTE: AirportTimingConfig is used ONLY by the advisory `airport-timing` endpoint.
+  // For the ride creation pickup-time computation, use PickupTimeService (configurable per
+  // company/client, 3-level hierarchy). A follow-up cleanup ticket should remove this config
+  // once the advisory endpoint is also migrated to the configurable approach.
   private object AirportTimingConfig:
     val travelTimeMinutes: Int        = 45
     val bufferTimeMinutes: Int        = 30
@@ -253,36 +257,48 @@ object RideApi:
 
   private val createRideServer: ZServerEndpoint[RideEnv, Any] = createRideEndpoint.serverLogic { user => apiRequest =>
     for {
-      _             <- checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
-      companyId     <- requireCompanyId(user.companyId)
-      validRequest  <- apiRequest.validate.mapError(fromRideError)
-      domainRequest <- CreateRideApiRequest
-                         .toDomain(validRequest, companyId)
-                         .mapError(_ => (StatusCode.BadRequest, ApiError("Invalid UUID format")))
-                         .map { req =>
-                           if (user.role.toUpperCase == "CLIENT")
-                             req.copy(clientId = PersonId(user.userId))
-                           else if (user.role.toUpperCase == "DRIVER" && validRequest.clientId == user.userId.toString)
-                             req.copy(clientId = PersonId(user.userId))
-                           else
-                             req
-                         }
-      service       <- ZIO.service[RideService]
-      ride0         <- service.createRide(domainRequest).mapError(fromRideError)
-      ride          <-
+      _              <- checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
+      companyId      <- requireCompanyId(user.companyId)
+      validRequest   <- apiRequest.validate.mapError(fromRideError)
+      domainRequest  <- CreateRideApiRequest
+                          .toDomain(validRequest, companyId)
+                          .mapError(_ => (StatusCode.BadRequest, ApiError("Invalid UUID format")))
+                          .map { req =>
+                            if (user.role.toUpperCase == "CLIENT")
+                              req.copy(clientId = PersonId(user.userId))
+                            else if (user.role.toUpperCase == "DRIVER" && validRequest.clientId == user.userId.toString)
+                              req.copy(clientId = PersonId(user.userId))
+                            else
+                              req
+                          }
+      // Resolve the client's clientCompanyId so PickupTimeService can apply per-client timing
+      // overrides (e.g. a corporate account with a custom check-in window). The lookup is
+      // best-effort: if the person is not found or has no company affiliation, we proceed
+      // without a client override (company/global defaults apply).
+      personRepo     <- ZIO.service[PersonRepository]
+      clientPerson   <- personRepo
+                          .findById(domainRequest.clientId)
+                          .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
+      enrichedRequest =
+        clientPerson
+          .flatMap(_.clientCompanyId)
+          .fold(domainRequest)(ccId => domainRequest.copy(clientCompanyId = Some(ccId)))
+      service        <- ZIO.service[RideService]
+      ride0          <- service.createRide(enrichedRequest).mapError(fromRideError)
+      ride           <-
         validRequest.driverId match
           case Some(driverIdStr) =>
             parsePersonId(driverIdStr).flatMap { driverPid =>
               service.assignDriver(ride0.id, driverPid).mapError(fromRideError)
             }
           case None              => ZIO.succeed(ride0)
-      addrService   <- ZIO.service[ClientAddressService]
-      _             <-
+      addrService    <- ZIO.service[ClientAddressService]
+      _              <-
         addrService
           .recordUsage(ride.clientId, ride.pickupLocation.address, "Pickup", None, None)
           .tapError(e => ZIO.logWarning(s"Failed to record from address: $e"))
           .ignore
-      _             <-
+      _              <-
         addrService
           .recordUsage(ride.clientId, ride.dropoffLocation.address, "Dropoff", None, None)
           .tapError(e => ZIO.logWarning(s"Failed to record to address: $e"))

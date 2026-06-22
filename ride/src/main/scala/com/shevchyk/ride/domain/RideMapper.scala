@@ -12,7 +12,9 @@ object RideMapper:
     companyId = request.companyId,
     pickupLocation = request.pickupLocation,
     dropoffLocation = request.dropoffLocation,
-    pickupDateTime = request.scheduledTime.getOrElse(Instant.now()),
+    // pickupDateTime takes precedence over scheduledTime (which is the flight time for departures).
+    // PickupTimeService fills in request.pickupDateTime before RideMapper is called for departure rides.
+    pickupDateTime = request.pickupDateTime.orElse(request.scheduledTime).getOrElse(Instant.now()),
     scheduledTime = request.scheduledTime,
     requestTime = Instant.now(),
     notes = request.notes,

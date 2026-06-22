@@ -37,7 +37,7 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
     .accumulate(request)(
       validateLocation(request.from, "Pickup location"),
       validateLocation(request.to, "Dropoff location"),
-      validateDateTime(request.pickupDateTime),
+      validatePickupDateTime(request),
       validateClientId(request.clientId),
       validateAirportTransfer(request),
       validatePrice(request.price)
@@ -59,18 +59,35 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
       _ <- validateCoordinates(location.latitude, location.longitude, fieldName)
     } yield ()
 
-  private def validateDateTime(dateTime: String): IO[RideError, Unit] = ZIO
-    .attempt(Instant.parse(dateTime))
-    .orElseFail(RideError.ValidationError(s"Invalid datetime format: $dateTime. Expected ISO-8601 format"))
-    .flatMap { instant =>
-      // Allow a small clock-skew tolerance (RidePolicy) so a client whose clock
-      // runs a few minutes fast isn't rejected. Must match RideService.
-      ZIO
-        .when(RidePolicy.isInThePast(instant))(
-          ZIO.fail(RideError.ValidationError("Pickup time cannot be in the past"))
-        )
-        .unit
-    }
+  /**
+   * Validates pickupDateTime:
+   *   - For airport departure rides (isAirportTransfer=true, isArrival=false) pickupDateTime is optional: an absent
+   *     value means "compute it from flightTime". When present, it must be a valid ISO-8601 instant and must not be in
+   *     the past.
+   *   - For all other ride types pickupDateTime is required and must be a valid ISO-8601 instant that is not in the
+   *     past.
+   */
+  private def validatePickupDateTime(request: CreateRideApiRequest): IO[RideError, Unit] =
+    val isDeparture = request.isAirportTransfer && !request.isArrival
+    request.pickupDateTime match
+      case None if isDeparture =>
+        // Auto-compute path: no manual pickup time; PickupTimeService will compute it.
+        // flightTime must be present — checked by validateAirportTransfer.
+        ZIO.unit
+      case None                =>
+        // Non-departure rides must supply a pickup time.
+        ZIO.fail(RideError.ValidationError("pickupDateTime is required"))
+      case Some(dt)            =>
+        ZIO
+          .attempt(Instant.parse(dt))
+          .orElseFail(RideError.ValidationError(s"Invalid datetime format: $dt. Expected ISO-8601 format"))
+          .flatMap { instant =>
+            ZIO
+              .when(RidePolicy.isInThePast(instant))(
+                ZIO.fail(RideError.ValidationError("Pickup time cannot be in the past"))
+              )
+              .unit
+          }
 
   private def validateClientId(clientId: String): IO[RideError, Unit] =
     ZIO
@@ -79,11 +96,40 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
       .unit
 
   private def validateAirportTransfer(request: CreateRideApiRequest): IO[RideError, Unit] =
-    ZIO
-      .when(request.isAirportTransfer && request.flightNumber.isEmpty)(
-        ZIO.fail(RideError.ValidationError("Flight number is required for airport transfers"))
-      )
-      .unit
+    for {
+      _ <-
+        ZIO
+          .when(request.isAirportTransfer && request.flightNumber.isEmpty)(
+            ZIO.fail(RideError.ValidationError("Flight number is required for airport transfers"))
+          )
+          .unit
+      // For departure rides without a manual pickup time, flightTime must be provided so the
+      // backend can compute the pickup time automatically.
+      _ <-
+        ZIO
+          .when(
+            request.isAirportTransfer && !request.isArrival &&
+              request.pickupDateTime.isEmpty && request.flightTime.isEmpty
+          )(
+            ZIO.fail(
+              RideError.ValidationError(
+                "flightTime is required for airport departure rides when pickupDateTime is not supplied"
+              )
+            )
+          )
+          .unit
+      // Validate flightTime format when present.
+      _ <-
+        request.flightTime match
+          case Some(ft) =>
+            ZIO
+              .attempt(Instant.parse(ft))
+              .orElseFail(
+                RideError.ValidationError(s"Invalid flightTime format: $ft. Expected ISO-8601 format")
+              )
+              .unit
+          case None     => ZIO.unit
+    } yield ()
 
   private def validatePrice(price: Option[Double]): IO[RideError, Unit] =
     ZIO

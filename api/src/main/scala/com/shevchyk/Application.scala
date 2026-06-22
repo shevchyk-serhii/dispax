@@ -7,8 +7,11 @@ import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
   AirportConfigService,
   ChatService,
-  ClientAddressService
+  ClientAddressService,
+  PickupTimeService
 }
+import com.shevchyk.core.config.AirportPickupConfig
+import com.shevchyk.app.HereTravelTimeAdapter
 import com.shevchyk.ride.repository.{
   RideRepository,
   PostgresRideRepository,
@@ -257,8 +260,11 @@ object Application extends ZIOAppDefault:
       InvoiceService.layerWithLanguage(sys.env.getOrElse("EMAIL_DEFAULT_LANG", "de")),
       PaymentChecker.mockLayer,
       HereConfig.liveLayer,
+      AirportPickupConfig.liveLayer,
       GeocodingService.layer,
       HereRoutingService.layer,
+      HereTravelTimeAdapter.layer,
+      PickupTimeService.layer,
       EtaService.layer,
       Client.default,
       JwtConfig.live,

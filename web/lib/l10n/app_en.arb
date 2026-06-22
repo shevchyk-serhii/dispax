@@ -213,5 +213,15 @@
     "placeholders": {
       "driverName": {"type": "String"}
     }
-  }
+  },
+
+  "flightDepartureTime": "Flight departure time",
+  "manualPickupTimeOptional": "Pickup time (optional — computed if blank)",
+  "confirmedPickupTime": "Confirmed pickup: {time}",
+  "@confirmedPickupTime": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "pickupTimeComputedAuto": "Computed automatically based on flight departure"
 }
