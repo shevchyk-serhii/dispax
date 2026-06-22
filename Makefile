@@ -586,17 +586,17 @@ dev-roles: free-port
 	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
 	@wait
 
-# Like `dev-roles`, but runs the app via a single `flutter run -d all` so HOT
-# RELOAD / HOT RESTART work: press `r` (hot reload) or `R` (hot restart) in this
-# terminal and the change lands on ALL THREE simulators at once. Trade-off vs
-# `dev-roles`: one foreground flutter process drives all devices (no per-device
-# control).
+# Like `dev-roles`, but runs the app with `flutter run` (debug, with VM service)
+# on each of our 3 simulators so you get a live dev session. Each simulator gets
+# its OWN `flutter run -d <udid>` in the background, targeted by UDID — NOT
+# `flutter run -d all`, which would also pick up macOS/Chrome/any plugged-in or
+# wireless iPhone and start "Building macOS application…".
 #
-# `-d all` targets every booted simulator, so to keep it to our three we shut
-# down only the OTHER booted simulators (foreign ones) — our three are left
-# running between invocations so re-running this is fast (no cold boot). Use
-# `dev-roles` when you just want the apps running; use `dev-roles-live` when
-# you're actively editing Dart and want r/R. Quit with `q`, then `make stop-dev`.
+# Trade-off: with three background flutter processes sharing one terminal, the
+# interactive r/R keys don't work — to apply Dart changes, re-run the target
+# (the simulators stay booted, so it restarts fast). Our 3 simulators are left
+# running between invocations; foreign devices are never touched. Use `dev-roles`
+# for a plain install run. Stop everything with `make stop-dev`.
 dev-roles-live: free-port
 	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
 	@echo "⏳ Waiting for backend on :8080..."
@@ -612,24 +612,22 @@ dev-roles-live: free-port
 		fi; \
 		echo "$$udid"; \
 	}; \
-	OURS=""; \
 	for role in "$(SIM_NAME_CLIENT)" "$(SIM_NAME_DRIVER)" "$(SIM_NAME_DISPATCHER)"; do \
-		udid=$$(ensure_sim "$$role"); OURS="$$OURS $$udid"; \
-	done; \
-	echo "🧹 Shutting down only FOREIGN booted simulators (keeping our 3 alive)..."; \
-	for booted in $$(xcrun simctl list devices booted 2>/dev/null | grep -oE '[0-9A-F-]{36}'); do \
-		case " $$OURS " in *" $$booted "*) ;; *) echo "   ⏹  $$booted"; xcrun simctl shutdown "$$booted" 2>/dev/null || true ;; esac; \
-	done; \
-	for udid in $$OURS; do \
-		echo "🚀 Booting (if needed) $$udid"; \
+		udid=$$(ensure_sim "$$role"); \
+		echo "🚀 $$role → $$udid"; \
 		xcrun simctl boot "$$udid" 2>/dev/null || true; \
 	done
 	@open -a Simulator
-	@echo "▶️  flutter run -d all — press 'r' hot reload, 'R' hot restart, 'q' quit."
+	@echo "▶️  Starting flutter run on each of the 3 simulators (by UDID, not -d all)."
 	@echo "   Log in via 'Quick Access for Testing' or dispatcher@/driver1@dispax.de, client1@bmw.de (password123)."
-	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d all \
-		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
-		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
+	@echo "   r/R keys are unavailable with 3 processes — re-run 'make dev-roles-live' to apply Dart changes."
+	@for role in "$(SIM_NAME_CLIENT)" "$(SIM_NAME_DRIVER)" "$(SIM_NAME_DISPATCHER)"; do \
+		udid=$$(xcrun simctl list devices 2>/dev/null | grep -F "$$role (" | grep -oE '[0-9A-F-]{36}' | head -1); \
+		( cd $(FLUTTER_DIR) && $(FLUTTER) run -d "$$udid" \
+			--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
+			--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ) & \
+	done; \
+	wait
 
 # Kill all dev processes (backend + flutter)
 stop-dev:
