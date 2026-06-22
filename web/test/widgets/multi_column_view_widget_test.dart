@@ -50,10 +50,7 @@ Map<String, dynamic> _rideJson({
   };
 }
 
-Person _driver({
-  String id = 'driver-1',
-  String name = 'Hans Müller',
-}) {
+Person _driver({String id = 'driver-1', String name = 'Hans Müller'}) {
   return Person(
     id: id,
     name: name,
@@ -101,15 +98,15 @@ void main() {
     apiClient = _MockApiClient();
     when(() => authBloc.apiClient).thenReturn(apiClient);
     when(() => authBloc.state).thenReturn(
-      AuthState.authenticated(
-        _driver(id: 'dispatcher-1', name: 'Dispatcher'),
-      ),
+      AuthState.authenticated(_driver(id: 'dispatcher-1', name: 'Dispatcher')),
     );
   });
 
   // ── Column headers ─────────────────────────────────────────────────────────
 
-  testWidgets('renders one column per driver headed by driver name', (tester) async {
+  testWidgets('renders one column per driver headed by driver name', (
+    tester,
+  ) async {
     // Widen the viewport so 3 columns have enough room and do not overflow.
     tester.view.physicalSize = const Size(1800, 1200);
     tester.view.devicePixelRatio = 1.0;
@@ -146,17 +143,18 @@ void main() {
     expect(find.text('Max Huber'), findsOneWidget);
   });
 
-  testWidgets('shows "+N more" indicator when more than 3 drivers are passed',
-      (tester) async {
+  testWidgets('shows "+N more" indicator when more than 3 drivers are passed', (
+    tester,
+  ) async {
     // 5 drivers → 3 columns + "+2 more" banner.
     final drivers = List.generate(
       5,
       (i) => _driver(id: 'driver-$i', name: 'Driver $i'),
     );
 
-    when(() => apiClient.get(any())).thenAnswer(
-      (_) async => http.Response('[]', 200),
-    );
+    when(
+      () => apiClient.get(any()),
+    ).thenAnswer((_) async => http.Response('[]', 200));
 
     await tester.pumpWidget(
       _buildTestWidget(authBloc: authBloc, drivers: drivers),
@@ -182,9 +180,9 @@ void main() {
       (i) => _driver(id: 'driver-$i', name: 'Driver $i'),
     );
 
-    when(() => apiClient.get(any())).thenAnswer(
-      (_) async => http.Response('[]', 200),
-    );
+    when(
+      () => apiClient.get(any()),
+    ).thenAnswer((_) async => http.Response('[]', 200));
 
     await tester.pumpWidget(
       _buildTestWidget(authBloc: authBloc, drivers: drivers),
@@ -198,21 +196,18 @@ void main() {
 
   // ── Loading state ──────────────────────────────────────────────────────────
 
-  testWidgets('shows CircularProgressIndicator while waiting for rides', (tester) async {
+  testWidgets('shows CircularProgressIndicator while waiting for rides', (
+    tester,
+  ) async {
     // Use a completer so we can check the loading state before it resolves.
-    when(() => apiClient.get(any())).thenAnswer(
-      (_) async {
-        // Simulate a slow response.
-        await Future<void>.delayed(const Duration(seconds: 10));
-        return http.Response('[]', 200);
-      },
-    );
+    when(() => apiClient.get(any())).thenAnswer((_) async {
+      // Simulate a slow response.
+      await Future<void>.delayed(const Duration(seconds: 10));
+      return http.Response('[]', 200);
+    });
 
     await tester.pumpWidget(
-      _buildTestWidget(
-        authBloc: authBloc,
-        drivers: [_driver()],
-      ),
+      _buildTestWidget(authBloc: authBloc, drivers: [_driver()]),
     );
 
     await tester.pump(); // start future
@@ -226,10 +221,12 @@ void main() {
 
   // ── Empty column ────────────────────────────────────────────────────────────
 
-  testWidgets('shows "No rides" for a driver with no rides on that day', (tester) async {
-    when(() => apiClient.get(any())).thenAnswer(
-      (_) async => http.Response('[]', 200),
-    );
+  testWidgets('shows "No rides" for a driver with no rides on that day', (
+    tester,
+  ) async {
+    when(
+      () => apiClient.get(any()),
+    ).thenAnswer((_) async => http.Response('[]', 200));
 
     await tester.pumpWidget(
       _buildTestWidget(
@@ -245,7 +242,9 @@ void main() {
 
   // ── Request URL ────────────────────────────────────────────────────────────
 
-  testWidgets('passes correct driverIds and date to getRidesByDrivers', (tester) async {
+  testWidgets('passes correct driverIds and date to getRidesByDrivers', (
+    tester,
+  ) async {
     String? capturedPath;
     when(() => apiClient.get(any())).thenAnswer((invocation) async {
       capturedPath = invocation.positionalArguments[0] as String;
@@ -272,26 +271,106 @@ void main() {
 
   // ── Tenant isolation: API returns [] for foreign driver ────────────────────
 
-  testWidgets('renders empty column when server returns no rides for driver (tenant isolation)',
+  testWidgets(
+    'renders empty column when server returns no rides for driver (tenant isolation)',
+    (tester) async {
+      // Simulate server returning [] for a foreign driver — no data should appear.
+      when(
+        () => apiClient.get(any()),
+      ).thenAnswer((_) async => http.Response('[]', 200));
+
+      final foreignDriver = _driver(id: 'foreign-id', name: 'Foreign Driver');
+
+      await tester.pumpWidget(
+        _buildTestWidget(authBloc: authBloc, drivers: [foreignDriver]),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Column header present (the driver is in the requested list), but no rides.
+      expect(find.text('Foreign Driver'), findsOneWidget);
+      expect(find.text('No rides'), findsOneWidget);
+    },
+  );
+
+  // ── Compact board layout ───────────────────────────────────────────────────
+
+  group('_DriverColumn — compact board layout', () {
+    Map<String, dynamic> longRideJson() {
+      return {
+        'id': 'long-ride-1',
+        'clientId': 'client-1',
+        'creatorId': 'creator-1',
+        'driverId': 'driver-1',
+        'companyId': 'company-1',
+        'pickupDateTime': '2026-06-22T14:00:00.000',
+        'from': {
+          'address': 'Flughafenstraße 100, Terminal 2, München-Flughafen',
+          'latitude': 48.35,
+          'longitude': 11.78,
+        },
+        'to': {
+          'address': 'Maximilianstraße 1, München-Innenstadt, Bayern',
+          'latitude': 48.14,
+          'longitude': 11.58,
+        },
+        'status': 'Assigned',
+        'clientName': 'BMWAG-HerrSchneiderVonMünchenGmbHLongName',
+        'isAirportTransfer': true,
+        'isArrival': true,
+        'driverApproaching': false,
+      };
+    }
+
+    testWidgets(
+      'cards render without overflow in narrow viewport (compact regression)',
       (tester) async {
-    // Simulate server returning [] for a foreign driver — no data should appear.
-    when(() => apiClient.get(any())).thenAnswer(
-      (_) async => http.Response('[]', 200),
+        // Force a narrow viewport that would have caused overflow before the fix.
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        // Two drivers → each column is ~200 px wide (400 / 2), well within the
+        // old overflow trigger zone.
+        final driver1 = _driver(id: 'driver-1', name: 'Hans Müller');
+        final driver2 = _driver(id: 'driver-2', name: 'Anna Bauer');
+
+        when(() => apiClient.get(any())).thenAnswer((_) async {
+          return http.Response(jsonEncode([longRideJson()]), 200);
+        });
+
+        await tester.pumpWidget(
+          _buildTestWidget(authBloc: authBloc, drivers: [driver1, driver2]),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        // No RenderFlex overflow exceptions must occur.
+        expect(tester.takeException(), isNull);
+      },
     );
 
-    final foreignDriver = _driver(id: 'foreign-id', name: 'Foreign Driver');
+    testWidgets('time rail renders HH:mm text beside each card', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(
-      _buildTestWidget(
-        authBloc: authBloc,
-        drivers: [foreignDriver],
-      ),
-    );
-    await tester.pump();
-    await tester.pumpAndSettle();
+      final driver1 = _driver(id: 'driver-1', name: 'Hans Müller');
 
-    // Column header present (the driver is in the requested list), but no rides.
-    expect(find.text('Foreign Driver'), findsOneWidget);
-    expect(find.text('No rides'), findsOneWidget);
+      when(() => apiClient.get(any())).thenAnswer((_) async {
+        return http.Response(jsonEncode([longRideJson()]), 200);
+      });
+
+      await tester.pumpWidget(
+        _buildTestWidget(authBloc: authBloc, drivers: [driver1]),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // "14:00" must appear — either from the time rail or the compact card header.
+      expect(find.text('14:00'), findsWidgets);
+    });
   });
 }

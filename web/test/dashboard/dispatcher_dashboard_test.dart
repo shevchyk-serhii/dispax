@@ -190,9 +190,7 @@ void main() {
   //   0=Home | 1=Calendar | 2=My Rides | 3=New Ride | 4=More | 5=Billing
   // ---------------------------------------------------------------------------
   testWidgets('mobile nav (canDrive=true): nav positions are '
-      '0=Home 1=Calendar 2=MyRides 3=NewRide 4=More 5=Billing', (
-    tester,
-  ) async {
+      '0=Home 1=Calendar 2=MyRides 3=NewRide 4=More 5=Billing', (tester) async {
     tester.view.physicalSize = const Size(420, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -218,103 +216,101 @@ void main() {
   // ---------------------------------------------------------------------------
   // Mobile — canDrive=true: presence checks and relative ordering
   // ---------------------------------------------------------------------------
-  testWidgets(
-    'mobile nav (canDrive=true): "Calendar" appears before "My Rides"; '
-    '"Analytics" is absent from nav but present in More-menu',
-    (tester) async {
-      tester.view.physicalSize = const Size(420, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+  testWidgets('mobile nav (canDrive=true): "Calendar" appears before "My Rides"; '
+      '"Analytics" is absent from nav but present in More-menu', (tester) async {
+    tester.view.physicalSize = const Size(420, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(buildApp(_dispatcherWithDrive()));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpWidget(buildApp(_dispatcherWithDrive()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      // Both "Calendar" and "My Rides" must be in the bottom nav.
-      expect(
-        find.descendant(
-          of: find.byType(BottomNavigationBar),
-          matching: find.text('Calendar'),
-        ),
-        findsOneWidget,
-        reason: 'canDrive=true must show "Calendar" in bottom nav',
-      );
-      expect(
-        find.descendant(
-          of: find.byType(BottomNavigationBar),
-          matching: find.text('My Rides'),
-        ),
-        findsOneWidget,
-        reason: 'canDrive=true must show "My Rides" in bottom nav',
-      );
+    // Both "Calendar" and "My Rides" must be in the bottom nav.
+    expect(
+      find.descendant(
+        of: find.byType(BottomNavigationBar),
+        matching: find.text('Calendar'),
+      ),
+      findsOneWidget,
+      reason: 'canDrive=true must show "Calendar" in bottom nav',
+    );
+    expect(
+      find.descendant(
+        of: find.byType(BottomNavigationBar),
+        matching: find.text('My Rides'),
+      ),
+      findsOneWidget,
+      reason: 'canDrive=true must show "My Rides" in bottom nav',
+    );
 
-      // Verify "Calendar" is at position 1 and "My Rides" is at position 2
-      // (i.e., Calendar precedes My Rides).
-      final nav = tester.widget<BottomNavigationBar>(
-        find.byType(BottomNavigationBar),
-      );
-      final labels = nav.items.map((item) => item.label ?? '').toList();
-      expect(
-        labels.indexOf('Calendar') < labels.indexOf('My Rides'),
-        isTrue,
-        reason: '"Calendar" (pos 1) must precede "My Rides" (pos 2)',
-      );
+    // Verify "Calendar" is at position 1 and "My Rides" is at position 2
+    // (i.e., Calendar precedes My Rides).
+    final nav = tester.widget<BottomNavigationBar>(
+      find.byType(BottomNavigationBar),
+    );
+    final labels = nav.items.map((item) => item.label ?? '').toList();
+    expect(
+      labels.indexOf('Calendar') < labels.indexOf('My Rides'),
+      isTrue,
+      reason: '"Calendar" (pos 1) must precede "My Rides" (pos 2)',
+    );
 
-      // "My Schedule" and "Schedule" must NOT be in the bottom nav (unified into "Calendar").
-      expect(
-        find.descendant(
-          of: find.byType(BottomNavigationBar),
-          matching: find.text('My Schedule'),
-        ),
-        findsNothing,
-        reason: 'canDrive=true must not show "My Schedule" (unified into Calendar)',
-      );
-      expect(
-        find.descendant(
-          of: find.byType(BottomNavigationBar),
-          matching: find.text('Schedule'),
-        ),
-        findsNothing,
-        reason: 'canDrive=true must not show "Schedule" (unified into Calendar)',
-      );
+    // "My Schedule" and "Schedule" must NOT be in the bottom nav (unified into "Calendar").
+    expect(
+      find.descendant(
+        of: find.byType(BottomNavigationBar),
+        matching: find.text('My Schedule'),
+      ),
+      findsNothing,
+      reason:
+          'canDrive=true must not show "My Schedule" (unified into Calendar)',
+    );
+    expect(
+      find.descendant(
+        of: find.byType(BottomNavigationBar),
+        matching: find.text('Schedule'),
+      ),
+      findsNothing,
+      reason: 'canDrive=true must not show "Schedule" (unified into Calendar)',
+    );
 
-      // 'Analytics' must NOT be in the bottom nav (it moved to More-menu).
-      expect(
-        find.descendant(
-          of: find.byType(BottomNavigationBar),
-          matching: find.text('Analytics'),
-        ),
-        findsNothing,
-        reason: 'canDrive=true must hide "Analytics" from bottom nav',
-      );
+    // 'Analytics' must NOT be in the bottom nav (it moved to More-menu).
+    expect(
+      find.descendant(
+        of: find.byType(BottomNavigationBar),
+        matching: find.text('Analytics'),
+      ),
+      findsNothing,
+      reason: 'canDrive=true must hide "Analytics" from bottom nav',
+    );
 
-      // Navigate to the More menu (screen index 4) by tapping pos 4 'More'.
-      await tester.tap(
-        find.descendant(
-          of: find.byType(BottomNavigationBar),
-          matching: find.text('More'),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    // Navigate to the More menu (screen index 4) by tapping pos 4 'More'.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(BottomNavigationBar),
+        matching: find.text('More'),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-      // The More-menu grid is lazy (GridView.builder): only items visible in the
-      // viewport are built. 'Analytics' is near the end of a 27-item grid, so
-      // we scroll the GridView until the Analytics label becomes visible.
-      await tester.scrollUntilVisible(
-        find.text('Analytics'),
-        200.0,
-        scrollable: find.byType(Scrollable).last,
-      );
+    // The More-menu grid is lazy (GridView.builder): only items visible in the
+    // viewport are built. 'Analytics' is near the end of a 27-item grid, so
+    // we scroll the GridView until the Analytics label becomes visible.
+    await tester.scrollUntilVisible(
+      find.text('Analytics'),
+      200.0,
+      scrollable: find.byType(Scrollable).last,
+    );
 
-      // After scrolling, the 'Analytics' grid entry must be present.
-      expect(
-        find.text('Analytics'),
-        findsOneWidget,
-        reason: 'More-menu must have "Analytics" grid entry when canDrive=true',
-      );
-    },
-  );
+    // After scrolling, the 'Analytics' grid entry must be present.
+    expect(
+      find.text('Analytics'),
+      findsOneWidget,
+      reason: 'More-menu must have "Analytics" grid entry when canDrive=true',
+    );
+  });
 
   // ---------------------------------------------------------------------------
   // Mobile — canDrive=false: exact nav order

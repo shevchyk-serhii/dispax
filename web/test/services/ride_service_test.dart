@@ -353,22 +353,24 @@ void main() {
     // ── setRidePrice ─────────────────────────────────────────────────────────
 
     group('setRidePrice', () {
-      test('200 calls PUT /rides/{id}/price with correct body and returns Ride',
-          () async {
-        Map<String, dynamic>? capturedBody;
-        when(
-          () => mockApiClient.put('/rides/ride-1/price', any()),
-        ).thenAnswer((invocation) async {
-          capturedBody =
-              invocation.positionalArguments[1] as Map<String, dynamic>;
-          return jsonResponse(TestFixtures.rideJson(id: 'ride-1'));
-        });
+      test(
+        '200 calls PUT /rides/{id}/price with correct body and returns Ride',
+        () async {
+          Map<String, dynamic>? capturedBody;
+          when(
+            () => mockApiClient.put('/rides/ride-1/price', any()),
+          ).thenAnswer((invocation) async {
+            capturedBody =
+                invocation.positionalArguments[1] as Map<String, dynamic>;
+            return jsonResponse(TestFixtures.rideJson(id: 'ride-1'));
+          });
 
-        final ride = await rideService.setRidePrice('ride-1', 49.99);
+          final ride = await rideService.setRidePrice('ride-1', 49.99);
 
-        expect(ride.id, 'ride-1');
-        expect(capturedBody?['price'], closeTo(49.99, 0.001));
-      });
+          expect(ride.id, 'ride-1');
+          expect(capturedBody?['price'], closeTo(49.99, 0.001));
+        },
+      );
 
       test('non-200 throws ApiException', () async {
         when(
@@ -394,9 +396,9 @@ void main() {
 
       test('sends zero price (clear disputed charge)', () async {
         Map<String, dynamic>? capturedBody;
-        when(
-          () => mockApiClient.put('/rides/ride-1/price', any()),
-        ).thenAnswer((invocation) async {
+        when(() => mockApiClient.put('/rides/ride-1/price', any())).thenAnswer((
+          invocation,
+        ) async {
           capturedBody =
               invocation.positionalArguments[1] as Map<String, dynamic>;
           return jsonResponse(TestFixtures.rideJson());
@@ -410,28 +412,31 @@ void main() {
     // ── getRidesByDrivers ─────────────────────────────────────────────────────
 
     group('getRidesByDrivers', () {
-      test('200 builds correct URL with comma-separated ids and date', () async {
-        String? capturedPath;
-        when(() => mockApiClient.get(any())).thenAnswer((invocation) async {
-          capturedPath = invocation.positionalArguments[0] as String;
-          return jsonResponse([
-            TestFixtures.rideJson(id: 'ride-1'),
-            TestFixtures.rideJson(id: 'ride-2'),
-          ]);
-        });
+      test(
+        '200 builds correct URL with comma-separated ids and date',
+        () async {
+          String? capturedPath;
+          when(() => mockApiClient.get(any())).thenAnswer((invocation) async {
+            capturedPath = invocation.positionalArguments[0] as String;
+            return jsonResponse([
+              TestFixtures.rideJson(id: 'ride-1'),
+              TestFixtures.rideJson(id: 'ride-2'),
+            ]);
+          });
 
-        final date = DateTime(2026, 6, 22);
-        final rides = await rideService.getRidesByDrivers(
-          ['driver-a', 'driver-b'],
-          date,
-        );
+          final date = DateTime(2026, 6, 22);
+          final rides = await rideService.getRidesByDrivers([
+            'driver-a',
+            'driver-b',
+          ], date);
 
-        expect(rides.length, 2);
-        expect(capturedPath, contains('/rides/by-drivers'));
-        expect(capturedPath, contains('driverIds=driver-a,driver-b'));
-        expect(capturedPath, contains('from=2026-06-22'));
-        expect(capturedPath, contains('to=2026-06-22'));
-      });
+          expect(rides.length, 2);
+          expect(capturedPath, contains('/rides/by-drivers'));
+          expect(capturedPath, contains('driverIds=driver-a,driver-b'));
+          expect(capturedPath, contains('from=2026-06-22'));
+          expect(capturedPath, contains('to=2026-06-22'));
+        },
+      );
 
       test('empty driverIds returns [] without calling API', () async {
         // No stub needed — the implementation returns early for empty list.
@@ -441,9 +446,9 @@ void main() {
       });
 
       test('non-200 throws ApiException', () async {
-        when(() => mockApiClient.get(any())).thenAnswer(
-          (_) async => jsonResponse({}, statusCode: 400),
-        );
+        when(
+          () => mockApiClient.get(any()),
+        ).thenAnswer((_) async => jsonResponse({}, statusCode: 400));
 
         expect(
           () => rideService.getRidesByDrivers(['d1'], DateTime(2026, 6, 22)),
@@ -451,20 +456,21 @@ void main() {
         );
       });
 
-      test('cross-tenant driverId returns empty list when server returns []',
-          () async {
-        // The server already enforces tenant isolation; the client just decodes
-        // an empty array — no rides must leak.
-        when(() => mockApiClient.get(any())).thenAnswer(
-          (_) async => jsonResponse([]),
-        );
+      test(
+        'cross-tenant driverId returns empty list when server returns []',
+        () async {
+          // The server already enforces tenant isolation; the client just decodes
+          // an empty array — no rides must leak.
+          when(
+            () => mockApiClient.get(any()),
+          ).thenAnswer((_) async => jsonResponse([]));
 
-        final rides = await rideService.getRidesByDrivers(
-          ['foreign-driver-id'],
-          DateTime(2026, 6, 22),
-        );
-        expect(rides, isEmpty);
-      });
+          final rides = await rideService.getRidesByDrivers([
+            'foreign-driver-id',
+          ], DateTime(2026, 6, 22));
+          expect(rides, isEmpty);
+        },
+      );
 
       test('date is zero-padded in URL (month and day)', () async {
         String? capturedPath;
