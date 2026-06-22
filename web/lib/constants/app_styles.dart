@@ -107,32 +107,13 @@ class AppStyles {
     color: AppColors.textSecondary,
   );
 
-  static TextStyle glassHeadlineLarge = headlineLarge.copyWith(
-    color: AppColors.glassText,
+  // Text styles for content placed over graphite / dark headers.
+  static TextStyle onDarkHeadlineLarge = headlineLarge.copyWith(
+    color: AppColors.onDarkText,
   );
 
-  static TextStyle glassHeadlineMedium = headlineMedium.copyWith(
-    color: AppColors.glassText,
-  );
-
-  static TextStyle glassTitleLarge = titleLarge.copyWith(
-    color: AppColors.glassText,
-  );
-
-  static TextStyle glassTitleMedium = titleMedium.copyWith(
-    color: AppColors.glassText,
-  );
-
-  static TextStyle glassBodyLarge = bodyLarge.copyWith(
-    color: AppColors.glassText,
-  );
-
-  static TextStyle glassBodyMedium = bodyMedium.copyWith(
-    color: AppColors.glassTextSecondary,
-  );
-
-  static TextStyle glassBodySmall = bodySmall.copyWith(
-    color: AppColors.glassTextSecondary,
+  static TextStyle onDarkBodyLarge = bodyLarge.copyWith(
+    color: AppColors.onDarkText,
   );
 
   static ButtonStyle primaryButtonStyle = ElevatedButton.styleFrom(
@@ -201,9 +182,8 @@ class AppStyles {
     );
   }
 
-  // Formerly a glass-morphism decoration; now a plain corporate card.
-  // Kept under the same name so all existing call sites stay flat-styled.
-  static BoxDecoration glassCardDecoration = BoxDecoration(
+  // Flat corporate card: surface fill, hairline border, soft shadow.
+  static BoxDecoration cardDecoration = BoxDecoration(
     color: AppColors.surface,
     borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
     border: Border.all(color: AppColors.borderPrimary),
@@ -216,9 +196,9 @@ class AppStyles {
     ],
   );
 
-  /// Theme-aware variant of [glassCardDecoration] — surface and border follow
+  /// Theme-aware variant of [cardDecoration] — surface and border follow
   /// the active brightness.
-  static BoxDecoration glassCardDecorationOf(BuildContext context) {
+  static BoxDecoration cardDecorationOf(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return BoxDecoration(
       color: isDark ? AppColors.surfaceDark : AppColors.surface,

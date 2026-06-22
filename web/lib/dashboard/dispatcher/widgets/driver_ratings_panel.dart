@@ -161,17 +161,22 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.driverColor.withAlpha(30),
-                      child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : '?',
-                        style: TextStyle(
-                          color: AppColors.driverColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final cs = Theme.of(context).colorScheme;
+                        return CircleAvatar(
+                          radius: 18,
+                          backgroundColor: cs.onSurface.withAlpha(30),
+                          child: Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : '?',
+                            style: TextStyle(
+                              color: cs.onSurface,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(width: 10),
                     Expanded(

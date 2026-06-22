@@ -208,8 +208,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 4),
         itemBuilder: (context, index) {
           final n = _notifications[index];
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           return Card(
-            color: n.isRead ? null : AppColors.rideAssignedBg,
+            color: n.isRead
+                ? null
+                : (isDark
+                      ? AppColors.rideAssignedBgDark
+                      : AppColors.rideAssignedBg),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),

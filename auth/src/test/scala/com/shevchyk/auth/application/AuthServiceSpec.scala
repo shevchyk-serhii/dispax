@@ -3,7 +3,7 @@ package com.shevchyk.auth.application
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.domain.*
 import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole, UserStatus}
-import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.repository.{InMemorySessionRepository, PersonRepository, SessionRepository}
 import com.shevchyk.auth.repository.{InMemoryPersonRepositoryWithUsers, InMemoryTokenRepository, TestLayers, TestUUIDs}
 import com.shevchyk.auth.service.JwtService
 import zio.*
@@ -22,6 +22,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
   def layers: ZLayer[Any, Nothing, AuthService] =
     (ZLayer.succeed(InMemoryPersonRepositoryWithUsers()) ++
       ZLayer.succeed(InMemoryTokenRepository()) ++
+      ZLayer.succeed[SessionRepository](InMemorySessionRepository()) ++
       (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
 
   // Like `layers`, but also exposes the underlying PersonRepository so a test can seed/inspect
@@ -30,8 +31,20 @@ object AuthServiceSpec extends ZIOSpecDefault {
     val repo = ZLayer.succeed[PersonRepository](InMemoryPersonRepositoryWithUsers())
     val auth =
       (repo ++ ZLayer.succeed(InMemoryTokenRepository()) ++
+        ZLayer.succeed[SessionRepository](InMemorySessionRepository()) ++
         (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
     repo ++ auth
+  }
+
+  // Like `layers`, but also exposes the SessionRepository so a login test can assert the
+  // session row created as part of the login transaction.
+  def layersWithSessionRepo: ZLayer[Any, Nothing, AuthService & SessionRepository] = {
+    val sessions = ZLayer.succeed[SessionRepository](InMemorySessionRepository())
+    val auth     =
+      (ZLayer.succeed(InMemoryPersonRepositoryWithUsers()) ++
+        ZLayer.succeed(InMemoryTokenRepository()) ++ sessions ++
+        (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
+    sessions ++ auth
   }
 
   def spec =
@@ -83,7 +96,32 @@ object AuthServiceSpec extends ZIOSpecDefault {
             response.person.email == "admin@example.com" &&
               response.person.role == "ADMIN"
           )
-        }.provide(layers)
+        }.provide(layers),
+        test("login creates an active session carrying the JWT, device info and IP") {
+          for {
+            service  <- ZIO.service[AuthService]
+            response <- service.login("test@example.com", "Password123", Some("UA/1.0"), Some("1.2.3.4"))
+            sessions <- ZIO.service[SessionRepository]
+            session  <- sessions.findByToken(response.token)
+          } yield assertTrue(
+            session.exists(s =>
+              s.isActive &&
+                s.token == response.token &&
+                s.deviceInfo.contains("UA/1.0") &&
+                s.ipAddress.contains("1.2.3.4")
+            )
+          )
+        }.provide(layersWithSessionRepo),
+        test("login without device info stores a session with no deviceInfo/ipAddress") {
+          for {
+            service  <- ZIO.service[AuthService]
+            response <- service.login("test@example.com", "Password123")
+            sessions <- ZIO.service[SessionRepository]
+            session  <- sessions.findByToken(response.token)
+          } yield assertTrue(
+            session.exists(s => s.deviceInfo.isEmpty && s.ipAddress.isEmpty)
+          )
+        }.provide(layersWithSessionRepo)
       ),
       suite("createUser")(
         test("valid request creates user with ACTIVE status") {

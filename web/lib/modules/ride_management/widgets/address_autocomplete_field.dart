@@ -12,6 +12,7 @@ class AddressAutocompleteField extends StatefulWidget {
   final ValueChanged<String> onChanged;
   final List<ClientAddress> suggestions;
   final String? Function(String?)? validator;
+  final String? excludeAddress;
 
   const AddressAutocompleteField({
     super.key,
@@ -22,6 +23,7 @@ class AddressAutocompleteField extends StatefulWidget {
     required this.onChanged,
     required this.suggestions,
     this.validator,
+    this.excludeAddress,
   });
 
   @override
@@ -92,7 +94,18 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
   }
 
   List<ClientAddress> _getFiltered(String query) {
-    if (query.isEmpty) return widget.suggestions.take(5).toList();
+    final excluded = widget.excludeAddress?.trim().toLowerCase();
+    final bool hasExcluded = excluded != null && excluded.isNotEmpty;
+
+    if (query.isEmpty) {
+      return widget.suggestions
+          .where(
+            (a) => !hasExcluded || a.address.trim().toLowerCase() != excluded,
+          )
+          .take(5)
+          .toList();
+    }
+
     final lower = query.toLowerCase();
     return widget.suggestions
         .where(
@@ -100,6 +113,9 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
               a.address.toLowerCase().contains(lower) ||
               a.label.toLowerCase().contains(lower) ||
               a.aliases.any((alias) => alias.toLowerCase().contains(lower)),
+        )
+        .where(
+          (a) => !hasExcluded || a.address.trim().toLowerCase() != excluded,
         )
         .take(5)
         .toList();

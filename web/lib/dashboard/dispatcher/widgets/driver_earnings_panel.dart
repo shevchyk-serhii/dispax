@@ -316,11 +316,11 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                       children: [
                         CircleAvatar(
                           radius: 16,
-                          backgroundColor: AppColors.driverColor.withAlpha(30),
+                          backgroundColor: colorScheme.onSurface.withAlpha(30),
                           child: Text(
                             name.isNotEmpty ? name[0].toUpperCase() : '?',
                             style: TextStyle(
-                              color: AppColors.driverColor,
+                              color: colorScheme.onSurface,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),

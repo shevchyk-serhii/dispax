@@ -32,6 +32,25 @@ object AccumulatingValidationSpec extends ZIOSpecDefault {
         yield assertTrue(
           result.left.toOption.exists(_.toChunk.size == 1)
         )
+      },
+      // [MEDIUM] Verify that errors are returned in input order (ZIO.validatePar preserves order)
+      // and that duplicate error messages are NOT silently deduplicated — both "a" occurrences appear.
+      // A mutation that reverses or deduplicates the error list would be caught by this test.
+      test("errors preserve input order and are not deduplicated") {
+        for result <- Validator.accumulate("v")(fail("first"), fail("second"), fail("third")).either
+        yield {
+          val messages = result.left.toOption.get.toChunk.collect { case RideError.ValidationError(m) => m }.toList
+          assertTrue(
+            messages == List("first", "second", "third")
+          )
+        }
+      },
+      test("duplicate error messages both appear (no deduplication)") {
+        for result <- Validator.accumulate("v")(fail("dup"), fail("dup")).either
+        yield {
+          val messages = result.left.toOption.get.toChunk.collect { case RideError.ValidationError(m) => m }.toList
+          assertTrue(messages.size == 2, messages == List("dup", "dup"))
+        }
       }
     )
 }

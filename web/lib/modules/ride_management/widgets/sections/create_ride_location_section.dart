@@ -117,6 +117,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                   prefixIconData: Icons.trip_origin,
                   initialValue: state.fromAddress,
                   suggestions: _savedAddresses,
+                  excludeAddress: state.toAddress,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Pick-up location is required';
@@ -149,6 +150,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                   prefixIconData: Icons.location_on,
                   initialValue: state.toAddress,
                   suggestions: _savedAddresses,
+                  excludeAddress: state.fromAddress,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Drop-off location is required';
@@ -161,6 +163,22 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                     );
                   },
                 ),
+                if (state.fromAddress.trim().isNotEmpty &&
+                    state.toAddress.trim().isNotEmpty &&
+                    state.fromAddress.trim().toLowerCase() ==
+                        state.toAddress.trim().toLowerCase())
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: AppDimensions.paddingSmall / 2,
+                    ),
+                    child: Text(
+                      'Pick-up and drop-off cannot be the same address.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

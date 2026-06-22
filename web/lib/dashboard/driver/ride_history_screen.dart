@@ -234,23 +234,22 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
 
   Widget _periodChip(String label, _PeriodFilter filter) {
     final selected = _period == filter;
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => setState(() => _period = filter),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.primarySurface,
+          color: selected ? cs.primary : cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.borderPrimary,
-          ),
+          border: Border.all(color: selected ? cs.primary : cs.outline),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecondary,
+            color: selected ? cs.onPrimary : cs.onSurfaceVariant,
           ),
         ),
       ),

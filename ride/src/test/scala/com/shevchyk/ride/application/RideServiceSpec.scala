@@ -66,6 +66,25 @@ object RideServiceSpec extends ZIOSpecDefault {
     preferredDriverId = Some(testDriverId)
   )
 
+  // Client referenced by testClientId — must exist in the person repo and belong to testCompanyId,
+  // otherwise createRide rejects it (company-isolation / PersonNotFound).
+  val testClient = Person(
+    id = testClientId,
+    name = "Test Client",
+    email = "test-client@example.com",
+    role = PersonRole.Client,
+    companyId = Some(testCompanyId)
+  )
+
+  // Client of a different company — used to assert createRide rejects cross-tenant clients.
+  val otherCompanyClient = Person(
+    id = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000300")),
+    name = "Other Company Client",
+    email = "other-client@example.com",
+    role = PersonRole.Client,
+    companyId = Some(otherCompanyId)
+  )
+
   // Dispatcher who also has the Driver role — should be assignable to rides.
   val dispatcherDriver = Person(
     id = dispatcherDriverId,
@@ -137,6 +156,8 @@ object RideServiceSpec extends ZIOSpecDefault {
       wrongCompanyDriver.id -> wrongCompanyDriver,
       clientPerson.id       -> clientPerson,
       vipClient.id          -> vipClient,
+      testClient.id         -> testClient,
+      otherCompanyClient.id -> otherCompanyClient,
       dispatcherDriver.id   -> dispatcherDriver,
       pureDispatcher.id     -> pureDispatcher
     )
@@ -197,20 +218,10 @@ object RideServiceSpec extends ZIOSpecDefault {
               ride.notes == request.notes &&
               ride.status == RideStatus.Requested
           )
-        }.provide(
-          InMemoryRideRepository.layer,
-          InMemoryPersonRepository.layer,
-          EventHub.layer,
-          noopEmailSms,
-          AuditService.inMemory,
-          BlacklistRepository.inMemory,
-          GeocodingService.noop,
-          ExpenseRepository.inMemory,
-          RideService.layer
-        ),
+        }.provide(standardLayers),
         test("should create airport transfer ride") {
           val request = CreateRideRequest(
-            clientId = PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200")),
+            clientId = vipClientId,
             companyId = testCompanyId,
             pickupLocation = Location("Airport Terminal 1"),
             dropoffLocation = Location("Hotel"),
@@ -226,17 +237,42 @@ object RideServiceSpec extends ZIOSpecDefault {
                 code == "KBP" && flight == "PS123"
               }
           )
-        }.provide(
-          InMemoryRideRepository.layer,
-          InMemoryPersonRepository.layer,
-          EventHub.layer,
-          noopEmailSms,
-          AuditService.inMemory,
-          BlacklistRepository.inMemory,
-          GeocodingService.noop,
-          ExpenseRepository.inMemory,
-          RideService.layer
-        )
+        }.provide(standardLayers),
+        // ── company isolation ──────────────────────────────────────────────
+        test("should reject a client of a different company (company_isolation)") {
+          val request = CreateRideRequest(
+            clientId = otherCompanyClient.id,
+            companyId = testCompanyId,
+            pickupLocation = Location("A"),
+            dropoffLocation = Location("B")
+          )
+          for {
+            service <- ZIO.service[RideService]
+            result  <- service.createRide(request).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation("company_isolation", _) => true
+                case _                                                       => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("should reject an unknown client (PersonNotFound)") {
+          val request = CreateRideRequest(
+            clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000999")),
+            companyId = testCompanyId,
+            pickupLocation = Location("A"),
+            dropoffLocation = Location("B")
+          )
+          for {
+            service <- ZIO.service[RideService]
+            result  <- service.createRide(request).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.PersonNotFound])
+            case _                   => false
+          })
+        }.provide(standardLayers)
       ),
       suite("assignDriver")(
         test("happy path: Requested ride + valid driver same company → Assigned") {
@@ -423,6 +459,7 @@ object RideServiceSpec extends ZIOSpecDefault {
               wrongCompanyDriver.id -> wrongCompanyDriver,
               clientPerson.id       -> clientPerson,
               vipClient.id          -> vipClient,
+              testClient.id         -> testClient,
               dispatcherDriver.id   -> dispatcherDriver,
               pureDispatcher.id     -> pureDispatcher,
               foreignDDId           -> foreignDD

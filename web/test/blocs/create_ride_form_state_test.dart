@@ -148,5 +148,33 @@ void main() {
         isTrue,
       );
     });
+
+    test('identical fromAddress and toAddress returns false', () {
+      expect(
+        makeState(fromAddress: 'Main St 1', toAddress: 'Main St 1').isValid,
+        isFalse,
+      );
+    });
+
+    test('case-insensitive same address returns false', () {
+      expect(
+        makeState(fromAddress: 'main st 1', toAddress: 'MAIN ST 1').isValid,
+        isFalse,
+      );
+    });
+
+    test('trimmed same address returns false', () {
+      expect(
+        makeState(fromAddress: '  Main St 1  ', toAddress: 'Main St 1').isValid,
+        isFalse,
+      );
+    });
+
+    test('different addresses returns true', () {
+      expect(
+        makeState(fromAddress: 'Airport', toAddress: 'Hotel').isValid,
+        isTrue,
+      );
+    });
   });
 }

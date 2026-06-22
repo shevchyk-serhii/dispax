@@ -607,11 +607,14 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
   Widget _buildComplianceCards() {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         final twoCol = constraints.maxWidth >= 480;
         final cards = [
           _ComplianceCard(
             icon: Icons.download_outlined,
-            iconBg: AppColors.successBg,
+            iconBg: isDark
+                ? AppColors.rideCompletedBgDark
+                : AppColors.successBg,
             iconColor: const Color(0xFF22C55E),
             title: 'GDPR export',
             subtitle: 'Download all personal data',
@@ -622,7 +625,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
           ),
           _ComplianceCard(
             icon: Icons.history_outlined,
-            iconBg: AppColors.infoBg,
+            iconBg: isDark ? AppColors.rideAssignedBgDark : AppColors.infoBg,
             iconColor: const Color(0xFF3B82F6),
             title: 'Audit log',
             subtitle: 'Review system activity',
@@ -630,8 +633,12 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
           ),
           _ComplianceCard(
             icon: Icons.devices_outlined,
-            iconBg: AppColors.primarySurface,
-            iconColor: AppColors.textSecondary,
+            iconBg: isDark
+                ? AppColors.surfaceVariantDark
+                : AppColors.primarySurface,
+            iconColor: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondary,
             title: 'Active sessions',
             subtitle: 'Manage logged-in devices',
             onTap: () => Navigator.push(
@@ -643,7 +650,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
           ),
           _ComplianceCard(
             icon: Icons.block_outlined,
-            iconBg: AppColors.errorBg,
+            iconBg: isDark ? AppColors.rideCancelledBgDark : AppColors.errorBg,
             iconColor: const Color(0xFFEF4444),
             title: 'Blacklist',
             subtitle: 'Manage blocked accounts',

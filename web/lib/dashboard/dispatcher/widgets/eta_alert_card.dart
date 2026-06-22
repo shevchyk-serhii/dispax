@@ -54,7 +54,7 @@ class EtaAlertCard extends StatelessWidget {
         color: AppColors.error.withValues(alpha: bgAlpha),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.errorBorder),
-        boxShadow: AppStyles.glassCardDecoration.boxShadow,
+        boxShadow: AppStyles.cardDecoration.boxShadow,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
@@ -265,8 +265,9 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isRed
-        ? AppColors.errorBg
+        ? (isDark ? AppColors.rideCancelledBgDark : AppColors.errorBg)
         : colorScheme.surfaceContainerHighest;
     final borderColor = isRed
         ? AppColors.errorBorder
