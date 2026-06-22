@@ -53,25 +53,10 @@ class MonthViewWidget extends StatelessWidget {
             onPageChanged: (focusedDay) {
               onMonthChanged(focusedDay);
             },
-            headerStyle: HeaderStyle(
-              formatButtonVisible: false,
-              titleCentered: true,
-              titleTextStyle: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-              leftChevronIcon: const Icon(
-                Icons.chevron_left,
-                color: AppColors.info,
-                size: 28,
-              ),
-              rightChevronIcon: const Icon(
-                Icons.chevron_right,
-                color: AppColors.info,
-                size: 28,
-              ),
-            ),
+            // The month/year title and navigation arrows are already provided
+            // by the outer CalendarControls, so hide TableCalendar's built-in
+            // header to avoid showing "June 2026" and chevrons twice.
+            headerVisible: false,
             calendarStyle: CalendarStyle(
               outsideDaysVisible: false,
               weekendTextStyle: const TextStyle(color: AppColors.error),
