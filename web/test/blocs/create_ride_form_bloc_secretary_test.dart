@@ -114,13 +114,33 @@ void main() {
       expect(state.isValid, isFalse);
     });
 
-    test('isValid is true for airport transfer with flight number', () {
-      final state = baseValid().copyWith(
-        isAirportTransfer: true,
-        flightNumber: 'LH123',
-      );
-      expect(state.isValid, isTrue);
-    });
+    // Airport DEPARTURE (isAirportTransfer=true, isArrival=false): flightDepartureTime required.
+    test(
+      'isValid is true for airport departure with flight number and flightDepartureTime',
+      () {
+        final state = baseValid().copyWith(
+          isAirportTransfer: true,
+          flightNumber: 'LH123',
+          flightDepartureTime: DateTime(2026, 3, 15, 8, 0),
+        );
+        expect(state.isValid, isTrue);
+      },
+    );
+
+    test(
+      'isValid is false for airport departure with flight number but no flightDepartureTime',
+      () {
+        // flightDepartureTime is required for departure auto-compute rides;
+        // manualPickupDateTime from baseValid() does not satisfy the departure rule.
+        final state = baseValid().copyWith(
+          isAirportTransfer: true,
+          flightNumber: 'LH123',
+          clearManualPickupDateTime: false,
+          // flightDepartureTime intentionally not provided
+        );
+        expect(state.isValid, isFalse);
+      },
+    );
 
     test('isValid is false when all fields empty (initial state)', () {
       expect(CreateRideFormState.initial().isValid, isFalse);
