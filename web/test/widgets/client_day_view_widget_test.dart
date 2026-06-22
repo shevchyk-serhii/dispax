@@ -97,8 +97,9 @@ void main() {
   // ── Day filtering ──────────────────────────────────────────────────────────
 
   group('ClientDayViewWidget — day filtering', () {
-    testWidgets('shows only the ride whose pickupDateTime is on selectedDay',
-        (tester) async {
+    testWidgets('shows only the ride whose pickupDateTime is on selectedDay', (
+      tester,
+    ) async {
       final rideOnDay = _ride(
         id: 'r-target',
         pickupDateTime: DateTime(2026, 6, 22, 10, 0),
@@ -112,8 +113,9 @@ void main() {
         toAddress: 'Englischer Garten',
       );
 
-      when(() => rideBloc.state)
-          .thenReturn(RideState.loaded([rideOnDay, rideOtherDay]));
+      when(
+        () => rideBloc.state,
+      ).thenReturn(RideState.loaded([rideOnDay, rideOtherDay]));
 
       await _pump(tester, rideBloc);
 
@@ -123,7 +125,9 @@ void main() {
       expect(find.textContaining('Hauptbahnhof'), findsNothing);
     });
 
-    testWidgets('shows two rides when both share the same pickupDate', (tester) async {
+    testWidgets('shows two rides when both share the same pickupDate', (
+      tester,
+    ) async {
       final ride1 = _ride(
         id: 'r1',
         pickupDateTime: DateTime(2026, 6, 22, 9, 0),
@@ -145,8 +149,9 @@ void main() {
       expect(find.textContaining('Pickup B'), findsOneWidget);
     });
 
-    testWidgets('midnight boundary: ride at 00:00 on selectedDay is shown',
-        (tester) async {
+    testWidgets('midnight boundary: ride at 00:00 on selectedDay is shown', (
+      tester,
+    ) async {
       final midnightRide = _ride(
         id: 'midnight',
         pickupDateTime: DateTime(2026, 6, 22, 0, 0),
@@ -154,8 +159,7 @@ void main() {
         toAddress: 'Night End',
       );
 
-      when(() => rideBloc.state)
-          .thenReturn(RideState.loaded([midnightRide]));
+      when(() => rideBloc.state).thenReturn(RideState.loaded([midnightRide]));
 
       await _pump(tester, rideBloc);
 
@@ -166,8 +170,9 @@ void main() {
   // ── Empty state ────────────────────────────────────────────────────────────
 
   group('ClientDayViewWidget — empty state', () {
-    testWidgets("shows 'No rides scheduled' when RideState has no rides",
-        (tester) async {
+    testWidgets("shows 'No rides scheduled' when RideState has no rides", (
+      tester,
+    ) async {
       when(() => rideBloc.state).thenReturn(RideState.loaded(const []));
 
       await _pump(tester, rideBloc);
@@ -176,18 +181,19 @@ void main() {
     });
 
     testWidgets(
-        "shows 'No rides scheduled' when all rides belong to a different day",
-        (tester) async {
-      final otherDay = _ride(
-        id: 'other',
-        pickupDateTime: DateTime(2026, 7, 1, 12, 0),
-      );
-      when(() => rideBloc.state).thenReturn(RideState.loaded([otherDay]));
+      "shows 'No rides scheduled' when all rides belong to a different day",
+      (tester) async {
+        final otherDay = _ride(
+          id: 'other',
+          pickupDateTime: DateTime(2026, 7, 1, 12, 0),
+        );
+        when(() => rideBloc.state).thenReturn(RideState.loaded([otherDay]));
 
-      await _pump(tester, rideBloc);
+        await _pump(tester, rideBloc);
 
-      expect(find.text('No rides scheduled'), findsOneWidget);
-    });
+        expect(find.text('No rides scheduled'), findsOneWidget);
+      },
+    );
   });
 
   // ── No driver action controls ──────────────────────────────────────────────
@@ -225,9 +231,9 @@ void main() {
   // ── No price-editing dialog ────────────────────────────────────────────────
 
   group('ClientDayViewWidget — price is read-only', () {
-    testWidgets(
-        "'Set ride price' dialog never opens (onPriceEdited is null)",
-        (tester) async {
+    testWidgets("'Set ride price' dialog never opens (onPriceEdited is null)", (
+      tester,
+    ) async {
       final ride = _ride(
         id: 'r-price',
         pickupDateTime: DateTime(2026, 6, 22, 10, 0),
@@ -243,9 +249,9 @@ void main() {
       expect(find.text('Set ride price'), findsNothing);
     });
 
-    testWidgets(
-        "'Set price' label is not rendered when card has no price",
-        (tester) async {
+    testWidgets("'Set price' label is not rendered when card has no price", (
+      tester,
+    ) async {
       final ride = _ride(
         id: 'r-noprice',
         pickupDateTime: DateTime(2026, 6, 22, 10, 0),
@@ -259,19 +265,39 @@ void main() {
     });
   });
 
+  // ── Compact layout: no duplicated date header ───────────────────────────────
+
+  group('ClientDayViewWidget — compact header', () {
+    testWidgets(
+      'does not render its own large weekday/date header (date lives in '
+      'CalendarControls above)',
+      (tester) async {
+        // selectedDay = 2026-06-22 is a Monday.
+        when(() => rideBloc.state).thenReturn(RideState.loaded(const []));
+
+        await _pump(tester, rideBloc);
+
+        // The day card used to repeat "Monday" + "Jun 22, 2026" as a big
+        // header; that duplication is removed to free vertical space.
+        expect(find.text('Monday'), findsNothing);
+        expect(find.text('Jun 22, 2026'), findsNothing);
+      },
+    );
+  });
+
   // ── onRideSelected callback ────────────────────────────────────────────────
 
   group('ClientDayViewWidget — onRideSelected callback', () {
-    testWidgets('tapping a ride card calls onRideSelected with that ride',
-        (tester) async {
+    testWidgets('tapping a ride card calls onRideSelected with that ride', (
+      tester,
+    ) async {
       final expectedRide = _ride(
         id: 'r-tap',
         pickupDateTime: DateTime(2026, 6, 22, 11, 30),
         fromAddress: 'Tap From',
         toAddress: 'Tap To',
       );
-      when(() => rideBloc.state)
-          .thenReturn(RideState.loaded([expectedRide]));
+      when(() => rideBloc.state).thenReturn(RideState.loaded([expectedRide]));
 
       Ride? captured;
       await _pump(tester, rideBloc, onRideSelected: (r) => captured = r);
@@ -283,32 +309,33 @@ void main() {
       expect(captured!.id, equals('r-tap'));
     });
 
-    testWidgets('tapping the correct card among multiple calls back with matching ride',
-        (tester) async {
-      final ride1 = _ride(
-        id: 'r-first',
-        pickupDateTime: DateTime(2026, 6, 22, 9, 0),
-        fromAddress: 'First From',
-        toAddress: 'First To',
-      );
-      final ride2 = _ride(
-        id: 'r-second',
-        pickupDateTime: DateTime(2026, 6, 22, 15, 0),
-        fromAddress: 'Second From',
-        toAddress: 'Second To',
-      );
-      when(() => rideBloc.state)
-          .thenReturn(RideState.loaded([ride1, ride2]));
+    testWidgets(
+      'tapping the correct card among multiple calls back with matching ride',
+      (tester) async {
+        final ride1 = _ride(
+          id: 'r-first',
+          pickupDateTime: DateTime(2026, 6, 22, 9, 0),
+          fromAddress: 'First From',
+          toAddress: 'First To',
+        );
+        final ride2 = _ride(
+          id: 'r-second',
+          pickupDateTime: DateTime(2026, 6, 22, 15, 0),
+          fromAddress: 'Second From',
+          toAddress: 'Second To',
+        );
+        when(() => rideBloc.state).thenReturn(RideState.loaded([ride1, ride2]));
 
-      Ride? captured;
-      await _pump(tester, rideBloc, onRideSelected: (r) => captured = r);
+        Ride? captured;
+        await _pump(tester, rideBloc, onRideSelected: (r) => captured = r);
 
-      // Tap the first InkWell (earliest ride is sorted first).
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pump();
+        // Tap the first InkWell (earliest ride is sorted first).
+        await tester.tap(find.byType(InkWell).first);
+        await tester.pump();
 
-      expect(captured, isNotNull);
-      expect(captured!.id, equals('r-first'));
-    });
+        expect(captured, isNotNull);
+        expect(captured!.id, equals('r-first'));
+      },
+    );
   });
 }

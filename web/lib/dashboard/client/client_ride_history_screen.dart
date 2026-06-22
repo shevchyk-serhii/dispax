@@ -167,29 +167,19 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'ALL TRIPS',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.06 * 11,
-                  color: AppColors.textLight,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
                 'My rides',
                 style: TextStyle(
-                  fontSize: 26,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               // List / Calendar toggle
               SegmentedButton<_ClientRidesView>(
                 segments: const [

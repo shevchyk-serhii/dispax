@@ -21,37 +21,29 @@ class CalendarControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: onPrevious,
-            icon: const Icon(Icons.chevron_left, color: Colors.white, size: 32),
+            icon: const Icon(Icons.chevron_left, color: Colors.white, size: 28),
             tooltip: 'Previous',
+            visualDensity: VisualDensity.compact,
           ),
           Expanded(
             child: GestureDetector(
               onTap: onDatePickerTap,
-              child: Column(
-                children: [
-                  Text(
-                    _getFormattedDate(selectedDay),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                  Text(
-                    _getViewTypeLabel(viewType),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              child: Text(
+                _getFormattedDate(selectedDay),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
           ),
@@ -60,9 +52,10 @@ class CalendarControls extends StatelessWidget {
             icon: const Icon(
               Icons.chevron_right,
               color: Colors.white,
-              size: 32,
+              size: 28,
             ),
             tooltip: 'Next',
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -84,19 +77,6 @@ class CalendarControls extends StatelessWidget {
       case CalendarViewType.day:
       case CalendarViewType.multiColumn:
         return '${_getDayName(date.weekday)}, ${_getMonthName(date.month)} ${date.day}, ${date.year}';
-    }
-  }
-
-  String _getViewTypeLabel(CalendarViewType viewType) {
-    switch (viewType) {
-      case CalendarViewType.month:
-        return 'Month View';
-      case CalendarViewType.week:
-        return 'Week View';
-      case CalendarViewType.day:
-        return 'Day View';
-      case CalendarViewType.multiColumn:
-        return 'Board';
     }
   }
 

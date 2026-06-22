@@ -79,7 +79,7 @@ class _ClientCalendarViewState extends State<ClientCalendarView> {
       children: [
         // View type segmented button
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: SegmentedButton<CalendarViewType>(
             segments: const [
               ButtonSegment(
