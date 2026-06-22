@@ -440,7 +440,7 @@ flutter-prod-android:
 
 # Run Flutter on Sergii's iPhone (wireless) against local backend
 flutter-dev-iphone-sergii:
-	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run --release -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
 
 # Run Flutter on Sergii's Android (wireless) against local backend
@@ -450,9 +450,9 @@ flutter-dev-android-sergii:
 
 # Run Flutter on both Sergii's devices simultaneously (wireless)
 flutter-dev-sergii:
-	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run --release -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
-	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run --release -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
 	wait
 
