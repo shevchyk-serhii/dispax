@@ -135,6 +135,38 @@ object ScheduleValidatorsSpec extends ZIOSpecDefault {
             err.asInstanceOf[ScheduleError.ValidationError].message.contains("Start time must be before end time")
           )
         }
+      },
+      // ── Mutant 5: per-day validateTime guard ──────────────────────────────
+      // Verifies that replacing validateTime(startTime/endTime) with ZIO.unit
+      // is caught: a batch day with an unparseable start-time string must be
+      // rejected even when the time-order check is satisfied.
+      test("rejects batch day with invalid start time format") {
+        val req = CreateScheduleBatchApiRequest(
+          driverId = validDriverId,
+          days = List(
+            ScheduleBatchDayApiRequest(date = validDate, startTime = validStart, endTime = validEnd),
+            ScheduleBatchDayApiRequest(date = "2026-06-17", startTime = "8am", endTime = validEnd)
+          )
+        )
+        summon[Validator[CreateScheduleBatchApiRequest]].validate(req).flip.map { err =>
+          assertTrue(
+            err.asInstanceOf[ScheduleError.ValidationError].message.contains("Start time")
+          )
+        }
+      },
+      test("rejects batch day with invalid end time format") {
+        val req = CreateScheduleBatchApiRequest(
+          driverId = validDriverId,
+          days = List(
+            ScheduleBatchDayApiRequest(date = validDate, startTime = validStart, endTime = validEnd),
+            ScheduleBatchDayApiRequest(date = "2026-06-18", startTime = validStart, endTime = "5pm")
+          )
+        )
+        summon[Validator[CreateScheduleBatchApiRequest]].validate(req).flip.map { err =>
+          assertTrue(
+            err.asInstanceOf[ScheduleError.ValidationError].message.contains("End time")
+          )
+        }
       }
     )
 

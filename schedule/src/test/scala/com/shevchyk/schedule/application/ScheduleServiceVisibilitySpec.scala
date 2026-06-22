@@ -258,6 +258,56 @@ object ScheduleServiceVisibilitySpec extends ZIOSpecDefault {
                          companyId = companyA
                        )
           } yield assertTrue(days.nonEmpty)
+        }.provide(layers),
+        // ── Mutant 2: toUpperCase guard ────────────────────────────────────────
+        // Verifies that removing `.toUpperCase` is caught:
+        // "driver" (lowercase) WITHOUT canView must produce AccessDenied.
+        // Without toUpperCase the "DRIVER" branch is skipped (falls to else =
+        // always-allowed), so the test would pass even for a forbidden access.
+        test("requesterRole 'driver' (lowercase) without canView permission → AccessDenied") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            // canViewOtherSchedules is NOT set — defaults to false
+            _       <- makeScheduleForDriver(service, driverBId, companyA, futureDate.plusDays(8))
+            result  <-
+              service
+                .getDriverScheduleAs(
+                  requesterId = driverAId,
+                  requesterRole = "driver", // lowercase
+                  targetDriverId = driverBId,
+                  companyId = companyA
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ScheduleError.AccessDenied(_) => true
+                case _                             => false
+              }
+            case _                   => false
+          })
+        }.provide(layers),
+        test("requesterRole 'Driver' (mixed case) without canView permission → AccessDenied") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            _       <- makeScheduleForDriver(service, driverBId, companyA, futureDate.plusDays(9))
+            result  <-
+              service
+                .getDriverScheduleAs(
+                  requesterId = driverAId,
+                  requesterRole = "Driver", // mixed case
+                  targetDriverId = driverBId,
+                  companyId = companyA
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ScheduleError.AccessDenied(_) => true
+                case _                             => false
+              }
+            case _                   => false
+          })
         }.provide(layers)
       ),
 
