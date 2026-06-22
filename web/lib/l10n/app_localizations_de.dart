@@ -645,4 +645,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get roleSuperAdmin => 'Super Admin';
+
+  @override
+  String get languageSaveFailed => 'Sprache konnte nicht gespeichert werden';
 }

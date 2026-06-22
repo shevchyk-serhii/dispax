@@ -683,18 +683,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: _language == entry.key
                     ? const Icon(Icons.check, color: AppColors.accent)
                     : null,
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(ctx);
+                  // Apply optimistically — local state + shared prefs update
+                  // immediately regardless of network so the UI switches at once.
                   setState(() => _language = entry.key);
                   _savePreference('language', entry.key);
-                  // Apply locale immediately — mirrors theme live-switch pattern.
                   localeNotifier.value = localeFromString(entry.key);
-                  // Persist on the backend so the preference follows the user.
+
                   if (user != null) {
-                    context.read<AuthBloc>().apiClient.put(
-                      '/users/${user.id}',
-                      {'preferredLanguage': entry.key},
-                    );
+                    // Capture messenger and mounted check before the await so
+                    // we never use BuildContext across an async gap.
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      await context.read<AuthBloc>().apiClient.put(
+                        '/users/${user.id}',
+                        {'preferredLanguage': entry.key},
+                      );
+                    } catch (_) {
+                      // Local language already applied; surface the failure so
+                      // it is not silent, but do NOT revert the local choice.
+                      if (mounted) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)!.languageSaveFailed,
+                            ),
+                          ),
+                        );
+                      }
+                    }
                   }
                 },
               ),

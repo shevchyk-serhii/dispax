@@ -640,4 +640,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get roleSuperAdmin => 'Супер Адмін';
+
+  @override
+  String get languageSaveFailed => 'Не вдалося зберегти мову в обліковий запис';
 }

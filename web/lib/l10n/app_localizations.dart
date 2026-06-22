@@ -1335,6 +1335,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Super Admin'**
   String get roleSuperAdmin;
+
+  /// Shown in a snackbar when the backend PUT /users/{id} call to persist the preferred language fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save language to your account'**
+  String get languageSaveFailed;
 }
 
 class _AppLocalizationsDelegate

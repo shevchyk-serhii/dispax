@@ -249,5 +249,7 @@
   "roleClientSecretary": "Секретар клієнта",
   "roleDispatcher": "Диспетчер",
   "roleAdmin": "Адмін",
-  "roleSuperAdmin": "Супер Адмін"
+  "roleSuperAdmin": "Супер Адмін",
+
+  "languageSaveFailed": "Не вдалося зберегти мову в обліковий запис"
 }

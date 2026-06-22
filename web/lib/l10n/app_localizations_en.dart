@@ -641,4 +641,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roleSuperAdmin => 'Super Admin';
+
+  @override
+  String get languageSaveFailed => 'Couldn\'t save language to your account';
 }

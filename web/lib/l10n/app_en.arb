@@ -264,5 +264,10 @@
   "roleClientSecretary": "Client Secretary",
   "roleDispatcher": "Dispatcher",
   "roleAdmin": "Admin",
-  "roleSuperAdmin": "Super Admin"
+  "roleSuperAdmin": "Super Admin",
+
+  "languageSaveFailed": "Couldn't save language to your account",
+  "@languageSaveFailed": {
+    "description": "Shown in a snackbar when the backend PUT /users/{id} call to persist the preferred language fails."
+  }
 }

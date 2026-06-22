@@ -249,5 +249,7 @@
   "roleClientSecretary": "Kundensekretärin",
   "roleDispatcher": "Disponent",
   "roleAdmin": "Admin",
-  "roleSuperAdmin": "Super Admin"
+  "roleSuperAdmin": "Super Admin",
+
+  "languageSaveFailed": "Sprache konnte nicht gespeichert werden"
 }
