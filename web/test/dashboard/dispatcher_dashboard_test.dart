@@ -12,6 +12,7 @@ import 'package:dispax/blocs/create_ride_form/create_ride_form_bloc.dart';
 import 'package:dispax/blocs/create_ride_form/create_ride_form_event.dart';
 import 'package:dispax/blocs/create_ride_form/create_ride_form_state.dart';
 import 'package:dispax/dashboard/dispatcher/dispatcher_dashboard.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:flutter/material.dart';
@@ -117,6 +118,8 @@ void main() {
     when(() => authBloc.state).thenReturn(AuthState.authenticated(user));
 
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: MultiBlocProvider(
         providers: [
           BlocProvider<AuthBloc>.value(value: authBloc),
