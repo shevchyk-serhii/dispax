@@ -545,27 +545,21 @@ dev-sim: free-port
 # --dart-define, which is why the map/geocoding work here but fail when the app
 # is launched from the IDE without those defines (Mapbox returns 401).
 #
-# The app is BUILT ONCE, then installed+launched on each booted simulator (much
-# faster and more stable than three concurrent `flutter run` processes fighting
-# over stdin/hot-reload). Roles are NOT auto-selected — the app has no autologin;
-# log in via the "Quick Access for Testing" panel on the login screen, or with
-# the dev seed accounts (password: password123):
-#   • dispatcher@dispax.de   • driver1@dispax.de   • client1@bmw.de
-# Stop everything with `make stop-dev`.
+# Each simulator gets its OWN build carrying --dart-define=DEV_AUTOLOGIN=<role>,
+# so the app auto-logs-in the matching test account and opens straight into that
+# role — no manual login. (The role is baked into the binary, hence one build per
+# role.) API_BASE_URL + MAPBOX_ACCESS_TOKEN are baked in too, so map/geocoding
+# work — they fail when launched from the IDE without these defines (Mapbox 401).
+# Builds are sequential (Flutter shares one build dir); the simulators stay
+# booted between runs so re-running is faster. Stop with `make stop-dev`.
 dev-roles: free-port
 	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
 	@echo "⏳ Waiting for backend on :8080..."
 	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
 	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
 	@sleep $(FLUTTER_STARTUP_DELAY)
-	@echo "🔨 Building the app once for the simulator..."
-	@cd $(FLUTTER_DIR) && $(FLUTTER) build ios --debug --simulator \
-		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
-		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
-	@APP="$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app"; \
-	ensure_sim() { \
-		local name="$$1"; \
-		local udid; \
+	@ensure_sim() { \
+		local name="$$1"; local udid; \
 		udid=$$(xcrun simctl list devices --json 2>/dev/null | python3 -c "import sys,json; n=sys.argv[1]; t='$(SIM_DEVICE_TYPE)'; d=json.load(sys.stdin); print(next((x['udid'] for rt in d['devices'].values() for x in rt if x['name']==n and x.get('deviceTypeIdentifier')==t), ''))" "$$name"); \
 		if [ -z "$$udid" ]; then \
 			echo "📲 Creating simulator \"$$name\" (17 Pro Max)..." 1>&2; \
@@ -573,16 +567,22 @@ dev-roles: free-port
 		fi; \
 		echo "$$udid"; \
 	}; \
-	for role in "$(SIM_NAME_CLIENT)" "$(SIM_NAME_DRIVER)" "$(SIM_NAME_DISPATCHER)"; do \
-		udid=$$(ensure_sim "$$role"); \
-		echo "🚀 $$role → $$udid"; \
+	APP="$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app"; \
+	for pair in "$(SIM_NAME_CLIENT):client" "$(SIM_NAME_DRIVER):driver" "$(SIM_NAME_DISPATCHER):dispatcher"; do \
+		name="$${pair%:*}"; autorole="$${pair##*:}"; \
+		udid=$$(ensure_sim "$$name"); \
+		echo "🔨 Building for $$name (autologin=$$autorole)..."; \
+		( cd $(FLUTTER_DIR) && $(FLUTTER) build ios --debug --simulator \
+			--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
+			--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) \
+			--dart-define=DEV_AUTOLOGIN=$$autorole ); \
+		echo "🚀 $$name → $$udid"; \
 		xcrun simctl boot "$$udid" 2>/dev/null || true; \
 		xcrun simctl install "$$udid" "$$APP"; \
 		xcrun simctl launch "$$udid" de.dispax.app; \
 	done; \
 	open -a Simulator
-	@echo "✅ App running on 3 named simulators (Dispax Client / Driver / Dispatcher)."
-	@echo "   Log in via 'Quick Access for Testing' or: dispatcher@dispax.de / driver1@dispax.de / client1@bmw.de (password123)."
+	@echo "✅ App running on 3 named simulators, each auto-logged-in to its role."
 	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
 	@wait
 

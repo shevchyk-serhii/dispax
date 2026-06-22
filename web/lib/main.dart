@@ -149,12 +149,76 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class AppRoot extends StatelessWidget {
+/// Dev-only autologin: when the app is launched with
+/// `--dart-define=DEV_AUTOLOGIN=<role>` (client | driver | dispatcher |
+/// secretary | superadmin), it logs the matching test account in automatically
+/// so each simulator opens straight into that role. Used by `make dev-roles`.
+/// Empty in normal/release builds — a no-op.
+const String _devAutologinRole = String.fromEnvironment('DEV_AUTOLOGIN');
+
+const Map<String, String> _devAutologinEmails = {
+  'client': 'client1@bmw.de',
+  'driver': 'driver1@dispax.de',
+  'dispatcher': 'dispatcher@dispax.de',
+  'secretary': 'secretary@dispax.de',
+  'superadmin': 'superadmin@dispax.de',
+};
+
+class AppRoot extends StatefulWidget {
   const AppRoot({super.key});
 
   @override
+  State<AppRoot> createState() => _AppRootState();
+}
+
+class _AppRootState extends State<AppRoot> {
+  // Guards the dev autologin so it fires at most once per app launch (e.g. it
+  // must not re-fire after the user manually logs out during a dev session).
+  bool _autologinAttempted = false;
+
+  void _maybeAutologin(AuthState state) {
+    if (_autologinAttempted) return;
+    if (_devAutologinRole.isEmpty) return;
+    // Wait for the initial auth check to resolve before acting.
+    if (state.status == AuthStatus.initial ||
+        state.status == AuthStatus.loading) {
+      return;
+    }
+
+    final email = _devAutologinEmails[_devAutologinRole];
+    if (email == null) {
+      debugPrint('⚠️ DEV_AUTOLOGIN="$_devAutologinRole" is not a known role');
+      _autologinAttempted = true;
+      return;
+    }
+
+    // If a previous session for a DIFFERENT account is restored from the
+    // Keychain (which survives an app uninstall on iOS), log out first so the
+    // target role's login takes effect — otherwise the simulator would keep
+    // whoever was logged in last.
+    if (state.isAuthenticated) {
+      if (state.user?.email == email) {
+        _autologinAttempted = true; // already the right account
+        return;
+      }
+      debugPrint('🔁 Dev autologin: switching ${state.user?.email} → $email');
+      context.read<AuthBloc>().add(const AuthLogoutRequested());
+      return; // re-enters this listener as unauthenticated, then logs in below
+    }
+
+    _autologinAttempted = true;
+    debugPrint('🔐 Dev autologin as $_devAutologinRole ($email)');
+    context.read<AuthBloc>().add(
+      AuthLoginRequested(email: email, password: 'password123'),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
+      // Fire the dev autologin once the initial auth check resolves to
+      // unauthenticated, reusing the normal login event.
+      listener: (context, authState) => _maybeAutologin(authState),
       builder: (context, authState) {
         if (authState.status == AuthStatus.initial ||
             authState.status == AuthStatus.loading) {
@@ -186,6 +250,8 @@ class AppRoot extends StatelessWidget {
           );
         }
 
+        // Unauthenticated: if a dev autologin is pending, it was just dispatched
+        // by the listener — briefly show the login screen until it resolves.
         return const LoginScreen();
       },
     );
