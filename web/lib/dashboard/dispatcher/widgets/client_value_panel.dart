@@ -226,12 +226,17 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
           final firstRide = client['firstRideDate'] as String?;
           final lastRide = client['lastRideDate'] as String?;
           final isTop3 = index < 3;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
 
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isTop3 ? AppColors.warningBg : colorScheme.surface,
+              color: isTop3
+                  ? (isDark
+                        ? AppColors.rideRequestedBgDark
+                        : AppColors.warningBg)
+                  : colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isTop3
@@ -263,11 +268,11 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                 else
                   CircleAvatar(
                     radius: 14,
-                    backgroundColor: AppColors.clientColor.withAlpha(30),
+                    backgroundColor: colorScheme.onSurface.withAlpha(30),
                     child: Text(
                       name.isNotEmpty ? name[0].toUpperCase() : '?',
                       style: TextStyle(
-                        color: AppColors.clientColor,
+                        color: colorScheme.onSurface,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),

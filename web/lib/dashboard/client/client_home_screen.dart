@@ -422,7 +422,7 @@ class _PlaceTile extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: cs.surface,
-          border: Border.all(color: AppColors.borderPrimary),
+          border: Border.all(color: cs.outline),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(

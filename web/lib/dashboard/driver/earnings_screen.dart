@@ -616,6 +616,7 @@ class _WithdrawButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return SizedBox(
       width: double.infinity,
       height: 46,
@@ -624,8 +625,8 @@ class _WithdrawButton extends StatelessWidget {
           // Withdraw action placeholder — no backend endpoint yet
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

@@ -171,17 +171,17 @@ make fmtAll    # Scala + Dart
 
 ## Project Structure
 
-| Module         | Purpose                                                                       |
-| -------------- | ----------------------------------------------------------------------------- |
+| Module         | Purpose                                                                        |
+|----------------|--------------------------------------------------------------------------------|
 | `core`         | Shared domain: IDs (UUID v7), Location, Person, Company, sessions, DB & config |
-| `auth`         | JWT authentication, user management, rate limiting                            |
-| `ride`         | Ride lifecycle: CRUD, driver assignment, status machine, ratings, expenses    |
-| `driver`       | Driver location tracking and proximity calculation                            |
-| `schedule`     | Driver schedules (days, shifts, availability)                                 |
-| `notification` | Firebase Cloud Messaging, notification orchestration                          |
-| `billing`      | Invoices, client companies, DATEV export                                      |
-| `api`          | HTTP entry point: route aggregation and DI wiring                             |
-| `web`          | Flutter app: BLoC, screens, services, theming, localization                   |
+| `auth`         | JWT authentication, user management, rate limiting                             |
+| `ride`         | Ride lifecycle: CRUD, driver assignment, status machine, ratings, expenses     |
+| `driver`       | Driver location tracking and proximity calculation                             |
+| `schedule`     | Driver schedules (days, shifts, availability)                                  |
+| `notification` | Firebase Cloud Messaging, notification orchestration                           |
+| `billing`      | Invoices, client companies, DATEV export                                       |
+| `api`          | HTTP entry point: route aggregation and DI wiring                              |
+| `web`          | Flutter app: BLoC, screens, services, theming, localization                    |
 
 ---
 

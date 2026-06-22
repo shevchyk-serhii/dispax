@@ -757,6 +757,7 @@ class _TerminalBadge extends StatelessWidget {
     final isT1 = terminal == 'T1';
     final isT2 = terminal == 'T2';
     final isMUC = terminal == 'MUC' || terminal.isEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final (bg, fg) = switch (true) {
       _ when isT1 => (
@@ -767,8 +768,14 @@ class _TerminalBadge extends StatelessWidget {
         AppColors.accent.withValues(alpha: 0.18),
         AppColors.accent,
       ),
-      _ when isMUC => (const Color(0xFFF4F4F5), const Color(0xFF52525B)),
-      _ => (AppColors.surfaceVariant, AppColors.textSecondary),
+      _ when isMUC =>
+        isDark
+            ? (AppColors.surfaceVariantDark, AppColors.textSecondaryDark)
+            : (const Color(0xFFF4F4F5), const Color(0xFF52525B)),
+      _ => (
+        isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+      ),
     };
 
     return Container(
@@ -913,16 +920,20 @@ class _ZoneRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.successBg,
+              color: isDark
+                  ? AppColors.rideCompletedBgDark
+                  : AppColors.successBg,
               border: Border.all(color: AppColors.rideCompletedBorder),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               '+$bufferMinutes min',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AppColors.successStrong,
+                color: isDark
+                    ? AppColors.rideCompletedTextDark
+                    : AppColors.successStrong,
               ),
             ),
           ),

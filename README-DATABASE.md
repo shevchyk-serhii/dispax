@@ -63,10 +63,10 @@ Production profile (`application-production.conf`) increases pool sizes: maxPool
 
 ### Environment Profiles
 
-| Profile | Config file | Test data | Pool size |
-|---------|------------|-----------|-----------|
-| development | application-development.conf | Yes (V1001) | 10/2 |
-| production | application-production.conf | No | 20/5 |
+| Profile     | Config file                  | Test data   | Pool size |
+|-------------|------------------------------|-------------|-----------|
+| development | application-development.conf | Yes (V1001) | 10/2      |
+| production  | application-production.conf  | No          | 20/5      |
 
 ### Testing
 

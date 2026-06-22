@@ -25,6 +25,7 @@ object AuthApi:
     .in("api" / "auth" / "login")
     .in(jsonBody[LoginRequest])
     .in(clientIp)
+    .in(header[Option[String]]("User-Agent"))
     .out(jsonBody[LoginResponse])
     .errorOut(
       oneOf[ApiError](
@@ -83,13 +84,13 @@ object AuthApi:
   // All server endpoints share one environment so they can be interpreted together.
   type AuthEnv = AuthService & RateLimiter & JwtService
 
-  private val loginServer = loginEndpoint.zServerLogic[AuthEnv] { case (req, ip) =>
+  private val loginServer = loginEndpoint.zServerLogic[AuthEnv] { case (req, ip, userAgent) =>
     val ipKey = ip.getOrElse("unknown")
     for {
       allowed  <- ZIO.serviceWithZIO[RateLimiter](_.checkRate(ipKey))
       _        <- ZIO.unless(allowed)(ZIO.fail(ApiError("Too many requests. Please try again later.")))
       response <- ZIO
-                    .serviceWithZIO[AuthService](_.login(req.email, req.password))
+                    .serviceWithZIO[AuthService](_.login(req.email, req.password, userAgent, ip))
                     .mapError {
                       case _: UserNotFound | _: InvalidCredentials => ApiError("Invalid credentials")
                       case _                                       => ApiError("Internal server error")

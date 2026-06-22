@@ -49,6 +49,7 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
   final _toController = TextEditingController();
 
   RideEstimateService? _estimateService;
+  bool _clientPreselected = false;
 
   @override
   void didChangeDependencies() {
@@ -56,6 +57,23 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
     _estimateService ??= RideEstimateService(
       apiClient: context.read<AuthBloc>().apiClient,
     );
+
+    // The client books for themselves — there is no client picker on this
+    // screen. Preselect self as the client (same as the secretary flow does
+    // for the client role) so the form is valid and the booking is created
+    // for the logged-in user.
+    if (!_clientPreselected) {
+      final auth = context.read<AuthBloc>().state;
+      if (auth.status == AuthStatus.authenticated && auth.user != null) {
+        _clientPreselected = true;
+        context.read<CreateRideFormBloc>().add(
+          ClientPreselected(
+            clientId: auth.user!.id,
+            clientName: auth.user!.name,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -226,7 +244,7 @@ class _RouteCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        border: Border.all(color: AppColors.borderPrimary),
+        border: Border.all(color: cs.outline),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -292,7 +310,11 @@ class _RouteCard extends StatelessWidget {
               ],
             ),
           ),
-          Divider(height: 1, color: const Color(0xFFF4F4F5), thickness: 1),
+          Divider(
+            height: 1,
+            color: Theme.of(context).colorScheme.outlineVariant,
+            thickness: 1,
+          ),
           // TO row
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 13),
@@ -490,20 +512,25 @@ class _AddressPickerSheetState extends State<_AddressPickerSheet> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final v = _ctrl.text.trim();
-                    if (v.isNotEmpty) Navigator.of(context).pop(v);
+                child: Builder(
+                  builder: (context) {
+                    final cs = Theme.of(context).colorScheme;
+                    return ElevatedButton(
+                      onPressed: () {
+                        final v = _ctrl.text.trim();
+                        if (v.isNotEmpty) Navigator.of(context).pop(v);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Confirm'),
+                    );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: const Text('Confirm'),
                 ),
               ),
             ),
@@ -705,7 +732,7 @@ class _VehicleClassSection extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: cs.surface,
-            border: Border.all(color: AppColors.borderPrimary),
+            border: Border.all(color: cs.outline),
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
@@ -755,7 +782,7 @@ class _VehicleClassRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final priceText = estimate != null
-        ? '€${estimate!.estimatedPrice.toStringAsFixed(0)}'
+        ? '€${estimate!.estimatedPrice.toStringAsFixed(2)}'
         : '—';
 
     return Column(
@@ -822,7 +849,11 @@ class _VehicleClassRow extends StatelessWidget {
           ),
         ),
         if (showDivider)
-          const Divider(height: 1, color: Color(0xFFF4F4F5), thickness: 1),
+          Divider(
+            height: 1,
+            color: Theme.of(context).colorScheme.outlineVariant,
+            thickness: 1,
+          ),
       ],
     );
   }
@@ -851,7 +882,7 @@ class _Footer extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        border: const Border(top: BorderSide(color: AppColors.borderPrimary)),
+        border: Border(top: BorderSide(color: cs.outline)),
       ),
       padding: const EdgeInsets.only(top: 14),
       child: Column(
@@ -885,24 +916,29 @@ class _Footer extends StatelessWidget {
           const SizedBox(height: 14),
           SizedBox(
             height: 52,
-            child: ElevatedButton(
-              onPressed: state.isValid
-                  ? () => context.read<CreateRideFormBloc>().add(
-                      const FormSubmitted(),
-                    )
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Text(
-                'Confirm booking',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-              ),
+            child: Builder(
+              builder: (context) {
+                final cs = Theme.of(context).colorScheme;
+                return ElevatedButton(
+                  onPressed: state.isValid
+                      ? () => context.read<CreateRideFormBloc>().add(
+                          const FormSubmitted(),
+                        )
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Confirm booking',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                );
+              },
             ),
           ),
         ],

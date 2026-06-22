@@ -15,9 +15,29 @@ import '../modules/core/services/websocket_service.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
+import '../utils/ride_status_styles.dart';
 
 class ClientMapScreen extends StatefulWidget {
   const ClientMapScreen({super.key});
+
+  /// Client-facing wording for the ride status shown on the map pill.
+  ///
+  /// Friendlier than the raw status label (e.g. "Driver on the way" instead of
+  /// "Assigned").
+  static String clientStatusLabel(RideStatus status) {
+    switch (status) {
+      case RideStatus.requested:
+        return 'Finding a driver';
+      case RideStatus.assigned:
+        return 'Driver on the way';
+      case RideStatus.inProgress:
+        return 'On trip';
+      case RideStatus.completed:
+        return 'Trip completed';
+      case RideStatus.cancelled:
+        return 'Trip cancelled';
+    }
+  }
 
   @override
   State<ClientMapScreen> createState() => _ClientMapScreenState();
@@ -25,12 +45,19 @@ class ClientMapScreen extends StatefulWidget {
 
 class _ClientMapScreenState extends State<ClientMapScreen> {
   MapboxMap? _mapboxMap;
-  PointAnnotationManager? _driverAnnotationManager;
-  PointAnnotation? _driverAnnotation;
-  PointAnnotationManager? _selfAnnotationManager;
-  PointAnnotation? _selfAnnotation;
-  Uint8List? _clientMarkerImage;
-  CircleAnnotationManager? _circleAnnotationManager;
+
+  // Driver and client (self) are drawn as themed CircleAnnotations (design:
+  // pulsing dots). Driver colour follows the ride status palette, client is the
+  // corporate accent. Route pickup/dropoff stay on a separate circle manager so
+  // the pulse animation never re-creates them.
+  CircleAnnotationManager? _driverCircleManager;
+  CircleAnnotation? _driverCircle;
+  CircleAnnotationManager? _selfCircleManager;
+  CircleAnnotation? _selfCircle;
+  CircleAnnotationManager? _routeCircleManager;
+  // Driver name label rides above the driver dot.
+  PointAnnotationManager? _driverLabelManager;
+  PointAnnotation? _driverLabel;
 
   StreamSubscription<geo.Position>? _locationSubscription;
   StreamSubscription? _wsSubscription;
@@ -40,7 +67,6 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   final LocationService _locationService = LocationService.instance;
   bool _sharingLocation = false;
   RideService? _rideService;
-  Uint8List? _driverMarkerImage;
   String? _approachingBannerMessage;
   Timer? _pulseTimer;
   bool _pulseState = false;
@@ -58,13 +84,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _pulseTimer = Timer.periodic(const Duration(milliseconds: 700), (_) {
       if (!mounted) return;
       _pulseState = !_pulseState;
-      if (_driverAnnotation != null) {
-        _driverAnnotation!.iconSize = _pulseState ? 2.4 : 1.8;
-        _driverAnnotationManager?.update(_driverAnnotation!);
+      if (_driverCircle != null) {
+        _driverCircle!.circleRadius = _pulseState ? 15.0 : 12.0;
+        _driverCircleManager?.update(_driverCircle!);
       }
-      if (_selfAnnotation != null) {
-        _selfAnnotation!.iconSize = _pulseState ? 1.8 : 1.3;
-        _selfAnnotationManager?.update(_selfAnnotation!);
+      if (_selfCircle != null) {
+        _selfCircle!.circleRadius = _pulseState ? 12.0 : 9.0;
+        _selfCircleManager?.update(_selfCircle!);
       }
     });
   }
@@ -221,12 +247,16 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
 
-    _driverAnnotationManager = await mapboxMap.annotations
-        .createPointAnnotationManager();
-    _selfAnnotationManager = await mapboxMap.annotations
-        .createPointAnnotationManager();
-    _circleAnnotationManager = await mapboxMap.annotations
+    // Route pickup/dropoff dots are created first so the live driver/client
+    // markers render on top of them.
+    _routeCircleManager = await mapboxMap.annotations
         .createCircleAnnotationManager();
+    _selfCircleManager = await mapboxMap.annotations
+        .createCircleAnnotationManager();
+    _driverCircleManager = await mapboxMap.annotations
+        .createCircleAnnotationManager();
+    _driverLabelManager = await mapboxMap.annotations
+        .createPointAnnotationManager();
 
     if (_currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
@@ -243,77 +273,80 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   Future<void> _updateCurrentLocationMarker() async {
     if (_mapboxMap == null || _currentPosition == null) return;
 
-    final name = context.read<AuthBloc>().state.user?.name;
-
-    if (_selfAnnotation != null) {
-      await _selfAnnotationManager?.delete(_selfAnnotation!);
-      _selfAnnotation = null;
+    // Pulsing cyan dot (design §8) — recreate so it tracks the latest GPS fix.
+    if (_selfCircle != null) {
+      await _selfCircleManager?.delete(_selfCircle!);
+      _selfCircle = null;
     }
 
-    _clientMarkerImage ??= (await rootBundle.load(
-      'assets/client_marker.png',
-    )).buffer.asUint8List();
-
-    _selfAnnotation = await _selfAnnotationManager?.create(
-      PointAnnotationOptions(
-        geometry: Point(
-          coordinates: Position(
-            _currentPosition!.longitude,
-            _currentPosition!.latitude,
-          ),
-        ),
-        image: _clientMarkerImage,
-        iconSize: 1.5,
-        textField: name,
-        textSize: 13.0,
-        textColor: 0xFF1B5E20,
-        textHaloColor: 0xFFFFFFFF,
-        textHaloWidth: 2.0,
-        textOffset: [0.0, -2.5],
+    _selfCircle = await _selfCircleManager?.create(
+      MapboxService.createClientMarker(
+        latitude: _currentPosition!.latitude,
+        longitude: _currentPosition!.longitude,
+        radius: _pulseState ? 12.0 : 9.0,
       ),
     );
   }
 
   Future<void> _updateDriverMarker(double latitude, double longitude) async {
-    if (_driverAnnotationManager == null) return;
+    if (_driverCircleManager == null) return;
 
-    _driverMarkerImage ??= (await rootBundle.load(
-      'assets/driver_marker.png',
-    )).buffer.asUint8List();
-    final Uint8List imageData = _driverMarkerImage!;
+    // Driver dot colour follows the ride status palette (design §8); falls back
+    // to the assigned colour when no active ride status is known yet.
+    final status = _activeRide?.status ?? RideStatus.assigned;
+    final color = RideStatusStyles.getStatusColorValue(status);
 
-    if (_driverAnnotation != null) {
-      await _driverAnnotationManager?.delete(_driverAnnotation!);
-      _driverAnnotation = null;
+    if (_driverCircle != null) {
+      await _driverCircleManager?.delete(_driverCircle!);
+      _driverCircle = null;
     }
-    _driverAnnotation = await _driverAnnotationManager?.create(
-      PointAnnotationOptions(
-        geometry: Point(coordinates: Position(longitude, latitude)),
-        image: imageData,
-        iconSize: 2.0,
-        textField: _activeRide?.driverName,
-        textSize: 13.0,
-        textColor: 0xFF0D47A1,
-        textHaloColor: 0xFFFFFFFF,
-        textHaloWidth: 2.0,
-        textOffset: [0.0, 2.5],
+    _driverCircle = await _driverCircleManager?.create(
+      MapboxService.createDriverMarker(
+        latitude: latitude,
+        longitude: longitude,
+        color: color,
+        radius: _pulseState ? 15.0 : 12.0,
+        driverId: _activeRide?.driverId,
       ),
     );
+
+    // Driver name label above the dot.
+    final name = _activeRide?.driverName;
+    if (_driverLabel != null) {
+      await _driverLabelManager?.delete(_driverLabel!);
+      _driverLabel = null;
+    }
+    if (name != null && name.isNotEmpty) {
+      _driverLabel = await _driverLabelManager?.create(
+        PointAnnotationOptions(
+          geometry: Point(coordinates: Position(longitude, latitude)),
+          textField: name,
+          textSize: 13.0,
+          textColor: color,
+          textHaloColor: 0xFFFFFFFF,
+          textHaloWidth: 2.0,
+          textOffset: [0.0, -2.0],
+        ),
+      );
+    }
   }
 
   void _updateMapMarkers() {
-    if (_mapboxMap == null || _circleAnnotationManager == null) return;
+    if (_mapboxMap == null || _routeCircleManager == null) return;
 
     _updateCurrentLocationMarker();
 
     if (_activeRide != null) {
+      // Clear stale pickup/dropoff dots before redrawing.
+      _routeCircleManager?.deleteAll();
+
       final rideMarkers = MapboxService.createRideMarkers(
         from: _activeRide!.from,
         to: _activeRide!.to,
       );
 
       for (final marker in rideMarkers) {
-        _circleAnnotationManager?.create(marker);
+        _routeCircleManager?.create(marker);
       }
 
       if (_activeRide!.driverLocation != null &&
@@ -423,14 +456,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                   ),
                   child: Row(
                     children: [
-                      // Back button
+                      // Back button — theme-aware so it stays legible in dark.
                       GestureDetector(
                         onTap: () => Navigator.of(context).maybePop(),
                         child: Container(
                           width: 38,
                           height: 38,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
@@ -440,50 +473,18 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                               ),
                             ],
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.arrow_back,
                             size: 20,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
 
                       const SizedBox(width: 12),
 
-                      // Status pill
-                      if (_activeRide != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 7,
-                                height: 7,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.accent,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'Driver on the way',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      // Status pill — colour and label follow the ride status.
+                      if (_activeRide != null) _buildStatusPill(_activeRide!),
                     ],
                   ),
                 ),
@@ -523,6 +524,52 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ─── Status pill ──────────────────────────────────────────────────────────────
+
+  Widget _buildStatusPill(Ride ride) {
+    final brightness = Theme.of(context).brightness;
+    final status = ride.status;
+    final bg = RideStatusStyles.getStatusBackgroundColor(
+      status,
+      brightness: brightness,
+    );
+    final fg = RideStatusStyles.getStatusTextColor(
+      status,
+      brightness: brightness,
+    );
+    final border = RideStatusStyles.getStatusBorderColor(
+      status,
+      brightness: brightness,
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: border, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            ClientMapScreen.clientStatusLabel(status),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
+          ),
+        ],
       ),
     );
   }

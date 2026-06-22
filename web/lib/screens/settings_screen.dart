@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,10 +53,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final resp = await apiClient.get('/sessions');
       if (!mounted) return;
       if (resp.statusCode == 200) {
-        final body = resp.body.trim();
-        if (body.startsWith('[')) {
-          final items = body.split(RegExp(r'\},\s*\{')).length;
-          setState(() => _sessionCount = items.clamp(1, 999));
+        final decoded = jsonDecode(resp.body);
+        if (decoded is List) {
+          setState(() => _sessionCount = decoded.length);
         }
       }
     } catch (_) {

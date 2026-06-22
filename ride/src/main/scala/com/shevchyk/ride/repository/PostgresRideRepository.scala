@@ -267,63 +267,56 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
-  override def update(ride: Ride): Task[Ride] = {
-    val updateSql =
-      sql"""
-      UPDATE rides SET
-        driver_id = ${ride.driverId.map(_.value)},
-        status = ${ride.status},
-        from_address = ${ride.pickupLocation.address},
-        from_lat = ${ride.pickupLocation.latitude},
-        from_lng = ${ride.pickupLocation.longitude},
-        to_address = ${ride.dropoffLocation.address},
-        to_lat = ${ride.dropoffLocation.latitude},
-        to_lng = ${ride.dropoffLocation.longitude},
-        pickup_datetime = ${ride.pickupDateTime},
-        scheduled_time = ${ride.scheduledTime},
-        start_time = ${ride.startTime},
-        end_time = ${ride.endTime},
-        final_price_amount = ${ride.finalPrice},
-        notes = ${ride.notes},
-        specifics = ${ride.specifics},
-        payment_status = ${ride.paymentStatus},
-        payment_method = ${ride.paymentMethod},
-        paid_at = ${ride.paidAt},
-        cancellation_reason = ${ride.cancellationReason},
-        cancellation_fee = ${ride.cancellationFee},
-        cancelled_by = ${ride.cancelledBy.map(_.value)},
-        is_vip_ride = ${ride.isVipRide},
-        preferred_driver_used = ${ride.preferredDriverUsed},
-        special_requirements = ${ride.specialRequirements},
-        pool_id = ${ride.poolId.map(_.value)},
-        tariff_id = ${ride.tariffId.map(_.value)},
-        estimated_price_amount = ${ride.estimatedPrice},
-        schedule_day_id = ${ride.scheduleDayId},
-        invoice_id = ${ride.invoiceId},
-        updated_at = NOW()
-      WHERE id = ${ride.id.value}
-    """.update.run
-    updateSql
+  // Full SET clause shared by `update` and `updateIfStatus` so the two never drift apart on which
+  // columns they persist. `updateIfStatus` adds a status guard to the WHERE; otherwise both write
+  // the entire ride. (A previous version of `updateIfStatus` only set 4 columns, which silently
+  // dropped start_time/cancellation_*/payment_* on the transitions that go through it.)
+  private def rideSetClause(ride: Ride): Fragment =
+    fr"""SET
+      driver_id = ${ride.driverId.map(_.value)},
+      status = ${ride.status},
+      from_address = ${ride.pickupLocation.address},
+      from_lat = ${ride.pickupLocation.latitude},
+      from_lng = ${ride.pickupLocation.longitude},
+      to_address = ${ride.dropoffLocation.address},
+      to_lat = ${ride.dropoffLocation.latitude},
+      to_lng = ${ride.dropoffLocation.longitude},
+      pickup_datetime = ${ride.pickupDateTime},
+      scheduled_time = ${ride.scheduledTime},
+      start_time = ${ride.startTime},
+      end_time = ${ride.endTime},
+      final_price_amount = ${ride.finalPrice},
+      notes = ${ride.notes},
+      specifics = ${ride.specifics},
+      payment_status = ${ride.paymentStatus},
+      payment_method = ${ride.paymentMethod},
+      paid_at = ${ride.paidAt},
+      cancellation_reason = ${ride.cancellationReason},
+      cancellation_fee = ${ride.cancellationFee},
+      cancelled_by = ${ride.cancelledBy.map(_.value)},
+      is_vip_ride = ${ride.isVipRide},
+      preferred_driver_used = ${ride.preferredDriverUsed},
+      special_requirements = ${ride.specialRequirements},
+      pool_id = ${ride.poolId.map(_.value)},
+      tariff_id = ${ride.tariffId.map(_.value)},
+      estimated_price_amount = ${ride.estimatedPrice},
+      schedule_day_id = ${ride.scheduleDayId},
+      invoice_id = ${ride.invoiceId},
+      updated_at = NOW()"""
+
+  override def update(ride: Ride): Task[Ride] =
+    (fr"UPDATE rides" ++ rideSetClause(ride) ++ fr"WHERE id = ${ride.id.value}").update.run
       .transact(xa)
       .as(ride)
       .mapError(ex => RideError.DatabaseError(ex))
-  }
 
   override def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean] = {
-    val statusList  = expectedStatuses.toList
     val whereStatus =
-      statusList match {
+      expectedStatuses.toList match {
         case Nil          => fr"TRUE"
         case head :: tail => Fragments.in(fr"status", NonEmptyList(head, tail))
       }
-    (sql"""
-      UPDATE rides SET
-        driver_id = ${ride.driverId.map(_.value)},
-        status = ${ride.status},
-        is_vip_ride = ${ride.isVipRide},
-        preferred_driver_used = ${ride.preferredDriverUsed},
-        updated_at = NOW()
-      WHERE id = ${ride.id.value} AND """ ++ whereStatus).update.run
+    (fr"UPDATE rides" ++ rideSetClause(ride) ++ fr"WHERE id = ${ride.id.value} AND" ++ whereStatus).update.run
       .transact(xa)
       .map(_ > 0)
       .mapError(ex => RideError.DatabaseError(ex))

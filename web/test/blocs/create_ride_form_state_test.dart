@@ -120,6 +120,20 @@ void main() {
       expect(makeState(selectedClientId: null).isValid, isFalse);
     });
 
+    test('client preselected as self (client booking flow) returns true', () {
+      // ClientBookScreen preselects the current user as the client, which
+      // sets both selectedClientId and baselineClientId to self.
+      final state = CreateRideFormState.initial().copyWith(
+        selectedClientId: 'self-1',
+        clientName: 'Self',
+        baselineClientId: 'self-1',
+        baselineClientName: 'Self',
+        fromAddress: 'Maximilianstrasse 10',
+        toAddress: 'Flughafen Muenchen Terminal 2',
+      );
+      expect(state.isValid, isTrue);
+    });
+
     test('empty fromAddress returns false', () {
       expect(makeState(fromAddress: '').isValid, isFalse);
     });
@@ -145,6 +159,34 @@ void main() {
     test('non-airport transfer does not require flight number', () {
       expect(
         makeState(isAirportTransfer: false, flightNumber: '').isValid,
+        isTrue,
+      );
+    });
+
+    test('identical fromAddress and toAddress returns false', () {
+      expect(
+        makeState(fromAddress: 'Main St 1', toAddress: 'Main St 1').isValid,
+        isFalse,
+      );
+    });
+
+    test('case-insensitive same address returns false', () {
+      expect(
+        makeState(fromAddress: 'main st 1', toAddress: 'MAIN ST 1').isValid,
+        isFalse,
+      );
+    });
+
+    test('trimmed same address returns false', () {
+      expect(
+        makeState(fromAddress: '  Main St 1  ', toAddress: 'Main St 1').isValid,
+        isFalse,
+      );
+    });
+
+    test('different addresses returns true', () {
+      expect(
+        makeState(fromAddress: 'Airport', toAddress: 'Hotel').isValid,
         isTrue,
       );
     });

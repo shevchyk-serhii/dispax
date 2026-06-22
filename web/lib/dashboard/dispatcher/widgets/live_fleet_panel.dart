@@ -213,7 +213,7 @@ class _DriverRow extends StatelessWidget {
             width: 30,
             height: 30,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: colorScheme.onSurface.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
@@ -222,7 +222,7 @@ class _DriverRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: colorScheme.onSurface,
               ),
             ),
           ),

@@ -161,11 +161,11 @@ class AppColors {
   static const Color borderDark = Color(0xFF27272A);
   static const Color borderSecondaryDark = Color(0xFF3F3F46);
 
-  // ─── Glass Effect ───
-  static Color glassBackground = Colors.white.withValues(alpha: 0.12);
-  static Color glassBorder = Colors.white.withValues(alpha: 0.18);
-  static Color glassText = Colors.white.withValues(alpha: 0.9);
-  static Color glassTextSecondary = Colors.white.withValues(alpha: 0.7);
+  // ─── On-dark (translucent white over graphite headers) ───
+  static Color onDarkBackground = Colors.white.withValues(alpha: 0.12);
+  static Color onDarkBorder = Colors.white.withValues(alpha: 0.18);
+  static Color onDarkText = Colors.white.withValues(alpha: 0.9);
+  static Color onDarkTextSecondary = Colors.white.withValues(alpha: 0.7);
 
   // ─── Shadows ───
   static Color shadowXs = Colors.black.withValues(alpha: 0.05);

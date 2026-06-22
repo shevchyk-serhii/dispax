@@ -258,6 +258,51 @@ object ScheduleServiceStatusSpec extends ZIOSpecDefault {
           cancelled <- service.cancelScheduleDay(day.id, testCompanyId)
           result    <- service.cancelScheduleDay(cancelled.id, testCompanyId)
         } yield assertTrue(result.status == ScheduleDayStatus.Cancelled)
+      }.provide(standardLayers),
+      // ── Mutant 3: explicit invalid transitions ─────────────────────────────
+      // These catch mutations that incorrectly mark Active→Scheduled or
+      // Scheduled→Completed as valid by adding them as `=> true` cases.
+      test("Active -> Scheduled is invalid") {
+        for {
+          service <- ZIO.service[ScheduleService]
+          active  <- createAndTransition(service, futureDate.plusDays(211), ScheduleDayStatus.Active)
+          result  <-
+            service
+              .updateScheduleDay(
+                active.id,
+                UpdateScheduleDayRequest(status = Some(ScheduleDayStatus.Scheduled)),
+                testCompanyId
+              )
+              .exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.InvalidStatusTransition])
+          case _                   => false
+        })
+      }.provide(standardLayers),
+      test("Scheduled -> Completed is invalid") {
+        for {
+          service <- ZIO.service[ScheduleService]
+          day     <- service.createScheduleDay(
+                       CreateScheduleDayRequest(
+                         driverId = testDriverId,
+                         companyId = testCompanyId,
+                         date = futureDate.plusDays(212),
+                         startTime = LocalTime.of(8, 0),
+                         endTime = LocalTime.of(17, 0)
+                       )
+                     )
+          result  <-
+            service
+              .updateScheduleDay(
+                day.id,
+                UpdateScheduleDayRequest(status = Some(ScheduleDayStatus.Completed)),
+                testCompanyId
+              )
+              .exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.InvalidStatusTransition])
+          case _                   => false
+        })
       }.provide(standardLayers)
     )
 }

@@ -92,7 +92,7 @@ class AssignmentDialog extends StatelessWidget {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
-                      decoration: AppStyles.glassCardDecorationOf(context),
+                      decoration: AppStyles.cardDecorationOf(context),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -213,7 +213,9 @@ class AssignmentDialog extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.errorBg,
+                          color: isDark
+                              ? AppColors.rideCancelledBgDark
+                              : AppColors.errorBg,
                           borderRadius: BorderRadius.circular(
                             AppDimensions.radiusMedium,
                           ),
