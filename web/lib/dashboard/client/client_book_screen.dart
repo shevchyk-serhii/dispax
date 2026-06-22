@@ -49,6 +49,7 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
   final _toController = TextEditingController();
 
   RideEstimateService? _estimateService;
+  bool _clientPreselected = false;
 
   @override
   void didChangeDependencies() {
@@ -56,6 +57,23 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
     _estimateService ??= RideEstimateService(
       apiClient: context.read<AuthBloc>().apiClient,
     );
+
+    // The client books for themselves — there is no client picker on this
+    // screen. Preselect self as the client (same as the secretary flow does
+    // for the client role) so the form is valid and the booking is created
+    // for the logged-in user.
+    if (!_clientPreselected) {
+      final auth = context.read<AuthBloc>().state;
+      if (auth.status == AuthStatus.authenticated && auth.user != null) {
+        _clientPreselected = true;
+        context.read<CreateRideFormBloc>().add(
+          ClientPreselected(
+            clientId: auth.user!.id,
+            clientName: auth.user!.name,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -764,7 +782,7 @@ class _VehicleClassRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final priceText = estimate != null
-        ? '€${estimate!.estimatedPrice.toStringAsFixed(0)}'
+        ? '€${estimate!.estimatedPrice.toStringAsFixed(2)}'
         : '—';
 
     return Column(
