@@ -62,3 +62,17 @@ Feature: Per-user language preference
   Scenario: Unauthenticated request to update profile is rejected
     When I send a PUT request to "/api/users/profile" without authentication
     Then the response status should be 401
+
+  @language @tenant-isolation
+  Scenario: Tenant isolation — user from company B cannot update user from company A via id endpoint
+    # Company-A user ID is 11111111-1111-1111-1111-111111111111 (testPersonId1, token valid-token-1).
+    # Company-B dispatcher token is valid-token-b (testPersonIdDispB, companyId testCompanyId2).
+    # requireSameCompany in UserApi.scala calls findByIdAndCompany: when the target user does not
+    # belong to the caller's company it returns None → 404 "User not found" (not 403, to avoid
+    # leaking the existence of users in other tenants).
+    Given I am authenticated as a dispatcher for company B
+    When I send a PUT request to "/api/users/11111111-1111-1111-1111-111111111111" with body:
+      """
+      {"preferredLanguage":"de"}
+      """
+    Then the response status should be 404

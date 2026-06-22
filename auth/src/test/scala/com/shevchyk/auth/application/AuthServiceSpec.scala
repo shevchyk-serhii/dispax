@@ -535,31 +535,29 @@ object AuthServiceSpec extends ZIOSpecDefault {
               updated.preferredLanguage.contains("uk")
           )
         }.provide(layers),
-        // Tenant-isolation regression: updateUser that carries a preferredLanguage must not
-        // touch a user belonging to a different company.
-        test("tenant isolation — update with preferredLanguage does not affect user in another company") {
-          val ownerCompany    = com.shevchyk.core.domain.CompanyId(UUID.randomUUID())
-          val attackerCompany = com.shevchyk.core.domain.CompanyId(UUID.randomUUID())
-          val victim          = Person(
-            id = PersonId.generate(),
-            name = "Victim",
-            email = "victim-lang@other.example.com",
-            role = PersonRole.Client,
-            passwordHash = "hash",
-            status = UserStatus.ACTIVE,
-            companyId = Some(ownerCompany),
-            roles = Set(PersonRole.Client)
-          )
+        // NOTE: tenant isolation for PUT /api/users/{id} lives at the ROUTE level
+        // (requireSameCompany in UserApi.scala), not inside AuthService.updateUser.
+        // The service itself works by user ID without a company filter — which is correct
+        // because the route guard has already verified company membership before calling it.
+        //
+        // The cross-company negative test is therefore a BDD scenario against the real HTTP
+        // layer: see api/src/test/resources/features/40_user_language_selection.feature
+        // ("Tenant isolation — user from company A cannot update user from company B via id endpoint").
+        //
+        // What we verify here at the service unit level: that updateUser with a
+        // preferredLanguage payload can update the specified user's record and returns
+        // the updated person (happy-path service contract, no isolation illusion).
+        test("updateUser with preferredLanguage succeeds and returns updated person") {
           for {
-            repo     <- ZIO.service[com.shevchyk.core.repository.PersonRepository]
-            _        <- repo.create(victim)
-            _        <- repo.update(victim.copy(preferredLanguage = None))
-            // The in-memory repository's update is not company-scoped (it stores by ID directly),
-            // so we verify isolation at the service/delete level: the attacker should NOT see
-            // the victim's row when looking it up by their company.
-            found    <- repo.findByIdAndCompany(victim.id, attackerCompany)
-          } yield assertTrue(found.isEmpty)
-        }.provide(layersWithRepo)
+            service <- ZIO.service[AuthService]
+            _       <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("de")))
+            // A second call with a different field must not lose the already-stored language.
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(name = Some("Lang Verified")))
+          } yield assertTrue(
+            updated.name == "Lang Verified" &&
+              updated.preferredLanguage.contains("de")
+          )
+        }.provide(layers)
       ),
       suite("updateUser")(
         test("partial update changes only specified fields") {
