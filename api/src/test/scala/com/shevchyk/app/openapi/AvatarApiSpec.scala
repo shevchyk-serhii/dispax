@@ -143,7 +143,12 @@ object AvatarApiSpec extends ZIOSpecDefault:
   private val stubAuthServiceLayer: ZLayer[Any, Nothing, AuthService] = ZLayer.succeed(
     new AuthService:
       private def notImpl                                                                                 = ZIO.die(new NotImplementedError("AvatarApiSpec AuthService stub"))
-      def login(email: String, password: String): IO[AuthError, LoginResponse]                            = notImpl
+      def login(
+          email: String,
+          password: String,
+          deviceInfo: Option[String],
+          ipAddress: Option[String]
+      ): IO[AuthError, LoginResponse] = notImpl
       def createUser(req: CreateUserRequest): IO[AuthError, UserDto]                                      = notImpl
       def getUserById(id: UUID): IO[AuthError, UserDto]                                                   = notImpl
       def getUserByEmail(email: String): IO[AuthError, UserDto]                                           = notImpl
