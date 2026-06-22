@@ -10,6 +10,12 @@ import 'ride_badges.dart';
 /// The price block is tappable and opens a numeric input dialog that calls
 /// [onPriceEdited] on confirm. When [showActions] is false (board view) the
 /// Start/Complete action buttons are hidden.
+///
+/// When [compact] is true the card uses reduced padding, a stacked header
+/// (time above price/status), single-line truncated location rows, and hides
+/// the estimated-duration chip and requirements badge. This prevents layout
+/// overflow in the multi-column board view where each column is only ~1/3 of
+/// the screen width.
 class RideCalendarCard extends StatelessWidget {
   final Ride ride;
 
@@ -26,6 +32,11 @@ class RideCalendarCard extends StatelessWidget {
   /// Supplied by the parent so this card has no direct dependency on RideBloc.
   final Widget? actionsWidget;
 
+  /// When true, applies a compact layout: reduced padding, stacked header,
+  /// single-line text truncation, and hidden duration chip / requirements.
+  /// Defaults to false so the day-view is byte-for-byte unchanged.
+  final bool compact;
+
   const RideCalendarCard({
     super.key,
     required this.ride,
@@ -33,6 +44,7 @@ class RideCalendarCard extends StatelessWidget {
     this.onPriceEdited,
     this.showActions = true,
     this.actionsWidget,
+    this.compact = false,
   });
 
   static const double _avgCitySpeedKmh = 30;
@@ -109,7 +121,7 @@ class RideCalendarCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(compact ? 8 : 16),
           decoration: BoxDecoration(
             color: statusColor.withAlpha(25),
             border: Border.all(color: statusColor.withAlpha(77)),
@@ -118,107 +130,190 @@ class RideCalendarCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header row: time/duration/price + status badge
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        DateFormat.Hm().format(ride.pickupDateTime),
-                        style: TextStyle(
-                          fontSize: 20,
+              // Header: full-width day-view uses a horizontal Row;
+              // compact board view uses a stacked Column to avoid overflow.
+              if (!compact)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          DateFormat.Hm().format(ride.pickupDateTime),
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        if (_estimatedTripMinutes() case final mins?) ...[
+                          const SizedBox(width: 10),
+                          Icon(
+                            Icons.timelapse,
+                            size: 15,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            _formatDuration(mins),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                        // Price block — tappable to open edit dialog.
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: onPriceEdited != null
+                              ? () => _showPriceDialog(context)
+                              : null,
+                          child: ride.price != null
+                              ? Text(
+                                  '€${ride.price!.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onSurfaceVariant,
+                                    decoration: onPriceEdited != null
+                                        ? TextDecoration.underline
+                                        : null,
+                                  ),
+                                )
+                              : onPriceEdited != null
+                              ? Text(
+                                  'Set price',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontStyle: FontStyle.italic,
+                                    color: colorScheme.onSurfaceVariant
+                                        .withAlpha(153),
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        statusText,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
                         ),
                       ),
-                      if (_estimatedTripMinutes() case final mins?) ...[
-                        const SizedBox(width: 10),
-                        Icon(
-                          Icons.timelapse,
-                          size: 15,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          _formatDuration(mins),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                )
+              else
+                // Compact header: time on first line, price + status on second.
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat.Hm().format(ride.pickupDateTime),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (ride.price != null || onPriceEdited != null)
+                          GestureDetector(
+                            onTap: onPriceEdited != null
+                                ? () => _showPriceDialog(context)
+                                : null,
+                            child: ride.price != null
+                                ? Text(
+                                    '€${ride.price!.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: colorScheme.onSurfaceVariant,
+                                      decoration: onPriceEdited != null
+                                          ? TextDecoration.underline
+                                          : null,
+                                    ),
+                                  )
+                                : Text(
+                                    'Set price',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontStyle: FontStyle.italic,
+                                      color: colorScheme.onSurfaceVariant
+                                          .withAlpha(153),
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                          ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            statusText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
-                      // Price block — tappable to open edit dialog.
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: onPriceEdited != null
-                            ? () => _showPriceDialog(context)
-                            : null,
-                        child: ride.price != null
-                            ? Text(
-                                '€${ride.price!.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: colorScheme.onSurfaceVariant,
-                                  decoration: onPriceEdited != null
-                                      ? TextDecoration.underline
-                                      : null,
-                                ),
-                              )
-                            : onPriceEdited != null
-                            ? Text(
-                                'Set price',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontStyle: FontStyle.italic,
-                                  color: colorScheme.onSurfaceVariant.withAlpha(
-                                    153,
-                                  ),
-                                  decoration: TextDecoration.underline,
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
                     ),
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               RideBadges.chips(context, ride),
               const SizedBox(height: 12),
-              _locationRow(context, Icons.person, 'Client', ride.clientName),
+              _locationRow(
+                context,
+                Icons.person,
+                'Client',
+                ride.clientName,
+                compact: compact,
+              ),
               const SizedBox(height: 8),
               _locationRow(
                 context,
                 Icons.location_on,
                 'From',
                 ride.from.address,
+                compact: compact,
               ),
               const SizedBox(height: 8),
-              _locationRow(context, Icons.flag, 'To', ride.to.address),
-              RideBadges.requirements(context, ride),
+              _locationRow(
+                context,
+                Icons.flag,
+                'To',
+                ride.to.address,
+                compact: compact,
+              ),
+              if (!compact) RideBadges.requirements(context, ride),
               if (showActions && actionsWidget != null) ...[
                 const SizedBox(height: 12),
                 actionsWidget!,
@@ -234,21 +329,25 @@ class RideCalendarCard extends StatelessWidget {
     BuildContext context,
     IconData icon,
     String label,
-    String value,
-  ) {
+    String value, {
+    bool compact = false,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
+    // In compact mode the label prefix text is omitted so the Row fits in a
+    // narrow column — only the icon identifies the field.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 8),
-        Text(
-          '$label: ',
-          style: TextStyle(
-            color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
+        if (!compact)
+          Text(
+            '$label: ',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
         Expanded(
           child: Text(
             value,
@@ -256,6 +355,8 @@ class RideCalendarCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
               color: colorScheme.onSurface,
             ),
+            maxLines: compact ? 1 : null,
+            overflow: compact ? TextOverflow.ellipsis : null,
           ),
         ),
       ],
