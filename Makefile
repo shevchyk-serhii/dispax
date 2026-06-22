@@ -18,6 +18,19 @@ GCP_REGION := europe-west1
 GCP_SERVICE := dispax
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/dispax-docker/dispax-server:latest
 FLUTTER_DIR    := web
+# Run Flutter/Dart through FVM when it is installed and the project pins a
+# version (web/.fvmrc → Flutter 3.44.2, matching .github/workflows/ci.yml), so
+# `make fmt`/test targets use the same formatter/SDK as CI. Falls back to the
+# bare `flutter`/`dart` on PATH otherwise (e.g. CI, which installs the SDK
+# itself). Override: `make FLUTTER=flutter ...`.
+FVM_BIN := $(shell command -v fvm 2>/dev/null)
+ifeq ($(and $(FVM_BIN),$(wildcard $(FLUTTER_DIR)/.fvmrc)),)
+  FLUTTER ?= flutter
+  DART    ?= dart
+else
+  FLUTTER ?= fvm flutter
+  DART    ?= fvm dart
+endif
 # Extra buffer (seconds) before launching Flutter in `make dev-all`, on top of
 # waiting for the backend's /health. Gives Flyway migrations + ZIO layers time
 # to finish so the first API calls (e.g. /users/clients) don't fail. Override:
@@ -94,7 +107,7 @@ test-unit:
 # the live-backend e2e in web/integration_test, which `flutter test test/` skips.
 test-unit-all: test-unit flutter-test-unit
 flutter-test-unit:
-	cd $(FLUTTER_DIR) && flutter test test/
+	cd $(FLUTTER_DIR) && $(FLUTTER) test test/
 
 # Run ONLY the integration tests (Testcontainers + real Postgres). Requires Docker.
 # Selects specs tagged `integration` via -tags.
@@ -126,7 +139,7 @@ flutter-test-integration:
 	@cd $(FLUTTER_DIR) && STATUS=0 ; \
 	  for t in $(INTEGRATION_HTTP_TESTS); do \
 	    echo "▶ $$t"; \
-	    flutter test -d macos $$t --dart-define=TEST_SERVER_PORT=$(TEST_PORT) || STATUS=1 ; \
+	    $(FLUTTER) test -d macos $$t --dart-define=TEST_SERVER_PORT=$(TEST_PORT) || STATUS=1 ; \
 	  done ; \
 	  kill $$(cat /tmp/dispax-testserver.pid) 2>/dev/null || true ; \
 	  pkill -f "PORT=$(TEST_PORT).*testServer" 2>/dev/null || true ; \
@@ -179,7 +192,7 @@ emulator-up:
 	  echo "📱 Android device already connected"; \
 	else \
 	  echo "📱 Launching emulator $(ANDROID_AVD)..."; \
-	  flutter emulators --launch $(ANDROID_AVD); \
+	  $(FLUTTER) emulators --launch $(ANDROID_AVD); \
 	  echo "⏳ Waiting for emulator to boot..."; \
 	  $(ADB) wait-for-device; \
 	  until [ "$$($(ADB) shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do sleep 2; done; \
@@ -299,7 +312,7 @@ e2e-notif-http: emulator-up e2e-backend-up
 	@cd $(FLUTTER_DIR) && for t in $(E2E_NOTIF_HTTP_TESTS); do \
 	  echo "▶ $$t"; \
 	  curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
-	  flutter test $$t \
+	  $(FLUTTER) test $$t \
 	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api ; \
 	done ; \
 	STATUS=$$? ; \
@@ -315,7 +328,7 @@ e2e-ride-rules: emulator-up e2e-backend-up
 	  for t in $(E2E_RIDE_RULES_HTTP_TESTS); do \
 	    echo "▶ $$t"; \
 	    curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
-	    flutter test $$t --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || STATUS=1 ; \
+	    $(FLUTTER) test $$t --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || STATUS=1 ; \
 	  done ; \
 	  $(MAKE) e2e-backend-down ; \
 	  exit $$STATUS
@@ -341,12 +354,16 @@ test-all:
 	@echo "▶ Running Cucumber BDD tests..."
 	sbt cucumber
 
-# Format all Scala code
+# Format all Scala + Dart code. Dart is rewritten first via $(DART) (FVM-pinned
+# to web/.fvmrc 3.44.2 when FVM is installed, matching CI), then `sbt fmtAll`
+# runs scalafmt and re-checks Dart with the same binary (DART_BIN) so a CI/local
+# formatter mismatch can't slip through.
 fmt:
-	sbt fmtAll
+	cd $(FLUTTER_DIR) && $(DART) format lib
+	DART_BIN="$(DART)" sbt fmtAll
 
 fmt-watch:
-	sbt fmtWatch
+	DART_BIN="$(DART)" sbt fmtWatch
 
 # Clean build
 clean:
@@ -391,51 +408,51 @@ logs:
 # would otherwise fall back to the prod default. For a physical phone (which
 # can't reach localhost) use `flutter-dev-device`, which targets the Mac's LAN IP.
 flutter-dev:
-	cd $(FLUTTER_DIR) && flutter run \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run \
 		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api
 
 # Run Flutter on a physical device against the local backend over the LAN.
 # Requires the phone and Mac to share a WiFi network and en0/en1 to be up.
 flutter-dev-device:
-	cd $(FLUTTER_DIR) && flutter run \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
 
 # Run Flutter on Android emulator against local backend
 flutter-dev-android:
-	cd $(FLUTTER_DIR) && flutter run -d emulator-5554 \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run -d emulator-5554 \
 		--dart-define=API_BASE_URL=http://10.0.2.2:8080/api
 
 # Run Flutter on iOS simulator against local backend
 flutter-dev-ios:
-	cd $(FLUTTER_DIR) && flutter run -d 09021E1A-BC6A-4D86-A2EA-06A5894E4AEC \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run -d 09021E1A-BC6A-4D86-A2EA-06A5894E4AEC \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
 
 # Run Flutter against production backend
 flutter-prod:
-	cd $(FLUTTER_DIR) && flutter run \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run \
 		--dart-define=API_BASE_URL=$(PROD_URL)/api
 
 # Build Android APK for production
 flutter-prod-android:
-	cd $(FLUTTER_DIR) && flutter build apk --release \
+	cd $(FLUTTER_DIR) && $(FLUTTER) build apk --release \
 		--dart-define=API_BASE_URL=$(PROD_URL)/api
 	@echo "✅ APK: $(FLUTTER_DIR)/build/app/outputs/flutter-apk/app-release.apk"
 
 # Run Flutter on Sergii's iPhone (wireless) against local backend
 flutter-dev-iphone-sergii:
-	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
 
 # Run Flutter on Sergii's Android (wireless) against local backend
 flutter-dev-android-sergii:
-	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api
 
 # Run Flutter on both Sergii's devices simultaneously (wireless)
 flutter-dev-sergii:
-	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
-	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
 	wait
 
@@ -459,9 +476,9 @@ dev-all: free-port
 	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
 	@sleep $(FLUTTER_STARTUP_DELAY)
 	@echo "🚀 Starting Flutter on both devices"
-	@cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
+	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
-	cd $(FLUTTER_DIR) && flutter run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
+	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api & \
 	wait
 
@@ -476,7 +493,7 @@ dev-sim: free-port
 	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
 	@sleep $(FLUTTER_STARTUP_DELAY)
 	@echo "🚀 Starting Flutter on iOS simulator $(IOS_SIM)"
-	@cd $(FLUTTER_DIR) && flutter run -d $(IOS_SIM) \
+	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(IOS_SIM) \
 		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api
 
 # Kill all dev processes (backend + flutter)
