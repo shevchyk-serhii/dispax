@@ -6,7 +6,7 @@ import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.repository.{InMemoryPersonRepositoryWithUsers, InMemoryTokenRepository, TestLayers}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{CompanyId, PersonId}
-import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.repository.{InMemorySessionRepository, PersonRepository, SessionRepository}
 import java.util.UUID
 import zio.*
 import zio.test.*
@@ -19,6 +19,7 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
   def layers: ZLayer[Any, Nothing, AuthService] =
     (ZLayer.succeed(InMemoryPersonRepositoryWithUsers()) ++
       ZLayer.succeed(InMemoryTokenRepository()) ++
+      ZLayer.succeed[SessionRepository](InMemorySessionRepository()) ++
       (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
 
   // Variant exposing the PersonRepository so the delete-flow tests can stamp a companyId on the
@@ -27,6 +28,7 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
     val repo = ZLayer.succeed[PersonRepository](InMemoryPersonRepositoryWithUsers())
     val auth =
       (repo ++ ZLayer.succeed(InMemoryTokenRepository()) ++
+        ZLayer.succeed[SessionRepository](InMemorySessionRepository()) ++
         (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
     repo ++ auth
   }
