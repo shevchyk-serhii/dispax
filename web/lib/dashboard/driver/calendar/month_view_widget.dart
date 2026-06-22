@@ -12,11 +12,17 @@ class MonthViewWidget extends StatelessWidget {
   final Function(DateTime) onDaySelected;
   final Function(DateTime) onMonthChanged;
 
+  /// When set, only rides assigned to this driver are shown. Null shows all
+  /// rides (back-compat). Used by the schedule screen's driver dropdown so the
+  /// calendar markers follow the currently selected driver.
+  final String? driverIdFilter;
+
   const MonthViewWidget({
     super.key,
     required this.selectedDay,
     required this.onDaySelected,
     required this.onMonthChanged,
+    this.driverIdFilter,
   });
 
   @override
@@ -118,6 +124,9 @@ class MonthViewWidget extends StatelessWidget {
 
   List<Ride> getRidesForDay(List<Ride> rides, DateTime day) {
     return rides.where((ride) {
+      if (driverIdFilter != null && ride.driverId != driverIdFilter) {
+        return false;
+      }
       final rideDate = DateTime(
         ride.pickupDateTime.year,
         ride.pickupDateTime.month,

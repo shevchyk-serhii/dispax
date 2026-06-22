@@ -14,10 +14,15 @@ class DayViewWidget extends StatelessWidget {
   final DateTime selectedDay;
   final Function(Ride) onRideSelected;
 
+  /// When set, only rides assigned to this driver are shown. Null shows all
+  /// rides (back-compat). Follows the schedule screen's driver dropdown.
+  final String? driverIdFilter;
+
   const DayViewWidget({
     super.key,
     required this.selectedDay,
     required this.onRideSelected,
+    this.driverIdFilter,
   });
 
   @override
@@ -398,6 +403,9 @@ class DayViewWidget extends StatelessWidget {
 
   List<Ride> getRidesForDay(List<Ride> rides, DateTime day) {
     return rides.where((ride) {
+      if (driverIdFilter != null && ride.driverId != driverIdFilter) {
+        return false;
+      }
       final rideDate = DateTime(
         ride.pickupDateTime.year,
         ride.pickupDateTime.month,
