@@ -283,10 +283,15 @@ void main() {
             body: SizedBox(
               width: 120,
               height: 400,
-              child: RideCalendarCard(
-                ride: ride,
-                compact: compact,
-                showActions: false,
+              // Mirror the real board: cards live in a vertically-scrolling
+              // list, so card height is intrinsic (never clipped). The 120 px
+              // width still exercises the HORIZONTAL overflow guard.
+              child: SingleChildScrollView(
+                child: RideCalendarCard(
+                  ride: ride,
+                  compact: compact,
+                  showActions: false,
+                ),
               ),
             ),
           ),
@@ -304,19 +309,22 @@ void main() {
       },
     );
 
-    testWidgets('compact mode renders no client name or address text at all', (
+    testWidgets('compact mode shows client name and route (single-line)', (
       tester,
     ) async {
-      // Compact cards show only time + price; the client/location rows are
-      // omitted entirely (they open on tap). This is the regression guard:
-      // the long unbreakable client/address strings that used to stack one
-      // letter per line must not be in the tree.
+      // Compact cards now surface the client and the From → To route so the
+      // dispatcher can triage without opening details. The long unbreakable
+      // strings must still render WITHOUT overflow (Expanded + ellipsis),
+      // which the overflow guard above asserts; here we assert they're present.
       await pumpCompact(tester, compact: true);
-      expect(find.textContaining(longClientName), findsNothing);
-      expect(find.textContaining(longAddress), findsNothing);
-      expect(find.textContaining('Client'), findsNothing);
-      expect(find.textContaining('From'), findsNothing);
-      expect(find.textContaining('To'), findsNothing);
+      expect(find.text(longClientName), findsOneWidget);
+      // Both From and To use the same long address fixture, so it appears twice.
+      expect(find.text(longAddress), findsNWidgets(2));
+      // Each compact info row is capped at one line with an ellipsis.
+      for (final t in tester.widgetList<Text>(find.text(longAddress))) {
+        expect(t.maxLines, 1);
+        expect(t.overflow, TextOverflow.ellipsis);
+      }
     });
 
     testWidgets(
@@ -338,6 +346,56 @@ void main() {
         pickupDateTime: DateTime(2026, 6, 22, 9, 30),
       );
       expect(find.text('09:30'), findsWidgets);
+    });
+
+    testWidgets('compact shows an airport flag for airport transfers', (
+      tester,
+    ) async {
+      final ride = Ride(
+        id: 'compact-air',
+        clientId: 'c1',
+        creatorId: 'u1',
+        companyId: 'co1',
+        pickupDateTime: DateTime(2026, 6, 22, 11, 0),
+        from: const Location(address: 'Hotel'),
+        to: const Location(address: 'MUC'),
+        clientName: 'Air Client',
+        status: RideStatus.assigned,
+        isAirportTransfer: true,
+        isArrival: true,
+        flightNumber: 'LH123',
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(useMaterial3: true),
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              height: 400,
+              child: RideCalendarCard(
+                ride: ride,
+                compact: true,
+                showActions: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      // A flight icon (arrival/departure or the generic flight) is shown.
+      final hasFlightIcon = find
+          .byIcon(ride.flightIconData ?? Icons.flight)
+          .evaluate()
+          .isNotEmpty;
+      expect(hasFlightIcon, isTrue);
+    });
+
+    testWidgets('compact shows NO airport flag for a normal ride', (
+      tester,
+    ) async {
+      await pumpCompact(tester, compact: true);
+      expect(find.byIcon(Icons.flight), findsNothing);
+      expect(find.byIcon(Icons.flight_land), findsNothing);
+      expect(find.byIcon(Icons.flight_takeoff), findsNothing);
     });
 
     testWidgets('compact with showActions:false renders no actionsWidget', (

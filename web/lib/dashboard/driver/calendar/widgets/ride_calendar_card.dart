@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart' as geo;
+import '../../../../constants/app_colors.dart';
 import '../../../../modules/ride_management/models/ride.dart';
 import '../../../../utils/ride_status_styles.dart';
 import 'ride_badges.dart';
@@ -222,20 +223,35 @@ class RideCalendarCard extends StatelessWidget {
                   ],
                 )
               else
-                // Compact body: only time + price. Status is shown via the
-                // card's border/background colour; full details open on tap.
-                // Nothing else is rendered so the card never overflows a narrow
-                // board column.
+                // Compact body for the narrow board column: time (+ an airport
+                // flag), price, the client name and the From → To route. Status
+                // is still conveyed by the card's border/background colour. Rows
+                // are kept terse (small font, single line, ellipsis) so the card
+                // stays readable without overflowing the column.
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      DateFormat.Hm().format(ride.pickupDateTime),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          DateFormat.Hm().format(ride.pickupDateTime),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        // Airport-transfer flag: the pickup may shift with the
+                        // flight, so the dispatcher must spot it at a glance.
+                        if (ride.isAirportTransfer) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            ride.flightIconData ?? Icons.flight,
+                            size: 14,
+                            color: AppColors.info,
+                          ),
+                        ],
+                      ],
                     ),
                     if (ride.price != null || onPriceEdited != null) ...[
                       const SizedBox(height: 4),
@@ -268,6 +284,24 @@ class RideCalendarCard extends StatelessWidget {
                               ),
                       ),
                     ],
+                    const SizedBox(height: 6),
+                    _compactInfoRow(
+                      context,
+                      Icons.person_outline,
+                      ride.clientName,
+                    ),
+                    const SizedBox(height: 4),
+                    _compactInfoRow(
+                      context,
+                      Icons.trip_origin,
+                      ride.from.address,
+                    ),
+                    const SizedBox(height: 2),
+                    _compactInfoRow(
+                      context,
+                      Icons.place_outlined,
+                      ride.to.address,
+                    ),
                   ],
                 ),
               if (!compact) ...[
@@ -293,6 +327,27 @@ class RideCalendarCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  /// A terse single-line icon + text row for the compact board card (client
+  /// name, pickup, dropoff). Truncates with an ellipsis so a long address can
+  /// never push the card past the column width.
+  Widget _compactInfoRow(BuildContext context, IconData icon, String value) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: colorScheme.onSurfaceVariant),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+          ),
+        ),
+      ],
     );
   }
 
