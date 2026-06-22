@@ -20,6 +20,7 @@ import 'modules/ride_management/models/ride.dart';
 import 'modules/schedule_management/services/schedule_service.dart';
 import 'modules/core/services/websocket_service.dart';
 import 'modules/core/services/push_notification_service.dart';
+import 'modules/core/services/mapbox_service.dart';
 
 import 'blocs/app_state/app_state_bloc.dart';
 import 'theme/app_theme.dart';
@@ -82,7 +83,7 @@ void main() async {
   // bool.fromEnvironment non-const, which throws on the DDC/web compiler
   // and crashes main() before runApp (white screen). Skip it on web.
   if (!kIsWeb) {
-    MapboxOptions.setAccessToken('MAPBOX_PUBLIC_TOKEN_REMOVED');
+    MapboxOptions.setAccessToken(MapboxService.accessToken);
   }
 
   try {

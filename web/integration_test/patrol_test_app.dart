@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dispax/main.dart'
     show MyApp, themeModeNotifier, themeFromString;
 import 'package:dispax/firebase_options.dart';
+import 'package:dispax/modules/core/services/mapbox_service.dart';
 
 /// Minimal bootstrap for Patrol E2E tests.
 ///
@@ -20,7 +21,14 @@ Future<void> bootstrapTestApp() async {
   final prefs = await SharedPreferences.getInstance();
   themeModeNotifier.value = themeFromString(prefs.getString('theme_mode'));
 
-  MapboxOptions.setAccessToken('MAPBOX_PUBLIC_TOKEN_REMOVED');
+  // Mapbox token comes from --dart-define=MAPBOX_ACCESS_TOKEN. The map is not
+  // exercised in E2E tests, so tolerate a missing token rather than crashing
+  // the bootstrap.
+  try {
+    MapboxOptions.setAccessToken(MapboxService.accessToken);
+  } catch (_) {
+    // Token not provided in the test run; maps simply won't render.
+  }
 
   try {
     await Firebase.initializeApp(
