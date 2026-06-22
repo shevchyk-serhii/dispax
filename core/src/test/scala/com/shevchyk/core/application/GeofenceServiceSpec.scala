@@ -335,6 +335,126 @@ object GeofenceServiceSpec extends ZIOSpecDefault {
               thresholds.contains("500m") &&
               thresholds.contains("100m")
           )
+        }.provide(layers),
+        // -- Mutation-killing tests (added 2026-06) ---------------------------
+        // [HIGH] Kills mutant: L154 threshold (2000,"2km") → (200,"2km").
+        // A driver ~1501m away triggers the 2km threshold with the original 2000 bound
+        // but would NOT trigger it if the mutant changed the bound to 200.
+        test("triggers 2km threshold when driver is ~1501m from pickup") {
+          // Munich Airport at baseLat=48.3537, baseLng=11.7751.
+          // lat+0.01350 ≈ 1501m north (haversine integer: 1501).
+          val pickupLat  = airportLat
+          val pickupLng  = airportLng
+          val driverLat  = 48.367200 // ~1501m north of pickup
+          val rideId     = UUID.randomUUID()
+          val activeRide = ActiveRideInfo(
+            rideId = rideId,
+            clientId = UUID.randomUUID(),
+            pickupLatitude = Some(pickupLat),
+            pickupLongitude = Some(pickupLng),
+            companyId = testCompanyId.value
+          )
+          for {
+            eventHub  <- ZIO.service[EventHub]
+            events    <- ZIO.scoped {
+                           for {
+                             dequeue <- eventHub.subscribe
+                             service <- ZIO.service[GeofenceService]
+                             _       <- service.checkClientProximity(testDriverId, driverLat, pickupLng, List(activeRide))
+                             evts    <- dequeue.takeAll
+                           } yield evts
+                         }
+            thresholds = events.collect { case e: WebSocketEvent.DriverApproaching => e.threshold }.toSet
+          } yield assertTrue(
+            thresholds.contains("2km") &&
+              !thresholds.contains("500m") &&
+              !thresholds.contains("100m")
+          )
+        }.provide(layers),
+        // [HIGH] Kills mutant: L156 threshold (100,"100m") → (50,"100m").
+        // A driver ~75m away triggers the 100m threshold with the original 100 bound
+        // but would NOT trigger it if the mutant changed the bound to 50.
+        test("triggers 100m threshold when driver is ~75m from pickup") {
+          // lat+0.00068 ≈ 75m north (haversine integer: 75).
+          val pickupLat  = airportLat
+          val pickupLng  = airportLng
+          val driverLat  = 48.354380 // ~75m north of pickup
+          val rideId     = UUID.randomUUID()
+          val activeRide = ActiveRideInfo(
+            rideId = rideId,
+            clientId = UUID.randomUUID(),
+            pickupLatitude = Some(pickupLat),
+            pickupLongitude = Some(pickupLng),
+            companyId = testCompanyId.value
+          )
+          for {
+            eventHub  <- ZIO.service[EventHub]
+            events    <- ZIO.scoped {
+                           for {
+                             dequeue <- eventHub.subscribe
+                             service <- ZIO.service[GeofenceService]
+                             _       <- service.checkClientProximity(testDriverId, driverLat, pickupLng, List(activeRide))
+                             evts    <- dequeue.takeAll
+                           } yield evts
+                         }
+            thresholds = events.collect { case e: WebSocketEvent.DriverApproaching => e.threshold }.toSet
+          } yield assertTrue(thresholds.contains("100m"))
+        }.provide(layers),
+        // [MEDIUM] Kills mutant: L159 `distance <= meters` → `distance < meters`.
+        // A driver at EXACTLY 2000m must trigger the "2km" threshold (inclusive boundary).
+        // With the mutant (<), distance == 2000 would not satisfy the condition.
+        test("2km threshold fires at exactly 2000m distance (inclusive boundary)") {
+          // lat+0.01799 gives haversine integer exactly 2000m.
+          val pickupLat  = airportLat
+          val pickupLng  = airportLng
+          val driverLat  = 48.371690 // exactly 2000m north of pickup
+          val rideId     = UUID.randomUUID()
+          val activeRide = ActiveRideInfo(
+            rideId = rideId,
+            clientId = UUID.randomUUID(),
+            pickupLatitude = Some(pickupLat),
+            pickupLongitude = Some(pickupLng),
+            companyId = testCompanyId.value
+          )
+          for {
+            eventHub  <- ZIO.service[EventHub]
+            events    <- ZIO.scoped {
+                           for {
+                             dequeue <- eventHub.subscribe
+                             service <- ZIO.service[GeofenceService]
+                             _       <- service.checkClientProximity(testDriverId, driverLat, pickupLng, List(activeRide))
+                             evts    <- dequeue.takeAll
+                           } yield evts
+                         }
+            thresholds = events.collect { case e: WebSocketEvent.DriverApproaching => e.threshold }.toSet
+          } yield assertTrue(thresholds.contains("2km"))
+        }.provide(layers),
+        // Companion: exactly 100m distance triggers the 100m threshold (inclusive).
+        test("100m threshold fires at exactly 100m distance (inclusive boundary)") {
+          // lat+0.00090 gives haversine integer exactly 100m.
+          val pickupLat  = airportLat
+          val pickupLng  = airportLng
+          val driverLat  = 48.354600 // exactly 100m north of pickup
+          val rideId     = UUID.randomUUID()
+          val activeRide = ActiveRideInfo(
+            rideId = rideId,
+            clientId = UUID.randomUUID(),
+            pickupLatitude = Some(pickupLat),
+            pickupLongitude = Some(pickupLng),
+            companyId = testCompanyId.value
+          )
+          for {
+            eventHub  <- ZIO.service[EventHub]
+            events    <- ZIO.scoped {
+                           for {
+                             dequeue <- eventHub.subscribe
+                             service <- ZIO.service[GeofenceService]
+                             _       <- service.checkClientProximity(testDriverId, driverLat, pickupLng, List(activeRide))
+                             evts    <- dequeue.takeAll
+                           } yield evts
+                         }
+            thresholds = events.collect { case e: WebSocketEvent.DriverApproaching => e.threshold }.toSet
+          } yield assertTrue(thresholds.contains("100m"))
         }.provide(layers)
       )
     )
