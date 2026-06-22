@@ -562,4 +562,85 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get noUnavailability => 'Немає вікон недоступності';
+
+  @override
+  String get preferences => 'Налаштування';
+
+  @override
+  String get faceIdUnlock => 'Face ID розблокування';
+
+  @override
+  String get darkMode => 'Темний режим';
+
+  @override
+  String get general => 'Загальне';
+
+  @override
+  String get activeSessions => 'Активні сесії';
+
+  @override
+  String get earnings => 'Заробіток';
+
+  @override
+  String get myEarnings => 'Мій заробіток';
+
+  @override
+  String get privacy => 'Конфіденційність';
+
+  @override
+  String get privacyDataGdpr => 'Конфіденційність та дані (GDPR)';
+
+  @override
+  String get signOut => 'Вийти';
+
+  @override
+  String get signOutConfirm => 'Ви впевнені, що хочете вийти?';
+
+  @override
+  String get required => 'Обов\'язкове поле';
+
+  @override
+  String get change => 'Змінити';
+
+  @override
+  String get failedToChangePassword => 'Не вдалося змінити пароль';
+
+  @override
+  String get welcomeBack => 'З поверненням';
+
+  @override
+  String get signInSubtitle => 'Увійдіть у свій обліковий запис диспетчера.';
+
+  @override
+  String get signIn => 'Увійти';
+
+  @override
+  String get forgotPassword => 'Забули пароль?';
+
+  @override
+  String get faceId => 'Face ID';
+
+  @override
+  String get roleDriver => 'Водій';
+
+  @override
+  String get roleClient => 'Клієнт';
+
+  @override
+  String get roleSecretary => 'Секретар';
+
+  @override
+  String get roleClientSecretary => 'Секретар клієнта';
+
+  @override
+  String get roleDispatcher => 'Диспетчер';
+
+  @override
+  String get roleAdmin => 'Адмін';
+
+  @override
+  String get roleSuperAdmin => 'Супер Адмін';
+
+  @override
+  String get languageSaveFailed => 'Не вдалося зберегти мову в обліковий запис';
 }

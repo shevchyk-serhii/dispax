@@ -220,5 +220,36 @@
   "assignAnyway": "Призначити все одно",
   "unavailabilityCreated": "Недоступність успішно позначена",
   "unavailabilityDeleted": "Недоступність видалена",
-  "noUnavailability": "Немає вікон недоступності"
+  "noUnavailability": "Немає вікон недоступності",
+
+  "preferences": "Налаштування",
+  "faceIdUnlock": "Face ID розблокування",
+  "darkMode": "Темний режим",
+  "general": "Загальне",
+  "activeSessions": "Активні сесії",
+  "earnings": "Заробіток",
+  "myEarnings": "Мій заробіток",
+  "privacy": "Конфіденційність",
+  "privacyDataGdpr": "Конфіденційність та дані (GDPR)",
+  "signOut": "Вийти",
+  "signOutConfirm": "Ви впевнені, що хочете вийти?",
+  "required": "Обов'язкове поле",
+  "change": "Змінити",
+  "failedToChangePassword": "Не вдалося змінити пароль",
+
+  "welcomeBack": "З поверненням",
+  "signInSubtitle": "Увійдіть у свій обліковий запис диспетчера.",
+  "signIn": "Увійти",
+  "forgotPassword": "Забули пароль?",
+  "faceId": "Face ID",
+
+  "roleDriver": "Водій",
+  "roleClient": "Клієнт",
+  "roleSecretary": "Секретар",
+  "roleClientSecretary": "Секретар клієнта",
+  "roleDispatcher": "Диспетчер",
+  "roleAdmin": "Адмін",
+  "roleSuperAdmin": "Супер Адмін",
+
+  "languageSaveFailed": "Не вдалося зберегти мову в обліковий запис"
 }

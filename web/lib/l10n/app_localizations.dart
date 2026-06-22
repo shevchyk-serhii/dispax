@@ -1179,6 +1179,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No unavailability windows'**
   String get noUnavailability;
+
+  /// No description provided for @preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferences;
+
+  /// No description provided for @faceIdUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Face ID unlock'**
+  String get faceIdUnlock;
+
+  /// No description provided for @darkMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark mode'**
+  String get darkMode;
+
+  /// No description provided for @general.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get general;
+
+  /// No description provided for @activeSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Active sessions'**
+  String get activeSessions;
+
+  /// No description provided for @earnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings'**
+  String get earnings;
+
+  /// No description provided for @myEarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'My Earnings'**
+  String get myEarnings;
+
+  /// No description provided for @privacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get privacy;
+
+  /// No description provided for @privacyDataGdpr.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Data (GDPR)'**
+  String get privacyDataGdpr;
+
+  /// No description provided for @signOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signOut;
+
+  /// No description provided for @signOutConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to sign out?'**
+  String get signOutConfirm;
+
+  /// No description provided for @required.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get required;
+
+  /// No description provided for @change.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get change;
+
+  /// No description provided for @failedToChangePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to change password'**
+  String get failedToChangePassword;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get welcomeBack;
+
+  /// No description provided for @signInSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to your dispatch account.'**
+  String get signInSubtitle;
+
+  /// No description provided for @signIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signIn;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPassword;
+
+  /// No description provided for @faceId.
+  ///
+  /// In en, this message translates to:
+  /// **'Face ID'**
+  String get faceId;
+
+  /// No description provided for @roleDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get roleDriver;
+
+  /// No description provided for @roleClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Client'**
+  String get roleClient;
+
+  /// No description provided for @roleSecretary.
+  ///
+  /// In en, this message translates to:
+  /// **'Secretary'**
+  String get roleSecretary;
+
+  /// No description provided for @roleClientSecretary.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Secretary'**
+  String get roleClientSecretary;
+
+  /// No description provided for @roleDispatcher.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatcher'**
+  String get roleDispatcher;
+
+  /// No description provided for @roleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get roleAdmin;
+
+  /// No description provided for @roleSuperAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Super Admin'**
+  String get roleSuperAdmin;
+
+  /// Shown in a snackbar when the backend PUT /users/{id} call to persist the preferred language fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save language to your account'**
+  String get languageSaveFailed;
 }
 
 class _AppLocalizationsDelegate

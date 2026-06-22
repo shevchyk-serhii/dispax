@@ -477,6 +477,88 @@ object AuthServiceSpec extends ZIOSpecDefault {
           })
         }.provide(layers)
       ),
+      suite("updateUser — preferredLanguage")(
+        // ── per-user locale (user-language-selection) ─────────────────────
+        test("valid preferredLanguage 'de' is saved and returned") {
+          for {
+            service <- ZIO.service[AuthService]
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("de")))
+          } yield assertTrue(updated.preferredLanguage.contains("de"))
+        }.provide(layers),
+        test("valid preferredLanguage 'en' is saved and returned") {
+          for {
+            service <- ZIO.service[AuthService]
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("en")))
+          } yield assertTrue(updated.preferredLanguage.contains("en"))
+        }.provide(layers),
+        test("valid preferredLanguage 'uk' is saved and returned") {
+          for {
+            service <- ZIO.service[AuthService]
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("uk")))
+          } yield assertTrue(updated.preferredLanguage.contains("uk"))
+        }.provide(layers),
+        // Negative/mutation-critical: unsupported code must NOT be persisted —
+        // any mutation that removes the supportedLanguageCodes filter would make this fail.
+        test("unsupported language code 'fr' is silently ignored — previous value kept") {
+          for {
+            service <- ZIO.service[AuthService]
+            // Set a known-good language first so we have a baseline to check against.
+            _       <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("de")))
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("fr")))
+          } yield assertTrue(
+            // 'fr' must not overwrite 'de'; the unsupported code is silently dropped.
+            !updated.preferredLanguage.contains("fr") &&
+              updated.preferredLanguage.contains("de")
+          )
+        }.provide(layers),
+        test("unsupported language code 'xx' is silently ignored when no prior value") {
+          for {
+            service <- ZIO.service[AuthService]
+            // testUserId1 has no preferredLanguage in seed data → after an invalid update, it stays None.
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("xx")))
+          } yield assertTrue(updated.preferredLanguage.isEmpty)
+        }.provide(layers),
+        test("empty string language code is silently ignored — remains None") {
+          for {
+            service <- ZIO.service[AuthService]
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("")))
+          } yield assertTrue(updated.preferredLanguage.isEmpty)
+        }.provide(layers),
+        test("omitting preferredLanguage in update preserves the current value") {
+          for {
+            service <- ZIO.service[AuthService]
+            _       <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("uk")))
+            // Second update omits preferredLanguage entirely — current value must be preserved.
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(name = Some("No Lang Change")))
+          } yield assertTrue(
+            updated.name == "No Lang Change" &&
+              updated.preferredLanguage.contains("uk")
+          )
+        }.provide(layers),
+        // NOTE: tenant isolation for PUT /api/users/{id} lives at the ROUTE level
+        // (requireSameCompany in UserApi.scala), not inside AuthService.updateUser.
+        // The service itself works by user ID without a company filter — which is correct
+        // because the route guard has already verified company membership before calling it.
+        //
+        // The cross-company negative test is therefore a BDD scenario against the real HTTP
+        // layer: see api/src/test/resources/features/40_user_language_selection.feature
+        // ("Tenant isolation — user from company A cannot update user from company B via id endpoint").
+        //
+        // What we verify here at the service unit level: that updateUser with a
+        // preferredLanguage payload can update the specified user's record and returns
+        // the updated person (happy-path service contract, no isolation illusion).
+        test("updateUser with preferredLanguage succeeds and returns updated person") {
+          for {
+            service <- ZIO.service[AuthService]
+            _       <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("de")))
+            // A second call with a different field must not lose the already-stored language.
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(name = Some("Lang Verified")))
+          } yield assertTrue(
+            updated.name == "Lang Verified" &&
+              updated.preferredLanguage.contains("de")
+          )
+        }.provide(layers)
+      ),
       suite("updateUser")(
         test("partial update changes only specified fields") {
           for {
