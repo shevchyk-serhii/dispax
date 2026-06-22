@@ -118,3 +118,7 @@ docs/agent/
 ### Flutter env configs — machine-specific (committed: staging.json, prod.json) ###
 web/config/dev.json
 web/config/lan.json
+
+### Local API debug dumps (curl output, may contain dev tokens) ###
+login_response.json
+audit_recent.json
