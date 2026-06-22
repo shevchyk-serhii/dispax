@@ -155,6 +155,7 @@ Full requirements: `docs/requirements.md`
 
 ## Coding Conventions
 
+- **English everywhere** — the whole project is in English: all code comments, commit messages, documentation, and identifiers. Never write comments, docs, or commit messages in any other language.
 - Scala 3: prefer `given`/`using`, opaque types for IDs, extension methods
 - ZIO effect system everywhere — no Future, no `throw`
 - DTOs are separated from domain objects; mapping happens in the route handler or application layer
@@ -203,3 +204,4 @@ PORT=8080
 - Do not hardcode secrets — only via env vars
 - Do not fix a bug without adding a regression test for it (a unit test first)
 - Do not fix or change functionality without first verifying tests exist for it (at minimum a unit test); if the tests are wrong, rewrite them to the new requirements
+- Do not write comments, documentation, commit messages, or identifiers in any language other than English
