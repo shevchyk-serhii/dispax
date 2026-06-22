@@ -165,6 +165,19 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
           period: EarningsPeriod,
           anchorDate: java.time.LocalDate
       ): IO[RideError, DriverEarningsReport] = notImplemented
+      def setRidePrice(
+          rideId: RideId,
+          price: Double,
+          userId: PersonId,
+          userRole: PersonRole,
+          companyId: CompanyId
+      ): IO[RideError, Ride] = notImplemented
+      def getRidesByDrivers(
+          driverIds: List[PersonId],
+          from: Option[String],
+          to: Option[String],
+          companyId: CompanyId
+      ): IO[RideError, List[Ride]] = notImplemented
   )
 
   // ---------------------------------------------------------------------------

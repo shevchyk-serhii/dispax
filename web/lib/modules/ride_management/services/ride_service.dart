@@ -295,6 +295,58 @@ class RideService {
     }
   }
 
+  /// Sets the final price of a ride via PUT /rides/{rideId}/price.
+  Future<Ride> setRidePrice(String rideId, double price) async {
+    try {
+      final response = await privateApiClient.put('/rides/$rideId/price', {
+        'price': price,
+      });
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+        return Ride.fromJson(json);
+      }
+      throw ApiException.fromResponse(response, 'Failed to set ride price');
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error setting ride price: $e');
+    }
+  }
+
+  /// Fetches rides for multiple drivers for a single calendar day.
+  ///
+  /// Calls GET /rides/by-drivers?driverIds=a,b,c&from=YYYY-MM-DD&to=YYYY-MM-DD.
+  Future<List<Ride>> getRidesByDrivers(
+    List<String> driverIds,
+    DateTime date,
+  ) async {
+    if (driverIds.isEmpty) return [];
+    try {
+      final dateStr =
+          '${date.year.toString().padLeft(4, '0')}-'
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.day.toString().padLeft(2, '0')}';
+      final ids = driverIds.join(',');
+      final response = await privateApiClient.get(
+        '/rides/by-drivers?driverIds=$ids&from=$dateStr&to=$dateStr',
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList
+            .map((j) => Ride.fromJson(j as Map<String, dynamic>))
+            .toList();
+      }
+      throw ApiException.fromResponse(
+        response,
+        'Failed to fetch rides by drivers',
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error fetching rides by drivers: $e');
+    }
+  }
+
   Future<void> markAirportCheckpoint(String rideId, String checkpoint) async {
     try {
       final response = await privateApiClient.post(

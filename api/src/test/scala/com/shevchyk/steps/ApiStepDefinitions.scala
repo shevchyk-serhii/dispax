@@ -450,6 +450,13 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     )
   }
 
+  Then("""^the response body should be an empty JSON array$""") { () =>
+    assert(
+      lastResponseBody.trim == "[]",
+      s"Expected empty JSON array '[]' but got: '$lastResponseBody'"
+    )
+  }
+
   Then("""^the response should contain (.+) details$""") { (entityType: String) =>
     assert(lastResponseBody.nonEmpty, s"Response should contain $entityType details")
   }

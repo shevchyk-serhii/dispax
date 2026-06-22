@@ -55,17 +55,16 @@ void main() {
   final allSuggestions = [airport, hotel, office];
 
   group('AddressAutocompleteField — excludeAddress filter', () {
-    testWidgets(
-      'without excludeAddress all suggestions appear when focused',
-      (tester) async {
-        await _pump(tester, suggestions: allSuggestions);
-        await _focusField(tester);
+    testWidgets('without excludeAddress all suggestions appear when focused', (
+      tester,
+    ) async {
+      await _pump(tester, suggestions: allSuggestions);
+      await _focusField(tester);
 
-        expect(find.text('Munich Airport T1'), findsOneWidget);
-        expect(find.text('Grand Hotel Munich'), findsOneWidget);
-        expect(find.text('Dispax HQ'), findsOneWidget);
-      },
-    );
+      expect(find.text('Munich Airport T1'), findsOneWidget);
+      expect(find.text('Grand Hotel Munich'), findsOneWidget);
+      expect(find.text('Dispax HQ'), findsOneWidget);
+    });
 
     testWidgets(
       'excluded suggestion is absent from the dropdown on empty query',
@@ -85,85 +84,66 @@ void main() {
       },
     );
 
-    testWidgets(
-      'excluded suggestion is absent when query matches it exactly',
-      (tester) async {
-        await _pump(
-          tester,
-          suggestions: allSuggestions,
-          excludeAddress: 'Munich Airport T1',
-        );
-        await _focusField(tester);
+    testWidgets('excluded suggestion is absent when query matches it exactly', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        suggestions: allSuggestions,
+        excludeAddress: 'Munich Airport T1',
+      );
+      await _focusField(tester);
 
-        // Type the excluded address as the query.
-        await tester.enterText(find.byType(TextFormField), 'Munich Airport');
-        await tester.pump();
+      // Type the excluded address as the query.
+      await tester.enterText(find.byType(TextFormField), 'Munich Airport');
+      await tester.pump();
 
-        expect(find.text('Munich Airport T1'), findsNothing);
-      },
-    );
+      expect(find.text('Munich Airport T1'), findsNothing);
+    });
 
-    testWidgets(
-      'exclusion is case-insensitive',
-      (tester) async {
-        await _pump(
-          tester,
-          suggestions: allSuggestions,
-          // Different case from the stored address.
-          excludeAddress: 'MUNICH AIRPORT T1',
-        );
-        await _focusField(tester);
+    testWidgets('exclusion is case-insensitive', (tester) async {
+      await _pump(
+        tester,
+        suggestions: allSuggestions,
+        // Different case from the stored address.
+        excludeAddress: 'MUNICH AIRPORT T1',
+      );
+      await _focusField(tester);
 
-        expect(find.text('Munich Airport T1'), findsNothing);
-        expect(find.text('Grand Hotel Munich'), findsOneWidget);
-      },
-    );
+      expect(find.text('Munich Airport T1'), findsNothing);
+      expect(find.text('Grand Hotel Munich'), findsOneWidget);
+    });
 
-    testWidgets(
-      'exclusion trims surrounding whitespace',
-      (tester) async {
-        await _pump(
-          tester,
-          suggestions: allSuggestions,
-          excludeAddress: '  Munich Airport T1  ',
-        );
-        await _focusField(tester);
+    testWidgets('exclusion trims surrounding whitespace', (tester) async {
+      await _pump(
+        tester,
+        suggestions: allSuggestions,
+        excludeAddress: '  Munich Airport T1  ',
+      );
+      await _focusField(tester);
 
-        expect(find.text('Munich Airport T1'), findsNothing);
-        expect(find.text('Grand Hotel Munich'), findsOneWidget);
-      },
-    );
+      expect(find.text('Munich Airport T1'), findsNothing);
+      expect(find.text('Grand Hotel Munich'), findsOneWidget);
+    });
 
-    testWidgets(
-      'null excludeAddress shows all suggestions',
-      (tester) async {
-        await _pump(
-          tester,
-          suggestions: allSuggestions,
-          excludeAddress: null,
-        );
-        await _focusField(tester);
+    testWidgets('null excludeAddress shows all suggestions', (tester) async {
+      await _pump(tester, suggestions: allSuggestions, excludeAddress: null);
+      await _focusField(tester);
 
-        expect(find.text('Munich Airport T1'), findsOneWidget);
-        expect(find.text('Grand Hotel Munich'), findsOneWidget);
-        expect(find.text('Dispax HQ'), findsOneWidget);
-      },
-    );
+      expect(find.text('Munich Airport T1'), findsOneWidget);
+      expect(find.text('Grand Hotel Munich'), findsOneWidget);
+      expect(find.text('Dispax HQ'), findsOneWidget);
+    });
 
-    testWidgets(
-      'empty string excludeAddress shows all suggestions',
-      (tester) async {
-        await _pump(
-          tester,
-          suggestions: allSuggestions,
-          excludeAddress: '',
-        );
-        await _focusField(tester);
+    testWidgets('empty string excludeAddress shows all suggestions', (
+      tester,
+    ) async {
+      await _pump(tester, suggestions: allSuggestions, excludeAddress: '');
+      await _focusField(tester);
 
-        expect(find.text('Munich Airport T1'), findsOneWidget);
-        expect(find.text('Grand Hotel Munich'), findsOneWidget);
-        expect(find.text('Dispax HQ'), findsOneWidget);
-      },
-    );
+      expect(find.text('Munich Airport T1'), findsOneWidget);
+      expect(find.text('Grand Hotel Munich'), findsOneWidget);
+      expect(find.text('Dispax HQ'), findsOneWidget);
+    });
   });
 }

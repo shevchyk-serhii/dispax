@@ -218,6 +218,23 @@ object RideApi:
     .tag(rideTag)
     .summary("Get the current airport checkpoint state for a ride")
 
+  val setRidePriceEndpoint = secureEndpoint.put
+    .in("api" / "rides" / path[String]("rideId") / "price")
+    .in(jsonBody[SetRidePriceRequest])
+    .out(jsonBody[RideDto])
+    .tag(rideTag)
+    .summary("Set the final price of a ride")
+
+  // driverIds: comma-separated list; from/to: optional ISO-8601 date strings (YYYY-MM-DD)
+  val getRidesByDriversEndpoint = secureEndpoint.get
+    .in("api" / "rides" / "by-drivers")
+    .in(query[String]("driverIds"))
+    .in(query[Option[String]]("from"))
+    .in(query[Option[String]]("to"))
+    .out(jsonBody[List[RideDto]])
+    .tag(rideTag)
+    .summary("List rides for multiple drivers (bulk, date-scoped)")
+
   /**
    * All endpoint descriptions, used to generate the OpenAPI document.
    */
@@ -244,7 +261,9 @@ object RideApi:
     rateRideEndpoint,
     getRatingEndpoint,
     markAirportCheckpointEndpoint,
-    getAirportCheckpointEndpoint
+    getAirportCheckpointEndpoint,
+    setRidePriceEndpoint,
+    getRidesByDriversEndpoint
   )
 
   // ======================================================================
@@ -808,6 +827,63 @@ object RideApi:
     )
   }
 
+  private val setRidePriceServer: ZServerEndpoint[RideEnv, Any] = setRidePriceEndpoint.serverLogic {
+    user => (rideId, priceReq) =>
+      for {
+        _            <- checkRole(user, "DISPATCHER", "DRIVER")
+        parsedRideId <- parseRideId(rideId)
+        companyId    <- requireCompanyId(user.companyId)
+        service      <- ZIO.service[RideService]
+        ride         <- service
+                          .setRidePrice(
+                            parsedRideId,
+                            priceReq.price,
+                            PersonId(user.userId),
+                            toPersonRole(user.role),
+                            companyId
+                          )
+                          .mapError(fromRideError)
+      } yield RideDto.fromDomain(ride)
+  }
+
+  private val getRidesByDriversServer: ZServerEndpoint[RideEnv, Any] = getRidesByDriversEndpoint.serverLogic {
+    user => (driverIdsStr, fromDateOpt, toDateOpt) =>
+      for {
+        _           <- checkRole(user, "DISPATCHER", "DRIVER")
+        companyId   <- requireCompanyId(user.companyId)
+        // Parse comma-separated driver IDs — request-parsing concern stays in the handler.
+        // Cap to 10 to guard against DoS via very long ID lists.
+        driverPids  <-
+          ZIO
+            .foreach(
+              driverIdsStr
+                .split(",")
+                .map(_.trim)
+                .filter(_.nonEmpty)
+                .take(10)
+                .toList
+            )(parsePersonId)
+        service     <- ZIO.service[RideService]
+        personRepo  <- ZIO.service[PersonRepository]
+        ratingRepo  <- ZIO.service[RideRatingRepository]
+        // Business logic (parallel fetch + date-filter) lives in the service layer.
+        filtered    <- service.getRidesByDrivers(driverPids, fromDateOpt, toDateOpt, companyId).mapError(fromRideError)
+        // DTO enrichment: client names and per-driver rating stats (presentational, not business logic).
+        clientIds    = filtered.map(_.clientId).distinct
+        persons     <- ZIO
+                         .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+                         .mapError(fromRideError)
+        clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+        ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+      } yield filtered.map { r =>
+        val (rating, count) = r.driverId
+          .flatMap(ratingStats.get)
+          .map { case (avg, n) => (Some(avg), Some(n)) }
+          .getOrElse((None, None))
+        RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+      }
+  }
+
   /**
    * All server endpoints, interpreted into zio-http Routes by the api module.
    */
@@ -824,9 +900,13 @@ object RideApi:
     markPaymentServer,
     cancelRideServer,
     updateRideServer,
+    // Literal-path endpoints must precede generic path[String] endpoints so that
+    // Tapir does not absorb them into the dynamic-segment handler first.
+    estimateRideServer,
+    setRidePriceServer,
+    getRidesByDriversServer,
     getRideServer,
     listRidesServer,
-    estimateRideServer,
     updateClientLocationServer,
     getRideLocationsServer,
     sendChatMessageServer,

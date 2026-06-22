@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geolocator/geolocator.dart' as geo;
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
+import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../modules/core/navigation_utils.dart';
 import '../../../modules/core/navigation_helper.dart';
-import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_colors.dart';
-import 'widgets/ride_badges.dart';
+import 'widgets/ride_calendar_card.dart';
 
 class DayViewWidget extends StatelessWidget {
   final DateTime selectedDay;
@@ -177,191 +176,40 @@ class DayViewWidget extends StatelessWidget {
     return items;
   }
 
-  /// Average effective city driving speed (km/h) used to turn straight-line
-  /// distance into a rough trip duration. Deliberately conservative to absorb
-  /// the detour vs. crow-flies gap and typical urban traffic.
-  static const double _avgCitySpeedKmh = 30;
-
-  /// A rough client-side estimate of the A→B trip duration in minutes, derived
-  /// from the straight-line distance between pickup and drop-off. Returns null
-  /// when either endpoint lacks coordinates (then no duration is shown).
-  ///
-  /// This is intentionally approximate — the backend has no stored trip
-  /// duration, and a real routed ETA would require a per-ride HERE API call.
-  int? _estimatedTripMinutes(Ride ride) {
-    final fromLat = ride.from.latitude;
-    final fromLng = ride.from.longitude;
-    final toLat = ride.to.latitude;
-    final toLng = ride.to.longitude;
-    if (fromLat == null || fromLng == null || toLat == null || toLng == null) {
-      return null;
-    }
-    final meters = geo.Geolocator.distanceBetween(
-      fromLat,
-      fromLng,
-      toLat,
-      toLng,
-    );
-    final minutes = (meters / 1000) / _avgCitySpeedKmh * 60;
-    // Floor at 1 min so very short hops don't render as "~0 min".
-    return minutes < 1 ? 1 : minutes.round();
-  }
-
-  /// Formats an estimated trip duration in minutes as a compact label,
-  /// e.g. 25 → "~25 min", 80 → "~1 h 20 min", 120 → "~2 h".
-  String _formatDuration(int minutes) {
-    if (minutes < 60) return '~$minutes min';
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return m == 0 ? '~$h h' : '~$h h $m min';
-  }
-
   Widget buildRideCard(BuildContext context, Ride ride, bool isLast) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final statusColor = RideStatusStyles.getStatusColor(ride.status);
-    final statusText = RideStatusStyles.getStatusLabel(ride.status);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: () => onRideSelected(ride),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: statusColor.withAlpha(25),
-            border: Border.all(color: statusColor.withAlpha(77)),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        DateFormat.Hm().format(ride.pickupDateTime),
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      if (_estimatedTripMinutes(ride) case final mins?) ...[
-                        const SizedBox(width: 10),
-                        Icon(
-                          Icons.timelapse,
-                          size: 15,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          // Rough A→B trip duration estimated client-side from
-                          // the straight-line distance, e.g. "~25 min".
-                          _formatDuration(mins),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                      if (ride.price != null) ...[
-                        const SizedBox(width: 10),
-                        Text(
-                          '€${ride.price!.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              RideBadges.chips(context, ride),
-              const SizedBox(height: 12),
-              buildLocationRow(
-                context,
-                Icons.person,
-                'Client',
-                ride.clientName,
-              ),
-              const SizedBox(height: 8),
-              buildLocationRow(
-                context,
-                Icons.location_on,
-                'From',
-                ride.from.address,
-              ),
-              const SizedBox(height: 8),
-              buildLocationRow(context, Icons.flag, 'To', ride.to.address),
-              RideBadges.requirements(context, ride),
-              const SizedBox(height: 12),
-              buildActionButtons(context, ride),
-            ],
-          ),
-        ),
-      ),
+    return RideCalendarCard(
+      ride: ride,
+      onTap: () => onRideSelected(ride),
+      onPriceEdited: (newPrice) => _handlePriceEdited(context, ride, newPrice),
+      showActions: true,
+      actionsWidget: buildActionButtons(context, ride),
     );
   }
 
-  Widget buildLocationRow(
-    BuildContext context,
-    IconData icon,
-    String label,
-    String value,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 8),
-        Text(
-          '$label: ',
-          style: TextStyle(
-            color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              color: colorScheme.onSurface,
-            ),
-          ),
-        ),
-      ],
-    );
+  void _handlePriceEdited(BuildContext context, Ride ride, double newPrice) {
+    final apiClient = context.read<AuthBloc>().apiClient;
+    final rideService = RideService(apiClient: apiClient);
+    rideService
+        .setRidePrice(ride.id, newPrice)
+        .then((_) {
+          rideService.dispose();
+          if (context.mounted) {
+            final user = context.read<AuthBloc>().state.user;
+            if (user != null) {
+              context.read<RideBloc>().add(RideLoadRequested(user: user));
+            }
+          }
+        })
+        .catchError((Object e) {
+          rideService.dispose();
+          if (context.mounted) {
+            NavigationHelper.showSnackBar(
+              context,
+              'Failed to set price: $e',
+              isError: true,
+            );
+          }
+        });
   }
 
   Widget buildActionButtons(BuildContext context, Ride ride) {

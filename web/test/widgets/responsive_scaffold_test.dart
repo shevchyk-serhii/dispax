@@ -75,8 +75,9 @@ void main() {
     });
 
     // Boundary: exactly at breakpointDesktop (800) → desktop layout.
-    testWidgets('shows NavigationRail at EXACTLY breakpointDesktop (800 px)',
-        (tester) async {
+    testWidgets('shows NavigationRail at EXACTLY breakpointDesktop (800 px)', (
+      tester,
+    ) async {
       const bp = AppDimensions.breakpointDesktop; // 800
       await _setViewport(tester, bp, 800);
       addTearDown(() => _resetViewport(tester));
@@ -84,29 +85,37 @@ void main() {
       await tester.pumpWidget(_buildScaffold(width: bp, selectedIndex: 0));
       await tester.pump();
 
-      expect(find.byType(NavigationRail), findsOneWidget,
-          reason: 'width == breakpointDesktop should use desktop layout');
+      expect(
+        find.byType(NavigationRail),
+        findsOneWidget,
+        reason: 'width == breakpointDesktop should use desktop layout',
+      );
       expect(find.byType(BottomNavigationBar), findsNothing);
     });
 
     // One pixel below breakpoint → mobile layout.
-    testWidgets('shows BottomNavigationBar at 799 px (one below breakpoint)',
-        (tester) async {
+    testWidgets('shows BottomNavigationBar at 799 px (one below breakpoint)', (
+      tester,
+    ) async {
       await _setViewport(tester, 799, 800);
       addTearDown(() => _resetViewport(tester));
 
       await tester.pumpWidget(_buildScaffold(width: 799, selectedIndex: 0));
       await tester.pump();
 
-      expect(find.byType(BottomNavigationBar), findsOneWidget,
-          reason: 'width < breakpointDesktop should use mobile layout');
+      expect(
+        find.byType(BottomNavigationBar),
+        findsOneWidget,
+        reason: 'width < breakpointDesktop should use mobile layout',
+      );
       expect(find.byType(NavigationRail), findsNothing);
     });
   });
 
   group('ResponsiveScaffold — ConstrainedBox on desktop', () {
-    testWidgets('body is in ConstrainedBox with maxContentWidth at wide layout',
-        (tester) async {
+    testWidgets('body is in ConstrainedBox with maxContentWidth at wide layout', (
+      tester,
+    ) async {
       await _setViewport(tester, 1000, 800);
       addTearDown(() => _resetViewport(tester));
 
@@ -126,93 +135,104 @@ void main() {
   });
 
   group('ResponsiveScaffold — onDestinationSelected callback', () {
-    testWidgets('fires with correct index when bottom-nav tab is tapped (mobile)',
-        (tester) async {
-      await _setViewport(tester, 700, 800);
-      addTearDown(() => _resetViewport(tester));
+    testWidgets(
+      'fires with correct index when bottom-nav tab is tapped (mobile)',
+      (tester) async {
+        await _setViewport(tester, 700, 800);
+        addTearDown(() => _resetViewport(tester));
 
-      int? tappedIndex;
-      await tester.pumpWidget(
-        _buildScaffold(
-          width: 700,
-          selectedIndex: 0,
-          onSelected: (i) => tappedIndex = i,
-        ),
-      );
-      await tester.pump();
+        int? tappedIndex;
+        await tester.pumpWidget(
+          _buildScaffold(
+            width: 700,
+            selectedIndex: 0,
+            onSelected: (i) => tappedIndex = i,
+          ),
+        );
+        await tester.pump();
 
-      await tester.tap(find.text('Rides'));
-      await tester.pump();
-      expect(tappedIndex, equals(1));
-    });
+        await tester.tap(find.text('Rides'));
+        await tester.pump();
+        expect(tappedIndex, equals(1));
+      },
+    );
 
     testWidgets(
-        'fires with correct index when bottom-nav third tab is tapped (mobile)',
-        (tester) async {
-      await _setViewport(tester, 700, 800);
-      addTearDown(() => _resetViewport(tester));
+      'fires with correct index when bottom-nav third tab is tapped (mobile)',
+      (tester) async {
+        await _setViewport(tester, 700, 800);
+        addTearDown(() => _resetViewport(tester));
 
-      int? tappedIndex;
-      await tester.pumpWidget(
-        _buildScaffold(
-          width: 700,
-          selectedIndex: 0,
-          onSelected: (i) => tappedIndex = i,
-        ),
-      );
-      await tester.pump();
+        int? tappedIndex;
+        await tester.pumpWidget(
+          _buildScaffold(
+            width: 700,
+            selectedIndex: 0,
+            onSelected: (i) => tappedIndex = i,
+          ),
+        );
+        await tester.pump();
 
-      await tester.tap(find.text('Profile'));
-      await tester.pump();
-      expect(tappedIndex, equals(2));
-    });
+        await tester.tap(find.text('Profile'));
+        await tester.pump();
+        expect(tappedIndex, equals(2));
+      },
+    );
 
     testWidgets(
-        'fires with correct index when NavigationRail item is tapped (desktop)',
-        (tester) async {
-      await _setViewport(tester, 1000, 800);
-      addTearDown(() => _resetViewport(tester));
+      'fires with correct index when NavigationRail item is tapped (desktop)',
+      (tester) async {
+        await _setViewport(tester, 1000, 800);
+        addTearDown(() => _resetViewport(tester));
 
-      int? tappedIndex;
-      await tester.pumpWidget(
-        _buildScaffold(
-          width: 1000,
-          selectedIndex: 0,
-          onSelected: (i) => tappedIndex = i,
-        ),
-      );
-      await tester.pump();
+        int? tappedIndex;
+        await tester.pumpWidget(
+          _buildScaffold(
+            width: 1000,
+            selectedIndex: 0,
+            onSelected: (i) => tappedIndex = i,
+          ),
+        );
+        await tester.pump();
 
-      // NavigationRail renders destination labels; tap 'Rides' (index 1).
-      await tester.tap(find.text('Rides'));
-      await tester.pump();
-      expect(tappedIndex, equals(1),
+        // NavigationRail renders destination labels; tap 'Rides' (index 1).
+        await tester.tap(find.text('Rides'));
+        await tester.pump();
+        expect(
+          tappedIndex,
+          equals(1),
           reason:
-              'tapping NavigationRail Rides destination should fire onDestinationSelected(1)');
-    });
+              'tapping NavigationRail Rides destination should fire onDestinationSelected(1)',
+        );
+      },
+    );
 
     testWidgets(
-        'fires with correct index when NavigationRail third item is tapped (desktop)',
-        (tester) async {
-      await _setViewport(tester, 1000, 800);
-      addTearDown(() => _resetViewport(tester));
+      'fires with correct index when NavigationRail third item is tapped (desktop)',
+      (tester) async {
+        await _setViewport(tester, 1000, 800);
+        addTearDown(() => _resetViewport(tester));
 
-      int? tappedIndex;
-      await tester.pumpWidget(
-        _buildScaffold(
-          width: 1000,
-          selectedIndex: 0,
-          onSelected: (i) => tappedIndex = i,
-        ),
-      );
-      await tester.pump();
+        int? tappedIndex;
+        await tester.pumpWidget(
+          _buildScaffold(
+            width: 1000,
+            selectedIndex: 0,
+            onSelected: (i) => tappedIndex = i,
+          ),
+        );
+        await tester.pump();
 
-      await tester.tap(find.text('Profile'));
-      await tester.pump();
-      expect(tappedIndex, equals(2),
+        await tester.tap(find.text('Profile'));
+        await tester.pump();
+        expect(
+          tappedIndex,
+          equals(2),
           reason:
-              'tapping NavigationRail Profile destination should fire onDestinationSelected(2)');
-    });
+              'tapping NavigationRail Profile destination should fire onDestinationSelected(2)',
+        );
+      },
+    );
   });
 
   group('ResponsiveScaffold — body content', () {
@@ -236,22 +256,25 @@ void main() {
       expect(find.text('Body Content'), findsOneWidget);
     });
 
-    testWidgets('selectedIndex is reflected in BottomNavigationBar currentIndex',
-        (tester) async {
-      await _setViewport(tester, 700, 800);
-      addTearDown(() => _resetViewport(tester));
+    testWidgets(
+      'selectedIndex is reflected in BottomNavigationBar currentIndex',
+      (tester) async {
+        await _setViewport(tester, 700, 800);
+        addTearDown(() => _resetViewport(tester));
 
-      await tester.pumpWidget(_buildScaffold(width: 700, selectedIndex: 2));
-      await tester.pump();
+        await tester.pumpWidget(_buildScaffold(width: 700, selectedIndex: 2));
+        await tester.pump();
 
-      final bar = tester.widget<BottomNavigationBar>(
-        find.byType(BottomNavigationBar),
-      );
-      expect(bar.currentIndex, equals(2));
-    });
+        final bar = tester.widget<BottomNavigationBar>(
+          find.byType(BottomNavigationBar),
+        );
+        expect(bar.currentIndex, equals(2));
+      },
+    );
 
-    testWidgets('selectedIndex is reflected in NavigationRail selectedIndex',
-        (tester) async {
+    testWidgets('selectedIndex is reflected in NavigationRail selectedIndex', (
+      tester,
+    ) async {
       await _setViewport(tester, 1000, 800);
       addTearDown(() => _resetViewport(tester));
 

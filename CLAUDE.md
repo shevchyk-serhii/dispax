@@ -181,7 +181,7 @@ PORT=8080
 
 **docker-compose.yml** brings up PostgreSQL 16 (port 5432, DB: `dispax`)  
 **Production URL:** `https://dispax-o2trzxjbva-ew.a.run.app`  
-**API docs (Swagger UI):** `/docs` — OpenAPI document at `/docs/docs.yaml` (YAML only; no JSON variant). Local: `http://localhost:8080/docs`, prod: `https://dispax-o2trzxjbva-ew.a.run.app/docs`. Generated via Tapir `SwaggerInterpreter` in `api/.../app/openapi/OpenApiServer.scala` — single source of truth for all 149 endpoints.  
+**API docs (Swagger UI):** `/docs` — OpenAPI document at `/docs/docs.yaml` (YAML only; no JSON variant). Local: `http://localhost:8080/docs`, prod: `https://dispax-o2trzxjbva-ew.a.run.app/docs`. Generated via Tapir `SwaggerInterpreter` in `api/.../app/openapi/OpenApiServer.scala` — single source of truth for all 151 endpoints.  
 **CI/CD:** GitHub Actions → push to `main` → sbt assembly → Docker → Cloud Run
 
 ---
