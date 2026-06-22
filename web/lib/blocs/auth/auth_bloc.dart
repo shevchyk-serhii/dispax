@@ -166,10 +166,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
 
         /// Connect WebSocket for real-time updates
-        _webSocketService.connect(
-          token,
-          wsBaseUrl: ApiClient.wsBaseUrl,
-        );
+        _webSocketService.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
 
         emit(
           AuthState.authenticated(
@@ -319,10 +316,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final user = Person.fromJson(userJson);
           privateApiClient.setAuthToken(token);
 
-          _webSocketService.connect(
-            token,
-            wsBaseUrl: ApiClient.wsBaseUrl,
-          );
+          _webSocketService.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
 
           emit(
             AuthState.authenticated(
