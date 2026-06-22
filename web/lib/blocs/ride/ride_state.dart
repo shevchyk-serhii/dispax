@@ -12,6 +12,10 @@ enum RideStateStatus {
   // The backend rejected a reassignment because the new driver's schedule
   // conflicts; the dispatcher may retry with override.
   reassignConflict,
+  // The backend rejected a primary assignment because the driver's schedule
+  // conflicts (ride overlap or unavailability); the dispatcher may retry with
+  // override.
+  assignConflict,
 }
 
 class RideState extends Equatable {
@@ -78,6 +82,11 @@ class RideState extends Equatable {
   bool get isAssigning => status == RideStateStatus.assigning;
   bool get hasReassignConflict =>
       status == RideStateStatus.reassignConflict &&
+      conflictRideId != null &&
+      conflictDriverId != null;
+
+  bool get hasAssignConflict =>
+      status == RideStateStatus.assignConflict &&
       conflictRideId != null &&
       conflictDriverId != null;
 

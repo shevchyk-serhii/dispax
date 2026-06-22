@@ -153,11 +153,33 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       final updatedRide = await privateRideService.assignDriver(
         event.rideId,
         event.driverId,
+        overrideScheduleConflict: event.overrideScheduleConflict,
       );
       final updatedRides = state.rides.map((ride) {
         return ride.id == updatedRide.id ? updatedRide : ride;
       }).toList();
       emit(RideState.loaded(updatedRides));
+    } on ApiException catch (e) {
+      // A 409 means the driver has a schedule conflict. Unless the dispatcher
+      // already chose to override, surface a distinct state so the UI can
+      // offer to assign anyway.
+      if (e.statusCode == 409 && !event.overrideScheduleConflict) {
+        emit(
+          state.copyWith(
+            status: RideStateStatus.assignConflict,
+            errorMessage: e.message,
+            conflictRideId: event.rideId,
+            conflictDriverId: event.driverId,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            status: RideStateStatus.error,
+            errorMessage: e.message,
+          ),
+        );
+      }
     } catch (e) {
       emit(
         state.copyWith(

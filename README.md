@@ -134,16 +134,19 @@ Further reading: [`docs/architecture.md`](docs/architecture.md) ·
 ## Getting Started
 
 ```bash
-# 1. Start PostgreSQL (port 5432)
+# 1. Enable the versioned git hooks (one-time, after cloning)
+make setup-hooks          # points core.hooksPath at .githooks (pre-commit fmt, pre-push fmt check)
+
+# 2. Start PostgreSQL (port 5432)
 docker-compose up -d
 
-# 2. Configure environment — copy the template and fill in values
+# 3. Configure environment — copy the template and fill in values
 cp .env.example .env.dev
 
-# 3. Run the backend (port 8080)
+# 4. Run the backend (port 8080)
 make dev
 
-# 4. Run the Flutter app on a connected device
+# 5. Run the Flutter app on a connected device
 make flutter-dev          # or flutter-dev-android / flutter-dev-ios
 ```
 

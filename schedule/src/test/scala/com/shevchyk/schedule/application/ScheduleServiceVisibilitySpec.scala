@@ -5,6 +5,7 @@ import com.shevchyk.core.repository.{PersonRepository, InMemoryPersonRepository}
 import com.shevchyk.schedule.domain.*
 import com.shevchyk.schedule.repository.{
   InMemoryDriverScheduleVisibilityRepository,
+  InMemoryDriverUnavailabilityRepository,
   InMemoryScheduleDayRepository,
   DriverScheduleVisibilityRepository
 }
@@ -109,6 +110,7 @@ object ScheduleServiceVisibilitySpec extends ZIOSpecDefault {
   def layers: ZLayer[Any, Nothing, ScheduleService] =
     InMemoryScheduleDayRepository.layer ++
       InMemoryDriverScheduleVisibilityRepository.layer ++
+      InMemoryDriverUnavailabilityRepository.layer ++
       personRepoLayer >>>
       ScheduleService.layer
 

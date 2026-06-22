@@ -2,6 +2,7 @@ package com.shevchyk.schedule.validation
 
 import com.shevchyk.schedule.domain.*
 import com.shevchyk.schedule.infrastructure.http.dto.*
+import java.time.Instant
 import com.shevchyk.schedule.validation.Validator
 import zio.*
 import java.time.LocalDate
@@ -57,6 +58,20 @@ given updateScheduleDayApiRequestValidator: Validator[UpdateScheduleDayApiReques
       _ <- request.status.map(validateStatus).getOrElse(ZIO.unit)
     } yield request
 
+given createDriverUnavailabilityApiRequestValidator: Validator[CreateDriverUnavailabilityApiRequest] with
+  type Error = ScheduleError
+
+  def validate(
+      request: CreateDriverUnavailabilityApiRequest
+  ): IO[ScheduleError, CreateDriverUnavailabilityApiRequest] =
+    for {
+      _ <- validateUuid(request.driverId, "Driver ID")
+      _ <- validateInstant(request.fromTime, "fromTime")
+      _ <- validateInstant(request.toTime, "toTime")
+      _ <- validateInstantOrder(request.fromTime, request.toTime)
+      _ <- validateUnavailabilityReason(request.reason)
+    } yield request
+
 private def validateUuid(value: String, fieldName: String): IO[ScheduleError, Unit] =
   ZIO
     .attempt(UUID.fromString(value))
@@ -95,5 +110,34 @@ private def validateStatus(status: String): IO[ScheduleError, Unit] =
       ZIO.fail(
         ScheduleError.ValidationError(
           s"Invalid status: $status. Valid values: ${ScheduleDayStatus.values.mkString(", ")}"
+        )
+      )
+
+private def validateInstant(value: String, fieldName: String): IO[ScheduleError, Unit] =
+  ZIO
+    .attempt(Instant.parse(value))
+    .orElseFail(ScheduleError.ValidationError(s"Invalid $fieldName format: $value. Expected ISO-8601 instant"))
+    .unit
+
+private def validateInstantOrder(fromStr: String, toStr: String): IO[ScheduleError, Unit] =
+  val result =
+    for {
+      from <- Try(Instant.parse(fromStr)).toOption
+      to   <- Try(Instant.parse(toStr)).toOption
+    } yield from.isBefore(to)
+
+  ZIO
+    .when(result.contains(false))(
+      ZIO.fail(ScheduleError.ValidationError("fromTime must be before toTime"))
+    )
+    .unit
+
+private def validateUnavailabilityReason(reason: String): IO[ScheduleError, Unit] =
+  Try(DriverUnavailabilityReason.valueOf(reason)) match
+    case scala.util.Success(_) => ZIO.unit
+    case scala.util.Failure(_) =>
+      ZIO.fail(
+        ScheduleError.ValidationError(
+          s"Invalid reason: $reason. Valid values: ${DriverUnavailabilityReason.values.mkString(", ")}"
         )
       )

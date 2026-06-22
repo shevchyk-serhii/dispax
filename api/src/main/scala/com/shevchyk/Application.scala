@@ -33,8 +33,12 @@ import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereR
 import com.shevchyk.core.config.HereConfig
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.driver.repository.DriverLocationRepository
-import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
-import com.shevchyk.schedule.repository.{DriverScheduleVisibilityRepository, ScheduleDayRepository}
+import com.shevchyk.schedule.application.{ScheduleAvailabilityChecker, ScheduleService => ScheduleSvc}
+import com.shevchyk.schedule.repository.{
+  DriverScheduleVisibilityRepository,
+  DriverUnavailabilityRepository,
+  ScheduleDayRepository
+}
 import com.shevchyk.billing.application.{InvoiceService, PaymentChecker}
 import com.shevchyk.billing.repository.{
   InvoiceRepository,
@@ -217,6 +221,8 @@ object Application extends ZIOAppDefault:
       DriverLocationService.providerLayer,
       ScheduleDayRepository.layer,
       DriverScheduleVisibilityRepository.layer,
+      DriverUnavailabilityRepository.layer,
+      ScheduleAvailabilityChecker.layer,
       ScheduleSvc.layer,
       ClientLocationRepository.layer,
       AirportConfigRepository.layer,

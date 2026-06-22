@@ -79,13 +79,12 @@ void main() {
       expect(dismissed, isTrue);
     });
 
-    testWidgets('onReassign fires when "Reassign" button is tapped',
-        (tester) async {
+    testWidgets('onReassign fires when "Reassign" button is tapped', (
+      tester,
+    ) async {
       bool reassigned = false;
       await tester.pumpWidget(
-        _wrap(
-          EtaAlertCard(info: _info, onReassign: () => reassigned = true),
-        ),
+        _wrap(EtaAlertCard(info: _info, onReassign: () => reassigned = true)),
       );
       await tester.tap(find.text('Reassign'));
       await tester.pump();
@@ -102,8 +101,9 @@ void main() {
       expect(viewed, isTrue);
     });
 
-    testWidgets('"Reassign" button is absent when onReassign is null',
-        (tester) async {
+    testWidgets('"Reassign" button is absent when onReassign is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(EtaAlertCard(info: _info)));
       expect(find.text('Reassign'), findsNothing);
     });
@@ -113,8 +113,9 @@ void main() {
       expect(find.text('View'), findsNothing);
     });
 
-    testWidgets('dismiss IconButton is absent when onDismiss is null',
-        (tester) async {
+    testWidgets('dismiss IconButton is absent when onDismiss is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(EtaAlertCard(info: _info)));
       expect(find.byType(IconButton), findsNothing);
     });
@@ -211,20 +212,22 @@ void main() {
     }
 
     testWidgets(
-        'light mode: outer Container has error colour with lower alpha (0.06)',
-        (tester) async {
-      await tester.pumpWidget(_wrap(EtaAlertCard(info: _info)));
+      'light mode: outer Container has error colour with lower alpha (0.06)',
+      (tester) async {
+        await tester.pumpWidget(_wrap(EtaAlertCard(info: _info)));
 
-      expect(
-        findBgWithAlpha(tester, 0.04, 0.09),
-        isTrue,
-        reason: 'light-mode background should use error colour with alpha≈0.06',
-      );
-    });
+        expect(
+          findBgWithAlpha(tester, 0.04, 0.09),
+          isTrue,
+          reason:
+              'light-mode background should use error colour with alpha≈0.06',
+        );
+      },
+    );
 
-    testWidgets(
-        'dark-mode: outer Container has error colour with alpha=0.12',
-        (tester) async {
+    testWidgets('dark-mode: outer Container has error colour with alpha=0.12', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(EtaAlertCard(info: _info), brightness: Brightness.dark),
       );

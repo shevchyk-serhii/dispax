@@ -2,7 +2,15 @@ package com.shevchyk.ride.application
 
 import com.shevchyk.core.config.AirportPickupConfig
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData, GeocodingService}
+import com.shevchyk.core.application.{
+  DriverAvailabilityChecker,
+  EventHub,
+  AuditService,
+  EmailSmsService,
+  RideConfirmationData,
+  GeocodingService,
+  UnavailabilitySlot
+}
 import com.shevchyk.core.repository.{
   BlacklistRepository,
   ClientCompanyRepository,
@@ -142,6 +150,16 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
 
   // ── Full RideService layers ──────────────────────────────────────────────
 
+  private val noopAvailabilityChecker: ZLayer[Any, Nothing, DriverAvailabilityChecker] = ZLayer.succeed(
+    new DriverAvailabilityChecker:
+      def overlappingUnavailability(
+          driverId: PersonId,
+          companyId: CompanyId,
+          from: java.time.Instant,
+          to: java.time.Instant
+      ): Task[List[UnavailabilitySlot]] = ZIO.succeed(Nil)
+  )
+
   def rideLayers(
       travelTime: ZLayer[Any, Nothing, TravelTimeService] = hereAvailable
   ): ZLayer[Any, Nothing, RideService] =
@@ -153,7 +171,8 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
       BlacklistRepository.inMemory ++
       deterministicGeocoding ++
       ExpenseRepository.inMemory ++
-      pickupServiceLayer(travelTime)) >+> RideService.layer
+      pickupServiceLayer(travelTime) ++
+      noopAvailabilityChecker) >+> RideService.layer
 
   // ── Flight departure time used in all departure tests ───────────────────
   // 2030-06-15T12:00:00Z → with global defaults (buffer=15, checkIn=60) and travel=30:

@@ -1,7 +1,15 @@
 package com.shevchyk.ride.application
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData, GeocodingService}
+import com.shevchyk.core.application.{
+  DriverAvailabilityChecker,
+  EventHub,
+  AuditService,
+  EmailSmsService,
+  RideConfirmationData,
+  GeocodingService,
+  UnavailabilitySlot
+}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.{PersonRepository, InMemoryPersonRepository}
 import com.shevchyk.ride.domain.*
@@ -169,6 +177,16 @@ object RideServiceSpec extends ZIOSpecDefault {
     def sendInvoiceEmail(data: com.shevchyk.core.application.InvoiceEmailData): Task[Unit] = ZIO.unit
   )
 
+  private val noopAvailabilityChecker: ZLayer[Any, Nothing, DriverAvailabilityChecker] = ZLayer.succeed(
+    new DriverAvailabilityChecker:
+      def overlappingUnavailability(
+          driverId: PersonId,
+          companyId: CompanyId,
+          from: java.time.Instant,
+          to: java.time.Instant
+      ): Task[List[UnavailabilitySlot]] = ZIO.succeed(Nil)
+  )
+
   val standardLayers =
     (InMemoryRideRepository.layer ++
       ZLayer.succeed[PersonRepository](testPersonRepo) ++
@@ -178,7 +196,8 @@ object RideServiceSpec extends ZIOSpecDefault {
       BlacklistRepository.inMemory ++
       GeocodingService.noop ++
       ExpenseRepository.inMemory ++
-      PickupTimeService.noopLayer) >+> RideService.layer
+      PickupTimeService.noopLayer ++
+      noopAvailabilityChecker) >+> RideService.layer
 
   def spec =
     suite("RideService")(
@@ -198,6 +217,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           GeocodingService.noop,
           ExpenseRepository.inMemory,
           PickupTimeService.noopLayer,
+          noopAvailabilityChecker,
           RideService.layer
         )
       ),
@@ -477,7 +497,8 @@ object RideServiceSpec extends ZIOSpecDefault {
               BlacklistRepository.inMemory ++
               GeocodingService.noop ++
               ExpenseRepository.inMemory ++
-              PickupTimeService.noopLayer) >+> RideService.layer
+              PickupTimeService.noopLayer ++
+              noopAvailabilityChecker) >+> RideService.layer
 
           (for {
             service <- ZIO.service[RideService]
