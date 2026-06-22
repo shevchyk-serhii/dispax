@@ -625,6 +625,23 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                       ),
                     ),
                   ],
+
+                  // Cancellation reason for cancelled rides
+                  if (ride.status == RideStatus.cancelled &&
+                      ride.cancellationReason != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Reason: ${ride.cancellationReason}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark
+                            ? AppColors.rideCancelledTextDark
+                            : AppColors.rideCancelledText,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
             ),

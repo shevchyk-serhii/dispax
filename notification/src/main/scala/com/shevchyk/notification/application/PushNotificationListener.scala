@@ -114,7 +114,14 @@ object PushNotificationListener:
         notifyUser(fcmService, notifRepo, PersonId(driverId), CompanyId(companyId), driverNotif, "ride_assigned") *>
           notifyUser(fcmService, notifRepo, PersonId(clientId), CompanyId(companyId), clientNotif, "ride_assigned")
 
-      case WebSocketEvent.RideStatusChanged(rideId, newStatus, driverIdOpt, clientId, companyId) =>
+      case WebSocketEvent.RideStatusChanged(
+            rideId,
+            newStatus,
+            driverIdOpt,
+            clientId,
+            companyId,
+            cancellationReasonOpt
+          ) =>
         // (driverNotif, clientNotif) per status; None means no notification.
         val notifications: Option[(PushNotification, PushNotification)] =
           newStatus match
@@ -174,6 +181,40 @@ object PushNotificationListener:
                     "ride_status_changed"
                   )
                 case None           => ZIO.unit
+
+            // Notify dispatchers for Cancelled and Completed events, excluding
+            // any dispatcher who is also the assigned driver or the client (no double push).
+            val notifyDispatchers =
+              newStatus match
+                case "Cancelled" | "Completed" =>
+                  val dispatcherBody  =
+                    if newStatus == "Cancelled" then
+                      cancellationReasonOpt match
+                        case Some(reason) => s"Ride cancelled. Reason: $reason"
+                        case None         => "A ride has been cancelled."
+                    else "A ride has been completed."
+                  val dispatcherNotif = PushNotification(
+                    title = if newStatus == "Cancelled" then "Ride Cancelled" else "Ride Completed",
+                    body = dispatcherBody,
+                    data = Map("type" -> "ride_status_changed", "rideId" -> rideId.toString, "status" -> newStatus)
+                  )
+                  personRepo.findByRoleAndCompany(PersonRole.Dispatcher, CompanyId(companyId)).flatMap { dispatchers =>
+                    val dedupedDispatchers = dispatchers.filterNot { d =>
+                      d.id.value == clientId || driverIdOpt.contains(d.id.value)
+                    }
+                    ZIO.foreachDiscard(dedupedDispatchers) { dispatcher =>
+                      notifyUser(
+                        fcmService,
+                        notifRepo,
+                        dispatcher.id,
+                        CompanyId(companyId),
+                        dispatcherNotif,
+                        "ride_status_changed"
+                      )
+                    }
+                  }
+                case _                         => ZIO.unit
+
             notifyDriver *>
               notifyUser(
                 fcmService,
@@ -182,8 +223,32 @@ object PushNotificationListener:
                 CompanyId(companyId),
                 clientNotif,
                 "ride_status_changed"
-              )
+              ) *> notifyDispatchers
           case None                             => ZIO.unit
+
+      case WebSocketEvent.RideDetailsUpdated(rideId, driverIdOpt, clientId, companyId) =>
+        val updatedNotif      = PushNotification(
+          title = "Ride Updated",
+          body = "Ride details have been updated.",
+          data = Map("type" -> "ride_updated", "rideId" -> rideId.toString)
+        )
+        // Notify the assigned driver (if any).
+        val notifyDriver      =
+          driverIdOpt match
+            case Some(driverId) =>
+              notifyUser(fcmService, notifRepo, PersonId(driverId), CompanyId(companyId), updatedNotif, "ride_updated")
+            case None           => ZIO.unit
+        // Notify all dispatchers of the company, skipping the driver if they are also a dispatcher.
+        val notifyDispatchers = personRepo.findByRoleAndCompany(PersonRole.Dispatcher, CompanyId(companyId)).flatMap {
+          dispatchers =>
+            val dedupedDispatchers = dispatchers.filterNot { d =>
+              driverIdOpt.contains(d.id.value)
+            }
+            ZIO.foreachDiscard(dedupedDispatchers) { dispatcher =>
+              notifyUser(fcmService, notifRepo, dispatcher.id, CompanyId(companyId), updatedNotif, "ride_updated")
+            }
+        }
+        notifyDriver *> notifyDispatchers
 
       case WebSocketEvent.RideCreated(rideId, clientId, companyId) =>
         // Dispatchers are notified via WebSocket. Send the client a booking

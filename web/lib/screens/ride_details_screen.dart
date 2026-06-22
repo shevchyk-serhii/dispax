@@ -535,6 +535,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   Future<void> _cancelRide(BuildContext context) async {
     final authState = context.read<AuthBloc>().state;
     final isDispatcher = authState.user?.role == PersonRole.dispatcher;
+    // Capture the RideBloc before crossing the first async gap so that the
+    // reference remains valid regardless of whether the widget stays mounted.
+    final rideBloc = context.read<RideBloc>();
 
     final result = await showAdaptiveDialog<Map<String, dynamic>?>(
       context: context,
@@ -549,14 +552,18 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
           result['reason'] as String,
           fee: result['fee'] as double?,
         );
+        final cancelledRide = _currentRide.copyWith(
+          status: RideStatus.cancelled,
+          cancellationReason: result['reason'] as String?,
+          cancellationFee: result['fee'] as double?,
+          cancelledBy: authState.user?.name,
+        );
         setState(() {
-          _currentRide = _currentRide.copyWith(
-            status: RideStatus.cancelled,
-            cancellationReason: result['reason'] as String?,
-            cancellationFee: result['fee'] as double?,
-            cancelledBy: authState.user?.name,
-          );
+          _currentRide = cancelledRide;
         });
+        // Update the shared RideBloc so lists (e.g. ClientRideHistoryScreen)
+        // immediately reflect the cancelled status without waiting for a WS event.
+        rideBloc.add(RideUpdated(ride: cancelledRide));
         _showSuccessMessage('Ride cancelled');
       } catch (e) {
         _showErrorMessage('Failed to cancel ride: $e');

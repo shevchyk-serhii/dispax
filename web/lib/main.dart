@@ -204,16 +204,29 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
       if (event.isRideStatusChanged &&
           event.rideId != null &&
           event.newStatus != null) {
-        context.read<RideBloc>().add(
-          RideStatusReceived(
-            rideId: event.rideId!,
-            newStatus: RideStatus.fromString(event.newStatus!),
-          ),
-        );
+        final parsedStatus = RideStatus.fromStringOrNull(event.newStatus!);
+        if (parsedStatus != null) {
+          context.read<RideBloc>().add(
+            RideStatusReceived(rideId: event.rideId!, newStatus: parsedStatus),
+          );
+        } else {
+          debugPrint(
+            'WS RideStatusChanged: unrecognised status "${event.newStatus}" for ride ${event.rideId} — skipping BLoC update',
+          );
+        }
         return;
       }
       if (event.isRideAssigned || event.isRideCreated) {
         _refreshRides();
+      }
+      if (event.isRideDetailsUpdated) {
+        _refreshRides();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ride details were updated.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
     });
 

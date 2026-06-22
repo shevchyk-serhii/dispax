@@ -463,7 +463,7 @@ object RideApi:
   private val updateRideServer: ZServerEndpoint[RideEnv, Any] = updateRideEndpoint.serverLogic {
     user => (rideId, apiRequest) =>
       for {
-        _            <- checkRole(user, "DRIVER", "DISPATCHER", "SECRETARY")
+        _            <- checkRole(user, "DRIVER", "DISPATCHER", "SECRETARY", "CLIENT")
         parsedRideId <- parseRideId(rideId)
         companyId    <- requireCompanyId(user.companyId)
         service      <- ZIO.service[RideService]

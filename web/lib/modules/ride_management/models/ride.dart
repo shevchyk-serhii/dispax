@@ -28,11 +28,25 @@ enum RideStatus {
     }
   }
 
+  /// Returns the matching [RideStatus], or `null` if the value is unrecognised.
+  /// Prefer this over [fromString] in contexts where an unknown status should
+  /// be handled explicitly (e.g. WebSocket events) rather than silently
+  /// defaulting to [requested].
+  static RideStatus? fromStringOrNull(String value) {
+    return RideStatus.values
+        .where((status) => status.value.toLowerCase() == value.toLowerCase())
+        .firstOrNull;
+  }
+
+  /// Returns the matching [RideStatus].
+  /// Falls back to [requested] only as a last resort; callers that cannot
+  /// tolerate a wrong default should use [fromStringOrNull] instead.
   static RideStatus fromString(String value) {
-    return RideStatus.values.firstWhere(
-      (status) => status.value.toLowerCase() == value.toLowerCase(),
-      orElse: () => RideStatus.requested,
-    );
+    final result = fromStringOrNull(value);
+    if (result == null) {
+      debugPrint('RideStatus.fromString: unrecognised status "$value"');
+    }
+    return result ?? RideStatus.requested;
   }
 }
 
