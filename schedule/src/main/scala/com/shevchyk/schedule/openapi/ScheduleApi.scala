@@ -3,7 +3,7 @@ package com.shevchyk.schedule.openapi
 import com.shevchyk.auth.domain.{ExpiredTokenError, InvalidTokenError, JwtError}
 import com.shevchyk.auth.middleware.AuthenticatedUser
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.domain.{CompanyId, PersonId, ScheduleDayId}
+import com.shevchyk.core.domain.{CompanyId, DriverUnavailabilityId, PersonId, ScheduleDayId}
 import com.shevchyk.core.openapi.{ApiError, ErrorMapper}
 import com.shevchyk.schedule.application.ScheduleService
 import com.shevchyk.schedule.domain.*
@@ -15,7 +15,7 @@ import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
 
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 
 /**
@@ -152,6 +152,37 @@ object ScheduleApi:
     .tag(scheduleTag)
     .summary("Set whether a driver may view other drivers' full schedules (dispatcher, admin)")
 
+  // -- Unavailability endpoints -------------------------------------------
+  // NOTE: static "unavailability/..." paths must be registered before any
+  // "/{id}" pattern to avoid the static prefix being swallowed by the id segment.
+
+  val createUnavailabilityEndpoint = secureEndpoint.post
+    .in("api" / "schedules" / "unavailability")
+    .in(jsonBody[CreateDriverUnavailabilityApiRequest])
+    .out(statusCode(StatusCode.Created).and(jsonBody[DriverUnavailabilityDto]))
+    .tag(scheduleTag)
+    .summary("Mark a driver unavailability window (driver-only-self)")
+
+  val getDriverUnavailabilityEndpoint = secureEndpoint.get
+    .in("api" / "schedules" / "unavailability" / "driver" / path[String]("driverId"))
+    .out(jsonBody[List[DriverUnavailabilityDto]])
+    .tag(scheduleTag)
+    .summary("Get unavailability windows for a driver (access-controlled)")
+
+  val getCompanyUnavailabilityEndpoint = secureEndpoint.get
+    .in("api" / "schedules" / "unavailability")
+    .in(query[Option[String]]("from"))
+    .in(query[Option[String]]("to"))
+    .out(jsonBody[List[DriverUnavailabilityDto]])
+    .tag(scheduleTag)
+    .summary("Get all unavailability windows for the company in a time range")
+
+  val deleteUnavailabilityEndpoint = secureEndpoint.delete
+    .in("api" / "schedules" / "unavailability" / path[String]("id"))
+    .out(statusCode(StatusCode.NoContent))
+    .tag(scheduleTag)
+    .summary("Delete a driver unavailability window (owner, dispatcher, or admin)")
+
   /**
    * All endpoint descriptions, used to generate the OpenAPI document.
    */
@@ -165,7 +196,11 @@ object ScheduleApi:
     deleteScheduleDayEndpoint,
     getCompanyVisibilityEndpoint,
     getMyVisibilityEndpoint,
-    setDriverVisibilityEndpoint
+    setDriverVisibilityEndpoint,
+    createUnavailabilityEndpoint,
+    getDriverUnavailabilityEndpoint,
+    getCompanyUnavailabilityEndpoint,
+    deleteUnavailabilityEndpoint
   )
 
   // -- Server logic --------------------------------------------------------
@@ -312,11 +347,91 @@ object ScheduleApi:
       } yield DriverScheduleVisibilityDto.fromDomain(result)
   }
 
+  // -- Unavailability server logic ------------------------------------------
+
+  /**
+   * POST /api/schedules/unavailability — driver-only-self. Creates a manual unavailability window.
+   */
+  private val createUnavailabilityServer: ZServerEndpoint[ScheduleEnv, Any] = createUnavailabilityEndpoint.serverLogic {
+    user => apiRequest =>
+      (for {
+        companyId     <- requireCompanyId(user)
+        validRequest  <- apiRequest.validate
+        domainRequest <- CreateDriverUnavailabilityApiRequest.toDomain(validRequest, companyId)
+        requesterId    = PersonId(user.userId)
+        service       <- ZIO.service[ScheduleService]
+        result        <- service.createUnavailability(domainRequest, requesterId, user.role)
+      } yield DriverUnavailabilityDto.fromDomain(result)).mapError(toError)
+  }
+
+  /**
+   * GET /api/schedules/unavailability/driver/:driverId — access-controlled (mirrors getDriverScheduleAs).
+   */
+  private val getDriverUnavailabilityServer: ZServerEndpoint[ScheduleEnv, Any] = getDriverUnavailabilityEndpoint
+    .serverLogic { user => driverId =>
+      (for {
+        companyId  <- requireCompanyId(user)
+        driverPid  <- ZIO
+                        .attempt(PersonId(UUID.fromString(driverId)))
+                        .orElseFail(ScheduleError.ValidationError("Invalid UUID format"))
+        requesterId = PersonId(user.userId)
+        service    <- ZIO.service[ScheduleService]
+        result     <- service.getDriverUnavailability(driverPid, companyId, requesterId, user.role)
+      } yield result.map(DriverUnavailabilityDto.fromDomain)).mapError(toError)
+    }
+
+  /**
+   * GET /api/schedules/unavailability?from=&to= — company-wide unavailability range view (dispatcher/admin only).
+   *
+   * Role guard mirrors `getCompanyVisibilityServer`: `requireDispatcherOrAdmin` runs first (already in the
+   * `(StatusCode, ApiError)` error channel), then the inner business logic runs in `ScheduleError` and is converted to
+   * `(StatusCode, ApiError)` via `.mapError(toError)`.
+   */
+  private val getCompanyUnavailabilityServer: ZServerEndpoint[ScheduleEnv, Any] = getCompanyUnavailabilityEndpoint
+    .serverLogic { user => (fromOpt, toOpt) =>
+      requireDispatcherOrAdmin(user) *> (for {
+        companyId <- requireCompanyId(user)
+        fromParam <- ZIO
+                       .fromOption(fromOpt)
+                       .orElseFail(ScheduleError.ValidationError("Query parameter 'from' is required"))
+        toParam   <- ZIO
+                       .fromOption(toOpt)
+                       .orElseFail(ScheduleError.ValidationError("Query parameter 'to' is required"))
+        from      <- ZIO
+                       .attempt(Instant.parse(fromParam))
+                       .orElseFail(ScheduleError.ValidationError(s"Invalid 'from' instant format: $fromParam"))
+        to        <- ZIO
+                       .attempt(Instant.parse(toParam))
+                       .orElseFail(ScheduleError.ValidationError(s"Invalid 'to' instant format: $toParam"))
+        service   <- ZIO.service[ScheduleService]
+        result    <- service.getCompanyUnavailability(companyId, from, to)
+      } yield result.map(DriverUnavailabilityDto.fromDomain)).mapError(toError)
+    }
+
+  /**
+   * DELETE /api/schedules/unavailability/:id — owner-only (or dispatcher/admin).
+   */
+  private val deleteUnavailabilityServer: ZServerEndpoint[ScheduleEnv, Any] = deleteUnavailabilityEndpoint.serverLogic {
+    user => id =>
+      (for {
+        companyId  <- requireCompanyId(user)
+        unavailId  <- ZIO
+                        .attempt(DriverUnavailabilityId(UUID.fromString(id)))
+                        .orElseFail(ScheduleError.ValidationError("Invalid UUID format"))
+        requesterId = PersonId(user.userId)
+        service    <- ZIO.service[ScheduleService]
+        _          <- service.deleteUnavailability(unavailId, requesterId, user.role, companyId)
+      } yield ()).mapError(toError)
+  }
+
   /**
    * All server endpoints, interpreted into zio-http Routes by the api module.
    *
    * NOTE: `getMyVisibilityServer` must appear before `setDriverVisibilityServer` so that Tapir routes `GET
    * /visibility/me` before attempting to match `PUT /visibility/:driverId`.
+   *
+   * NOTE: `getDriverUnavailabilityServer` (static "driver/..." prefix) must appear before `deleteUnavailabilityServer`
+   * (dynamic "/:id" pattern) to avoid the static prefix being matched by the id segment.
    */
   val serverEndpoints: List[ZServerEndpoint[ScheduleEnv, Any]] = List(
     createScheduleDayServer,
@@ -328,5 +443,9 @@ object ScheduleApi:
     deleteScheduleDayServer,
     getCompanyVisibilityServer,
     getMyVisibilityServer,
-    setDriverVisibilityServer
+    setDriverVisibilityServer,
+    createUnavailabilityServer,
+    getDriverUnavailabilityServer,
+    getCompanyUnavailabilityServer,
+    deleteUnavailabilityServer
   )

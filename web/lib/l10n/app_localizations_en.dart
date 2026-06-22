@@ -513,4 +513,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String viewingDriverSchedule(String driverName) {
     return 'Viewing: $driverName';
   }
+
+  @override
+  String get markUnavailable => 'Mark Unavailable';
+
+  @override
+  String get driverUnavailable => 'Driver Unavailable';
+
+  @override
+  String get unavailabilityReason => 'Reason';
+
+  @override
+  String get unavailabilityNote => 'Note (optional)';
+
+  @override
+  String get unavailabilityFrom => 'From';
+
+  @override
+  String get unavailabilityTo => 'To';
+
+  @override
+  String get unavailabilityReasonLunch => 'Lunch';
+
+  @override
+  String get unavailabilityReasonVacation => 'Vacation';
+
+  @override
+  String get unavailabilityReasonPersonal => 'Personal';
+
+  @override
+  String get driverHasScheduleConflict => 'Driver is busy during this time';
+
+  @override
+  String get assignAnywayTitle => 'Driver Busy';
+
+  @override
+  String assignAnywayMessage(String reason) {
+    return 'This driver has a schedule conflict: $reason. Assign anyway?';
+  }
+
+  @override
+  String get assignAnyway => 'Assign Anyway';
+
+  @override
+  String get unavailabilityCreated => 'Unavailability marked successfully';
+
+  @override
+  String get unavailabilityDeleted => 'Unavailability removed';
+
+  @override
+  String get noUnavailability => 'No unavailability windows';
 }

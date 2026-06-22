@@ -114,7 +114,11 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
           userId: PersonId,
           role: PersonRole
       ): IO[RideError, Ride] = notImplemented
-      def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                = notImplemented
+      def assignDriver(
+          rideId: RideId,
+          driverId: PersonId,
+          overrideScheduleConflict: Boolean = false
+      ): IO[RideError, Ride] = notImplemented
       def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]                                      = notImplemented
       def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]]      =
         notImplemented

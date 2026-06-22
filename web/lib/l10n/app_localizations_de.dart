@@ -515,4 +515,56 @@ class AppLocalizationsDe extends AppLocalizations {
   String viewingDriverSchedule(String driverName) {
     return 'Ansicht: $driverName';
   }
+
+  @override
+  String get markUnavailable => 'Als nicht verfügbar markieren';
+
+  @override
+  String get driverUnavailable => 'Fahrer nicht verfügbar';
+
+  @override
+  String get unavailabilityReason => 'Grund';
+
+  @override
+  String get unavailabilityNote => 'Notiz (optional)';
+
+  @override
+  String get unavailabilityFrom => 'Von';
+
+  @override
+  String get unavailabilityTo => 'Bis';
+
+  @override
+  String get unavailabilityReasonLunch => 'Mittagspause';
+
+  @override
+  String get unavailabilityReasonVacation => 'Urlaub';
+
+  @override
+  String get unavailabilityReasonPersonal => 'Persönlich';
+
+  @override
+  String get driverHasScheduleConflict =>
+      'Fahrer ist zu dieser Zeit beschäftigt';
+
+  @override
+  String get assignAnywayTitle => 'Fahrer beschäftigt';
+
+  @override
+  String assignAnywayMessage(String reason) {
+    return 'Dieser Fahrer hat einen Zeitkonflikt: $reason. Trotzdem zuweisen?';
+  }
+
+  @override
+  String get assignAnyway => 'Trotzdem zuweisen';
+
+  @override
+  String get unavailabilityCreated =>
+      'Nicht-Verfügbarkeit erfolgreich markiert';
+
+  @override
+  String get unavailabilityDeleted => 'Nicht-Verfügbarkeit entfernt';
+
+  @override
+  String get noUnavailability => 'Keine Nicht-Verfügbarkeiten';
 }

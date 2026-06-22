@@ -1,10 +1,13 @@
 package com.shevchyk.schedule.infrastructure.http.dto
 
-import com.shevchyk.core.domain.{CompanyId, PersonId, ScheduleDayId}
+import com.shevchyk.core.domain.{CompanyId, DriverUnavailabilityId, PersonId, ScheduleDayId}
 import com.shevchyk.schedule.domain.{
+  CreateDriverUnavailabilityRequest,
   CreateScheduleBatchDay,
   CreateScheduleBatchRequest,
   CreateScheduleDayRequest,
+  DriverUnavailability,
+  DriverUnavailabilityReason,
   DriverScheduleVisibility,
   ScheduleDay,
   ScheduleDayStatus,
@@ -13,7 +16,7 @@ import com.shevchyk.schedule.domain.{
 import sttp.tapir.Schema
 import zio.*
 import zio.json.*
-import java.time.{LocalDate, LocalTime}
+import java.time.{Instant, LocalDate, LocalTime}
 import java.util.UUID
 
 case class ScheduleDayDto(
@@ -164,3 +167,80 @@ case class SetDriverVisibilityRequest(canViewOtherSchedules: Boolean) derives Js
 
 object SetDriverVisibilityRequest:
   given Schema[SetDriverVisibilityRequest] = Schema.derived[SetDriverVisibilityRequest]
+
+// -- Driver unavailability DTOs ------------------------------------------------
+
+/**
+ * Response DTO for a single driver unavailability window.
+ */
+case class DriverUnavailabilityDto(
+    id: String,
+    driverId: String,
+    companyId: String,
+    fromTime: String,
+    toTime: String,
+    reason: String,
+    note: Option[String],
+    createdAt: String
+) derives JsonCodec
+
+object DriverUnavailabilityDto:
+
+  given Schema[DriverUnavailabilityDto] = Schema.derived[DriverUnavailabilityDto]
+
+  def fromDomain(u: DriverUnavailability): DriverUnavailabilityDto = DriverUnavailabilityDto(
+    id = u.id.value.toString,
+    driverId = u.driverId.value.toString,
+    companyId = u.companyId.value.toString,
+    fromTime = u.fromTime.toString,
+    toTime = u.toTime.toString,
+    reason = u.reason.toString,
+    note = u.note,
+    createdAt = u.createdAt.toString
+  )
+
+/**
+ * Request DTO for creating a driver unavailability window. fromTime and toTime are ISO-8601 instant strings; reason
+ * must be one of Lunch | Vacation | Personal.
+ */
+case class CreateDriverUnavailabilityApiRequest(
+    driverId: String,
+    fromTime: String,
+    toTime: String,
+    reason: String,
+    note: Option[String] = None
+) derives JsonCodec
+
+object CreateDriverUnavailabilityApiRequest:
+
+  given Schema[CreateDriverUnavailabilityApiRequest] = Schema.derived[CreateDriverUnavailabilityApiRequest]
+
+  def toDomain(
+      request: CreateDriverUnavailabilityApiRequest,
+      companyId: CompanyId
+  ): IO[ScheduleError, CreateDriverUnavailabilityRequest] =
+    for {
+      driverUuid <- ZIO
+                      .attempt(UUID.fromString(request.driverId))
+                      .orElseFail(ScheduleError.ValidationError(s"Invalid driver UUID: ${request.driverId}"))
+      from       <- ZIO
+                      .attempt(Instant.parse(request.fromTime))
+                      .orElseFail(ScheduleError.ValidationError(s"Invalid fromTime format: ${request.fromTime}"))
+      to         <- ZIO
+                      .attempt(Instant.parse(request.toTime))
+                      .orElseFail(ScheduleError.ValidationError(s"Invalid toTime format: ${request.toTime}"))
+      reason     <- ZIO
+                      .attempt(DriverUnavailabilityReason.valueOf(request.reason))
+                      .orElseFail(
+                        ScheduleError.ValidationError(
+                          s"Invalid reason: ${request.reason}. Valid values: ${DriverUnavailabilityReason.values.mkString(", ")}"
+                        )
+                      )
+    } yield CreateDriverUnavailabilityRequest(
+      driverId = PersonId(driverUuid),
+      companyId = companyId,
+      fromTime = from,
+      toTime = to,
+      reason = reason,
+      note = request.note
+    )

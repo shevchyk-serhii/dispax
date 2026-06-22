@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../models/schedule_day.dart';
+import '../models/driver_unavailability.dart';
 import '../../core/services/api_client.dart';
 
 class ScheduleService {
@@ -225,6 +226,107 @@ class ScheduleService {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException('Error updating visibility: $e');
+    }
+  }
+
+  // -- Driver unavailability -------------------------------------------------
+
+  /// Creates a manual unavailability window for the authenticated driver (driver-only-self).
+  Future<DriverUnavailability> createUnavailability({
+    required String driverId,
+    required DateTime fromTime,
+    required DateTime toTime,
+    required DriverUnavailabilityReason reason,
+    String? note,
+  }) async {
+    try {
+      final response = await _apiClient.post('/schedules/unavailability', {
+        'driverId': driverId,
+        'fromTime': fromTime.toUtc().toIso8601String(),
+        'toTime': toTime.toUtc().toIso8601String(),
+        'reason': reason.value,
+        if (note != null) 'note': note,
+      });
+
+      if (response.statusCode == 201) {
+        return DriverUnavailability.fromJson(jsonDecode(response.body));
+      } else {
+        throw ApiException(
+          'Failed to create unavailability: ${response.statusCode} ${response.body}',
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Error creating unavailability: $e');
+    }
+  }
+
+  /// Returns all unavailability windows for a specific driver (access-controlled).
+  Future<List<DriverUnavailability>> getDriverUnavailability(
+    String driverId,
+  ) async {
+    try {
+      final response = await _apiClient.get(
+        '/schedules/unavailability/driver/$driverId',
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList
+            .map((json) => DriverUnavailability.fromJson(json))
+            .toList();
+      } else {
+        throw ApiException(
+          'Failed to fetch driver unavailability: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Error fetching driver unavailability: $e');
+    }
+  }
+
+  /// Returns all unavailability windows for the company in a time range (dispatcher/admin).
+  Future<List<DriverUnavailability>> getCompanyUnavailability({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    try {
+      final fromStr = from.toUtc().toIso8601String();
+      final toStr = to.toUtc().toIso8601String();
+      final response = await _apiClient.get(
+        '/schedules/unavailability?from=$fromStr&to=$toStr',
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList
+            .map((json) => DriverUnavailability.fromJson(json))
+            .toList();
+      } else {
+        throw ApiException(
+          'Failed to fetch company unavailability: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Error fetching company unavailability: $e');
+    }
+  }
+
+  /// Deletes an unavailability window (owner, dispatcher, or admin).
+  Future<void> deleteUnavailability(String id) async {
+    try {
+      final response = await _apiClient.delete('/schedules/unavailability/$id');
+
+      if (response.statusCode != 204) {
+        throw ApiException(
+          'Failed to delete unavailability: ${response.statusCode} ${response.body}',
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Error deleting unavailability: $e');
     }
   }
 

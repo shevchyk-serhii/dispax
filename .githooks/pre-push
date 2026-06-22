@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#
+# pre-push: проверяет форматирование ровно так же, как CI
+# (.github/workflows/ci.yml → "Check formatting (scalafmt)").
+#
+# Блокирует push при неотформатированных Scala (Compile+Test) или Dart файлах.
+# Ничего не меняет за вас. Чтобы починить: `make fmtAll` (или см. подсказку ниже).
+#
+# Пропустить разово:  git push --no-verify
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+echo "pre-push: проверка форматирования (scalafmt, как в CI)..."
+
+# scalafmtCheckAll покрывает Compile И Test scope — именно это чекает CI.
+# scalafmtSbtCheck — форматирование build.sbt / project.
+if ! sbt -batch scalafmtCheckAll scalafmtSbtCheck; then
+  echo ""
+  echo "❌ scalafmt: есть неотформатированные Scala-файлы — push отменён."
+  echo "   Почини:  sbt scalafmtAll scalafmtSbt   (или make fmtAll)"
+  echo "   Обойти:  git push --no-verify"
+  exit 1
+fi
+
+# Dart-форматирование web/lib (как fmtDart в CI/Flutter job).
+# Use the same SDK as the Makefile/CI: prefer the FVM-pinned dart
+# (web/.fvmrc → Flutter 3.44.2) when fvm is installed and the project pins a
+# version, otherwise fall back to the bare `dart` on PATH. The system `dart`
+# can be a newer SDK whose formatter diverges from CI, producing false
+# failures — honouring DART_BIN keeps this check in lockstep with CI.
+if [ -n "${DART_BIN:-}" ]; then
+  DART_FMT="$DART_BIN"
+elif command -v fvm >/dev/null 2>&1 && [ -f web/.fvmrc ]; then
+  DART_FMT="fvm dart"
+elif command -v dart >/dev/null 2>&1; then
+  DART_FMT="dart"
+else
+  DART_FMT=""
+fi
+
+if [ -n "$DART_FMT" ]; then
+  if ! $DART_FMT format web/lib --set-exit-if-changed >/dev/null 2>&1; then
+    echo ""
+    echo "❌ dart format ($DART_FMT): есть неотформатированные файлы в web/lib — push отменён."
+    echo "   Почини:  $DART_FMT format web/lib   (или make fmtAll)"
+    echo "   Обойти:  git push --no-verify"
+    exit 1
+  fi
+fi
+
+echo "✅ pre-push: форматирование в порядке."

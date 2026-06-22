@@ -134,16 +134,19 @@ Further reading: [`docs/architecture.md`](docs/architecture.md) ·
 ## Getting Started
 
 ```bash
-# 1. Start PostgreSQL (port 5432)
+# 1. Enable the versioned git hooks (one-time, after cloning)
+make setup-hooks          # points core.hooksPath at .githooks (pre-commit fmt, pre-push fmt check)
+
+# 2. Start PostgreSQL (port 5432)
 docker-compose up -d
 
-# 2. Configure environment — copy the template and fill in values
+# 3. Configure environment — copy the template and fill in values
 cp .env.example .env.dev
 
-# 3. Run the backend (port 8080)
+# 4. Run the backend (port 8080)
 make dev
 
-# 4. Run the Flutter app on a connected device
+# 5. Run the Flutter app on a connected device
 make flutter-dev          # or flutter-dev-android / flutter-dev-ios
 ```
 
@@ -171,17 +174,17 @@ make fmtAll    # Scala + Dart
 
 ## Project Structure
 
-| Module         | Purpose                                                                       |
-| -------------- | ----------------------------------------------------------------------------- |
+| Module         | Purpose                                                                        |
+|----------------|--------------------------------------------------------------------------------|
 | `core`         | Shared domain: IDs (UUID v7), Location, Person, Company, sessions, DB & config |
-| `auth`         | JWT authentication, user management, rate limiting                            |
-| `ride`         | Ride lifecycle: CRUD, driver assignment, status machine, ratings, expenses    |
-| `driver`       | Driver location tracking and proximity calculation                            |
-| `schedule`     | Driver schedules (days, shifts, availability)                                 |
-| `notification` | Firebase Cloud Messaging, notification orchestration                          |
-| `billing`      | Invoices, client companies, DATEV export                                      |
-| `api`          | HTTP entry point: route aggregation and DI wiring                             |
-| `web`          | Flutter app: BLoC, screens, services, theming, localization                   |
+| `auth`         | JWT authentication, user management, rate limiting                             |
+| `ride`         | Ride lifecycle: CRUD, driver assignment, status machine, ratings, expenses     |
+| `driver`       | Driver location tracking and proximity calculation                             |
+| `schedule`     | Driver schedules (days, shifts, availability)                                  |
+| `notification` | Firebase Cloud Messaging, notification orchestration                           |
+| `billing`      | Invoices, client companies, DATEV export                                       |
+| `api`          | HTTP entry point: route aggregation and DI wiring                              |
+| `web`          | Flutter app: BLoC, screens, services, theming, localization                    |
 
 ---
 

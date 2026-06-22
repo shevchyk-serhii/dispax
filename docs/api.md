@@ -35,6 +35,10 @@ All endpoints return JSON. Authenticated endpoints require `Authorization: Beare
 
 ## Rides
 
+> For end-to-end ride flows (create / cancel / modify) — status machine, role matrices,
+> validation, side-effects, failure modes and test-case catalogue — see
+> [`ride-flows.md`](ride-flows.md).
+
 | Method | Path                                  | Auth | Roles                                 | Description                                      |
 |--------|---------------------------------------|------|---------------------------------------|--------------------------------------------------|
 | POST   | `/api/rides`                          | Yes  | DISPATCHER, SECRETARY, CLIENT, DRIVER | Create ride                                      |

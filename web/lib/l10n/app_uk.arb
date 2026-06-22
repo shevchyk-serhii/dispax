@@ -198,5 +198,27 @@
     "placeholders": {
       "driverName": {"type": "String"}
     }
-  }
+  },
+
+  "markUnavailable": "Позначити як недоступний",
+  "driverUnavailable": "Водій недоступний",
+  "unavailabilityReason": "Причина",
+  "unavailabilityNote": "Нотатка (необов'язково)",
+  "unavailabilityFrom": "Від",
+  "unavailabilityTo": "До",
+  "unavailabilityReasonLunch": "Обід",
+  "unavailabilityReasonVacation": "Відпустка",
+  "unavailabilityReasonPersonal": "Особисте",
+  "driverHasScheduleConflict": "Водій зайнятий у цей час",
+  "assignAnywayTitle": "Водій зайнятий",
+  "assignAnywayMessage": "У цього водія є конфлікт розкладу: {reason}. Все одно призначити?",
+  "@assignAnywayMessage": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  },
+  "assignAnyway": "Призначити все одно",
+  "unavailabilityCreated": "Недоступність успішно позначена",
+  "unavailabilityDeleted": "Недоступність видалена",
+  "noUnavailability": "Немає вікон недоступності"
 }

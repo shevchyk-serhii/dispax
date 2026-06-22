@@ -81,6 +81,7 @@ final case class UpdateScheduleDayRequest(
 enum ScheduleError extends Throwable:
   case ValidationError(message: String)
   case ScheduleDayNotFound(id: ScheduleDayId)
+  case UnavailabilityNotFound(id: DriverUnavailabilityId)
   case DriverNotFound(id: PersonId)
   case DuplicateScheduleDay(driverId: PersonId, date: LocalDate)
   case InvalidStatusTransition(from: ScheduleDayStatus, to: ScheduleDayStatus)
@@ -95,6 +96,7 @@ object ScheduleError:
   given ErrorMapper[ScheduleError] = ErrorMapper.instance {
     case ValidationError(message)             => (StatusCode.BadRequest, ApiError(message))
     case ScheduleDayNotFound(id)              => (StatusCode.NotFound, ApiError(s"Schedule day not found: ${id.value}"))
+    case UnavailabilityNotFound(id)           => (StatusCode.NotFound, ApiError(s"Unavailability not found: ${id.value}"))
     case DriverNotFound(id)                   => (StatusCode.NotFound, ApiError(s"Driver not found: ${id.value}"))
     case DuplicateScheduleDay(driverId, date) =>
       (StatusCode.Conflict, ApiError(s"Driver ${driverId.value} already has a schedule for $date"))

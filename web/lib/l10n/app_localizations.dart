@@ -1083,6 +1083,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Viewing: {driverName}'**
   String viewingDriverSchedule(String driverName);
+
+  /// No description provided for @markUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Unavailable'**
+  String get markUnavailable;
+
+  /// No description provided for @driverUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Unavailable'**
+  String get driverUnavailable;
+
+  /// No description provided for @unavailabilityReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get unavailabilityReason;
+
+  /// No description provided for @unavailabilityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get unavailabilityNote;
+
+  /// No description provided for @unavailabilityFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get unavailabilityFrom;
+
+  /// No description provided for @unavailabilityTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get unavailabilityTo;
+
+  /// No description provided for @unavailabilityReasonLunch.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch'**
+  String get unavailabilityReasonLunch;
+
+  /// No description provided for @unavailabilityReasonVacation.
+  ///
+  /// In en, this message translates to:
+  /// **'Vacation'**
+  String get unavailabilityReasonVacation;
+
+  /// No description provided for @unavailabilityReasonPersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get unavailabilityReasonPersonal;
+
+  /// No description provided for @driverHasScheduleConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver is busy during this time'**
+  String get driverHasScheduleConflict;
+
+  /// No description provided for @assignAnywayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Busy'**
+  String get assignAnywayTitle;
+
+  /// No description provided for @assignAnywayMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This driver has a schedule conflict: {reason}. Assign anyway?'**
+  String assignAnywayMessage(String reason);
+
+  /// No description provided for @assignAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Anyway'**
+  String get assignAnyway;
+
+  /// No description provided for @unavailabilityCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailability marked successfully'**
+  String get unavailabilityCreated;
+
+  /// No description provided for @unavailabilityDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailability removed'**
+  String get unavailabilityDeleted;
+
+  /// No description provided for @noUnavailability.
+  ///
+  /// In en, this message translates to:
+  /// **'No unavailability windows'**
+  String get noUnavailability;
 }
 
 class _AppLocalizationsDelegate

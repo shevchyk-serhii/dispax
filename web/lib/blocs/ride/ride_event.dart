@@ -81,10 +81,18 @@ class RideAssignRequested extends RideEvent {
   final String rideId;
   final String driverId;
 
-  const RideAssignRequested({required this.rideId, required this.driverId});
+  /// When true, the dispatcher has confirmed assignment despite a schedule conflict;
+  /// the backend skips the conflict check for this request.
+  final bool overrideScheduleConflict;
+
+  const RideAssignRequested({
+    required this.rideId,
+    required this.driverId,
+    this.overrideScheduleConflict = false,
+  });
 
   @override
-  List<Object> get props => [rideId, driverId];
+  List<Object> get props => [rideId, driverId, overrideScheduleConflict];
 }
 
 class RideReassignRequested extends RideEvent {

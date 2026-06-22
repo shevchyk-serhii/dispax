@@ -58,7 +58,14 @@ ThisBuild / assembly / assemblyMergeStrategy := {
 }
 
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
-addCommandAlias("fmtDart", "! dart format web/lib --set-exit-if-changed")
+// Honour the DART_BIN env var (the Makefile sets it to `fvm dart` when FVM is
+// installed, so formatting uses the pinned web/.fvmrc SDK — same as CI). Falls
+// back to the bare `dart` on PATH. `--set-exit-if-changed` makes this a check,
+// not a rewrite; the Makefile `fmt` target rewrites first, then this verifies.
+addCommandAlias(
+  "fmtDart",
+  "! " + sys.env.getOrElse("DART_BIN", "dart") + " format web/lib --set-exit-if-changed"
+)
 addCommandAlias("fmtAll", "; fmt ; fmtDart")
 addCommandAlias("fmtWatch", "~fmtAll")
 addCommandAlias("cucumber", "testOnly *CucumberRunner")
