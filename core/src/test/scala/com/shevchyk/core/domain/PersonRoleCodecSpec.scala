@@ -17,10 +17,18 @@ object PersonRoleCodecSpec extends ZIOSpecDefault:
         test("Admin encodes to 'ADMIN'") {
           assertTrue(PersonRole.Admin.toJson == "\"ADMIN\"")
         },
-        test("ClientSecretary encodes to 'CLIENT_SECRETARY'") {
+        test("ClientSecretary encodes to 'CLIENT_SECRETARY' — not 'CLIENTSECRETARY' (mutation guard)") {
+          val wire = PersonRole.toWire(PersonRole.ClientSecretary)
+          assertTrue(wire == "CLIENT_SECRETARY" && wire != "CLIENTSECRETARY")
+        },
+        test("SuperAdmin encodes to 'SUPER_ADMIN' — not 'SUPERADMIN' (mutation guard)") {
+          val wire = PersonRole.toWire(PersonRole.SuperAdmin)
+          assertTrue(wire == "SUPER_ADMIN" && wire != "SUPERADMIN")
+        },
+        test("ClientSecretary JSON encode is exact 'CLIENT_SECRETARY'") {
           assertTrue(PersonRole.ClientSecretary.toJson == "\"CLIENT_SECRETARY\"")
         },
-        test("SuperAdmin encodes to 'SUPER_ADMIN'") {
+        test("SuperAdmin JSON encode is exact 'SUPER_ADMIN'") {
           assertTrue(PersonRole.SuperAdmin.toJson == "\"SUPER_ADMIN\"")
         }
       ),
@@ -31,11 +39,18 @@ object PersonRoleCodecSpec extends ZIOSpecDefault:
         test("'super_admin' (DB form) decodes to SuperAdmin") {
           assertTrue("\"super_admin\"".fromJson[PersonRole] == Right(PersonRole.SuperAdmin))
         },
-        test("'ADMIN' decodes to Admin") {
+        test("'ADMIN' decodes to Admin — not SuperAdmin (mutation guard)") {
           assertTrue("\"ADMIN\"".fromJson[PersonRole] == Right(PersonRole.Admin))
         },
-        test("'CLIENT_SECRETARY' decodes to ClientSecretary") {
+        test("'CLIENT_SECRETARY' decodes to ClientSecretary — not Client (mutation guard)") {
           assertTrue("\"CLIENT_SECRETARY\"".fromJson[PersonRole] == Right(PersonRole.ClientSecretary))
+        },
+        test("'client_secretary' lowercase decodes to ClientSecretary — not Client (legacy DB form)") {
+          assertTrue("\"client_secretary\"".fromJson[PersonRole] == Right(PersonRole.ClientSecretary))
+        },
+        test("'SUPER_ADMIN' decodes to SuperAdmin — not Admin (mutation guard)") {
+          val result = "\"SUPER_ADMIN\"".fromJson[PersonRole]
+          assertTrue(result == Right(PersonRole.SuperAdmin) && result != Right(PersonRole.Admin))
         },
         test("unknown string decodes to Left") {
           val result = "\"NOT_A_ROLE\"".fromJson[PersonRole]

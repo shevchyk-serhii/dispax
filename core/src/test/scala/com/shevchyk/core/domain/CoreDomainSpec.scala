@@ -143,6 +143,69 @@ object CoreDomainSpec extends ZIOSpecDefault {
           assertTrue(!dispatcher.canDrive)
         }
       ),
+      suite("PersonDto.fromPerson")(
+        test("fromPerson preserves companyId — not None (mutation guard)") {
+          val companyUuid = UUID.fromString("aabbccdd-1111-1111-1111-aabbccddeeff")
+          val person      = Person(
+            id = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000010")),
+            name = "Test",
+            email = "t@x.com",
+            role = PersonRole.Client,
+            companyId = Some(CompanyId(companyUuid))
+          )
+          val dto         = PersonDto.fromPerson(person)
+          assertTrue(
+            dto.companyId.isDefined &&
+              dto.companyId == Some(CompanyId(companyUuid))
+          )
+        },
+        test("fromPerson with None companyId maps to None") {
+          val person = Person(
+            id = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000011")),
+            name = "Test",
+            email = "t@x.com",
+            role = PersonRole.Driver,
+            companyId = None
+          )
+          val dto    = PersonDto.fromPerson(person)
+          assertTrue(dto.companyId.isEmpty)
+        },
+        test(
+          "fromPerson roles uses effectiveRoles not p.roles — primary forced in when roles is empty (mutation guard)"
+        ) {
+          // person.roles is empty but effectiveRoles = Set(role); if the impl used p.roles the DTO would have Set.empty
+          val person = Person(
+            id = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000012")),
+            name = "Test",
+            email = "t@x.com",
+            role = PersonRole.Dispatcher,
+            roles = Set.empty
+          )
+          val dto    = PersonDto.fromPerson(person)
+          assertTrue(
+            dto.roles == Set(PersonRole.Dispatcher) &&
+              dto.roles.nonEmpty
+          )
+        },
+        test(
+          "fromPerson roles uses effectiveRoles — includes primary even when missing from p.roles (mutation guard)"
+        ) {
+          // p.roles does NOT contain the primary role; effectiveRoles adds it; p.roles would miss it
+          val person = Person(
+            id = PersonId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000013")),
+            name = "Test",
+            email = "t@x.com",
+            role = PersonRole.Dispatcher,
+            roles = Set(PersonRole.Driver) // primary (Dispatcher) NOT in roles
+          )
+          val dto    = PersonDto.fromPerson(person)
+          assertTrue(
+            dto.roles.contains(PersonRole.Dispatcher) &&    // effectiveRoles forces primary in
+              dto.roles.contains(PersonRole.Driver) &&
+              !person.roles.contains(PersonRole.Dispatcher) // confirm the raw field lacks it
+          )
+        }
+      ),
       suite("Company")(
         test("should create company with valid data") {
           val testCompanyUuid = UUID.fromString("10101010-1010-1010-1010-101010101010")
