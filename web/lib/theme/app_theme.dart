@@ -440,6 +440,5 @@ class AppTheme {
     }
   }
 
-  static BoxDecoration get glassDecoration => AppStyles.glassCardDecoration;
   static BoxDecoration get cardDecoration => AppStyles.primaryCardDecoration;
 }

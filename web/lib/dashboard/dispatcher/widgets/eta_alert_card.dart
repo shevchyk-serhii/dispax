@@ -54,7 +54,7 @@ class EtaAlertCard extends StatelessWidget {
         color: AppColors.error.withValues(alpha: bgAlpha),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.errorBorder),
-        boxShadow: AppStyles.glassCardDecoration.boxShadow,
+        boxShadow: AppStyles.cardDecoration.boxShadow,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),

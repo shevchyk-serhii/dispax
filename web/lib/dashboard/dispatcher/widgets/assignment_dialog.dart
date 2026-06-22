@@ -92,7 +92,7 @@ class AssignmentDialog extends StatelessWidget {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
-                      decoration: AppStyles.glassCardDecorationOf(context),
+                      decoration: AppStyles.cardDecorationOf(context),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
