@@ -105,6 +105,27 @@ class RideReassignRequested extends RideEvent {
   List<Object> get props => [rideId, newDriverId, overrideScheduleConflict];
 }
 
+/// Driver confirms an assigned ride (PUT /rides/{id}/confirm).
+class RideConfirmRequested extends RideEvent {
+  final String rideId;
+
+  const RideConfirmRequested({required this.rideId});
+
+  @override
+  List<Object> get props => [rideId];
+}
+
+/// Driver rejects an assigned ride with a reason (PUT /rides/{id}/reject).
+class RideRejectRequested extends RideEvent {
+  final String rideId;
+  final String reason;
+
+  const RideRejectRequested({required this.rideId, required this.reason});
+
+  @override
+  List<Object> get props => [rideId, reason];
+}
+
 /// Locally applies a status change received via WebSocket — no HTTP call.
 class RideStatusReceived extends RideEvent {
   final String rideId;

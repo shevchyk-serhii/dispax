@@ -77,6 +77,20 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     super.initState();
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
+      if (event.isRideConfirmed || event.isRideRejected) {
+        // Refresh ride list so the dispatcher sees updated status and frame color.
+        _rideBloc.add(const RideLoadPendingRequested());
+        if (event.isRideRejected) {
+          final reason = event.rejectionReason ?? 'No reason provided';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Ride rejected by driver: $reason'),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
       if (event.isEtaAtRisk) {
         final rideId = event.rideId ?? '';
         final driverId = event.etaRiskDriverId ?? '';

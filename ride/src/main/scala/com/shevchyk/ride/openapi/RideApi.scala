@@ -203,6 +203,21 @@ object RideApi:
     .tag(rideTag)
     .summary("Get a ride's rating")
 
+  // -- driver confirmation routes ------------------------------------------
+
+  val confirmRideEndpoint = secureEndpoint.put
+    .in("api" / "rides" / path[String]("rideId") / "confirm")
+    .out(jsonBody[RideDto])
+    .tag(rideTag)
+    .summary("Driver confirms the assigned ride")
+
+  val rejectRideEndpoint = secureEndpoint.put
+    .in("api" / "rides" / path[String]("rideId") / "reject")
+    .in(jsonBody[RejectRideRequest])
+    .out(jsonBody[RideDto])
+    .tag(rideTag)
+    .summary("Driver rejects the assigned ride with a reason")
+
   // -- airport-checkpoint routes -------------------------------------------
 
   val markAirportCheckpointEndpoint = secureEndpoint.post
@@ -243,6 +258,8 @@ object RideApi:
     getChatMessagesEndpoint,
     rateRideEndpoint,
     getRatingEndpoint,
+    confirmRideEndpoint,
+    rejectRideEndpoint,
     markAirportCheckpointEndpoint,
     getAirportCheckpointEndpoint
   )
@@ -726,6 +743,44 @@ object RideApi:
     } yield rating
   }
 
+  // -- driver confirmation servers -----------------------------------------
+
+  private val confirmRideServer: ZServerEndpoint[RideEnv, Any] = confirmRideEndpoint.serverLogic { user => rideId =>
+    for {
+      _            <- checkRole(user, "DRIVER")
+      parsedRideId <- parseRideId(rideId)
+      companyId    <- requireCompanyId(user.companyId)
+      service      <- ZIO.service[RideService]
+      existing     <- service.getRideById(parsedRideId).mapError(fromRideError)
+      // Company isolation: hide cross-tenant rides as 404.
+      _            <- ZIO
+                        .fail(RideError.RideNotFound(parsedRideId))
+                        .when(existing.companyId != companyId)
+                        .mapError(fromRideError)
+      ride         <- service.confirmRide(parsedRideId, PersonId(user.userId)).mapError(fromRideError)
+    } yield RideDto.fromDomain(ride)
+  }
+
+  private val rejectRideServer: ZServerEndpoint[RideEnv, Any] = rejectRideEndpoint.serverLogic {
+    user => (rideId, rejectReq) =>
+      for {
+        _            <- checkRole(user, "DRIVER")
+        parsedRideId <- parseRideId(rideId)
+        validated    <- rejectReq.validate.mapError(fromRideError)
+        companyId    <- requireCompanyId(user.companyId)
+        service      <- ZIO.service[RideService]
+        existing     <- service.getRideById(parsedRideId).mapError(fromRideError)
+        // Company isolation: hide cross-tenant rides as 404.
+        _            <- ZIO
+                          .fail(RideError.RideNotFound(parsedRideId))
+                          .when(existing.companyId != companyId)
+                          .mapError(fromRideError)
+        ride         <- service
+                          .rejectRide(parsedRideId, PersonId(user.userId), validated.reason)
+                          .mapError(fromRideError)
+      } yield RideDto.fromDomain(ride)
+  }
+
   // -- airport-checkpoint servers ------------------------------------------
 
   private val markAirportCheckpointServer: ZServerEndpoint[RideEnv, Any] = markAirportCheckpointEndpoint.serverLogic {
@@ -831,6 +886,8 @@ object RideApi:
     getChatMessagesServer,
     rateRideServer,
     getRatingServer,
+    confirmRideServer,
+    rejectRideServer,
     markAirportCheckpointServer,
     getAirportCheckpointServer
   )

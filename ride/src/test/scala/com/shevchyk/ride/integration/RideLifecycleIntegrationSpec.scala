@@ -7,6 +7,7 @@ import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.*
 import zio.test.*
 import java.util.UUID
@@ -115,7 +116,9 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
       noopEmailSms ++
       AuditService.inMemory ++
       BlacklistRepository.inMemory ++
-      GeocodingService.noop ++ ExpenseRepository.inMemory) >+> RideService.layer
+      GeocodingService.noop ++
+      ExpenseRepository.inMemory ++
+      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
 
   def createTestRide(service: RideService, clientId: PersonId = testClientId) = service.createRide(
     CreateRideRequest(
@@ -128,17 +131,20 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
 
   def spec =
     suite("RideLifecycle Integration")(
-      test("full lifecycle: create → assign → start → complete → markPayment") {
+      test("full lifecycle: create -> assign -> confirm -> start -> complete -> markPayment") {
         for {
           service   <- ZIO.service[RideService]
           ride      <- createTestRide(service)
           assigned  <- service.assignDriver(ride.id, testDriverId)
-          started   <- service.startRide(assigned.id, testDriverId)
+          confirmed <- service.confirmRide(assigned.id, testDriverId)
+          started   <- service.startRide(confirmed.id, testDriverId)
           completed <- service.completeRide(started.id)
           paid      <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
         } yield assertTrue(
           ride.status == RideStatus.Requested &&
             assigned.status == RideStatus.Assigned &&
+            confirmed.status == RideStatus.Confirmed &&
+            confirmed.confirmedAt.isDefined &&
             started.status == RideStatus.InProgress &&
             started.startTime.isDefined &&
             completed.status == RideStatus.Completed &&

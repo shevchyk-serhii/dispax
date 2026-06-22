@@ -206,6 +206,17 @@ class InMemoryRideRepository extends RideRepository:
       .toList
   )
 
+  override def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = rides.get.map(
+    _.values
+      .filter(r =>
+        r.status == RideStatus.Assigned &&
+          r.driverId.isDefined &&
+          !r.pickupDateTime.isBefore(from) &&
+          r.pickupDateTime.isBefore(to)
+      )
+      .toList
+  )
+
   override def clearReminders(rideId: RideId): Task[Unit] = ZIO.unit
 
   // ---------------------------------------------------------------------------

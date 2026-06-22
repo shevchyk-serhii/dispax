@@ -414,6 +414,8 @@ class _RideExportScreenState extends State<RideExportScreen> {
         return AppColors.rideRequested;
       case RideStatus.assigned:
         return AppColors.rideAssigned;
+      case RideStatus.confirmed:
+        return AppColors.success;
       case RideStatus.inProgress:
         return AppColors.rideInProgress;
       case RideStatus.completed:

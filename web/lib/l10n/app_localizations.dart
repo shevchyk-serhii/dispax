@@ -1083,6 +1083,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Viewing: {driverName}'**
   String viewingDriverSchedule(String driverName);
+
+  /// No description provided for @confirmRide.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Ride'**
+  String get confirmRide;
+
+  /// No description provided for @rejectRide.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject Ride'**
+  String get rejectRide;
+
+  /// No description provided for @rejectReasonPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for rejection'**
+  String get rejectReasonPrompt;
+
+  /// No description provided for @rideConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride confirmed'**
+  String get rideConfirmed;
+
+  /// No description provided for @rideRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride rejected'**
+  String get rideRejected;
+
+  /// No description provided for @confirmationRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride confirmation needed'**
+  String get confirmationRequestTitle;
+
+  /// No description provided for @confirmationRequestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm or reject your assigned ride'**
+  String get confirmationRequestBody;
+
+  /// No description provided for @statusConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get statusConfirmed;
 }
 
 class _AppLocalizationsDelegate

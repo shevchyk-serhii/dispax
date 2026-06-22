@@ -22,6 +22,8 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     on<RideLoadPendingRequested>(onLoadPendingRequested);
     on<RideAssignRequested>(onAssignRequested);
     on<RideReassignRequested>(onReassignRequested);
+    on<RideConfirmRequested>(onConfirmRequested);
+    on<RideRejectRequested>(onRejectRequested);
     on<RideStatusReceived>(onStatusReceived);
   }
 
@@ -210,6 +212,53 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to reassign driver: $e',
+        ),
+      );
+    }
+  }
+
+  Future<void> onConfirmRequested(
+    RideConfirmRequested event,
+    Emitter<RideState> emit,
+  ) async {
+    emit(state.copyWith(status: RideStateStatus.loading, errorMessage: null));
+
+    try {
+      final updatedRide = await privateRideService.confirmRide(event.rideId);
+      final updatedRides = state.rides.map((ride) {
+        return ride.id == updatedRide.id ? updatedRide : ride;
+      }).toList();
+      emit(RideState.loaded(updatedRides));
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: RideStateStatus.error,
+          errorMessage: 'Failed to confirm ride: $e',
+        ),
+      );
+    }
+  }
+
+  Future<void> onRejectRequested(
+    RideRejectRequested event,
+    Emitter<RideState> emit,
+  ) async {
+    emit(state.copyWith(status: RideStateStatus.loading, errorMessage: null));
+
+    try {
+      final updatedRide = await privateRideService.rejectRide(
+        event.rideId,
+        event.reason,
+      );
+      final updatedRides = state.rides.map((ride) {
+        return ride.id == updatedRide.id ? updatedRide : ride;
+      }).toList();
+      emit(RideState.loaded(updatedRides));
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: RideStateStatus.error,
+          errorMessage: 'Failed to reject ride: $e',
         ),
       );
     }

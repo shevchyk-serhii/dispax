@@ -81,6 +81,10 @@ class RideStatusCard extends StatelessWidget {
         return isClientView
             ? 'Driver has been assigned and is on the way'
             : 'You have been assigned to this ride';
+      case RideStatus.confirmed:
+        return isClientView
+            ? 'Driver confirmed your ride'
+            : 'You confirmed this ride — ready to start';
       case RideStatus.inProgress:
         return isClientView
             ? 'Your ride is currently in progress'

@@ -6,6 +6,7 @@ import '../../core/models/person.dart';
 enum RideStatus {
   requested('Requested'),
   assigned('Assigned'),
+  confirmed('Confirmed'),
   inProgress('InProgress'),
   completed('Completed'),
   cancelled('Cancelled');
@@ -19,6 +20,8 @@ enum RideStatus {
         return 'Requested';
       case RideStatus.assigned:
         return 'Assigned';
+      case RideStatus.confirmed:
+        return 'Confirmed';
       case RideStatus.inProgress:
         return 'In Progress';
       case RideStatus.completed:
@@ -76,6 +79,8 @@ class Ride {
   final String? paymentMethod;
   final DateTime? paidAt;
   final bool confirmationSent;
+  final DateTime? confirmedAt;
+  final String? rejectionReason;
   final String? cancellationReason;
   final double? cancellationFee;
   final String? cancelledBy;
@@ -121,6 +126,8 @@ class Ride {
     this.paymentMethod,
     this.paidAt,
     this.confirmationSent = false,
+    this.confirmedAt,
+    this.rejectionReason,
     this.cancellationReason,
     this.cancellationFee,
     this.cancelledBy,
@@ -174,6 +181,8 @@ class Ride {
       paymentMethod: json['paymentMethod'],
       paidAt: JsonParse.optionalDateTime(json, 'paidAt'),
       confirmationSent: json['confirmationSent'] ?? false,
+      confirmedAt: JsonParse.optionalDateTime(json, 'confirmedAt'),
+      rejectionReason: json['rejectionReason'] as String?,
       cancellationReason: json['cancellationReason'],
       cancellationFee: json['cancellationFee']?.toDouble(),
       cancelledBy: json['cancelledBy'],
@@ -221,6 +230,8 @@ class Ride {
       'paymentMethod': paymentMethod,
       'paidAt': paidAt?.toIso8601String(),
       'confirmationSent': confirmationSent,
+      'confirmedAt': confirmedAt?.toIso8601String(),
+      'rejectionReason': rejectionReason,
       'cancellationReason': cancellationReason,
       'cancellationFee': cancellationFee,
       'cancelledBy': cancelledBy,
@@ -267,6 +278,8 @@ class Ride {
     String? paymentMethod,
     DateTime? paidAt,
     bool? confirmationSent,
+    Object? confirmedAt = _sentinel,
+    Object? rejectionReason = _sentinel,
     String? cancellationReason,
     double? cancellationFee,
     String? cancelledBy,
@@ -311,6 +324,12 @@ class Ride {
       paymentMethod: paymentMethod ?? this.paymentMethod,
       paidAt: paidAt ?? this.paidAt,
       confirmationSent: confirmationSent ?? this.confirmationSent,
+      confirmedAt: confirmedAt == _sentinel
+          ? this.confirmedAt
+          : confirmedAt as DateTime?,
+      rejectionReason: rejectionReason == _sentinel
+          ? this.rejectionReason
+          : rejectionReason as String?,
       cancellationReason: cancellationReason ?? this.cancellationReason,
       cancellationFee: cancellationFee ?? this.cancellationFee,
       cancelledBy: cancelledBy ?? this.cancelledBy,
@@ -353,6 +372,8 @@ class Ride {
   String toString() {
     return 'Ride(id: $id, from: $from, to: $to, status: ${status.value}, pickupDateTime: $pickupDateTime, flightNumber: $flightNumber, gate: $gate, isArrival: $isArrival, flightStatus: $flightStatus)';
   }
+
+  bool get isConfirmed => status == RideStatus.confirmed;
 
   String get statusDisplayName {
     return status.displayName;

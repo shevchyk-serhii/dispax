@@ -37,6 +37,7 @@ import com.shevchyk.core.repository.{
   NotificationPreferenceRepository,
   PersonRepository,
   RidePoolRepository,
+  SentConfirmationRequestRepository,
   SessionRepository
 }
 import com.shevchyk.notification.application.{FcmService, LoggingEmailSmsService}
@@ -677,6 +678,15 @@ object TestApplication extends ZIOAppDefault:
             _.values
               .filter(r =>
                 r.status == RideStatus.Assigned && r.scheduledTime.exists(t => !t.isBefore(from) && !t.isAfter(to))
+              )
+              .toList
+          )
+          def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]                        = ridesRef.get.map(
+            _.values
+              .filter(r =>
+                r.status == RideStatus.Assigned &&
+                  r.driverId.isDefined &&
+                  r.scheduledTime.exists(t => !t.isBefore(from) && !t.isAfter(to))
               )
               .toList
           )
@@ -1509,6 +1519,7 @@ object TestApplication extends ZIOAppDefault:
       },
       ClientAddressService.layer,
       inMemoryClientAddressRepositoryLayer,
+      SentConfirmationRequestRepository.inMemory,
       RideService.layer,
       // Schedule
       inMemoryScheduleDayRepositoryLayer,

@@ -15,6 +15,8 @@ class TodayRideCard extends StatelessWidget {
   final VoidCallback? onCallClient;
   final VoidCallback? onStartRide;
   final VoidCallback? onCompleteRide;
+  final VoidCallback? onConfirmRide;
+  final VoidCallback? onRejectRide;
   final int? approachingDistanceMeters;
   final int? etaMinutes;
   final VoidCallback? onViewDetails;
@@ -26,6 +28,8 @@ class TodayRideCard extends StatelessWidget {
     this.onCallClient,
     this.onStartRide,
     this.onCompleteRide,
+    this.onConfirmRide,
+    this.onRejectRide,
     this.approachingDistanceMeters,
     this.etaMinutes,
     this.onViewDetails,
@@ -263,6 +267,8 @@ class TodayRideCard extends StatelessWidget {
             onCallClient: onCallClient,
             onStartRide: onStartRide,
             onCompleteRide: onCompleteRide,
+            onConfirmRide: onConfirmRide,
+            onRejectRide: onRejectRide,
             onViewDetails:
                 onViewDetails ??
                 () {

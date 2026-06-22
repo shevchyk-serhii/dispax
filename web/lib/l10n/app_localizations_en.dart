@@ -513,4 +513,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String viewingDriverSchedule(String driverName) {
     return 'Viewing: $driverName';
   }
+
+  @override
+  String get confirmRide => 'Confirm Ride';
+
+  @override
+  String get rejectRide => 'Reject Ride';
+
+  @override
+  String get rejectReasonPrompt => 'Reason for rejection';
+
+  @override
+  String get rideConfirmed => 'Ride confirmed';
+
+  @override
+  String get rideRejected => 'Ride rejected';
+
+  @override
+  String get confirmationRequestTitle => 'Ride confirmation needed';
+
+  @override
+  String get confirmationRequestBody =>
+      'Please confirm or reject your assigned ride';
+
+  @override
+  String get statusConfirmed => 'Confirmed';
 }

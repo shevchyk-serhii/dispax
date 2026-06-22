@@ -59,6 +59,8 @@ class WebSocketEvent {
       type == 'RideStatusChanged' && data['newStatus'] == 'PooledRide';
   bool get isAirportCheckpointReached => type == 'AirportCheckpointReached';
   bool get isEtaAtRisk => type == 'EtaAtRisk';
+  bool get isRideConfirmed => type == 'RideConfirmed';
+  bool get isRideRejected => type == 'RideRejected';
 
   String? get geofenceName => data['geofenceName'];
   String? get alertType => data['alertType'];
@@ -66,6 +68,9 @@ class WebSocketEvent {
   int? get threshold => data['threshold'];
   String? get checkpointType => data['checkpointType'];
   String? get checkpointName => data['checkpointName'];
+
+  // RideRejected event accessors
+  String? get rejectionReason => data['reason'] as String?;
 
   // EtaAtRisk event accessors
   String? get etaRiskDriverId => data['driverId'] as String?;

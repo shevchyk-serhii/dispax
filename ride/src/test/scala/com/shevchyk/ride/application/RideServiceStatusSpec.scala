@@ -7,6 +7,7 @@ import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.test.*
 import zio.*
 import java.time.Instant
@@ -134,7 +135,9 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
       noopEmailSms ++
       AuditService.inMemory ++
       BlacklistRepository.inMemory ++
-      GeocodingService.noop ++ ExpenseRepository.inMemory) >+> RideService.layer
+      GeocodingService.noop ++
+      ExpenseRepository.inMemory ++
+      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
 
   // ── Helpers ───────────────────────────────────────────────────────────
   private def mkRide(clientId: PersonId = testClientId, companyId: CompanyId = testCompanyId) = CreateRideRequest(
@@ -170,12 +173,25 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
     } yield assigned
 
   /**
-   * Create a ride, assign, and start it
+   * Create a ride, assign and confirm it (driver confirmation is now required before start).
+   */
+  private def createConfirmedRide(
+      service: RideService,
+      clientId: PersonId = testClientId,
+      driverId: PersonId = testDriverId
+  ) =
+    for {
+      assigned  <- createAssignedRide(service, clientId, driverId)
+      confirmed <- service.confirmRide(assigned.id, driverId)
+    } yield confirmed
+
+  /**
+   * Create a ride, assign, confirm, and start it
    */
   private def createInProgressRide(service: RideService, clientId: PersonId = testClientId) =
     for {
-      assigned <- createAssignedRide(service, clientId)
-      started  <- service.startRide(assigned.id, testDriverId)
+      confirmed <- createConfirmedRide(service, clientId)
+      started   <- service.startRide(confirmed.id, testDriverId)
     } yield started
 
   // ── Spec ──────────────────────────────────────────────────────────────
@@ -235,27 +251,45 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
       // 2. updateRideStatus suite
       // ────────────────────────────────────────────────────────────────────
       suite("updateRideStatus")(
-        test("driver updates own ride from Assigned to InProgress (sets startTime)") {
+        test("driver updates own ride from Confirmed to InProgress (sets startTime)") {
           for {
-            service  <- ZIO.service[RideService]
-            assigned <- createAssignedRide(service)
-            updated  <- service.updateRideStatus(
-                          assigned.id,
-                          UpdateRideStatusRequest(RideStatus.InProgress),
-                          testDriverId,
-                          PersonRole.Driver
-                        )
+            service   <- ZIO.service[RideService]
+            confirmed <- createConfirmedRide(service)
+            updated   <- service.updateRideStatus(
+                           confirmed.id,
+                           UpdateRideStatusRequest(RideStatus.InProgress),
+                           testDriverId,
+                           PersonRole.Driver
+                         )
           } yield assertTrue(
             updated.status == RideStatus.InProgress &&
               updated.startTime.isDefined
           )
         }.provide(standardLayers),
+        test("driver cannot update from Assigned to InProgress (must confirm first)") {
+          for {
+            service  <- ZIO.service[RideService]
+            assigned <- createAssignedRide(service)
+            result   <-
+              service
+                .updateRideStatus(
+                  assigned.id,
+                  UpdateRideStatusRequest(RideStatus.InProgress),
+                  testDriverId,
+                  PersonRole.Driver
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition])
+            case _                   => false
+          })
+        }.provide(standardLayers),
         test("driver updates own ride from InProgress to Completed (sets endTime)") {
           for {
             service   <- ZIO.service[RideService]
-            assigned  <- createAssignedRide(service)
+            confirmed <- createConfirmedRide(service)
             started   <- service.updateRideStatus(
-                           assigned.id,
+                           confirmed.id,
                            UpdateRideStatusRequest(RideStatus.InProgress),
                            testDriverId,
                            PersonRole.Driver
@@ -329,7 +363,7 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(standardLayers),
-        test("dispatcher can update any ride") {
+        test("dispatcher can update any ride (Assigned -> InProgress override, no Confirmed required)") {
           for {
             service  <- ZIO.service[RideService]
             assigned <- createAssignedRide(service)
@@ -500,7 +534,8 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
             service <- ZIO.service[RideService]
             ride1   <- service.createRide(mkScheduledRide(baseTime))
             _       <- service.assignDriver(ride1.id, testDriverId)
-            _       <- service.startRide(ride1.id, testDriverId) // ride1 → InProgress, not Assigned
+            _       <- service.confirmRide(ride1.id, testDriverId)
+            _       <- service.startRide(ride1.id, testDriverId) // ride1 -> InProgress, not Assigned
             ride2   <- service.createRide(mkScheduledRide(baseTime.plusSeconds(1800)))
             result  <- service.assignDriver(ride2.id, testDriverId).exit
           } yield assertTrue(result match {

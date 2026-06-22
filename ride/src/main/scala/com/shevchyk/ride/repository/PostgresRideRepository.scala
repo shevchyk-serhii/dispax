@@ -65,6 +65,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
     {
       case "Requested"  => RideStatus.Requested
       case "Assigned"   => RideStatus.Assigned
+      case "Confirmed"  => RideStatus.Confirmed
       case "InProgress" => RideStatus.InProgress
       case "Completed"  => RideStatus.Completed
       case "Cancelled"  => RideStatus.Cancelled
@@ -72,6 +73,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
     {
       case RideStatus.Requested  => "Requested"
       case RideStatus.Assigned   => "Assigned"
+      case RideStatus.Confirmed  => "Confirmed"
       case RideStatus.InProgress => "InProgress"
       case RideStatus.Completed  => "Completed"
       case RideStatus.Cancelled  => "Cancelled"
@@ -118,7 +120,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         payment_status, payment_method, paid_at,
         cancellation_reason, cancellation_fee, cancelled_by,
         is_vip_ride, preferred_driver_used,
-        pool_id, tariff_id, schedule_day_id, invoice_id, vehicle_class
+        pool_id, tariff_id, schedule_day_id, invoice_id, vehicle_class,
+        confirmed_at, rejection_reason, rejected_by, rejected_at
       ) VALUES (
         ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.companyId.value}, ${ride.driverId.map(
         _.value
@@ -134,7 +137,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         ${ride.cancellationReason}, ${ride.cancellationFee}, ${ride.cancelledBy.map(_.value)},
         ${ride.isVipRide}, ${ride.preferredDriverUsed},
         ${ride.poolId.map(_.value)}, ${ride.tariffId.map(_.value)}, ${ride.scheduleDayId}, ${ride.invoiceId},
-        ${VehicleClass.toDbString(ride.vehicleClass)}
+        ${VehicleClass.toDbString(ride.vehicleClass)},
+        ${ride.confirmedAt}, ${ride.rejectionReason}, ${ride.rejectedBy.map(_.value)}, ${ride.rejectedAt}
       )
     """.update.run
       .transact(xa)
@@ -156,7 +160,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         special_requirements, pool_id,
         schedule_day_id, invoice_id,
         flight_is_arrival, airport_checkpoint,
-        vehicle_class"""
+        vehicle_class,
+        confirmed_at, rejection_reason, rejected_by, rejected_at"""
   // NOTE: columns are listed explicitly (not SELECT *) to guarantee order matches rideReadBase/rideReadExtra
 
   override def findById(id: RideId): Task[Option[Ride]] = {
@@ -300,6 +305,10 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         estimated_price_amount = ${ride.estimatedPrice},
         schedule_day_id = ${ride.scheduleDayId},
         invoice_id = ${ride.invoiceId},
+        confirmed_at = ${ride.confirmedAt},
+        rejection_reason = ${ride.rejectionReason},
+        rejected_by = ${ride.rejectedBy.map(_.value)},
+        rejected_at = ${ride.rejectedAt},
         updated_at = NOW()
       WHERE id = ${ride.id.value}
     """.update.run
@@ -322,6 +331,10 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         status = ${ride.status},
         is_vip_ride = ${ride.isVipRide},
         preferred_driver_used = ${ride.preferredDriverUsed},
+        confirmed_at = ${ride.confirmedAt},
+        rejection_reason = ${ride.rejectionReason},
+        rejected_by = ${ride.rejectedBy.map(_.value)},
+        rejected_at = ${ride.rejectedAt},
         updated_at = NOW()
       WHERE id = ${ride.id.value} AND """ ++ whereStatus).update.run
       .transact(xa)
@@ -535,7 +548,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         Option[UUID],              // schedule_day_id, invoice_id
         Option[Boolean],
         Option[AirportCheckpoint], // flight_is_arrival, airport_checkpoint
-        Option[String]             // vehicle_class
+        Option[String],            // vehicle_class
+        Option[Instant],
+        Option[String],
+        Option[UUID],
+        Option[Instant]            // confirmed_at, rejection_reason, rejected_by, rejected_at
     )
   ] =
     Read[
@@ -554,7 +571,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
           Option[UUID],
           Option[Boolean],
           Option[AirportCheckpoint],
-          Option[String]
+          Option[String],
+          Option[Instant],
+          Option[String],
+          Option[UUID],
+          Option[Instant]
       )
     ]
 
@@ -599,7 +620,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
             invoiceId,
             flightIsArrival,
             airportCheckpoint,
-            vehicleClassStr
+            vehicleClassStr,
+            confirmedAt,
+            rejectionReason,
+            rejectedBy,
+            rejectedAt
           )
         ) =>
       Ride(
@@ -635,7 +660,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         invoiceId = invoiceId,
         flightIsArrival = flightIsArrival,
         airportCheckpoint = airportCheckpoint,
-        vehicleClass = vehicleClassStr.flatMap(VehicleClass.fromString).getOrElse(VehicleClass.Default)
+        vehicleClass = vehicleClassStr.flatMap(VehicleClass.fromString).getOrElse(VehicleClass.Default),
+        confirmedAt = confirmedAt,
+        rejectionReason = rejectionReason,
+        rejectedBy = rejectedBy.map(PersonId.apply),
+        rejectedAt = rejectedAt
       )
   }
 
@@ -676,6 +705,20 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
              AND driver_id IS NOT NULL
              AND pickup_datetime > $from
              AND pickup_datetime <= $to
+        """)
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
+  override def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++
+      fr"""FROM rides
+           WHERE status = 'Assigned'
+             AND driver_id IS NOT NULL
+             AND pickup_datetime >= $from
+             AND pickup_datetime < $to
         """)
       .query[Ride]
       .to[List]

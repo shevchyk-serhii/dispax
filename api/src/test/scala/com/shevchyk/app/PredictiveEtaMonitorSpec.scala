@@ -87,6 +87,9 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
           to: Instant,
           bucket: TimeBucket
       ): Task[List[(Instant, BigDecimal)]] = nope("earningsBucketsByDriver")
+      def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]                              = nope(
+        "findRidesNeedingConfirmation"
+      )
       def clearReminders(rideId: RideId): Task[Unit]                                                              = nope("clearReminders")
       def countAllRidesByStatus(): Task[Map[String, Int]]                                                         = nope("countAllRidesByStatus")
       def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                                             = nope("sumAllRevenue")

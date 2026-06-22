@@ -100,6 +100,8 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
       def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                         = notImplemented
       def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                   = notImplemented
       def completeRide(rideId: RideId): IO[RideError, Ride]                                                    = notImplemented
+      def confirmRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                 = notImplemented
+      def rejectRide(rideId: RideId, driverId: PersonId, reason: String): IO[RideError, Ride]                  = notImplemented
       def cancelRide(rideId: RideId, userId: PersonId, role: PersonRole): IO[RideError, Ride]                  = notImplemented
       def cancelRideWithReason(
           rideId: RideId,

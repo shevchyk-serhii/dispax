@@ -213,5 +213,14 @@
     "placeholders": {
       "driverName": {"type": "String"}
     }
-  }
+  },
+
+  "confirmRide": "Confirm Ride",
+  "rejectRide": "Reject Ride",
+  "rejectReasonPrompt": "Reason for rejection",
+  "rideConfirmed": "Ride confirmed",
+  "rideRejected": "Ride rejected",
+  "confirmationRequestTitle": "Ride confirmation needed",
+  "confirmationRequestBody": "Please confirm or reject your assigned ride",
+  "statusConfirmed": "Confirmed"
 }

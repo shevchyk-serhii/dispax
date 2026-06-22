@@ -90,7 +90,9 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     final rideState = context.read<RideBloc>().state;
     final activeRides = rideState.rides.where(
       (r) =>
-          r.status == RideStatus.assigned || r.status == RideStatus.inProgress,
+          r.status == RideStatus.assigned ||
+          r.status == RideStatus.confirmed ||
+          r.status == RideStatus.inProgress,
     );
     for (final ride in activeRides) {
       final data = await _rideService!.getDriverProximity(ride.id);
@@ -237,7 +239,9 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
                 if (state.status == RideStateStatus.loaded &&
                     !_trackingStarted) {
                   final hasActiveRide = state.rides.any(
-                    (r) => r.status == RideStatus.inProgress,
+                    (r) =>
+                        r.status == RideStatus.inProgress ||
+                        r.status == RideStatus.confirmed,
                   );
                   if (hasActiveRide) _startLocationTracking();
                 }
@@ -405,16 +409,20 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
       return buildEmptyState();
     }
 
-    // The "live" ride: in-progress first, then first assigned
+    // The "live" ride: in-progress first, then confirmed, then assigned
     final liveRide = todayRides.firstWhere(
       (r) => r.status == RideStatus.inProgress,
       orElse: () => todayRides.firstWhere(
-        (r) => r.status == RideStatus.assigned,
-        orElse: () => todayRides.first,
+        (r) => r.status == RideStatus.confirmed,
+        orElse: () => todayRides.firstWhere(
+          (r) => r.status == RideStatus.assigned,
+          orElse: () => todayRides.first,
+        ),
       ),
     );
     final isLiveActive =
         liveRide.status == RideStatus.inProgress ||
+        liveRide.status == RideStatus.confirmed ||
         liveRide.status == RideStatus.assigned;
 
     // Remaining rides (excluding live)
@@ -426,10 +434,13 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     Ride? nextRide;
     if (isLiveActive && remainingRides.isNotEmpty) {
       final candidate = remainingRides.firstWhere(
-        (r) => r.status == RideStatus.assigned,
+        (r) =>
+            r.status == RideStatus.assigned ||
+            r.status == RideStatus.confirmed,
         orElse: () => remainingRides.first,
       );
-      if (candidate.status == RideStatus.assigned) {
+      if (candidate.status == RideStatus.assigned ||
+          candidate.status == RideStatus.confirmed) {
         nextRide = candidate;
       }
     }
@@ -454,6 +465,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
                   onStartRide: () => _handleStartRide(context, liveRide),
                   onCompleteRide: () => _handleCompleteRide(context, liveRide),
                   onCallClient: () => _handleCallClient(context, liveRide),
+                  onConfirmRide: () => _handleConfirmRide(context, liveRide),
+                  onRejectRide: () => _handleRejectRide(context, liveRide),
                 ),
               ),
             ),
@@ -482,6 +495,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
                     onCallClient: () => _handleCallClient(context, ride),
                     onStartRide: () => _handleStartRide(context, ride),
                     onCompleteRide: () => _handleCompleteRide(context, ride),
+                    onConfirmRide: () => _handleConfirmRide(context, ride),
+                    onRejectRide: () => _handleRejectRide(context, ride),
                   );
                 }, childCount: otherRides.length),
               ),
@@ -582,17 +597,74 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     );
   }
 
+  void _handleConfirmRide(BuildContext context, Ride ride) {
+    context.read<RideBloc>().add(RideConfirmRequested(rideId: ride.id));
+    NavigationHelper.showSnackBar(context, 'Ride confirmed');
+  }
+
+  void _handleRejectRide(BuildContext context, Ride ride) {
+    final reasonController = TextEditingController();
+    showAdaptiveDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reject Ride'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Reject ride from ${ride.from.address} to ${ride.to.address}?',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Reason for rejection',
+                border: OutlineInputBorder(),
+                hintText: 'Enter reason...',
+              ),
+              maxLines: 2,
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () {
+              final reason = reasonController.text.trim();
+              if (reason.isEmpty) return;
+              Navigator.pop(ctx);
+              context.read<RideBloc>().add(
+                RideRejectRequested(rideId: ride.id, reason: reason),
+              );
+              NavigationHelper.showSnackBar(context, 'Ride rejected');
+            },
+            child: const Text('Reject'),
+          ),
+        ],
+      ),
+    );
+  }
+
   List<Ride> getTodayRides(List<Ride> rides) {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
     final todayEnd = todayStart.add(const Duration(days: 1));
 
-    return rides.where((ride) {
-      return ride.pickupDateTime.isAfter(todayStart) &&
-          ride.pickupDateTime.isBefore(todayEnd) &&
-          ride.status != RideStatus.completed &&
-          ride.status != RideStatus.cancelled;
-    }).toList()..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+    return rides
+        .where((ride) {
+          return ride.pickupDateTime.isAfter(todayStart) &&
+              ride.pickupDateTime.isBefore(todayEnd) &&
+              ride.status != RideStatus.completed &&
+              ride.status != RideStatus.cancelled;
+        })
+        .toList()
+      ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
   }
 }
 
@@ -859,6 +931,8 @@ class _LiveRideCard extends StatelessWidget {
   final VoidCallback? onStartRide;
   final VoidCallback? onCompleteRide;
   final VoidCallback? onCallClient;
+  final VoidCallback? onConfirmRide;
+  final VoidCallback? onRejectRide;
 
   const _LiveRideCard({
     required this.ride,
@@ -867,6 +941,8 @@ class _LiveRideCard extends StatelessWidget {
     this.onStartRide,
     this.onCompleteRide,
     this.onCallClient,
+    this.onConfirmRide,
+    this.onRejectRide,
   });
 
   @override
@@ -1014,7 +1090,57 @@ class _LiveRideCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (ride.status == RideStatus.assigned &&
+                if (ride.status == RideStatus.assigned) ...[
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 40,
+                    child: FilledButton.icon(
+                      onPressed: onConfirmRide,
+                      icon: const Icon(Icons.check_rounded, size: 16),
+                      label: const Text(
+                        'Confirm',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusButton,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 40,
+                    child: OutlinedButton.icon(
+                      onPressed: onRejectRide,
+                      icon: const Icon(Icons.close_rounded, size: 16),
+                      label: const Text(
+                        'Reject',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.errorBorder),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusButton,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                if (ride.status == RideStatus.confirmed &&
                     onStartRide != null) ...[
                   const SizedBox(width: 8),
                   SizedBox(

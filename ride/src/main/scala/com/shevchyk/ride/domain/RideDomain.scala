@@ -108,7 +108,7 @@ object VehicleClass:
   )
 
 enum RideStatus:
-  case Requested, Assigned, InProgress, Completed, Cancelled
+  case Requested, Assigned, Confirmed, InProgress, Completed, Cancelled
 
 enum PaymentStatus:
   case Unpaid, Pending, Paid
@@ -208,15 +208,24 @@ final case class Ride(
     invoiceId: Option[java.util.UUID] = None,
     flightIsArrival: Option[Boolean] = None,
     airportCheckpoint: Option[AirportCheckpoint] = None,
-    vehicleClass: VehicleClass = VehicleClass.Default
+    vehicleClass: VehicleClass = VehicleClass.Default,
+    confirmedAt: Option[java.time.Instant] = None,
+    rejectionReason: Option[String] = None,
+    rejectedBy: Option[PersonId] = None,
+    rejectedAt: Option[java.time.Instant] = None
 ):
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
-  def canBeReassigned: Boolean = status == RideStatus.Assigned && driverId.isDefined
-  def canBeStarted: Boolean    = status == RideStatus.Assigned && driverId.isDefined
+  def canBeReassigned: Boolean = (status == RideStatus.Assigned || status == RideStatus.Confirmed) && driverId.isDefined
+  def canBeConfirmed: Boolean  = status == RideStatus.Assigned && driverId.isDefined
+  def canBeRejected: Boolean   = (status == RideStatus.Assigned || status == RideStatus.Confirmed) && driverId.isDefined
+  // Drivers must confirm before starting; dispatchers may override (Assigned -> InProgress) via updateRideStatus.
+  def canBeStarted: Boolean    = status == RideStatus.Confirmed && driverId.isDefined
   def canBeCompleted: Boolean  = status == RideStatus.InProgress
   def canBeCancelled: Boolean  = status != RideStatus.Completed && status != RideStatus.Cancelled
-  def canBeEdited: Boolean     = status == RideStatus.Requested || status == RideStatus.Assigned
+
+  def canBeEdited: Boolean     =
+    status == RideStatus.Requested || status == RideStatus.Assigned || status == RideStatus.Confirmed
 
   def isAirportTransfer: Boolean = specifics.exists(_.isInstanceOf[RideSpecifics.AirportTransfer])
 
@@ -273,5 +282,7 @@ enum RideError extends Throwable:
   case BusinessRuleViolation(rule: String, message: String)
   case TariffNotFound(id: TariffId)
   case InvalidOperation(message: String)
+  case RideAlreadyConfirmed(rideId: RideId)
+  case RejectionReasonRequired(rideId: RideId)
 
 object RideError

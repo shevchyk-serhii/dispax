@@ -64,10 +64,19 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   }
 
   List<Ride> _applyFiltersAndSort(List<Ride> rides) {
-    final statusFilter = _tabIndex == 0
-        ? RideStatus.requested
-        : RideStatus.assigned;
-    var filtered = rides.where((r) => r.status == statusFilter).toList();
+    List<Ride> filtered;
+    if (_tabIndex == 0) {
+      filtered = rides.where((r) => r.status == RideStatus.requested).toList();
+    } else {
+      // Assigned tab shows both assigned (unconfirmed) and confirmed rides.
+      filtered = rides
+          .where(
+            (r) =>
+                r.status == RideStatus.assigned ||
+                r.status == RideStatus.confirmed,
+          )
+          .toList();
+    }
 
     switch (_filterMode) {
       case _FilterMode.today:
@@ -297,7 +306,11 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             .where((r) => r.status == RideStatus.requested)
             .length;
         final assignedCount = state.rides
-            .where((r) => r.status == RideStatus.assigned)
+            .where(
+              (r) =>
+                  r.status == RideStatus.assigned ||
+                  r.status == RideStatus.confirmed,
+            )
             .length;
         return Container(
           color: Theme.of(context).colorScheme.surface,
@@ -685,21 +698,38 @@ class _RideRow extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = brightness == Brightness.dark;
 
-    // At-risk rows get a subtle red tint
-    final rowBg = isAtRisk
-        ? AppColors.error.withValues(alpha: isDark ? 0.08 : 0.04)
-        : Colors.transparent;
+    // Determine border color: at-risk (red) takes priority,
+    // then confirmed (green), then assigned-unconfirmed (red), then default.
+    final Color borderColor;
+    final Color rowBgColor;
+    if (isAtRisk) {
+      borderColor = AppColors.errorBorder;
+      rowBgColor = AppColors.error.withValues(alpha: isDark ? 0.08 : 0.04);
+    } else if (ride.status == RideStatus.confirmed) {
+      borderColor = RideStatusStyles.getStatusBorderColor(
+        RideStatus.confirmed,
+        brightness: brightness,
+      );
+      rowBgColor = RideStatusStyles.getStatusBackgroundColor(
+        RideStatus.confirmed,
+        brightness: brightness,
+      ).withValues(alpha: 0.5);
+    } else if (ride.status == RideStatus.assigned) {
+      // Assigned but not yet confirmed — highlight with red to signal
+      // dispatcher that confirmation is still pending.
+      borderColor = AppColors.errorBorder;
+      rowBgColor = Colors.transparent;
+    } else {
+      borderColor = isDark ? AppColors.borderDark : AppColors.borderPrimary;
+      rowBgColor = Colors.transparent;
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: rowBg,
+        color: rowBgColor,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-        border: Border.all(
-          color: isAtRisk
-              ? AppColors.errorBorder
-              : (isDark ? AppColors.borderDark : AppColors.borderPrimary),
-        ),
+        border: Border.all(color: borderColor),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),

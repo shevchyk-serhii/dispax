@@ -198,5 +198,14 @@
     "placeholders": {
       "driverName": {"type": "String"}
     }
-  }
+  },
+
+  "confirmRide": "Підтвердити поїздку",
+  "rejectRide": "Відхилити поїздку",
+  "rejectReasonPrompt": "Причина відмови",
+  "rideConfirmed": "Поїздку підтверджено",
+  "rideRejected": "Поїздку відхилено",
+  "confirmationRequestTitle": "Необхідне підтвердження поїздки",
+  "confirmationRequestBody": "Будь ласка, підтвердіть або відхиліть призначену поїздку",
+  "statusConfirmed": "Підтверджено"
 }

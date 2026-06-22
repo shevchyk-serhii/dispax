@@ -515,4 +515,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String viewingDriverSchedule(String driverName) {
     return 'Ansicht: $driverName';
   }
+
+  @override
+  String get confirmRide => 'Fahrt bestätigen';
+
+  @override
+  String get rejectRide => 'Fahrt ablehnen';
+
+  @override
+  String get rejectReasonPrompt => 'Grund für die Ablehnung';
+
+  @override
+  String get rideConfirmed => 'Fahrt bestätigt';
+
+  @override
+  String get rideRejected => 'Fahrt abgelehnt';
+
+  @override
+  String get confirmationRequestTitle => 'Fahrtbestätigung erforderlich';
+
+  @override
+  String get confirmationRequestBody =>
+      'Bitte bestätigen oder ablehnen Sie Ihre zugewiesene Fahrt';
+
+  @override
+  String get statusConfirmed => 'Bestätigt';
 }

@@ -198,5 +198,14 @@
     "placeholders": {
       "driverName": {"type": "String"}
     }
-  }
+  },
+
+  "confirmRide": "Fahrt bestätigen",
+  "rejectRide": "Fahrt ablehnen",
+  "rejectReasonPrompt": "Grund für die Ablehnung",
+  "rideConfirmed": "Fahrt bestätigt",
+  "rideRejected": "Fahrt abgelehnt",
+  "confirmationRequestTitle": "Fahrtbestätigung erforderlich",
+  "confirmationRequestBody": "Bitte bestätigen oder ablehnen Sie Ihre zugewiesene Fahrt",
+  "statusConfirmed": "Bestätigt"
 }

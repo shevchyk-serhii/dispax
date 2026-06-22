@@ -60,12 +60,14 @@ class PushNotificationService {
 
         FirebaseMessaging.onMessage.listen((message) {
           debugPrint('FCM foreground message: ${message.messageId}');
+          _handleMessageData(message);
           _showLocalNotification(message);
           _messageController.add(message);
         });
 
         FirebaseMessaging.onMessageOpenedApp.listen((message) {
           debugPrint('FCM message opened app: ${message.messageId}');
+          _handleMessageData(message);
           _messageController.add(message);
         });
 
@@ -112,6 +114,34 @@ class PushNotificationService {
             AndroidFlutterLocalNotificationsPlugin
           >()
           ?.createNotificationChannel(channel);
+    }
+  }
+
+  /// Handles structured push notification data for ride confirmation flows.
+  ///
+  /// `ride_confirmation_request` — sent to the driver to confirm/reject a ride.
+  /// `ride_rejected` — sent to the dispatcher when the driver rejects a ride.
+  void _handleMessageData(RemoteMessage message) {
+    final data = message.data;
+    final type = data['type'] as String?;
+    if (type == null) return;
+
+    switch (type) {
+      case 'ride_confirmation_request':
+        // The driver received a confirmation request.
+        // The rideId is available in data['rideId'] for deep-linking.
+        final rideId = data['rideId'] as String?;
+        debugPrint(
+          'Push: ride_confirmation_request for rideId=$rideId — '
+          'driver should confirm or reject',
+        );
+      case 'ride_rejected':
+        // A dispatcher notification: the driver rejected the ride.
+        final rideId = data['rideId'] as String?;
+        final reason = data['reason'] as String?;
+        debugPrint(
+          'Push: ride_rejected for rideId=$rideId, reason=$reason',
+        );
     }
   }
 

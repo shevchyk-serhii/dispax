@@ -349,11 +349,15 @@ class UpcomingRidesScreen extends StatelessWidget {
 
   List<Ride> getUpcomingRides(List<Ride> rides) {
     final now = DateTime.now();
-    return rides.where((ride) {
-      return ride.pickupDateTime.isAfter(now) &&
-          (ride.status == RideStatus.assigned ||
-              ride.status == RideStatus.requested);
-    }).toList()..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+    return rides
+        .where((ride) {
+          return ride.pickupDateTime.isAfter(now) &&
+              (ride.status == RideStatus.assigned ||
+                  ride.status == RideStatus.confirmed ||
+                  ride.status == RideStatus.requested);
+        })
+        .toList()
+      ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
   }
 
   Map<String, List<Ride>> groupRidesByDate(List<Ride> rides) {

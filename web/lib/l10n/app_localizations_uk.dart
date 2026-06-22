@@ -512,4 +512,29 @@ class AppLocalizationsUk extends AppLocalizations {
   String viewingDriverSchedule(String driverName) {
     return 'Перегляд: $driverName';
   }
+
+  @override
+  String get confirmRide => 'Підтвердити поїздку';
+
+  @override
+  String get rejectRide => 'Відхилити поїздку';
+
+  @override
+  String get rejectReasonPrompt => 'Причина відмови';
+
+  @override
+  String get rideConfirmed => 'Поїздку підтверджено';
+
+  @override
+  String get rideRejected => 'Поїздку відхилено';
+
+  @override
+  String get confirmationRequestTitle => 'Необхідне підтвердження поїздки';
+
+  @override
+  String get confirmationRequestBody =>
+      'Будь ласка, підтвердіть або відхиліть призначену поїздку';
+
+  @override
+  String get statusConfirmed => 'Підтверджено';
 }

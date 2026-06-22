@@ -197,6 +197,9 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
           bucket: TimeBucket
       ): Task[List[(java.time.Instant, BigDecimal)]] = ZIO.succeed(Nil)
       def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]              = ZIO.succeed(Nil)
+      def findRidesNeedingConfirmation(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]           = ZIO.succeed(
+        Nil
+      )
       def clearReminders(rideId: RideId): Task[Unit]                                                               = ZIO.unit
       def countAllRidesByStatus(): Task[Map[String, Int]]                                                          = ZIO.succeed(Map.empty)
       def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]                          = ZIO.succeed(BigDecimal(0))
