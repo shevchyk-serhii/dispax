@@ -142,120 +142,122 @@ object TestApplication extends ZIOAppDefault:
   private val testCompanyId2      = CompanyId(UUID.fromString("20202020-2020-2020-2020-202020202020"))
   private val testPersonIdDispB   = PersonId(UUID.fromString("2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b2b"))
 
-  private val mockPersonRepository: PersonRepository =
-    new PersonRepository {
-      private val people = Map[PersonId, Person](
-        testPersonId1       -> Person(
-          testPersonId1,
-          "Test User",
-          "test@example.com",
-          PersonRole.Client,
-          passwordHash = hashPassword("Password123"),
-          phone = Some("+1234567890"),
-          companyId = Some(testCompanyId1)
-        ),
-        testPersonId50      -> Person(
-          testPersonId50,
-          "Client User",
-          "client@example.com",
-          PersonRole.Client,
-          passwordHash = hashPassword("Password123"),
-          phone = Some("+1111111111"),
-          companyId = Some(testCompanyId1)
-        ),
-        testPersonId10      -> Person(
-          testPersonId10,
-          "Driver User",
-          "driver@example.com",
-          PersonRole.Driver,
-          passwordHash = hashPassword("Password123"),
-          phone = Some("+2222222222"),
-          companyId = Some(testCompanyId1)
-        ),
-        testPersonId99      -> Person(
-          testPersonId99,
-          "Admin User",
-          "admin@example.com",
-          PersonRole.Admin,
-          passwordHash = hashPassword("Password123"),
-          phone = Some("+3333333333"),
-          companyId = Some(testCompanyId1)
-        ),
-        testPersonId33      -> Person(
-          testPersonId33,
-          "Dispatcher User",
-          "dispatcher@example.com",
-          PersonRole.Dispatcher,
-          passwordHash = hashPassword("Password123"),
-          phone = Some("+4444444444"),
-          companyId = Some(testCompanyId1)
-        ),
-        testPersonId44      -> Person(
-          testPersonId44,
-          "Secretary User",
-          "secretary@example.com",
-          PersonRole.Secretary,
-          passwordHash = hashPassword("Password123"),
-          phone = Some("+5555555555"),
-          companyId = Some(testCompanyId1)
-        ),
-        // Dispatcher who also holds the Driver role (used in 37_dispatcher_can_drive)
-        testPersonIdDispDrv -> Person(
-          testPersonIdDispDrv,
-          "Disp Driver",
-          "disp.driver@example.com",
-          PersonRole.Dispatcher,
-          passwordHash = hashPassword("Password123"),
-          phone = Some("+6666666666"),
-          companyId = Some(testCompanyId1),
-          roles = Set(PersonRole.Dispatcher, PersonRole.Driver)
-        ),
-        // Dispatcher of the second tenant (company B) — used in 26_export tenant isolation
-        testPersonIdDispB   -> Person(
-          testPersonIdDispB,
-          "Dispatcher B",
-          "dispatcher.b@example.com",
-          PersonRole.Dispatcher,
-          passwordHash = hashPassword("Password123"),
-          phone = Some("+7777777777"),
-          companyId = Some(testCompanyId2)
-        )
-      )
+  private def personSeed: Map[PersonId, Person] = Map[PersonId, Person](
+    testPersonId1       -> Person(
+      testPersonId1,
+      "Test User",
+      "test@example.com",
+      PersonRole.Client,
+      passwordHash = hashPassword("Password123"),
+      phone = Some("+1234567890"),
+      companyId = Some(testCompanyId1)
+    ),
+    testPersonId50      -> Person(
+      testPersonId50,
+      "Client User",
+      "client@example.com",
+      PersonRole.Client,
+      passwordHash = hashPassword("Password123"),
+      phone = Some("+1111111111"),
+      companyId = Some(testCompanyId1)
+    ),
+    testPersonId10      -> Person(
+      testPersonId10,
+      "Driver User",
+      "driver@example.com",
+      PersonRole.Driver,
+      passwordHash = hashPassword("Password123"),
+      phone = Some("+2222222222"),
+      companyId = Some(testCompanyId1)
+    ),
+    testPersonId99      -> Person(
+      testPersonId99,
+      "Admin User",
+      "admin@example.com",
+      PersonRole.Admin,
+      passwordHash = hashPassword("Password123"),
+      phone = Some("+3333333333"),
+      companyId = Some(testCompanyId1)
+    ),
+    testPersonId33      -> Person(
+      testPersonId33,
+      "Dispatcher User",
+      "dispatcher@example.com",
+      PersonRole.Dispatcher,
+      passwordHash = hashPassword("Password123"),
+      phone = Some("+4444444444"),
+      companyId = Some(testCompanyId1)
+    ),
+    testPersonId44      -> Person(
+      testPersonId44,
+      "Secretary User",
+      "secretary@example.com",
+      PersonRole.Secretary,
+      passwordHash = hashPassword("Password123"),
+      phone = Some("+5555555555"),
+      companyId = Some(testCompanyId1)
+    ),
+    // Dispatcher who also holds the Driver role (used in 37_dispatcher_can_drive)
+    testPersonIdDispDrv -> Person(
+      testPersonIdDispDrv,
+      "Disp Driver",
+      "disp.driver@example.com",
+      PersonRole.Dispatcher,
+      passwordHash = hashPassword("Password123"),
+      phone = Some("+6666666666"),
+      companyId = Some(testCompanyId1),
+      roles = Set(PersonRole.Dispatcher, PersonRole.Driver)
+    ),
+    // Dispatcher of the second tenant (company B) — used in 26_export tenant isolation
+    testPersonIdDispB   -> Person(
+      testPersonIdDispB,
+      "Dispatcher B",
+      "dispatcher.b@example.com",
+      PersonRole.Dispatcher,
+      passwordHash = hashPassword("Password123"),
+      phone = Some("+7777777777"),
+      companyId = Some(testCompanyId2)
+    )
+  )
 
-      def create(person: Person): Task[Person]                                                     = ZIO.succeed(person)
-      def findById(id: PersonId): Task[Option[Person]]                                             = ZIO.succeed(people.get(id))
-      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]             = ZIO.succeed(
-        people.get(id).filter(_.companyId.contains(companyId))
-      )
-      def findByEmail(email: String): Task[Option[Person]]                                         = ZIO.succeed(people.values.find(_.email == email))
-      def findByRole(role: PersonRole): Task[List[Person]]                                         = ZIO.succeed(people.values.filter(_.role == role).toList)
-      def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]         = ZIO.succeed(
-        people.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList
-      )
-      def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                = ZIO.succeed(
-        people.values.filter(_.companyId.contains(companyId)).toList
-      )
-      def findAll(): Task[List[Person]]                                                            = ZIO.succeed(people.values.toList)
-      def update(person: Person): Task[Person]                                                     = ZIO.succeed(person)
-      def delete(id: PersonId): Task[Unit]                                                         = ZIO.unit
-      def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit] = ZIO.unit
-      def findByStatus(status: UserStatus): Task[List[Person]]                                     = ZIO.succeed(
-        people.values.filter(_.status == status).toList
-      )
-      def searchByQuery(query: String): Task[List[Person]]                                         = ZIO.succeed(
-        people.values
-          .filter(p =>
-            p.name.toLowerCase.contains(query.toLowerCase) || p.email.toLowerCase.contains(query.toLowerCase)
+  private val inMemoryPersonRepositoryLayer: ZLayer[Any, Nothing, PersonRepository] = ZLayer.fromZIO(
+    Ref.Synchronized
+      .make(personSeed)
+      .map { peopleRef =>
+        registerReset(peopleRef.set(personSeed))
+        new PersonRepository:
+          def create(person: Person): Task[Person]                                                     = peopleRef.update(_.updated(person.id, person)).as(person)
+          def findById(id: PersonId): Task[Option[Person]]                                             = peopleRef.get.map(_.get(id))
+          def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]             = peopleRef.get
+            .map(_.get(id).filter(_.companyId.contains(companyId)))
+          def findByEmail(email: String): Task[Option[Person]]                                         = peopleRef.get.map(_.values.find(_.email == email))
+          def findByRole(role: PersonRole): Task[List[Person]]                                         = peopleRef.get
+            .map(_.values.filter(_.role == role).toList)
+          def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]         = peopleRef.get
+            .map(_.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList)
+          def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                = peopleRef.get
+            .map(_.values.filter(_.companyId.contains(companyId)).toList)
+          def findAll(): Task[List[Person]]                                                            = peopleRef.get.map(_.values.toList)
+          def update(person: Person): Task[Person]                                                     = peopleRef.update(_.updated(person.id, person)).as(person)
+          def delete(id: PersonId): Task[Unit]                                                         = peopleRef.update(_.removed(id)).unit
+          def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit] = ZIO.unit
+          def findByStatus(status: UserStatus): Task[List[Person]]                                     = peopleRef.get
+            .map(_.values.filter(_.status == status).toList)
+          def searchByQuery(query: String): Task[List[Person]]                                         = peopleRef.get.map(
+            _.values
+              .filter(p =>
+                p.name.toLowerCase.contains(query.toLowerCase) || p.email.toLowerCase.contains(query.toLowerCase)
+              )
+              .toList
           )
-          .toList
-      )
-      def updateLastLogin(id: PersonId): Task[Unit]                                                = ZIO.unit
-      def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                = ZIO.succeed(Nil)
-      def upsertDriverRow(personId: PersonId): Task[Unit]                                          = ZIO.unit
-      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                             = ZIO.succeed(None)
-      def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]             = ZIO.unit
-      def deleteAvatar(id: PersonId): Task[Unit]                                                   = ZIO.unit
-    }
+          def updateLastLogin(id: PersonId): Task[Unit]                                                = ZIO.unit
+          def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                = ZIO.succeed(Nil)
+          def upsertDriverRow(personId: PersonId): Task[Unit]                                          = ZIO.unit
+          def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                             = ZIO.succeed(None)
+          def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]             = ZIO.unit
+          def deleteAvatar(id: PersonId): Task[Unit]                                                   = ZIO.unit
+      }
+  )
 
   private val mockTokenRepository: TokenRepository =
     new TokenRepository {
@@ -1477,7 +1479,7 @@ object TestApplication extends ZIOAppDefault:
         Server.Config.default.binding(config.host, config.port)
       ) >>> Server.live,
       ServerConfig.envPortLayer,
-      ZLayer.succeed[PersonRepository](mockPersonRepository),
+      inMemoryPersonRepositoryLayer,
       ZLayer.succeed[TokenRepository](mockTokenRepository),
       JwtConfig.live,
       testJwtServiceLayer,

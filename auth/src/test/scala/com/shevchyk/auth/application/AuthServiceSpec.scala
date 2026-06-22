@@ -501,10 +501,10 @@ object AuthServiceSpec extends ZIOSpecDefault {
         // any mutation that removes the supportedLanguageCodes filter would make this fail.
         test("unsupported language code 'fr' is silently ignored — previous value kept") {
           for {
-            service  <- ZIO.service[AuthService]
+            service <- ZIO.service[AuthService]
             // Set a known-good language first so we have a baseline to check against.
-            _        <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("de")))
-            updated  <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("fr")))
+            _       <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("de")))
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("fr")))
           } yield assertTrue(
             // 'fr' must not overwrite 'de'; the unsupported code is silently dropped.
             !updated.preferredLanguage.contains("fr") &&
@@ -526,10 +526,10 @@ object AuthServiceSpec extends ZIOSpecDefault {
         }.provide(layers),
         test("omitting preferredLanguage in update preserves the current value") {
           for {
-            service  <- ZIO.service[AuthService]
-            _        <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("uk")))
+            service <- ZIO.service[AuthService]
+            _       <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("uk")))
             // Second update omits preferredLanguage entirely — current value must be preserved.
-            updated  <- service.updateUser(testUserId1, UpdateUserRequest(name = Some("No Lang Change")))
+            updated <- service.updateUser(testUserId1, UpdateUserRequest(name = Some("No Lang Change")))
           } yield assertTrue(
             updated.name == "No Lang Change" &&
               updated.preferredLanguage.contains("uk")

@@ -456,7 +456,8 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           xa      <- ZIO.service[Transactor[Task]]
           // Seed companyA via the shared seedCompany (testCompanyId), then seed companyB manually.
           _       <- seedCompany(xa)
-          _       <- sql"""INSERT INTO companies (id, name, email)
+          _       <-
+            sql"""INSERT INTO companies (id, name, email)
                            VALUES (${companyB.value}, 'Company B', 'b@example.com')
                            ON CONFLICT DO NOTHING""".update.run.transact(xa)
           _       <- cleanPersons(xa)
