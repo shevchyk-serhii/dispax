@@ -4,7 +4,7 @@
         patrol-test-android patrol-test-ios \
         emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
-        dev-all dev-sim free-port stop-dev \
+        dev-all dev-sim dev-roles free-port stop-dev \
         deploy logs setup-hooks \
         load-test
 
@@ -45,6 +45,15 @@ FLUTTER_STARTUP_DELAY := 8
 # Booted iOS simulator UDID used by `make dev-sim`. Override if you boot a
 # different simulator: `make dev-sim IOS_SIM=<udid>` (find it via `flutter devices`).
 IOS_SIM        := 09021E1A-BC6A-4D86-A2EA-06A5894E4AEC
+# Three distinct available iPhone simulators for `make dev-roles` (client /
+# driver / dispatcher), auto-picked so the three app instances land on three
+# different device models and are easy to tell apart on screen. Override any of
+# them: `make dev-roles SIM_CLIENT=<udid>`. The `$(shell ...)` lists available
+# iPhone sims (one UDID per line) and picks the 1st / 2nd / 3rd.
+_IOS_SIMS      := $(shell xcrun simctl list devices available 2>/dev/null | grep -oE 'iPhone[^()]*\(([0-9A-F-]+)\)' | grep -oE '[0-9A-F-]{36}')
+SIM_CLIENT     ?= $(word 1,$(_IOS_SIMS))
+SIM_DRIVER     ?= $(word 2,$(_IOS_SIMS))
+SIM_DISPATCHER ?= $(word 3,$(_IOS_SIMS))
 PATROL         := $(HOME)/.pub-cache/bin/patrol
 ADB            := $(HOME)/Library/Android/sdk/platform-tools/adb
 # AVD launched by `emulator-up` if no device is connected. Override: ANDROID_AVD=Pixel_7 make e2e-fast
@@ -522,6 +531,46 @@ dev-sim: free-port
 	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(IOS_SIM) \
 		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
+
+# Start local backend + the app on THREE iOS simulators at once (client /
+# driver / dispatcher) so all roles can be tested side by side from one command.
+# The MAPBOX_ACCESS_TOKEN + API_BASE_URL are baked into the build via
+# --dart-define, which is why the map/geocoding work here but fail when the app
+# is launched from the IDE without those defines (Mapbox returns 401).
+#
+# The app is BUILT ONCE, then installed+launched on each booted simulator (much
+# faster and more stable than three concurrent `flutter run` processes fighting
+# over stdin/hot-reload). Roles are NOT auto-selected — the app has no autologin;
+# log in manually with the dev seed accounts (password: password123):
+#   • dispatcher@dispax.de   • driver1@dispax.de   • client1@bmw.de
+# Override the simulators: `make dev-roles SIM_CLIENT=<udid> SIM_DRIVER=<udid> …`.
+# Stop everything with `make stop-dev`.
+dev-roles: free-port
+	@test -n "$(SIM_CLIENT)" && test -n "$(SIM_DRIVER)" && test -n "$(SIM_DISPATCHER)" \
+		|| { echo "❌ Need 3 available iPhone simulators (found: $(SIM_CLIENT) $(SIM_DRIVER) $(SIM_DISPATCHER)). Create more in Xcode → Devices, or pass SIM_CLIENT/SIM_DRIVER/SIM_DISPATCHER."; exit 1; }
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
+	@echo "⏳ Waiting for backend on :8080..."
+	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
+	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
+	@sleep $(FLUTTER_STARTUP_DELAY)
+	@echo "📲 Booting simulators (client=$(SIM_CLIENT) driver=$(SIM_DRIVER) dispatcher=$(SIM_DISPATCHER))"
+	@xcrun simctl boot $(SIM_CLIENT) 2>/dev/null || true
+	@xcrun simctl boot $(SIM_DRIVER) 2>/dev/null || true
+	@xcrun simctl boot $(SIM_DISPATCHER) 2>/dev/null || true
+	@open -a Simulator
+	@echo "🔨 Building the app once for the simulator..."
+	@cd $(FLUTTER_DIR) && $(FLUTTER) build ios --debug --simulator \
+		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
+		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
+	@APP=$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app; \
+	for sim in $(SIM_CLIENT) $(SIM_DRIVER) $(SIM_DISPATCHER); do \
+		echo "📦 Installing on $$sim"; \
+		xcrun simctl install $$sim "$$APP"; \
+		xcrun simctl launch $$sim de.dispax.app; \
+	done
+	@echo "✅ App running on 3 simulators. Log in: dispatcher@dispax.de / driver1@dispax.de / client1@bmw.de (password123)."
+	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
+	@wait
 
 # Kill all dev processes (backend + flutter)
 stop-dev:
