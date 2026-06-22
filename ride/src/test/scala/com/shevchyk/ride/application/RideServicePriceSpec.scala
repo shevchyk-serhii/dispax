@@ -1,7 +1,15 @@
 package com.shevchyk.ride.application
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData, GeocodingService}
+import com.shevchyk.core.application.{
+  EventHub,
+  AuditService,
+  EmailSmsService,
+  RideConfirmationData,
+  GeocodingService,
+  DriverAvailabilityChecker,
+  UnavailabilitySlot
+}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
@@ -71,15 +79,15 @@ object RideServicePriceSpec extends ZIOSpecDefault {
 
   // ── Person repo ────────────────────────────────────────────────────────────
   final case class TestPersonRepository(persons: Map[PersonId, Person]) extends PersonRepository {
-    override def create(person: Person): Task[Person]                                             = ZIO.succeed(person)
-    override def findById(id: PersonId): Task[Option[Person]]                                     = ZIO.succeed(persons.get(id))
+    override def create(person: Person): Task[Person]         = ZIO.succeed(person)
+    override def findById(id: PersonId): Task[Option[Person]] = ZIO.succeed(persons.get(id))
 
-    override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]     = ZIO.succeed(
+    override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]] = ZIO.succeed(
       persons.get(id).filter(_.companyId.contains(companyId))
     )
-    override def findByEmail(email: String): Task[Option[Person]]                                 = ZIO.succeed(persons.values.find(_.email == email))
+    override def findByEmail(email: String): Task[Option[Person]]                             = ZIO.succeed(persons.values.find(_.email == email))
 
-    override def findByRole(role: PersonRole): Task[List[Person]]                                 = ZIO.succeed(
+    override def findByRole(role: PersonRole): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(_.role == role).toList
     )
 
@@ -87,24 +95,24 @@ object RideServicePriceSpec extends ZIOSpecDefault {
       persons.values.filter(p => p.hasRole(role) && p.companyId.contains(companyId)).toList
     )
 
-    override def findByCompanyId(companyId: CompanyId): Task[List[Person]]                        = ZIO.succeed(
+    override def findByCompanyId(companyId: CompanyId): Task[List[Person]]       = ZIO.succeed(
       persons.values.filter(_.companyId.contains(companyId)).toList
     )
-    override def findAll(): Task[List[Person]]                                                    = ZIO.succeed(persons.values.toList)
-    override def update(person: Person): Task[Person]                                             = ZIO.succeed(person)
-    override def delete(id: PersonId): Task[Unit]                                                 = ZIO.unit
-    override def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                  = ZIO.unit
+    override def findAll(): Task[List[Person]]                                   = ZIO.succeed(persons.values.toList)
+    override def update(person: Person): Task[Person]                            = ZIO.succeed(person)
+    override def delete(id: PersonId): Task[Unit]                                = ZIO.unit
+    override def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit] = ZIO.unit
 
-    override def findByStatus(status: UserStatus): Task[List[Person]]                             = ZIO.succeed(
+    override def findByStatus(status: UserStatus): Task[List[Person]]                         = ZIO.succeed(
       persons.values.filter(_.status == status).toList
     )
-    override def searchByQuery(query: String): Task[List[Person]]                                 = ZIO.succeed(Nil)
-    override def updateLastLogin(id: PersonId): Task[Unit]                                        = ZIO.unit
-    override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]        = ZIO.succeed(Nil)
-    override def upsertDriverRow(personId: PersonId): Task[Unit]                                  = ZIO.unit
-    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                     = ZIO.succeed(None)
-    override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]     = ZIO.unit
-    override def deleteAvatar(id: PersonId): Task[Unit]                                           = ZIO.unit
+    override def searchByQuery(query: String): Task[List[Person]]                             = ZIO.succeed(Nil)
+    override def updateLastLogin(id: PersonId): Task[Unit]                                    = ZIO.unit
+    override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]    = ZIO.succeed(Nil)
+    override def upsertDriverRow(personId: PersonId): Task[Unit]                              = ZIO.unit
+    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                 = ZIO.succeed(None)
+    override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
+    override def deleteAvatar(id: PersonId): Task[Unit]                                       = ZIO.unit
   }
 
   val testPersonRepo = TestPersonRepository(
@@ -123,6 +131,16 @@ object RideServicePriceSpec extends ZIOSpecDefault {
     def sendInvoiceEmail(data: com.shevchyk.core.application.InvoiceEmailData): Task[Unit] = ZIO.unit
   )
 
+  private val noopAvailabilityChecker: ZLayer[Any, Nothing, DriverAvailabilityChecker] = ZLayer.succeed(
+    new DriverAvailabilityChecker:
+      def overlappingUnavailability(
+          driverId: PersonId,
+          companyId: CompanyId,
+          from: java.time.Instant,
+          to: java.time.Instant
+      ): Task[List[UnavailabilitySlot]] = ZIO.succeed(Nil)
+  )
+
   val standardLayers =
     (InMemoryRideRepository.layer ++
       ZLayer.succeed[PersonRepository](testPersonRepo) ++
@@ -131,7 +149,8 @@ object RideServicePriceSpec extends ZIOSpecDefault {
       AuditService.inMemory ++
       BlacklistRepository.inMemory ++
       GeocodingService.noop ++
-      ExpenseRepository.inMemory) >+> RideService.layer
+      ExpenseRepository.inMemory ++
+      noopAvailabilityChecker) >+> RideService.layer
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
