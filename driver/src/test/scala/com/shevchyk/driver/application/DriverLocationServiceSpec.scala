@@ -176,6 +176,30 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
             loc     <- service.getLocation(testDriverId)
           } yield assertTrue(loc.exists(l => l.latitude == -90.0 && l.longitude == 180.0))
         }.provide(standardLayers),
+        // -----------------------------------------------------------------------
+        // MUTATION KILL: boundary conditions in validateCoordinates
+        // -----------------------------------------------------------------------
+        // The guard is:  latitude < -90.0 || latitude > 90.0
+        //                longitude < -180.0 || longitude > 180.0
+        //
+        // Mutations targeted:
+        //   • "latitude > 90.0"  → "latitude >= 90.0"  : would reject lat = 90.0
+        //   • "longitude < -180.0" → "longitude <= -180.0" : would reject lon = -180.0
+        //
+        // Each test stores the coordinate and confirms no error is thrown, so a
+        // mutated guard that incorrectly rejects the boundary value causes the test to fail.
+        test("accepts latitude exactly 90.0 (upper inclusive boundary)") {
+          for {
+            service <- ZIO.service[DriverLocationService]
+            result  <- service.updateLocation(testDriverId, 90.0, 0.0).exit
+          } yield assertTrue(result.isSuccess)
+        }.provide(standardLayers),
+        test("accepts longitude exactly -180.0 (lower inclusive boundary)") {
+          for {
+            service <- ZIO.service[DriverLocationService]
+            result  <- service.updateLocation(testDriverId, 0.0, -180.0).exit
+          } yield assertTrue(result.isSuccess)
+        }.provide(standardLayers),
         test("updates existing location") {
           for {
             service <- ZIO.service[DriverLocationService]

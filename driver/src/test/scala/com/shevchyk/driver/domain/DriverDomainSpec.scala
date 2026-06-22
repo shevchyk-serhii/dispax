@@ -51,6 +51,41 @@ object DriverDomainSpec extends ZIOSpecDefault {
           // ~100m between two nearby points
           val distance = DriverLocation.distanceMeters(48.1351, 11.5820, 48.1360, 11.5820)
           assertTrue(distance > 90 && distance < 110)
+        },
+        // -----------------------------------------------------------------------
+        // MUTATION KILL: haversine cos factor and Earth radius
+        // -----------------------------------------------------------------------
+        // Two points at Munich latitude (48.137°N) with exactly 1 degree of longitude
+        // separation and zero latitude difference.
+        //
+        // Correct result:
+        //   dist = 6 371 000 * c  where  a = cos²(48.137°) * sin²(0.5°)
+        //   ≈ 74 205 m   (int-truncated from .toInt in distanceMeters)
+        //
+        // Mutations targeted (must both FAIL these assertions):
+        //   • cos(lat1)*cos(lat2) dropped (L27) → a = sin²(0.5°) alone, same as equator
+        //     → dist ≈ 111 194 m  — fails upper bound 74 300
+        //   • Earth radius 6 371 000 → 6 385 000 (L22) → 0.22 % inflation
+        //     → dist ≈ 74 368 m  — fails upper bound 74 300
+        //
+        // Companion assertion: at equator the SAME 1-degree longitude arc is ~111 194 m,
+        // confirming the cos factor is the only reason Munich gives a shorter result.
+        test(
+          "distanceMeters: 1-degree longitude diff at Munich lat pins the cos factor and Earth radius"
+        ) {
+          // 48.137°N, 0.000°E  →  48.137°N, 1.000°E
+          val distanceMunich  = DriverLocation.distanceMeters(48.137, 0.0, 48.137, 1.0)
+          // 0.000°N, 0.000°E  →  0.000°N, 1.000°E
+          val distanceEquator = DriverLocation.distanceMeters(0.0, 0.0, 0.0, 1.0)
+
+          assertTrue(
+            // Correct haversine gives ~74 205 m; window [74 000, 74 300] kills both mutations.
+            distanceMunich > 74000 && distanceMunich < 74300,
+            // At equator cos(0)*cos(0)=1 so the full 1-deg arc ~111 194 m — proves cos matters.
+            distanceEquator > 110000 && distanceEquator < 112000,
+            // Munich must be strictly less than the equatorial arc (cos factor compresses it).
+            distanceMunich < distanceEquator
+          )
         }
       )
     )
