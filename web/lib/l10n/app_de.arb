@@ -198,5 +198,27 @@
     "placeholders": {
       "driverName": {"type": "String"}
     }
-  }
+  },
+
+  "markUnavailable": "Als nicht verfügbar markieren",
+  "driverUnavailable": "Fahrer nicht verfügbar",
+  "unavailabilityReason": "Grund",
+  "unavailabilityNote": "Notiz (optional)",
+  "unavailabilityFrom": "Von",
+  "unavailabilityTo": "Bis",
+  "unavailabilityReasonLunch": "Mittagspause",
+  "unavailabilityReasonVacation": "Urlaub",
+  "unavailabilityReasonPersonal": "Persönlich",
+  "driverHasScheduleConflict": "Fahrer ist zu dieser Zeit beschäftigt",
+  "assignAnywayTitle": "Fahrer beschäftigt",
+  "assignAnywayMessage": "Dieser Fahrer hat einen Zeitkonflikt: {reason}. Trotzdem zuweisen?",
+  "@assignAnywayMessage": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  },
+  "assignAnyway": "Trotzdem zuweisen",
+  "unavailabilityCreated": "Nicht-Verfügbarkeit erfolgreich markiert",
+  "unavailabilityDeleted": "Nicht-Verfügbarkeit entfernt",
+  "noUnavailability": "Keine Nicht-Verfügbarkeiten"
 }

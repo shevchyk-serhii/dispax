@@ -192,10 +192,17 @@ class RideService {
     }
   }
 
-  Future<Ride> assignDriver(String rideId, String driverId) async {
+  Future<Ride> assignDriver(
+    String rideId,
+    String driverId, {
+    bool overrideScheduleConflict = false,
+  }) async {
     final response = await privateApiClient.put(
       '/rides/$rideId/assign-driver',
-      {'driverId': driverId},
+      {
+        'driverId': driverId,
+        'overrideScheduleConflict': overrideScheduleConflict,
+      },
     );
 
     if (response.statusCode == 200) {

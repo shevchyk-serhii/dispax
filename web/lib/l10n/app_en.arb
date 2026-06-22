@@ -213,5 +213,27 @@
     "placeholders": {
       "driverName": {"type": "String"}
     }
-  }
+  },
+
+  "markUnavailable": "Mark Unavailable",
+  "driverUnavailable": "Driver Unavailable",
+  "unavailabilityReason": "Reason",
+  "unavailabilityNote": "Note (optional)",
+  "unavailabilityFrom": "From",
+  "unavailabilityTo": "To",
+  "unavailabilityReasonLunch": "Lunch",
+  "unavailabilityReasonVacation": "Vacation",
+  "unavailabilityReasonPersonal": "Personal",
+  "driverHasScheduleConflict": "Driver is busy during this time",
+  "assignAnywayTitle": "Driver Busy",
+  "assignAnywayMessage": "This driver has a schedule conflict: {reason}. Assign anyway?",
+  "@assignAnywayMessage": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  },
+  "assignAnyway": "Assign Anyway",
+  "unavailabilityCreated": "Unavailability marked successfully",
+  "unavailabilityDeleted": "Unavailability removed",
+  "noUnavailability": "No unavailability windows"
 }

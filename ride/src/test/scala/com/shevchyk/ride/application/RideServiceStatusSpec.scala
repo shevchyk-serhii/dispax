@@ -1,7 +1,15 @@
 package com.shevchyk.ride.application
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{EventHub, AuditService, EmailSmsService, RideConfirmationData, GeocodingService}
+import com.shevchyk.core.application.{
+  DriverAvailabilityChecker,
+  EventHub,
+  AuditService,
+  EmailSmsService,
+  RideConfirmationData,
+  GeocodingService,
+  UnavailabilitySlot
+}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
@@ -127,6 +135,16 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
     def sendInvoiceEmail(data: com.shevchyk.core.application.InvoiceEmailData): Task[Unit] = ZIO.unit
   )
 
+  private val noopAvailabilityChecker: ZLayer[Any, Nothing, DriverAvailabilityChecker] = ZLayer.succeed(
+    new DriverAvailabilityChecker:
+      def overlappingUnavailability(
+          driverId: PersonId,
+          companyId: CompanyId,
+          from: java.time.Instant,
+          to: java.time.Instant
+      ): Task[List[UnavailabilitySlot]] = ZIO.succeed(Nil)
+  )
+
   val standardLayers =
     (InMemoryRideRepository.layer ++
       ZLayer.succeed[PersonRepository](testPersonRepo) ++
@@ -134,7 +152,9 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
       noopEmailSms ++
       AuditService.inMemory ++
       BlacklistRepository.inMemory ++
-      GeocodingService.noop ++ ExpenseRepository.inMemory) >+> RideService.layer
+      GeocodingService.noop ++
+      ExpenseRepository.inMemory ++
+      noopAvailabilityChecker) >+> RideService.layer
 
   // ── Helpers ───────────────────────────────────────────────────────────
   private def mkRide(clientId: PersonId = testClientId, companyId: CompanyId = testCompanyId) = CreateRideRequest(

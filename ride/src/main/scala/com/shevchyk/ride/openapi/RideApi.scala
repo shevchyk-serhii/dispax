@@ -433,7 +433,9 @@ object RideApi:
                             .fail(RideError.RideNotFound(parsedRideId))
                             .when(existing.companyId != companyId)
                             .mapError(fromRideError)
-        ride           <- service.assignDriver(parsedRideId, parsedDriverId).mapError(fromRideError)
+        ride           <- service
+                            .assignDriver(parsedRideId, parsedDriverId, validated.overrideScheduleConflict)
+                            .mapError(fromRideError)
       } yield RideDto.fromDomain(ride)
   }
 

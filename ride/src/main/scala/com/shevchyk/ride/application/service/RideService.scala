@@ -1,7 +1,7 @@
 package com.shevchyk.ride.application.service
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{EventHub, AuditService, GeocodingService}
+import com.shevchyk.core.application.{DriverAvailabilityChecker, EventHub, AuditService, GeocodingService}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.domain.RepositoryExtensions.*
@@ -34,7 +34,7 @@ trait RideService:
       userId: PersonId,
       userRole: PersonRole
   ): IO[RideError, Ride]
-  def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride]
+  def assignDriver(rideId: RideId, driverId: PersonId, overrideScheduleConflict: Boolean = false): IO[RideError, Ride]
   def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]
   def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]]
   // Company-scoped: a dispatcher can only list rides of a driver/client within their own
@@ -93,7 +93,8 @@ class RideServiceImpl(
     auditService: AuditService,
     blacklistRepository: BlacklistRepository,
     geocodingService: GeocodingService,
-    expenseRepository: ExpenseRepository
+    expenseRepository: ExpenseRepository,
+    availabilityChecker: DriverAvailabilityChecker
 ) extends RideService:
 
   /**
@@ -444,7 +445,11 @@ class RideServiceImpl(
       _                <- ZIO.when(pickupTimeChanged)(rideRepository.clearReminders(rideId).mapDatabaseError)
     } yield persistedRide
 
-  def assignDriver(rideId: RideId, driverId: PersonId): IO[RideError, Ride] =
+  def assignDriver(
+      rideId: RideId,
+      driverId: PersonId,
+      overrideScheduleConflict: Boolean = false
+  ): IO[RideError, Ride] =
     for {
       ride <- getRideById(rideId)
       _    <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Assigned)).when(!ride.canBeAssigned).unit
@@ -462,8 +467,9 @@ class RideServiceImpl(
       blocked <- blacklistRepository.isBlacklisted(ride.clientId, driverId).mapDatabaseError
       _       <- failRule("blacklist", "This driver is blacklisted for the ride's client").when(blocked).unit
 
-      // Check scheduling conflicts
-      _ <- checkScheduleConflict(driverId, ride)
+      // Check scheduling conflicts (ride-vs-ride + unavailability windows).
+      // A dispatcher can knowingly override the conflict; tenant/role/blacklist checks above still apply.
+      _ <- checkScheduleConflict(driverId, ride).unless(overrideScheduleConflict)
 
       // Check VIP and preferred driver
       clientOpt        <- personRepository.findById(ride.clientId).mapDatabaseError
@@ -742,27 +748,37 @@ class RideServiceImpl(
   private val MinBufferMinutes = 30L
 
   /**
-   * Checks whether ``driverId`` has any active ride (Assigned / InProgress) whose time window overlaps with
-   * ``candidateRide``.
+   * Default ride duration in minutes when no real ETA is available.
+   */
+  private val DefaultRideDurationMinutes = 60L
+
+  /**
+   * Checks whether ``driverId`` has any active ride (Assigned / InProgress) or a manual unavailability window whose
+   * time window overlaps with ``candidateRide``.
    *
    * A ride's "occupied window" is: [scheduledTime − buffer, scheduledTime + estimatedDuration + buffer]
    *
    * Without real ETA data we assume a default ride duration of 60 min.
+   *
+   * CompanyId is taken from the candidate ride — never caller-supplied — to preserve tenant isolation.
    */
   private def checkScheduleConflict(driverId: PersonId, candidateRide: Ride): IO[RideError, Unit] =
     val candidateTime = candidateRide.scheduledTime.getOrElse(candidateRide.requestTime)
+    val windowSeconds = (DefaultRideDurationMinutes + MinBufferMinutes) * 60
+    val windowFrom    = candidateTime.minusSeconds(MinBufferMinutes * 60)
+    val windowTo      = candidateTime.plusSeconds(windowSeconds)
     for {
-      driverRides <- rideRepository.findByDriverId(driverId).mapDatabaseError
-      activeRides  = driverRides.filter(r =>
-                       (r.status == RideStatus.Assigned || r.status == RideStatus.InProgress) &&
-                         r.id != candidateRide.id // exclude self (relevant for reassign)
-                     )
-      conflict     = activeRides.find { existing =>
-                       val existingTime = existing.scheduledTime.getOrElse(existing.requestTime)
-                       ridesOverlap(candidateTime, existingTime)
-                     }
-      _           <-
-        conflict match
+      driverRides      <- rideRepository.findByDriverId(driverId).mapDatabaseError
+      activeRides       = driverRides.filter(r =>
+                            (r.status == RideStatus.Assigned || r.status == RideStatus.InProgress) &&
+                              r.id != candidateRide.id // exclude self (relevant for reassign)
+                          )
+      rideConflict      = activeRides.find { existing =>
+                            val existingTime = existing.scheduledTime.getOrElse(existing.requestTime)
+                            ridesOverlap(candidateTime, existingTime)
+                          }
+      _                <-
+        rideConflict match
           case Some(conflicting) =>
             val conflictTime = conflicting.scheduledTime.getOrElse(conflicting.requestTime)
             val msg          =
@@ -771,6 +787,17 @@ class RideServiceImpl(
             ZIO.logWarning(s"assignDriver rejected: rule=schedule_conflict msg=$msg") *>
               ZIO.fail(RideError.ScheduleConflict(msg))
           case None              => ZIO.unit
+      // Check manual unavailability windows (uses the candidateRide's companyId for tenant safety).
+      unavailableSlots <- availabilityChecker
+                            .overlappingUnavailability(driverId, candidateRide.companyId, windowFrom, windowTo)
+                            .mapError(ex => RideError.DatabaseError(ex))
+      _                <-
+        unavailableSlots.headOption match
+          case Some(slot) =>
+            val msg = s"Driver has a ${slot.reason} unavailability from ${slot.from} to ${slot.to}"
+            ZIO.logWarning(s"assignDriver rejected: rule=schedule_conflict msg=$msg") *>
+              ZIO.fail(RideError.ScheduleConflict(msg))
+          case None       => ZIO.unit
     } yield ()
 
   /**
@@ -791,17 +818,18 @@ class RideServiceImpl(
    */
   private def ridesOverlap(candidateTime: Instant, existingTime: Instant): Boolean =
     // Without real ETA data we assume a default ride duration of 60 min for both rides.
-    val DefaultRideDurationMinutes = 60L
-    val windowSeconds              = (DefaultRideDurationMinutes + MinBufferMinutes) * 60
-    val existingEnd                = existingTime.plusSeconds(windowSeconds)
-    val candidateEnd               = candidateTime.plusSeconds(windowSeconds)
+    val windowSeconds = (DefaultRideDurationMinutes + MinBufferMinutes) * 60
+    val existingEnd   = existingTime.plusSeconds(windowSeconds)
+    val candidateEnd  = candidateTime.plusSeconds(windowSeconds)
     // Standard interval overlap: [existingStart, existingEnd) overlaps [candidateStart, candidateEnd) iff:
     candidateTime.isBefore(existingEnd) && existingTime.isBefore(candidateEnd)
 
 object RideService:
 
-  val layer
-      : ZLayer[RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository, Nothing, RideService] =
-    ZLayer.fromFunction(
-      RideServiceImpl.apply
-    )
+  val layer: ZLayer[
+    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & DriverAvailabilityChecker,
+    Nothing,
+    RideService
+  ] = ZLayer.fromFunction(
+    RideServiceImpl.apply
+  )
