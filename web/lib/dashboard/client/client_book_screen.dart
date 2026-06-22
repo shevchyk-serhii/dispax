@@ -140,6 +140,11 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
                   backgroundColor: AppColors.success,
                 ),
               );
+              // The ride is persisted, so the form holds no unsaved details
+              // anymore. Clear it before navigating away, otherwise isModified
+              // stays true and the "Discard changes?" dialog wrongly appears on
+              // the next leave from the Book tab.
+              ctx.read<CreateRideFormBloc>().add(const FormCleared());
               widget.onCreated?.call();
             } else if (state.status == RideStateStatus.error) {
               ScaffoldMessenger.of(ctx).showSnackBar(
