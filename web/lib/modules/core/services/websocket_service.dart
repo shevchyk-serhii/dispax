@@ -6,7 +6,14 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as ws_status;
 import '../models/websocket_event.dart';
 
-class WebSocketService {
+/// Minimal interface the AuthBloc depends on so tests can inject a no-op stub
+/// without opening a real WebSocket connection.
+abstract class WebSocketServiceBase {
+  Future<void> connect(String token, {required String wsBaseUrl});
+  void disconnect();
+}
+
+class WebSocketService implements WebSocketServiceBase {
   static final WebSocketService instance = WebSocketService._();
 
   WebSocketService._();
@@ -28,6 +35,7 @@ class WebSocketService {
     return uri.toString();
   }
 
+  @override
   Future<void> connect(String token, {required String wsBaseUrl}) async {
     _token = token;
     _wsBaseUrl = wsBaseUrl;
@@ -91,6 +99,7 @@ class WebSocketService {
     _reconnectTimer = Timer(Duration(seconds: delay), _doConnect);
   }
 
+  @override
   void disconnect() {
     _shouldReconnect = false;
     _reconnectTimer?.cancel();

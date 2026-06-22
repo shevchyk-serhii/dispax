@@ -12,7 +12,6 @@ import 'package:dispax/blocs/auth/auth_state.dart';
 import 'package:dispax/locale_notifier.dart';
 import 'package:dispax/modules/auth/services/biometric_service.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
-import 'package:dispax/modules/core/services/websocket_service.dart';
 import '../helpers/mocks.dart';
 import '../helpers/test_fixtures.dart';
 
@@ -20,11 +19,13 @@ void main() {
   late MockApiClient mockApiClient;
   late MockBiometricService mockBiometricService;
   late MockTokenStorage mockStorage;
+  late MockWebSocketService mockWebSocketService;
 
   setUp(() {
     mockApiClient = MockApiClient();
     mockBiometricService = MockBiometricService();
     mockStorage = MockTokenStorage();
+    mockWebSocketService = MockWebSocketService();
 
     when(() => mockApiClient.dispose()).thenReturn(null);
     when(() => mockApiClient.setAuthToken(any())).thenReturn(null);
@@ -36,12 +37,20 @@ void main() {
     when(() => mockStorage.read(any())).thenAnswer((_) async => null);
     when(() => mockStorage.write(any(), any())).thenAnswer((_) async {});
     when(() => mockStorage.delete(any())).thenAnswer((_) async {});
+    when(
+      () => mockWebSocketService.connect(
+        any(),
+        wsBaseUrl: any(named: 'wsBaseUrl'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => mockWebSocketService.disconnect()).thenReturn(null);
   });
 
   AuthBloc buildBloc() => AuthBloc(
     apiClient: mockApiClient,
     biometricService: mockBiometricService,
     storage: mockStorage,
+    webSocketService: mockWebSocketService,
   );
 
   group('AuthBloc', () {
@@ -261,9 +270,6 @@ void main() {
 
       expect(bloc.apiClient, same(clientBefore));
 
-      // Login starts the real WebSocket singleton (its reconnect timer would
-      // otherwise fire during a later test); stop it before tearing down.
-      WebSocketService.instance.disconnect();
       await bloc.close();
     });
 
@@ -281,9 +287,6 @@ void main() {
 
       verify(() => mockApiClient.setAuthToken('new-token')).called(1);
 
-      // Stop the real WebSocket singleton started by login so its reconnect
-      // timer doesn't leak into a later test.
-      WebSocketService.instance.disconnect();
       await bloc.close();
     });
 
@@ -382,7 +385,6 @@ void main() {
 
         expect(localeNotifier.value, const Locale('de'));
 
-        WebSocketService.instance.disconnect();
         await bloc.close();
       });
 
@@ -401,7 +403,6 @@ void main() {
 
         expect(localeNotifier.value, const Locale('uk'));
 
-        WebSocketService.instance.disconnect();
         await bloc.close();
       });
 
@@ -424,7 +425,6 @@ void main() {
         // localeNotifier must remain unchanged — we did not override it.
         expect(localeNotifier.value, const Locale('en'));
 
-        WebSocketService.instance.disconnect();
         await bloc.close();
       });
 
@@ -445,7 +445,6 @@ void main() {
 
         expect(localeNotifier.value, const Locale('de'));
 
-        WebSocketService.instance.disconnect();
         await bloc.close();
       });
 
@@ -469,7 +468,6 @@ void main() {
         // Pre-existing locale must be preserved — bloc must not clear it.
         expect(localeNotifier.value, const Locale('uk'));
 
-        WebSocketService.instance.disconnect();
         await bloc.close();
       });
     });

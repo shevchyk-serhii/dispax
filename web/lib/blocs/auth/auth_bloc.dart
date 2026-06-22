@@ -84,6 +84,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   late ApiClient privateApiClient;
   late BiometricService privateBiometricService;
   final TokenStorage _storage;
+  final WebSocketServiceBase _webSocketService;
 
   static const String privateUserKey = 'current_user';
   static const String privateTokenKey = 'auth_token';
@@ -92,7 +93,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     ApiClient? apiClient,
     BiometricService? biometricService,
     TokenStorage? storage,
+    WebSocketServiceBase? webSocketService,
   }) : _storage = storage ?? _TokenStorage(),
+       _webSocketService = webSocketService ?? WebSocketService.instance,
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();
     privateApiClient.onUnauthorized = () => add(AuthLogoutRequested());
@@ -163,7 +166,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
 
         /// Connect WebSocket for real-time updates
-        WebSocketService.instance.connect(
+        _webSocketService.connect(
           token,
           wsBaseUrl: ApiClient.wsBaseUrl,
         );
@@ -217,7 +220,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
 
         /// Connect WebSocket for real-time updates
-        WebSocketService.instance.connect(
+        _webSocketService.connect(
           loginResponse['token'],
           wsBaseUrl: ApiClient.wsBaseUrl,
         );
@@ -256,7 +259,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       privateApiClient.clearAuthToken();
 
       /// Disconnect WebSocket
-      WebSocketService.instance.disconnect();
+      _webSocketService.disconnect();
 
       /// Unregister FCM token
       await PushNotificationService.instance.unregisterToken();
@@ -316,7 +319,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final user = Person.fromJson(userJson);
           privateApiClient.setAuthToken(token);
 
-          WebSocketService.instance.connect(
+          _webSocketService.connect(
             token,
             wsBaseUrl: ApiClient.wsBaseUrl,
           );
