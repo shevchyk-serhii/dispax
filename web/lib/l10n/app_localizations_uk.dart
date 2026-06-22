@@ -512,4 +512,54 @@ class AppLocalizationsUk extends AppLocalizations {
   String viewingDriverSchedule(String driverName) {
     return 'Перегляд: $driverName';
   }
+
+  @override
+  String get markUnavailable => 'Позначити як недоступний';
+
+  @override
+  String get driverUnavailable => 'Водій недоступний';
+
+  @override
+  String get unavailabilityReason => 'Причина';
+
+  @override
+  String get unavailabilityNote => 'Нотатка (необов\'язково)';
+
+  @override
+  String get unavailabilityFrom => 'Від';
+
+  @override
+  String get unavailabilityTo => 'До';
+
+  @override
+  String get unavailabilityReasonLunch => 'Обід';
+
+  @override
+  String get unavailabilityReasonVacation => 'Відпустка';
+
+  @override
+  String get unavailabilityReasonPersonal => 'Особисте';
+
+  @override
+  String get driverHasScheduleConflict => 'Водій зайнятий у цей час';
+
+  @override
+  String get assignAnywayTitle => 'Водій зайнятий';
+
+  @override
+  String assignAnywayMessage(String reason) {
+    return 'У цього водія є конфлікт розкладу: $reason. Все одно призначити?';
+  }
+
+  @override
+  String get assignAnyway => 'Призначити все одно';
+
+  @override
+  String get unavailabilityCreated => 'Недоступність успішно позначена';
+
+  @override
+  String get unavailabilityDeleted => 'Недоступність видалена';
+
+  @override
+  String get noUnavailability => 'Немає вікон недоступності';
 }
