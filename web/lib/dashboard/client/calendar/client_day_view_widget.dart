@@ -147,14 +147,13 @@ class ClientDayViewWidget extends StatelessWidget {
   }
 
   Widget buildRidesList(BuildContext context, List<Ride> rides) {
+    // Build the interleaved card/travel-time items once, not per itemBuilder
+    // call, so scrolling stays O(n) instead of O(n^2).
+    final items = buildTimelineItems(context, rides);
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: rides.length + getTravelTimeSlots(rides).length,
-      itemBuilder: (context, index) {
-        final items = buildTimelineItems(context, rides);
-        if (index >= items.length) return const SizedBox.shrink();
-        return items[index];
-      },
+      itemCount: items.length,
+      itemBuilder: (context, index) => items[index],
     );
   }
 
@@ -227,19 +226,6 @@ class ClientDayViewWidget extends StatelessWidget {
       final targetDate = DateTime(day.year, day.month, day.day);
       return rideDate == targetDate;
     }).toList();
-  }
-
-  List<int> getTravelTimeSlots(List<Ride> rides) {
-    final travelTimes = <int>[];
-    for (int i = 0; i < rides.length - 1; i++) {
-      final currentRide = rides[i];
-      final nextRide = rides[i + 1];
-      final travelTime = nextRide.pickupDateTime
-          .difference(currentRide.pickupDateTime)
-          .inMinutes;
-      travelTimes.add(travelTime);
-    }
-    return travelTimes;
   }
 
   bool isSameDay(DateTime a, DateTime b) {
