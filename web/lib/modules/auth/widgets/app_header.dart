@@ -14,9 +14,9 @@ class AppHeader extends StatelessWidget {
           width: AppDimensions.iconHero,
           height: AppDimensions.iconHero,
           decoration: BoxDecoration(
-            color: AppColors.glassBackground,
+            color: AppColors.onDarkBackground,
             borderRadius: BorderRadius.circular(AppDimensions.radiusXXLarge),
-            border: Border.all(color: AppColors.glassBorder, width: 2),
+            border: Border.all(color: AppColors.onDarkBorder, width: 2),
             boxShadow: [
               BoxShadow(
                 color: AppColors.shadowMedium,
@@ -36,9 +36,9 @@ class AppHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppDimensions.paddingLarge),
-        Text('Dispax', style: AppStyles.glassHeadlineLarge),
+        Text('Dispax', style: AppStyles.onDarkHeadlineLarge),
         const SizedBox(height: AppDimensions.paddingSmall),
-        Text('Smart Mobility Solutions', style: AppStyles.glassBodyLarge),
+        Text('Smart Mobility Solutions', style: AppStyles.onDarkBodyLarge),
       ],
     );
   }
