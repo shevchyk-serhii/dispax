@@ -3,14 +3,26 @@ package com.shevchyk.auth.application
 import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.repository.*
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole, UserStatus}
+import com.shevchyk.core.repository.{PersonRepository, SessionRepository}
+import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole, Session, SessionId, UserStatus}
 import zio.*
+import java.time.Instant
 import java.util.UUID
 import org.mindrot.jbcrypt.BCrypt
 
 trait AuthService:
-  def login(email: String, password: String): ZIO[Any, AuthError, LoginResponse]
+
+  /**
+   * Authenticates a user and, as part of the same login transaction, records an active session row so the "Active
+   * sessions" screen can list this device. `deviceInfo` (User-Agent) and `ipAddress` come from the HTTP layer; both are
+   * optional so non-HTTP callers and tests can omit them.
+   */
+  def login(
+      email: String,
+      password: String,
+      deviceInfo: Option[String] = None,
+      ipAddress: Option[String] = None
+  ): ZIO[Any, AuthError, LoginResponse]
   def createUser(request: CreateUserRequest): ZIO[Any, AuthError, UserDto]
   def getUserById(id: UUID): ZIO[Any, AuthError, UserDto]
   def getUserByEmail(email: String): ZIO[Any, AuthError, UserDto]
@@ -36,6 +48,7 @@ trait AuthService:
 class AuthServiceImpl(
     personRepository: PersonRepository,
     tokenRepository: TokenRepository,
+    sessionRepository: SessionRepository,
     jwtService: JwtService
 ) extends AuthService:
 
@@ -66,7 +79,12 @@ class AuthServiceImpl(
       password.exists(_.isLower) &&
       password.exists(_.isDigit)
 
-  override def login(email: String, password: String): ZIO[Any, AuthError, LoginResponse] =
+  override def login(
+      email: String,
+      password: String,
+      deviceInfo: Option[String],
+      ipAddress: Option[String]
+  ): ZIO[Any, AuthError, LoginResponse] =
     for
       personOpt <- personRepository.findByEmail(email).orElseFail(UserNotFound(email))
       person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(email))
@@ -75,6 +93,23 @@ class AuthServiceImpl(
       _         <- ZIO.when(!pwMatch)(ZIO.fail(InvalidCredentials(email)))
       token     <- jwtService.generateToken(person).mapError(identity)
       _         <- tokenRepository.create(token, person.id.value).orElseFail(ValidationError("token", "Failed to store token"))
+      // Record an active session for the "Active sessions" screen. A storage hiccup here must not block the login —
+      // the JWT is already issued — so this is best-effort (`.ignore`), mirroring updateLastLogin below.
+      now        = Instant.now()
+      _         <-
+        sessionRepository
+          .create(
+            Session(
+              id = SessionId.generate(),
+              userId = person.id,
+              token = token,
+              deviceInfo = deviceInfo,
+              ipAddress = ipAddress,
+              createdAt = now,
+              lastActiveAt = now
+            )
+          )
+          .ignore
       _         <- personRepository.updateLastLogin(person.id).ignore
     yield LoginResponse(UserDto.fromPerson(person), token)
 
@@ -243,5 +278,5 @@ class AuthServiceImpl(
 
 object AuthService:
 
-  val live: ZLayer[PersonRepository & TokenRepository & JwtService, Nothing, AuthService] = ZLayer
+  val live: ZLayer[PersonRepository & TokenRepository & SessionRepository & JwtService, Nothing, AuthService] = ZLayer
     .fromFunction(AuthServiceImpl.apply)

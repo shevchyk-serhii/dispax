@@ -123,6 +123,20 @@ void main() {
       expect(makeState(selectedClientId: null).isValid, isFalse);
     });
 
+    test('client preselected as self (client booking flow) returns true', () {
+      // ClientBookScreen preselects the current user as the client, which
+      // sets both selectedClientId and baselineClientId to self.
+      final state = CreateRideFormState.initial().copyWith(
+        selectedClientId: 'self-1',
+        clientName: 'Self',
+        baselineClientId: 'self-1',
+        baselineClientName: 'Self',
+        fromAddress: 'Maximilianstrasse 10',
+        toAddress: 'Flughafen Muenchen Terminal 2',
+      );
+      expect(state.isValid, isTrue);
+    });
+
     test('empty fromAddress returns false', () {
       expect(makeState(fromAddress: '').isValid, isFalse);
     });

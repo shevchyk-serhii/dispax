@@ -22,6 +22,15 @@ class RideStatusStyles {
     }
   }
 
+  /// Gets the ride status color as a 32-bit ARGB integer.
+  ///
+  /// Mapbox annotations (`CircleAnnotationOptions.circleColor`) take a raw int
+  /// rather than a Flutter [Color], so this exposes the same status palette in
+  /// the form the map layer needs — keeping `RideStatusStyles` the single
+  /// source of truth for status colors.
+  static int getStatusColorValue(RideStatus status) =>
+      getStatusColor(status).toARGB32();
+
   /// Gets the background color for the given ride status.
   ///
   /// Pass [brightness] (typically `Theme.of(context).brightness`) so the badge

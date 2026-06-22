@@ -66,6 +66,25 @@ object RideServiceSpec extends ZIOSpecDefault {
     preferredDriverId = Some(testDriverId)
   )
 
+  // Client referenced by testClientId — must exist in the person repo and belong to testCompanyId,
+  // otherwise createRide rejects it (company-isolation / PersonNotFound).
+  val testClient = Person(
+    id = testClientId,
+    name = "Test Client",
+    email = "test-client@example.com",
+    role = PersonRole.Client,
+    companyId = Some(testCompanyId)
+  )
+
+  // Client of a different company — used to assert createRide rejects cross-tenant clients.
+  val otherCompanyClient = Person(
+    id = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000300")),
+    name = "Other Company Client",
+    email = "other-client@example.com",
+    role = PersonRole.Client,
+    companyId = Some(otherCompanyId)
+  )
+
   // Dispatcher who also has the Driver role — should be assignable to rides.
   val dispatcherDriver = Person(
     id = dispatcherDriverId,
@@ -137,6 +156,8 @@ object RideServiceSpec extends ZIOSpecDefault {
       wrongCompanyDriver.id -> wrongCompanyDriver,
       clientPerson.id       -> clientPerson,
       vipClient.id          -> vipClient,
+      testClient.id         -> testClient,
+      otherCompanyClient.id -> otherCompanyClient,
       dispatcherDriver.id   -> dispatcherDriver,
       pureDispatcher.id     -> pureDispatcher
     )
@@ -200,21 +221,10 @@ object RideServiceSpec extends ZIOSpecDefault {
               ride.notes == request.notes &&
               ride.status == RideStatus.Requested
           )
-        }.provide(
-          InMemoryRideRepository.layer,
-          InMemoryPersonRepository.layer,
-          EventHub.layer,
-          noopEmailSms,
-          AuditService.inMemory,
-          BlacklistRepository.inMemory,
-          GeocodingService.noop,
-          ExpenseRepository.inMemory,
-          PickupTimeService.noopLayer,
-          RideService.layer
-        ),
+        }.provide(standardLayers),
         test("should create airport transfer ride") {
           val request = CreateRideRequest(
-            clientId = PersonId(UUID.fromString("000000c8-0000-0000-0000-000000000200")),
+            clientId = vipClientId,
             companyId = testCompanyId,
             pickupLocation = Location("Airport Terminal 1"),
             dropoffLocation = Location("Hotel"),
@@ -230,18 +240,42 @@ object RideServiceSpec extends ZIOSpecDefault {
                 code == "KBP" && flight == "PS123"
               }
           )
-        }.provide(
-          InMemoryRideRepository.layer,
-          InMemoryPersonRepository.layer,
-          EventHub.layer,
-          noopEmailSms,
-          AuditService.inMemory,
-          BlacklistRepository.inMemory,
-          GeocodingService.noop,
-          ExpenseRepository.inMemory,
-          PickupTimeService.noopLayer,
-          RideService.layer
-        )
+        }.provide(standardLayers),
+        // ── company isolation ──────────────────────────────────────────────
+        test("should reject a client of a different company (company_isolation)") {
+          val request = CreateRideRequest(
+            clientId = otherCompanyClient.id,
+            companyId = testCompanyId,
+            pickupLocation = Location("A"),
+            dropoffLocation = Location("B")
+          )
+          for {
+            service <- ZIO.service[RideService]
+            result  <- service.createRide(request).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation("company_isolation", _) => true
+                case _                                                       => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("should reject an unknown client (PersonNotFound)") {
+          val request = CreateRideRequest(
+            clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000999")),
+            companyId = testCompanyId,
+            pickupLocation = Location("A"),
+            dropoffLocation = Location("B")
+          )
+          for {
+            service <- ZIO.service[RideService]
+            result  <- service.createRide(request).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.PersonNotFound])
+            case _                   => false
+          })
+        }.provide(standardLayers)
       ),
       suite("assignDriver")(
         test("happy path: Requested ride + valid driver same company → Assigned") {
@@ -428,6 +462,7 @@ object RideServiceSpec extends ZIOSpecDefault {
               wrongCompanyDriver.id -> wrongCompanyDriver,
               clientPerson.id       -> clientPerson,
               vipClient.id          -> vipClient,
+              testClient.id         -> testClient,
               dispatcherDriver.id   -> dispatcherDriver,
               pureDispatcher.id     -> pureDispatcher,
               foreignDDId           -> foreignDD
@@ -497,6 +532,71 @@ object RideServiceSpec extends ZIOSpecDefault {
                        )
             result  <- service.startRide(ride.id, testDriverId).exit
           } yield assertTrue(result.isFailure)
+        }.provide(standardLayers),
+        test("concurrent start: two racing starts, exactly one wins") {
+          // Two callers start the same Assigned ride at once. The atomic CAS must let exactly one
+          // win; the loser gets InvalidStatusTransition, never a silent overwrite.
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            results   <- ZIO.collectAllPar(
+                           List(
+                             service.startRide(assigned.id, testDriverId).exit,
+                             service.startRide(assigned.id, testDriverId).exit
+                           )
+                         )
+            finalRide <- service.getRideById(ride.id)
+          } yield {
+            val failures = results.collect { case Exit.Failure(c) => c }
+            assertTrue(
+              results.count(_.isSuccess) == 1,
+              failures.size == 1,
+              failures.head.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition]),
+              finalRide.status == RideStatus.InProgress
+            )
+          }
+        }.provide(standardLayers),
+        test("concurrent start vs cancel: persisted status matches a CAS winner") {
+          // A driver starts while a dispatcher cancels the same Assigned ride. Because cancel is
+          // legal from both Assigned and InProgress, both can legitimately apply in sequence
+          // (Assigned → InProgress → Cancelled) — so this is NOT a one-wins race. What we assert is
+          // that the persisted status is one that a *successful* call actually produced — i.e. the
+          // DB reflects a real applied transition, not a value no caller reported.
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            results   <- ZIO.collectAllPar(
+                           List(
+                             service.startRide(assigned.id, testDriverId).exit,
+                             service.cancelRide(assigned.id, pureDispatcherId, PersonRole.Dispatcher).exit
+                           )
+                         )
+            finalRide <- service.getRideById(ride.id)
+          } yield {
+            val succeededStatuses = results.collect { case Exit.Success(r) => r.status }
+            assertTrue(
+              // at least one applied, and the DB status is one that a successful call produced
+              succeededStatuses.nonEmpty,
+              succeededStatuses.contains(finalRide.status),
+              finalRide.status == RideStatus.InProgress || finalRide.status == RideStatus.Cancelled
+            )
+          }
         }.provide(standardLayers)
       ),
       suite("completeRide")(
@@ -555,6 +655,34 @@ object RideServiceSpec extends ZIOSpecDefault {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition])
             case _                   => false
           })
+        }.provide(standardLayers),
+        test("concurrent complete vs cancel: exactly one wins, no lost write") {
+          // A ride is completed while it is being cancelled. The atomic CAS lets exactly one apply;
+          // the ride must not 'un-complete' silently — it ends Completed or Cancelled, consistently.
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            started   <- service.startRide(assigned.id, testDriverId)
+            results   <- ZIO.collectAllPar(
+                           List(
+                             service.completeRide(started.id).exit,
+                             service.cancelRide(started.id, pureDispatcherId, PersonRole.Dispatcher).exit
+                           )
+                         )
+            finalRide <- service.getRideById(ride.id)
+          } yield assertTrue(
+            results.count(_.isSuccess) == 1,
+            results.count(_.isFailure) == 1,
+            finalRide.status == RideStatus.Completed || finalRide.status == RideStatus.Cancelled
+          )
         }.provide(standardLayers)
       ),
       suite("cancelRide")(
@@ -690,6 +818,59 @@ object RideServiceSpec extends ZIOSpecDefault {
             after.status != RideStatus.Cancelled
           )
         }.provide(standardLayers),
+        test("concurrent cancellations: winner's reason/fee/cancelledBy are consistent") {
+          // Two callers cancel the same ride with different reason/fee/cancelledBy. Exactly one
+          // applies; the persisted reason+fee+cancelledBy must all come from the same winner — the
+          // loser must not partially overwrite the winner's fields.
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            results   <- ZIO.collectAllPar(
+                           List(
+                             service
+                               .cancelRideWithReason(
+                                 ride.id,
+                                 testClientId,
+                                 PersonRole.Client,
+                                 CancelRideRequest("client_no_show", Some(BigDecimal(10.00)))
+                               )
+                               .exit,
+                             service
+                               .cancelRideWithReason(
+                                 ride.id,
+                                 pureDispatcherId,
+                                 PersonRole.Dispatcher,
+                                 CancelRideRequest("dispatcher_cancel", Some(BigDecimal(25.00)))
+                               )
+                               .exit
+                           )
+                         )
+            finalRide <- service.getRideById(ride.id)
+          } yield {
+            // The winner is fully self-consistent: client→no_show/10, dispatcher→cancel/25.
+            val clientWon     =
+              finalRide.cancellationReason.contains("client_no_show") &&
+                finalRide.cancellationFee.contains(BigDecimal(10.00)) &&
+                finalRide.cancelledBy.contains(testClientId)
+            val dispatcherWon =
+              finalRide.cancellationReason.contains("dispatcher_cancel") &&
+                finalRide.cancellationFee.contains(BigDecimal(25.00)) &&
+                finalRide.cancelledBy.contains(pureDispatcherId)
+            assertTrue(
+              results.count(_.isSuccess) == 1,
+              results.count(_.isFailure) == 1,
+              finalRide.status == RideStatus.Cancelled,
+              clientWon || dispatcherWon
+            )
+          }
+        }.provide(standardLayers),
         test("fails when Completed") {
           for {
             service   <- ZIO.service[RideService]
@@ -733,6 +914,50 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(
             updated.status == RideStatus.InProgress &&
               updated.startTime.isDefined
+          )
+        }.provide(standardLayers),
+        test("concurrent identical updates via updateRideStatus: exactly one wins") {
+          // Two callers drive the same Assigned ride to InProgress through updateRideStatus at once.
+          // Both transitions share the same expected status {Assigned}, so the atomic CAS must let
+          // exactly one apply; the loser gets InvalidStatusTransition, never a silent double-apply.
+          // (Two *different* targets like InProgress vs Cancelled are not a race — Assigned →
+          //  InProgress → Cancelled is a valid sequential path, so both legitimately succeed.)
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            results   <- ZIO.collectAllPar(
+                           List(
+                             service
+                               .updateRideStatus(
+                                 assigned.id,
+                                 UpdateRideStatusRequest(RideStatus.InProgress),
+                                 testDriverId,
+                                 PersonRole.Driver
+                               )
+                               .exit,
+                             service
+                               .updateRideStatus(
+                                 assigned.id,
+                                 UpdateRideStatusRequest(RideStatus.InProgress),
+                                 pureDispatcherId,
+                                 PersonRole.Dispatcher
+                               )
+                               .exit
+                           )
+                         )
+            finalRide <- service.getRideById(ride.id)
+          } yield assertTrue(
+            results.count(_.isSuccess) == 1,
+            results.count(_.isFailure) == 1,
+            finalRide.status == RideStatus.InProgress
           )
         }.provide(standardLayers),
         test("driver cannot update another driver's ride") {
@@ -1141,6 +1366,64 @@ object RideServiceSpec extends ZIOSpecDefault {
             completed <- service.completeRide(started.id)
             pending   <- service.markPayment(completed.id, PaymentStatus.Pending, None)
           } yield assertTrue(pending.paidAt.isEmpty)
+        }.provide(standardLayers),
+        test("fails to mark a non-Completed ride as Paid (atomic CAS)") {
+          // Paying is the only status-gated payment transition: the atomic CAS (Set(Completed))
+          // rejects `Paid` on a ride that is not Completed, so a cancel racing a payment can never
+          // flip a cancelled/in-progress ride to Paid. (Non-Paid statuses stay legal in any status.)
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(
+                          CreateRideRequest(
+                            clientId = testClientId,
+                            companyId = testCompanyId,
+                            pickupLocation = Location("A"),
+                            dropoffLocation = Location("B")
+                          )
+                        )
+            assigned <- service.assignDriver(ride.id, testDriverId)
+            started  <- service.startRide(assigned.id, testDriverId)
+            result   <- service.markPayment(started.id, PaymentStatus.Paid, Some(PaymentMethod.Cash)).exit
+            after    <- service.getRideById(ride.id)
+          } yield assertTrue(
+            result.isFailure,
+            after.paymentStatus != PaymentStatus.Paid
+          )
+        }.provide(standardLayers),
+        test("concurrent complete vs markPayment: payment only applies once Completed") {
+          // A ride is completed while a payment is attempted concurrently. The payment must not
+          // apply to the still-InProgress ride; if it fails it can be retried after completion.
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            started   <- service.startRide(assigned.id, testDriverId)
+            results   <- ZIO.collectAllPar(
+                           List(
+                             service.completeRide(started.id).exit,
+                             service.markPayment(started.id, PaymentStatus.Paid, Some(PaymentMethod.Cash)).exit
+                           )
+                         )
+            finalRide <- service.getRideById(ride.id)
+          } yield {
+            // Completion always wins (it is the only path to Completed). The payment either raced in
+            // before completion and was rejected by the CAS, or it never applied — so the loser does
+            // not silently overwrite. If the payment failed, the ride must still be unpaid.
+            val completeSucceeded = results.head.isSuccess
+            val paymentSucceeded  = results.lift(1).exists(_.isSuccess)
+            assertTrue(
+              completeSucceeded,
+              finalRide.status == RideStatus.Completed,
+              paymentSucceeded || finalRide.paymentStatus != PaymentStatus.Paid
+            )
+          }
         }.provide(standardLayers)
       ),
       suite("getUnpaidCompletedRides")(

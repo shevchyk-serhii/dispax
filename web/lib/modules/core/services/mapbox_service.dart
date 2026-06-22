@@ -162,28 +162,42 @@ class MapboxService {
     }
   }
 
+  /// Driver position marker.
+  ///
+  /// [color] is a 32-bit ARGB int (typically
+  /// `RideStatusStyles.getStatusColorValue(ride.status)`) so the dot follows the
+  /// ride status palette per the design; [radius] is animated by the caller to
+  /// produce the live pulse.
   static CircleAnnotationOptions createDriverMarker({
     required double latitude,
     required double longitude,
+    required int color,
+    double radius = 12.0,
     String? driverId,
   }) {
     return CircleAnnotationOptions(
       geometry: Point(coordinates: Position(longitude, latitude)),
-      circleRadius: 12.0,
-      circleColor: _parseColor('blue'),
+      circleRadius: radius,
+      circleColor: color,
       circleStrokeWidth: 3.0,
       circleStrokeColor: 0xFFFFFFFF,
     );
   }
 
+  /// Client (self) position marker — the design's pulsing cyan dot.
+  ///
+  /// [color] defaults to the corporate accent (`#0EA5E9`); [radius] is animated
+  /// by the caller for the pulse.
   static CircleAnnotationOptions createClientMarker({
     required double latitude,
     required double longitude,
+    int color = 0xFF0EA5E9,
+    double radius = 9.0,
   }) {
     return CircleAnnotationOptions(
       geometry: Point(coordinates: Position(longitude, latitude)),
-      circleRadius: 10.0,
-      circleColor: _parseColor('green'),
+      circleRadius: radius,
+      circleColor: color,
       circleStrokeWidth: 3.0,
       circleStrokeColor: 0xFFFFFFFF,
     );

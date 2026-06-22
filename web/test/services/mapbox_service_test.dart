@@ -73,4 +73,43 @@ void main() {
       );
     });
   });
+
+  group('MapboxService marker colours', () {
+    test('createDriverMarker uses the provided status colour', () {
+      final marker = MapboxService.createDriverMarker(
+        latitude: 48.0,
+        longitude: 11.0,
+        color: 0xFF14B8A6, // in-progress teal
+      );
+      expect(marker.circleColor, 0xFF14B8A6);
+    });
+
+    test('createClientMarker defaults to the corporate accent (cyan)', () {
+      final marker = MapboxService.createClientMarker(
+        latitude: 48.0,
+        longitude: 11.0,
+      );
+      expect(marker.circleColor, 0xFF0EA5E9);
+    });
+
+    test('marker radius is animatable via the radius argument', () {
+      expect(
+        MapboxService.createDriverMarker(
+          latitude: 48.0,
+          longitude: 11.0,
+          color: 0xFF000000,
+          radius: 15.0,
+        ).circleRadius,
+        15.0,
+      );
+      expect(
+        MapboxService.createClientMarker(
+          latitude: 48.0,
+          longitude: 11.0,
+          radius: 12.0,
+        ).circleRadius,
+        12.0,
+      );
+    });
+  });
 }
