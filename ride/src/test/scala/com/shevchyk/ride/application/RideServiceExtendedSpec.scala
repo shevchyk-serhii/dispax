@@ -717,7 +717,9 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             noopEmailSms ++
             AuditService.inMemory ++
             BlacklistRepository.inMemory ++
-            GeocodingService.noop ++ ExpenseRepository.inMemory) >+> RideService.layer
+            GeocodingService.noop ++
+            ExpenseRepository.inMemory ++
+            noopAvailabilityChecker) >+> RideService.layer
         )
       ),
 
