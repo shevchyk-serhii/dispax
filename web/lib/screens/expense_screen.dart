@@ -327,7 +327,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               height: 44,
               decoration: BoxDecoration(
                 color: hasMissingReceipt
-                    ? AppColors.warningBg
+                    ? (isDark
+                          ? AppColors.rideRequestedBgDark
+                          : AppColors.warningBg)
                     : catColor.withAlpha(25),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
@@ -339,7 +341,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               child: Icon(
                 _categoryIcon(expense.category),
                 size: 20,
-                color: hasMissingReceipt ? AppColors.warningStrong : catColor,
+                color: hasMissingReceipt
+                    ? (isDark
+                          ? AppColors.rideRequestedTextDark
+                          : AppColors.warningStrong)
+                    : catColor,
               ),
             ),
             const SizedBox(width: 12),

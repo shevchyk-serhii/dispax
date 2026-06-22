@@ -238,14 +238,20 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          selectedDayNotifier.value = DateTime.now();
-          viewTypeNotifier.value = CalendarViewType.day;
+      floatingActionButton: Builder(
+        builder: (context) {
+          final cs = Theme.of(context).colorScheme;
+          return FloatingActionButton(
+            onPressed: () {
+              selectedDayNotifier.value = DateTime.now();
+              viewTypeNotifier.value = CalendarViewType.day;
+            },
+            backgroundColor: cs.primary,
+            foregroundColor: cs.onPrimary,
+            tooltip: 'Today\'s Schedule',
+            child: const Icon(Icons.today),
+          );
         },
-        backgroundColor: AppColors.primary,
-        tooltip: 'Today\'s Schedule',
-        child: const Icon(Icons.today, color: Colors.white),
       ),
     );
   }

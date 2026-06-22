@@ -61,10 +61,12 @@ class WeekViewWidget extends StatelessWidget {
 
   Widget buildWeekHeader(BuildContext context, List<DateTime> weekDays) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 60,
       decoration: BoxDecoration(
-        color: AppColors.infoBg,
+        // Light keeps the intentional blue tint; dark uses a neutral surface.
+        color: isDark ? colorScheme.surfaceContainerHighest : AppColors.infoBg,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),

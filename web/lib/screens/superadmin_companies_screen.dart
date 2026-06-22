@@ -714,26 +714,48 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final (bg, border, text) = switch (status) {
-      'Active' => (
-        AppColors.successBg,
-        AppColors.rideCompletedBorder,
-        AppColors.successStrong,
-      ),
-      'Trial' => (
-        AppColors.warningBg,
-        AppColors.rideRequestedBorder,
-        AppColors.warningStrong,
-      ),
-      'Suspended' => (
-        AppColors.errorBg,
-        AppColors.rideCancelledBorder,
-        AppColors.errorStrong,
-      ),
+      'Active' =>
+        isDark
+            ? (
+                AppColors.rideCompletedBgDark,
+                AppColors.rideCompletedBorder,
+                AppColors.rideCompletedTextDark,
+              )
+            : (
+                AppColors.successBg,
+                AppColors.rideCompletedBorder,
+                AppColors.successStrong,
+              ),
+      'Trial' =>
+        isDark
+            ? (
+                AppColors.rideRequestedBgDark,
+                AppColors.rideRequestedBorder,
+                AppColors.rideRequestedTextDark,
+              )
+            : (
+                AppColors.warningBg,
+                AppColors.rideRequestedBorder,
+                AppColors.warningStrong,
+              ),
+      'Suspended' =>
+        isDark
+            ? (
+                AppColors.rideCancelledBgDark,
+                AppColors.rideCancelledBorder,
+                AppColors.rideCancelledTextDark,
+              )
+            : (
+                AppColors.errorBg,
+                AppColors.rideCancelledBorder,
+                AppColors.errorStrong,
+              ),
       _ => (
-        AppColors.surfaceVariant,
-        AppColors.borderPrimary,
-        AppColors.textSecondary,
+        isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
+        isDark ? AppColors.borderDark : AppColors.borderPrimary,
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
       ),
     };
 

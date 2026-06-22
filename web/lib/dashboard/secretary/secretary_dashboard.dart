@@ -437,7 +437,7 @@ class _TodaysBookingsCard extends StatelessWidget {
           Divider(
             height: 1,
             thickness: 1,
-            color: isDark ? AppColors.borderDark : const Color(0xFFF4F4F5),
+            color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
           ),
           if (rideState.isLoading)
             const Padding(
@@ -558,7 +558,7 @@ class _BookingRow extends StatelessWidget {
           Divider(
             height: 1,
             thickness: 1,
-            color: isDark ? AppColors.borderDark : const Color(0xFFF4F4F5),
+            color: isDark ? AppColors.borderDark : AppColors.borderPrimary,
             indent: 18,
             endIndent: 18,
           ),

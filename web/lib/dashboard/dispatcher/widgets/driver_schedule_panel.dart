@@ -448,8 +448,10 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    // primary stays graphite in light, inverts to light-graphite
+                    // in dark (theme handles it) — graphite in light is preserved.
                     color: isToday
-                        ? AppColors.dispatcherColor
+                        ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
@@ -773,7 +775,11 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                     : BorderSide.none,
               ),
               elevation: isHovering ? 4 : 2,
-              color: isHovering ? AppColors.rideAssignedBg : null,
+              color: isHovering
+                  ? (Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.rideAssignedBgDark
+                        : AppColors.rideAssignedBg)
+                  : null,
               child: Container(
                 decoration: BoxDecoration(
                   border: Border(left: BorderSide(color: loadColor, width: 4)),
@@ -1038,7 +1044,11 @@ class _DriverScheduleColumn extends StatelessWidget {
                     : BorderSide.none,
               ),
               elevation: isHovering ? 4 : 2,
-              color: isHovering ? AppColors.rideAssignedBg : null,
+              color: isHovering
+                  ? (Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.rideAssignedBgDark
+                        : AppColors.rideAssignedBg)
+                  : null,
               child: Container(
                 decoration: BoxDecoration(
                   border: Border(top: BorderSide(color: loadColor, width: 4)),

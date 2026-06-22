@@ -751,14 +751,14 @@ class _DispatchTopBar extends StatelessWidget {
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Search rides, drivers…',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textLight,
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search,
                       size: 18,
-                      color: AppColors.textLight,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     filled: true,
                     fillColor: colorScheme.surfaceContainerHighest,

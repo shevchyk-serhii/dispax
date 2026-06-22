@@ -525,7 +525,10 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.warningBg,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.rideRequestedBgDark
+                                : AppColors.warningBg,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: AppColors.rideRequestedBorder,
@@ -533,8 +536,12 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                           ),
                           child: Text(
                             '$unassignedCount unassigned',
-                            style: const TextStyle(
-                              color: AppColors.warningStrong,
+                            style: TextStyle(
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.rideRequestedTextDark
+                                  : AppColors.warningStrong,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -771,14 +778,16 @@ class _RideRow extends StatelessWidget {
         ),
       );
     } else {
-      // Graphite "Assign" button
+      // Graphite "Assign" button — theme-aware so it stays visible in dark
+      // (AppColors.primary == surfaceDark, so the button vanished on the card).
+      final colorScheme = Theme.of(context).colorScheme;
       return SizedBox(
         height: 32,
         child: FilledButton(
           onPressed: onAction,
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(horizontal: 10),
             textStyle: const TextStyle(
               fontSize: 12,

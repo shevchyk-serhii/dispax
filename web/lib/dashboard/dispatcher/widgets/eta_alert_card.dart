@@ -265,8 +265,9 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isRed
-        ? AppColors.errorBg
+        ? (isDark ? AppColors.rideCancelledBgDark : AppColors.errorBg)
         : colorScheme.surfaceContainerHighest;
     final borderColor = isRed
         ? AppColors.errorBorder

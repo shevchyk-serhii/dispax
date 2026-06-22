@@ -338,7 +338,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.errorBg,
+        color: isDark ? AppColors.rideCancelledBgDark : AppColors.errorBg,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
         border: Border.all(color: AppColors.rideCancelledBorder),
       ),
@@ -567,16 +567,22 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF0F9FF),
-                            border: Border.all(color: const Color(0xFFBAE6FD)),
+                            color: AppColors.accent.withValues(
+                              alpha: isDark ? 0.15 : 0.1,
+                            ),
+                            border: Border.all(
+                              color: AppColors.accent.withValues(alpha: 0.4),
+                            ),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Best match',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF0284C7),
+                              color: isDark
+                                  ? AppColors.accentLight
+                                  : AppColors.accentDark,
                             ),
                           ),
                         ),

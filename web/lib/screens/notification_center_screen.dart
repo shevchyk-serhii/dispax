@@ -677,6 +677,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
   // ─── Card style by type ───────────────────────────────────────────────────
 
   _CardStyle _cardStyle(String type) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     switch (type) {
       case 'ride':
       case 'ride_assigned':
@@ -684,7 +685,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
         // alert — red border-left
         return _CardStyle(
           leftBorder: const Color(0xFFEF4444),
-          iconBg: AppColors.errorBg,
+          iconBg: isDark ? AppColors.rideCancelledBgDark : AppColors.errorBg,
           iconColor: const Color(0xFFEF4444),
         );
       case 'chat':
@@ -692,7 +693,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
         // info — blue
         return _CardStyle(
           leftBorder: const Color(0xFF3B82F6),
-          iconBg: AppColors.infoBg,
+          iconBg: isDark ? AppColors.rideAssignedBgDark : AppColors.infoBg,
           iconColor: const Color(0xFF3B82F6),
         );
       case 'geofence':
@@ -700,15 +701,19 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
         // success — green
         return _CardStyle(
           leftBorder: const Color(0xFF22C55E),
-          iconBg: AppColors.successBg,
+          iconBg: isDark ? AppColors.rideCompletedBgDark : AppColors.successBg,
           iconColor: const Color(0xFF22C55E),
         );
       default:
         // neutral
         return _CardStyle(
-          leftBorder: AppColors.borderSecondary,
-          iconBg: AppColors.primarySurface,
-          iconColor: AppColors.textSecondary,
+          leftBorder: isDark ? AppColors.borderDark : AppColors.borderSecondary,
+          iconBg: isDark
+              ? AppColors.surfaceVariantDark
+              : AppColors.primarySurface,
+          iconColor: isDark
+              ? AppColors.textSecondaryDark
+              : AppColors.textSecondary,
         );
     }
   }
