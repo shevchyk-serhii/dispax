@@ -8,12 +8,15 @@ import '../../../modules/core/navigation_helper.dart';
 import '../../../modules/core/services/api_client.dart';
 import '../../../modules/core/widgets/calendar_controls.dart';
 import '../../../modules/schedule_management/services/schedule_service.dart';
+import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
+import '../../../screens/ride_details_screen.dart';
 export '../../../modules/core/widgets/calendar_controls.dart'
     show CalendarViewType;
 import 'month_view_widget.dart';
 import 'week_view_widget.dart';
 import 'day_view_widget.dart';
+import 'multi_column_view_widget.dart';
 
 class CalendarScheduleScreen extends StatefulWidget {
   const CalendarScheduleScreen({super.key});
@@ -178,6 +181,15 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),
+                      if (_canViewOtherSchedules)
+                        const PopupMenuItem<CalendarViewType>(
+                          value: CalendarViewType.multiColumn,
+                          child: ListTile(
+                            leading: Icon(Icons.view_column),
+                            title: Text('Board'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
                     ],
               );
             },
@@ -292,6 +304,12 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
     );
   }
 
+  void _openRideDetails(Ride ride) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => RideDetailsScreen(ride: ride)),
+    );
+  }
+
   Widget buildCalendarView(CalendarViewType viewType, DateTime selectedDay) {
     switch (viewType) {
       case CalendarViewType.month:
@@ -319,7 +337,24 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       case CalendarViewType.day:
         return DayViewWidget(
           selectedDay: selectedDay,
-          onRideSelected: (ride) {},
+          onRideSelected: _openRideDetails,
+        );
+      case CalendarViewType.multiColumn:
+        final authState = context.read<AuthBloc>().state;
+        final self = authState.user;
+        final selfPerson = self != null
+            ? Person(
+                id: self.id,
+                name: self.name,
+                email: self.email,
+                role: PersonRole.driver,
+              )
+            : null;
+        final allDrivers = [if (selfPerson != null) selfPerson, ..._colleagues];
+        return MultiColumnViewWidget(
+          selectedDay: selectedDay,
+          drivers: allDrivers,
+          onRideSelected: _openRideDetails,
         );
     }
   }
@@ -342,6 +377,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         );
         break;
       case CalendarViewType.day:
+      case CalendarViewType.multiColumn:
         selectedDayNotifier.value = currentDate.subtract(
           const Duration(days: 1),
         );
@@ -365,6 +401,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         selectedDayNotifier.value = currentDate.add(const Duration(days: 7));
         break;
       case CalendarViewType.day:
+      case CalendarViewType.multiColumn:
         selectedDayNotifier.value = currentDate.add(const Duration(days: 1));
         break;
     }

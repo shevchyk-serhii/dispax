@@ -188,6 +188,10 @@ case class MarkPaymentRequest(
     paymentMethod: Option[PaymentMethod] = None
 ) derives JsonCodec
 
+case class SetRidePriceRequest(
+    price: Double
+) derives JsonCodec
+
 case class CancelRideApiRequest(
     reason: String,
     fee: Option[Double] = None
@@ -247,6 +251,7 @@ given sttp.tapir.Schema[UpdateClientLocationRequest] = sttp.tapir.Schema.derived
 given sttp.tapir.Schema[SendChatMessageRequest]      = sttp.tapir.Schema.derived[SendChatMessageRequest]
 given sttp.tapir.Schema[MarkCheckpointRequest]       = sttp.tapir.Schema.derived[MarkCheckpointRequest]
 given sttp.tapir.Schema[CheckpointStateResponse]     = sttp.tapir.Schema.derived[CheckpointStateResponse]
+given sttp.tapir.Schema[SetRidePriceRequest]         = sttp.tapir.Schema.derived[SetRidePriceRequest]
 given sttp.tapir.Schema[EstimateRideRequest]         = sttp.tapir.Schema.derived[EstimateRideRequest]
 given sttp.tapir.Schema[EstimateRideResponse]        = sttp.tapir.Schema.derived[EstimateRideResponse]
 

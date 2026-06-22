@@ -68,6 +68,11 @@ class Person {
   /// company is unknown. Shown instead of the raw [companyId].
   final String? companyName;
 
+  /// User-selected UI language (en, de, uk). Null means use the device/system
+  /// locale. Stored on the backend and applied on login so the preference
+  /// follows the user across devices.
+  final String? preferredLanguage;
+
   Person({
     required this.id,
     required this.name,
@@ -84,6 +89,7 @@ class Person {
     Set<PersonRole>? roles,
     this.hasAvatar = false,
     this.companyName,
+    this.preferredLanguage,
   }) : roles = roles != null ? {...roles, role} : {role};
 
   /// Returns true when the person carries [r] as one of their roles.
@@ -130,6 +136,7 @@ class Person {
       roles: parsedRoles,
       hasAvatar: json['hasAvatar'] as bool? ?? false,
       companyName: json['companyName']?.toString(),
+      preferredLanguage: json['preferredLanguage']?.toString(),
     );
   }
 
@@ -149,6 +156,7 @@ class Person {
       'status': status,
       'hasAvatar': hasAvatar,
       'companyName': companyName,
+      'preferredLanguage': preferredLanguage,
     };
   }
 

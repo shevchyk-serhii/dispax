@@ -1,15 +1,17 @@
 import 'dart:convert';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dispax/blocs/auth/auth_bloc.dart';
 import 'package:dispax/blocs/auth/auth_event.dart';
 import 'package:dispax/blocs/auth/auth_state.dart';
+import 'package:dispax/locale_notifier.dart';
 import 'package:dispax/modules/auth/services/biometric_service.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
-import 'package:dispax/modules/core/services/websocket_service.dart';
 import '../helpers/mocks.dart';
 import '../helpers/test_fixtures.dart';
 
@@ -17,11 +19,13 @@ void main() {
   late MockApiClient mockApiClient;
   late MockBiometricService mockBiometricService;
   late MockTokenStorage mockStorage;
+  late MockWebSocketService mockWebSocketService;
 
   setUp(() {
     mockApiClient = MockApiClient();
     mockBiometricService = MockBiometricService();
     mockStorage = MockTokenStorage();
+    mockWebSocketService = MockWebSocketService();
 
     when(() => mockApiClient.dispose()).thenReturn(null);
     when(() => mockApiClient.setAuthToken(any())).thenReturn(null);
@@ -33,12 +37,20 @@ void main() {
     when(() => mockStorage.read(any())).thenAnswer((_) async => null);
     when(() => mockStorage.write(any(), any())).thenAnswer((_) async {});
     when(() => mockStorage.delete(any())).thenAnswer((_) async {});
+    when(
+      () => mockWebSocketService.connect(
+        any(),
+        wsBaseUrl: any(named: 'wsBaseUrl'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => mockWebSocketService.disconnect()).thenReturn(null);
   });
 
   AuthBloc buildBloc() => AuthBloc(
     apiClient: mockApiClient,
     biometricService: mockBiometricService,
     storage: mockStorage,
+    webSocketService: mockWebSocketService,
   );
 
   group('AuthBloc', () {
@@ -258,9 +270,6 @@ void main() {
 
       expect(bloc.apiClient, same(clientBefore));
 
-      // Login starts the real WebSocket singleton (its reconnect timer would
-      // otherwise fire during a later test); stop it before tearing down.
-      WebSocketService.instance.disconnect();
       await bloc.close();
     });
 
@@ -278,9 +287,6 @@ void main() {
 
       verify(() => mockApiClient.setAuthToken('new-token')).called(1);
 
-      // Stop the real WebSocket singleton started by login so its reconnect
-      // timer doesn't leak into a later test.
-      WebSocketService.instance.disconnect();
       await bloc.close();
     });
 
@@ -344,5 +350,128 @@ void main() {
         await bloc.close();
       },
     );
+
+    // ── Locale application on login / session restore ─────────────────────────
+    //
+    // When AuthBloc loads a user that has a preferredLanguage set on the backend,
+    // it must apply that language to localeNotifier immediately so the UI switches
+    // without requiring a restart (per the "live-switch" requirement).
+    group('locale application', () {
+      setUp(() {
+        // Reset the global notifier before each test to prevent leakage.
+        localeNotifier.value = null;
+        // Provide a fake SharedPreferences backend so the in-memory write inside
+        // AuthBloc._onLoginRequested / _onInitializeRequested does not hit a
+        // real platform channel (which is unavailable in unit tests).
+        SharedPreferences.setMockInitialValues({});
+      });
+
+      tearDown(() {
+        localeNotifier.value = null;
+      });
+
+      test('login with preferredLanguage "de" sets localeNotifier to Locale("de")',
+          () async {
+        final person = TestFixtures.person(preferredLanguage: 'de');
+        when(() => mockApiClient.login(any(), any())).thenAnswer(
+          (_) async => {'person': person.toJson(), 'token': 'test-token'},
+        );
+
+        final bloc = buildBloc();
+        bloc.add(
+          const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
+        );
+        await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
+
+        expect(localeNotifier.value, const Locale('de'));
+
+        await bloc.close();
+      });
+
+      test('login with preferredLanguage "uk" sets localeNotifier to Locale("uk")',
+          () async {
+        final person = TestFixtures.person(preferredLanguage: 'uk');
+        when(() => mockApiClient.login(any(), any())).thenAnswer(
+          (_) async => {'person': person.toJson(), 'token': 'test-token'},
+        );
+
+        final bloc = buildBloc();
+        bloc.add(
+          const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
+        );
+        await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
+
+        expect(localeNotifier.value, const Locale('uk'));
+
+        await bloc.close();
+      });
+
+      test('login with null preferredLanguage does not change localeNotifier',
+          () async {
+        // Set a pre-existing locale to confirm it is not touched.
+        localeNotifier.value = const Locale('en');
+
+        final person = TestFixtures.person(preferredLanguage: null);
+        when(() => mockApiClient.login(any(), any())).thenAnswer(
+          (_) async => {'person': person.toJson(), 'token': 'test-token'},
+        );
+
+        final bloc = buildBloc();
+        bloc.add(
+          const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
+        );
+        await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
+
+        // localeNotifier must remain unchanged — we did not override it.
+        expect(localeNotifier.value, const Locale('en'));
+
+        await bloc.close();
+      });
+
+      test(
+          'AuthInitializeRequested with stored user that has preferredLanguage "de" sets localeNotifier',
+          () async {
+        final person = TestFixtures.person(preferredLanguage: 'de');
+        when(
+          () => mockStorage.read(AuthBloc.privateUserKey),
+        ).thenAnswer((_) async => jsonEncode(person.toJson()));
+        when(
+          () => mockStorage.read(AuthBloc.privateTokenKey),
+        ).thenAnswer((_) async => 'test-token');
+
+        final bloc = buildBloc();
+        bloc.add(const AuthInitializeRequested());
+        await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
+
+        expect(localeNotifier.value, const Locale('de'));
+
+        await bloc.close();
+      });
+
+      test(
+          'AuthInitializeRequested with stored user without preferredLanguage does not change localeNotifier',
+          () async {
+        localeNotifier.value = const Locale('uk');
+
+        final person = TestFixtures.person(preferredLanguage: null);
+        when(
+          () => mockStorage.read(AuthBloc.privateUserKey),
+        ).thenAnswer((_) async => jsonEncode(person.toJson()));
+        when(
+          () => mockStorage.read(AuthBloc.privateTokenKey),
+        ).thenAnswer((_) async => 'test-token');
+
+        final bloc = buildBloc();
+        bloc.add(const AuthInitializeRequested());
+        await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
+
+        // Pre-existing locale must be preserved — bloc must not clear it.
+        expect(localeNotifier.value, const Locale('uk'));
+
+        await bloc.close();
+      });
+    });
+
   });
 }
+

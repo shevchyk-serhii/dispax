@@ -12,12 +12,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 
 import 'l10n/app_localizations.dart';
+import 'locale_notifier.dart';
 import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'modules/ride_management/services/ride_service.dart';
 import 'modules/ride_management/models/ride.dart';
 import 'modules/schedule_management/services/schedule_service.dart';
+import 'modules/core/services/mapbox_service.dart';
 import 'modules/core/services/websocket_service.dart';
 import 'modules/core/services/push_notification_service.dart';
 
@@ -77,12 +79,13 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
   themeModeNotifier.value = themeFromString(prefs.getString('theme_mode'));
+  localeNotifier.value = localeFromString(prefs.getString('language'));
 
   // Mapbox Maps is not supported on web; its initializer calls
   // bool.fromEnvironment non-const, which throws on the DDC/web compiler
   // and crashes main() before runApp (white screen). Skip it on web.
-  if (!kIsWeb) {
-    MapboxOptions.setAccessToken('MAPBOX_PUBLIC_TOKEN_REMOVED');
+  if (!kIsWeb && MapboxService.accessTokenOrEmpty.isNotEmpty) {
+    MapboxOptions.setAccessToken(MapboxService.accessTokenOrEmpty);
   }
 
   try {
@@ -123,19 +126,23 @@ class MyApp extends StatelessWidget {
       ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: themeModeNotifier,
-        builder: (context, themeMode, _) => MaterialApp(
-          title: 'Dispax',
-          theme: AppTheme.theme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: themeMode,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const AppRoot(),
+        builder: (context, themeMode, _) => ValueListenableBuilder<Locale?>(
+          valueListenable: localeNotifier,
+          builder: (context, locale, _) => MaterialApp(
+            title: 'Dispax',
+            theme: AppTheme.theme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeMode,
+            locale: locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const AppRoot(),
+          ),
         ),
       ),
     );

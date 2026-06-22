@@ -375,17 +375,16 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   /// Returns the ordered list of screen indices for each bottom-nav position.
   ///
-  /// canDrive=true  → 7 tabs: Home | My Schedule | Schedule | My Rides | New Ride | More | Billing
+  /// canDrive=true  → 6 tabs: Home | Calendar | My Rides | New Ride | More | Billing
   /// canDrive=false → 6 tabs: Home | Schedule | Analytics | New Ride | More | Billing
   List<int> _navOrder(bool canDrive) => canDrive
       ? [
           0, // pos 0: Home (PendingRidesPanel)
-          _myScheduleScreenIndex, // pos 1: My Schedule (CalendarScheduleScreen)
-          1, // pos 2: Schedule (DriverSchedulePanel)
-          _driverMyRidesScreenIndex, // pos 3: My Rides (TodayRidesScreen)
-          3, // pos 4: New Ride (CreateRideScreen)
-          4, // pos 5: More
-          _billingTabIndex, // pos 6: Billing
+          _myScheduleScreenIndex, // pos 1: Calendar (CalendarScheduleScreen)
+          _driverMyRidesScreenIndex, // pos 2: My Rides (TodayRidesScreen)
+          3, // pos 3: New Ride (CreateRideScreen)
+          4, // pos 4: More
+          _billingTabIndex, // pos 5: Billing
         ]
       : [
           0, // pos 0: Home
@@ -404,8 +403,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     if (canDrive) {
       return [
         dest(LucideCompat.clipboardList, 'Home'),
-        dest(Icons.event_note_outlined, 'My Schedule'),
-        dest(LucideCompat.calendarDays, 'Schedule'),
+        dest(LucideCompat.calendarDays, 'Calendar'),
         dest(Icons.directions_car_outlined, 'My Rides'),
         dest(Icons.add_circle_outline, 'New Ride'),
         dest(Icons.grid_view_outlined, 'More'),
@@ -570,6 +568,13 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           Icons.bar_chart,
           'Analytics',
           2,
+          Theme.of(context).colorScheme.primary,
+        ),
+      if (canDrive)
+        _MoreMenuItem(
+          Icons.calendar_view_week,
+          'Driver Board',
+          1, // DriverSchedulePanel — removed from nav but still accessible via More
           Theme.of(context).colorScheme.primary,
         ),
       if (canDrive)

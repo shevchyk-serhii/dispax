@@ -30,7 +30,8 @@ case class UserDto(
     status: Option[String] = None,
     companyId: Option[UUID] = None,
     createdAt: Option[String] = None,
-    roles: List[String] = Nil
+    roles: List[String] = Nil,
+    preferredLanguage: Option[String] = None
 ) derives JsonCodec
 
 case class CreateUserRequest(
@@ -45,28 +46,36 @@ case class CreateUserRequest(
 object CreateUserRequest:
   given Schema[CreateUserRequest] = Schema.derived
 
+// Supported locale codes — must match AppLocalizations.supportedLocales in the Flutter app.
+private val supportedLanguageCodes: Set[String] = Set("en", "de", "uk")
+
 case class UpdateUserRequest(
     email: Option[String] = None,
     name: Option[String] = None,
     role: Option[String] = None,
     phone: Option[String] = None,
     status: Option[String] = None,
-    roles: Option[List[String]] = None
+    roles: Option[List[String]] = None,
+    preferredLanguage: Option[String] = None
 ) derives JsonCodec:
 
   /**
    * Apply the patch onto an existing person. The `role`, `status` and `roles` fields are passed in already
    * parsed/validated by the caller (they require effectful validation); the remaining fields are merged from this
-   * request.
+   * request. `preferredLanguage` is silently ignored if it is not one of the supported locale codes (en/de/uk) —
+   * unknown values are never written to the database.
    */
-  def applyTo(current: Person, role: PersonRole, status: UserStatus, rolesSet: Set[PersonRole]): Person = current.copy(
-    email = email.getOrElse(current.email),
-    name = name.getOrElse(current.name),
-    role = role,
-    phone = phone.orElse(current.phone),
-    status = status,
-    roles = rolesSet
-  )
+  def applyTo(current: Person, role: PersonRole, status: UserStatus, rolesSet: Set[PersonRole]): Person =
+    val validatedLang = preferredLanguage.filter(supportedLanguageCodes.contains)
+    current.copy(
+      email = email.getOrElse(current.email),
+      name = name.getOrElse(current.name),
+      role = role,
+      phone = phone.orElse(current.phone),
+      status = status,
+      roles = rolesSet,
+      preferredLanguage = validatedLang.orElse(current.preferredLanguage)
+    )
 
 object UpdateUserRequest:
   given Schema[UpdateUserRequest] = Schema.derived
@@ -145,5 +154,6 @@ object UserDto:
     phone = person.phone,
     status = Some(person.status.toString),
     companyId = person.companyId.map(_.value),
-    roles = person.effectiveRoles.map(PersonRole.toWire).toList
+    roles = person.effectiveRoles.map(PersonRole.toWire).toList,
+    preferredLanguage = person.preferredLanguage
   )

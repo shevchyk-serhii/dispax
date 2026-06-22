@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../modules/core/models/person.dart';
 import '../../modules/core/services/api_client.dart';
+import '../../locale_notifier.dart';
 import '../../modules/core/services/location_clarification_service.dart';
 import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/push_notification_service.dart';
@@ -83,6 +84,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   late ApiClient privateApiClient;
   late BiometricService privateBiometricService;
   final TokenStorage _storage;
+  final WebSocketServiceBase _webSocketService;
 
   static const String privateUserKey = 'current_user';
   static const String privateTokenKey = 'auth_token';
@@ -91,7 +93,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     ApiClient? apiClient,
     BiometricService? biometricService,
     TokenStorage? storage,
+    WebSocketServiceBase? webSocketService,
   }) : _storage = storage ?? _TokenStorage(),
+       _webSocketService = webSocketService ?? WebSocketService.instance,
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();
     privateApiClient.onUnauthorized = () => add(AuthLogoutRequested());
@@ -144,6 +148,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final user = Person.fromJson(userJson);
         privateApiClient.setAuthToken(token);
 
+        // Apply the user's preferred language — backend is the source of truth.
+        if (user.preferredLanguage != null) {
+          final locale = localeFromString(user.preferredLanguage);
+          if (locale != null) {
+            localeNotifier.value = locale;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('language', user.preferredLanguage!);
+          }
+        }
+
         /// Configure services with authenticated API client
         AirportTimingService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
@@ -152,10 +166,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
 
         /// Connect WebSocket for real-time updates
-        WebSocketService.instance.connect(
-          token,
-          wsBaseUrl: ApiClient.wsBaseUrl,
-        );
+        _webSocketService.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
 
         emit(
           AuthState.authenticated(
@@ -206,12 +217,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
 
         /// Connect WebSocket for real-time updates
-        WebSocketService.instance.connect(
+        _webSocketService.connect(
           loginResponse['token'],
           wsBaseUrl: ApiClient.wsBaseUrl,
         );
 
         final user = Person.fromJson(loginResponse['person']);
+
+        // Apply the user's preferred language — backend is the source of truth.
+        if (user.preferredLanguage != null) {
+          final locale = localeFromString(user.preferredLanguage);
+          if (locale != null) {
+            localeNotifier.value = locale;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('language', user.preferredLanguage!);
+          }
+        }
+
         emit(AuthState.authenticated(user));
       } else {
         emit(AuthState.error('Invalid email or password'));
@@ -234,7 +256,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       privateApiClient.clearAuthToken();
 
       /// Disconnect WebSocket
-      WebSocketService.instance.disconnect();
+      _webSocketService.disconnect();
 
       /// Unregister FCM token
       await PushNotificationService.instance.unregisterToken();
@@ -294,10 +316,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final user = Person.fromJson(userJson);
           privateApiClient.setAuthToken(token);
 
-          WebSocketService.instance.connect(
-            token,
-            wsBaseUrl: ApiClient.wsBaseUrl,
-          );
+          _webSocketService.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
 
           emit(
             AuthState.authenticated(

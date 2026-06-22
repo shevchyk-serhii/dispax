@@ -22,6 +22,7 @@ class TestFixtures {
     String? licenseNumber,
     String? phone = '+491234567890',
     VehicleInfo? vehicleInfo,
+    String? preferredLanguage,
   }) {
     return Person(
       id: id,
@@ -32,6 +33,7 @@ class TestFixtures {
       licenseNumber: licenseNumber,
       phone: phone,
       vehicleInfo: vehicleInfo,
+      preferredLanguage: preferredLanguage,
     );
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../core/validators.dart';
 
 /// The credential fields + action buttons for the sign-in screen.
@@ -104,7 +105,7 @@ class LoginForm extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── Email field ──────────────────────────────────────────────────
-          _fieldLabel('Email'),
+          _fieldLabel(AppLocalizations.of(context)!.email),
           const SizedBox(height: 6),
           SizedBox(
             height: 48,
@@ -134,7 +135,7 @@ class LoginForm extends StatelessWidget {
           const SizedBox(height: 16),
 
           // ── Password field ───────────────────────────────────────────────
-          _fieldLabel('Password'),
+          _fieldLabel(AppLocalizations.of(context)!.password),
           const SizedBox(height: 6),
           ValueListenableBuilder<bool>(
             valueListenable: obscurePasswordNotifier,
@@ -190,9 +191,9 @@ class LoginForm extends StatelessWidget {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text(
-                'Forgot password?',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)!.forgotPassword,
+                style: const TextStyle(
                   color: AppColors.accent,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
@@ -216,9 +217,9 @@ class LoginForm extends StatelessWidget {
                   borderRadius: BorderRadius.circular(13),
                 ),
               ),
-              child: const Text(
-                'Sign in',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)!.signIn,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -284,14 +285,14 @@ class _FaceIdButton extends StatelessWidget {
           ),
           elevation: 0,
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.face, size: 18, color: AppColors.textPrimary),
-            SizedBox(width: 8),
+            const Icon(Icons.face, size: 18, color: AppColors.textPrimary),
+            const SizedBox(width: 8),
             Text(
-              'Face ID',
-              style: TextStyle(
+              AppLocalizations.of(context)!.faceId,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,

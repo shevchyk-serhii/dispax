@@ -244,5 +244,39 @@
   "assignAnyway": "Assign Anyway",
   "unavailabilityCreated": "Unavailability marked successfully",
   "unavailabilityDeleted": "Unavailability removed",
-  "noUnavailability": "No unavailability windows"
+  "noUnavailability": "No unavailability windows",
+
+  "preferences": "Preferences",
+  "faceIdUnlock": "Face ID unlock",
+  "darkMode": "Dark mode",
+  "general": "General",
+  "activeSessions": "Active sessions",
+  "earnings": "Earnings",
+  "myEarnings": "My Earnings",
+  "privacy": "Privacy",
+  "privacyDataGdpr": "Privacy & Data (GDPR)",
+  "signOut": "Sign out",
+  "signOutConfirm": "Are you sure you want to sign out?",
+  "required": "Required",
+  "change": "Change",
+  "failedToChangePassword": "Failed to change password",
+
+  "welcomeBack": "Welcome back",
+  "signInSubtitle": "Sign in to your dispatch account.",
+  "signIn": "Sign in",
+  "forgotPassword": "Forgot password?",
+  "faceId": "Face ID",
+
+  "roleDriver": "Driver",
+  "roleClient": "Client",
+  "roleSecretary": "Secretary",
+  "roleClientSecretary": "Client Secretary",
+  "roleDispatcher": "Dispatcher",
+  "roleAdmin": "Admin",
+  "roleSuperAdmin": "Super Admin",
+
+  "languageSaveFailed": "Couldn't save language to your account",
+  "@languageSaveFailed": {
+    "description": "Shown in a snackbar when the backend PUT /users/{id} call to persist the preferred language fails."
+  }
 }

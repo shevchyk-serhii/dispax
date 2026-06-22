@@ -14,12 +14,20 @@ class MapboxService {
   );
 
   static String get accessToken {
-    assert(
-      _accessToken.isNotEmpty,
-      'MAPBOX_ACCESS_TOKEN must be set via --dart-define',
-    );
+    // Use a real check (not assert) so a missing token also surfaces in
+    // release builds, where asserts are stripped and an empty token would
+    // otherwise leave the map silently blank.
+    if (_accessToken.isEmpty) {
+      throw StateError('MAPBOX_ACCESS_TOKEN must be set via --dart-define');
+    }
     return _accessToken;
   }
+
+  /// Token without the `assert` — safe to read when an empty token is a valid
+  /// (degraded) state, e.g. wiring the maps SDK at startup or feeding the
+  /// address suggester. Returns `''` when unset instead of tripping the debug
+  /// assertion in [accessToken].
+  static String get accessTokenOrEmpty => _accessToken;
 
   static const double defaultLatitude = 48.1351;
   static const double defaultLongitude = 11.5820;
@@ -108,6 +116,60 @@ class MapboxService {
     }
 
     return [(center[1] as num).toDouble(), (center[0] as num).toDouble()];
+  }
+
+  /// Forward-geocode [query] into a short list of human-readable address
+  /// suggestions (Mapbox `place_name`), biased to Munich/Germany. Used by the
+  /// address picker to show live autocomplete while the user types.
+  ///
+  /// Returns `[]` (never throws) when the token is missing, the query is too
+  /// short, the request fails, or the response is malformed — the picker falls
+  /// back to manual entry / saved places in that case.
+  static Future<List<String>> suggestAddresses(String query) async {
+    final trimmed = query.trim();
+    if (_accessToken.isEmpty || trimmed.length < 3) return const [];
+
+    try {
+      final encoded = Uri.encodeComponent(trimmed);
+      final url = Uri.parse(
+        'https://api.mapbox.com/geocoding/v5/mapbox.places/$encoded.json'
+        '?access_token=$_accessToken'
+        '&limit=5'
+        '&country=de'
+        '&proximity=$defaultLongitude,$defaultLatitude',
+      );
+
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        return parseGeocodeSuggestions(jsonDecode(response.body));
+      }
+      debugPrint(
+        'MapboxService: Suggest failed with status ${response.statusCode}',
+      );
+    } catch (e) {
+      debugPrint('MapboxService: Suggest error: $e');
+    }
+
+    return const [];
+  }
+
+  /// Extracts the `place_name` of each feature from a decoded Mapbox geocoding
+  /// response, skipping any feature without a non-empty string name. Returns an
+  /// empty list (never throws) for any malformed shape — missing/non-list
+  /// `features`, non-Map features, missing/non-string `place_name`.
+  static List<String> parseGeocodeSuggestions(dynamic data) {
+    final features = data is Map ? data['features'] : null;
+    if (features is! List) return const [];
+
+    final result = <String>[];
+    for (final feature in features) {
+      final name = feature is Map ? feature['place_name'] : null;
+      if (name is String && name.trim().isNotEmpty) {
+        result.add(name);
+      }
+    }
+    return result;
   }
 
   static CameraOptions createCameraOptions({

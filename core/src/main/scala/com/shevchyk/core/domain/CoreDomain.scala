@@ -140,7 +140,9 @@ final case class Person(
     avatarPresent: Boolean = false,
     // avatar bytes are only populated by PersonRepository.getAvatar, never by selectColumns.
     avatar: Option[Array[Byte]] = None,
-    avatarContentType: Option[String] = None
+    avatarContentType: Option[String] = None,
+    // User-selected UI language (en, de, uk); None means use the device/system locale.
+    preferredLanguage: Option[String] = None
 ):
 
   /**
@@ -181,7 +183,9 @@ final case class PersonDto(
     // true when the person has a profile photo; raw bytes are served separately via GET /api/users/{id}/avatar
     hasAvatar: Boolean = false,
     // resolved company display name — populated by the profile endpoint only (lookup via CompanyRepository)
-    companyName: Option[String] = None
+    companyName: Option[String] = None,
+    // user-selected UI language (en, de, uk); None means use the device/system locale
+    preferredLanguage: Option[String] = None
 ) derives JsonCodec
 
 object PersonDto:
@@ -202,7 +206,8 @@ object PersonDto:
     clientCompanyId = p.clientCompanyId,
     reminderMinutes = p.reminderMinutes,
     roles = p.effectiveRoles,
-    hasAvatar = p.avatarPresent
+    hasAvatar = p.avatarPresent,
+    preferredLanguage = p.preferredLanguage
   )
 
 enum CompanyStatus derives JsonCodec:
