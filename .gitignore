@@ -60,10 +60,6 @@ web/.pub-cache/
 web/.pub/
 web/pubspec.lock
 
-### FVM ###
-# Pin lives in web/.fvmrc (tracked); the local SDK symlink/cache must not be committed.
-web/.fvm/
-
 ### Patrol ###
 web/integration_test/test_bundle.dart
 

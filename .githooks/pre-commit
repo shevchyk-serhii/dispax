@@ -2,7 +2,14 @@
 
 echo "Running formatters before commit..."
 
-# Format Scala code
+# Use the FVM-pinned Dart (web/.fvmrc → matches CI) for the Dart format check,
+# so committing with a newer system Dart can't reformat files in a way that then
+# fails CI. Falls back to the bare `dart` when FVM isn't installed.
+if command -v fvm >/dev/null 2>&1 && [ -f web/.fvmrc ]; then
+  export DART_BIN="fvm dart"
+fi
+
+# Format Scala + Dart code (DART_BIN honoured by the build.sbt fmtDart alias).
 sbt fmtAll
 
 # Re-stage ONLY files that were already staged (preserve selective commits).
