@@ -8,6 +8,7 @@ import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 import '../utils/conflict_detector.dart';
 import 'assignment_dialog.dart';
 import 'bulk_reassign_dialog.dart';
@@ -183,9 +184,14 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
                         scheduleState.errorMessage ?? 'Error loading schedules',
                       ),
                       const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _loadSchedule,
-                        child: const Text('Retry'),
+                      Builder(
+                        builder: (context) {
+                          final l10n = AppLocalizations.of(context)!;
+                          return ElevatedButton(
+                            onPressed: _loadSchedule,
+                            child: Text(l10n.retry),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -526,10 +532,9 @@ void showReassignSheet(
         ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
   if (otherDrivers.isEmpty) {
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('No other drivers available for reassignment.'),
-      ),
+      SnackBar(content: Text(l10n.noDriversAvailableForReassignment)),
     );
     return;
   }
@@ -654,36 +659,39 @@ void showReassignSheet(
                       Navigator.pop(ctx);
                       showAdaptiveDialog(
                         context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text('Confirm Reassignment'),
-                          content: Text(
-                            'Reassign ${ride.clientName} to $driverLabel?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Cancel'),
+                        builder: (dlgCtx) {
+                          final l10n = AppLocalizations.of(dlgCtx)!;
+                          return AlertDialog(
+                            title: Text(l10n.confirmReassignment),
+                            content: Text(
+                              'Reassign ${ride.clientName} to $driverLabel?',
                             ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.warning,
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dlgCtx),
+                                child: Text(l10n.cancel),
                               ),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                context.read<RideBloc>().add(
-                                  RideReassignRequested(
-                                    rideId: ride.id,
-                                    newDriverId: schedule.driverId,
-                                  ),
-                                );
-                              },
-                              child: const Text(
-                                'Reassign',
-                                style: TextStyle(color: Colors.white),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.warning,
+                                ),
+                                onPressed: () {
+                                  Navigator.pop(dlgCtx);
+                                  context.read<RideBloc>().add(
+                                    RideReassignRequested(
+                                      rideId: ride.id,
+                                      newDriverId: schedule.driverId,
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  'Reassign',
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          );
+                        },
                       );
                     },
                   ),

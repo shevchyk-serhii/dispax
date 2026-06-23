@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/lucide_compat.dart';
+import '../../l10n/app_localizations.dart';
 import '../../screens/create_ride_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/expense_screen.dart';
@@ -138,22 +140,21 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   Future<bool> _confirmLeaveCreateRide(BuildContext context) async {
     if (!_createRideFormBloc.state.isModified) return true;
+    final l10n = AppLocalizations.of(context)!;
     final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Discard changes?'),
-        content: const Text(
-          'You have unsaved ride details. If you leave, they will be lost.',
-        ),
+        title: Text(l10n.discardChangesTitle),
+        content: Text(l10n.discardChangesMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Stay'),
+            child: Text(l10n.stay),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Discard'),
+            child: Text(l10n.discard),
           ),
         ],
       ),
@@ -232,10 +233,11 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final user = context.read<AuthBloc>().state.user;
     final canDrive = user?.canDrive ?? false;
     final navOrder = _navOrder(canDrive);
-    final navDestinations = _buildNavDestinations(canDrive);
+    final navDestinations = _buildNavDestinations(canDrive, l10n);
 
     return ResponsiveScaffold(
       destinations: navDestinations,
@@ -348,23 +350,29 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     );
   }
 
-  void _openBilling(BuildContext context) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => Scaffold(
-        appBar: AppBar(title: const Text('Billing')),
-        body: const BillingScreen(),
+  void _openBilling(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(l10n.billingScreenTitle)),
+          body: const BillingScreen(),
+        ),
       ),
-    ),
-  );
+    );
+  }
 
-  void _openDriverMap(BuildContext context) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => Scaffold(
-        appBar: AppBar(title: const Text('Driver Map')),
-        body: const DriverMapScreen(),
+  void _openDriverMap(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(l10n.driverMapMenuItem)),
+          body: const DriverMapScreen(),
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   /// Mobile body: the IndexedStack with all screens. The BottomNavigationBar is
   /// provided by [ResponsiveScaffold] at the mobile breakpoint.
@@ -396,27 +404,30 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         ];
 
   /// Builds the [NavigationDestination] list matching the nav order.
-  List<NavigationDestination> _buildNavDestinations(bool canDrive) {
+  List<NavigationDestination> _buildNavDestinations(
+    bool canDrive,
+    AppLocalizations l10n,
+  ) {
     NavigationDestination dest(IconData icon, String label) =>
         NavigationDestination(icon: Icon(icon), label: label);
 
     if (canDrive) {
       return [
-        dest(LucideCompat.clipboardList, 'Home'),
-        dest(LucideCompat.calendarDays, 'Calendar'),
-        dest(Icons.directions_car_outlined, 'My Rides'),
-        dest(Icons.add_circle_outline, 'New Ride'),
-        dest(Icons.grid_view_outlined, 'More'),
-        dest(Icons.request_quote_outlined, 'Billing'),
+        dest(LucideCompat.clipboardList, l10n.homeTab),
+        dest(LucideCompat.calendarDays, l10n.calendarTab),
+        dest(Icons.directions_car_outlined, l10n.myRides),
+        dest(Icons.add_circle_outline, l10n.newRideTab),
+        dest(Icons.grid_view_outlined, l10n.moreTab),
+        dest(Icons.request_quote_outlined, l10n.billingTab),
       ];
     }
     return [
-      dest(LucideCompat.clipboardList, 'Home'),
-      dest(LucideCompat.calendarDays, 'Schedule'),
-      dest(Icons.bar_chart_outlined, 'Analytics'),
-      dest(Icons.add_circle_outline, 'New Ride'),
-      dest(Icons.grid_view_outlined, 'More'),
-      dest(Icons.request_quote_outlined, 'Billing'),
+      dest(LucideCompat.clipboardList, l10n.homeTab),
+      dest(LucideCompat.calendarDays, l10n.scheduleTab),
+      dest(Icons.bar_chart_outlined, l10n.analytics),
+      dest(Icons.add_circle_outline, l10n.newRideTab),
+      dest(Icons.grid_view_outlined, l10n.moreTab),
+      dest(Icons.request_quote_outlined, l10n.billingTab),
     ];
   }
 
@@ -430,134 +441,140 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   }
 
   Widget _buildMoreScreen(bool canDrive) {
+    final l10n = AppLocalizations.of(context)!;
     final items = [
       // Unified corporate graphite; only genuinely destructive items stay red.
       _MoreMenuItem(
         Icons.euro,
-        'Earnings',
+        l10n.earningsMenuItem,
         5,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.access_time_filled,
-        'Peak Hours',
+        l10n.peakHoursMenuItem,
         6,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.diamond,
-        'Client Value',
+        l10n.clientValueMenuItem,
         7,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.leaderboard,
-        'Drivers',
+        l10n.driversMenuItem,
         8,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.star,
-        'Ratings',
+        l10n.ratingsMenuItem,
         9,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.history,
-        'Audit Log',
+        l10n.auditLogMenuItem,
         10,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.admin_panel_settings,
-        'Admin',
+        l10n.adminMenuItem,
         11,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.business,
-        'Company',
+        l10n.companyMenuItem,
         12,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.receipt_long,
-        'Expenses',
+        l10n.expensesMenuItem,
         13,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.download,
-        'Export',
+        l10n.exportMenuItem,
         14,
         Theme.of(context).colorScheme.primary,
       ),
       // Billing (screen 15) now has a dedicated bottom-nav tab, so it's omitted here.
       _MoreMenuItem(
         Icons.repeat,
-        'Templates',
+        l10n.templatesMenuItem,
         16,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.payment,
-        'Payments',
+        l10n.paymentsMenuItem,
         17,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.account_balance_wallet,
-        'Payroll',
+        l10n.payrollMenuItem,
         18,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.settings,
-        'Settings',
+        l10n.settingsMenuItem,
         19,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.share_location,
-        'Geofences',
+        l10n.geofencesMenuItem,
         20,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.account_balance,
-        'DATEV',
+        l10n.datevMenuItem,
         21,
         Theme.of(context).colorScheme.primary,
       ),
-      _MoreMenuItem(Icons.block, 'Blacklist', 22, AppColors.error),
-      _MoreMenuItem(Icons.emergency, 'Emergency', 23, AppColors.error),
+      _MoreMenuItem(Icons.block, l10n.blacklistMenuItem, 22, AppColors.error),
+      _MoreMenuItem(
+        Icons.emergency,
+        l10n.emergencyMenuItem,
+        23,
+        AppColors.error,
+      ),
       _MoreMenuItem(
         Icons.groups,
-        'Ride Pools',
+        l10n.ridePoolsMenuItem,
         24,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.notifications,
-        'Notifications',
+        l10n.notificationsMenuItem,
         25,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.privacy_tip,
-        'GDPR',
+        l10n.gdprMenuItem,
         26,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.devices,
-        'Sessions',
+        l10n.sessionsMenuItem,
         27,
         Theme.of(context).colorScheme.primary,
       ),
       _MoreMenuItem(
         Icons.visibility,
-        'Sched. Visibility',
+        l10n.schedVisibilityMenuItem,
         28,
         Theme.of(context).colorScheme.primary,
       ),
@@ -566,28 +583,28 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       if (canDrive)
         _MoreMenuItem(
           Icons.bar_chart,
-          'Analytics',
+          l10n.analyticsMenuItem,
           2,
           Theme.of(context).colorScheme.primary,
         ),
       if (canDrive)
         _MoreMenuItem(
           Icons.calendar_view_week,
-          'Driver Board',
+          l10n.driverBoardMenuItem,
           1, // DriverSchedulePanel — removed from nav but still accessible via More
           Theme.of(context).colorScheme.primary,
         ),
       if (canDrive)
         _MoreMenuItem(
           Icons.map,
-          'Driver Map',
+          l10n.driverMapMenuItem,
           _driverMapScreenIndex,
           Theme.of(context).colorScheme.primary,
         ),
       if (canDrive)
         _MoreMenuItem(
           Icons.directions_car,
-          'My Rides',
+          l10n.myRides,
           _driverMyRidesScreenIndex,
           Theme.of(context).colorScheme.primary,
         ),
@@ -603,11 +620,11 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
             decoration: const BoxDecoration(
               gradient: LinearGradient(colors: AppColors.dispatcherGradient),
             ),
-            child: const SafeArea(
+            child: SafeArea(
               bottom: false,
               child: Text(
-                'More',
-                style: TextStyle(
+                l10n.moreScreenTitle,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -695,9 +712,11 @@ class _DispatchTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final now = DateTime.now();
-    final weekday = _weekdayName(now.weekday);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final weekday = DateFormat('EEEE', locale).format(now);
     final dateStr =
         '${now.day.toString().padLeft(2, '0')}.${now.month.toString().padLeft(2, '0')}.${now.year}';
 
@@ -728,9 +747,9 @@ class _DispatchTopBar extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Dispatch board',
-                      style: TextStyle(
+                    Text(
+                      l10n.dispatchBoardTitle,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                       ),
@@ -738,7 +757,7 @@ class _DispatchTopBar extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '$weekday, $dateStr · $activeCount active rides',
+                      l10n.dispatcherSubtitle(weekday, dateStr, activeCount),
                       style: TextStyle(
                         fontSize: 13,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -755,7 +774,7 @@ class _DispatchTopBar extends StatelessWidget {
                 width: 200,
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search rides, drivers…',
+                    hintText: l10n.searchRidesDrivers,
                     hintStyle: TextStyle(
                       fontSize: 13,
                       color: colorScheme.onSurfaceVariant,
@@ -794,7 +813,7 @@ class _DispatchTopBar extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: onNewRide,
                   icon: const Icon(Icons.add, size: 16),
-                  label: const Text('New ride'),
+                  label: Text(l10n.newRideButtonLabel),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -817,7 +836,7 @@ class _DispatchTopBar extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: onDriverMap,
                     icon: const Icon(Icons.map, size: 16),
-                    label: const Text('Driver Map'),
+                    label: Text(l10n.driverMapMenuItem),
                     style: AppStyles.accentButtonStyle,
                   ),
                 ),
@@ -829,7 +848,7 @@ class _DispatchTopBar extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: onBilling,
                   icon: const Icon(Icons.request_quote, size: 16),
-                  label: const Text('Billing'),
+                  label: Text(l10n.billingScreenTitle),
                   style: AppStyles.accentButtonStyle,
                 ),
               ),
@@ -838,20 +857,6 @@ class _DispatchTopBar extends StatelessWidget {
         );
       },
     );
-  }
-
-  String _weekdayName(int weekday) {
-    const names = [
-      '',
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    return weekday >= 1 && weekday <= 7 ? names[weekday] : '';
   }
 }
 
@@ -868,6 +873,7 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocBuilder<RideBloc, RideState>(
       buildWhen: (prev, curr) => prev.rides != curr.rides,
       builder: (context, state) {
@@ -895,24 +901,28 @@ class _StatsRow extends StatelessWidget {
           child: Row(
             children: [
               _StatTile(
-                label: 'Active rides',
+                label: l10n.activeRidesLabel,
                 value: '$activeCount',
                 isRed: false,
               ),
               const SizedBox(width: 12),
               _StatTile(
-                label: 'At risk',
+                label: l10n.atRiskLabel,
                 value: '$atRiskCount',
                 isRed: atRiskCount > 0,
               ),
               const SizedBox(width: 12),
               _StatTile(
-                label: 'Drivers online',
+                label: l10n.driversOnlineLabel,
                 value: '$assignedCount',
                 isRed: false,
               ),
               const SizedBox(width: 12),
-              _StatTile(label: 'On-time', value: '$onTimePct%', isRed: false),
+              _StatTile(
+                label: l10n.onTimeLabel,
+                value: '$onTimePct%',
+                isRed: false,
+              ),
             ],
           ),
         );

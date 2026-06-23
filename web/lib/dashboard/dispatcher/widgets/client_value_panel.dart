@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ClientValuePanel extends StatefulWidget {
   const ClientValuePanel({super.key});
@@ -91,9 +92,14 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                       const SizedBox(height: 12),
                       Text(_error!),
                       const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _loadData,
-                        child: const Text('Retry'),
+                      Builder(
+                        builder: (context) {
+                          final l10n = AppLocalizations.of(context)!;
+                          return ElevatedButton(
+                            onPressed: _loadData,
+                            child: Text(l10n.retry),
+                          );
+                        },
                       ),
                     ],
                   ),

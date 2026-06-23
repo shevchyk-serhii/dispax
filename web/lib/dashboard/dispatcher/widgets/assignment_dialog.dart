@@ -5,6 +5,7 @@ import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 
 class AssignmentDialog extends StatelessWidget {
   final Ride ride;
@@ -24,6 +25,7 @@ class AssignmentDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasConflicts = conflicts.isNotEmpty;
     final shortId = ride.id.length > 8 ? ride.id.substring(0, 8) : ride.id;
@@ -61,7 +63,7 @@ class AssignmentDialog extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Assign Ride #$shortId',
+                      l10n.assignRideDialogTitle(shortId),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,
@@ -96,19 +98,19 @@ class AssignmentDialog extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _sectionLabel('Ride details'),
+                          _sectionLabel(l10n.rideDetailsLabel),
                           const SizedBox(height: 8),
                           _infoRow(
                             context,
                             icon: Icons.person_outline,
-                            label: 'Client',
+                            label: l10n.clientLabel,
                             value: ride.clientName,
                             isDark: isDark,
                           ),
                           _infoRow(
                             context,
                             icon: Icons.access_time_outlined,
-                            label: 'Time',
+                            label: l10n.timeLabel,
                             value: DateFormat(
                               'dd.MM.yyyy HH:mm',
                             ).format(ride.pickupDateTime),
@@ -117,14 +119,14 @@ class AssignmentDialog extends StatelessWidget {
                           _infoRow(
                             context,
                             icon: Icons.place_outlined,
-                            label: 'From',
+                            label: l10n.fromLabel,
                             value: ride.from.address,
                             isDark: isDark,
                           ),
                           _infoRow(
                             context,
                             icon: Icons.flag_outlined,
-                            label: 'To',
+                            label: l10n.toLabel,
                             value: ride.to.address,
                             isDark: isDark,
                           ),
@@ -132,7 +134,7 @@ class AssignmentDialog extends StatelessWidget {
                             _infoRow(
                               context,
                               icon: Icons.flight,
-                              label: 'Flight',
+                              label: l10n.flightLabel,
                               value: ride.flightNumber!,
                               isDark: isDark,
                             ),
@@ -140,7 +142,7 @@ class AssignmentDialog extends StatelessWidget {
                             _infoRow(
                               context,
                               icon: Icons.euro_outlined,
-                              label: 'Fare',
+                              label: l10n.fareLabel,
                               value: '€${ride.price!.toStringAsFixed(2)}',
                               isDark: isDark,
                               accent: true,
@@ -183,7 +185,7 @@ class AssignmentDialog extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Assigning to',
+                                  l10n.assigningToLabel,
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
@@ -235,7 +237,7 @@ class AssignmentDialog extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Schedule conflicts (${conflicts.length})',
+                                  l10n.scheduleConflictsCount(conflicts.length),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13,
@@ -288,7 +290,7 @@ class AssignmentDialog extends StatelessWidget {
                   TextButton(
                     style: AppStyles.textButtonStyle,
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    child: Text(l10n.cancel),
                   ),
                   const SizedBox(width: 8),
                   FilledButton.icon(
@@ -312,7 +314,9 @@ class AssignmentDialog extends StatelessWidget {
                       size: 18,
                     ),
                     label: Text(
-                      hasConflicts ? 'Assign anyway' : 'Assign driver',
+                      hasConflicts
+                          ? l10n.assignAnyway
+                          : l10n.assignDriverButton,
                     ),
                     onPressed: () {
                       HapticFeedback.selectionClick();

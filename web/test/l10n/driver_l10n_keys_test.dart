@@ -23,55 +23,6 @@ Future<AppLocalizations> _l10n(String languageCode) async {
   return AppLocalizations.delegate.load(locale);
 }
 
-// All 43 new driver keys from the l10n-driver refactor.
-const _allDriverKeys = [
-  'newRideAssigned',
-  'newRideAssignedContent',
-  'decline',
-  'accept',
-  'call',
-  'sms',
-  'completeRideTitle',
-  'navigate',
-  'navigateTo',
-  'googleMapsPickup',
-  'googleMapsDropoff',
-  'openingNavigation',
-  'arrivingInMinutes',
-  'noCompletedRides',
-  'refresh',
-  'youreOnline',
-  'youreOffline',
-  'discardChangesTitle',
-  'discardChangesMessage',
-  'stay',
-  'discard',
-  'bookLabel',
-  'monthView',
-  'weekView',
-  'dayView',
-  'board',
-  'goToday',
-  'todaysSchedule',
-  'noRidesScheduled',
-  'enjoyYourFreeDay',
-  'callClient',
-  'startNavigation',
-  'start',
-  'completeRideButton',
-  'pickupLocation',
-  'dropoffLocation',
-  'couldNotOpenNavigation',
-  'travelTimeMinutes',
-  'failedToSetPrice',
-  'setRidePrice',
-  'setPrice',
-  'offline',
-  'acceptingRides',
-  'notAcceptingRides',
-  'failedToUpdate',
-];
-
 void main() {
   group('driver l10n keys — parity', () {
     test('all 45 driver keys are present in English', () async {
@@ -285,20 +236,23 @@ void main() {
       expect(de.youreOffline, equals('Sie sind offline'));
     });
 
-    test('acceptingRides and notAcceptingRides are distinct in all locales', () async {
-      final en = await _l10n('en');
-      final de = await _l10n('de');
-      final uk = await _l10n('uk');
+    test(
+      'acceptingRides and notAcceptingRides are distinct in all locales',
+      () async {
+        final en = await _l10n('en');
+        final de = await _l10n('de');
+        final uk = await _l10n('uk');
 
-      expect(en.acceptingRides, isNot(equals(en.notAcceptingRides)));
-      expect(de.acceptingRides, isNot(equals(de.notAcceptingRides)));
-      expect(uk.acceptingRides, isNot(equals(uk.notAcceptingRides)));
+        expect(en.acceptingRides, isNot(equals(en.notAcceptingRides)));
+        expect(de.acceptingRides, isNot(equals(de.notAcceptingRides)));
+        expect(uk.acceptingRides, isNot(equals(uk.notAcceptingRides)));
 
-      expect(en.acceptingRides, equals('You are accepting rides'));
-      expect(en.notAcceptingRides, equals('You are not accepting rides'));
-      expect(de.acceptingRides, equals('Sie nehmen Fahrten an'));
-      expect(de.notAcceptingRides, equals('Sie nehmen keine Fahrten an'));
-    });
+        expect(en.acceptingRides, equals('You are accepting rides'));
+        expect(en.notAcceptingRides, equals('You are not accepting rides'));
+        expect(de.acceptingRides, equals('Sie nehmen Fahrten an'));
+        expect(de.notAcceptingRides, equals('Sie nehmen keine Fahrten an'));
+      },
+    );
   });
 
   group('driver l10n keys — parameterized formatting', () {
@@ -327,10 +281,7 @@ void main() {
       final de = await _l10n('de');
       final uk = await _l10n('uk');
 
-      expect(
-        en.failedToUpdate('timeout'),
-        equals('Failed to update: timeout'),
-      );
+      expect(en.failedToUpdate('timeout'), equals('Failed to update: timeout'));
       expect(
         de.failedToUpdate('timeout'),
         equals('Aktualisierung fehlgeschlagen: timeout'),
@@ -360,24 +311,27 @@ void main() {
       );
     });
 
-    test('couldNotOpenNavigation formats error string in all locales', () async {
-      final en = await _l10n('en');
-      final de = await _l10n('de');
-      final uk = await _l10n('uk');
+    test(
+      'couldNotOpenNavigation formats error string in all locales',
+      () async {
+        final en = await _l10n('en');
+        final de = await _l10n('de');
+        final uk = await _l10n('uk');
 
-      expect(
-        en.couldNotOpenNavigation('no app'),
-        equals('Could not open navigation: no app'),
-      );
-      expect(
-        de.couldNotOpenNavigation('no app'),
-        equals('Navigation konnte nicht geöffnet werden: no app'),
-      );
-      expect(
-        uk.couldNotOpenNavigation('no app'),
-        equals('Не вдалося відкрити навігацію: no app'),
-      );
-    });
+        expect(
+          en.couldNotOpenNavigation('no app'),
+          equals('Could not open navigation: no app'),
+        );
+        expect(
+          de.couldNotOpenNavigation('no app'),
+          equals('Navigation konnte nicht geöffnet werden: no app'),
+        );
+        expect(
+          uk.couldNotOpenNavigation('no app'),
+          equals('Не вдалося відкрити навігацію: no app'),
+        );
+      },
+    );
 
     test(
       'parameterized keys return different results for different argument values',

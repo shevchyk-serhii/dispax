@@ -568,5 +568,153 @@
     "placeholders": {
       "error": {"type": "String"}
     }
-  }
+  },
+
+  "homeTab": "Home",
+  "scheduleTab": "Schedule",
+  "calendarTab": "Calendar",
+  "newRideTab": "New Ride",
+  "moreTab": "More",
+  "billingTab": "Billing",
+  "moreScreenTitle": "More",
+
+  "dispatchBoardTitle": "Dispatch board",
+  "dispatcherSubtitle": "{weekday}, {date} · {count} active rides",
+  "@dispatcherSubtitle": {
+    "placeholders": {
+      "weekday": {"type": "String"},
+      "date": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "searchRidesDrivers": "Search rides, drivers…",
+  "newRideButtonLabel": "New ride",
+
+  "activeRidesLabel": "Active rides",
+  "atRiskLabel": "At risk",
+  "driversOnlineLabel": "Drivers online",
+  "onTimeLabel": "On-time",
+
+  "earningsMenuItem": "Earnings",
+  "peakHoursMenuItem": "Peak Hours",
+  "clientValueMenuItem": "Client Value",
+  "driversMenuItem": "Drivers",
+  "ratingsMenuItem": "Ratings",
+  "auditLogMenuItem": "Audit Log",
+  "adminMenuItem": "Admin",
+  "companyMenuItem": "Company",
+  "expensesMenuItem": "Expenses",
+  "exportMenuItem": "Export",
+  "templatesMenuItem": "Templates",
+  "paymentsMenuItem": "Payments",
+  "payrollMenuItem": "Payroll",
+  "settingsMenuItem": "Settings",
+  "geofencesMenuItem": "Geofences",
+  "datevMenuItem": "DATEV",
+  "blacklistMenuItem": "Blacklist",
+  "emergencyMenuItem": "Emergency",
+  "ridePoolsMenuItem": "Ride Pools",
+  "notificationsMenuItem": "Notifications",
+  "gdprMenuItem": "GDPR",
+  "sessionsMenuItem": "Sessions",
+  "schedVisibilityMenuItem": "Sched. Visibility",
+  "analyticsMenuItem": "Analytics",
+  "driverBoardMenuItem": "Driver Board",
+  "driverMapMenuItem": "Driver Map",
+
+  "assignRideDialogTitle": "Assign Ride #{rideId}",
+  "@assignRideDialogTitle": {
+    "placeholders": {
+      "rideId": {"type": "String"}
+    }
+  },
+  "rideDetailsLabel": "Ride details",
+  "clientLabel": "Client",
+  "timeLabel": "Time",
+  "fromLabel": "From",
+  "toLabel": "To",
+  "flightLabel": "Flight",
+  "fareLabel": "Fare",
+  "assigningToLabel": "Assigning to",
+  "scheduleConflictsCount": "Schedule conflicts ({count})",
+  "@scheduleConflictsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "assignDriverButton": "Assign driver",
+
+  "reassignRideDialogTitle": "Reassign ride #{rideId}",
+  "@reassignRideDialogTitle": {
+    "placeholders": {
+      "rideId": {"type": "String"}
+    }
+  },
+  "nearestAvailableDriversLabel": "NEAREST AVAILABLE DRIVERS · RANKED BY ETA",
+  "noDriversAvailableForReassignment": "No other drivers available for reassignment.",
+  "reassignNRides": "Reassign {count} ride(s)",
+  "@reassignNRides": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "driverDelayedMessage": "{driverName} is delayed — slack {slack} min",
+  "@driverDelayedMessage": {
+    "placeholders": {
+      "driverName": {"type": "String"},
+      "slack": {"type": "String"}
+    }
+  },
+  "ridesToReassignLabel": "Rides to reassign ({selected}/{total})",
+  "@ridesToReassignLabel": {
+    "placeholders": {
+      "selected": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "deselectAllButton": "Deselect all",
+  "selectAllButton": "Select all",
+  "bestMatchBadge": "Best match",
+  "stillLateLabel": "still late",
+  "slackRestoredLabel": "slack restored",
+  "tightLabel": "tight",
+  "ridesReassignedMessage": "{count} ride(s) reassigned to {driverName}",
+  "@ridesReassignedMessage": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "driverName": {"type": "String"}
+    }
+  },
+
+  "reassignAnyway": "Reassign anyway",
+  "pendingTab": "Pending",
+  "assignedTab": "Assigned",
+  "sortTooltip": "Sort",
+  "noAssignedRides": "No assigned rides",
+  "noRidesCurrentlyAssigned": "No rides currently assigned to drivers",
+  "pendingRequestsHeader": "Pending requests",
+  "unassignedRidesBadge": "{count} unassigned",
+  "@unassignedRidesBadge": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "rideAtRiskTitle": "Ride at risk of delay",
+  "etaMonitorBadgeLabel": "PREDICTIVE ETA MONITOR · 60S",
+  "viewButton": "View",
+  "etaDriverEtaLabel": "DRIVER ETA",
+  "etaPickupInLabel": "PICKUP IN",
+  "etaSlackLabel": "SLACK",
+
+  "driverEarningsTitle": "Driver Earnings",
+  "sortByEarnings": "Sort by Earnings",
+  "sortByName": "Sort by Name",
+  "sortByRides": "Sort by Rides",
+
+  "driverPayrollTitle": "Driver Payroll",
+  "payrollSummaryTitle": "Payroll Summary",
+  "loadPayrollButton": "Load Payroll",
+  "payrollCsvCopiedMessage": "Payroll CSV copied to clipboard",
+  "commissionLabel": "Commission: "
 }

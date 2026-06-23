@@ -7,6 +7,7 @@ import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 
 // ─── Driver candidate model ──────────────────────────────────────────────────
 
@@ -143,6 +144,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final scheduleState = context.read<ScheduleBloc>().state;
     final rideState = context.read<RideBloc>().state;
     final candidates = _buildCandidates(
@@ -187,7 +189,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Reassign ride #$rideId',
+                      l10n.reassignRideDialogTitle(rideId),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,
@@ -230,7 +232,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
 
                     // Section label
                     Text(
-                      'NEAREST AVAILABLE DRIVERS · RANKED BY ETA',
+                      l10n.nearestAvailableDriversLabel,
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -253,9 +255,9 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                           ),
                           border: Border.all(color: AppColors.warningBorder),
                         ),
-                        child: const Text(
-                          'No other drivers available for reassignment.',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.noDriversAvailableForReassignment,
+                          style: const TextStyle(
                             color: AppColors.warning,
                             fontSize: 13,
                           ),
@@ -291,7 +293,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                     onPressed: _isReassigning
                         ? null
                         : () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: Text(l10n.cancel),
                   ),
                   const SizedBox(width: 8),
                   FilledButton.icon(
@@ -315,7 +317,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                     label: Text(
                       _isReassigning
                           ? 'Reassigning…'
-                          : 'Reassign ${_selectedRideIds.length} ride${_selectedRideIds.length == 1 ? '' : 's'}',
+                          : l10n.reassignNRides(_selectedRideIds.length),
                     ),
                   ),
                 ],
@@ -330,7 +332,9 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
   // ── Alert banner ─────────────────────────────────────────────────────────
 
   Widget _buildAlertBanner(bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final slack = widget.slackMinutes ?? -5;
+    final slackStr = slack < 0 ? '$slack' : '+$slack';
     final driverLabel = widget.fromDriverLabel;
     final failingRide = widget.failingRide;
 
@@ -356,7 +360,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '$driverLabel is delayed — slack ${slack < 0 ? slack : '+$slack'} min',
+                  l10n.driverDelayedMessage(driverLabel, slackStr),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -386,6 +390,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
   // ── Ride selector ────────────────────────────────────────────────────────
 
   Widget _buildRideSelector(bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -393,7 +398,10 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Rides to reassign (${_selectedRideIds.length}/${widget.rides.length})',
+              l10n.ridesToReassignLabel(
+                _selectedRideIds.length,
+                widget.rides.length,
+              ),
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
             TextButton(
@@ -413,8 +421,8 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
               },
               child: Text(
                 _selectedRideIds.length == widget.rides.length
-                    ? 'Deselect all'
-                    : 'Select all',
+                    ? l10n.deselectAllButton
+                    : l10n.selectAllButton,
                 style: const TextStyle(fontSize: 12, color: AppColors.accent),
               ),
             ),
@@ -460,6 +468,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
   // ── Candidate card ────────────────────────────────────────────────────────
 
   Widget _buildCandidateCard(_DriverCandidate c, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final isSelected = _selectedDriverId == c.driverId;
     final isBest = c.fit == _CandidateFit.best;
     final isLate = c.fit == _CandidateFit.late;
@@ -473,10 +482,10 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
 
     // Slack label
     final slackText = isLate
-        ? 'still late'
+        ? l10n.stillLateLabel
         : isBest
-        ? 'slack restored'
-        : 'tight';
+        ? l10n.slackRestoredLabel
+        : l10n.tightLabel;
 
     final slackColor = isLate
         ? const Color(0xFFDC2626)
@@ -576,7 +585,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            'Best match',
+                            l10n.bestMatchBadge,
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -647,7 +656,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('Reassign'),
+                    child: Text(l10n.reassign),
                   )
                 else if (isBest)
                   FilledButton(
@@ -671,7 +680,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                         ),
                       ),
                     ),
-                    child: const Text('Reassign'),
+                    child: Text(l10n.reassign),
                   )
                 else
                   OutlinedButton(
@@ -704,7 +713,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('Reassign'),
+                    child: Text(l10n.reassign),
                   ),
               ],
             ),
@@ -717,6 +726,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
   // ── Execute reassign ──────────────────────────────────────────────────────
 
   void _executeBulkReassign() {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isReassigning = true);
 
     final rideBloc = context.read<RideBloc>();
@@ -730,7 +740,10 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${_selectedRideIds.length} ride${_selectedRideIds.length == 1 ? '' : 's'} reassigned to $_selectedDriverLabel',
+          l10n.ridesReassignedMessage(
+            _selectedRideIds.length,
+            _selectedDriverLabel ?? '',
+          ),
         ),
         backgroundColor: AppColors.success,
       ),

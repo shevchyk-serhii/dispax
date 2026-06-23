@@ -1189,4 +1189,289 @@ class AppLocalizationsEn extends AppLocalizations {
   String failedToUpdate(String error) {
     return 'Failed to update: $error';
   }
+
+  @override
+  String get homeTab => 'Home';
+
+  @override
+  String get scheduleTab => 'Schedule';
+
+  @override
+  String get calendarTab => 'Calendar';
+
+  @override
+  String get newRideTab => 'New Ride';
+
+  @override
+  String get moreTab => 'More';
+
+  @override
+  String get billingTab => 'Billing';
+
+  @override
+  String get moreScreenTitle => 'More';
+
+  @override
+  String get dispatchBoardTitle => 'Dispatch board';
+
+  @override
+  String dispatcherSubtitle(String weekday, String date, int count) {
+    return '$weekday, $date · $count active rides';
+  }
+
+  @override
+  String get searchRidesDrivers => 'Search rides, drivers…';
+
+  @override
+  String get newRideButtonLabel => 'New ride';
+
+  @override
+  String get activeRidesLabel => 'Active rides';
+
+  @override
+  String get atRiskLabel => 'At risk';
+
+  @override
+  String get driversOnlineLabel => 'Drivers online';
+
+  @override
+  String get onTimeLabel => 'On-time';
+
+  @override
+  String get earningsMenuItem => 'Earnings';
+
+  @override
+  String get peakHoursMenuItem => 'Peak Hours';
+
+  @override
+  String get clientValueMenuItem => 'Client Value';
+
+  @override
+  String get driversMenuItem => 'Drivers';
+
+  @override
+  String get ratingsMenuItem => 'Ratings';
+
+  @override
+  String get auditLogMenuItem => 'Audit Log';
+
+  @override
+  String get adminMenuItem => 'Admin';
+
+  @override
+  String get companyMenuItem => 'Company';
+
+  @override
+  String get expensesMenuItem => 'Expenses';
+
+  @override
+  String get exportMenuItem => 'Export';
+
+  @override
+  String get templatesMenuItem => 'Templates';
+
+  @override
+  String get paymentsMenuItem => 'Payments';
+
+  @override
+  String get payrollMenuItem => 'Payroll';
+
+  @override
+  String get settingsMenuItem => 'Settings';
+
+  @override
+  String get geofencesMenuItem => 'Geofences';
+
+  @override
+  String get datevMenuItem => 'DATEV';
+
+  @override
+  String get blacklistMenuItem => 'Blacklist';
+
+  @override
+  String get emergencyMenuItem => 'Emergency';
+
+  @override
+  String get ridePoolsMenuItem => 'Ride Pools';
+
+  @override
+  String get notificationsMenuItem => 'Notifications';
+
+  @override
+  String get gdprMenuItem => 'GDPR';
+
+  @override
+  String get sessionsMenuItem => 'Sessions';
+
+  @override
+  String get schedVisibilityMenuItem => 'Sched. Visibility';
+
+  @override
+  String get analyticsMenuItem => 'Analytics';
+
+  @override
+  String get driverBoardMenuItem => 'Driver Board';
+
+  @override
+  String get driverMapMenuItem => 'Driver Map';
+
+  @override
+  String assignRideDialogTitle(String rideId) {
+    return 'Assign Ride #$rideId';
+  }
+
+  @override
+  String get rideDetailsLabel => 'Ride details';
+
+  @override
+  String get clientLabel => 'Client';
+
+  @override
+  String get timeLabel => 'Time';
+
+  @override
+  String get fromLabel => 'From';
+
+  @override
+  String get toLabel => 'To';
+
+  @override
+  String get flightLabel => 'Flight';
+
+  @override
+  String get fareLabel => 'Fare';
+
+  @override
+  String get assigningToLabel => 'Assigning to';
+
+  @override
+  String scheduleConflictsCount(int count) {
+    return 'Schedule conflicts ($count)';
+  }
+
+  @override
+  String get assignDriverButton => 'Assign driver';
+
+  @override
+  String reassignRideDialogTitle(String rideId) {
+    return 'Reassign ride #$rideId';
+  }
+
+  @override
+  String get nearestAvailableDriversLabel =>
+      'NEAREST AVAILABLE DRIVERS · RANKED BY ETA';
+
+  @override
+  String get noDriversAvailableForReassignment =>
+      'No other drivers available for reassignment.';
+
+  @override
+  String reassignNRides(int count) {
+    return 'Reassign $count ride(s)';
+  }
+
+  @override
+  String driverDelayedMessage(String driverName, String slack) {
+    return '$driverName is delayed — slack $slack min';
+  }
+
+  @override
+  String ridesToReassignLabel(int selected, int total) {
+    return 'Rides to reassign ($selected/$total)';
+  }
+
+  @override
+  String get deselectAllButton => 'Deselect all';
+
+  @override
+  String get selectAllButton => 'Select all';
+
+  @override
+  String get bestMatchBadge => 'Best match';
+
+  @override
+  String get stillLateLabel => 'still late';
+
+  @override
+  String get slackRestoredLabel => 'slack restored';
+
+  @override
+  String get tightLabel => 'tight';
+
+  @override
+  String ridesReassignedMessage(int count, String driverName) {
+    return '$count ride(s) reassigned to $driverName';
+  }
+
+  @override
+  String get reassignAnyway => 'Reassign anyway';
+
+  @override
+  String get pendingTab => 'Pending';
+
+  @override
+  String get assignedTab => 'Assigned';
+
+  @override
+  String get sortTooltip => 'Sort';
+
+  @override
+  String get noAssignedRides => 'No assigned rides';
+
+  @override
+  String get noRidesCurrentlyAssigned =>
+      'No rides currently assigned to drivers';
+
+  @override
+  String get pendingRequestsHeader => 'Pending requests';
+
+  @override
+  String unassignedRidesBadge(int count) {
+    return '$count unassigned';
+  }
+
+  @override
+  String get rideAtRiskTitle => 'Ride at risk of delay';
+
+  @override
+  String get etaMonitorBadgeLabel => 'PREDICTIVE ETA MONITOR · 60S';
+
+  @override
+  String get viewButton => 'View';
+
+  @override
+  String get etaDriverEtaLabel => 'DRIVER ETA';
+
+  @override
+  String get etaPickupInLabel => 'PICKUP IN';
+
+  @override
+  String get etaSlackLabel => 'SLACK';
+
+  @override
+  String get driverEarningsTitle => 'Driver Earnings';
+
+  @override
+  String get sortByEarnings => 'Sort by Earnings';
+
+  @override
+  String get sortByName => 'Sort by Name';
+
+  @override
+  String get sortByRides => 'Sort by Rides';
+
+  @override
+  String get driverPayrollTitle => 'Driver Payroll';
+
+  @override
+  String get payrollSummaryTitle => 'Payroll Summary';
+
+  @override
+  String get loadPayrollButton => 'Load Payroll';
+
+  @override
+  String get payrollCsvCopiedMessage => 'Payroll CSV copied to clipboard';
+
+  @override
+  String get commissionLabel => 'Commission: ';
 }
