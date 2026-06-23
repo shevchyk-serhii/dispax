@@ -578,8 +578,10 @@ dev-roles: free-port
 			--dart-define=DEV_AUTOLOGIN=$$autorole ); \
 		echo "🚀 $$name → $$udid"; \
 		xcrun simctl boot "$$udid" 2>/dev/null || true; \
+		xcrun simctl bootstatus "$$udid" -b 2>/dev/null || true; \
+		open -a Simulator --args -CurrentDeviceUDID "$$udid"; \
 		xcrun simctl install "$$udid" "$$APP"; \
-		xcrun simctl launch "$$udid" de.dispax.app; \
+		xcrun simctl launch --terminate-running-process "$$udid" de.dispax.app; \
 	done; \
 	open -a Simulator
 	@echo "✅ App running on 3 named simulators, each auto-logged-in to its role."
