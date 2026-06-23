@@ -98,5 +98,9 @@ object RideSecure:
       case RideError.ScheduleConflict(msg)             => (StatusCode.Conflict, ApiError(msg))
       case RideError.BusinessRuleViolation(_, msg)     => (StatusCode.BadRequest, ApiError(msg))
       case RideError.InvalidOperation(msg)             => (StatusCode.UnprocessableEntity, ApiError(msg))
+      case RideError.ExternalDriverNotFound(id)        =>
+        (StatusCode.NotFound, ApiError(s"External driver not found: ${id.value}"))
+      case RideError.PartnerCompanyNotFound(id)        =>
+        (StatusCode.NotFound, ApiError(s"Partner company not found: ${id.value}"))
       case RideError.DatabaseError(_)                  => (StatusCode.InternalServerError, ApiError("Internal server error"))
       case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))

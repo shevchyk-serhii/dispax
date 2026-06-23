@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../models/ride.dart';
 import '../models/create_ride_request.dart';
 import '../models/driver_earnings.dart';
+import '../models/partner_company.dart';
+import '../models/external_driver.dart';
 import '../../core/models/person.dart';
 import '../../core/services/api_client.dart';
 
@@ -372,6 +374,123 @@ class RideService {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  /// Hands off a ride to an external driver and partner company.
+  Future<Ride> handOffRide(
+    String rideId, {
+    required String externalDriverId,
+    required String partnerCompanyId,
+  }) async {
+    try {
+      final response = await privateApiClient.put('/rides/$rideId/hand-off', {
+        'externalDriverId': externalDriverId,
+        'partnerCompanyId': partnerCompanyId,
+      });
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+        return Ride.fromJson(json);
+      }
+      throw ApiException.fromResponse(response, 'Failed to hand off ride');
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error handing off ride: $e');
+    }
+  }
+
+  /// Fetches the list of partner companies for the current tenant.
+  Future<List<PartnerCompany>> listPartnerCompanies() async {
+    try {
+      final response = await privateApiClient.get('/partner-companies');
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList
+            .map((j) => PartnerCompany.fromJson(j as Map<String, dynamic>))
+            .toList();
+      }
+      throw ApiException.fromResponse(
+        response,
+        'Failed to fetch partner companies',
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error fetching partner companies: $e');
+    }
+  }
+
+  /// Creates a new partner company for the current tenant.
+  Future<PartnerCompany> createPartnerCompany({
+    required String name,
+    String? phone,
+  }) async {
+    try {
+      final response = await privateApiClient.post('/partner-companies', {
+        'name': name,
+        if (phone != null) 'phone': phone,
+      });
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+        return PartnerCompany.fromJson(json);
+      }
+      throw ApiException.fromResponse(
+        response,
+        'Failed to create partner company',
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error creating partner company: $e');
+    }
+  }
+
+  /// Fetches the list of external drivers for the current tenant.
+  Future<List<ExternalDriver>> listExternalDrivers() async {
+    try {
+      final response = await privateApiClient.get('/external-drivers');
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList
+            .map((j) => ExternalDriver.fromJson(j as Map<String, dynamic>))
+            .toList();
+      }
+      throw ApiException.fromResponse(
+        response,
+        'Failed to fetch external drivers',
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error fetching external drivers: $e');
+    }
+  }
+
+  /// Creates a new external driver for the current tenant.
+  Future<ExternalDriver> createExternalDriver({
+    required String name,
+    String? phone,
+    String? partnerCompanyId,
+  }) async {
+    try {
+      final response = await privateApiClient.post('/external-drivers', {
+        'name': name,
+        if (phone != null) 'phone': phone,
+        if (partnerCompanyId != null) 'partnerCompanyId': partnerCompanyId,
+      });
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+        return ExternalDriver.fromJson(json);
+      }
+      throw ApiException.fromResponse(
+        response,
+        'Failed to create external driver',
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error creating external driver: $e');
     }
   }
 

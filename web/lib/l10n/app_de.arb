@@ -648,5 +648,23 @@
   "payrollSummaryTitle": "Gehaltsübersicht",
   "loadPayrollButton": "Lohnabrechnung laden",
   "payrollCsvCopiedMessage": "Gehalts-CSV in Zwischenablage kopiert",
-  "commissionLabel": "Provision: "
+  "commissionLabel": "Provision: ",
+
+  "rideStatusHandedOff": "Übergeben",
+  "handOffRide": "Fahrt übergeben",
+  "handOffRideTitle": "Fahrt übergeben",
+  "handOffPartnerCompany": "Partnerunternehmen",
+  "handOffExternalDriver": "Externer Fahrer",
+  "handOffSelectCompany": "Unternehmen auswählen",
+  "handOffSelectDriver": "Fahrer auswählen",
+  "handOffAddNewCompany": "+ Neues Unternehmen hinzufügen",
+  "handOffAddNewDriver": "+ Neuen Fahrer hinzufügen",
+  "handOffCompanyName": "Unternehmensname *",
+  "handOffDriverName": "Fahrername *",
+  "handOffPhoneOptional": "Telefon (optional)",
+  "handOffButton": "Übergeben",
+  "closeRide": "Schließen",
+  "closeRideTitle": "Fahrt schließen?",
+  "closeRideConfirmMessage": "Dadurch wird die nicht zugewiesene Fahrt storniert. Der Kunde wird benachrichtigt.",
+  "closeRideButton": "Fahrt schließen"
 }

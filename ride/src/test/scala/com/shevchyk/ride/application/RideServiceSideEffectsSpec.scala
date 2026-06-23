@@ -18,6 +18,7 @@ import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{PickupTimeService, RideService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import zio.test.*
 import zio.*
 import java.time.Instant
@@ -132,7 +133,9 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
       PickupTimeService.noopLayer ++
       ZLayer.succeed(noopScheduleDayLookup) ++
       auditConcrete ++ (auditConcrete >>> auditAsService) ++
-      emailConcrete ++ (emailConcrete >>> emailAsService)
+      emailConcrete ++ (emailConcrete >>> emailAsService) ++
+      InMemoryExternalDriverRepository.layer ++
+      InMemoryPartnerCompanyRepository.layer
 
   private val fullLayers = baseLayers >+> RideService.layer
 

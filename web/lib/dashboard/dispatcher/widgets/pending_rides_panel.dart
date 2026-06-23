@@ -7,13 +7,16 @@ import '../../../blocs/blocs.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/services/user_service.dart';
 import '../../../modules/ride_management/models/ride.dart';
+import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../utils/conflict_detector.dart';
+import '../../../widgets/common/cancel_ride_dialog.dart';
 import '../../../widgets/common/notification_bell.dart';
+import '../../../widgets/common/hand_off_ride_dialog.dart';
 import 'assignment_dialog.dart';
 import 'eta_alert_card.dart';
 
@@ -355,6 +358,8 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                           onAction: () =>
                               _showDriverSelectionSheet(context, ride),
                           isReassign: false,
+                          onClose: () => _showCloseRideDialog(context, ride),
+                          onHandOff: () => _showHandOffDialog(context, ride),
                         ),
                       ),
                     );
@@ -652,6 +657,32 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     );
   }
 
+  /// Shows the [CancelRideDialog] (reason picker) and, on confirmation,
+  /// dispatches [RideCancelRequested] with the valid wire reason value.
+  void _showCloseRideDialog(BuildContext context, Ride ride) {
+    showAdaptiveDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => const CancelRideDialog(role: PersonRole.dispatcher),
+    ).then((result) {
+      if (result == null) return; // user pressed Back
+      final reason = result['reason'] as String?;
+      if (reason == null) return;
+      _dispatchAfterFrame(RideCancelRequested(rideId: ride.id, reason: reason));
+    });
+  }
+
+  /// Shows the [HandOffRideDialog] for the given ride.
+  void _showHandOffDialog(BuildContext context, Ride ride) {
+    final authBloc = context.read<AuthBloc>();
+    showAdaptiveDialog(
+      context: context,
+      builder: (_) => HandOffRideDialog(
+        rideId: ride.id,
+        rideService: RideService(apiClient: authBloc.apiClient),
+      ),
+    );
+  }
+
   void _showDriverSelectionSheet(
     BuildContext context,
     Ride ride, {
@@ -754,6 +785,12 @@ class _RideRow extends StatelessWidget {
   final bool isReassign;
   final bool isDragging;
 
+  /// Called when the dispatcher taps "Close" on a pending (Requested) row.
+  final VoidCallback? onClose;
+
+  /// Called when the dispatcher taps "Hand off" on a pending (Requested) row.
+  final VoidCallback? onHandOff;
+
   const _RideRow({
     super.key,
     required this.ride,
@@ -761,6 +798,8 @@ class _RideRow extends StatelessWidget {
     required this.onAction,
     required this.isReassign,
     this.isDragging = false,
+    this.onClose,
+    this.onHandOff,
   });
 
   @override
@@ -883,13 +922,10 @@ class _RideRow extends StatelessWidget {
                 ],
               ),
             ],
-            // Action button (full width)
-            if (onAction != null) ...[
+            // Action buttons
+            if (onAction != null || onClose != null || onHandOff != null) ...[
               const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: _buildActionButton(context),
-              ),
+              _buildActionButtons(context),
             ],
           ],
         ),
@@ -949,10 +985,11 @@ class _RideRow extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(BuildContext context) {
+  Widget _buildActionButtons(BuildContext context) {
     if (isReassign) {
-      // Soft-red "Reassign" button
+      // Soft-red "Reassign" button — full width
       return SizedBox(
+        width: double.infinity,
         height: 32,
         child: OutlinedButton(
           onPressed: onAction,
@@ -972,27 +1009,77 @@ class _RideRow extends StatelessWidget {
         ),
       );
     } else {
-      // Graphite "Assign" button — theme-aware so it stays visible in dark
-      // (AppColors.primary == surfaceDark, so the button vanished on the card).
+      // Pending row: [Close] [Hand off] [Assign →]
       final colorScheme = Theme.of(context).colorScheme;
-      return SizedBox(
-        height: 32,
-        child: FilledButton(
-          onPressed: onAction,
-          style: FilledButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            textStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+      return Row(
+        children: [
+          if (onClose != null)
+            SizedBox(
+              height: 32,
+              child: OutlinedButton(
+                onPressed: onClose,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: const BorderSide(color: AppColors.borderSecondary),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Close'),
+              ),
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+          if (onClose != null && onHandOff != null) const SizedBox(width: 6),
+          if (onHandOff != null)
+            SizedBox(
+              height: 32,
+              child: OutlinedButton(
+                onPressed: onHandOff,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.rideHandedOffText,
+                  side: const BorderSide(color: AppColors.rideHandedOffBorder),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Hand off'),
+              ),
             ),
-          ),
-          child: const Text('Assign'),
-        ),
+          if (onAction != null) ...[
+            if (onClose != null || onHandOff != null) const SizedBox(width: 6),
+            Expanded(
+              child: SizedBox(
+                height: 32,
+                child: FilledButton(
+                  onPressed: onAction,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Assign'),
+                ),
+              ),
+            ),
+          ] else
+            const Spacer(),
+        ],
       );
     }
   }

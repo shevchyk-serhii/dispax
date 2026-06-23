@@ -16,6 +16,7 @@ import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import zio.test.*
 import zio.*
 import java.time.Instant
@@ -160,7 +161,9 @@ object RideServicePriceSpec extends ZIOSpecDefault {
       ExpenseRepository.inMemory ++
       PickupTimeService.noopLayer ++
       noopAvailabilityChecker ++
-      noopScheduleDayLookup) >+> RideService.layer
+      noopScheduleDayLookup ++
+      InMemoryExternalDriverRepository.layer ++
+      InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 

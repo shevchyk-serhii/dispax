@@ -25,6 +25,8 @@ case class RideId(value: UUID)
 case class TariffId(value: UUID)
 case class ScheduleDayId(value: UUID)
 case class DriverUnavailabilityId(value: UUID)
+case class ExternalDriverId(value: UUID)
+case class PartnerCompanyId(value: UUID)
 
 // Codecs live in each companion so they're found via the type's implicit scope
 // (no import needed) when other case classes derive their JSON codecs.
@@ -66,6 +68,18 @@ object DriverUnavailabilityId:
   given JsonEncoder[DriverUnavailabilityId] = idEncoder(_.value)
   given JsonDecoder[DriverUnavailabilityId] = idDecoder(DriverUnavailabilityId.apply)
   given Schema[DriverUnavailabilityId]      = Schema.derived
+
+object ExternalDriverId:
+  def generate(): ExternalDriverId    = ExternalDriverId(UuidCreator.getTimeOrderedEpoch())
+  given JsonEncoder[ExternalDriverId] = idEncoder(_.value)
+  given JsonDecoder[ExternalDriverId] = idDecoder(ExternalDriverId.apply)
+  given Schema[ExternalDriverId]      = Schema.derived
+
+object PartnerCompanyId:
+  def generate(): PartnerCompanyId    = PartnerCompanyId(UuidCreator.getTimeOrderedEpoch())
+  given JsonEncoder[PartnerCompanyId] = idEncoder(_.value)
+  given JsonDecoder[PartnerCompanyId] = idDecoder(PartnerCompanyId.apply)
+  given Schema[PartnerCompanyId]      = Schema.derived
 
 final case class Location(
     address: String,

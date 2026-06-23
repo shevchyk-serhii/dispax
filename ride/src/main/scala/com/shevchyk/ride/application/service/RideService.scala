@@ -11,7 +11,13 @@ import com.shevchyk.core.application.{
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.domain.RepositoryExtensions.*
-import com.shevchyk.ride.repository.{ExpenseRepository, RideRepository, TimeBucket}
+import com.shevchyk.ride.repository.{
+  ExpenseRepository,
+  ExternalDriverRepository,
+  PartnerCompanyRepository,
+  RideRepository,
+  TimeBucket
+}
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.core.application.{EmailSmsService, RideConfirmationData}
 import zio.*
@@ -30,9 +36,22 @@ trait RideService:
       rideId: RideId,
       userId: PersonId,
       userRole: PersonRole,
-      request: CancelRideRequest
+      request: CancelRideRequest,
+      companyId: CompanyId
   ): IO[RideError, Ride]
   def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]
+
+  def handOffToExternal(
+      rideId: RideId,
+      callerCompanyId: CompanyId,
+      callerId: PersonId,
+      req: HandOffRequest
+  ): IO[RideError, Ride]
+
+  def createPartnerCompany(companyId: CompanyId, req: CreatePartnerCompanyRequest): IO[RideError, PartnerCompany]
+  def listPartnerCompanies(companyId: CompanyId): IO[RideError, List[PartnerCompany]]
+  def createExternalDriver(companyId: CompanyId, req: CreateExternalDriverRequest): IO[RideError, ExternalDriver]
+  def listExternalDrivers(companyId: CompanyId): IO[RideError, List[ExternalDriver]]
 
   def updateRideStatus(
       rideId: RideId,
@@ -131,7 +150,9 @@ class RideServiceImpl(
     expenseRepository: ExpenseRepository,
     pickupTimeService: PickupTimeService,
     availabilityChecker: DriverAvailabilityChecker,
-    scheduleDayLookup: ScheduleDayLookup
+    scheduleDayLookup: ScheduleDayLookup,
+    externalDriverRepo: ExternalDriverRepository,
+    partnerCompanyRepo: PartnerCompanyRepository
 ) extends RideService:
 
   /**
@@ -362,7 +383,10 @@ class RideServiceImpl(
       // InvalidStatusTransition instead of silently overwriting the winner.
       applied      <-
         rideRepository
-          .updateIfStatus(updatedRide, Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress))
+          .updateIfStatus(
+            updatedRide,
+            Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress, RideStatus.HandedOff)
+          )
           .mapDatabaseError
       _            <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled)).when(!applied).unit
       persistedRide = updatedRide
@@ -372,10 +396,13 @@ class RideServiceImpl(
       rideId: RideId,
       userId: PersonId,
       userRole: PersonRole,
-      request: CancelRideRequest
+      request: CancelRideRequest,
+      companyId: CompanyId
   ): IO[RideError, Ride] =
     for {
       ride         <- getRideById(rideId)
+      // Tenant isolation: a dispatcher from company A must not cancel a ride of company B.
+      _            <- ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.companyId != companyId).unit
       _            <-
         ZIO
           .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled))
@@ -418,9 +445,14 @@ class RideServiceImpl(
       // Atomic compare-and-set: only cancel from a still-cancellable status. Guards against a
       // concurrent start/complete/reassign racing this cancel — the loser gets
       // InvalidStatusTransition instead of silently overwriting the winner.
+      // HandedOff is included so a ride that was handed off to an external driver can still
+      // be cancelled (e.g. if the external driver also falls through).
       applied      <-
         rideRepository
-          .updateIfStatus(updatedRide, Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress))
+          .updateIfStatus(
+            updatedRide,
+            Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress, RideStatus.HandedOff)
+          )
           .mapDatabaseError
       _            <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled)).when(!applied).unit
       persistedRide = updatedRide
@@ -512,7 +544,8 @@ class RideServiceImpl(
         request.status match
           case RideStatus.InProgress => Set(RideStatus.Assigned)
           case RideStatus.Completed  => Set(RideStatus.InProgress)
-          case RideStatus.Cancelled  => Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress)
+          case RideStatus.Cancelled  =>
+            Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress, RideStatus.HandedOff)
           case _                     => RideStatus.values.toSet
 
       updatedRide   = ride
@@ -1116,10 +1149,111 @@ class RideServiceImpl(
     // Standard interval overlap: [existingStart, existingEnd) overlaps [candidateStart, candidateEnd) iff:
     candidateTime.isBefore(existingEnd) && existingTime.isBefore(candidateEnd)
 
+  def handOffToExternal(
+      rideId: RideId,
+      callerCompanyId: CompanyId,
+      callerId: PersonId,
+      req: HandOffRequest
+  ): IO[RideError, Ride] =
+    for {
+      ride           <- getRideById(rideId)
+      // Tenant isolation: the caller must belong to the same company as the ride.
+      _              <- ZIO.fail(RideError.UnauthorizedAccess(callerId, rideId)).when(ride.companyId != callerCompanyId).unit
+      // Status guard: only a Requested (unassigned) ride can be handed off.
+      _              <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.HandedOff))
+          .when(!ride.canBeHandedOff)
+          .unit
+      // Tenant-scoped lookup of external driver — returns None if the driver belongs to another tenant.
+      externalDriver <- externalDriverRepo
+                          .findById(req.externalDriverId, callerCompanyId)
+                          .mapDatabaseError
+                          .flatMap(ZIO.fromOption(_).orElseFail(RideError.ExternalDriverNotFound(req.externalDriverId)))
+      // Tenant-scoped lookup of partner company.
+      partnerCompany <- partnerCompanyRepo
+                          .findById(req.partnerCompanyId, callerCompanyId)
+                          .mapDatabaseError
+                          .flatMap(ZIO.fromOption(_).orElseFail(RideError.PartnerCompanyNotFound(req.partnerCompanyId)))
+      updatedRide     = ride
+                          .focus(_.status)
+                          .replace(RideStatus.HandedOff)
+                          .focus(_.externalDriverId)
+                          .replace(Some(externalDriver.id))
+                          .focus(_.partnerCompanyId)
+                          .replace(Some(partnerCompany.id))
+      // Atomic CAS: only transition from Requested. Guards against concurrent assignment.
+      applied        <-
+        rideRepository
+          .updateIfStatus(updatedRide, Set(RideStatus.Requested))
+          .mapDatabaseError
+      _              <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.HandedOff)).when(!applied).unit
+      persistedRide   = updatedRide
+      _              <-
+        eventHub
+          .publish(
+            WebSocketEvent.RideStatusChanged(
+              rideId = persistedRide.id.value,
+              newStatus = "HandedOff",
+              driverId = None,
+              clientId = persistedRide.clientId.value,
+              companyId = persistedRide.companyId.value
+            )
+          )
+          .ignore
+      _              <-
+        auditService
+          .log(
+            AuditLogEntry.record(
+              companyId = persistedRide.companyId,
+              actorId = callerId,
+              action = AuditAction.RideHandedOff,
+              entityType = "ride",
+              entityId = persistedRide.id.value,
+              newValue = Some(
+                s"externalDriverId=${externalDriver.id.value},partnerCompanyId=${partnerCompany.id.value}"
+              )
+            )
+          )
+          .tapError(e => ZIO.logWarning(s"Failed to write audit log for ride handoff: $e"))
+          .ignore
+    } yield persistedRide
+
+  def createPartnerCompany(companyId: CompanyId, req: CreatePartnerCompanyRequest): IO[RideError, PartnerCompany] =
+    val pc = PartnerCompany(
+      id = PartnerCompanyId.generate(),
+      name = req.name,
+      email = req.email,
+      phone = req.phone,
+      address = req.address,
+      taxiCompanyId = companyId,
+      createdAt = java.time.Instant.now(),
+      updatedAt = java.time.Instant.now()
+    )
+    partnerCompanyRepo.create(pc).mapDatabaseError
+
+  def listPartnerCompanies(companyId: CompanyId): IO[RideError, List[PartnerCompany]] =
+    partnerCompanyRepo.findByCompany(companyId).mapDatabaseError
+
+  def createExternalDriver(companyId: CompanyId, req: CreateExternalDriverRequest): IO[RideError, ExternalDriver] =
+    val ed = ExternalDriver(
+      id = ExternalDriverId.generate(),
+      name = req.name,
+      phone = req.phone,
+      partnerCompanyId = req.partnerCompanyId,
+      taxiCompanyId = companyId,
+      createdAt = java.time.Instant.now(),
+      updatedAt = java.time.Instant.now()
+    )
+    externalDriverRepo.create(ed).mapDatabaseError
+
+  def listExternalDrivers(companyId: CompanyId): IO[RideError, List[ExternalDriver]] =
+    externalDriverRepo.findByCompany(companyId).mapDatabaseError
+
 object RideService:
 
   val layer: ZLayer[
-    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup,
+    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository,
     Nothing,
     RideService
   ] = ZLayer.fromFunction(

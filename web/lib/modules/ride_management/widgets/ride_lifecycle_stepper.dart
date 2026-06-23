@@ -247,6 +247,8 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
         return 'Completed successfully';
       case RideStatus.cancelled:
         return 'Ride cancelled';
+      case RideStatus.handedOff:
+        return 'Handed off to partner';
     }
   }
 }

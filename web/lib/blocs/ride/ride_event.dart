@@ -123,3 +123,31 @@ class RideStatusReceived extends RideEvent {
   @override
   List<Object> get props => [rideId, newStatus];
 }
+
+/// Asks the bloc to cancel a ride with the given [reason].
+/// Used by the dispatcher "Close" action on unassigned (Requested) rides.
+class RideCancelRequested extends RideEvent {
+  final String rideId;
+  final String reason;
+
+  const RideCancelRequested({required this.rideId, required this.reason});
+
+  @override
+  List<Object> get props => [rideId, reason];
+}
+
+/// Asks the bloc to hand off a ride to an external driver and partner company.
+class RideHandOffRequested extends RideEvent {
+  final String rideId;
+  final String externalDriverId;
+  final String partnerCompanyId;
+
+  const RideHandOffRequested({
+    required this.rideId,
+    required this.externalDriverId,
+    required this.partnerCompanyId,
+  });
+
+  @override
+  List<Object> get props => [rideId, externalDriverId, partnerCompanyId];
+}

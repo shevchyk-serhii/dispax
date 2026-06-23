@@ -1849,6 +1849,61 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     testData("ride_assignment_notification_sent") = true
   }
 
+  // ── Dispatcher hand-off helpers ───────────────────────────────────────────
+
+  /**
+   * Parses `"id"` from the last JSON response body and stores it under [key].
+   */
+  Then("""^I store the response "id" field as "(.+)"$""") { (key: String) =>
+    // Extract the first occurrence of `"id":"<value>"` from the response body.
+    val pattern = """"id"\s*:\s*"([^"]+)"""".r
+    val id      = pattern.findFirstMatchIn(lastResponseBody).map(_.group(1)).getOrElse {
+      throw new AssertionError(
+        s"No 'id' field found in response body: $lastResponseBody"
+      )
+    }
+    testData(key) = id
+  }
+
+  /**
+   * Hands off ride [rideId] using previously stored externalDriverId/partnerCompanyId.
+   */
+  When("""^I hand off ride "(.+)" using stored ids$""") { (rideId: String) =>
+    val externalDriverId = testData.getOrElse("storedExternalDriverId", "").toString
+    val partnerCompanyId = testData.getOrElse("storedPartnerCompanyId", "").toString
+    val body             = s"""{"externalDriverId":"$externalDriverId","partnerCompanyId":"$partnerCompanyId"}"""
+    val request          = createRequest("PUT", s"/api/rides/$rideId/hand-off", Some(body))
+    executeRequest(request)
+  }
+
+  /**
+   * Creates a partner company + external driver for the current tenant, stores their IDs, then hands off [rideId] to
+   * that external driver. This is a composite step so the feature file stays readable without requiring multi-step ID
+   * threading through the stored testData map.
+   */
+  When("""^I hand off ride "(.+)" to a new external driver as dispatcher$""") { (rideId: String) =>
+    // Create partner company
+    val pcBody    = """{"name":"Test Partner GmbH","phone":"+498912345"}"""
+    val pcRequest = createRequest("POST", "/api/partner-companies", Some(pcBody))
+    executeRequest(pcRequest)
+    val pcPattern = """"id"\s*:\s*"([^"]+)"""".r
+    val pcId      = pcPattern.findFirstMatchIn(lastResponseBody).map(_.group(1)).getOrElse {
+      throw new AssertionError(s"No 'id' in partner-companies response: $lastResponseBody")
+    }
+    // Create external driver using that partner company
+    val edBody    = s"""{"name":"Test Extern Driver","phone":"+491712345678","partnerCompanyId":"$pcId"}"""
+    val edRequest = createRequest("POST", "/api/external-drivers", Some(edBody))
+    executeRequest(edRequest)
+    val edPattern = """"id"\s*:\s*"([^"]+)"""".r
+    val edId      = edPattern.findFirstMatchIn(lastResponseBody).map(_.group(1)).getOrElse {
+      throw new AssertionError(s"No 'id' in external-drivers response: $lastResponseBody")
+    }
+    // Hand off the ride
+    val hoBody    = s"""{"externalDriverId":"$edId","partnerCompanyId":"$pcId"}"""
+    val hoRequest = createRequest("PUT", s"/api/rides/$rideId/hand-off", Some(hoBody))
+    executeRequest(hoRequest)
+  }
+
   private def determineMockStatusUpdated(request: Request): Status = {
     val path   = request.url.path.toString()
     val method = request.method

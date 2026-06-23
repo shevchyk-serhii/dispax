@@ -9,6 +9,8 @@ enum RideStateStatus {
   error,
   deleting,
   assigning,
+  cancelling,
+  handingOff,
   // The backend rejected a reassignment because the new driver's schedule
   // conflicts; the dispatcher may retry with override.
   reassignConflict,
@@ -80,6 +82,8 @@ class RideState extends Equatable {
   bool get isEmpty => rides.isEmpty && isLoaded;
   bool get isDeleting => status == RideStateStatus.deleting;
   bool get isAssigning => status == RideStateStatus.assigning;
+  bool get isCancelling => status == RideStateStatus.cancelling;
+  bool get isHandingOff => status == RideStateStatus.handingOff;
   bool get hasReassignConflict =>
       status == RideStateStatus.reassignConflict &&
       conflictRideId != null &&

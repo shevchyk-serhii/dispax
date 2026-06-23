@@ -1,0 +1,358 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../blocs/blocs.dart';
+import '../../constants/app_colors.dart';
+import '../../modules/ride_management/models/external_driver.dart';
+import '../../modules/ride_management/models/partner_company.dart';
+import '../../modules/ride_management/services/ride_service.dart';
+
+/// Dialog that lets a dispatcher hand off a [Requested] ride to an external
+/// driver + partner company.  Shows dropdowns backed by the tenant's
+/// `/partner-companies` and `/external-drivers` directories and allows the
+/// dispatcher to add a new entry inline without leaving the dialog.
+class HandOffRideDialog extends StatefulWidget {
+  final String rideId;
+  final RideService rideService;
+
+  const HandOffRideDialog({
+    super.key,
+    required this.rideId,
+    required this.rideService,
+  });
+
+  @override
+  State<HandOffRideDialog> createState() => _HandOffRideDialogState();
+}
+
+class _HandOffRideDialogState extends State<HandOffRideDialog> {
+  List<PartnerCompany>? _companies;
+  List<ExternalDriver>? _drivers;
+  String? _loadError;
+
+  PartnerCompany? _selectedCompany;
+  ExternalDriver? _selectedDriver;
+
+  // Inline "add new" state
+  bool _addingCompany = false;
+  bool _addingDriver = false;
+
+  final _companyNameCtrl = TextEditingController();
+  final _companyPhoneCtrl = TextEditingController();
+  final _driverNameCtrl = TextEditingController();
+  final _driverPhoneCtrl = TextEditingController();
+
+  bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _companyNameCtrl.dispose();
+    _companyPhoneCtrl.dispose();
+    _driverNameCtrl.dispose();
+    _driverPhoneCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final companies = await widget.rideService.listPartnerCompanies();
+      final drivers = await widget.rideService.listExternalDrivers();
+      if (mounted) {
+        setState(() {
+          _companies = companies;
+          _drivers = drivers;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadError = e.toString());
+    }
+  }
+
+  Future<void> _createCompany() async {
+    final name = _companyNameCtrl.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _submitting = true);
+    try {
+      final created = await widget.rideService.createPartnerCompany(
+        name: name,
+        phone: _companyPhoneCtrl.text.trim().isNotEmpty
+            ? _companyPhoneCtrl.text.trim()
+            : null,
+      );
+      if (mounted) {
+        setState(() {
+          _companies = [...?_companies, created];
+          _selectedCompany = created;
+          _addingCompany = false;
+          _companyNameCtrl.clear();
+          _companyPhoneCtrl.clear();
+          _submitting = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _createDriver() async {
+    final name = _driverNameCtrl.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _submitting = true);
+    try {
+      final created = await widget.rideService.createExternalDriver(
+        name: name,
+        phone: _driverPhoneCtrl.text.trim().isNotEmpty
+            ? _driverPhoneCtrl.text.trim()
+            : null,
+        partnerCompanyId: _selectedCompany?.id,
+      );
+      if (mounted) {
+        setState(() {
+          _drivers = [...?_drivers, created];
+          _selectedDriver = created;
+          _addingDriver = false;
+          _driverNameCtrl.clear();
+          _driverPhoneCtrl.clear();
+          _submitting = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  void _confirm(BuildContext dialogCtx) {
+    final driver = _selectedDriver;
+    final company = _selectedCompany;
+    if (driver == null || company == null) return;
+
+    final rideBloc = context.read<RideBloc>();
+    Navigator.of(dialogCtx).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      rideBloc.add(
+        RideHandOffRequested(
+          rideId: widget.rideId,
+          externalDriverId: driver.id,
+          partnerCompanyId: company.id,
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.swap_horiz, color: AppColors.rideHandedOff),
+          SizedBox(width: 8),
+          Text('Hand Off Ride'),
+        ],
+      ),
+      content: SizedBox(
+        width: 400,
+        child: _loadError != null
+            ? Text(
+                'Failed to load: $_loadError',
+                style: const TextStyle(color: AppColors.error),
+              )
+            : _companies == null || _drivers == null
+            ? const Center(child: CircularProgressIndicator.adaptive())
+            : _buildForm(context),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed:
+              (_selectedDriver != null &&
+                  _selectedCompany != null &&
+                  !_submitting)
+              ? () => _confirm(context)
+              : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.rideHandedOff,
+          ),
+          child: const Text('Hand Off'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Partner Company ──
+          _sectionLabel('Partner Company'),
+          if (!_addingCompany) ...[
+            DropdownButton<PartnerCompany>(
+              value: _selectedCompany,
+              isExpanded: true,
+              hint: const Text('Select company'),
+              items: _companies!
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedCompany = v),
+            ),
+            const SizedBox(height: 4),
+            _addNewLink(
+              label: '+ Add new company',
+              onTap: () => setState(() => _addingCompany = true),
+            ),
+          ] else
+            _inlineForm(
+              fields: [
+                _field(_companyNameCtrl, 'Company name *'),
+                const SizedBox(height: 8),
+                _field(_companyPhoneCtrl, 'Phone (optional)'),
+              ],
+              onSave: _createCompany,
+              onCancel: () => setState(() {
+                _addingCompany = false;
+                _companyNameCtrl.clear();
+                _companyPhoneCtrl.clear();
+              }),
+              submitting: _submitting,
+            ),
+
+          const SizedBox(height: 16),
+
+          // ── External Driver ──
+          _sectionLabel('External Driver'),
+          if (!_addingDriver) ...[
+            DropdownButton<ExternalDriver>(
+              value: _selectedDriver,
+              isExpanded: true,
+              hint: const Text('Select driver'),
+              items: _drivers!
+                  .map((d) => DropdownMenuItem(value: d, child: Text(d.name)))
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedDriver = v),
+            ),
+            const SizedBox(height: 4),
+            _addNewLink(
+              label: '+ Add new driver',
+              onTap: () => setState(() => _addingDriver = true),
+            ),
+          ] else
+            _inlineForm(
+              fields: [
+                _field(_driverNameCtrl, 'Driver name *'),
+                const SizedBox(height: 8),
+                _field(_driverPhoneCtrl, 'Phone (optional)'),
+              ],
+              onSave: _createDriver,
+              onCancel: () => setState(() {
+                _addingDriver = false;
+                _driverNameCtrl.clear();
+                _driverPhoneCtrl.clear();
+              }),
+              submitting: _submitting,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+
+  Widget _addNewLink({required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          color: AppColors.accent,
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    );
+  }
+
+  Widget _field(TextEditingController ctrl, String hint) {
+    return TextField(
+      controller: ctrl,
+      decoration: InputDecoration(
+        hintText: hint,
+        isDense: true,
+        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      ),
+      style: const TextStyle(fontSize: 13),
+    );
+  }
+
+  Widget _inlineForm({
+    required List<Widget> fields,
+    required VoidCallback onSave,
+    required VoidCallback onCancel,
+    required bool submitting,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.rideHandedOffBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.rideHandedOffBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...fields,
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: submitting ? null : onCancel,
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: submitting ? null : onSave,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.rideHandedOff,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  textStyle: const TextStyle(fontSize: 12),
+                ),
+                child: submitting
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Add'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -44,6 +44,16 @@ void main() {
         AppColors.rideCancelledText,
         AppColors.rideCancelledTextDark,
       ),
+      // Regression: handedOff was added after initial status set; every switch
+      // in RideStatusStyles must handle it (missing case → compile-time error in
+      // Dart since the switch covers a sealed enum).
+      (
+        RideStatus.handedOff,
+        AppColors.rideHandedOffBg,
+        AppColors.rideHandedOffBgDark,
+        AppColors.rideHandedOffText,
+        AppColors.rideHandedOffTextDark,
+      ),
     ];
 
     for (final c in cases) {
@@ -101,6 +111,15 @@ void main() {
           brightness: Brightness.dark,
         ),
         AppColors.rideCompletedTextDark.withValues(alpha: 0.4),
+      );
+    });
+
+    // Regression: getStatusDisplayName must not throw on handedOff
+    // (mutation: remove handedOff case from getStatusDisplayName switch → this fails).
+    test('getStatusDisplayName returns "Handed Off" for handedOff', () {
+      expect(
+        RideStatusStyles.getStatusDisplayName(RideStatus.handedOff),
+        'Handed Off',
       );
     });
 

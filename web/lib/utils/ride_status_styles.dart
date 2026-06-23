@@ -19,6 +19,8 @@ class RideStatusStyles {
         return AppColors.rideCompleted;
       case RideStatus.cancelled:
         return AppColors.rideCancelled;
+      case RideStatus.handedOff:
+        return AppColors.rideHandedOff;
     }
   }
 
@@ -60,6 +62,10 @@ class RideStatusStyles {
         return isDark
             ? AppColors.rideCancelledBgDark
             : AppColors.rideCancelledBg;
+      case RideStatus.handedOff:
+        return isDark
+            ? AppColors.rideHandedOffBgDark
+            : AppColors.rideHandedOffBg;
     }
   }
 
@@ -88,6 +94,8 @@ class RideStatusStyles {
         return AppColors.rideCompletedBorder;
       case RideStatus.cancelled:
         return AppColors.rideCancelledBorder;
+      case RideStatus.handedOff:
+        return AppColors.rideHandedOffBorder;
     }
   }
 
@@ -121,6 +129,10 @@ class RideStatusStyles {
         return isDark
             ? AppColors.rideCancelledTextDark
             : AppColors.rideCancelledText;
+      case RideStatus.handedOff:
+        return isDark
+            ? AppColors.rideHandedOffTextDark
+            : AppColors.rideHandedOffText;
     }
   }
 
@@ -137,6 +149,8 @@ class RideStatusStyles {
         return Icons.check_circle_outline;
       case RideStatus.cancelled:
         return Icons.highlight_off;
+      case RideStatus.handedOff:
+        return Icons.swap_horiz;
     }
   }
 
@@ -153,6 +167,8 @@ class RideStatusStyles {
         return 'Completed';
       case RideStatus.cancelled:
         return 'Cancelled';
+      case RideStatus.handedOff:
+        return 'Handed Off';
     }
   }
 

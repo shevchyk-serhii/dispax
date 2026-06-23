@@ -95,19 +95,32 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
     new RideService:
       private def notImplemented = ZIO.die(new NotImplementedError("ExportApiIsolationSpec stub"))
 
-      def getRideById(rideId: RideId): IO[RideError, Ride]                                                     = notImplemented
-      def createRide(req: CreateRideRequest): IO[RideError, Ride]                                              = notImplemented
-      def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                         = notImplemented
-      def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                   = notImplemented
-      def completeRide(rideId: RideId): IO[RideError, Ride]                                                    = notImplemented
-      def cancelRide(rideId: RideId, userId: PersonId, role: PersonRole): IO[RideError, Ride]                  = notImplemented
+      def getRideById(rideId: RideId): IO[RideError, Ride]                                                            = notImplemented
+      def createRide(req: CreateRideRequest): IO[RideError, Ride]                                                     = notImplemented
+      def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                                = notImplemented
+      def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                          = notImplemented
+      def completeRide(rideId: RideId): IO[RideError, Ride]                                                           = notImplemented
+      def cancelRide(rideId: RideId, userId: PersonId, role: PersonRole): IO[RideError, Ride]                         = notImplemented
       def cancelRideWithReason(
           rideId: RideId,
           userId: PersonId,
           role: PersonRole,
-          req: CancelRideRequest
+          req: CancelRideRequest,
+          companyId: CompanyId
       ): IO[RideError, Ride] = notImplemented
-      def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]                          = notImplemented
+      def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]                                 = notImplemented
+      def handOffToExternal(
+          rideId: RideId,
+          callerCompanyId: CompanyId,
+          callerId: PersonId,
+          req: HandOffRequest
+      ): IO[RideError, Ride] = notImplemented
+      def createPartnerCompany(companyId: CompanyId, req: CreatePartnerCompanyRequest): IO[RideError, PartnerCompany] =
+        notImplemented
+      def listPartnerCompanies(companyId: CompanyId): IO[RideError, List[PartnerCompany]]                             = notImplemented
+      def createExternalDriver(companyId: CompanyId, req: CreateExternalDriverRequest): IO[RideError, ExternalDriver] =
+        notImplemented
+      def listExternalDrivers(companyId: CompanyId): IO[RideError, List[ExternalDriver]]                              = notImplemented
       def updateRideStatus(
           rideId: RideId,
           req: UpdateRideStatusRequest,
@@ -119,17 +132,17 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
           driverId: PersonId,
           overrideScheduleConflict: Boolean = false
       ): IO[RideError, Ride] = notImplemented
-      def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]                                      = notImplemented
-      def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]]      =
+      def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]                                             = notImplemented
+      def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]]             =
         notImplemented
-      def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                  = notImplemented
-      def getClientRides(clientId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                  = notImplemented
-      def getAllRides: IO[RideError, List[Ride]]                                                               = notImplemented
+      def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                         = notImplemented
+      def getClientRides(clientId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                         = notImplemented
+      def getAllRides: IO[RideError, List[Ride]]                                                                      = notImplemented
       // Core isolation: only rides for the requested companyId are returned
-      def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]                                   = ZIO.succeed(
+      def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]                                          = ZIO.succeed(
         rides.filter(_.companyId == companyId)
       )
-      def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]] =
+      def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]]        =
         notImplemented
       def getDriverRidesPaginated(
           driverId: PersonId,
@@ -144,17 +157,17 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
           role: PersonRole,
           cid: Option[CompanyId]
       ): IO[RideError, Ride] = notImplemented
-      def reassignDriver(rideId: RideId, newDriverId: PersonId, ov: Boolean): IO[RideError, Ride]              = notImplemented
+      def reassignDriver(rideId: RideId, newDriverId: PersonId, ov: Boolean): IO[RideError, Ride]                     = notImplemented
       def markPayment(
           rideId: RideId,
           ps: PaymentStatus,
           pm: Option[PaymentMethod]
       ): IO[RideError, Ride] = notImplemented
-      def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                             = notImplemented
-      def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                         = notImplemented
-      def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                     = notImplemented
-      def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                     = notImplemented
-      def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                 = notImplemented
+      def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                                    = notImplemented
+      def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                                = notImplemented
+      def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                            = notImplemented
+      def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                            = notImplemented
+      def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                        = notImplemented
       def getDailyStats(
           companyId: CompanyId,
           days: Int

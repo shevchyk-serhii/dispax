@@ -17,8 +17,8 @@ import zio.http.*
 import zio.json.*
 import java.time.Instant
 
-given JsonCodec[RideStatus] = JsonCodec.string.transform(
-  str => RideStatus.valueOf(str),
+given JsonCodec[RideStatus] = JsonCodec.string.transformOrFail(
+  str => scala.util.Try(RideStatus.valueOf(str)).toEither.left.map(e => s"Unknown RideStatus: $str"),
   status => status.toString
 )
 
@@ -79,7 +79,9 @@ case class RideDto(
     // For airport departure rides: the backend-computed pickup time (same as pickupDateTime
     // for auto-computed rides). Included as a convenience field so the frontend can display
     // the computed value without re-parsing pickupDateTime.
-    recommendedPickupDateTime: Option[String] = None
+    recommendedPickupDateTime: Option[String] = None,
+    externalDriverId: Option[String] = None,
+    partnerCompanyId: Option[String] = None
 )
 
 given JsonEncoder[RideDto] = DeriveJsonEncoder.gen[RideDto]
@@ -197,6 +199,45 @@ case class CancelRideApiRequest(
     fee: Option[Double] = None
 ) derives JsonCodec
 
+case class HandOffRideApiRequest(
+    externalDriverId: String,
+    partnerCompanyId: String
+) derives JsonCodec
+
+case class PartnerCompanyDto(
+    id: String,
+    name: String,
+    email: Option[String] = None,
+    phone: Option[String] = None,
+    address: Option[String] = None,
+    taxiCompanyId: String,
+    createdAt: String,
+    updatedAt: String
+) derives JsonCodec
+
+case class CreatePartnerCompanyApiRequest(
+    name: String,
+    email: Option[String] = None,
+    phone: Option[String] = None,
+    address: Option[String] = None
+) derives JsonCodec
+
+case class ExternalDriverDto(
+    id: String,
+    name: String,
+    phone: Option[String] = None,
+    partnerCompanyId: Option[String] = None,
+    taxiCompanyId: String,
+    createdAt: String,
+    updatedAt: String
+) derives JsonCodec
+
+case class CreateExternalDriverApiRequest(
+    name: String,
+    phone: Option[String] = None,
+    partnerCompanyId: Option[String] = None
+) derives JsonCodec
+
 case class ValidationErrorsResponse(
     errors: List[ValidationFieldError]
 ) derives JsonCodec
@@ -238,22 +279,27 @@ case class CheckpointStateResponse(
 
 // -- Tapir schemas (alongside the zio-json codecs above) so these DTOs can be
 //    used directly as Tapir request/response bodies and appear in the OpenAPI doc.
-given sttp.tapir.Schema[PaymentStatus]               = sttp.tapir.Schema.string
-given sttp.tapir.Schema[PaymentMethod]               = sttp.tapir.Schema.string
-given sttp.tapir.Schema[RideDto]                     = sttp.tapir.Schema.derived[RideDto]
-given sttp.tapir.Schema[CreateRideApiRequest]        = sttp.tapir.Schema.derived[CreateRideApiRequest]
-given sttp.tapir.Schema[RideStatusUpdateRequest]     = sttp.tapir.Schema.derived[RideStatusUpdateRequest]
-given sttp.tapir.Schema[AssignDriverRequest]         = sttp.tapir.Schema.derived[AssignDriverRequest]
-given sttp.tapir.Schema[MarkPaymentRequest]          = sttp.tapir.Schema.derived[MarkPaymentRequest]
-given sttp.tapir.Schema[CancelRideApiRequest]        = sttp.tapir.Schema.derived[CancelRideApiRequest]
-given sttp.tapir.Schema[UpdateRideDetailsApiRequest] = sttp.tapir.Schema.derived[UpdateRideDetailsApiRequest]
-given sttp.tapir.Schema[UpdateClientLocationRequest] = sttp.tapir.Schema.derived[UpdateClientLocationRequest]
-given sttp.tapir.Schema[SendChatMessageRequest]      = sttp.tapir.Schema.derived[SendChatMessageRequest]
-given sttp.tapir.Schema[MarkCheckpointRequest]       = sttp.tapir.Schema.derived[MarkCheckpointRequest]
-given sttp.tapir.Schema[CheckpointStateResponse]     = sttp.tapir.Schema.derived[CheckpointStateResponse]
-given sttp.tapir.Schema[SetRidePriceRequest]         = sttp.tapir.Schema.derived[SetRidePriceRequest]
-given sttp.tapir.Schema[EstimateRideRequest]         = sttp.tapir.Schema.derived[EstimateRideRequest]
-given sttp.tapir.Schema[EstimateRideResponse]        = sttp.tapir.Schema.derived[EstimateRideResponse]
+given sttp.tapir.Schema[PaymentStatus]                  = sttp.tapir.Schema.string
+given sttp.tapir.Schema[PaymentMethod]                  = sttp.tapir.Schema.string
+given sttp.tapir.Schema[RideDto]                        = sttp.tapir.Schema.derived[RideDto]
+given sttp.tapir.Schema[CreateRideApiRequest]           = sttp.tapir.Schema.derived[CreateRideApiRequest]
+given sttp.tapir.Schema[RideStatusUpdateRequest]        = sttp.tapir.Schema.derived[RideStatusUpdateRequest]
+given sttp.tapir.Schema[AssignDriverRequest]            = sttp.tapir.Schema.derived[AssignDriverRequest]
+given sttp.tapir.Schema[MarkPaymentRequest]             = sttp.tapir.Schema.derived[MarkPaymentRequest]
+given sttp.tapir.Schema[CancelRideApiRequest]           = sttp.tapir.Schema.derived[CancelRideApiRequest]
+given sttp.tapir.Schema[UpdateRideDetailsApiRequest]    = sttp.tapir.Schema.derived[UpdateRideDetailsApiRequest]
+given sttp.tapir.Schema[HandOffRideApiRequest]          = sttp.tapir.Schema.derived[HandOffRideApiRequest]
+given sttp.tapir.Schema[PartnerCompanyDto]              = sttp.tapir.Schema.derived[PartnerCompanyDto]
+given sttp.tapir.Schema[CreatePartnerCompanyApiRequest] = sttp.tapir.Schema.derived[CreatePartnerCompanyApiRequest]
+given sttp.tapir.Schema[ExternalDriverDto]              = sttp.tapir.Schema.derived[ExternalDriverDto]
+given sttp.tapir.Schema[CreateExternalDriverApiRequest] = sttp.tapir.Schema.derived[CreateExternalDriverApiRequest]
+given sttp.tapir.Schema[UpdateClientLocationRequest]    = sttp.tapir.Schema.derived[UpdateClientLocationRequest]
+given sttp.tapir.Schema[SendChatMessageRequest]         = sttp.tapir.Schema.derived[SendChatMessageRequest]
+given sttp.tapir.Schema[MarkCheckpointRequest]          = sttp.tapir.Schema.derived[MarkCheckpointRequest]
+given sttp.tapir.Schema[CheckpointStateResponse]        = sttp.tapir.Schema.derived[CheckpointStateResponse]
+given sttp.tapir.Schema[SetRidePriceRequest]            = sttp.tapir.Schema.derived[SetRidePriceRequest]
+given sttp.tapir.Schema[EstimateRideRequest]            = sttp.tapir.Schema.derived[EstimateRideRequest]
+given sttp.tapir.Schema[EstimateRideResponse]           = sttp.tapir.Schema.derived[EstimateRideResponse]
 
 object LocationDto:
 
@@ -354,7 +400,9 @@ object RideDto:
       vehicleClass = VehicleClass.toDbString(ride.vehicleClass),
       driverRating = driverRating,
       driverRatingCount = driverRatingCount,
-      recommendedPickupDateTime = recommendedPickupTime
+      recommendedPickupDateTime = recommendedPickupTime,
+      externalDriverId = ride.externalDriverId.map(_.value.toString),
+      partnerCompanyId = ride.partnerCompanyId.map(_.value.toString)
     )
 
   private def distanceMetersHaversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Int =

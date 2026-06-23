@@ -716,5 +716,23 @@
   "payrollSummaryTitle": "Payroll Summary",
   "loadPayrollButton": "Load Payroll",
   "payrollCsvCopiedMessage": "Payroll CSV copied to clipboard",
-  "commissionLabel": "Commission: "
+  "commissionLabel": "Commission: ",
+
+  "rideStatusHandedOff": "Handed Off",
+  "handOffRide": "Hand Off Ride",
+  "handOffRideTitle": "Hand Off Ride",
+  "handOffPartnerCompany": "Partner Company",
+  "handOffExternalDriver": "External Driver",
+  "handOffSelectCompany": "Select company",
+  "handOffSelectDriver": "Select driver",
+  "handOffAddNewCompany": "+ Add new company",
+  "handOffAddNewDriver": "+ Add new driver",
+  "handOffCompanyName": "Company name *",
+  "handOffDriverName": "Driver name *",
+  "handOffPhoneOptional": "Phone (optional)",
+  "handOffButton": "Hand Off",
+  "closeRide": "Close",
+  "closeRideTitle": "Close ride?",
+  "closeRideConfirmMessage": "This will cancel the unassigned ride. The client will be notified.",
+  "closeRideButton": "Close ride"
 }

@@ -71,9 +71,11 @@ import com.shevchyk.ride.domain.{
   ClientAddressId,
   ClientLocation,
   DriverEarnings,
+  ExternalDriver,
   Expense,
   ExpenseCategory,
   ExpenseId,
+  PartnerCompany,
   RecurrencePattern,
   Ride,
   RideSpecifics,
@@ -88,7 +90,9 @@ import com.shevchyk.ride.repository.{
   ClientAddressRepository,
   ClientLocationRepository,
   ExpenseRepository,
+  ExternalDriverRepository,
   InMemoryTariffRepository,
+  PartnerCompanyRepository,
   RideRatingRepository,
   RideRepository,
   RideTemplateRepository,
@@ -1562,6 +1566,33 @@ object TestApplication extends ZIOAppDefault:
               from: java.time.Instant,
               to: java.time.Instant
           ): zio.Task[List[UnavailabilitySlot]] = ZIO.succeed(Nil)
+      ),
+      // Hand-off directories: in-memory stubs for BDD tests
+      ZLayer.fromZIO(
+        Ref.Synchronized.make(Map.empty[PartnerCompanyId, PartnerCompany]).map { store =>
+          registerReset(store.set(Map.empty[PartnerCompanyId, PartnerCompany]))
+          new PartnerCompanyRepository:
+            def create(pc: PartnerCompany): Task[PartnerCompany]                                   = store.update(_.updated(pc.id, pc)).as(pc)
+            def findById(id: PartnerCompanyId, companyId: CompanyId): Task[Option[PartnerCompany]] = store.get.map(
+              _.get(id).filter(_.taxiCompanyId == companyId)
+            )
+            def findByCompany(companyId: CompanyId): Task[List[PartnerCompany]]                    = store.get.map(
+              _.values.filter(_.taxiCompanyId == companyId).toList.sortBy(_.name)
+            )
+        }
+      ),
+      ZLayer.fromZIO(
+        Ref.Synchronized.make(Map.empty[ExternalDriverId, ExternalDriver]).map { store =>
+          registerReset(store.set(Map.empty[ExternalDriverId, ExternalDriver]))
+          new ExternalDriverRepository:
+            def create(ed: ExternalDriver): Task[ExternalDriver]                                   = store.update(_.updated(ed.id, ed)).as(ed)
+            def findById(id: ExternalDriverId, companyId: CompanyId): Task[Option[ExternalDriver]] = store.get.map(
+              _.get(id).filter(_.taxiCompanyId == companyId)
+            )
+            def findByCompany(companyId: CompanyId): Task[List[ExternalDriver]]                    = store.get.map(
+              _.values.filter(_.taxiCompanyId == companyId).toList.sortBy(_.name)
+            )
+        }
       ),
       RideService.layer,
       // Schedule

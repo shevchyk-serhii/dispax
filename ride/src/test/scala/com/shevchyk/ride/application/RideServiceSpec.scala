@@ -17,6 +17,7 @@ import com.shevchyk.core.repository.{PersonRepository, InMemoryPersonRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, RideRepository}
+import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import zio.test.*
 import zio.*
 import java.time.Instant
@@ -216,7 +217,9 @@ object RideServiceSpec extends ZIOSpecDefault {
       ExpenseRepository.inMemory ++
       PickupTimeService.noopLayer ++
       noopAvailabilityChecker ++
-      scheduleDayLookup) >+> RideService.layer
+      scheduleDayLookup ++
+      InMemoryExternalDriverRepository.layer ++
+      InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
 
   // Shared by the scheduleDay-validation suite. Schedule-day id used across those tests.
   private val scheduleDayValidationDayId = ScheduleDayId(UUID.fromString("00000099-0000-0000-0000-000000000001"))
@@ -274,6 +277,8 @@ object RideServiceSpec extends ZIOSpecDefault {
           PickupTimeService.noopLayer,
           noopAvailabilityChecker,
           noopScheduleDayLookup,
+          InMemoryExternalDriverRepository.layer,
+          InMemoryPartnerCompanyRepository.layer,
           RideService.layer
         )
       ),
@@ -655,7 +660,9 @@ object RideServiceSpec extends ZIOSpecDefault {
               ExpenseRepository.inMemory ++
               PickupTimeService.noopLayer ++
               noopAvailabilityChecker ++
-              noopScheduleDayLookup) >+> RideService.layer
+              noopScheduleDayLookup ++
+              InMemoryExternalDriverRepository.layer ++
+              InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
 
           (for {
             service <- ZIO.service[RideService]
@@ -1084,7 +1091,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                            ride.id,
                            testClientId,
                            PersonRole.Client,
-                           CancelRideRequest("client_request", Some(BigDecimal(10.00)))
+                           CancelRideRequest("client_request", Some(BigDecimal(10.00))),
+                           testCompanyId
                          )
           } yield assertTrue(
             cancelled.status == RideStatus.Cancelled &&
@@ -1113,7 +1121,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                   ride.id,
                   testClientId,
                   PersonRole.Client,
-                  CancelRideRequest("client_request", Some(BigDecimal(-100.00)))
+                  CancelRideRequest("client_request", Some(BigDecimal(-100.00))),
+                  testCompanyId
                 )
                 .exit
             after   <- service.getRideById(ride.id)
@@ -1143,7 +1152,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                                  ride.id,
                                  testClientId,
                                  PersonRole.Client,
-                                 CancelRideRequest("client_request", Some(BigDecimal(10.00)))
+                                 CancelRideRequest("client_request", Some(BigDecimal(10.00))),
+                                 testCompanyId
                                )
                                .exit,
                              service
@@ -1151,7 +1161,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                                  ride.id,
                                  pureDispatcherId,
                                  PersonRole.Dispatcher,
-                                 CancelRideRequest("client_no_show", Some(BigDecimal(25.00)))
+                                 CancelRideRequest("client_no_show", Some(BigDecimal(25.00))),
+                                 testCompanyId
                                )
                                .exit
                            )
@@ -1195,7 +1206,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                   completed.id,
                   testClientId,
                   PersonRole.Client,
-                  CancelRideRequest("client_request")
+                  CancelRideRequest("client_request"),
+                  testCompanyId
                 )
                 .exit
           } yield assertTrue(result.isFailure)
@@ -1220,7 +1232,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                   ride.id,
                   testClientId,
                   PersonRole.Client,
-                  CancelRideRequest("client_no_show")
+                  CancelRideRequest("client_no_show"),
+                  testCompanyId
                 )
                 .exit
             after   <- service.getRideById(ride.id)
@@ -1245,7 +1258,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                            ride.id,
                            pureDispatcherId,
                            PersonRole.Dispatcher,
-                           CancelRideRequest("client_no_show")
+                           CancelRideRequest("client_no_show"),
+                           testCompanyId
                          )
           } yield assertTrue(
             cancelled.status == RideStatus.Cancelled,
@@ -1270,7 +1284,8 @@ object RideServiceSpec extends ZIOSpecDefault {
                   ride.id,
                   pureDispatcherId,
                   PersonRole.Dispatcher,
-                  CancelRideRequest("not_a_real_reason")
+                  CancelRideRequest("not_a_real_reason"),
+                  testCompanyId
                 )
                 .exit
             after   <- service.getRideById(ride.id)
@@ -2395,13 +2410,15 @@ object RideServiceSpec extends ZIOSpecDefault {
                          ride1.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("client_request")
+                         CancelRideRequest("client_request"),
+                         testCompanyId
                        )
             _       <- service.cancelRideWithReason(
                          ride2.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("client_request")
+                         CancelRideRequest("client_request"),
+                         testCompanyId
                        )
             stats   <- service.getCancellationStats(testCompanyId)
           } yield assertTrue(stats.getOrElse("client_request", 0) >= 2)

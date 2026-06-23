@@ -12,6 +12,7 @@ import 'package:dispax/blocs/auth/auth_state.dart';
 import 'package:dispax/locale_notifier.dart';
 import 'package:dispax/modules/auth/services/biometric_service.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/modules/core/services/websocket_service.dart';
 import '../helpers/mocks.dart';
 import '../helpers/test_fixtures.dart';
 

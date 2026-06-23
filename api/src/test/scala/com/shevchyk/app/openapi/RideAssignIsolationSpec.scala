@@ -192,31 +192,44 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           case None    => ZIO.fail(RideError.RideNotFound(rideId))
 
       // All other methods die (they must not be reached in these tests)
-      def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                         = notImplemented
-      def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                   = notImplemented
-      def completeRide(rideId: RideId): IO[RideError, Ride]                                                    = notImplemented
-      def cancelRide(rideId: RideId, userId: PersonId, role: PersonRole): IO[RideError, Ride]                  = notImplemented
+      def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                                = notImplemented
+      def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                          = notImplemented
+      def completeRide(rideId: RideId): IO[RideError, Ride]                                                           = notImplemented
+      def cancelRide(rideId: RideId, userId: PersonId, role: PersonRole): IO[RideError, Ride]                         = notImplemented
       def cancelRideWithReason(
           rideId: RideId,
           userId: PersonId,
           role: PersonRole,
-          req: CancelRideRequest
+          req: CancelRideRequest,
+          companyId: CompanyId
       ): IO[RideError, Ride] = notImplemented
-      def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]                          = notImplemented
+      def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]                                 = notImplemented
+      def handOffToExternal(
+          rideId: RideId,
+          callerCompanyId: CompanyId,
+          callerId: PersonId,
+          req: HandOffRequest
+      ): IO[RideError, Ride] = notImplemented
+      def createPartnerCompany(companyId: CompanyId, req: CreatePartnerCompanyRequest): IO[RideError, PartnerCompany] =
+        notImplemented
+      def listPartnerCompanies(companyId: CompanyId): IO[RideError, List[PartnerCompany]]                             = notImplemented
+      def createExternalDriver(companyId: CompanyId, req: CreateExternalDriverRequest): IO[RideError, ExternalDriver] =
+        notImplemented
+      def listExternalDrivers(companyId: CompanyId): IO[RideError, List[ExternalDriver]]                              = notImplemented
       def updateRideStatus(
           rideId: RideId,
           req: UpdateRideStatusRequest,
           userId: PersonId,
           role: PersonRole
       ): IO[RideError, Ride] = notImplemented
-      def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]                                      = notImplemented
-      def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]]      =
+      def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]                                             = notImplemented
+      def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]]             =
         notImplemented
-      def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                  = notImplemented
-      def getClientRides(clientId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                  = notImplemented
-      def getAllRides: IO[RideError, List[Ride]]                                                               = notImplemented
-      def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]                                   = ZIO.succeed(Nil)
-      def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]] =
+      def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                         = notImplemented
+      def getClientRides(clientId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                         = notImplemented
+      def getAllRides: IO[RideError, List[Ride]]                                                                      = notImplemented
+      def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]                                          = ZIO.succeed(Nil)
+      def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]]        =
         notImplemented
       def getDriverRidesPaginated(
           driverId: PersonId,
@@ -229,11 +242,11 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           ps: PaymentStatus,
           pm: Option[PaymentMethod]
       ): IO[RideError, Ride] = notImplemented
-      def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                             = notImplemented
-      def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                         = ZIO.succeed(Map.empty)
-      def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                     = ZIO.succeed(BigDecimal(0))
-      def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                     = ZIO.succeed(BigDecimal(0))
-      def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                 = ZIO.succeed(0.0)
+      def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                                    = notImplemented
+      def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                                = ZIO.succeed(Map.empty)
+      def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                            = ZIO.succeed(BigDecimal(0))
+      def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                            = ZIO.succeed(BigDecimal(0))
+      def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                        = ZIO.succeed(0.0)
       def getDailyStats(
           companyId: CompanyId,
           days: Int

@@ -15,7 +15,7 @@ enum AuditAction derives JsonCodec:
 
   case RideCreated, RideAssigned, RideReassigned, RideCancelled, RideStatusChanged,
     RideEdited, UserCreated, UserUpdated, UserDeactivated, PaymentRecorded,
-    DriverAvailabilityChanged, AuthorizationDenied
+    DriverAvailabilityChanged, AuthorizationDenied, RideHandedOff
 
 final case class AuditLogEntry(
     id: AuditLogId,
