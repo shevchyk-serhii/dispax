@@ -414,6 +414,8 @@ object CreateRideApiRequest:
         specifics = specifics,
         specialRequirements = request.specialRequirements,
         vehicleClass = parsedVehicleClass,
+        // Convert the wire Double price into the domain BigDecimal estimate (None stays None).
+        estimatedPrice = request.price.map(BigDecimal(_)),
         pickupDateTime = parsedPickupDateTime
       )
     }

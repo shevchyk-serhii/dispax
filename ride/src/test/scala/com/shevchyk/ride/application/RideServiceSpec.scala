@@ -351,6 +351,32 @@ object RideServiceSpec extends ZIOSpecDefault {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.PersonNotFound])
             case _                   => false
           })
+        }.provide(standardLayers),
+        // ── price/estimate carry-through (regression: BUG #6) ──────────────
+        test("should persist the supplied estimatedPrice") {
+          val request = CreateRideRequest(
+            clientId = testClientId,
+            companyId = testCompanyId,
+            pickupLocation = Location("Start Point"),
+            dropoffLocation = Location("End Point"),
+            estimatedPrice = Some(BigDecimal("42.50"))
+          )
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(request)
+          } yield assertTrue(ride.estimatedPrice.contains(BigDecimal("42.50")))
+        }.provide(standardLayers),
+        test("should leave estimatedPrice None when no price is supplied") {
+          val request = CreateRideRequest(
+            clientId = testClientId,
+            companyId = testCompanyId,
+            pickupLocation = Location("Start Point"),
+            dropoffLocation = Location("End Point")
+          )
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(request)
+          } yield assertTrue(ride.estimatedPrice.isEmpty)
         }.provide(standardLayers)
       ),
       suite("getRidesForUser")(

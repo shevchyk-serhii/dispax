@@ -364,9 +364,26 @@ object RideValidatorsSpec extends ZIOSpecDefault {
       }
     )
 
+  def suite_createRideApiRequestMapping =
+    suite("CreateRideApiRequest.toDomain")(
+      test("carries the supplied price into estimatedPrice (Double → BigDecimal)") {
+        val req = validCreateRequest(price = Some(42.5))
+        CreateRideApiRequest
+          .toDomain(req, com.shevchyk.core.domain.CompanyId.generate())
+          .map(domain => assertTrue(domain.estimatedPrice.contains(BigDecimal(42.5))))
+      },
+      test("leaves estimatedPrice None when no price is supplied") {
+        val req = validCreateRequest(price = None)
+        CreateRideApiRequest
+          .toDomain(req, com.shevchyk.core.domain.CompanyId.generate())
+          .map(domain => assertTrue(domain.estimatedPrice.isEmpty))
+      }
+    )
+
   def spec =
     suite("RideValidators")(
       suite_createRideApiRequest,
+      suite_createRideApiRequestMapping,
       suite_assignDriverRequest,
       suite_rideStatusUpdateRequest,
       suite_updateRideApiRequest,
