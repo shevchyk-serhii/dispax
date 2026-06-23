@@ -47,6 +47,53 @@ class CreateRideScreenContent extends StatefulWidget {
 class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
   final _formKey = GlobalKey<FormState>();
 
+  /// Shown after a driver created a ride with "Assign to me" on, but the
+  /// self-assignment hit a schedule conflict. The ride already exists in the
+  /// pool; the driver can assign anyway (override) or leave it for the
+  /// dispatcher.
+  void _showCreateSelfAssignConflictDialog(
+    BuildContext context, {
+    required String rideId,
+    required String driverId,
+    String? message,
+  }) {
+    final rideBloc = context.read<RideBloc>();
+    showAdaptiveDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+        title: const Text('Schedule conflict'),
+        content: Text(
+          message != null
+              ? '$message\n\nThe ride was created and is in the dispatcher pool. '
+                    'Assign it to yourself anyway?'
+              : 'You already have a ride around this time. The ride was created '
+                    'and is in the dispatcher pool. Assign it to yourself anyway?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Keep in pool'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
+            onPressed: () {
+              Navigator.of(dialogCtx).pop();
+              rideBloc.add(
+                RideAssignRequested(
+                  rideId: rideId,
+                  driverId: driverId,
+                  overrideScheduleConflict: true,
+                ),
+              );
+            },
+            child: const Text('Assign anyway'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
@@ -76,6 +123,23 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
               // "Creating Ride..." — because the success branch (unlike the
               // error branch) never clears the status.
               context.read<CreateRideFormBloc>().add(const FormCleared());
+              if (widget.onCreated != null) {
+                widget.onCreated!();
+              } else if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+            } else if (state.status == RideStateStatus.assignConflict &&
+                state.hasAssignConflict) {
+              // The ride was created into the pool, but the driver's opt-in
+              // "Assign to me" hit a schedule conflict so it came back
+              // unassigned. The ride is NOT lost — offer to assign anyway
+              // (override) or leave it in the pool for the dispatcher.
+              _showCreateSelfAssignConflictDialog(
+                context,
+                rideId: state.conflictRideId!,
+                driverId: state.conflictDriverId!,
+                message: state.errorMessage,
+              );
               if (widget.onCreated != null) {
                 widget.onCreated!();
               } else if (Navigator.of(context).canPop()) {

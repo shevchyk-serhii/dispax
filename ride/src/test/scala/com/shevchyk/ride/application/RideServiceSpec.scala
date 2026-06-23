@@ -298,6 +298,27 @@ object RideServiceSpec extends ZIOSpecDefault {
               ride.status == RideStatus.Requested
           )
         }.provide(standardLayers),
+        // ── pool create: a freshly created ride has no driver ──────────────
+        // A driver creating a ride from the app must land it in the dispatcher
+        // pool by default (Requested, no driver). Self-assignment is a separate,
+        // optional step performed by the HTTP handler via assignDriver; createRide
+        // itself never assigns a driver.
+        test("should create a ride into the pool with no driver assigned") {
+          val request = CreateRideRequest(
+            clientId = testClientId,
+            companyId = testCompanyId,
+            pickupLocation = Location("Start Point"),
+            dropoffLocation = Location("End Point")
+          )
+
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(request)
+          } yield assertTrue(
+            ride.status == RideStatus.Requested &&
+              ride.driverId.isEmpty
+          )
+        }.provide(standardLayers),
         test("should create airport transfer ride") {
           val request = CreateRideRequest(
             clientId = vipClientId,
