@@ -115,3 +115,34 @@
 - [ ] **[FEATURE/MEDIUM] Flutter: выбор таксофирмы в форме создания поездки** _(спроектировано по коду)_ — сервис `getMyTaxiCompanies()→GET /client/taxi-companies` + модель `TaxiPartner`; стейт `create_ride_form_state.dart` (`selectedTaxiCompanyId`, `availableTaxiCompanies`, gate `isValid` для CLIENT); события `TaxiCompanySelected`/`TaxiCompaniesLoaded` + обработчики в `create_ride_form_bloc.dart`; экран `create_ride_screen.dart` грузит партнёров на init (при одном — авто-выбор + скрыть дропдаун); UI `create_ride_form_sections.dart` (`DropdownButtonFormField`, только CLIENT/CLIENT_SECRETARY); `create_ride_form_helper.dart:118-142` — `companyId` из `state.selectedTaxiCompanyId` вместо `authState.user!.companyId`; синхронизировать `create_ride_request.dart` + `web/test/models/create_ride_request_test.dart`. _Категория: Functional._
 - [ ] **[FEATURE/HIGH] Тесты** _(к написанию при реализации; правило fix→tests / bug→regression)_ — unit (in-memory, приоритет): `RideService.createRide` негатив `partner_isolation` (партнёры {A,B}, выбор C → отказ) + позитив (выбор A → `companyId=A`, событие `RideCreated(companyId=A)`) + staff-путь (диспетчер A для клиента A ок, для B отказ); repo-spec новых методов партнёрства (upsert `ON CONFLICT`, cascade, `isPartner`); integration (Testcontainers): Postgres-spec репозитория + проверка бэкфилла V11, e2e в `RideLifecycleIntegrationSpec.scala`; WS: `RideCreated(companyId=A)` приходит сокету A и НЕ приходит B; Flutter: bloc-тест на новые события + `isValid`, e2e в `web/integration_test/` (выбор не-партнёра → ошибка). _Категория: Tests._
 - [ ] **[FEATURE/SECURITY] Риски тенант-изоляции — чеклист при реализации** _(спроектировано)_ — (1) `companyId` теперь из request → НЕ доверять: для staff брать из JWT, request игнорировать; для CLIENT — валидировать через `isPartner` (дропдаун это удобство, не граница безопасности; отказ жёсткий + лог как `RideService.scala:103`). (2) Эндпоинты партнёрства — POST/DELETE ограничить своим `taxiCompanyId` (+ SuperAdmin). (3) Клиентский список партнёров — `clientCompanyId` только из JWT. (4) `clientId` для CLIENT уже форсится в `user.userId` (route) — сохранить. (5) billing `findByTaxiCompany`/инвойсинг оставить на `taxi_company_id` (владелец), не путать с партнёрством для диспатча. _Категория: Security._
+
+---
+
+## Регулярное направление: аудит небезопасного JSON-парсинга на Flutter
+
+> **Повторять при каждом аудите** (направление, как разделы 1–4). Канон проекта — хелпер `JsonParse` (`web/lib/.../json_parse.dart`): `requiredString/requiredDouble/requiredInt/requiredDateTime` + `optional*`, дающий типизированную ошибку парсинга вместо рантайм-краша UI. Многие `fromJson`-фабрики читают ОБЯЗАТЕЛЬНЫЕ поля сырым кастом (`json['x'] as String`, `as int`, `(json['x'] as num).toDouble()`, `DateTime.parse(...)`) → краш на неполном/битом ответе API (ср. историю фронтовых `DateTime.parse`-крашей).
+
+- [ ] **Регулярная задача** — грепнуть `web/lib/**/models/*.dart` по паттернам `as String\b` / `as int\b` / `as num)` / `DateTime.parse(` внутри `fromJson`-фабрик; каждый сырой каст ОБЯЗАТЕЛЬНОГО поля заменить на `JsonParse.required*`. Опциональные (`as String?`) — оставлять. Цель — список `file:line` под замену.
+
+---
+
+## Найденные баги — 2026-06-23
+
+> Аудит охвата: backend (functional/security/SOLID/покрытие) + Flutter. Проверено лично по коду (`Test/compile` зелёный). Дедуп с разделами выше выполнен. Severity: HIGH / MEDIUM / LOW.
+>
+> Отброшены как ложные срабатывания при личной верификации: cross-tenant чтение аватара (`UserApi.getAvatarServer:415` — `requireSameCompany`→`requireCompanyId`+`findByIdAndCompany` корректно изолирует); краш `billing_rides_screen.dart:122` на пустом выборе (есть гард `_selectedRideIds.isEmpty` на :109). Дубликаты (уже записаны выше, пропущены): `EmergencyApi.reassignServer` cross-tenant, FCM-токены без company_id, пагинация без валидации, Validator-trait/`checkRole`-дубли, EmergencyApi untyped-ошибки.
+
+### Flutter — небезопасный JSON-парсинг (см. регулярное направление выше)
+
+- [ ] **[MEDIUM] `ClientCompany.fromJson` — сырые касты обязательных полей** _(проверено лично)_ — `web/lib/modules/billing/models/client_company.dart:21-23` — `id`/`name`/`taxiCompanyId` читаются как `json['x'] as String` вместо `JsonParse.requiredString`; null/отсутствие поля в ответе API → рантайм-краш экрана billing. _Категория: Functional (Flutter)._
+- [ ] **[MEDIUM] `RideEstimate.fromJson` — сырые касты обязательных полей** _(проверено лично)_ — `web/lib/modules/ride_management/models/ride_estimate.dart:16-18` — `(json['distanceKm'] as num).toDouble()`, `json['durationMinutes'] as int`, `(json['estimatedPrice'] as num).toDouble()` без null-защиты → краш при показе оценки цены, если поле отсутствует/`null` (currency уже защищён через `?? 'EUR'`). _Категория: Functional (Flutter)._
+- [ ] **[LOW] `Invoice.fromJson` — единственный сырой каст `status`** _(проверено лично)_ — `web/lib/modules/billing/models/invoice.dart:117` — `InvoiceStatus.fromString(json['status'] as String)`: все прочие поля фабрики уже на `JsonParse.*`, а `status` остался сырым кастом → краш, если поле отсутствует/`null`. Обернуть в `JsonParse.requiredString(json, 'status')`. _Категория: Functional (Flutter)._
+
+### Backend — SOLID / непокрытый код
+
+- [ ] **[MEDIUM] Дублирование Haversine: хендлер `DriverApi` дублирует `EtaService`** _(проверено лично)_ — `driver/.../openapi/DriverApi.scala:125-135` (`estimateEtaMinutes`) повторяет ту же формулу расстояния, что и `driver/.../application/EtaService.scala:29-44`; HTTP-хендлер несёт application-логику вместо делегирования в сервис (DRY + слой). Заменить на вызов `EtaService`. _Категория: SOLID._
+- [ ] **[LOW] Непокрыт unit-тестами адаптер доступности водителя** _(проверено лично — нет `*Spec`)_ — `schedule/.../application/ScheduleAvailabilityChecker.scala` (реализация core-порта `DriverAvailabilityChecker`) — маппинг недоступности/overlap-логика влияет на блокировку назначения, но нет юнит-теста на in-memory дубле. _Категория: Tests._
+- [ ] **[LOW] Непокрыты unit-тестами notification-сервисы** _(проверено лично — нет `*Spec`)_ — `notification/.../application/SmtpEmailService.scala` (сборка MIME/вложение PDF счёта) и `FcmService.sendToToken` (`.ignore` глушит сбой доставки) не имеют юнит-тестов; доставка счёта/пуша критична. _Категория: Tests._
+
+<!-- AUDIT-RUN-IN-PROGRESS 2026-06-23: продолжается поиск (functional backend дал 0 нового; ждут доп. проходы по driver/schedule/notification/billing) -->
+
