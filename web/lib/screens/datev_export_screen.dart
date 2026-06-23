@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../constants/app_styles.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 import '../modules/billing/csv_download_stub.dart'
     if (dart.library.html) '../modules/billing/csv_download_web.dart';
 import '../dashboard/superadmin/widgets/billing_widgets.dart';
@@ -106,28 +107,31 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   // --- Clipboard ---
 
   void _copyToClipboard(String text, String label) {
+    final l10n = AppLocalizations.of(context)!;
     Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$label in die Zwischenablage kopiert')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.copiedToClipboard(label))));
     }
   }
 
   void _copyAll() {
+    final l10n = AppLocalizations.of(context)!;
     final buffer = StringBuffer();
-    buffer.writeln('=== Erlöse ===');
+    buffer.writeln(l10n.copyAllRevenueHeader);
     buffer.writeln(_revenueCsv);
     buffer.writeln();
-    buffer.writeln('=== Ausgaben ===');
+    buffer.writeln(l10n.copyAllExpensesHeader);
     buffer.writeln(_expensesCsv);
     buffer.writeln();
-    buffer.writeln('=== Zusammenfassung ===');
+    buffer.writeln(l10n.copyAllSummaryHeader);
     buffer.writeln(_summaryCsv);
-    _copyToClipboard(buffer.toString(), 'Alle DATEV-Daten');
+    _copyToClipboard(buffer.toString(), l10n.allDatevDataLabel);
   }
 
   Future<void> _downloadExtf() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isDownloading = true);
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
@@ -142,7 +146,9 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Download fehlgeschlagen: ${response.statusCode}'),
+              content: Text(
+                l10n.downloadFailed(response.statusCode.toString()),
+              ),
               backgroundColor: AppColors.error,
             ),
           );
@@ -152,7 +158,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler: $e'),
+            content: Text(l10n.genericError(e.toString())),
             backgroundColor: AppColors.error,
           ),
         );
@@ -166,6 +172,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final monthNames = [
       'Jan',
       'Feb',
@@ -186,7 +193,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
     return Column(
       children: [
         BillingTopBar(
-          title: 'DATEV Export',
+          title: l10n.datevExportTitle,
           subtitle: monthLabel,
           actions: [
             IconButton(
@@ -232,6 +239,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   }
 
   Widget _buildBody(String monthLabel) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
@@ -248,10 +256,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
               child: Text(_error!, textAlign: TextAlign.center),
             ),
             const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _loadData,
-              child: const Text('Erneut versuchen'),
-            ),
+            ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
           ],
         ),
       );
@@ -269,7 +274,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Keine Daten für $monthLabel',
+              l10n.noDataForMonth(monthLabel),
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -301,6 +306,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   // --- Revenue Section ---
 
   Widget _buildRevenueSection() {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
@@ -321,11 +327,11 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
           backgroundColor: AppColors.success.withAlpha(30),
           child: const Icon(Icons.trending_up, color: AppColors.success),
         ),
-        title: const Text(
-          'Erlöse',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.revenueSection,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text('$_revenueRows Zeilen'),
+        subtitle: Text(l10n.rowsCountLabel(_revenueRows)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -340,8 +346,9 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             const SizedBox(width: 4),
             IconButton(
               icon: const Icon(Icons.copy, size: 18),
-              tooltip: 'CSV kopieren',
-              onPressed: () => _copyToClipboard(_revenueCsv, 'Erlöse CSV'),
+              tooltip: l10n.copyCsvTooltip,
+              onPressed: () =>
+                  _copyToClipboard(_revenueCsv, l10n.revenueCsvLabel),
             ),
           ],
         ),
@@ -374,6 +381,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   // --- Expenses Section ---
 
   Widget _buildExpensesSection() {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
@@ -394,11 +402,11 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
           backgroundColor: AppColors.error.withAlpha(30),
           child: const Icon(Icons.trending_down, color: AppColors.error),
         ),
-        title: const Text(
-          'Ausgaben',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.expensesSection,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text('$_expensesRows Zeilen'),
+        subtitle: Text(l10n.rowsCountLabel(_expensesRows)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -413,8 +421,9 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             const SizedBox(width: 4),
             IconButton(
               icon: const Icon(Icons.copy, size: 18),
-              tooltip: 'CSV kopieren',
-              onPressed: () => _copyToClipboard(_expensesCsv, 'Ausgaben CSV'),
+              tooltip: l10n.copyCsvTooltip,
+              onPressed: () =>
+                  _copyToClipboard(_expensesCsv, l10n.expensesCsvLabel),
             ),
           ],
         ),
@@ -447,6 +456,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   // --- Summary Section ---
 
   Widget _buildSummarySection() {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
@@ -467,12 +477,12 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
           backgroundColor: AppColors.info.withAlpha(30),
           child: const Icon(Icons.summarize, color: AppColors.info),
         ),
-        title: const Text(
-          'Zusammenfassung',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.summarySection,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          'Ergebnis: ${fmtEur(_netIncome)}',
+          l10n.netIncomeResult(fmtEur(_netIncome)),
           style: TextStyle(
             color: _netIncome >= 0 ? AppColors.success : AppColors.error,
             fontWeight: FontWeight.w600,
@@ -480,8 +490,8 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
         ),
         trailing: IconButton(
           icon: const Icon(Icons.copy, size: 18),
-          tooltip: 'Zusammenfassung kopieren',
-          onPressed: () => _copyToClipboard(_summaryCsv, 'Zusammenfassung'),
+          tooltip: l10n.copySummaryCsvTooltip,
+          onPressed: () => _copyToClipboard(_summaryCsv, l10n.summaryCsvLabel),
         ),
         children: [
           Padding(
@@ -519,14 +529,15 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   }
 
   Widget _buildNetIncomeLine() {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Ergebnis (Netto)',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          Text(
+            l10n.netIncomeLabel,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -552,6 +563,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   // --- Bottom Bar ---
 
   Widget _buildBottomBar() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -574,12 +586,12 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
                 Expanded(
                   child: BillingOutlinedButton(
                     onPressed: _copyAll,
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.copy_all, size: 16),
-                        SizedBox(width: 6),
-                        Text('Alles kopieren'),
+                        const Icon(Icons.copy_all, size: 16),
+                        const SizedBox(width: 6),
+                        Text(l10n.copyAllButton),
                       ],
                     ),
                   ),
@@ -600,7 +612,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
                               ),
                             )
                           : const Icon(Icons.download, size: 16),
-                      label: const Text('Download .csv (EXTF)'),
+                      label: Text(l10n.downloadCsvExtfButton),
                       style: AppStyles.accentButtonStyle,
                     ),
                   ),
@@ -609,7 +621,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'DATEV Buchungsstapel Format – Import via DATEV Unternehmen Online',
+              l10n.datevExtfFormatInfo,
               style: TextStyle(
                 fontSize: 11,
                 color: Theme.of(context).colorScheme.outlineVariant,

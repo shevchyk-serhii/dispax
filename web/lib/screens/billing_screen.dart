@@ -9,6 +9,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../constants/lucide_compat.dart';
+import '../l10n/app_localizations.dart';
 import '../modules/billing/models/client_company.dart';
 import '../modules/billing/models/invoice.dart';
 import '../modules/billing/services/client_company_service.dart';
@@ -192,6 +193,7 @@ class _BillingScreenState extends State<BillingScreen>
 
   /// Mobile: existing header + TabBar + TabBarView.
   Widget _buildMobileLayout(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         _buildHeader(),
@@ -201,12 +203,18 @@ class _BillingScreenState extends State<BillingScreen>
           unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           indicatorColor: Theme.of(context).colorScheme.primary,
           isScrollable: true,
-          tabs: const [
-            Tab(icon: Icon(Icons.receipt_long, size: 18), text: 'Rechnungen'),
-            Tab(icon: Icon(Icons.business, size: 18), text: 'Unternehmen'),
+          tabs: [
             Tab(
-              icon: Icon(Icons.playlist_add_check, size: 18),
-              text: 'Fahrten',
+              icon: const Icon(Icons.receipt_long, size: 18),
+              text: l10n.invoicesTab,
+            ),
+            Tab(
+              icon: const Icon(Icons.business, size: 18),
+              text: l10n.companiesTab,
+            ),
+            Tab(
+              icon: const Icon(Icons.playlist_add_check, size: 18),
+              text: l10n.billingRidesTab,
             ),
           ],
         ),
@@ -225,6 +233,7 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final monthNames = [
       'Jan',
@@ -243,10 +252,10 @@ class _BillingScreenState extends State<BillingScreen>
     final monthLabel = '${monthNames[now.month - 1]} ${now.year}';
     final subtitle = _loadingInvoices
         ? monthLabel
-        : '$monthLabel · ${_invoices.length} Rechnungen';
+        : l10n.invoicesCountSubtitle(monthLabel, _invoices.length);
 
     return BillingTopBar(
-      title: 'Billing',
+      title: l10n.billingScreenTitle,
       subtitle: subtitle,
       actions: [
         IconButton(
@@ -263,6 +272,7 @@ class _BillingScreenState extends State<BillingScreen>
   // ─── INVOICES TAB ────────────────────────────────────────────────────────────
 
   Widget _buildInvoicesTab() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         if (!_loadingInvoices && _invoiceError == null && _invoices.isNotEmpty)
@@ -275,7 +285,7 @@ class _BillingScreenState extends State<BillingScreen>
               : _invoiceError != null
               ? _buildError(_invoiceError!, _loadInvoices)
               : _invoices.isEmpty
-              ? _buildEmpty('Keine Rechnungen', Icons.receipt)
+              ? _buildEmpty(l10n.noInvoices, Icons.receipt)
               : _buildInvoiceTable(),
         ),
         _buildGoBDFooter(),
@@ -284,6 +294,7 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   Widget _buildStatTiles() {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: LayoutBuilder(
@@ -291,17 +302,17 @@ class _BillingScreenState extends State<BillingScreen>
           final isWide = constraints.maxWidth >= 500;
           final tiles = [
             StatTile(
-              label: 'Ausstehend',
+              label: l10n.outstandingInvoices,
               value: fmtEur(_outstanding),
               variant: StatTileVariant.dark,
             ),
-            StatTile(label: 'Bezahlt (Monat)', value: fmtEur(_paidThisMonth)),
+            StatTile(label: l10n.paidThisMonth, value: fmtEur(_paidThisMonth)),
             StatTile(
-              label: 'Überfällig',
+              label: l10n.overdueInvoices,
               value: fmtEur(_overdue),
               valueColor: const Color(0xFFDC2626),
             ),
-            StatTile(label: 'Einzugsquote', value: _collectionRate),
+            StatTile(label: l10n.collectionRate, value: _collectionRate),
           ];
           if (isWide) {
             return Row(
@@ -332,30 +343,31 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   Widget _buildTopActions() {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Row(
         children: [
           BillingOutlinedButton(
             onPressed: _showDatevExport,
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.download, size: 16),
-                SizedBox(width: 6),
-                Text('Export DATEV'),
+                const Icon(Icons.download, size: 16),
+                const SizedBox(width: 6),
+                Text(l10n.exportDatevButton),
               ],
             ),
           ),
           const SizedBox(width: 8),
           BillingGraphiteButton(
             onPressed: _showNewInvoiceDialog,
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add, size: 16),
-                SizedBox(width: 6),
-                Text('+ Neue Rechnung'),
+                const Icon(Icons.add, size: 16),
+                const SizedBox(width: 6),
+                Text(l10n.createNewInvoiceButton),
               ],
             ),
           ),
@@ -365,17 +377,19 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   void _showDatevExport() {
+    final l10n = AppLocalizations.of(context)!;
     // Navigate to the DATEV export tab if available, or show snackbar.
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('DATEV Export öffnen...')));
+    ).showSnackBar(SnackBar(content: Text(l10n.datevExportOpening)));
   }
 
   void _showNewInvoiceDialog() {
+    final l10n = AppLocalizations.of(context)!;
     if (_companies.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte zuerst ein Unternehmen anlegen.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.createCompanyFirst)));
       return;
     }
     String? selectedCompanyId = _companies.first.id;
@@ -384,10 +398,10 @@ class _BillingScreenState extends State<BillingScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlg) => AlertDialog(
-          title: const Text('Neue Rechnung'),
+          title: Text(l10n.newInvoiceTitle),
           content: DropdownButtonFormField<String>(
             initialValue: selectedCompanyId,
-            decoration: const InputDecoration(labelText: 'Unternehmen *'),
+            decoration: InputDecoration(labelText: l10n.companiesLabel),
             items: _companies
                 .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
                 .toList(),
@@ -396,7 +410,7 @@ class _BillingScreenState extends State<BillingScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Abbrechen'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -415,10 +429,12 @@ class _BillingScreenState extends State<BillingScreen>
                   );
                   await _loadInvoices();
                 } catch (e) {
-                  messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(l10n.genericError(e.toString()))),
+                  );
                 }
               },
-              child: const Text('Erstellen'),
+              child: Text(l10n.createInvoiceButton),
             ),
           ],
         ),
@@ -427,13 +443,19 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   Widget _buildStatusFilters() {
+    final l10n = AppLocalizations.of(context)!;
     final filters = [
       null,
       InvoiceStatus.draft,
       InvoiceStatus.sent,
       InvoiceStatus.paid,
     ];
-    final labels = ['Alle', 'Entwurf', 'Gesendet', 'Bezahlt'];
+    final labels = [
+      l10n.allInvoicesFilter,
+      l10n.draftStatusFilter,
+      l10n.sentStatusFilter,
+      l10n.paidStatusFilter,
+    ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -459,6 +481,7 @@ class _BillingScreenState extends State<BillingScreen>
 
   /// Invoice table with themed card, header row, and per-row entries.
   Widget _buildInvoiceTable() {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     return RefreshIndicator(
@@ -495,7 +518,7 @@ class _BillingScreenState extends State<BillingScreen>
                       Expanded(
                         flex: 3,
                         child: Text(
-                          'RECHNUNG',
+                          l10n.invoiceTableHeaderNumber,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -509,7 +532,7 @@ class _BillingScreenState extends State<BillingScreen>
                       Expanded(
                         flex: 3,
                         child: Text(
-                          'KUNDE',
+                          l10n.invoiceTableHeaderClient,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -523,7 +546,7 @@ class _BillingScreenState extends State<BillingScreen>
                       SizedBox(
                         width: 90,
                         child: Text(
-                          'BETRAG',
+                          l10n.invoiceTableHeaderAmount,
                           textAlign: TextAlign.right,
                           style: TextStyle(
                             fontSize: 11,
@@ -556,6 +579,7 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   Widget _buildInvoiceTableRow(Invoice invoice, bool isLast) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final company = _companies
@@ -593,7 +617,7 @@ class _BillingScreenState extends State<BillingScreen>
     if (invoice.status == InvoiceStatus.sent &&
         invoice.dueDate != null &&
         invoice.dueDate!.isBefore(DateTime.now())) {
-      statusBadge = BillingStatusBadge.overdue(label: 'Überfällig');
+      statusBadge = BillingStatusBadge.overdue(label: l10n.overdueStatus);
     }
 
     return InkWell(
@@ -632,7 +656,7 @@ class _BillingScreenState extends State<BillingScreen>
                   if (invoice.reminderSentAt != null) ...[
                     const SizedBox(width: 6),
                     Tooltip(
-                      message: 'Zahlungserinnerung versendet',
+                      message: l10n.paymentReminderSent,
                       child: Icon(
                         Icons.notifications_active,
                         size: 14,
@@ -685,11 +709,11 @@ class _BillingScreenState extends State<BillingScreen>
                   if (action == 'detail') _showInvoiceDetail(invoice);
                 },
                 itemBuilder: (_) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'detail',
                     child: ListTile(
-                      leading: Icon(Icons.open_in_new),
-                      title: Text('Details'),
+                      leading: const Icon(Icons.open_in_new),
+                      title: Text(l10n.viewDetailsMenu),
                     ),
                   ),
                 ],
@@ -702,6 +726,7 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   Widget _buildGoBDFooter() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -715,7 +740,7 @@ class _BillingScreenState extends State<BillingScreen>
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              'GoBD-konform — Rechnungen sind unveränderlich archiviert.',
+              l10n.gobdCompliant,
               style: TextStyle(
                 fontSize: 11,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -745,6 +770,7 @@ class _BillingScreenState extends State<BillingScreen>
   // ─── COMPANIES TAB ───────────────────────────────────────────────────────────
 
   Widget _buildCompaniesTab() {
+    final l10n = AppLocalizations.of(context)!;
     return Stack(
       children: [
         _loadingCompanies
@@ -752,7 +778,7 @@ class _BillingScreenState extends State<BillingScreen>
             : _companyError != null
             ? _buildError(_companyError!, _loadCompanies)
             : _companies.isEmpty
-            ? _buildEmpty('Keine Unternehmen', Icons.business)
+            ? _buildEmpty(l10n.noCompanies, Icons.business)
             : RefreshIndicator(
                 onRefresh: _loadCompanies,
                 child: ListView.builder(
@@ -778,6 +804,7 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   Widget _buildCompanyCard(ClientCompany company) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -804,20 +831,20 @@ class _BillingScreenState extends State<BillingScreen>
             if (action == 'delete') _confirmDeleteCompany(company);
           },
           itemBuilder: (_) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'edit',
               child: ListTile(
-                leading: Icon(Icons.edit),
-                title: Text('Bearbeiten'),
+                leading: const Icon(Icons.edit),
+                title: Text(l10n.editCompanyMenu),
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: ListTile(
-                leading: Icon(Icons.delete, color: AppColors.error),
+                leading: const Icon(Icons.delete, color: AppColors.error),
                 title: Text(
-                  'Löschen',
-                  style: TextStyle(color: AppColors.error),
+                  l10n.deleteCompanyMenu,
+                  style: const TextStyle(color: AppColors.error),
                 ),
               ),
             ),
@@ -832,6 +859,7 @@ class _BillingScreenState extends State<BillingScreen>
       _showCompanyDialog(company);
 
   void _showCompanyDialog(ClientCompany? existing) {
+    final l10n = AppLocalizations.of(context)!;
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
     final emailCtrl = TextEditingController(text: existing?.email ?? '');
     final phoneCtrl = TextEditingController(text: existing?.phone ?? '');
@@ -844,9 +872,7 @@ class _BillingScreenState extends State<BillingScreen>
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           title: Text(
-            existing == null
-                ? 'Unternehmen hinzufügen'
-                : 'Unternehmen bearbeiten',
+            existing == null ? l10n.addCompanyTitle : l10n.editCompanyTitle,
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -854,31 +880,49 @@ class _BillingScreenState extends State<BillingScreen>
               children: [
                 TextField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Name *'),
+                  decoration: InputDecoration(labelText: l10n.companyNameLabel),
                 ),
                 TextField(
                   controller: emailCtrl,
-                  decoration: const InputDecoration(labelText: 'E-Mail'),
+                  decoration: InputDecoration(
+                    labelText: l10n.companyEmailLabel,
+                  ),
                 ),
                 TextField(
                   controller: phoneCtrl,
-                  decoration: const InputDecoration(labelText: 'Telefon'),
+                  decoration: InputDecoration(
+                    labelText: l10n.companyPhoneLabel,
+                  ),
                 ),
                 TextField(
                   controller: addressCtrl,
-                  decoration: const InputDecoration(labelText: 'Adresse'),
+                  decoration: InputDecoration(
+                    labelText: l10n.companyAddressLabel,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String?>(
                   initialValue: selectedLanguage,
-                  decoration: const InputDecoration(
-                    labelText: 'Rechnungssprache',
+                  decoration: InputDecoration(
+                    labelText: l10n.invoiceLanguageLabel,
                   ),
-                  items: const [
-                    DropdownMenuItem(value: null, child: Text('Standard')),
-                    DropdownMenuItem(value: 'de', child: Text('Deutsch')),
-                    DropdownMenuItem(value: 'en', child: Text('English')),
-                    DropdownMenuItem(value: 'uk', child: Text('Українська')),
+                  items: [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(l10n.languageStandard),
+                    ),
+                    DropdownMenuItem(
+                      value: 'de',
+                      child: Text(l10n.languageGerman),
+                    ),
+                    DropdownMenuItem(
+                      value: 'en',
+                      child: Text(l10n.languageEnglish),
+                    ),
+                    DropdownMenuItem(
+                      value: 'uk',
+                      child: Text(l10n.languageUkrainian),
+                    ),
                   ],
                   onChanged: (value) =>
                       setDialogState(() => selectedLanguage = value),
@@ -889,7 +933,7 @@ class _BillingScreenState extends State<BillingScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Abbrechen'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -916,10 +960,12 @@ class _BillingScreenState extends State<BillingScreen>
                   }
                   await _loadCompanies();
                 } catch (e) {
-                  messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(l10n.genericError(e.toString()))),
+                  );
                 }
               },
-              child: Text(existing == null ? 'Hinzufügen' : 'Speichern'),
+              child: Text(existing == null ? l10n.addCompanyButton : l10n.save),
             ),
           ],
         ),
@@ -933,16 +979,17 @@ class _BillingScreenState extends State<BillingScreen>
   }
 
   void _confirmDeleteCompany(ClientCompany company) {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     showAdaptiveDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Unternehmen löschen?'),
-        content: Text('${company.name} wird gelöscht.'),
+        title: Text(l10n.deleteCompanyConfirmTitle),
+        content: Text(l10n.deleteCompanyConfirmMsg(company.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Abbrechen'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
@@ -952,10 +999,15 @@ class _BillingScreenState extends State<BillingScreen>
                 await _companyService.deleteCompany(company.id);
                 await _loadCompanies();
               } catch (e) {
-                messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
+                messenger.showSnackBar(
+                  SnackBar(content: Text(l10n.genericError(e.toString()))),
+                );
               }
             },
-            child: const Text('Löschen', style: TextStyle(color: Colors.white)),
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -984,17 +1036,20 @@ class _BillingScreenState extends State<BillingScreen>
     ),
   );
 
-  Widget _buildError(String msg, VoidCallback retry) => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.error_outline, size: 48, color: AppColors.error),
-        const SizedBox(height: 12),
-        Text(msg, textAlign: TextAlign.center),
-        ElevatedButton(onPressed: retry, child: const Text('Wiederholen')),
-      ],
-    ),
-  );
+  Widget _buildError(String msg, VoidCallback retry) {
+    final l10n = AppLocalizations.of(context)!;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: AppColors.error),
+          const SizedBox(height: 12),
+          Text(msg, textAlign: TextAlign.center),
+          ElevatedButton(onPressed: retry, child: Text(l10n.retry)),
+        ],
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -1046,12 +1101,15 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
   Future<void> _action(Future<dynamic> Function() fn) async {
     setState(() => _loading = true);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
     try {
       await fn();
       widget.onRefresh();
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.genericError(e.toString()))),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1061,13 +1119,16 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
       '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
 
   Future<void> _previewPdf(Invoice inv) async {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
     Uint8List bytes;
     try {
       bytes = await widget.invoiceService.downloadPdf(inv.id);
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.genericError(e.toString()))),
+      );
       return;
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -1075,36 +1136,40 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
     if (!mounted) return;
     await showAdaptiveDialog<void>(
       context: context,
-      builder: (ctx) => Dialog(
-        insetPadding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            AppBar(
-              automaticallyImplyLeading: false,
-              title: Text('Vorschau · ${inv.number}'),
-              actions: [
-                IconButton(
-                  tooltip: 'Herunterladen',
-                  icon: const Icon(Icons.download),
-                  onPressed: () =>
-                      triggerPdfDownload(bytes, 'invoice-${inv.number}.pdf'),
-                ),
-                IconButton(
-                  tooltip: 'Schließen',
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                ),
-              ],
-            ),
-            Expanded(child: buildPdfPreview(bytes)),
-          ],
-        ),
-      ),
+      builder: (ctx) {
+        final ctxL10n = AppLocalizations.of(ctx)!;
+        return Dialog(
+          insetPadding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              AppBar(
+                automaticallyImplyLeading: false,
+                title: Text(ctxL10n.pdfPreviewTitle(inv.number)),
+                actions: [
+                  IconButton(
+                    tooltip: ctxL10n.downloadPdfTooltip,
+                    icon: const Icon(Icons.download),
+                    onPressed: () =>
+                        triggerPdfDownload(bytes, 'invoice-${inv.number}.pdf'),
+                  ),
+                  IconButton(
+                    tooltip: ctxL10n.closeTooltip,
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              Expanded(child: buildPdfPreview(bytes)),
+            ],
+          ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final inv = _invoice;
     final isDraft = inv.status == InvoiceStatus.draft;
     final isSent = inv.status == InvoiceStatus.sent;
@@ -1159,16 +1224,20 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                   children: [
                     _StatusBadge(inv.status),
                     if (inv.reminderSentAt != null)
-                      _ReminderBadge(inv.reminderSentAt!),
+                      _ReminderBadge(
+                        label: l10n.reminderBadgeLabel(
+                          _fmtDate(inv.reminderSentAt!),
+                        ),
+                      ),
                   ],
                 ),
               ],
             ),
             const Divider(height: 24),
             if (inv.items.isNotEmpty) ...[
-              const Text(
-                'Positionen',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Text(
+                l10n.invoiceLineItems,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               ...inv.items.map(
@@ -1195,13 +1264,17 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
               ),
               const Divider(),
             ],
-            _TotalRow('Zwischensumme', inv.subtotalAmount),
+            _TotalRow(l10n.subtotalLabel, inv.subtotalAmount),
             if (inv.taxRate > 0)
               _TotalRow(
-                'MwSt. ${inv.taxRate.toStringAsFixed(0)}%',
+                l10n.vatLineLabel(inv.taxRate.toStringAsFixed(0)),
                 inv.taxAmount,
               ),
-            _TotalRow('Gesamt (${inv.currency})', inv.totalAmount, bold: true),
+            _TotalRow(
+              l10n.totalLabel(inv.currency),
+              inv.totalAmount,
+              bold: true,
+            ),
             const SizedBox(height: 16),
             if (_loading)
               Center(child: CircularProgressIndicator.adaptive())
@@ -1213,7 +1286,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                       onPressed: () =>
                           _action(() => widget.invoiceService.autoFill(inv.id)),
                       icon: const Icon(Icons.auto_fix_high),
-                      label: const Text('Fahrten automatisch laden'),
+                      label: Text(l10n.autoFillRidesButton),
                     ),
                     const SizedBox(height: 8),
                     ElevatedButton.icon(
@@ -1221,7 +1294,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                         () => widget.invoiceService.sendInvoice(inv.id),
                       ),
                       icon: const Icon(Icons.send),
-                      label: const Text('Rechnung senden'),
+                      label: Text(l10n.sendInvoiceButton),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                       ),
@@ -1232,9 +1305,9 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                         () => widget.invoiceService.deleteInvoice(inv.id),
                       ),
                       icon: const Icon(Icons.delete, color: AppColors.error),
-                      label: const Text(
-                        'Löschen',
-                        style: TextStyle(color: AppColors.error),
+                      label: Text(
+                        l10n.delete,
+                        style: const TextStyle(color: AppColors.error),
                       ),
                     ),
                   ],
@@ -1243,7 +1316,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                       onPressed: () =>
                           _action(() => widget.invoiceService.markPaid(inv.id)),
                       icon: const Icon(Icons.check_circle),
-                      label: const Text('Als bezahlt markieren'),
+                      label: Text(l10n.markAsPaidButton),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success,
                       ),
@@ -1254,30 +1327,33 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                     onPressed: () async {
                       setState(() => _loading = true);
                       final messenger = ScaffoldMessenger.of(context);
+                      final btnL10n = AppLocalizations.of(context)!;
                       try {
                         final bytes = await widget.invoiceService.downloadPdf(
                           inv.id,
                         );
                         triggerPdfDownload(bytes, 'invoice-${inv.number}.pdf');
                         messenger.showSnackBar(
-                          const SnackBar(content: Text('PDF heruntergeladen')),
+                          SnackBar(content: Text(btnL10n.pdfDownloadSuccess)),
                         );
                       } catch (e) {
                         messenger.showSnackBar(
-                          SnackBar(content: Text('Fehler: $e')),
+                          SnackBar(
+                            content: Text(btnL10n.genericError(e.toString())),
+                          ),
                         );
                       } finally {
                         if (mounted) setState(() => _loading = false);
                       }
                     },
                     icon: const Icon(Icons.picture_as_pdf),
-                    label: const Text('PDF herunterladen'),
+                    label: Text(l10n.downloadPdfButton),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: () => _previewPdf(inv),
                     icon: const Icon(Icons.visibility),
-                    label: const Text('Vorschau'),
+                    label: Text(l10n.previewButton),
                   ),
                 ],
               ),
@@ -1322,13 +1398,10 @@ class _StatusBadge extends StatelessWidget {
 }
 
 /// Shown next to the status badge once a payment reminder has been emailed for a
-/// sent-but-overdue invoice; carries the date it went out.
+/// sent-but-overdue invoice; carries the pre-localized label string.
 class _ReminderBadge extends StatelessWidget {
-  final DateTime sentAt;
-  const _ReminderBadge(this.sentAt);
-
-  String _fmtDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+  final String label;
+  const _ReminderBadge({required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -1346,7 +1419,7 @@ class _ReminderBadge extends StatelessWidget {
           const Icon(Icons.notifications_active, size: 12, color: color),
           const SizedBox(width: 4),
           Text(
-            'Erinnert ${_fmtDate(sentAt)}',
+            label,
             style: const TextStyle(
               color: color,
               fontWeight: FontWeight.bold,
@@ -1406,6 +1479,7 @@ class _BillingNavRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return NavigationRail(
       backgroundColor: AppColors.primary,
       indicatorColor: AppColors.accent.withValues(alpha: 0.2),
@@ -1416,18 +1490,18 @@ class _BillingNavRail extends StatelessWidget {
       labelType: NavigationRailLabelType.all,
       selectedIndex: selectedIndex,
       onDestinationSelected: onDestinationSelected,
-      destinations: const [
+      destinations: [
         NavigationRailDestination(
-          icon: Icon(LucideCompat.receipt),
-          label: Text('Invoices'),
+          icon: const Icon(LucideCompat.receipt),
+          label: Text(l10n.invoicesRailLabel),
         ),
         NavigationRailDestination(
-          icon: Icon(LucideCompat.building2),
-          label: Text('Clients'),
+          icon: const Icon(LucideCompat.building2),
+          label: Text(l10n.clientsRailLabel),
         ),
         NavigationRailDestination(
-          icon: Icon(LucideCompat.download),
-          label: Text('DATEV'),
+          icon: const Icon(LucideCompat.download),
+          label: Text(l10n.datevRailLabel),
         ),
       ],
     );

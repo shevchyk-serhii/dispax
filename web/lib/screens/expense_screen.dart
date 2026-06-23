@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 import '../modules/core/models/expense.dart';
 import '../modules/core/services/expense_service.dart';
 import '../dashboard/superadmin/widgets/billing_widgets.dart';
@@ -68,6 +69,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Future<void> _showCreateExpenseDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final amountController = TextEditingController();
     final descriptionController = TextEditingController();
     ExpenseCategory selectedCategory = ExpenseCategory.fuel;
@@ -76,16 +78,16 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Ausgabe erfassen'),
+          title: Text(l10n.captureExpenseTitle),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<ExpenseCategory>(
                   initialValue: selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategorie',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.expenseCategoryLabel,
+                    border: const OutlineInputBorder(),
                   ),
                   items: ExpenseCategory.values.map((cat) {
                     return DropdownMenuItem(
@@ -115,9 +117,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Betrag (EUR)',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.expenseAmountLabel,
+                    border: const OutlineInputBorder(),
                     prefixText: '€ ',
                   ),
                 ),
@@ -125,9 +127,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 TextField(
                   controller: descriptionController,
                   maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: 'Beschreibung (optional)',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.expenseDescriptionLabel,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ],
@@ -136,16 +138,14 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () async {
                 final amount = double.tryParse(amountController.text);
                 if (amount == null || amount <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Bitte gültigen Betrag eingeben'),
-                    ),
+                    SnackBar(content: Text(l10n.invalidAmountError)),
                   );
                   return;
                 }
@@ -165,13 +165,13 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                   if (context.mounted) Navigator.pop(context, true);
                 } catch (e) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Fehler: $e')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.genericError(e.toString()))),
+                    );
                   }
                 }
               },
-              child: const Text('Speichern'),
+              child: Text(l10n.save),
             ),
           ],
         ),
@@ -184,22 +184,26 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Future<void> _deleteExpense(Expense expense) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Ausgabe löschen?'),
+        title: Text(l10n.deleteExpenseConfirmTitle),
         content: Text(
-          '${expense.category.label} · €${expense.amount.toStringAsFixed(2)} wird gelöscht.',
+          l10n.deleteExpenseConfirmMsg(
+            expense.category.label,
+            expense.amount.toStringAsFixed(2),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Löschen'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -211,9 +215,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         _loadExpenses();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Fehler: $e')));
+          final errL10n = AppLocalizations.of(context)!;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errL10n.genericError(e.toString()))),
+          );
         }
       }
     }
@@ -223,10 +228,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         BillingTopBar(
-          title: 'Ausgaben · $_monthLabel',
+          title: l10n.expensesScreenTitle(_monthLabel),
           subtitle: _isLoading
               ? null
               : _expenses.isEmpty
@@ -236,7 +242,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
             IconButton(
               icon: const Icon(Icons.add, color: Colors.white, size: 24),
               onPressed: _showCreateExpenseDialog,
-              tooltip: 'Ausgabe erfassen',
+              tooltip: l10n.addExpenseTooltip,
             ),
             IconButton(
               icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
@@ -262,7 +268,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: _loadExpenses,
-                        child: const Text('Wiederholen'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
@@ -279,7 +285,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Keine Ausgaben',
+                        l10n.noExpenses,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -304,6 +310,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Widget _buildExpenseRow(Expense expense) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final catColor = _categoryColor(expense.category);
     final hasMissingReceipt = expense.receiptUrl == null;
@@ -380,7 +387,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
-                        'Kein Beleg',
+                        l10n.noReceiptWarning,
                         style: TextStyle(
                           fontSize: 11,
                           color: AppColors.warningStrong,
@@ -418,6 +425,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Widget _buildTotalFooter() {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -433,7 +441,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Gesamt',
+            l10n.totalExpensesLabel,
             style: TextStyle(
               fontWeight: FontWeight.w600,
               color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,

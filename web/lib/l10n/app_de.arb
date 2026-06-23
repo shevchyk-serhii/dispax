@@ -260,5 +260,224 @@
   "roleAdmin": "Admin",
   "roleSuperAdmin": "Super Admin",
 
-  "languageSaveFailed": "Sprache konnte nicht gespeichert werden"
+  "languageSaveFailed": "Sprache konnte nicht gespeichert werden",
+
+  "billingScreenTitle": "Billing",
+  "invoicesTab": "Rechnungen",
+  "companiesTab": "Unternehmen",
+  "billingRidesTab": "Fahrten",
+  "invoicesCountSubtitle": "{month} · {count} Rechnungen",
+  "@invoicesCountSubtitle": {
+    "placeholders": {
+      "month": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "outstandingInvoices": "Ausstehend",
+  "paidThisMonth": "Bezahlt (Monat)",
+  "overdueInvoices": "Überfällig",
+  "collectionRate": "Einzugsquote",
+  "exportDatevButton": "Export DATEV",
+  "createNewInvoiceButton": "+ Neue Rechnung",
+  "datevExportOpening": "DATEV Export öffnen...",
+  "createCompanyFirst": "Bitte zuerst ein Unternehmen anlegen.",
+  "newInvoiceTitle": "Neue Rechnung",
+  "companiesLabel": "Unternehmen *",
+  "createInvoiceButton": "Rechnung erstellen",
+  "allInvoicesFilter": "Alle",
+  "draftStatusFilter": "Entwurf",
+  "sentStatusFilter": "Gesendet",
+  "paidStatusFilter": "Bezahlt",
+  "invoiceTableHeaderNumber": "RECHNUNG",
+  "invoiceTableHeaderClient": "KUNDE",
+  "invoiceTableHeaderAmount": "BETRAG",
+  "overdueStatus": "Überfällig",
+  "paymentReminderSent": "Zahlungserinnerung versendet",
+  "viewDetailsMenu": "Details",
+  "gobdCompliant": "GoBD-konform — Rechnungen sind unveränderlich archiviert.",
+  "noCompanies": "Keine Unternehmen",
+  "noInvoices": "Keine Rechnungen",
+  "editCompanyMenu": "Bearbeiten",
+  "deleteCompanyMenu": "Löschen",
+  "addCompanyTitle": "Unternehmen hinzufügen",
+  "editCompanyTitle": "Unternehmen bearbeiten",
+  "companyNameLabel": "Name *",
+  "companyEmailLabel": "E-Mail",
+  "companyPhoneLabel": "Telefon",
+  "companyAddressLabel": "Adresse",
+  "invoiceLanguageLabel": "Rechnungssprache",
+  "languageStandard": "Standard",
+  "languageGerman": "Deutsch",
+  "languageEnglish": "English",
+  "languageUkrainian": "Ukrainisch",
+  "addCompanyButton": "Hinzufügen",
+  "deleteCompanyConfirmTitle": "Unternehmen löschen?",
+  "deleteCompanyConfirmMsg": "{name} wird gelöscht.",
+  "@deleteCompanyConfirmMsg": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "downloadPdfTooltip": "Herunterladen",
+  "closeTooltip": "Schließen",
+  "closeButton": "Schließen",
+  "pdfPreviewTitle": "Vorschau · {number}",
+  "@pdfPreviewTitle": {
+    "placeholders": {
+      "number": {"type": "String"}
+    }
+  },
+  "invoiceLineItems": "Positionen",
+  "subtotalLabel": "Zwischensumme",
+  "vatLineLabel": "MwSt. {rate}%",
+  "@vatLineLabel": {
+    "placeholders": {
+      "rate": {"type": "String"}
+    }
+  },
+  "totalLabel": "Gesamt ({currency})",
+  "@totalLabel": {
+    "placeholders": {
+      "currency": {"type": "String"}
+    }
+  },
+  "autoFillRidesButton": "Fahrten automatisch laden",
+  "sendInvoiceButton": "Rechnung senden",
+  "markAsPaidButton": "Als bezahlt markieren",
+  "pdfDownloadSuccess": "PDF heruntergeladen",
+  "downloadPdfButton": "PDF herunterladen",
+  "previewButton": "Vorschau",
+  "reminderBadgeLabel": "Erinnert {date}",
+  "@reminderBadgeLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "invoicesRailLabel": "Invoices",
+  "clientsRailLabel": "Clients",
+  "datevRailLabel": "DATEV",
+  "genericError": "Fehler: {error}",
+  "@genericError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "unbilledRidesTitle": "Nicht fakturierte Fahrten",
+  "selectRidesToBill": "Fahrten auswählen",
+  "ridesBillingCountSelected": "{count} ausgewählt",
+  "@ridesBillingCountSelected": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "ridesBillingCountAvailable": "{count} Fahrten",
+  "@ridesBillingCountAvailable": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "selectCompanyForBilling": "Wählen Sie ein Unternehmen, um abrechenbare Fahrten zu sehen.",
+  "noBillableRides": "Keine abrechenbaren Fahrten",
+  "receiptTooltip": "Quittung",
+  "receiptTitle": "Quittung",
+  "selectedRidesSummary": "Ausgewählt: {subtotal} netto · {total} gesamt",
+  "@selectedRidesSummary": {
+    "placeholders": {
+      "subtotal": {"type": "String"},
+      "total": {"type": "String"}
+    }
+  },
+  "noRidesSelected": "Keine Fahrten ausgewählt",
+  "vatPercentLabel": "MwSt %",
+  "invoiceCreatedTitle": "Rechnung erstellt",
+  "invoiceCreatedMsg": "{number} · {count} Fahrten · €{amount}",
+  "@invoiceCreatedMsg": {
+    "placeholders": {
+      "number": {"type": "String"},
+      "count": {"type": "int"},
+      "amount": {"type": "String"}
+    }
+  },
+  "pdfDownloadError": "PDF-Fehler: {error}",
+  "@pdfDownloadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "receiptDownloadError": "Quittung-Fehler: {error}",
+  "@receiptDownloadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "datevExportTitle": "DATEV Export",
+  "noDataForMonth": "Keine Daten für {monthLabel}",
+  "@noDataForMonth": {
+    "placeholders": {
+      "monthLabel": {"type": "String"}
+    }
+  },
+  "revenueSection": "Erlöse",
+  "rowsCountLabel": "{count} Zeilen",
+  "@rowsCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "copyCsvTooltip": "CSV kopieren",
+  "revenueCsvLabel": "Erlöse CSV",
+  "expensesSection": "Ausgaben",
+  "expensesCsvLabel": "Ausgaben CSV",
+  "summarySection": "Zusammenfassung",
+  "netIncomeResult": "Ergebnis: {amount}",
+  "@netIncomeResult": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "copySummaryCsvTooltip": "Zusammenfassung kopieren",
+  "summaryCsvLabel": "Zusammenfassung",
+  "copiedToClipboard": "{label} in die Zwischenablage kopiert",
+  "@copiedToClipboard": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "copyAllRevenueHeader": "=== Erlöse ===",
+  "copyAllExpensesHeader": "=== Ausgaben ===",
+  "copyAllSummaryHeader": "=== Zusammenfassung ===",
+  "allDatevDataLabel": "Alle DATEV-Daten",
+  "downloadFailed": "Download fehlgeschlagen: {code}",
+  "@downloadFailed": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "netIncomeLabel": "Ergebnis (Netto)",
+  "copyAllButton": "Alles kopieren",
+  "downloadCsvExtfButton": "Download .csv (EXTF)",
+  "datevExtfFormatInfo": "DATEV Buchungsstapel Format – Import via DATEV Unternehmen Online",
+  "expensesScreenTitle": "Ausgaben · {monthLabel}",
+  "@expensesScreenTitle": {
+    "placeholders": {
+      "monthLabel": {"type": "String"}
+    }
+  },
+  "addExpenseTooltip": "Ausgabe erfassen",
+  "captureExpenseTitle": "Ausgabe erfassen",
+  "expenseCategoryLabel": "Kategorie",
+  "expenseAmountLabel": "Betrag (EUR)",
+  "expenseDescriptionLabel": "Beschreibung (optional)",
+  "invalidAmountError": "Bitte gültigen Betrag eingeben",
+  "deleteExpenseConfirmTitle": "Ausgabe löschen?",
+  "deleteExpenseConfirmMsg": "{category} · €{amount} wird gelöscht.",
+  "@deleteExpenseConfirmMsg": {
+    "placeholders": {
+      "category": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+  "noExpenses": "Keine Ausgaben",
+  "noReceiptWarning": "Kein Beleg",
+  "totalExpensesLabel": "Gesamt"
 }

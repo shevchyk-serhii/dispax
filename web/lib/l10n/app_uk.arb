@@ -260,5 +260,224 @@
   "roleAdmin": "Адмін",
   "roleSuperAdmin": "Супер Адмін",
 
-  "languageSaveFailed": "Не вдалося зберегти мову в обліковий запис"
+  "languageSaveFailed": "Не вдалося зберегти мову в обліковий запис",
+
+  "billingScreenTitle": "Білінг",
+  "invoicesTab": "Рахунки",
+  "companiesTab": "Компанії",
+  "billingRidesTab": "Поїздки",
+  "invoicesCountSubtitle": "{month} · {count} Рахунків",
+  "@invoicesCountSubtitle": {
+    "placeholders": {
+      "month": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "outstandingInvoices": "Непогашено",
+  "paidThisMonth": "Сплачено (Місяць)",
+  "overdueInvoices": "Прострочено",
+  "collectionRate": "Коефіцієнт збору",
+  "exportDatevButton": "Експорт DATEV",
+  "createNewInvoiceButton": "+ Новий рахунок",
+  "datevExportOpening": "Відкриття DATEV Export...",
+  "createCompanyFirst": "Будь ласка, спочатку створіть компанію.",
+  "newInvoiceTitle": "Новий рахунок",
+  "companiesLabel": "Компанія *",
+  "createInvoiceButton": "Створити рахунок",
+  "allInvoicesFilter": "Всі",
+  "draftStatusFilter": "Чернетка",
+  "sentStatusFilter": "Відправлено",
+  "paidStatusFilter": "Оплачено",
+  "invoiceTableHeaderNumber": "РАХУНОК",
+  "invoiceTableHeaderClient": "КЛІЄНТ",
+  "invoiceTableHeaderAmount": "СУМА",
+  "overdueStatus": "Прострочено",
+  "paymentReminderSent": "Нагадування про оплату відправлено",
+  "viewDetailsMenu": "Деталі",
+  "gobdCompliant": "GoBD-відповідність — рахунки незмінно заархівовані.",
+  "noCompanies": "Немає компаній",
+  "noInvoices": "Немає рахунків",
+  "editCompanyMenu": "Редагувати",
+  "deleteCompanyMenu": "Видалити",
+  "addCompanyTitle": "Додати компанію",
+  "editCompanyTitle": "Редагувати компанію",
+  "companyNameLabel": "Назва *",
+  "companyEmailLabel": "Електронна пошта",
+  "companyPhoneLabel": "Телефон",
+  "companyAddressLabel": "Адреса",
+  "invoiceLanguageLabel": "Мова рахунку",
+  "languageStandard": "За замовчуванням",
+  "languageGerman": "Німецька",
+  "languageEnglish": "Англійська",
+  "languageUkrainian": "Українська",
+  "addCompanyButton": "Додати",
+  "deleteCompanyConfirmTitle": "Видалити компанію?",
+  "deleteCompanyConfirmMsg": "{name} буде видалено.",
+  "@deleteCompanyConfirmMsg": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "downloadPdfTooltip": "Завантажити",
+  "closeTooltip": "Закрити",
+  "closeButton": "Закрити",
+  "pdfPreviewTitle": "Перегляд · {number}",
+  "@pdfPreviewTitle": {
+    "placeholders": {
+      "number": {"type": "String"}
+    }
+  },
+  "invoiceLineItems": "Позиції",
+  "subtotalLabel": "Проміжний підсумок",
+  "vatLineLabel": "ПДВ {rate}%",
+  "@vatLineLabel": {
+    "placeholders": {
+      "rate": {"type": "String"}
+    }
+  },
+  "totalLabel": "Разом ({currency})",
+  "@totalLabel": {
+    "placeholders": {
+      "currency": {"type": "String"}
+    }
+  },
+  "autoFillRidesButton": "Автозавантажити поїздки",
+  "sendInvoiceButton": "Відправити рахунок",
+  "markAsPaidButton": "Позначити як оплачено",
+  "pdfDownloadSuccess": "PDF завантажено",
+  "downloadPdfButton": "Завантажити PDF",
+  "previewButton": "Перегляд",
+  "reminderBadgeLabel": "Нагадано {date}",
+  "@reminderBadgeLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "invoicesRailLabel": "Рахунки",
+  "clientsRailLabel": "Клієнти",
+  "datevRailLabel": "DATEV",
+  "genericError": "Помилка: {error}",
+  "@genericError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "unbilledRidesTitle": "Нерозрахованих поїздок",
+  "selectRidesToBill": "Оберіть поїздки для виставлення рахунку",
+  "ridesBillingCountSelected": "{count} вибрано",
+  "@ridesBillingCountSelected": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "ridesBillingCountAvailable": "{count} поїздок",
+  "@ridesBillingCountAvailable": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "selectCompanyForBilling": "Виберіть компанію для перегляду поїздок.",
+  "noBillableRides": "Немає поїздок для виставлення рахунку",
+  "receiptTooltip": "Квитанція",
+  "receiptTitle": "Квитанція",
+  "selectedRidesSummary": "Вибрано: {subtotal} нетто · {total} всього",
+  "@selectedRidesSummary": {
+    "placeholders": {
+      "subtotal": {"type": "String"},
+      "total": {"type": "String"}
+    }
+  },
+  "noRidesSelected": "Поїздок не вибрано",
+  "vatPercentLabel": "ПДВ %",
+  "invoiceCreatedTitle": "Рахунок створено",
+  "invoiceCreatedMsg": "{number} · {count} поїздок · €{amount}",
+  "@invoiceCreatedMsg": {
+    "placeholders": {
+      "number": {"type": "String"},
+      "count": {"type": "int"},
+      "amount": {"type": "String"}
+    }
+  },
+  "pdfDownloadError": "Помилка PDF: {error}",
+  "@pdfDownloadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "receiptDownloadError": "Помилка квитанції: {error}",
+  "@receiptDownloadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "datevExportTitle": "DATEV Експорт",
+  "noDataForMonth": "Немає даних за {monthLabel}",
+  "@noDataForMonth": {
+    "placeholders": {
+      "monthLabel": {"type": "String"}
+    }
+  },
+  "revenueSection": "Доходи",
+  "rowsCountLabel": "{count} рядків",
+  "@rowsCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "copyCsvTooltip": "Копіювати CSV",
+  "revenueCsvLabel": "CSV доходів",
+  "expensesSection": "Витрати",
+  "expensesCsvLabel": "CSV витрат",
+  "summarySection": "Підсумок",
+  "netIncomeResult": "Результат: {amount}",
+  "@netIncomeResult": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "copySummaryCsvTooltip": "Копіювати підсумок",
+  "summaryCsvLabel": "Підсумок",
+  "copiedToClipboard": "{label} скопійовано в буфер обміну",
+  "@copiedToClipboard": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "copyAllRevenueHeader": "=== Доходи ===",
+  "copyAllExpensesHeader": "=== Витрати ===",
+  "copyAllSummaryHeader": "=== Підсумок ===",
+  "allDatevDataLabel": "Всі дані DATEV",
+  "downloadFailed": "Завантаження не вдалось: {code}",
+  "@downloadFailed": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "netIncomeLabel": "Чистий дохід",
+  "copyAllButton": "Копіювати все",
+  "downloadCsvExtfButton": "Завантажити .csv (EXTF)",
+  "datevExtfFormatInfo": "Формат DATEV Buchungsstapel – Імпорт через DATEV Unternehmen Online",
+  "expensesScreenTitle": "Витрати · {monthLabel}",
+  "@expensesScreenTitle": {
+    "placeholders": {
+      "monthLabel": {"type": "String"}
+    }
+  },
+  "addExpenseTooltip": "Записати витрату",
+  "captureExpenseTitle": "Записати витрату",
+  "expenseCategoryLabel": "Категорія",
+  "expenseAmountLabel": "Сума (EUR)",
+  "expenseDescriptionLabel": "Опис (необов'язково)",
+  "invalidAmountError": "Введіть коректну суму",
+  "deleteExpenseConfirmTitle": "Видалити витрату?",
+  "deleteExpenseConfirmMsg": "{category} · €{amount} буде видалено.",
+  "@deleteExpenseConfirmMsg": {
+    "placeholders": {
+      "category": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+  "noExpenses": "Немає витрат",
+  "noReceiptWarning": "Немає квитанції",
+  "totalExpensesLabel": "Всього"
 }
