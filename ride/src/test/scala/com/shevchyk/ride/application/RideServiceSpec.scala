@@ -8,13 +8,15 @@ import com.shevchyk.core.application.{
   EmailSmsService,
   RideConfirmationData,
   GeocodingService,
+  ScheduleDayLookup,
+  ScheduleDaySnapshot,
   UnavailabilitySlot
 }
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.{PersonRepository, InMemoryPersonRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, RideRepository}
 import zio.test.*
 import zio.*
 import java.time.Instant
@@ -189,7 +191,21 @@ object RideServiceSpec extends ZIOSpecDefault {
       ): Task[List[UnavailabilitySlot]] = ZIO.succeed(Nil)
   )
 
-  val standardLayers =
+  // In-memory schedule-day lookup double. Seeded via the companion factory so individual tests can
+  // register the exact days they need (mirrors the InMemoryRideRepository pattern).
+  final case class InMemoryScheduleDayLookup(days: Map[ScheduleDayId, ScheduleDaySnapshot]) extends ScheduleDayLookup:
+    override def find(id: ScheduleDayId): Task[Option[ScheduleDaySnapshot]] = ZIO.succeed(days.get(id))
+
+  private def scheduleDayLookupLayer(
+      days: ScheduleDaySnapshot*
+  ): ZLayer[Any, Nothing, ScheduleDayLookup] = ZLayer.succeed[ScheduleDayLookup](
+    InMemoryScheduleDayLookup(days.map(d => d.id -> d).toMap)
+  )
+
+  // Default lookup: knows about no schedule days. Rides without a scheduleDayId never touch it.
+  private val noopScheduleDayLookup: ZLayer[Any, Nothing, ScheduleDayLookup] = scheduleDayLookupLayer()
+
+  private def layersWith(scheduleDayLookup: ZLayer[Any, Nothing, ScheduleDayLookup]) =
     (InMemoryRideRepository.layer ++
       ZLayer.succeed[PersonRepository](testPersonRepo) ++
       EventHub.layer ++
@@ -199,7 +215,44 @@ object RideServiceSpec extends ZIOSpecDefault {
       GeocodingService.noop ++
       ExpenseRepository.inMemory ++
       PickupTimeService.noopLayer ++
-      noopAvailabilityChecker) >+> RideService.layer
+      noopAvailabilityChecker ++
+      scheduleDayLookup) >+> RideService.layer
+
+  // Shared by the scheduleDay-validation suite. Schedule-day id used across those tests.
+  private val scheduleDayValidationDayId = ScheduleDayId(UUID.fromString("00000099-0000-0000-0000-000000000001"))
+
+  // Create a Requested ride, then stamp it with `scheduleDayId` via the repository (createRide does
+  // not accept one). Returns the persisted ride.
+  private def rideWithScheduleDay(
+      scheduleDayId: ScheduleDayId
+  ): ZIO[RideService & RideRepository, Any, Ride] =
+    for {
+      service   <- ZIO.service[RideService]
+      repo      <- ZIO.service[RideRepository]
+      ride      <- service.createRide(
+                     CreateRideRequest(
+                       clientId = testClientId,
+                       companyId = testCompanyId,
+                       pickupLocation = Location("A"),
+                       dropoffLocation = Location("B")
+                     )
+                   )
+      stamped    = ride.copy(scheduleDayId = Some(scheduleDayId.value))
+      persisted <- repo.update(stamped)
+    } yield persisted
+
+  // Asserts the given Exit failed with a BusinessRuleViolation tagged "schedule_day".
+  private def failedWithScheduleDayRule(result: Exit[RideError, Any]): Boolean =
+    result match {
+      case Exit.Failure(cause) =>
+        cause.failureOption.exists {
+          case RideError.BusinessRuleViolation("schedule_day", _) => true
+          case _                                                  => false
+        }
+      case _                   => false
+    }
+
+  val standardLayers = layersWith(noopScheduleDayLookup)
 
   def spec =
     suite("RideService")(
@@ -220,6 +273,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           ExpenseRepository.inMemory,
           PickupTimeService.noopLayer,
           noopAvailabilityChecker,
+          noopScheduleDayLookup,
           RideService.layer
         )
       ),
@@ -500,7 +554,8 @@ object RideServiceSpec extends ZIOSpecDefault {
               GeocodingService.noop ++
               ExpenseRepository.inMemory ++
               PickupTimeService.noopLayer ++
-              noopAvailabilityChecker) >+> RideService.layer
+              noopAvailabilityChecker ++
+              noopScheduleDayLookup) >+> RideService.layer
 
           (for {
             service <- ZIO.service[RideService]
@@ -521,6 +576,93 @@ object RideServiceSpec extends ZIOSpecDefault {
               }
             case _                   => false
           })).provide(layersWithForeignDD)
+        }
+      ),
+      suite("assignDriver scheduleDay validation")(
+        test("fails when the referenced schedule day does not exist") {
+          (for {
+            service <- ZIO.service[RideService]
+            ride    <- rideWithScheduleDay(scheduleDayValidationDayId)
+            result  <- service.assignDriver(ride.id, testDriverId).exit
+          } yield assertTrue(failedWithScheduleDayRule(result)))
+            .provide(layersWith(noopScheduleDayLookup))
+        },
+        test("fails when the schedule day belongs to a different company") {
+          val foreignDay = ScheduleDaySnapshot(
+            id = scheduleDayValidationDayId,
+            driverId = testDriverId,
+            companyId = otherCompanyId,
+            active = true
+          )
+          (for {
+            service <- ZIO.service[RideService]
+            ride    <- rideWithScheduleDay(scheduleDayValidationDayId)
+            result  <- service.assignDriver(ride.id, testDriverId).exit
+          } yield assertTrue(failedWithScheduleDayRule(result)))
+            .provide(layersWith(scheduleDayLookupLayer(foreignDay)))
+        },
+        test("fails when the schedule day is cancelled / inactive") {
+          val cancelledDay = ScheduleDaySnapshot(
+            id = scheduleDayValidationDayId,
+            driverId = testDriverId,
+            companyId = testCompanyId,
+            active = false
+          )
+          (for {
+            service <- ZIO.service[RideService]
+            ride    <- rideWithScheduleDay(scheduleDayValidationDayId)
+            result  <- service.assignDriver(ride.id, testDriverId).exit
+          } yield assertTrue(failedWithScheduleDayRule(result)))
+            .provide(layersWith(scheduleDayLookupLayer(cancelledDay)))
+        },
+        test("fails when the schedule day is assigned to a different driver") {
+          val otherDriverDay = ScheduleDaySnapshot(
+            id = scheduleDayValidationDayId,
+            driverId = testDriver2Id,
+            companyId = testCompanyId,
+            active = true
+          )
+          (for {
+            service <- ZIO.service[RideService]
+            ride    <- rideWithScheduleDay(scheduleDayValidationDayId)
+            result  <- service.assignDriver(ride.id, testDriverId).exit
+          } yield assertTrue(failedWithScheduleDayRule(result)))
+            .provide(layersWith(scheduleDayLookupLayer(otherDriverDay)))
+        },
+        test("succeeds with a valid, active, same-company schedule day for the driver") {
+          val validDay = ScheduleDaySnapshot(
+            id = scheduleDayValidationDayId,
+            driverId = testDriverId,
+            companyId = testCompanyId,
+            active = true
+          )
+          (for {
+            service  <- ZIO.service[RideService]
+            ride     <- rideWithScheduleDay(scheduleDayValidationDayId)
+            assigned <- service.assignDriver(ride.id, testDriverId)
+          } yield assertTrue(
+            assigned.status == RideStatus.Assigned &&
+              assigned.driverId.contains(testDriverId)
+          )).provide(layersWith(scheduleDayLookupLayer(validDay)))
+        },
+        test("succeeds (no schedule-day check) when the ride has no scheduleDayId") {
+          // Backward compatibility: a ride without a scheduleDayId is assigned even though the
+          // lookup knows about no days at all.
+          (for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(
+                          CreateRideRequest(
+                            clientId = testClientId,
+                            companyId = testCompanyId,
+                            pickupLocation = Location("A"),
+                            dropoffLocation = Location("B")
+                          )
+                        )
+            assigned <- service.assignDriver(ride.id, testDriverId)
+          } yield assertTrue(
+            assigned.status == RideStatus.Assigned &&
+              assigned.driverId.contains(testDriverId)
+          )).provide(layersWith(noopScheduleDayLookup))
         }
       ),
       suite("startRide")(
