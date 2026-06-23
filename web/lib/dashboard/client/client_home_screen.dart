@@ -241,9 +241,11 @@ class _LiveRideCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Text(
-                      'Driver on the way',
-                      style: TextStyle(
+                    Text(
+                      ride.driverEnRoute
+                          ? 'Driver on the way'
+                          : 'Driver assigned',
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppColors.accentLight,
