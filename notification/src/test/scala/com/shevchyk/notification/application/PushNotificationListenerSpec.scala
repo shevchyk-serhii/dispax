@@ -225,12 +225,37 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
           ).map(notifs => assertTrue(notifs.isEmpty))
         }
       }.provide(baseLayers),
-      test("GeofenceTriggered event produces no notification") {
+      test("GeofenceTriggered alerts the company's dispatcher") {
+        ZIO.scoped {
+          val geofenceId = UUID.randomUUID()
+          publishAndCollect(
+            WebSocketEvent.GeofenceTriggered(geofenceId, "Zone A", driverId, "entry", 48.1, 11.5, companyId),
+            PersonId(dispatcherId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.notificationType == "geofence") &&
+                notifs.exists(_.title == "Geofence alert") &&
+                notifs.exists(n => n.data.exists(_.contains("Zone A")))
+            )
+          }
+        }
+      }.provide(baseLayers),
+      test("GeofenceTriggered does not alert the driver who triggered it") {
         ZIO.scoped {
           val geofenceId = UUID.randomUUID()
           publishAndCollect(
             WebSocketEvent.GeofenceTriggered(geofenceId, "Zone A", driverId, "entry", 48.1, 11.5, companyId),
             PersonId(driverId)
+          ).map(notifs => assertTrue(notifs.isEmpty))
+        }
+      }.provide(baseLayers),
+      test("[TENANT ISOLATION] GeofenceTriggered for another company does not alert this company's dispatcher") {
+        val otherCompany = UUID.fromString("00000066-0000-0000-0000-000000000066")
+        ZIO.scoped {
+          val geofenceId = UUID.randomUUID()
+          publishAndCollect(
+            WebSocketEvent.GeofenceTriggered(geofenceId, "Zone A", driverId, "entry", 48.1, 11.5, otherCompany),
+            PersonId(dispatcherId)
           ).map(notifs => assertTrue(notifs.isEmpty))
         }
       }.provide(baseLayers),
