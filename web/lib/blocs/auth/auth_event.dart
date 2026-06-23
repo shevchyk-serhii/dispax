@@ -25,6 +25,13 @@ class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
 }
 
+/// Forced logout triggered by a 401 from the API (expired/invalid token).
+/// Clears the session like a normal logout, but leaves the login screen with a
+/// "session expired" message instead of dropping to it silently.
+class AuthSessionExpired extends AuthEvent {
+  const AuthSessionExpired();
+}
+
 class AuthErrorCleared extends AuthEvent {
   const AuthErrorCleared();
 }

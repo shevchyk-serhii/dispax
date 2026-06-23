@@ -316,39 +316,58 @@ void main() {
       ],
     );
 
-    test(
-      'ApiClient 401 triggers auto-logout via onUnauthorized callback',
-      () async {
-        final httpClient = MockClient((_) async => http.Response('', 401));
-        final realApiClient = ApiClient(
-          client: httpClient,
-          baseUrl: 'http://localhost:8080/api',
-        );
-        realApiClient.setAuthToken('expired-token');
+    test('ApiClient 401 on an authenticated session forces logout with a '
+        '"session expired" message', () async {
+      final httpClient = MockClient((_) async => http.Response('', 401));
+      final realApiClient = ApiClient(
+        client: httpClient,
+        baseUrl: 'http://localhost:8080/api',
+      );
+      realApiClient.setAuthToken('expired-token');
 
-        final bloc = AuthBloc(
-          apiClient: realApiClient,
-          biometricService: mockBiometricService,
-          storage: mockStorage,
-        );
+      final bloc = AuthBloc(
+        apiClient: realApiClient,
+        biometricService: mockBiometricService,
+        storage: mockStorage,
+      );
+      // The forced-logout guard only fires for an authenticated session, so
+      // drive the bloc to authenticated via AuthInitializeRequested first.
+      final person = TestFixtures.person();
+      when(
+        () => mockStorage.read(AuthBloc.privateUserKey),
+      ).thenAnswer((_) async => jsonEncode(person.toJson()));
+      when(
+        () => mockStorage.read(AuthBloc.privateTokenKey),
+      ).thenAnswer((_) async => 'expired-token');
+      bloc.add(const AuthInitializeRequested());
+      await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
 
-        // Trigger 401 — onUnauthorized fires → AuthLogoutRequested dispatched
-        try {
-          await realApiClient.get('/rides');
-        } on UnauthorizedException {
-          // expected
-        }
+      // Trigger 401 — onUnauthorized fires → AuthSessionExpired dispatched
+      try {
+        await realApiClient.get('/rides');
+      } on UnauthorizedException {
+        // expected
+      }
 
-        // Give the bloc time to process the dispatched event
-        await Future.delayed(const Duration(milliseconds: 50));
+      // Wait deterministically for the bloc to reach a terminal error state.
+      final state = await bloc.stream.firstWhere(
+        (s) => s.status == AuthStatus.error,
+      );
+      expect(state.errorMessage, contains('Session expired'));
+      // Session must be torn down: stored token/user cleared.
+      verify(() => mockStorage.delete(AuthBloc.privateTokenKey)).called(1);
 
-        expect(
-          bloc.state.status,
-          anyOf(AuthStatus.loading, AuthStatus.unauthenticated),
-        );
+      WebSocketService.instance.disconnect();
+      await bloc.close();
+    });
 
-        await bloc.close();
-      },
+    blocTest<AuthBloc, AuthState>(
+      'AuthSessionExpired is ignored when not authenticated (no stale '
+      '"session expired" on a fresh login screen)',
+      build: buildBloc,
+      seed: AuthState.unauthenticated,
+      act: (bloc) => bloc.add(const AuthSessionExpired()),
+      expect: () => const <AuthState>[],
     );
 
     // ── Locale application on login / session restore ─────────────────────────

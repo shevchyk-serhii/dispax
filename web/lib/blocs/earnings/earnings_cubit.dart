@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../modules/core/services/api_client.dart';
 import '../../modules/ride_management/models/driver_earnings.dart';
 import '../../modules/ride_management/services/ride_service.dart';
 
@@ -72,6 +73,12 @@ class EarningsCubit extends Cubit<EarningsState> {
         state.anchorDate,
       );
       emit(state.copyWith(status: EarningsStatus.loaded, data: data));
+    } on UnauthorizedException {
+      // A 401 already triggers a forced logout via ApiClient.onUnauthorized,
+      // which routes the user to the login screen with a "session expired"
+      // message. Don't render a dead-end "Failed to load earnings" error on top
+      // of that — just leave the loading state to be torn down by the logout.
+      return;
     } catch (e) {
       emit(
         state.copyWith(

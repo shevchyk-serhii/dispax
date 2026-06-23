@@ -68,11 +68,11 @@ void main() {
     );
 
     blocTest<EarningsCubit, EarningsState>(
-      'load() emits error when the service throws',
+      'load() emits error when the service throws a generic error',
       build: () {
         when(
           () => mockService.getDriverEarnings(any(), any(), any()),
-        ).thenThrow(UnauthorizedException());
+        ).thenThrow(ApiException('boom'));
         return buildCubit();
       },
       act: (cubit) => cubit.load('driver-1'),
@@ -85,6 +85,27 @@ void main() {
         isA<EarningsState>()
             .having((s) => s.status, 'status', EarningsStatus.error)
             .having((s) => s.error, 'error', contains('Failed to load')),
+      ],
+    );
+
+    blocTest<EarningsCubit, EarningsState>(
+      'load() does NOT emit a dead-end error on 401 — the forced logout '
+      'handles routing to the login screen instead',
+      build: () {
+        when(
+          () => mockService.getDriverEarnings(any(), any(), any()),
+        ).thenThrow(UnauthorizedException());
+        return buildCubit();
+      },
+      act: (cubit) => cubit.load('driver-1'),
+      // Only the loading state — no EarningsStatus.error. Rendering "Failed to
+      // load earnings" with a useless "Try again" on top of a logout is the bug.
+      expect: () => [
+        isA<EarningsState>().having(
+          (s) => s.status,
+          'status',
+          EarningsStatus.loading,
+        ),
       ],
     );
   });
