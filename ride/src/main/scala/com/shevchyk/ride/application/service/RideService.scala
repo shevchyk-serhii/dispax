@@ -269,10 +269,15 @@ class RideServiceImpl(
           .ignore
     } yield persistedRide
 
-  def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]] = rideRepository
-    .findByClientId(userId)
-    .orElse(rideRepository.findByDriverId(userId))
-    .mapError(ex => RideError.DatabaseError(ex))
+  def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]] =
+    // A user can be both a client and a driver (multi-role). Run BOTH queries and
+    // union the results, de-duplicating by ride id, so no rides are silently dropped.
+    rideRepository
+      .findByClientId(userId)
+      .zipWith(rideRepository.findByDriverId(userId))((clientRides, driverRides) =>
+        (clientRides ++ driverRides).distinctBy(_.id)
+      )
+      .mapError(ex => RideError.DatabaseError(ex))
 
   def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride] =
     for {
