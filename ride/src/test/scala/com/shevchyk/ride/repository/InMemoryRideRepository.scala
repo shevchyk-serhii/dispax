@@ -1,7 +1,7 @@
 package com.shevchyk.ride.repository
 
 import com.shevchyk.core.domain.{RideId, PersonId, CompanyId}
-import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, Ride, RideStatus}
+import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, PaymentMethod, PaymentStatus, Ride, RideStatus}
 import zio.*
 import java.time.{Instant, ZoneOffset}
 
@@ -23,6 +23,19 @@ class InMemoryRideRepository extends RideRepository:
     m.get(ride.id) match
       case Some(current) if expectedStatuses.contains(current.status) => (true, m.updated(ride.id, ride))
       case _                                                          => (false, m)
+  }
+
+  override def markPaidIfCompleted(rideId: RideId, paymentMethod: Option[PaymentMethod]): Task[Boolean] = rides.modify {
+    m =>
+      m.get(rideId) match
+        case Some(current) if current.status == RideStatus.Completed && current.paymentStatus != PaymentStatus.Paid =>
+          val updated = current.copy(
+            paymentStatus = PaymentStatus.Paid,
+            paymentMethod = paymentMethod,
+            paidAt = Some(Instant.now())
+          )
+          (true, m.updated(rideId, updated))
+        case _                                                                                                      => (false, m)
   }
 
   override def findByClientId(clientId: PersonId): Task[List[Ride]] = rides.get.map(

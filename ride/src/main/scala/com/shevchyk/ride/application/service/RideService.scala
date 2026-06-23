@@ -824,37 +824,40 @@ class RideServiceImpl(
           .fail(RideError.BusinessRuleViolation("payment_status", "Only a completed ride can be marked paid"))
           .when(paymentStatus == PaymentStatus.Paid && ride.status != RideStatus.Completed)
           .unit
-      // Idempotent: paying an already-paid ride must not overwrite paidAt.
-      alreadyPaid    = ride.paymentStatus == PaymentStatus.Paid && paymentStatus == PaymentStatus.Paid
-      updatedRide    = ride
-                         .focus(_.paymentStatus)
-                         .replace(paymentStatus)
-                         .focus(_.paymentMethod)
-                         .replace(paymentMethod.orElse(ride.paymentMethod))
-                         .focus(_.paidAt)
-                         .replace(
-                           if paymentStatus == PaymentStatus.Paid then
-                             if alreadyPaid then ride.paidAt else Some(Instant.now())
-                           else ride.paidAt
-                         )
-      // Marking a ride `Paid` is the only payment transition gated on status (it requires the ride
-      // to be Completed). For that case use an atomic compare-and-set so a concurrent cancel racing
-      // the payment cannot let a non-Completed ride flip to Paid. Other payment statuses
-      // (Pending/Unpaid/...) are legal in any ride status, so they take the plain update.
-      // NOTE: the CAS guards the ride status only — two concurrent markPayment(Paid) calls on the
-      // same Completed ride can still lost-update each other's payment fields. A field-level CAS
-      // (version column) would be needed to close that, and is out of scope here.
+      // Marking a ride `Paid` is the only payment transition that carries a money-handling race: two
+      // concurrent markPayment(Paid) calls on the same Completed ride would lost-update each other's
+      // payment_method/paid_at through a read-modify-write `update`. Close it with a field-level CAS
+      // (`markPaidIfCompleted`) that flips only the payment columns, atomically, and only while the
+      // row is still Completed and not already Paid. Other payment statuses (Pending/Unpaid) are legal
+      // in any ride status and carry no money risk, so they take the plain read-modify-write update.
       persistedRide <-
         if paymentStatus == PaymentStatus.Paid then
+          // Carry over the existing method when the caller passes none, matching the historic
+          // read-modify-write semantics (`paymentMethod.orElse(ride.paymentMethod)`).
+          val effectiveMethod = paymentMethod.orElse(ride.paymentMethod)
           for {
-            applied <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Completed)).mapDatabaseError
-            _       <-
-              ZIO
-                .fail(RideError.BusinessRuleViolation("payment_status", "Only a completed ride can be marked paid"))
-                .when(!applied)
-                .unit
-          } yield updatedRide
-        else rideRepository.update(updatedRide).mapDatabaseError
+            applied <- rideRepository.markPaidIfCompleted(rideId, effectiveMethod).mapDatabaseError
+            result  <-
+              if applied then getRideById(rideId)
+              else
+                // The CAS did not apply: either the ride is already Paid (a concurrent winner / a
+                // re-pay) -> return it idempotently without overwriting paid_at/method, or it is not
+                // Completed -> reject. Re-read to distinguish the two.
+                getRideById(rideId).flatMap { latest =>
+                  if latest.paymentStatus == PaymentStatus.Paid then ZIO.succeed(latest)
+                  else
+                    ZIO.fail(
+                      RideError.BusinessRuleViolation("payment_status", "Only a completed ride can be marked paid")
+                    )
+                }
+          } yield result
+        else
+          val updatedRide = ride
+            .focus(_.paymentStatus)
+            .replace(paymentStatus)
+            .focus(_.paymentMethod)
+            .replace(paymentMethod.orElse(ride.paymentMethod))
+          rideRepository.update(updatedRide).mapDatabaseError
     } yield persistedRide
 
   def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]] = rideRepository

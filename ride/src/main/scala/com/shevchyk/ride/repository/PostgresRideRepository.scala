@@ -322,6 +322,22 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  override def markPaidIfCompleted(rideId: RideId, paymentMethod: Option[PaymentMethod]): Task[Boolean] =
+    // Field-level CAS: only this UPDATE touches the payment columns, and the WHERE guard makes the
+    // whole operation atomic in the DB. The `payment_status <> 'Paid'` predicate makes a second
+    // concurrent markPaid a no-op (idempotent) instead of overwriting the winner's paid_at/method.
+    sql"""UPDATE rides
+          SET payment_status = ${PaymentStatus.Paid},
+              payment_method = $paymentMethod,
+              paid_at = NOW(),
+              updated_at = NOW()
+          WHERE id = ${rideId.value}
+            AND status = ${RideStatus.Completed}
+            AND payment_status <> ${PaymentStatus.Paid}""".update.run
+      .transact(xa)
+      .map(_ > 0)
+      .mapError(ex => RideError.DatabaseError(ex))
+
   override def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]] = {
     sql"""
       SELECT status::text, COUNT(*)::int

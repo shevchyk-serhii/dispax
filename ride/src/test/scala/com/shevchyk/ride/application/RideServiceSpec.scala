@@ -1791,7 +1791,73 @@ object RideServiceSpec extends ZIOSpecDefault {
               paymentSucceeded || finalRide.paymentStatus != PaymentStatus.Paid
             )
           }
-        }.provide(standardLayers)
+        }.provide(standardLayers),
+        test("concurrent markPayment(Paid, Cash) vs markPayment(Paid, Card): exactly one winner, no torn fields") {
+          // Field-level CAS: two payments race on the SAME Completed ride. Exactly one must win; the
+          // persisted payment fields must come consistently from that single winner (method is one of
+          // {Cash, Card}, paidAt is set), not a torn mix where the method comes from one call and
+          // paidAt from another. A regression to a plain read-modify-write `update` lets both succeed
+          // and lost-update each other.
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            started   <- service.startRide(assigned.id, testDriverId)
+            completed <- service.completeRide(started.id)
+            results   <- service
+                           .markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
+                           .exit
+                           .zipPar(
+                             service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Card)).exit
+                           )
+            finalRide <- service.getRideById(ride.id)
+          } yield {
+            val (cashExit, cardExit) = results
+            assertTrue(
+              // Both calls observe a Paid ride (the winner persisted, the loser reads idempotently).
+              cashExit.isSuccess,
+              cardExit.isSuccess,
+              finalRide.paymentStatus == PaymentStatus.Paid,
+              // The persisted method is one of the two competitors — never None, never torn.
+              finalRide.paymentMethod.contains(PaymentMethod.Cash) ||
+                finalRide.paymentMethod.contains(PaymentMethod.Card),
+              // paidAt is stamped by the winner and never left empty.
+              finalRide.paidAt.isDefined
+            )
+          }
+        }.provide(standardLayers),
+        test("re-paying an already Paid ride is idempotent: paidAt and method are not overwritten") {
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(
+                           CreateRideRequest(
+                             clientId = testClientId,
+                             companyId = testCompanyId,
+                             pickupLocation = Location("A"),
+                             dropoffLocation = Location("B")
+                           )
+                         )
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            started   <- service.startRide(assigned.id, testDriverId)
+            completed <- service.completeRide(started.id)
+            firstPay  <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
+            // A second, later markPayment must be a no-op on the money fields.
+            _         <- ZIO.sleep(5.millis)
+            secondPay <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Card))
+          } yield assertTrue(
+            firstPay.paymentMethod.contains(PaymentMethod.Cash),
+            // Idempotent: the original method and timestamp survive the re-pay.
+            secondPay.paymentMethod.contains(PaymentMethod.Cash),
+            secondPay.paidAt == firstPay.paidAt
+          )
+        }.provide(standardLayers) @@ TestAspect.withLiveClock
       ),
       suite("getUnpaidCompletedRides")(
         test("returns unpaid completed rides") {

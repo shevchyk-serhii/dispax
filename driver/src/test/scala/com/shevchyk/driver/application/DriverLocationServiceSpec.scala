@@ -514,6 +514,10 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
             def findById(id: RideId): Task[Option[Ride]]                                                        = ZIO.succeed(None)
             def update(ride: Ride): Task[Ride]                                                                  = ZIO.succeed(ride)
             def updateIfStatus(ride: Ride, expected: Set[RideStatus]): Task[Boolean]                            = ZIO.succeed(false)
+            def markPaidIfCompleted(
+                rideId: RideId,
+                paymentMethod: Option[com.shevchyk.ride.domain.PaymentMethod]
+            ): Task[Boolean] = ZIO.succeed(false)
             def findByClientId(id: PersonId): Task[List[Ride]]                                                  = ZIO.succeed(Nil)
             def findByDriverId(id: PersonId): Task[List[Ride]]                                                  = ZIO.fail(RuntimeException("db error"))
             def findByDriverIdAndCompany(id: PersonId, c: CompanyId): Task[List[Ride]]                          = ZIO.fail(

@@ -1,6 +1,6 @@
 package com.shevchyk.ride.repository
 
-import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, Ride, RideStatus}
+import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, PaymentMethod, Ride, RideStatus}
 import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId}
 import zio.*
 import java.time.Instant
@@ -44,6 +44,12 @@ trait RideRepository {
   // concurrent transaction already moved the ride out of those statuses. Used to make
   // driver (re)assignment safe against the read-modify-write race between two dispatchers.
   def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]
+  // Field-level atomic compare-and-set for the "mark paid" transition: flips payment_status to
+  // 'Paid', stamps payment_method and paid_at = NOW() only when the row is still Completed and not
+  // already Paid. Returns true if this call won the race (the row was updated), false otherwise
+  // (ride is not Completed, or another concurrent markPaid already won). Closes the lost-update
+  // window that a read-modify-write update leaves open between two concurrent markPayment(Paid) calls.
+  def markPaidIfCompleted(rideId: RideId, paymentMethod: Option[PaymentMethod]): Task[Boolean]
   // Tenant-scoped delete: only removes the ride when it belongs to `companyId`.
   def delete(id: RideId, companyId: CompanyId): Task[Unit]
   def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]

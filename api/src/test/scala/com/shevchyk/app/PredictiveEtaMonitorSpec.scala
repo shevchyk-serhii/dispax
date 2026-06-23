@@ -69,6 +69,10 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
       ): Task[List[Ride]] = nope("findByDriverIdAndCompanyPaginated")
       def update(ride: Ride): Task[Ride]                                                                          = nope("update")
       def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]                            = nope("updateIfStatus")
+      def markPaidIfCompleted(
+          rideId: RideId,
+          paymentMethod: Option[com.shevchyk.ride.domain.PaymentMethod]
+      ): Task[Boolean] = nope("markPaidIfCompleted")
       def delete(id: RideId, companyId: CompanyId): Task[Unit]                                                    = nope("delete")
       def countByCompanyGroupedByStatus(c: CompanyId): Task[Map[String, Int]]                                     = nope("countByCompanyGroupedByStatus")
       def sumRevenueByCompany(c: CompanyId): Task[BigDecimal]                                                     = nope("sumRevenueByCompany")
