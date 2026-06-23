@@ -92,6 +92,87 @@ void main() {
     });
 
     blocTest<SavedPlacesBloc, SavedPlacesState>(
+      'SavedPlacesSaveRequested saves then reloads and emits loaded',
+      build: () {
+        final saved = _makeAddress(
+          id: '3',
+          label: 'Airport',
+          address: 'Munich Airport',
+        );
+        when(
+          () => mockService.saveAddress(
+            clientId: 'client-1',
+            label: 'Airport',
+            address: 'Munich Airport',
+            latitude: 48.35,
+            longitude: 11.78,
+          ),
+        ).thenAnswer((_) async => saved);
+        when(
+          () => mockService.getAddresses('client-1'),
+        ).thenAnswer((_) async => [saved]);
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const SavedPlacesSaveRequested(
+          clientId: 'client-1',
+          label: 'Airport',
+          address: 'Munich Airport',
+          latitude: 48.35,
+          longitude: 11.78,
+        ),
+      ),
+      expect: () => [
+        isA<SavedPlacesState>()
+            .having((s) => s.status, 'status', SavedPlacesStatus.loaded)
+            .having((s) => s.places.single.label, 'label', 'Airport'),
+      ],
+      verify: (_) {
+        verify(
+          () => mockService.saveAddress(
+            clientId: 'client-1',
+            label: 'Airport',
+            address: 'Munich Airport',
+            latitude: 48.35,
+            longitude: 11.78,
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<SavedPlacesBloc, SavedPlacesState>(
+      'SavedPlacesSaveRequested emits error when save fails',
+      build: () {
+        when(
+          () => mockService.saveAddress(
+            clientId: 'client-1',
+            label: 'Home',
+            address: 'Leopoldstr. 21',
+            latitude: null,
+            longitude: null,
+          ),
+        ).thenThrow(Exception('Network error'));
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const SavedPlacesSaveRequested(
+          clientId: 'client-1',
+          label: 'Home',
+          address: 'Leopoldstr. 21',
+        ),
+      ),
+      expect: () => [
+        isA<SavedPlacesState>()
+            .having((s) => s.status, 'status', SavedPlacesStatus.error)
+            .having(
+              (s) => s.errorMessage,
+              'errorMessage',
+              contains('Failed to save place'),
+            ),
+      ],
+    );
+
+    blocTest<SavedPlacesBloc, SavedPlacesState>(
       'empty addresses list emits loaded with empty list',
       build: () {
         when(

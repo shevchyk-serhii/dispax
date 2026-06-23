@@ -10,6 +10,7 @@ class SavedPlacesBloc extends Bloc<SavedPlacesEvent, SavedPlacesState> {
     : _addressService = addressService,
       super(SavedPlacesState.initial()) {
     on<SavedPlacesLoadRequested>(_onLoadRequested);
+    on<SavedPlacesSaveRequested>(_onSaveRequested);
   }
 
   Future<void> _onLoadRequested(
@@ -22,6 +23,26 @@ class SavedPlacesBloc extends Bloc<SavedPlacesEvent, SavedPlacesState> {
       emit(SavedPlacesState.loaded(places));
     } catch (e) {
       emit(SavedPlacesState.error('Failed to load saved places: $e'));
+    }
+  }
+
+  Future<void> _onSaveRequested(
+    SavedPlacesSaveRequested event,
+    Emitter<SavedPlacesState> emit,
+  ) async {
+    try {
+      await _addressService.saveAddress(
+        clientId: event.clientId,
+        label: event.label,
+        address: event.address,
+        latitude: event.latitude,
+        longitude: event.longitude,
+      );
+      // Reload so findByLabel() picks up the newly saved place.
+      final places = await _addressService.getAddresses(event.clientId);
+      emit(SavedPlacesState.loaded(places));
+    } catch (e) {
+      emit(SavedPlacesState.error('Failed to save place: $e'));
     }
   }
 

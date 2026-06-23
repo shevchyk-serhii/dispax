@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
+import '../../modules/core/services/mapbox_service.dart';
 import '../../modules/ride_management/models/ride.dart';
+import '../../modules/ride_management/widgets/address_picker_sheet.dart';
 
 /// Client Home tab — graphite header, live ride card, saved places, book button.
 class ClientHomeScreen extends StatelessWidget {
@@ -370,7 +372,9 @@ class _SavedPlacesRow extends StatelessWidget {
                     icon: Icons.home_outlined,
                     title: home?.label ?? 'Home',
                     subtitle: home?.address ?? 'Add address',
-                    onTap: onPlaceTap,
+                    onTap: home != null
+                        ? onPlaceTap
+                        : () => _addPlace(context, 'Home'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -379,7 +383,9 @@ class _SavedPlacesRow extends StatelessWidget {
                     icon: Icons.business_outlined,
                     title: office?.label ?? 'Office',
                     subtitle: office?.address ?? 'Add address',
-                    onTap: onPlaceTap,
+                    onTap: office != null
+                        ? onPlaceTap
+                        : () => _addPlace(context, 'Office'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -388,7 +394,9 @@ class _SavedPlacesRow extends StatelessWidget {
                     icon: Icons.flight_outlined,
                     title: airport?.label ?? 'Airport',
                     subtitle: airport?.address ?? 'Add address',
-                    onTap: onPlaceTap,
+                    onTap: airport != null
+                        ? onPlaceTap
+                        : () => _addPlace(context, 'Airport'),
                   ),
                 ),
               ],
@@ -396,6 +404,40 @@ class _SavedPlacesRow extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+
+  /// Opens the address picker for an empty saved-place slot and persists the
+  /// chosen address under [label] (Home/Office/Airport) for the current client.
+  Future<void> _addPlace(BuildContext context, String label) async {
+    final user = context.read<AuthBloc>().state.user;
+    if (user == null) return;
+
+    final savedBloc = context.read<SavedPlacesBloc>();
+    final existing = savedBloc.state.places
+        .map((p) => p.address)
+        .where((a) => a.isNotEmpty)
+        .toList();
+
+    final address = await showAddressPickerSheet(
+      context,
+      isFrom: false,
+      current: '',
+      savedPlaces: existing,
+    );
+    if (address == null || address.isEmpty) return;
+
+    // Best-effort geocoding — coordinates are optional on the backend DTO.
+    final coords = await MapboxService.geocodeAddress(address);
+
+    savedBloc.add(
+      SavedPlacesSaveRequested(
+        clientId: user.id,
+        label: label,
+        address: address,
+        latitude: coords != null && coords.length == 2 ? coords[0] : null,
+        longitude: coords != null && coords.length == 2 ? coords[1] : null,
+      ),
     );
   }
 }
