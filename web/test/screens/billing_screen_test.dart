@@ -5,10 +5,12 @@ import 'package:dispax/blocs/auth/auth_bloc.dart';
 import 'package:dispax/blocs/auth/auth_event.dart';
 import 'package:dispax/blocs/auth/auth_state.dart';
 import 'package:dispax/constants/app_colors.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/screens/billing_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
@@ -100,6 +102,14 @@ void main() {
   });
 
   Widget pumpApp() => MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    locale: const Locale('de'),
     home: BlocProvider<AuthBloc>.value(
       value: authBloc,
       child: const Scaffold(body: BillingScreen()),

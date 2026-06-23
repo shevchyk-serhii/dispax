@@ -664,4 +664,386 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get languageSaveFailed => 'Sprache konnte nicht gespeichert werden';
+
+  @override
+  String get billingScreenTitle => 'Billing';
+
+  @override
+  String get invoicesTab => 'Rechnungen';
+
+  @override
+  String get companiesTab => 'Unternehmen';
+
+  @override
+  String get billingRidesTab => 'Fahrten';
+
+  @override
+  String invoicesCountSubtitle(String month, int count) {
+    return '$month · $count Rechnungen';
+  }
+
+  @override
+  String get outstandingInvoices => 'Ausstehend';
+
+  @override
+  String get paidThisMonth => 'Bezahlt (Monat)';
+
+  @override
+  String get overdueInvoices => 'Überfällig';
+
+  @override
+  String get collectionRate => 'Einzugsquote';
+
+  @override
+  String get exportDatevButton => 'Export DATEV';
+
+  @override
+  String get createNewInvoiceButton => '+ Neue Rechnung';
+
+  @override
+  String get datevExportOpening => 'DATEV Export öffnen...';
+
+  @override
+  String get createCompanyFirst => 'Bitte zuerst ein Unternehmen anlegen.';
+
+  @override
+  String get newInvoiceTitle => 'Neue Rechnung';
+
+  @override
+  String get companiesLabel => 'Unternehmen *';
+
+  @override
+  String get createInvoiceButton => 'Rechnung erstellen';
+
+  @override
+  String get allInvoicesFilter => 'Alle';
+
+  @override
+  String get draftStatusFilter => 'Entwurf';
+
+  @override
+  String get sentStatusFilter => 'Gesendet';
+
+  @override
+  String get paidStatusFilter => 'Bezahlt';
+
+  @override
+  String get invoiceTableHeaderNumber => 'RECHNUNG';
+
+  @override
+  String get invoiceTableHeaderClient => 'KUNDE';
+
+  @override
+  String get invoiceTableHeaderAmount => 'BETRAG';
+
+  @override
+  String get overdueStatus => 'Überfällig';
+
+  @override
+  String get paymentReminderSent => 'Zahlungserinnerung versendet';
+
+  @override
+  String get viewDetailsMenu => 'Details';
+
+  @override
+  String get gobdCompliant =>
+      'GoBD-konform — Rechnungen sind unveränderlich archiviert.';
+
+  @override
+  String get noCompanies => 'Keine Unternehmen';
+
+  @override
+  String get noInvoices => 'Keine Rechnungen';
+
+  @override
+  String get editCompanyMenu => 'Bearbeiten';
+
+  @override
+  String get deleteCompanyMenu => 'Löschen';
+
+  @override
+  String get addCompanyTitle => 'Unternehmen hinzufügen';
+
+  @override
+  String get editCompanyTitle => 'Unternehmen bearbeiten';
+
+  @override
+  String get companyNameLabel => 'Name *';
+
+  @override
+  String get companyEmailLabel => 'E-Mail';
+
+  @override
+  String get companyPhoneLabel => 'Telefon';
+
+  @override
+  String get companyAddressLabel => 'Adresse';
+
+  @override
+  String get invoiceLanguageLabel => 'Rechnungssprache';
+
+  @override
+  String get languageStandard => 'Standard';
+
+  @override
+  String get languageGerman => 'Deutsch';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageUkrainian => 'Ukrainisch';
+
+  @override
+  String get addCompanyButton => 'Hinzufügen';
+
+  @override
+  String get deleteCompanyConfirmTitle => 'Unternehmen löschen?';
+
+  @override
+  String deleteCompanyConfirmMsg(String name) {
+    return '$name wird gelöscht.';
+  }
+
+  @override
+  String get downloadPdfTooltip => 'Herunterladen';
+
+  @override
+  String get closeTooltip => 'Schließen';
+
+  @override
+  String get closeButton => 'Schließen';
+
+  @override
+  String pdfPreviewTitle(String number) {
+    return 'Vorschau · $number';
+  }
+
+  @override
+  String get invoiceLineItems => 'Positionen';
+
+  @override
+  String get subtotalLabel => 'Zwischensumme';
+
+  @override
+  String vatLineLabel(String rate) {
+    return 'MwSt. $rate%';
+  }
+
+  @override
+  String totalLabel(String currency) {
+    return 'Gesamt ($currency)';
+  }
+
+  @override
+  String get autoFillRidesButton => 'Fahrten automatisch laden';
+
+  @override
+  String get sendInvoiceButton => 'Rechnung senden';
+
+  @override
+  String get markAsPaidButton => 'Als bezahlt markieren';
+
+  @override
+  String get pdfDownloadSuccess => 'PDF heruntergeladen';
+
+  @override
+  String get downloadPdfButton => 'PDF herunterladen';
+
+  @override
+  String get previewButton => 'Vorschau';
+
+  @override
+  String reminderBadgeLabel(String date) {
+    return 'Erinnert $date';
+  }
+
+  @override
+  String get invoicesRailLabel => 'Invoices';
+
+  @override
+  String get clientsRailLabel => 'Clients';
+
+  @override
+  String get datevRailLabel => 'DATEV';
+
+  @override
+  String genericError(String error) {
+    return 'Fehler: $error';
+  }
+
+  @override
+  String get unbilledRidesTitle => 'Nicht fakturierte Fahrten';
+
+  @override
+  String get selectRidesToBill => 'Fahrten auswählen';
+
+  @override
+  String ridesBillingCountSelected(int count) {
+    return '$count ausgewählt';
+  }
+
+  @override
+  String ridesBillingCountAvailable(int count) {
+    return '$count Fahrten';
+  }
+
+  @override
+  String get selectCompanyForBilling =>
+      'Wählen Sie ein Unternehmen, um abrechenbare Fahrten zu sehen.';
+
+  @override
+  String get noBillableRides => 'Keine abrechenbaren Fahrten';
+
+  @override
+  String get receiptTooltip => 'Quittung';
+
+  @override
+  String get receiptTitle => 'Quittung';
+
+  @override
+  String selectedRidesSummary(String subtotal, String total) {
+    return 'Ausgewählt: $subtotal netto · $total gesamt';
+  }
+
+  @override
+  String get noRidesSelected => 'Keine Fahrten ausgewählt';
+
+  @override
+  String get vatPercentLabel => 'MwSt %';
+
+  @override
+  String get invoiceCreatedTitle => 'Rechnung erstellt';
+
+  @override
+  String invoiceCreatedMsg(String number, int count, String amount) {
+    return '$number · $count Fahrten · €$amount';
+  }
+
+  @override
+  String pdfDownloadError(String error) {
+    return 'PDF-Fehler: $error';
+  }
+
+  @override
+  String receiptDownloadError(String error) {
+    return 'Quittung-Fehler: $error';
+  }
+
+  @override
+  String get datevExportTitle => 'DATEV Export';
+
+  @override
+  String noDataForMonth(String monthLabel) {
+    return 'Keine Daten für $monthLabel';
+  }
+
+  @override
+  String get revenueSection => 'Erlöse';
+
+  @override
+  String rowsCountLabel(int count) {
+    return '$count Zeilen';
+  }
+
+  @override
+  String get copyCsvTooltip => 'CSV kopieren';
+
+  @override
+  String get revenueCsvLabel => 'Erlöse CSV';
+
+  @override
+  String get expensesSection => 'Ausgaben';
+
+  @override
+  String get expensesCsvLabel => 'Ausgaben CSV';
+
+  @override
+  String get summarySection => 'Zusammenfassung';
+
+  @override
+  String netIncomeResult(String amount) {
+    return 'Ergebnis: $amount';
+  }
+
+  @override
+  String get copySummaryCsvTooltip => 'Zusammenfassung kopieren';
+
+  @override
+  String get summaryCsvLabel => 'Zusammenfassung';
+
+  @override
+  String copiedToClipboard(String label) {
+    return '$label in die Zwischenablage kopiert';
+  }
+
+  @override
+  String get copyAllRevenueHeader => '=== Erlöse ===';
+
+  @override
+  String get copyAllExpensesHeader => '=== Ausgaben ===';
+
+  @override
+  String get copyAllSummaryHeader => '=== Zusammenfassung ===';
+
+  @override
+  String get allDatevDataLabel => 'Alle DATEV-Daten';
+
+  @override
+  String downloadFailed(String code) {
+    return 'Download fehlgeschlagen: $code';
+  }
+
+  @override
+  String get netIncomeLabel => 'Ergebnis (Netto)';
+
+  @override
+  String get copyAllButton => 'Alles kopieren';
+
+  @override
+  String get downloadCsvExtfButton => 'Download .csv (EXTF)';
+
+  @override
+  String get datevExtfFormatInfo =>
+      'DATEV Buchungsstapel Format – Import via DATEV Unternehmen Online';
+
+  @override
+  String expensesScreenTitle(String monthLabel) {
+    return 'Ausgaben · $monthLabel';
+  }
+
+  @override
+  String get addExpenseTooltip => 'Ausgabe erfassen';
+
+  @override
+  String get captureExpenseTitle => 'Ausgabe erfassen';
+
+  @override
+  String get expenseCategoryLabel => 'Kategorie';
+
+  @override
+  String get expenseAmountLabel => 'Betrag (EUR)';
+
+  @override
+  String get expenseDescriptionLabel => 'Beschreibung (optional)';
+
+  @override
+  String get invalidAmountError => 'Bitte gültigen Betrag eingeben';
+
+  @override
+  String get deleteExpenseConfirmTitle => 'Ausgabe löschen?';
+
+  @override
+  String deleteExpenseConfirmMsg(String category, String amount) {
+    return '$category · €$amount wird gelöscht.';
+  }
+
+  @override
+  String get noExpenses => 'Keine Ausgaben';
+
+  @override
+  String get noReceiptWarning => 'Kein Beleg';
+
+  @override
+  String get totalExpensesLabel => 'Gesamt';
 }

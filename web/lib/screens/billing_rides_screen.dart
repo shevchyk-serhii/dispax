@@ -7,6 +7,7 @@ import '../modules/billing/pdf_preview_stub.dart'
     if (dart.library.html) '../modules/billing/pdf_preview_web.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 import '../modules/billing/models/billable_ride.dart';
 import '../modules/billing/models/client_company.dart';
 import '../modules/billing/models/invoice.dart';
@@ -108,6 +109,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     final company = _selectedCompany;
     if (company == null || _selectedRideIds.isEmpty) return;
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _creating = true);
     try {
       final selected = _rides
@@ -142,23 +144,29 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
       _showCreatedDialog(filled);
     } catch (e) {
       if (mounted) setState(() => _creating = false);
-      messenger.showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.genericError(e.toString()))),
+      );
     }
   }
 
   void _showCreatedDialog(Invoice invoice) {
+    final l10n = AppLocalizations.of(context)!;
     showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rechnung erstellt'),
+        title: Text(l10n.invoiceCreatedTitle),
         content: Text(
-          '${invoice.number} · ${invoice.items.length} Fahrten · '
-          '€${invoice.totalAmount.toStringAsFixed(2)}',
+          l10n.invoiceCreatedMsg(
+            invoice.number,
+            invoice.items.length,
+            invoice.totalAmount.toStringAsFixed(2),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Schließen'),
+            child: Text(l10n.closeButton),
           ),
           TextButton.icon(
             onPressed: () {
@@ -166,26 +174,29 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
               _previewPdf(invoice);
             },
             icon: const Icon(Icons.visibility),
-            label: const Text('Vorschau'),
+            label: Text(l10n.previewButton),
           ),
           FilledButton.icon(
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
+              final btnL10n = AppLocalizations.of(context)!;
               Navigator.of(ctx).pop();
               try {
                 final bytes = await _invoiceService.downloadPdf(invoice.id);
                 triggerPdfDownload(bytes, 'invoice-${invoice.number}.pdf');
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('PDF heruntergeladen')),
+                  SnackBar(content: Text(btnL10n.pdfDownloadSuccess)),
                 );
               } catch (e) {
                 messenger.showSnackBar(
-                  SnackBar(content: Text('PDF-Fehler: $e')),
+                  SnackBar(
+                    content: Text(btnL10n.pdfDownloadError(e.toString())),
+                  ),
                 );
               }
             },
             icon: const Icon(Icons.picture_as_pdf),
-            label: const Text('PDF herunterladen'),
+            label: Text(l10n.downloadPdfButton),
           ),
         ],
       ),
@@ -193,50 +204,57 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
   }
 
   Future<void> _previewPdf(Invoice invoice) async {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     Uint8List bytes;
     try {
       bytes = await _invoiceService.downloadPdf(invoice.id);
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('PDF-Fehler: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.pdfDownloadError(e.toString()))),
+      );
       return;
     }
     if (!mounted) return;
     await showAdaptiveDialog<void>(
       context: context,
-      builder: (ctx) => Dialog(
-        insetPadding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            AppBar(
-              automaticallyImplyLeading: false,
-              title: Text('Vorschau · ${invoice.number}'),
-              actions: [
-                IconButton(
-                  tooltip: 'Herunterladen',
-                  icon: const Icon(Icons.download),
-                  onPressed: () => triggerPdfDownload(
-                    bytes,
-                    'invoice-${invoice.number}.pdf',
+      builder: (ctx) {
+        final ctxL10n = AppLocalizations.of(ctx)!;
+        return Dialog(
+          insetPadding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              AppBar(
+                automaticallyImplyLeading: false,
+                title: Text(ctxL10n.pdfPreviewTitle(invoice.number)),
+                actions: [
+                  IconButton(
+                    tooltip: ctxL10n.downloadPdfTooltip,
+                    icon: const Icon(Icons.download),
+                    onPressed: () => triggerPdfDownload(
+                      bytes,
+                      'invoice-${invoice.number}.pdf',
+                    ),
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Schließen',
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                ),
-              ],
-            ),
-            Expanded(child: buildPdfPreview(bytes)),
-          ],
-        ),
-      ),
+                  IconButton(
+                    tooltip: ctxL10n.closeTooltip,
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              Expanded(child: buildPdfPreview(bytes)),
+            ],
+          ),
+        );
+      },
     );
   }
 
   // Single-ride Quittung: download the receipt PDF for one ride and preview it,
   // reusing the same dialog scaffold as the invoice preview.
   Future<void> _previewReceipt(BillableRide ride) async {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     Uint8List bytes;
     try {
@@ -245,37 +263,42 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
         taxRate: _taxRate,
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Quittung-Fehler: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.receiptDownloadError(e.toString()))),
+      );
       return;
     }
     if (!mounted) return;
     final fileName = 'quittung-${ride.rideId}.pdf';
     await showAdaptiveDialog<void>(
       context: context,
-      builder: (ctx) => Dialog(
-        insetPadding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            AppBar(
-              automaticallyImplyLeading: false,
-              title: const Text('Quittung'),
-              actions: [
-                IconButton(
-                  tooltip: 'Herunterladen',
-                  icon: const Icon(Icons.download),
-                  onPressed: () => triggerPdfDownload(bytes, fileName),
-                ),
-                IconButton(
-                  tooltip: 'Schließen',
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                ),
-              ],
-            ),
-            Expanded(child: buildPdfPreview(bytes)),
-          ],
-        ),
-      ),
+      builder: (ctx) {
+        final ctxL10n = AppLocalizations.of(ctx)!;
+        return Dialog(
+          insetPadding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              AppBar(
+                automaticallyImplyLeading: false,
+                title: Text(ctxL10n.receiptTitle),
+                actions: [
+                  IconButton(
+                    tooltip: ctxL10n.downloadPdfTooltip,
+                    icon: const Icon(Icons.download),
+                    onPressed: () => triggerPdfDownload(bytes, fileName),
+                  ),
+                  IconButton(
+                    tooltip: ctxL10n.closeTooltip,
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              Expanded(child: buildPdfPreview(bytes)),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -288,17 +311,18 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final selCount = _selectedRideIds.length;
     final subtitle = _selectedCompany == null
-        ? 'Fahrten auswählen'
+        ? l10n.selectRidesToBill
         : selCount > 0
-        ? '$selCount ausgewählt'
-        : '${_rides.length} Fahrten';
+        ? l10n.ridesBillingCountSelected(selCount)
+        : l10n.ridesBillingCountAvailable(_rides.length);
 
     return Column(
       children: [
         BillingTopBar(
-          title: 'Nicht fakturierte Fahrten',
+          title: l10n.unbilledRidesTitle,
           subtitle: subtitle,
           actions: selCount > 0
               ? [
@@ -330,9 +354,9 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
               ? const LinearProgressIndicator()
               : DropdownButtonFormField<ClientCompany>(
                   initialValue: _selectedCompany,
-                  decoration: const InputDecoration(
-                    labelText: 'Unternehmen',
-                    prefixIcon: Icon(Icons.business),
+                  decoration: InputDecoration(
+                    labelText: l10n.companiesLabel,
+                    prefixIcon: const Icon(Icons.business),
                   ),
                   items: _companies
                       .map(
@@ -349,6 +373,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
   }
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -363,7 +388,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     if (_selectedCompany == null) {
       return Center(
         child: Text(
-          'Wählen Sie ein Unternehmen, um abrechenbare Fahrten zu sehen.',
+          l10n.selectCompanyForBilling,
           style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
       );
@@ -383,7 +408,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Keine abrechenbaren Fahrten',
+              l10n.noBillableRides,
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
           ],
@@ -463,7 +488,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Quittung',
+                  tooltip: l10n.receiptTooltip,
                   icon: const Icon(Icons.receipt_long),
                   onPressed: _creating ? null : () => _previewReceipt(ride),
                 ),
@@ -478,6 +503,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
   }
 
   Widget _buildSummaryBar() {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final count = _selectedRideIds.length;
     final total = _selectedSubtotal + _selectedTax;
@@ -493,9 +519,11 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                 Expanded(
                   child: Text(
                     count > 0
-                        ? 'Ausgewählt: ${fmtEur(_selectedSubtotal)} netto · '
-                              '${fmtEur(total)} gesamt'
-                        : 'Keine Fahrten ausgewählt',
+                        ? l10n.selectedRidesSummary(
+                            fmtEur(_selectedSubtotal),
+                            fmtEur(total),
+                          )
+                        : l10n.noRidesSelected,
                     style: TextStyle(
                       color: colorScheme.onSurfaceVariant,
                       fontSize: 13,
@@ -507,8 +535,8 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                   child: TextFormField(
                     initialValue: _taxRate.toStringAsFixed(0),
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'MwSt %',
+                    decoration: InputDecoration(
+                      labelText: l10n.vatPercentLabel,
                       isDense: true,
                     ),
                     onChanged: (v) =>
@@ -531,7 +559,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Rechnung erstellen'),
+                    : Text(l10n.createInvoiceButton),
               ),
             ),
           ],

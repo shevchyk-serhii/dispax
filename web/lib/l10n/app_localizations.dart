@@ -1365,6 +1365,684 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save language to your account'**
   String get languageSaveFailed;
+
+  /// No description provided for @billingScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get billingScreenTitle;
+
+  /// No description provided for @invoicesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get invoicesTab;
+
+  /// No description provided for @companiesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Companies'**
+  String get companiesTab;
+
+  /// No description provided for @billingRidesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Rides'**
+  String get billingRidesTab;
+
+  /// No description provided for @invoicesCountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{month} · {count} Invoices'**
+  String invoicesCountSubtitle(String month, int count);
+
+  /// No description provided for @outstandingInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding'**
+  String get outstandingInvoices;
+
+  /// No description provided for @paidThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid (Month)'**
+  String get paidThisMonth;
+
+  /// No description provided for @overdueInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get overdueInvoices;
+
+  /// No description provided for @collectionRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection Rate'**
+  String get collectionRate;
+
+  /// No description provided for @exportDatevButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Export DATEV'**
+  String get exportDatevButton;
+
+  /// No description provided for @createNewInvoiceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'+ New Invoice'**
+  String get createNewInvoiceButton;
+
+  /// No description provided for @datevExportOpening.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening DATEV Export...'**
+  String get datevExportOpening;
+
+  /// No description provided for @createCompanyFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please create a company first.'**
+  String get createCompanyFirst;
+
+  /// No description provided for @newInvoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Invoice'**
+  String get newInvoiceTitle;
+
+  /// No description provided for @companiesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Company *'**
+  String get companiesLabel;
+
+  /// No description provided for @createInvoiceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Invoice'**
+  String get createInvoiceButton;
+
+  /// No description provided for @allInvoicesFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allInvoicesFilter;
+
+  /// No description provided for @draftStatusFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get draftStatusFilter;
+
+  /// No description provided for @sentStatusFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get sentStatusFilter;
+
+  /// No description provided for @paidStatusFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get paidStatusFilter;
+
+  /// No description provided for @invoiceTableHeaderNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'INVOICE'**
+  String get invoiceTableHeaderNumber;
+
+  /// No description provided for @invoiceTableHeaderClient.
+  ///
+  /// In en, this message translates to:
+  /// **'CLIENT'**
+  String get invoiceTableHeaderClient;
+
+  /// No description provided for @invoiceTableHeaderAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'AMOUNT'**
+  String get invoiceTableHeaderAmount;
+
+  /// No description provided for @overdueStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get overdueStatus;
+
+  /// No description provided for @paymentReminderSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment reminder sent'**
+  String get paymentReminderSent;
+
+  /// No description provided for @viewDetailsMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get viewDetailsMenu;
+
+  /// No description provided for @gobdCompliant.
+  ///
+  /// In en, this message translates to:
+  /// **'GoBD-compliant — invoices are immutably archived.'**
+  String get gobdCompliant;
+
+  /// No description provided for @noCompanies.
+  ///
+  /// In en, this message translates to:
+  /// **'No Companies'**
+  String get noCompanies;
+
+  /// No description provided for @noInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'No Invoices'**
+  String get noInvoices;
+
+  /// No description provided for @editCompanyMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editCompanyMenu;
+
+  /// No description provided for @deleteCompanyMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteCompanyMenu;
+
+  /// No description provided for @addCompanyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Company'**
+  String get addCompanyTitle;
+
+  /// No description provided for @editCompanyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Company'**
+  String get editCompanyTitle;
+
+  /// No description provided for @companyNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name *'**
+  String get companyNameLabel;
+
+  /// No description provided for @companyEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'E-Mail'**
+  String get companyEmailLabel;
+
+  /// No description provided for @companyPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get companyPhoneLabel;
+
+  /// No description provided for @companyAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get companyAddressLabel;
+
+  /// No description provided for @invoiceLanguageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Language'**
+  String get invoiceLanguageLabel;
+
+  /// No description provided for @languageStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get languageStandard;
+
+  /// No description provided for @languageGerman.
+  ///
+  /// In en, this message translates to:
+  /// **'German'**
+  String get languageGerman;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// No description provided for @languageUkrainian.
+  ///
+  /// In en, this message translates to:
+  /// **'Ukrainian'**
+  String get languageUkrainian;
+
+  /// No description provided for @addCompanyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addCompanyButton;
+
+  /// No description provided for @deleteCompanyConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Company?'**
+  String get deleteCompanyConfirmTitle;
+
+  /// No description provided for @deleteCompanyConfirmMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will be deleted.'**
+  String deleteCompanyConfirmMsg(String name);
+
+  /// No description provided for @downloadPdfTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get downloadPdfTooltip;
+
+  /// No description provided for @closeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeTooltip;
+
+  /// No description provided for @closeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeButton;
+
+  /// No description provided for @pdfPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview · {number}'**
+  String pdfPreviewTitle(String number);
+
+  /// No description provided for @invoiceLineItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Line Items'**
+  String get invoiceLineItems;
+
+  /// No description provided for @subtotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get subtotalLabel;
+
+  /// No description provided for @vatLineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT {rate}%'**
+  String vatLineLabel(String rate);
+
+  /// No description provided for @totalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total ({currency})'**
+  String totalLabel(String currency);
+
+  /// No description provided for @autoFillRidesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-fill rides'**
+  String get autoFillRidesButton;
+
+  /// No description provided for @sendInvoiceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Invoice'**
+  String get sendInvoiceButton;
+
+  /// No description provided for @markAsPaidButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Paid'**
+  String get markAsPaidButton;
+
+  /// No description provided for @pdfDownloadSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF downloaded'**
+  String get pdfDownloadSuccess;
+
+  /// No description provided for @downloadPdfButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Download PDF'**
+  String get downloadPdfButton;
+
+  /// No description provided for @previewButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get previewButton;
+
+  /// No description provided for @reminderBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminded {date}'**
+  String reminderBadgeLabel(String date);
+
+  /// No description provided for @invoicesRailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get invoicesRailLabel;
+
+  /// No description provided for @clientsRailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clients'**
+  String get clientsRailLabel;
+
+  /// No description provided for @datevRailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'DATEV'**
+  String get datevRailLabel;
+
+  /// No description provided for @genericError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String genericError(String error);
+
+  /// No description provided for @unbilledRidesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unbilled Rides'**
+  String get unbilledRidesTitle;
+
+  /// No description provided for @selectRidesToBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Select rides to bill'**
+  String get selectRidesToBill;
+
+  /// No description provided for @ridesBillingCountSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String ridesBillingCountSelected(int count);
+
+  /// No description provided for @ridesBillingCountAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} rides'**
+  String ridesBillingCountAvailable(int count);
+
+  /// No description provided for @selectCompanyForBilling.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a company to see billable rides.'**
+  String get selectCompanyForBilling;
+
+  /// No description provided for @noBillableRides.
+  ///
+  /// In en, this message translates to:
+  /// **'No billable rides'**
+  String get noBillableRides;
+
+  /// No description provided for @receiptTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get receiptTooltip;
+
+  /// No description provided for @receiptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get receiptTitle;
+
+  /// No description provided for @selectedRidesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected: {subtotal} net · {total} total'**
+  String selectedRidesSummary(String subtotal, String total);
+
+  /// No description provided for @noRidesSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No rides selected'**
+  String get noRidesSelected;
+
+  /// No description provided for @vatPercentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT %'**
+  String get vatPercentLabel;
+
+  /// No description provided for @invoiceCreatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Created'**
+  String get invoiceCreatedTitle;
+
+  /// No description provided for @invoiceCreatedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'{number} · {count} rides · €{amount}'**
+  String invoiceCreatedMsg(String number, int count, String amount);
+
+  /// No description provided for @pdfDownloadError.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF error: {error}'**
+  String pdfDownloadError(String error);
+
+  /// No description provided for @receiptDownloadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt error: {error}'**
+  String receiptDownloadError(String error);
+
+  /// No description provided for @datevExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'DATEV Export'**
+  String get datevExportTitle;
+
+  /// No description provided for @noDataForMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'No data for {monthLabel}'**
+  String noDataForMonth(String monthLabel);
+
+  /// No description provided for @revenueSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get revenueSection;
+
+  /// No description provided for @rowsCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} rows'**
+  String rowsCountLabel(int count);
+
+  /// No description provided for @copyCsvTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy CSV'**
+  String get copyCsvTooltip;
+
+  /// No description provided for @revenueCsvLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue CSV'**
+  String get revenueCsvLabel;
+
+  /// No description provided for @expensesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get expensesSection;
+
+  /// No description provided for @expensesCsvLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses CSV'**
+  String get expensesCsvLabel;
+
+  /// No description provided for @summarySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get summarySection;
+
+  /// No description provided for @netIncomeResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Result: {amount}'**
+  String netIncomeResult(String amount);
+
+  /// No description provided for @copySummaryCsvTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Summary'**
+  String get copySummaryCsvTooltip;
+
+  /// No description provided for @summaryCsvLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get summaryCsvLabel;
+
+  /// No description provided for @copiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} copied to clipboard'**
+  String copiedToClipboard(String label);
+
+  /// No description provided for @copyAllRevenueHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'=== Revenue ==='**
+  String get copyAllRevenueHeader;
+
+  /// No description provided for @copyAllExpensesHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'=== Expenses ==='**
+  String get copyAllExpensesHeader;
+
+  /// No description provided for @copyAllSummaryHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'=== Summary ==='**
+  String get copyAllSummaryHeader;
+
+  /// No description provided for @allDatevDataLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All DATEV Data'**
+  String get allDatevDataLabel;
+
+  /// No description provided for @downloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed: {code}'**
+  String downloadFailed(String code);
+
+  /// No description provided for @netIncomeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Net Income'**
+  String get netIncomeLabel;
+
+  /// No description provided for @copyAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy All'**
+  String get copyAllButton;
+
+  /// No description provided for @downloadCsvExtfButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Download .csv (EXTF)'**
+  String get downloadCsvExtfButton;
+
+  /// No description provided for @datevExtfFormatInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'DATEV Buchungsstapel Format – Import via DATEV Unternehmen Online'**
+  String get datevExtfFormatInfo;
+
+  /// No description provided for @expensesScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses · {monthLabel}'**
+  String expensesScreenTitle(String monthLabel);
+
+  /// No description provided for @addExpenseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Expense'**
+  String get addExpenseTooltip;
+
+  /// No description provided for @captureExpenseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Expense'**
+  String get captureExpenseTitle;
+
+  /// No description provided for @expenseCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get expenseCategoryLabel;
+
+  /// No description provided for @expenseAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (EUR)'**
+  String get expenseAmountLabel;
+
+  /// No description provided for @expenseDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get expenseDescriptionLabel;
+
+  /// No description provided for @invalidAmountError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid amount'**
+  String get invalidAmountError;
+
+  /// No description provided for @deleteExpenseConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Expense?'**
+  String get deleteExpenseConfirmTitle;
+
+  /// No description provided for @deleteExpenseConfirmMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'{category} · €{amount} will be deleted.'**
+  String deleteExpenseConfirmMsg(String category, String amount);
+
+  /// No description provided for @noExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'No Expenses'**
+  String get noExpenses;
+
+  /// No description provided for @noReceiptWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'No Receipt'**
+  String get noReceiptWarning;
+
+  /// No description provided for @totalExpensesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get totalExpensesLabel;
 }
 
 class _AppLocalizationsDelegate

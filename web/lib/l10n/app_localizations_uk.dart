@@ -659,4 +659,386 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get languageSaveFailed => 'Не вдалося зберегти мову в обліковий запис';
+
+  @override
+  String get billingScreenTitle => 'Білінг';
+
+  @override
+  String get invoicesTab => 'Рахунки';
+
+  @override
+  String get companiesTab => 'Компанії';
+
+  @override
+  String get billingRidesTab => 'Поїздки';
+
+  @override
+  String invoicesCountSubtitle(String month, int count) {
+    return '$month · $count Рахунків';
+  }
+
+  @override
+  String get outstandingInvoices => 'Непогашено';
+
+  @override
+  String get paidThisMonth => 'Сплачено (Місяць)';
+
+  @override
+  String get overdueInvoices => 'Прострочено';
+
+  @override
+  String get collectionRate => 'Коефіцієнт збору';
+
+  @override
+  String get exportDatevButton => 'Експорт DATEV';
+
+  @override
+  String get createNewInvoiceButton => '+ Новий рахунок';
+
+  @override
+  String get datevExportOpening => 'Відкриття DATEV Export...';
+
+  @override
+  String get createCompanyFirst => 'Будь ласка, спочатку створіть компанію.';
+
+  @override
+  String get newInvoiceTitle => 'Новий рахунок';
+
+  @override
+  String get companiesLabel => 'Компанія *';
+
+  @override
+  String get createInvoiceButton => 'Створити рахунок';
+
+  @override
+  String get allInvoicesFilter => 'Всі';
+
+  @override
+  String get draftStatusFilter => 'Чернетка';
+
+  @override
+  String get sentStatusFilter => 'Відправлено';
+
+  @override
+  String get paidStatusFilter => 'Оплачено';
+
+  @override
+  String get invoiceTableHeaderNumber => 'РАХУНОК';
+
+  @override
+  String get invoiceTableHeaderClient => 'КЛІЄНТ';
+
+  @override
+  String get invoiceTableHeaderAmount => 'СУМА';
+
+  @override
+  String get overdueStatus => 'Прострочено';
+
+  @override
+  String get paymentReminderSent => 'Нагадування про оплату відправлено';
+
+  @override
+  String get viewDetailsMenu => 'Деталі';
+
+  @override
+  String get gobdCompliant =>
+      'GoBD-відповідність — рахунки незмінно заархівовані.';
+
+  @override
+  String get noCompanies => 'Немає компаній';
+
+  @override
+  String get noInvoices => 'Немає рахунків';
+
+  @override
+  String get editCompanyMenu => 'Редагувати';
+
+  @override
+  String get deleteCompanyMenu => 'Видалити';
+
+  @override
+  String get addCompanyTitle => 'Додати компанію';
+
+  @override
+  String get editCompanyTitle => 'Редагувати компанію';
+
+  @override
+  String get companyNameLabel => 'Назва *';
+
+  @override
+  String get companyEmailLabel => 'Електронна пошта';
+
+  @override
+  String get companyPhoneLabel => 'Телефон';
+
+  @override
+  String get companyAddressLabel => 'Адреса';
+
+  @override
+  String get invoiceLanguageLabel => 'Мова рахунку';
+
+  @override
+  String get languageStandard => 'За замовчуванням';
+
+  @override
+  String get languageGerman => 'Німецька';
+
+  @override
+  String get languageEnglish => 'Англійська';
+
+  @override
+  String get languageUkrainian => 'Українська';
+
+  @override
+  String get addCompanyButton => 'Додати';
+
+  @override
+  String get deleteCompanyConfirmTitle => 'Видалити компанію?';
+
+  @override
+  String deleteCompanyConfirmMsg(String name) {
+    return '$name буде видалено.';
+  }
+
+  @override
+  String get downloadPdfTooltip => 'Завантажити';
+
+  @override
+  String get closeTooltip => 'Закрити';
+
+  @override
+  String get closeButton => 'Закрити';
+
+  @override
+  String pdfPreviewTitle(String number) {
+    return 'Перегляд · $number';
+  }
+
+  @override
+  String get invoiceLineItems => 'Позиції';
+
+  @override
+  String get subtotalLabel => 'Проміжний підсумок';
+
+  @override
+  String vatLineLabel(String rate) {
+    return 'ПДВ $rate%';
+  }
+
+  @override
+  String totalLabel(String currency) {
+    return 'Разом ($currency)';
+  }
+
+  @override
+  String get autoFillRidesButton => 'Автозавантажити поїздки';
+
+  @override
+  String get sendInvoiceButton => 'Відправити рахунок';
+
+  @override
+  String get markAsPaidButton => 'Позначити як оплачено';
+
+  @override
+  String get pdfDownloadSuccess => 'PDF завантажено';
+
+  @override
+  String get downloadPdfButton => 'Завантажити PDF';
+
+  @override
+  String get previewButton => 'Перегляд';
+
+  @override
+  String reminderBadgeLabel(String date) {
+    return 'Нагадано $date';
+  }
+
+  @override
+  String get invoicesRailLabel => 'Рахунки';
+
+  @override
+  String get clientsRailLabel => 'Клієнти';
+
+  @override
+  String get datevRailLabel => 'DATEV';
+
+  @override
+  String genericError(String error) {
+    return 'Помилка: $error';
+  }
+
+  @override
+  String get unbilledRidesTitle => 'Нерозрахованих поїздок';
+
+  @override
+  String get selectRidesToBill => 'Оберіть поїздки для виставлення рахунку';
+
+  @override
+  String ridesBillingCountSelected(int count) {
+    return '$count вибрано';
+  }
+
+  @override
+  String ridesBillingCountAvailable(int count) {
+    return '$count поїздок';
+  }
+
+  @override
+  String get selectCompanyForBilling =>
+      'Виберіть компанію для перегляду поїздок.';
+
+  @override
+  String get noBillableRides => 'Немає поїздок для виставлення рахунку';
+
+  @override
+  String get receiptTooltip => 'Квитанція';
+
+  @override
+  String get receiptTitle => 'Квитанція';
+
+  @override
+  String selectedRidesSummary(String subtotal, String total) {
+    return 'Вибрано: $subtotal нетто · $total всього';
+  }
+
+  @override
+  String get noRidesSelected => 'Поїздок не вибрано';
+
+  @override
+  String get vatPercentLabel => 'ПДВ %';
+
+  @override
+  String get invoiceCreatedTitle => 'Рахунок створено';
+
+  @override
+  String invoiceCreatedMsg(String number, int count, String amount) {
+    return '$number · $count поїздок · €$amount';
+  }
+
+  @override
+  String pdfDownloadError(String error) {
+    return 'Помилка PDF: $error';
+  }
+
+  @override
+  String receiptDownloadError(String error) {
+    return 'Помилка квитанції: $error';
+  }
+
+  @override
+  String get datevExportTitle => 'DATEV Експорт';
+
+  @override
+  String noDataForMonth(String monthLabel) {
+    return 'Немає даних за $monthLabel';
+  }
+
+  @override
+  String get revenueSection => 'Доходи';
+
+  @override
+  String rowsCountLabel(int count) {
+    return '$count рядків';
+  }
+
+  @override
+  String get copyCsvTooltip => 'Копіювати CSV';
+
+  @override
+  String get revenueCsvLabel => 'CSV доходів';
+
+  @override
+  String get expensesSection => 'Витрати';
+
+  @override
+  String get expensesCsvLabel => 'CSV витрат';
+
+  @override
+  String get summarySection => 'Підсумок';
+
+  @override
+  String netIncomeResult(String amount) {
+    return 'Результат: $amount';
+  }
+
+  @override
+  String get copySummaryCsvTooltip => 'Копіювати підсумок';
+
+  @override
+  String get summaryCsvLabel => 'Підсумок';
+
+  @override
+  String copiedToClipboard(String label) {
+    return '$label скопійовано в буфер обміну';
+  }
+
+  @override
+  String get copyAllRevenueHeader => '=== Доходи ===';
+
+  @override
+  String get copyAllExpensesHeader => '=== Витрати ===';
+
+  @override
+  String get copyAllSummaryHeader => '=== Підсумок ===';
+
+  @override
+  String get allDatevDataLabel => 'Всі дані DATEV';
+
+  @override
+  String downloadFailed(String code) {
+    return 'Завантаження не вдалось: $code';
+  }
+
+  @override
+  String get netIncomeLabel => 'Чистий дохід';
+
+  @override
+  String get copyAllButton => 'Копіювати все';
+
+  @override
+  String get downloadCsvExtfButton => 'Завантажити .csv (EXTF)';
+
+  @override
+  String get datevExtfFormatInfo =>
+      'Формат DATEV Buchungsstapel – Імпорт через DATEV Unternehmen Online';
+
+  @override
+  String expensesScreenTitle(String monthLabel) {
+    return 'Витрати · $monthLabel';
+  }
+
+  @override
+  String get addExpenseTooltip => 'Записати витрату';
+
+  @override
+  String get captureExpenseTitle => 'Записати витрату';
+
+  @override
+  String get expenseCategoryLabel => 'Категорія';
+
+  @override
+  String get expenseAmountLabel => 'Сума (EUR)';
+
+  @override
+  String get expenseDescriptionLabel => 'Опис (необов\'язково)';
+
+  @override
+  String get invalidAmountError => 'Введіть коректну суму';
+
+  @override
+  String get deleteExpenseConfirmTitle => 'Видалити витрату?';
+
+  @override
+  String deleteExpenseConfirmMsg(String category, String amount) {
+    return '$category · €$amount буде видалено.';
+  }
+
+  @override
+  String get noExpenses => 'Немає витрат';
+
+  @override
+  String get noReceiptWarning => 'Немає квитанції';
+
+  @override
+  String get totalExpensesLabel => 'Всього';
 }

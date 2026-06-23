@@ -278,5 +278,224 @@
   "languageSaveFailed": "Couldn't save language to your account",
   "@languageSaveFailed": {
     "description": "Shown in a snackbar when the backend PUT /users/{id} call to persist the preferred language fails."
-  }
+  },
+
+  "billingScreenTitle": "Billing",
+  "invoicesTab": "Invoices",
+  "companiesTab": "Companies",
+  "billingRidesTab": "Rides",
+  "invoicesCountSubtitle": "{month} · {count} Invoices",
+  "@invoicesCountSubtitle": {
+    "placeholders": {
+      "month": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "outstandingInvoices": "Outstanding",
+  "paidThisMonth": "Paid (Month)",
+  "overdueInvoices": "Overdue",
+  "collectionRate": "Collection Rate",
+  "exportDatevButton": "Export DATEV",
+  "createNewInvoiceButton": "+ New Invoice",
+  "datevExportOpening": "Opening DATEV Export...",
+  "createCompanyFirst": "Please create a company first.",
+  "newInvoiceTitle": "New Invoice",
+  "companiesLabel": "Company *",
+  "createInvoiceButton": "Create Invoice",
+  "allInvoicesFilter": "All",
+  "draftStatusFilter": "Draft",
+  "sentStatusFilter": "Sent",
+  "paidStatusFilter": "Paid",
+  "invoiceTableHeaderNumber": "INVOICE",
+  "invoiceTableHeaderClient": "CLIENT",
+  "invoiceTableHeaderAmount": "AMOUNT",
+  "overdueStatus": "Overdue",
+  "paymentReminderSent": "Payment reminder sent",
+  "viewDetailsMenu": "Details",
+  "gobdCompliant": "GoBD-compliant — invoices are immutably archived.",
+  "noCompanies": "No Companies",
+  "noInvoices": "No Invoices",
+  "editCompanyMenu": "Edit",
+  "deleteCompanyMenu": "Delete",
+  "addCompanyTitle": "Add Company",
+  "editCompanyTitle": "Edit Company",
+  "companyNameLabel": "Name *",
+  "companyEmailLabel": "E-Mail",
+  "companyPhoneLabel": "Phone",
+  "companyAddressLabel": "Address",
+  "invoiceLanguageLabel": "Invoice Language",
+  "languageStandard": "Default",
+  "languageGerman": "German",
+  "languageEnglish": "English",
+  "languageUkrainian": "Ukrainian",
+  "addCompanyButton": "Add",
+  "deleteCompanyConfirmTitle": "Delete Company?",
+  "deleteCompanyConfirmMsg": "{name} will be deleted.",
+  "@deleteCompanyConfirmMsg": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "downloadPdfTooltip": "Download",
+  "closeTooltip": "Close",
+  "closeButton": "Close",
+  "pdfPreviewTitle": "Preview · {number}",
+  "@pdfPreviewTitle": {
+    "placeholders": {
+      "number": {"type": "String"}
+    }
+  },
+  "invoiceLineItems": "Line Items",
+  "subtotalLabel": "Subtotal",
+  "vatLineLabel": "VAT {rate}%",
+  "@vatLineLabel": {
+    "placeholders": {
+      "rate": {"type": "String"}
+    }
+  },
+  "totalLabel": "Total ({currency})",
+  "@totalLabel": {
+    "placeholders": {
+      "currency": {"type": "String"}
+    }
+  },
+  "autoFillRidesButton": "Auto-fill rides",
+  "sendInvoiceButton": "Send Invoice",
+  "markAsPaidButton": "Mark as Paid",
+  "pdfDownloadSuccess": "PDF downloaded",
+  "downloadPdfButton": "Download PDF",
+  "previewButton": "Preview",
+  "reminderBadgeLabel": "Reminded {date}",
+  "@reminderBadgeLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "invoicesRailLabel": "Invoices",
+  "clientsRailLabel": "Clients",
+  "datevRailLabel": "DATEV",
+  "genericError": "Error: {error}",
+  "@genericError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "unbilledRidesTitle": "Unbilled Rides",
+  "selectRidesToBill": "Select rides to bill",
+  "ridesBillingCountSelected": "{count} selected",
+  "@ridesBillingCountSelected": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "ridesBillingCountAvailable": "{count} rides",
+  "@ridesBillingCountAvailable": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "selectCompanyForBilling": "Select a company to see billable rides.",
+  "noBillableRides": "No billable rides",
+  "receiptTooltip": "Receipt",
+  "receiptTitle": "Receipt",
+  "selectedRidesSummary": "Selected: {subtotal} net · {total} total",
+  "@selectedRidesSummary": {
+    "placeholders": {
+      "subtotal": {"type": "String"},
+      "total": {"type": "String"}
+    }
+  },
+  "noRidesSelected": "No rides selected",
+  "vatPercentLabel": "VAT %",
+  "invoiceCreatedTitle": "Invoice Created",
+  "invoiceCreatedMsg": "{number} · {count} rides · €{amount}",
+  "@invoiceCreatedMsg": {
+    "placeholders": {
+      "number": {"type": "String"},
+      "count": {"type": "int"},
+      "amount": {"type": "String"}
+    }
+  },
+  "pdfDownloadError": "PDF error: {error}",
+  "@pdfDownloadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "receiptDownloadError": "Receipt error: {error}",
+  "@receiptDownloadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "datevExportTitle": "DATEV Export",
+  "noDataForMonth": "No data for {monthLabel}",
+  "@noDataForMonth": {
+    "placeholders": {
+      "monthLabel": {"type": "String"}
+    }
+  },
+  "revenueSection": "Revenue",
+  "rowsCountLabel": "{count} rows",
+  "@rowsCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "copyCsvTooltip": "Copy CSV",
+  "revenueCsvLabel": "Revenue CSV",
+  "expensesSection": "Expenses",
+  "expensesCsvLabel": "Expenses CSV",
+  "summarySection": "Summary",
+  "netIncomeResult": "Result: {amount}",
+  "@netIncomeResult": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "copySummaryCsvTooltip": "Copy Summary",
+  "summaryCsvLabel": "Summary",
+  "copiedToClipboard": "{label} copied to clipboard",
+  "@copiedToClipboard": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "copyAllRevenueHeader": "=== Revenue ===",
+  "copyAllExpensesHeader": "=== Expenses ===",
+  "copyAllSummaryHeader": "=== Summary ===",
+  "allDatevDataLabel": "All DATEV Data",
+  "downloadFailed": "Download failed: {code}",
+  "@downloadFailed": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "netIncomeLabel": "Net Income",
+  "copyAllButton": "Copy All",
+  "downloadCsvExtfButton": "Download .csv (EXTF)",
+  "datevExtfFormatInfo": "DATEV Buchungsstapel Format – Import via DATEV Unternehmen Online",
+  "expensesScreenTitle": "Expenses · {monthLabel}",
+  "@expensesScreenTitle": {
+    "placeholders": {
+      "monthLabel": {"type": "String"}
+    }
+  },
+  "addExpenseTooltip": "Record Expense",
+  "captureExpenseTitle": "Record Expense",
+  "expenseCategoryLabel": "Category",
+  "expenseAmountLabel": "Amount (EUR)",
+  "expenseDescriptionLabel": "Description (optional)",
+  "invalidAmountError": "Please enter a valid amount",
+  "deleteExpenseConfirmTitle": "Delete Expense?",
+  "deleteExpenseConfirmMsg": "{category} · €{amount} will be deleted.",
+  "@deleteExpenseConfirmMsg": {
+    "placeholders": {
+      "category": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+  "noExpenses": "No Expenses",
+  "noReceiptWarning": "No Receipt",
+  "totalExpensesLabel": "Total"
 }
