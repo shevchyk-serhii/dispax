@@ -517,6 +517,22 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get flightDepartureTime => 'Abflugzeit';
+
+  @override
+  String get manualPickupTimeOptional =>
+      'Abholzeit (optional — wird berechnet, falls leer)';
+
+  @override
+  String confirmedPickupTime(String time) {
+    return 'Bestätigte Abholung: $time';
+  }
+
+  @override
+  String get pickupTimeComputedAuto =>
+      'Automatisch basierend auf dem Abflugzeitpunkt berechnet';
+
+  @override
   String get markUnavailable => 'Als nicht verfügbar markieren';
 
   @override

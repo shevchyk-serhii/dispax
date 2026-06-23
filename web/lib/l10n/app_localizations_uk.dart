@@ -514,6 +514,22 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
+  String get flightDepartureTime => 'Час відправлення рейсу';
+
+  @override
+  String get manualPickupTimeOptional =>
+      'Час подачі (необов\'язково — буде розраховано, якщо не вказано)';
+
+  @override
+  String confirmedPickupTime(String time) {
+    return 'Підтверджена подача: $time';
+  }
+
+  @override
+  String get pickupTimeComputedAuto =>
+      'Розраховано автоматично на основі часу відправлення рейсу';
+
+  @override
   String get markUnavailable => 'Позначити як недоступний';
 
   @override

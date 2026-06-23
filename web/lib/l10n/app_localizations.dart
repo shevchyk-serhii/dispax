@@ -1084,6 +1084,30 @@ abstract class AppLocalizations {
   /// **'Viewing: {driverName}'**
   String viewingDriverSchedule(String driverName);
 
+  /// No description provided for @flightDepartureTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight departure time'**
+  String get flightDepartureTime;
+
+  /// No description provided for @manualPickupTimeOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup time (optional — computed if blank)'**
+  String get manualPickupTimeOptional;
+
+  /// No description provided for @confirmedPickupTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed pickup: {time}'**
+  String confirmedPickupTime(String time);
+
+  /// No description provided for @pickupTimeComputedAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Computed automatically based on flight departure'**
+  String get pickupTimeComputedAuto;
+
   /// No description provided for @markUnavailable.
   ///
   /// In en, this message translates to:
