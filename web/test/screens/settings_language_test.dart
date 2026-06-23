@@ -47,9 +47,7 @@ void main() {
     ).thenAnswer((_) async => http.Response('[]', 200));
 
     // Default: auth state with a logged-in user.
-    when(
-      () => authBloc.state,
-    ).thenReturn(AuthState.authenticated(_testUser()));
+    when(() => authBloc.state).thenReturn(AuthState.authenticated(_testUser()));
 
     // Reset locale to a known value before each test.
     localeNotifier.value = null;
@@ -80,13 +78,21 @@ void main() {
     // The Language row is built with InkWell + Text, not a ListTile.
     // Tap the "Language" text to open the bottom sheet.
     final languageText = find.text('Language');
-    expect(languageText, findsOneWidget, reason: '"Language" row must be present');
+    expect(
+      languageText,
+      findsOneWidget,
+      reason: '"Language" row must be present',
+    );
     await tester.tap(languageText);
     await tester.pumpAndSettle();
 
     // Tap the desired language entry in the bottom sheet (standard ListTile).
     final entry = find.widgetWithText(ListTile, languageLabel);
-    expect(entry, findsOneWidget, reason: '$languageLabel must appear in picker');
+    expect(
+      entry,
+      findsOneWidget,
+      reason: '$languageLabel must appear in picker',
+    );
     await tester.tap(entry);
     // Allow async onTap (including the awaited PUT) to complete.
     await tester.pumpAndSettle();
@@ -95,39 +101,33 @@ void main() {
   // ---------------------------------------------------------------------------
   // Case 1 — success: PUT succeeds, locale is applied, no snackbar.
   // ---------------------------------------------------------------------------
-  testWidgets(
-    'language picker success: PUT is called once and locale updates; '
-    'no error snackbar is shown',
-    (tester) async {
-      // Stub a successful PUT.
-      when(
-        () => apiClient.put(
-          '/users/user-123',
-          {'preferredLanguage': 'de'},
-        ),
-      ).thenAnswer((_) async => http.Response('{}', 200));
+  testWidgets('language picker success: PUT is called once and locale updates; '
+      'no error snackbar is shown', (tester) async {
+    // Stub a successful PUT.
+    when(
+      () => apiClient.put('/users/user-123', {'preferredLanguage': 'de'}),
+    ).thenAnswer((_) async => http.Response('{}', 200));
 
-      await tester.pumpWidget(buildApp());
-      await tester.pump();
+    await tester.pumpWidget(buildApp());
+    await tester.pump();
 
-      await openLanguagePickerAndTap(tester, 'Deutsch');
+    await openLanguagePickerAndTap(tester, 'Deutsch');
 
-      // PUT must have been called exactly once with the correct payload.
-      verify(
-        () => apiClient.put('/users/user-123', {'preferredLanguage': 'de'}),
-      ).called(1);
+    // PUT must have been called exactly once with the correct payload.
+    verify(
+      () => apiClient.put('/users/user-123', {'preferredLanguage': 'de'}),
+    ).called(1);
 
-      // Locale notifier must reflect the selection.
-      expect(
-        localeNotifier.value,
-        equals(const Locale('de')),
-        reason: 'localeNotifier must be updated to de on success',
-      );
+    // Locale notifier must reflect the selection.
+    expect(
+      localeNotifier.value,
+      equals(const Locale('de')),
+      reason: 'localeNotifier must be updated to de on success',
+    );
 
-      // No error snackbar must appear.
-      expect(find.byType(SnackBar), findsNothing);
-    },
-  );
+    // No error snackbar must appear.
+    expect(find.byType(SnackBar), findsNothing);
+  });
 
   // ---------------------------------------------------------------------------
   // Case 2 — failure: PUT throws, locale still applies, snackbar is shown.
@@ -138,10 +138,7 @@ void main() {
     (tester) async {
       // Stub the PUT to throw a network error.
       when(
-        () => apiClient.put(
-          '/users/user-123',
-          {'preferredLanguage': 'uk'},
-        ),
+        () => apiClient.put('/users/user-123', {'preferredLanguage': 'uk'}),
       ).thenThrow(Exception('Network error'));
 
       await tester.pumpWidget(buildApp());

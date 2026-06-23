@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dispax/dashboard/driver/widgets/availability_toggle.dart';
 import 'package:dispax/blocs/blocs.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 
 // A minimal AuthBloc mock that returns default state so the toggle can render.
 class _FakeAuthBloc extends Fake implements AuthBloc {
@@ -26,6 +27,9 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: BlocProvider<AuthBloc>.value(
             value: _FakeAuthBloc(),
             child: const Scaffold(body: AvailabilityToggle()),

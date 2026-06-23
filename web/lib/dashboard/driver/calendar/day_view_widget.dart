@@ -8,6 +8,7 @@ import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../modules/core/navigation_utils.dart';
 import '../../../modules/core/navigation_helper.dart';
 import '../../../constants/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 import 'widgets/ride_calendar_card.dart';
 
 class DayViewWidget extends StatelessWidget {
@@ -66,6 +67,7 @@ class DayViewWidget extends StatelessWidget {
 
   Widget buildDayHeader(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -106,9 +108,9 @@ class DayViewWidget extends StatelessWidget {
                 color: AppColors.warning,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
-                'Today',
-                style: TextStyle(
+              child: Text(
+                l10n.today,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -121,6 +123,7 @@ class DayViewWidget extends StatelessWidget {
 
   Widget buildEmptyState(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Center(
       child: Column(
@@ -133,7 +136,7 @@ class DayViewWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'No rides scheduled',
+            l10n.noRidesScheduled,
             style: TextStyle(
               fontSize: 18,
               color: colorScheme.onSurfaceVariant,
@@ -142,7 +145,7 @@ class DayViewWidget extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Enjoy your free day!',
+            l10n.enjoyYourFreeDay,
             style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
           ),
         ],
@@ -210,7 +213,7 @@ class DayViewWidget extends StatelessWidget {
           if (context.mounted) {
             NavigationHelper.showSnackBar(
               context,
-              'Failed to set price: $e',
+              AppLocalizations.of(context)!.failedToSetPrice(e.toString()),
               isError: true,
             );
           }
@@ -218,6 +221,7 @@ class DayViewWidget extends StatelessWidget {
   }
 
   Widget buildActionButtons(BuildContext context, Ride ride) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -228,12 +232,12 @@ class DayViewWidget extends StatelessWidget {
               IconButton(
                 onPressed: () => _handleCall(context, ride),
                 icon: const Icon(Icons.phone, color: AppColors.success),
-                tooltip: 'Call Client',
+                tooltip: l10n.callClient,
               ),
               IconButton(
                 onPressed: () => _handleNavigation(context, ride),
                 icon: const Icon(Icons.navigation, color: AppColors.info),
-                tooltip: 'Start Navigation',
+                tooltip: l10n.startNavigation,
               ),
             ],
           ),
@@ -250,7 +254,7 @@ class DayViewWidget extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.play_arrow, size: 18),
-              label: const Text('Start'),
+              label: Text(l10n.start),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,
                 foregroundColor: Colors.white,
@@ -269,7 +273,7 @@ class DayViewWidget extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.check, size: 18),
-              label: const Text('Complete'),
+              label: Text(l10n.completeRideButton),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.warning,
                 foregroundColor: Colors.white,
@@ -290,6 +294,7 @@ class DayViewWidget extends StatelessWidget {
       );
       return;
     }
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -298,7 +303,7 @@ class DayViewWidget extends StatelessWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.phone, color: AppColors.success),
-              title: const Text('Call'),
+              title: Text(l10n.call),
               subtitle: Text(phone),
               onTap: () {
                 Navigator.pop(ctx);
@@ -307,7 +312,7 @@ class DayViewWidget extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.message, color: AppColors.info),
-              title: const Text('SMS'),
+              title: Text(l10n.sms),
               subtitle: Text(phone),
               onTap: () {
                 Navigator.pop(ctx);
@@ -321,11 +326,12 @@ class DayViewWidget extends StatelessWidget {
   }
 
   void _handleNavigation(BuildContext context, Ride ride) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final choice = await showAdaptiveDialog<String>(
         context: context,
         builder: (ctx) => SimpleDialog(
-          title: const Text('Navigate to'),
+          title: Text(l10n.navigateTo),
           children: [
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, 'pickup'),
@@ -335,7 +341,7 @@ class DayViewWidget extends StatelessWidget {
                   color: AppColors.success,
                 ),
                 title: Text(ride.from.address),
-                subtitle: const Text('Pickup location'),
+                subtitle: Text(l10n.pickupLocation),
               ),
             ),
             SimpleDialogOption(
@@ -343,7 +349,7 @@ class DayViewWidget extends StatelessWidget {
               child: ListTile(
                 leading: const Icon(Icons.flag, color: AppColors.error),
                 title: Text(ride.to.address),
-                subtitle: const Text('Drop-off location'),
+                subtitle: Text(l10n.dropoffLocation),
               ),
             ),
           ],
@@ -362,7 +368,7 @@ class DayViewWidget extends StatelessWidget {
       if (context.mounted) {
         NavigationHelper.showSnackBar(
           context,
-          'Could not open navigation: $e',
+          l10n.couldNotOpenNavigation(e.toString()),
           isError: true,
         );
       }
@@ -371,6 +377,7 @@ class DayViewWidget extends StatelessWidget {
 
   Widget buildTravelTimeIndicator(BuildContext context, int minutes) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -389,7 +396,7 @@ class DayViewWidget extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '$minutes min travel time',
+            l10n.travelTimeMinutes(minutes),
             style: TextStyle(
               color: colorScheme.onSurfaceVariant,
               fontSize: 12,

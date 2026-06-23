@@ -35,7 +35,11 @@ void main() {
         de.noBillableRides,
         de.noExpenses,
       };
-      expect(values.length, equals(4), reason: 'all four empty-state keys must be distinct strings in DE');
+      expect(
+        values.length,
+        equals(4),
+        reason: 'all four empty-state keys must be distinct strings in DE',
+      );
     });
 
     test('empty-state keys are distinct and correct in English', () async {
@@ -44,30 +48,63 @@ void main() {
       expect(en.noCompanies, equals('No Companies'));
       expect(en.noBillableRides, equals('No billable rides'));
       expect(en.noExpenses, equals('No Expenses'));
-      final values = {en.noInvoices, en.noCompanies, en.noBillableRides, en.noExpenses};
-      expect(values.length, equals(4), reason: 'all four empty-state keys must be distinct strings in EN');
+      final values = {
+        en.noInvoices,
+        en.noCompanies,
+        en.noBillableRides,
+        en.noExpenses,
+      };
+      expect(
+        values.length,
+        equals(4),
+        reason: 'all four empty-state keys must be distinct strings in EN',
+      );
     });
 
     test('empty-state keys are distinct and correct in Ukrainian', () async {
       final uk = await _l10n('uk');
       expect(uk.noInvoices, equals('Немає рахунків'));
       expect(uk.noCompanies, equals('Немає компаній'));
-      expect(uk.noBillableRides, equals('Немає поїздок для виставлення рахунку'));
+      expect(
+        uk.noBillableRides,
+        equals('Немає поїздок для виставлення рахунку'),
+      );
       expect(uk.noExpenses, equals('Немає витрат'));
-      final values = {uk.noInvoices, uk.noCompanies, uk.noBillableRides, uk.noExpenses};
-      expect(values.length, equals(4), reason: 'all four empty-state keys must be distinct strings in UK');
+      final values = {
+        uk.noInvoices,
+        uk.noCompanies,
+        uk.noBillableRides,
+        uk.noExpenses,
+      };
+      expect(
+        values.length,
+        equals(4),
+        reason: 'all four empty-state keys must be distinct strings in UK',
+      );
     });
   });
 
   group('billing l10n keys — parameterized formatting', () {
-    test('invoicesCountSubtitle formats month and count in all locales', () async {
-      final de = await _l10n('de');
-      final en = await _l10n('en');
-      final uk = await _l10n('uk');
-      expect(de.invoicesCountSubtitle('Jan 2026', 5), equals('Jan 2026 · 5 Rechnungen'));
-      expect(en.invoicesCountSubtitle('Jan 2026', 5), equals('Jan 2026 · 5 Invoices'));
-      expect(uk.invoicesCountSubtitle('Jan 2026', 5), equals('Jan 2026 · 5 Рахунків'));
-    });
+    test(
+      'invoicesCountSubtitle formats month and count in all locales',
+      () async {
+        final de = await _l10n('de');
+        final en = await _l10n('en');
+        final uk = await _l10n('uk');
+        expect(
+          de.invoicesCountSubtitle('Jan 2026', 5),
+          equals('Jan 2026 · 5 Rechnungen'),
+        );
+        expect(
+          en.invoicesCountSubtitle('Jan 2026', 5),
+          equals('Jan 2026 · 5 Invoices'),
+        );
+        expect(
+          uk.invoicesCountSubtitle('Jan 2026', 5),
+          equals('Jan 2026 · 5 Рахунків'),
+        );
+      },
+    );
 
     test('genericError formats error string in all locales', () async {
       final de = await _l10n('de');
@@ -82,9 +119,18 @@ void main() {
       final de = await _l10n('de');
       final en = await _l10n('en');
       final uk = await _l10n('uk');
-      expect(de.reminderBadgeLabel('05.03.2026'), equals('Erinnert 05.03.2026'));
-      expect(en.reminderBadgeLabel('05.03.2026'), equals('Reminded 05.03.2026'));
-      expect(uk.reminderBadgeLabel('05.03.2026'), equals('Нагадано 05.03.2026'));
+      expect(
+        de.reminderBadgeLabel('05.03.2026'),
+        equals('Erinnert 05.03.2026'),
+      );
+      expect(
+        en.reminderBadgeLabel('05.03.2026'),
+        equals('Reminded 05.03.2026'),
+      );
+      expect(
+        uk.reminderBadgeLabel('05.03.2026'),
+        equals('Нагадано 05.03.2026'),
+      );
     });
 
     test('totalLabel formats currency in all locales', () async {
@@ -96,28 +142,43 @@ void main() {
       expect(uk.totalLabel('EUR'), equals('Разом (EUR)'));
     });
 
-    test('totalExpensesLabel is distinct from totalLabel in all locales', () async {
-      // totalExpensesLabel is the expense footer ("Gesamt" / "Total" / "Всього")
-      // totalLabel is the parameterized invoice total "Gesamt (EUR)" etc.
-      // They must not be swapped.
-      final de = await _l10n('de');
-      final en = await _l10n('en');
-      final uk = await _l10n('uk');
-      expect(de.totalExpensesLabel, equals('Gesamt'));
-      expect(de.totalLabel('EUR'), contains('EUR')); // parameterized, must include currency
-      expect(en.totalExpensesLabel, equals('Total'));
-      expect(en.totalLabel('EUR'), contains('EUR'));
-      expect(uk.totalExpensesLabel, equals('Всього'));
-      expect(uk.totalLabel('EUR'), contains('EUR'));
-    });
+    test(
+      'totalExpensesLabel is distinct from totalLabel in all locales',
+      () async {
+        // totalExpensesLabel is the expense footer ("Gesamt" / "Total" / "Всього")
+        // totalLabel is the parameterized invoice total "Gesamt (EUR)" etc.
+        // They must not be swapped.
+        final de = await _l10n('de');
+        final en = await _l10n('en');
+        final uk = await _l10n('uk');
+        expect(de.totalExpensesLabel, equals('Gesamt'));
+        expect(
+          de.totalLabel('EUR'),
+          contains('EUR'),
+        ); // parameterized, must include currency
+        expect(en.totalExpensesLabel, equals('Total'));
+        expect(en.totalLabel('EUR'), contains('EUR'));
+        expect(uk.totalExpensesLabel, equals('Всього'));
+        expect(uk.totalLabel('EUR'), contains('EUR'));
+      },
+    );
 
     test('deleteCompanyConfirmMsg formats name in all locales', () async {
       final de = await _l10n('de');
       final en = await _l10n('en');
       final uk = await _l10n('uk');
-      expect(de.deleteCompanyConfirmMsg('Acme GmbH'), equals('Acme GmbH wird gelöscht.'));
-      expect(en.deleteCompanyConfirmMsg('Acme GmbH'), equals('Acme GmbH will be deleted.'));
-      expect(uk.deleteCompanyConfirmMsg('Acme GmbH'), equals('Acme GmbH буде видалено.'));
+      expect(
+        de.deleteCompanyConfirmMsg('Acme GmbH'),
+        equals('Acme GmbH wird gelöscht.'),
+      );
+      expect(
+        en.deleteCompanyConfirmMsg('Acme GmbH'),
+        equals('Acme GmbH will be deleted.'),
+      );
+      expect(
+        uk.deleteCompanyConfirmMsg('Acme GmbH'),
+        equals('Acme GmbH буде видалено.'),
+      );
     });
 
     test('expensesScreenTitle formats monthLabel in all locales', () async {
@@ -129,46 +190,76 @@ void main() {
       expect(uk.expensesScreenTitle('Jun 2026'), equals('Витрати · Jun 2026'));
     });
 
-    test('invoiceCreatedMsg formats number, count and amount in all locales', () async {
-      final de = await _l10n('de');
-      final en = await _l10n('en');
-      final uk = await _l10n('uk');
-      expect(de.invoiceCreatedMsg('INV-001', 3, '357.00'),
-          equals('INV-001 · 3 Fahrten · €357.00'));
-      expect(en.invoiceCreatedMsg('INV-001', 3, '357.00'),
-          equals('INV-001 · 3 rides · €357.00'));
-      expect(uk.invoiceCreatedMsg('INV-001', 3, '357.00'),
-          equals('INV-001 · 3 поїздок · €357.00'));
-    });
+    test(
+      'invoiceCreatedMsg formats number, count and amount in all locales',
+      () async {
+        final de = await _l10n('de');
+        final en = await _l10n('en');
+        final uk = await _l10n('uk');
+        expect(
+          de.invoiceCreatedMsg('INV-001', 3, '357.00'),
+          equals('INV-001 · 3 Fahrten · €357.00'),
+        );
+        expect(
+          en.invoiceCreatedMsg('INV-001', 3, '357.00'),
+          equals('INV-001 · 3 rides · €357.00'),
+        );
+        expect(
+          uk.invoiceCreatedMsg('INV-001', 3, '357.00'),
+          equals('INV-001 · 3 поїздок · €357.00'),
+        );
+      },
+    );
 
     test('noDataForMonth formats monthLabel in all locales', () async {
       final de = await _l10n('de');
       final en = await _l10n('en');
       final uk = await _l10n('uk');
-      expect(de.noDataForMonth('März 2026'), equals('Keine Daten für März 2026'));
+      expect(
+        de.noDataForMonth('März 2026'),
+        equals('Keine Daten für März 2026'),
+      );
       expect(en.noDataForMonth('March 2026'), equals('No data for March 2026'));
-      expect(uk.noDataForMonth('Березень 2026'), equals('Немає даних за Березень 2026'));
+      expect(
+        uk.noDataForMonth('Березень 2026'),
+        equals('Немає даних за Березень 2026'),
+      );
     });
 
-    test('deleteExpenseConfirmMsg formats category and amount in all locales', () async {
-      final de = await _l10n('de');
-      final en = await _l10n('en');
-      final uk = await _l10n('uk');
-      expect(de.deleteExpenseConfirmMsg('Kraftstoff', '48.50'),
-          equals('Kraftstoff · €48.50 wird gelöscht.'));
-      expect(en.deleteExpenseConfirmMsg('Fuel', '48.50'),
-          equals('Fuel · €48.50 will be deleted.'));
-      expect(uk.deleteExpenseConfirmMsg('Паливо', '48.50'),
-          equals('Паливо · €48.50 буде видалено.'));
-    });
+    test(
+      'deleteExpenseConfirmMsg formats category and amount in all locales',
+      () async {
+        final de = await _l10n('de');
+        final en = await _l10n('en');
+        final uk = await _l10n('uk');
+        expect(
+          de.deleteExpenseConfirmMsg('Kraftstoff', '48.50'),
+          equals('Kraftstoff · €48.50 wird gelöscht.'),
+        );
+        expect(
+          en.deleteExpenseConfirmMsg('Fuel', '48.50'),
+          equals('Fuel · €48.50 will be deleted.'),
+        );
+        expect(
+          uk.deleteExpenseConfirmMsg('Паливо', '48.50'),
+          equals('Паливо · €48.50 буде видалено.'),
+        );
+      },
+    );
 
-    test('ridesBillingCountSelected and ridesBillingCountAvailable are distinct', () async {
-      final de = await _l10n('de');
-      // selected = "{count} ausgewählt", available = "{count} Fahrten"
-      expect(de.ridesBillingCountSelected(3), equals('3 ausgewählt'));
-      expect(de.ridesBillingCountAvailable(10), equals('10 Fahrten'));
-      expect(de.ridesBillingCountSelected(3), isNot(equals(de.ridesBillingCountAvailable(3))));
-    });
+    test(
+      'ridesBillingCountSelected and ridesBillingCountAvailable are distinct',
+      () async {
+        final de = await _l10n('de');
+        // selected = "{count} ausgewählt", available = "{count} Fahrten"
+        expect(de.ridesBillingCountSelected(3), equals('3 ausgewählt'));
+        expect(de.ridesBillingCountAvailable(10), equals('10 Fahrten'));
+        expect(
+          de.ridesBillingCountSelected(3),
+          isNot(equals(de.ridesBillingCountAvailable(3))),
+        );
+      },
+    );
   });
 
   group('billing l10n keys — static string values', () {

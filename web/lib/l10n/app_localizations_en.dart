@@ -1042,4 +1042,151 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get totalExpensesLabel => 'Total';
+
+  @override
+  String get newRideAssigned => 'New ride assigned';
+
+  @override
+  String get newRideAssignedContent =>
+      'You have been assigned a new ride. Do you accept it?';
+
+  @override
+  String get decline => 'Decline';
+
+  @override
+  String get accept => 'Accept';
+
+  @override
+  String get call => 'Call';
+
+  @override
+  String get sms => 'SMS';
+
+  @override
+  String get completeRideTitle => 'Complete Ride';
+
+  @override
+  String get navigate => 'Navigate';
+
+  @override
+  String get navigateTo => 'Navigate to';
+
+  @override
+  String get googleMapsPickup => 'Google Maps — Pickup';
+
+  @override
+  String get googleMapsDropoff => 'Google Maps — Drop-off';
+
+  @override
+  String get openingNavigation => 'Opening navigation in Google Maps...';
+
+  @override
+  String arrivingInMinutes(int etaMinutes) {
+    return 'Arriving in $etaMinutes min';
+  }
+
+  @override
+  String get noCompletedRides => 'No completed rides yet';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get youreOnline => 'You\'re online';
+
+  @override
+  String get youreOffline => 'You\'re offline';
+
+  @override
+  String get discardChangesTitle => 'Discard changes?';
+
+  @override
+  String get discardChangesMessage =>
+      'You have unsaved ride details. If you leave, they will be lost.';
+
+  @override
+  String get stay => 'Stay';
+
+  @override
+  String get discard => 'Discard';
+
+  @override
+  String get bookLabel => 'Book';
+
+  @override
+  String get monthView => 'Month View';
+
+  @override
+  String get weekView => 'Week View';
+
+  @override
+  String get dayView => 'Day View';
+
+  @override
+  String get board => 'Board';
+
+  @override
+  String get goToday => 'Go to Today';
+
+  @override
+  String get todaysSchedule => 'Today\'s Schedule';
+
+  @override
+  String get noRidesScheduled => 'No rides scheduled';
+
+  @override
+  String get enjoyYourFreeDay => 'Enjoy your free day!';
+
+  @override
+  String get callClient => 'Call Client';
+
+  @override
+  String get startNavigation => 'Start Navigation';
+
+  @override
+  String get start => 'Start';
+
+  @override
+  String get completeRideButton => 'Complete';
+
+  @override
+  String get pickupLocation => 'Pickup location';
+
+  @override
+  String get dropoffLocation => 'Drop-off location';
+
+  @override
+  String couldNotOpenNavigation(String error) {
+    return 'Could not open navigation: $error';
+  }
+
+  @override
+  String travelTimeMinutes(int minutes) {
+    return '$minutes min travel time';
+  }
+
+  @override
+  String failedToSetPrice(String error) {
+    return 'Failed to set price: $error';
+  }
+
+  @override
+  String get setRidePrice => 'Set ride price';
+
+  @override
+  String get setPrice => 'Set price';
+
+  @override
+  String get offline => 'Offline';
+
+  @override
+  String get acceptingRides => 'You are accepting rides';
+
+  @override
+  String get notAcceptingRides => 'You are not accepting rides';
+
+  @override
+  String failedToUpdate(String error) {
+    return 'Failed to update: $error';
+  }
 }

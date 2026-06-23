@@ -1046,4 +1046,151 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get totalExpensesLabel => 'Gesamt';
+
+  @override
+  String get newRideAssigned => 'Neue Fahrt zugewiesen';
+
+  @override
+  String get newRideAssignedContent =>
+      'Ihnen wurde eine neue Fahrt zugewiesen. Möchten Sie sie annehmen?';
+
+  @override
+  String get decline => 'Ablehnen';
+
+  @override
+  String get accept => 'Annehmen';
+
+  @override
+  String get call => 'Anrufen';
+
+  @override
+  String get sms => 'SMS';
+
+  @override
+  String get completeRideTitle => 'Fahrt abschließen';
+
+  @override
+  String get navigate => 'Navigieren';
+
+  @override
+  String get navigateTo => 'Navigieren zu';
+
+  @override
+  String get googleMapsPickup => 'Google Maps — Abholung';
+
+  @override
+  String get googleMapsDropoff => 'Google Maps — Ziel';
+
+  @override
+  String get openingNavigation => 'Navigation in Google Maps wird geöffnet...';
+
+  @override
+  String arrivingInMinutes(int etaMinutes) {
+    return 'Ankunft in $etaMinutes Min.';
+  }
+
+  @override
+  String get noCompletedRides => 'Noch keine abgeschlossenen Fahrten';
+
+  @override
+  String get refresh => 'Aktualisieren';
+
+  @override
+  String get youreOnline => 'Sie sind online';
+
+  @override
+  String get youreOffline => 'Sie sind offline';
+
+  @override
+  String get discardChangesTitle => 'Änderungen verwerfen?';
+
+  @override
+  String get discardChangesMessage =>
+      'Sie haben nicht gespeicherte Fahrtdetails. Wenn Sie die Seite verlassen, gehen sie verloren.';
+
+  @override
+  String get stay => 'Bleiben';
+
+  @override
+  String get discard => 'Verwerfen';
+
+  @override
+  String get bookLabel => 'Buchen';
+
+  @override
+  String get monthView => 'Monatsansicht';
+
+  @override
+  String get weekView => 'Wochenansicht';
+
+  @override
+  String get dayView => 'Tagesansicht';
+
+  @override
+  String get board => 'Übersicht';
+
+  @override
+  String get goToday => 'Zum heutigen Tag';
+
+  @override
+  String get todaysSchedule => 'Heutiger Zeitplan';
+
+  @override
+  String get noRidesScheduled => 'Keine Fahrten geplant';
+
+  @override
+  String get enjoyYourFreeDay => 'Genießen Sie Ihren freien Tag!';
+
+  @override
+  String get callClient => 'Kunden anrufen';
+
+  @override
+  String get startNavigation => 'Navigation starten';
+
+  @override
+  String get start => 'Starten';
+
+  @override
+  String get completeRideButton => 'Abschließen';
+
+  @override
+  String get pickupLocation => 'Abholort';
+
+  @override
+  String get dropoffLocation => 'Zielort';
+
+  @override
+  String couldNotOpenNavigation(String error) {
+    return 'Navigation konnte nicht geöffnet werden: $error';
+  }
+
+  @override
+  String travelTimeMinutes(int minutes) {
+    return '$minutes Min. Fahrzeit';
+  }
+
+  @override
+  String failedToSetPrice(String error) {
+    return 'Preis konnte nicht gesetzt werden: $error';
+  }
+
+  @override
+  String get setRidePrice => 'Fahrtpreis festlegen';
+
+  @override
+  String get setPrice => 'Preis festlegen';
+
+  @override
+  String get offline => 'Offline';
+
+  @override
+  String get acceptingRides => 'Sie nehmen Fahrten an';
+
+  @override
+  String get notAcceptingRides => 'Sie nehmen keine Fahrten an';
+
+  @override
+  String failedToUpdate(String error) {
+    return 'Aktualisierung fehlgeschlagen: $error';
+  }
 }

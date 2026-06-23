@@ -9,6 +9,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/lucide_compat.dart';
 import '../../widgets/common/responsive_scaffold.dart';
 import '../../blocs/blocs.dart';
+import '../../l10n/app_localizations.dart';
 
 class DriverDashboard extends StatefulWidget {
   const DriverDashboard({super.key});
@@ -36,22 +37,21 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
   Future<bool> _confirmLeaveCreateRide(BuildContext context) async {
     if (!_createRideFormBloc.state.isModified) return true;
+    final l10n = AppLocalizations.of(context)!;
     final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Discard changes?'),
-        content: const Text(
-          'You have unsaved ride details. If you leave, they will be lost.',
-        ),
+        title: Text(l10n.discardChangesTitle),
+        content: Text(l10n.discardChangesMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Stay'),
+            child: Text(l10n.stay),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Discard'),
+            child: Text(l10n.discard),
           ),
         ],
       ),
@@ -62,33 +62,35 @@ class _DriverDashboardState extends State<DriverDashboard> {
     return result ?? false;
   }
 
-  static const _destinations = [
-    NavigationDestination(
-      icon: Icon(LucideCompat.car),
-      selectedIcon: Icon(LucideCompat.car),
-      label: 'Today',
-    ),
-    NavigationDestination(
-      icon: Icon(LucideCompat.calendarDays),
-      selectedIcon: Icon(LucideCompat.calendarDays),
-      label: 'Calendar',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.add_circle_outline),
-      selectedIcon: Icon(Icons.add_circle),
-      label: 'Book',
-    ),
-    NavigationDestination(
-      icon: Icon(LucideCompat.map),
-      selectedIcon: Icon(LucideCompat.map),
-      label: 'Map',
-    ),
-    NavigationDestination(
-      icon: Icon(LucideCompat.settings),
-      selectedIcon: Icon(LucideCompat.settings),
-      label: 'Settings',
-    ),
-  ];
+  List<NavigationDestination> _buildDestinations(AppLocalizations l10n) {
+    return [
+      NavigationDestination(
+        icon: const Icon(LucideCompat.car),
+        selectedIcon: const Icon(LucideCompat.car),
+        label: l10n.today,
+      ),
+      NavigationDestination(
+        icon: const Icon(LucideCompat.calendarDays),
+        selectedIcon: const Icon(LucideCompat.calendarDays),
+        label: l10n.calendar,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.add_circle_outline),
+        selectedIcon: const Icon(Icons.add_circle),
+        label: l10n.bookLabel,
+      ),
+      NavigationDestination(
+        icon: const Icon(LucideCompat.map),
+        selectedIcon: const Icon(LucideCompat.map),
+        label: l10n.map,
+      ),
+      NavigationDestination(
+        icon: const Icon(LucideCompat.settings),
+        selectedIcon: const Icon(LucideCompat.settings),
+        label: l10n.settings,
+      ),
+    ];
+  }
 
   Widget _buildCurrentTab() {
     switch (_selectedIndex) {
@@ -118,8 +120,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return ResponsiveScaffold(
-      destinations: _destinations,
+      destinations: _buildDestinations(l10n),
       selectedIndex: _selectedIndex,
       onDestinationSelected: (index) async {
         if (_selectedIndex == 2 && index != 2) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import '../../../../constants/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../modules/ride_management/models/ride.dart';
 import '../../../../utils/ride_status_styles.dart';
 import 'ride_badges.dart';
@@ -79,13 +80,14 @@ class RideCalendarCard extends StatelessWidget {
 
   void _showPriceDialog(BuildContext context) {
     if (onPriceEdited == null) return;
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(
       text: ride.price != null ? ride.price!.toStringAsFixed(2) : '',
     );
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Set ride price'),
+        title: Text(l10n.setRidePrice),
         content: TextField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -95,7 +97,7 @@ class RideCalendarCard extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -105,7 +107,7 @@ class RideCalendarCard extends StatelessWidget {
                 onPriceEdited!(value);
               }
             },
-            child: const Text('Confirm'),
+            child: Text(l10n.confirm),
           ),
         ],
       ),
@@ -115,6 +117,7 @@ class RideCalendarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
     final statusText = RideStatusStyles.getStatusLabel(ride.status);
 
@@ -189,7 +192,7 @@ class RideCalendarCard extends StatelessWidget {
                                 )
                               : onPriceEdited != null
                               ? Text(
-                                  'Set price',
+                                  l10n.setPrice,
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontStyle: FontStyle.italic,
@@ -272,7 +275,7 @@ class RideCalendarCard extends StatelessWidget {
                                 ),
                               )
                             : Text(
-                                'Set price',
+                                l10n.setPrice,
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontStyle: FontStyle.italic,
