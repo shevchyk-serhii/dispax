@@ -18,6 +18,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
 import '../../utils/ride_status_styles.dart';
+import 'ride_assigned_details.dart';
 import 'upcoming_rides_screen.dart';
 
 /// Narrows [rides] to those driven by [driverId]. Rides without an assigned
@@ -112,16 +113,23 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     }
   }
 
-  // ── Preserved verbatim ────────────────────────────────────────────────────
   Future<void> _showRideAssignedDialog(String rideId) async {
+    // Fetch the full ride so the driver sees pickup, destination, client, and
+    // price before deciding. A failed fetch falls back to the generic text.
+    Ride? ride;
+    try {
+      ride = await _rideService?.getRideById(rideId);
+    } catch (_) {
+      ride = null;
+    }
+    if (!mounted) return;
+
     final accepted = await showAdaptiveDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('New ride assigned'),
-        content: const Text(
-          'You have been assigned a new ride. Do you accept it?',
-        ),
+        content: RideAssignedDetails(ride: ride),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
