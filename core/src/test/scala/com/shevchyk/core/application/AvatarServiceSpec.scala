@@ -198,6 +198,21 @@ object AvatarServiceSpec extends ZIOSpecDefault:
           result  <- service.uploadAvatar(id, companyId, smallBytes, "IMAGE/JPEG").either
         } yield assertTrue(result.isRight)
       },
+      // -- Mutation-killing test (added 2026-06) ----------------------------
+      // [MEDIUM] Kills mutant: L55 stores raw `contentType` instead of `normalizedContentType`.
+      // If the mutant passes the original mixed-case string to repo.setAvatar, getAvatar returns
+      // "IMAGE/JPEG" instead of "image/jpeg" and the assertion fails.
+      test("uploadAvatar with mixed-case content type stores normalized (lowercase) type in repository") {
+        val id = PersonId(UUID.randomUUID())
+        for {
+          service <- ZIO.service[AvatarService]
+          _       <- service.uploadAvatar(id, smallBytes, "IMAGE/JPEG")
+          result  <- service.getAvatar(id)
+        } yield assertTrue(
+          result.isDefined &&
+            result.get._2 == "image/jpeg"
+        )
+      },
       test("InvalidContentType error carries the unsupported MIME type in message") {
         for {
           _       <- seedPerson(testPersonId)

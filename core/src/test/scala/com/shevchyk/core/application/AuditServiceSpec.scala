@@ -71,6 +71,44 @@ object AuditServiceSpec extends ZIOSpecDefault {
               found(1).id == entry2.id &&
               found(2).id == entry1.id
           )
+        }.provide(layers),
+        // -- Mutation-killing tests (added 2026-06) ---------------------------
+        // [MEDIUM] Kills mutant that drops the entityType half of the filter.
+        // Two entries share the same entityId but have DIFFERENT entityTypes.
+        // findByEntity("Ride", id) must return only the "Ride" entry, not the "Driver" one.
+        test("findByEntity filters by entityType — same entityId but different entityType is excluded") {
+          val sharedId    = UUID.randomUUID()
+          val rideEntry   = makeEntry(entityType = "Ride", entityId = sharedId)
+          val driverEntry = makeEntry(entityType = "Driver", entityId = sharedId)
+          for {
+            service <- ZIO.service[AuditService]
+            _       <- service.log(rideEntry)
+            _       <- service.log(driverEntry)
+            found   <- service.findByEntity("Ride", sharedId)
+          } yield assertTrue(
+            found.size == 1 &&
+              found.head.id == rideEntry.id &&
+              found.head.entityType == "Ride"
+          )
+        }.provide(layers),
+        // [MEDIUM] Kills mutant that drops the entityId half of the filter.
+        // Two entries share the same entityType but have DIFFERENT entityIds.
+        // findByEntity("Ride", targetId) must return only the entry with that specific entityId.
+        test("findByEntity filters by entityId — same entityType but different entityId is excluded") {
+          val targetId    = UUID.randomUUID()
+          val otherId     = UUID.randomUUID()
+          val targetEntry = makeEntry(entityType = "Ride", entityId = targetId)
+          val otherEntry  = makeEntry(entityType = "Ride", entityId = otherId)
+          for {
+            service <- ZIO.service[AuditService]
+            _       <- service.log(targetEntry)
+            _       <- service.log(otherEntry)
+            found   <- service.findByEntity("Ride", targetId)
+          } yield assertTrue(
+            found.size == 1 &&
+              found.head.id == targetEntry.id &&
+              found.head.entityId == targetId
+          )
         }.provide(layers)
       ),
       suite("findByCompany")(
