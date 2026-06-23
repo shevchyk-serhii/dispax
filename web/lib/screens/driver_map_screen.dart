@@ -14,10 +14,10 @@ import '../modules/core/services/websocket_service.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
-import '../modules/core/date_utils.dart';
 import '../modules/flight_management/widgets/airport_entry_timer.dart';
 import '../modules/flight_management/widgets/airport_checkpoint_progress.dart';
 import '../modules/flight_management/muc_checkpoints.dart';
+import 'widgets/ride_control_panel.dart';
 
 class DriverMapScreen extends StatefulWidget {
   const DriverMapScreen({super.key});
@@ -789,163 +789,18 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   Widget _buildRideControlPanel() {
-    if (_currentRide == null) return const SizedBox.shrink();
+    final ride = _currentRide;
+    if (ride == null) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(AppDimensions.radiusLarge),
-          topRight: Radius.circular(AppDimensions.radiusLarge),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowMedium,
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _currentRide!.clientName,
-                  style: AppStyles.titleMedium,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.paddingSmall,
-                  vertical: AppDimensions.paddingXSmall,
-                ),
-                decoration: BoxDecoration(
-                  color: _getRideStatusColor(_currentRide!.status),
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusSmall,
-                  ),
-                ),
-                child: Text(
-                  _currentRide!.statusDisplayName,
-                  style: AppStyles.labelSmall.copyWith(
-                    color: AppColors.textOnPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppDimensions.paddingMedium),
-
-          Row(
-            children: [
-              Icon(
-                Icons.schedule,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                size: AppDimensions.iconSmall,
-              ),
-              const SizedBox(width: AppDimensions.paddingSmall),
-              Text(
-                AppDateUtils.formatDateTime(_currentRide!.pickupDateTime),
-                style: AppStyles.bodyMedium,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppDimensions.paddingSmall),
-
-          Row(
-            children: [
-              Icon(
-                Icons.route,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                size: AppDimensions.iconSmall,
-              ),
-              const SizedBox(width: AppDimensions.paddingSmall),
-              Expanded(
-                child: Text(
-                  '${_currentRide!.from.address} → ${_currentRide!.to.address}',
-                  style: AppStyles.bodyMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-
-          if (_currentRide!.etaMinutes != null) ...[
-            const SizedBox(height: AppDimensions.paddingSmall),
-            Row(
-              children: [
-                Icon(
-                  Icons.timer_outlined,
-                  color: AppColors.accent,
-                  size: AppDimensions.iconSmall,
-                ),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                Text(
-                  '~${_currentRide!.etaMinutes} min to client',
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          if (_currentRide!.isAirportTransfer) ...[
-            const SizedBox(height: AppDimensions.paddingSmall),
-            Row(
-              children: [
-                Icon(
-                  Icons.flight,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: AppDimensions.iconSmall,
-                ),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                Text(_currentRide!.fullFlightInfo, style: AppStyles.bodyMedium),
-              ],
-            ),
-          ],
-
-          if (_currentRide!.isAirportTransfer && _currentRide!.isArrival) ...[
-            const SizedBox(height: AppDimensions.paddingSmall),
-            AirportCheckpointProgress(
-              currentCheckpoint:
-                  _airportCheckpoint ?? _currentRide!.airportCheckpoint,
-            ),
-          ],
-
-          const SizedBox(height: AppDimensions.paddingLarge),
-
-          if (_currentRide!.status == RideStatus.assigned)
-            ElevatedButton(
-              onPressed: () =>
-                  _updateRideStatus(_currentRide!, RideStatus.inProgress),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.driverColor,
-                foregroundColor: AppColors.textOnPrimary,
-              ),
-              child: const Text('Start Ride'),
+    return RideControlPanel(
+      ride: ride,
+      onStartRide: () => _updateRideStatus(ride, RideStatus.inProgress),
+      onCompleteRide: () => _updateRideStatus(ride, RideStatus.completed),
+      airportCheckpoint: ride.isAirportTransfer && ride.isArrival
+          ? AirportCheckpointProgress(
+              currentCheckpoint: _airportCheckpoint ?? ride.airportCheckpoint,
             )
-          else if (_currentRide!.status == RideStatus.inProgress)
-            ElevatedButton(
-              onPressed: () =>
-                  _updateRideStatus(_currentRide!, RideStatus.completed),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.clientColor,
-                foregroundColor: AppColors.textOnPrimary,
-              ),
-              child: const Text('Complete Ride'),
-            ),
-        ],
-      ),
+          : null,
     );
   }
 
@@ -1035,18 +890,5 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     );
 
     _mapboxMap!.setCamera(cameraOptions);
-  }
-
-  Color _getRideStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.assigned:
-        return Theme.of(context).colorScheme.primary;
-      case RideStatus.inProgress:
-        return AppColors.driverColor;
-      case RideStatus.completed:
-        return AppColors.clientColor;
-      default:
-        return Theme.of(context).colorScheme.primary;
-    }
   }
 }
