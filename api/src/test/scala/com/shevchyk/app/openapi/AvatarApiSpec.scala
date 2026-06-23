@@ -174,36 +174,49 @@ object AvatarApiSpec extends ZIOSpecDefault:
 
   private val stubRideServiceLayer: ZLayer[Any, Nothing, RideService] = ZLayer.succeed(
     new RideService:
-      private def notImpl                                                                                         = ZIO.die(new NotImplementedError("AvatarApiSpec stub"))
-      def getRideById(id: RideId): IO[RideError, Ride]                                                            = notImpl
-      def createRide(req: CreateRideRequest): IO[RideError, Ride]                                                 = notImpl
-      def getRidesForUser(id: PersonId): IO[RideError, List[Ride]]                                                = notImpl
-      def startRide(id: RideId, did: PersonId): IO[RideError, Ride]                                               = notImpl
-      def completeRide(id: RideId): IO[RideError, Ride]                                                           = notImpl
-      def cancelRide(id: RideId, uid: PersonId, role: PersonRole): IO[RideError, Ride]                            = notImpl
+      private def notImpl                                                                                             = ZIO.die(new NotImplementedError("AvatarApiSpec stub"))
+      def getRideById(id: RideId): IO[RideError, Ride]                                                                = notImpl
+      def createRide(req: CreateRideRequest): IO[RideError, Ride]                                                     = notImpl
+      def getRidesForUser(id: PersonId): IO[RideError, List[Ride]]                                                    = notImpl
+      def startRide(id: RideId, did: PersonId): IO[RideError, Ride]                                                   = notImpl
+      def completeRide(id: RideId): IO[RideError, Ride]                                                               = notImpl
+      def cancelRide(id: RideId, uid: PersonId, role: PersonRole): IO[RideError, Ride]                                = notImpl
       def cancelRideWithReason(
           id: RideId,
           uid: PersonId,
           role: PersonRole,
-          req: CancelRideRequest
+          req: CancelRideRequest,
+          companyId: CompanyId
       ): IO[RideError, Ride] = notImpl
-      def getCancellationStats(cid: CompanyId): IO[RideError, Map[String, Int]]                                   = notImpl
+      def getCancellationStats(cid: CompanyId): IO[RideError, Map[String, Int]]                                       = notImpl
+      def handOffToExternal(
+          rideId: RideId,
+          callerCompanyId: CompanyId,
+          callerId: PersonId,
+          req: HandOffRequest
+      ): IO[RideError, Ride] = notImpl
+      def createPartnerCompany(companyId: CompanyId, req: CreatePartnerCompanyRequest): IO[RideError, PartnerCompany] =
+        notImpl
+      def listPartnerCompanies(companyId: CompanyId): IO[RideError, List[PartnerCompany]]                             = notImpl
+      def createExternalDriver(companyId: CompanyId, req: CreateExternalDriverRequest): IO[RideError, ExternalDriver] =
+        notImpl
+      def listExternalDrivers(companyId: CompanyId): IO[RideError, List[ExternalDriver]]                              = notImpl
       def updateRideStatus(
           id: RideId,
           req: UpdateRideStatusRequest,
           uid: PersonId,
           role: PersonRole
       ): IO[RideError, Ride] = notImpl
-      def assignDriver(id: RideId, did: PersonId, overrideScheduleConflict: Boolean = false): IO[RideError, Ride] =
+      def assignDriver(id: RideId, did: PersonId, overrideScheduleConflict: Boolean = false): IO[RideError, Ride]     =
         notImpl
-      def getRidesByStatus(s: RideStatus): IO[RideError, List[Ride]]                                              = notImpl
-      def getRidesByStatusAndCompany(s: RideStatus, cid: CompanyId): IO[RideError, List[Ride]]                    = notImpl
-      def getDriverRides(did: PersonId, cid: CompanyId): IO[RideError, List[Ride]]                                = notImpl
-      def getClientRides(clid: PersonId, cid: CompanyId): IO[RideError, List[Ride]]                               = notImpl
-      def getAllRides: IO[RideError, List[Ride]]                                                                  = notImpl
-      def getRidesByCompany(cid: CompanyId): IO[RideError, List[Ride]]                                            = ZIO.succeed(Nil)
-      def getRidesByCompanyPaginated(cid: CompanyId, off: Int, lim: Int): IO[RideError, List[Ride]]               = notImpl
-      def getDriverRidesPaginated(did: PersonId, cid: CompanyId, off: Int, lim: Int): IO[RideError, List[Ride]]   =
+      def getRidesByStatus(s: RideStatus): IO[RideError, List[Ride]]                                                  = notImpl
+      def getRidesByStatusAndCompany(s: RideStatus, cid: CompanyId): IO[RideError, List[Ride]]                        = notImpl
+      def getDriverRides(did: PersonId, cid: CompanyId): IO[RideError, List[Ride]]                                    = notImpl
+      def getClientRides(clid: PersonId, cid: CompanyId): IO[RideError, List[Ride]]                                   = notImpl
+      def getAllRides: IO[RideError, List[Ride]]                                                                      = notImpl
+      def getRidesByCompany(cid: CompanyId): IO[RideError, List[Ride]]                                                = ZIO.succeed(Nil)
+      def getRidesByCompanyPaginated(cid: CompanyId, off: Int, lim: Int): IO[RideError, List[Ride]]                   = notImpl
+      def getDriverRidesPaginated(did: PersonId, cid: CompanyId, off: Int, lim: Int): IO[RideError, List[Ride]]       =
         notImpl
       def updateRideDetails(
           id: RideId,
@@ -212,14 +225,14 @@ object AvatarApiSpec extends ZIOSpecDefault:
           role: PersonRole,
           cid: Option[CompanyId]
       ): IO[RideError, Ride] = notImpl
-      def reassignDriver(id: RideId, nd: PersonId, ov: Boolean): IO[RideError, Ride]                              = notImpl
-      def markPayment(id: RideId, ps: PaymentStatus, pm: Option[PaymentMethod]): IO[RideError, Ride]              = notImpl
-      def getUnpaidCompletedRides(cid: CompanyId): IO[RideError, List[Ride]]                                      = notImpl
-      def getRideCountsByStatus(cid: CompanyId): IO[RideError, Map[String, Int]]                                  = ZIO.succeed(Map.empty)
-      def getTotalRevenue(cid: CompanyId): IO[RideError, BigDecimal]                                              = ZIO.succeed(BigDecimal(0))
-      def getTodayRevenue(cid: CompanyId): IO[RideError, BigDecimal]                                              = ZIO.succeed(BigDecimal(0))
-      def getAvgAssignmentMinutes(cid: CompanyId): IO[RideError, Double]                                          = ZIO.succeed(0.0)
-      def getDailyStats(cid: CompanyId, d: Int): IO[RideError, List[(String, Int, Int, Int)]]                     = ZIO.succeed(Nil)
+      def reassignDriver(id: RideId, nd: PersonId, ov: Boolean): IO[RideError, Ride]                                  = notImpl
+      def markPayment(id: RideId, ps: PaymentStatus, pm: Option[PaymentMethod]): IO[RideError, Ride]                  = notImpl
+      def getUnpaidCompletedRides(cid: CompanyId): IO[RideError, List[Ride]]                                          = notImpl
+      def getRideCountsByStatus(cid: CompanyId): IO[RideError, Map[String, Int]]                                      = ZIO.succeed(Map.empty)
+      def getTotalRevenue(cid: CompanyId): IO[RideError, BigDecimal]                                                  = ZIO.succeed(BigDecimal(0))
+      def getTodayRevenue(cid: CompanyId): IO[RideError, BigDecimal]                                                  = ZIO.succeed(BigDecimal(0))
+      def getAvgAssignmentMinutes(cid: CompanyId): IO[RideError, Double]                                              = ZIO.succeed(0.0)
+      def getDailyStats(cid: CompanyId, d: Int): IO[RideError, List[(String, Int, Int, Int)]]                         = ZIO.succeed(Nil)
       def getDriverEarnings(
           did: PersonId,
           cid: CompanyId,

@@ -101,12 +101,16 @@ class AppColors {
   static const Color rideCompleted = Color(0xFF10B981);
   static const Color rideCancelled = Color(0xFFEF4444);
 
+  /// HandedOff — orange (distinct from the amber of Requested)
+  static const Color rideHandedOff = Color(0xFFF97316); // Orange 500
+
   // Status — light backgrounds (light mode)
   static const Color rideRequestedBg = Color(0xFFFFFBEB);
   static const Color rideAssignedBg = Color(0xFFEFF6FF);
   static const Color rideInProgressBg = Color(0xFFF0FDFA);
   static const Color rideCompletedBg = Color(0xFFF0FDF4);
   static const Color rideCancelledBg = Color(0xFFFEF2F2);
+  static const Color rideHandedOffBg = Color(0xFFFFF7ED); // Orange 50
 
   // Status — dark backgrounds (dark mode)
   static const Color rideRequestedBgDark = Color(0xFF292210);
@@ -114,18 +118,21 @@ class AppColors {
   static const Color rideInProgressBgDark = Color(0xFF0D2620);
   static const Color rideCompletedBgDark = Color(0xFF0B2317);
   static const Color rideCancelledBgDark = Color(0xFF2A0E0E);
+  static const Color rideHandedOffBgDark = Color(0xFF2A1500); // deep orange
 
   static const Color rideRequestedBorder = Color(0xFFFCD34D);
   static const Color rideAssignedBorder = Color(0xFF93C5FD);
   static const Color rideInProgressBorder = Color(0xFF5EEAD4);
   static const Color rideCompletedBorder = Color(0xFF86EFAC);
   static const Color rideCancelledBorder = Color(0xFFFCA5A5);
+  static const Color rideHandedOffBorder = Color(0xFFFDBA74); // Orange 300
 
   static const Color rideRequestedText = Color(0xFF92400E);
   static const Color rideAssignedText = Color(0xFF1E40AF);
   static const Color rideInProgressText = Color(0xFF115E59);
   static const Color rideCompletedText = Color(0xFF166534);
   static const Color rideCancelledText = Color(0xFF991B1B);
+  static const Color rideHandedOffText = Color(0xFF7C2D12); // Orange 900
 
   // Status text — dark mode
   static const Color rideRequestedTextDark = Color(0xFFFBBF24);
@@ -133,6 +140,7 @@ class AppColors {
   static const Color rideInProgressTextDark = Color(0xFF2DD4BF);
   static const Color rideCompletedTextDark = Color(0xFF34D399);
   static const Color rideCancelledTextDark = Color(0xFFF87171);
+  static const Color rideHandedOffTextDark = Color(0xFFFB923C); // Orange 400
 
   // ─── Text Colors — Light ───
   static const Color textPrimary = Color(0xFF18181B);

@@ -648,5 +648,23 @@
   "payrollSummaryTitle": "Підсумок зарплати",
   "loadPayrollButton": "Завантажити відомість",
   "payrollCsvCopiedMessage": "CSV зарплатної відомості скопійовано",
-  "commissionLabel": "Комісія: "
+  "commissionLabel": "Комісія: ",
+
+  "rideStatusHandedOff": "Передано",
+  "handOffRide": "Передати поїздку",
+  "handOffRideTitle": "Передати поїздку",
+  "handOffPartnerCompany": "Компанія-партнер",
+  "handOffExternalDriver": "Зовнішній водій",
+  "handOffSelectCompany": "Оберіть компанію",
+  "handOffSelectDriver": "Оберіть водія",
+  "handOffAddNewCompany": "+ Додати нову компанію",
+  "handOffAddNewDriver": "+ Додати нового водія",
+  "handOffCompanyName": "Назва компанії *",
+  "handOffDriverName": "Ім'я водія *",
+  "handOffPhoneOptional": "Телефон (необов'язково)",
+  "handOffButton": "Передати",
+  "closeRide": "Закрити",
+  "closeRideTitle": "Закрити поїздку?",
+  "closeRideConfirmMessage": "Це скасує непризначену поїздку. Клієнт отримає сповіщення.",
+  "closeRideButton": "Закрити поїздку"
 }

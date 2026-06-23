@@ -689,6 +689,67 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           )
         }
       )
+      // ── HandedOff status and new directory-FK columns ─────────────────────────
+      // V11 schema: ride_status enum extended with 'HandedOff'; rides table gains
+      // external_driver_id and partner_company_id columns.
+      // These tests assert that the PostgresRideRepository reads/writes the new fields correctly.
+      ,
+      test("HandedOff status round-trips through create and updateIfStatus") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanRides(xa)
+          repo     = PostgresRideRepository(xa)
+          ride     = makeRide(status = RideStatus.Requested)
+          _       <- repo.create(ride)
+          found1  <- repo.findById(ride.id)
+          // Atomically transition to HandedOff
+          updated  = ride.copy(status = RideStatus.HandedOff)
+          applied <- repo.updateIfStatus(updated, Set(RideStatus.Requested))
+          found2  <- repo.findById(ride.id)
+        } yield assertTrue(
+          found1.isDefined,
+          found1.get.status == RideStatus.Requested,
+          applied,
+          found2.isDefined,
+          found2.get.status == RideStatus.HandedOff
+        )
+      },
+      test("externalDriverId and partnerCompanyId round-trip through create and updateIfStatus") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanRides(xa)
+          // Seed the required partner_companies and external_drivers rows (FK constraint).
+          pcId     = PartnerCompanyId(UUID.fromString("00000090-0000-0000-0000-000000000001"))
+          edId     = ExternalDriverId(UUID.fromString("00000091-0000-0000-0000-000000000001"))
+          _       <-
+            sql"""INSERT INTO partner_companies (id, name, taxi_company_id)
+                   VALUES (${pcId.value}, 'Handoff Partner', ${testCompanyId.value})
+                   ON CONFLICT DO NOTHING""".update.run.transact(xa)
+          _       <-
+            sql"""INSERT INTO external_drivers (id, name, taxi_company_id)
+                   VALUES (${edId.value}, 'Handoff Driver', ${testCompanyId.value})
+                   ON CONFLICT DO NOTHING""".update.run.transact(xa)
+          repo     = PostgresRideRepository(xa)
+          ride     = makeRide(status = RideStatus.Requested)
+          _       <- repo.create(ride)
+          // Transition to HandedOff and populate the new FK columns
+          updated  = ride.copy(
+                       status = RideStatus.HandedOff,
+                       externalDriverId = Some(edId),
+                       partnerCompanyId = Some(pcId)
+                     )
+          applied <- repo.updateIfStatus(updated, Set(RideStatus.Requested))
+          found   <- repo.findById(ride.id)
+        } yield assertTrue(
+          applied,
+          found.isDefined,
+          found.get.status == RideStatus.HandedOff,
+          found.get.externalDriverId.contains(edId),
+          found.get.partnerCompanyId.contains(pcId)
+        )
+      }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"
     )

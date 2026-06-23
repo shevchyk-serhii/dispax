@@ -16,6 +16,7 @@ import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import zio.*
 import zio.test.*
 import java.util.UUID
@@ -145,7 +146,9 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
       ExpenseRepository.inMemory ++
       PickupTimeService.noopLayer ++
       noopAvailabilityChecker ++
-      noopScheduleDayLookup) >+> RideService.layer
+      noopScheduleDayLookup ++
+      InMemoryExternalDriverRepository.layer ++
+      InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
 
   def createTestRide(service: RideService, clientId: PersonId = testClientId) = service.createRide(
     CreateRideRequest(
@@ -222,7 +225,8 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
                          assigned.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("client_request", Some(BigDecimal(5.00)))
+                         CancelRideRequest("client_request", Some(BigDecimal(5.00))),
+                         testCompanyId
                        )
         } yield assertTrue(
           cancelled.status == RideStatus.Cancelled &&
@@ -278,7 +282,8 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
                          assigned.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("client_request", Some(BigDecimal(5.00)))
+                         CancelRideRequest("client_request", Some(BigDecimal(5.00))),
+                         testCompanyId
                        )
           persisted <- service.getRideById(ride.id)
         } yield assertTrue(
@@ -287,6 +292,92 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
           persisted.cancellationFee.contains(BigDecimal(5.00)),
           persisted.cancelledBy.contains(testClientId)
         )
+      }.provide(standardLayers),
+      // ── Stage A AC-A4: cross-company cancel → UnauthorizedAccess ──────────
+      test("AC-A4: cancelRideWithReason with wrong companyId → UnauthorizedAccess") {
+        val otherCompanyId = CompanyId(UUID.fromString("00000002-0000-0000-0000-000000000099"))
+        for {
+          service <- ZIO.service[RideService]
+          ride    <- createTestRide(service)
+          result  <-
+            service
+              .cancelRideWithReason(
+                ride.id,
+                testClientId,
+                PersonRole.Dispatcher,
+                CancelRideRequest("other"),
+                otherCompanyId // ← wrong tenant
+              )
+              .exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+          case _                   => false
+        })
+      }.provide(standardLayers),
+      // ── Stage B AC-B7: cross-company handOff → UnauthorizedAccess ─────────
+      test("AC-B7: handOffToExternal with wrong callerCompanyId → UnauthorizedAccess") {
+        val otherCompanyId     = CompanyId(UUID.fromString("00000002-0000-0000-0000-000000000099"))
+        val otherExtDriverId   = ExternalDriverId(UUID.fromString("00000011-0000-0000-0000-000000000099"))
+        val otherPartnerCompId = PartnerCompanyId(UUID.fromString("00000012-0000-0000-0000-000000000099"))
+        for {
+          service <- ZIO.service[RideService]
+          ride    <- createTestRide(service)
+          result  <-
+            service
+              .handOffToExternal(
+                ride.id,
+                otherCompanyId, // ← wrong tenant
+                testClientId,
+                HandOffRequest(otherExtDriverId, otherPartnerCompId)
+              )
+              .exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+          case _                   => false
+        })
+      }.provide(standardLayers),
+      // ── Stage B AC-B8: handOff on Assigned ride → InvalidStatusTransition ─
+      test("AC-B8: handOffToExternal on Assigned ride → InvalidStatusTransition") {
+        val extDriverId   = ExternalDriverId(UUID.fromString("00000011-0000-0000-0000-000000000001"))
+        val partnerCompId = PartnerCompanyId(UUID.fromString("00000012-0000-0000-0000-000000000001"))
+        for {
+          service  <- ZIO.service[RideService]
+          ride     <- createTestRide(service)
+          assigned <- service.assignDriver(ride.id, testDriverId)
+          result   <-
+            service
+              .handOffToExternal(
+                assigned.id,
+                testCompanyId,
+                testClientId,
+                HandOffRequest(extDriverId, partnerCompId)
+              )
+              .exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition])
+          case _                   => false
+        })
+      }.provide(standardLayers),
+      // ── Stage B: HandedOff status machine predicates ─────────────────────
+      // Verifies that the domain predicates on HandedOff are correct:
+      // a Requested ride can be handed off; an Assigned ride cannot;
+      // a HandedOff ride is still cancellable (not Completed/Cancelled).
+      test("HandedOff status machine predicates") {
+        for {
+          service <- ZIO.service[RideService]
+          ride    <- createTestRide(service)
+        } yield {
+          val handedOffRide = ride.copy(status = RideStatus.HandedOff)
+          assertTrue(
+            ride.status == RideStatus.Requested,
+            ride.canBeHandedOff,
+            !ride.copy(status = RideStatus.Assigned).canBeHandedOff,
+            ride.canBeCancelled,
+            !ride.copy(status = RideStatus.Completed).canBeCancelled,
+            handedOffRide.canBeCancelled,
+            !handedOffRide.canBeAssigned
+          )
+        }
       }.provide(standardLayers)
     ) @@ TestAspect.tag("integration")
 }

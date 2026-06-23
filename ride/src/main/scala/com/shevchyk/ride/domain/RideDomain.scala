@@ -158,7 +158,7 @@ object CancellationReason:
   )
 
 enum RideStatus:
-  case Requested, Assigned, InProgress, Completed, Cancelled
+  case Requested, Assigned, InProgress, Completed, Cancelled, HandedOff
 
 enum PaymentStatus:
   case Unpaid, Pending, Paid
@@ -258,7 +258,9 @@ final case class Ride(
     invoiceId: Option[java.util.UUID] = None,
     flightIsArrival: Option[Boolean] = None,
     airportCheckpoint: Option[AirportCheckpoint] = None,
-    vehicleClass: VehicleClass = VehicleClass.Default
+    vehicleClass: VehicleClass = VehicleClass.Default,
+    externalDriverId: Option[ExternalDriverId] = None,
+    partnerCompanyId: Option[PartnerCompanyId] = None
 ):
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
@@ -266,6 +268,7 @@ final case class Ride(
   def canBeStarted: Boolean    = status == RideStatus.Assigned && driverId.isDefined
   def canBeCompleted: Boolean  = status == RideStatus.InProgress
   def canBeCancelled: Boolean  = status != RideStatus.Completed && status != RideStatus.Cancelled
+  def canBeHandedOff: Boolean  = status == RideStatus.Requested
   def canBeEdited: Boolean     = status == RideStatus.Requested || status == RideStatus.Assigned
 
   def isAirportTransfer: Boolean = specifics.exists(_.isInstanceOf[RideSpecifics.AirportTransfer])
@@ -307,6 +310,11 @@ final case class CancelRideRequest(
     fee: Option[BigDecimal] = None
 )
 
+final case class HandOffRequest(
+    externalDriverId: ExternalDriverId,
+    partnerCompanyId: PartnerCompanyId
+)
+
 final case class UpdateRideDetailsRequest(
     pickupLocation: Option[Location] = None,
     dropoffLocation: Option[Location] = None,
@@ -332,5 +340,7 @@ enum RideError extends Throwable:
   case BusinessRuleViolation(rule: String, message: String)
   case TariffNotFound(id: TariffId)
   case InvalidOperation(message: String)
+  case ExternalDriverNotFound(id: ExternalDriverId)
+  case PartnerCompanyNotFound(id: PartnerCompanyId)
 
 object RideError

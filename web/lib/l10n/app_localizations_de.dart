@@ -1478,4 +1478,56 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get commissionLabel => 'Provision: ';
+
+  @override
+  String get rideStatusHandedOff => 'Übergeben';
+
+  @override
+  String get handOffRide => 'Fahrt übergeben';
+
+  @override
+  String get handOffRideTitle => 'Fahrt übergeben';
+
+  @override
+  String get handOffPartnerCompany => 'Partnerunternehmen';
+
+  @override
+  String get handOffExternalDriver => 'Externer Fahrer';
+
+  @override
+  String get handOffSelectCompany => 'Unternehmen auswählen';
+
+  @override
+  String get handOffSelectDriver => 'Fahrer auswählen';
+
+  @override
+  String get handOffAddNewCompany => '+ Neues Unternehmen hinzufügen';
+
+  @override
+  String get handOffAddNewDriver => '+ Neuen Fahrer hinzufügen';
+
+  @override
+  String get handOffCompanyName => 'Unternehmensname *';
+
+  @override
+  String get handOffDriverName => 'Fahrername *';
+
+  @override
+  String get handOffPhoneOptional => 'Telefon (optional)';
+
+  @override
+  String get handOffButton => 'Übergeben';
+
+  @override
+  String get closeRide => 'Schließen';
+
+  @override
+  String get closeRideTitle => 'Fahrt schließen?';
+
+  @override
+  String get closeRideConfirmMessage =>
+      'Dadurch wird die nicht zugewiesene Fahrt storniert. Der Kunde wird benachrichtigt.';
+
+  @override
+  String get closeRideButton => 'Fahrt schließen';
 }

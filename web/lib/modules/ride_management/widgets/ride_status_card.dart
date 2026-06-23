@@ -89,6 +89,8 @@ class RideStatusCard extends StatelessWidget {
         return 'Ride has been completed successfully';
       case RideStatus.cancelled:
         return 'This ride has been cancelled';
+      case RideStatus.handedOff:
+        return 'This ride has been handed off to a partner';
     }
   }
 }

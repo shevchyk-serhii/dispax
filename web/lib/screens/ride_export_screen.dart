@@ -420,6 +420,8 @@ class _RideExportScreenState extends State<RideExportScreen> {
         return AppColors.rideCompleted;
       case RideStatus.cancelled:
         return AppColors.rideCancelled;
+      case RideStatus.handedOff:
+        return AppColors.rideHandedOff;
     }
   }
 

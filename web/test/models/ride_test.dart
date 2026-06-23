@@ -164,6 +164,15 @@ void main() {
       expect(RideStatus.fromString('Cancelled'), RideStatus.cancelled);
     });
 
+    // Regression: HandedOff was added later; fromString must recognise it
+    // (mutation: remove the handedOff case from the enum to confirm this fails).
+    test('parses HandedOff correctly', () {
+      expect(RideStatus.fromString('HandedOff'), RideStatus.handedOff);
+      // Case-insensitive match as documented by the implementation
+      expect(RideStatus.fromString('handedoff'), RideStatus.handedOff);
+      expect(RideStatus.fromString('HANDEDOFF'), RideStatus.handedOff);
+    });
+
     test('is case insensitive', () {
       expect(RideStatus.fromString('requested'), RideStatus.requested);
       expect(RideStatus.fromString('ASSIGNED'), RideStatus.assigned);

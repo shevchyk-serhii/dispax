@@ -16,6 +16,7 @@ import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import zio.test.*
 import zio.*
 import java.time.Instant
@@ -164,7 +165,9 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       ExpenseRepository.inMemory ++
       PickupTimeService.noopLayer ++
       noopAvailabilityChecker ++
-      noopScheduleDayLookup) >+> RideService.layer
+      noopScheduleDayLookup ++
+      InMemoryExternalDriverRepository.layer ++
+      InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
 
   // ── Helpers ───────────────────────────────────────────────────────────
   private def mkRide(clientId: PersonId = testClientId, companyId: CompanyId = testCompanyId) = CreateRideRequest(
@@ -220,7 +223,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                            ride.id,
                            testClientId,
                            PersonRole.Client,
-                           CancelRideRequest("client_request")
+                           CancelRideRequest("client_request"),
+                           testCompanyId
                          )
           } yield assertTrue(
             cancelled.status == RideStatus.Cancelled &&
@@ -236,7 +240,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                            assigned.id,
                            testDriverId,
                            PersonRole.Driver,
-                           CancelRideRequest("vehicle_issue", Some(BigDecimal(5.00)))
+                           CancelRideRequest("vehicle_issue", Some(BigDecimal(5.00))),
+                           testCompanyId
                          )
           } yield assertTrue(
             cancelled.status == RideStatus.Cancelled &&
@@ -253,7 +258,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                            ride.id,
                            dispatcherId,
                            PersonRole.Dispatcher,
-                           CancelRideRequest("other")
+                           CancelRideRequest("other"),
+                           testCompanyId
                          )
           } yield assertTrue(
             cancelled.status == RideStatus.Cancelled &&
@@ -271,7 +277,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                   completed.id,
                   testClientId,
                   PersonRole.Client,
-                  CancelRideRequest("client_request")
+                  CancelRideRequest("client_request"),
+                  testCompanyId
                 )
                 .exit
           } yield assertTrue(result match {
@@ -287,11 +294,18 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                          ride.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("client_request")
+                         CancelRideRequest("client_request"),
+                         testCompanyId
                        )
             result  <-
               service
-                .cancelRideWithReason(ride.id, testClientId, PersonRole.Client, CancelRideRequest("weather"))
+                .cancelRideWithReason(
+                  ride.id,
+                  testClientId,
+                  PersonRole.Client,
+                  CancelRideRequest("weather"),
+                  testCompanyId
+                )
                 .exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition])
@@ -305,7 +319,13 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             ride    <- service.createRide(mkRide())
             result  <-
               service
-                .cancelRideWithReason(ride.id, vipClientId, PersonRole.Client, CancelRideRequest("client_request"))
+                .cancelRideWithReason(
+                  ride.id,
+                  vipClientId,
+                  PersonRole.Client,
+                  CancelRideRequest("client_request"),
+                  testCompanyId
+                )
                 .exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
@@ -323,7 +343,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                   assigned.id,
                   testDriver2Id,
                   PersonRole.Driver,
-                  CancelRideRequest("vehicle_issue")
+                  CancelRideRequest("vehicle_issue"),
+                  testCompanyId
                 )
                 .exit
           } yield assertTrue(result match {
@@ -591,19 +612,22 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                          ride1.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("client_request")
+                         CancelRideRequest("client_request"),
+                         testCompanyId
                        )
             _       <- service.cancelRideWithReason(
                          ride2.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("client_request")
+                         CancelRideRequest("client_request"),
+                         testCompanyId
                        )
             _       <- service.cancelRideWithReason(
                          ride3.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("weather")
+                         CancelRideRequest("weather"),
+                         testCompanyId
                        )
             // A completed (non-cancelled) ride must NOT leak into cancellation stats.
             // Its cancellationReason is None, so an unfiltered impl would bucket it as "unknown".
@@ -626,7 +650,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                          ride2.id,
                          testClientId,
                          PersonRole.Client,
-                         CancelRideRequest("client_request")
+                         CancelRideRequest("client_request"),
+                         testCompanyId
                        )
             stats   <- service.getDailyStats(testCompanyId, 7)
           } yield assertTrue(
@@ -694,7 +719,9 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             ExpenseRepository.inMemory ++
             PickupTimeService.noopLayer ++
             noopAvailabilityChecker ++
-            noopScheduleDayLookup) >+> RideService.layer
+            noopScheduleDayLookup ++
+            InMemoryExternalDriverRepository.layer ++
+            InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
         ),
         test("assignment succeeds when driver is not blacklisted") {
           for {
@@ -743,7 +770,9 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             ExpenseRepository.inMemory ++
             PickupTimeService.noopLayer ++
             noopAvailabilityChecker ++
-            noopScheduleDayLookup) >+> RideService.layer
+            noopScheduleDayLookup ++
+            InMemoryExternalDriverRepository.layer ++
+            InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
         )
       ),
 

@@ -2,7 +2,7 @@ package com.shevchyk.ride.openapi
 
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
-import com.shevchyk.core.domain.PersonId
+import com.shevchyk.core.domain.{ExternalDriverId, PartnerCompanyId, PersonId}
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.{
@@ -142,6 +142,13 @@ object RideApi:
     .tag(rideTag)
     .summary("Cancel a ride")
 
+  val handOffRideEndpoint = secureEndpoint.put
+    .in("api" / "rides" / path[String]("rideId") / "hand-off")
+    .in(jsonBody[HandOffRideApiRequest])
+    .out(jsonBody[RideDto])
+    .tag(rideTag)
+    .summary("Hand off a ride to an external driver")
+
   val updateRideEndpoint = secureEndpoint.put
     .in("api" / "rides" / path[String]("rideId"))
     .in(jsonBody[UpdateRideDetailsApiRequest])
@@ -264,6 +271,7 @@ object RideApi:
     airportTimingEndpoint,
     markPaymentEndpoint,
     cancelRideEndpoint,
+    handOffRideEndpoint,
     updateRideEndpoint,
     getRideEndpoint,
     listRidesEndpoint,
@@ -625,15 +633,47 @@ object RideApi:
         _            <- checkRole(user, "DRIVER", "DISPATCHER", "CLIENT")
         parsedRideId <- parseRideId(rideId)
         validated    <- cancelReq.validate.mapError(fromRideError)
+        companyId    <- requireCompanyId(user.companyId)
         service      <- ZIO.service[RideService]
         ride         <- service
                           .cancelRideWithReason(
                             parsedRideId,
                             PersonId(user.userId),
                             toPersonRole(user.role),
-                            CancelRideRequest(validated.reason, validated.fee.map(BigDecimal(_)))
+                            CancelRideRequest(validated.reason, validated.fee.map(BigDecimal(_))),
+                            companyId
                           )
                           .mapError(fromRideError)
+      } yield RideDto.fromDomain(ride)
+  }
+
+  private val handOffRideServer: ZServerEndpoint[RideEnv, Any] = handOffRideEndpoint.serverLogic {
+    user => (rideId, req) =>
+      for {
+        _                <- checkRole(user, "DISPATCHER", "ADMIN")
+        parsedRideId     <- parseRideId(rideId)
+        companyId        <- requireCompanyId(user.companyId)
+        externalDriverId <- ZIO
+                              .attempt(java.util.UUID.fromString(req.externalDriverId))
+                              .mapError(_ =>
+                                (sttp.model.StatusCode.BadRequest, ApiError("Invalid externalDriverId UUID"))
+                              )
+                              .map(ExternalDriverId.apply)
+        partnerCompanyId <- ZIO
+                              .attempt(java.util.UUID.fromString(req.partnerCompanyId))
+                              .mapError(_ =>
+                                (sttp.model.StatusCode.BadRequest, ApiError("Invalid partnerCompanyId UUID"))
+                              )
+                              .map(PartnerCompanyId.apply)
+        service          <- ZIO.service[RideService]
+        ride             <- service
+                              .handOffToExternal(
+                                parsedRideId,
+                                companyId,
+                                PersonId(user.userId),
+                                HandOffRequest(externalDriverId, partnerCompanyId)
+                              )
+                              .mapError(fromRideError)
       } yield RideDto.fromDomain(ride)
   }
 
@@ -943,6 +983,7 @@ object RideApi:
     airportTimingServer,
     markPaymentServer,
     cancelRideServer,
+    handOffRideServer,
     updateRideServer,
     // Literal-path endpoints must precede generic path[String] endpoints so that
     // Tapir does not absorb them into the dynamic-segment handler first.

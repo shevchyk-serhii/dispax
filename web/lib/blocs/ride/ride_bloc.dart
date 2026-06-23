@@ -23,6 +23,8 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     on<RideAssignRequested>(onAssignRequested);
     on<RideReassignRequested>(onReassignRequested);
     on<RideStatusReceived>(onStatusReceived);
+    on<RideCancelRequested>(onCancelRequested);
+    on<RideHandOffRequested>(onHandOffRequested);
   }
 
   Future<void> onLoadRequested(
@@ -264,6 +266,65 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     final updatedRides = List<Ride>.from(state.rides);
     updatedRides[idx] = updatedRides[idx].copyWith(status: event.newStatus);
     emit(state.copyWith(rides: updatedRides));
+  }
+
+  Future<void> onCancelRequested(
+    RideCancelRequested event,
+    Emitter<RideState> emit,
+  ) async {
+    emit(
+      state.copyWith(status: RideStateStatus.cancelling, errorMessage: null),
+    );
+    try {
+      await privateRideService.cancelRide(event.rideId, event.reason);
+      // Remove the cancelled ride from the list so the panel refreshes immediately.
+      final updatedRides = state.rides
+          .where((r) => r.id != event.rideId)
+          .toList();
+      emit(RideState.loaded(updatedRides));
+    } on ApiException catch (e) {
+      emit(
+        state.copyWith(status: RideStateStatus.error, errorMessage: e.message),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: RideStateStatus.error,
+          errorMessage: 'Failed to cancel ride: $e',
+        ),
+      );
+    }
+  }
+
+  Future<void> onHandOffRequested(
+    RideHandOffRequested event,
+    Emitter<RideState> emit,
+  ) async {
+    emit(
+      state.copyWith(status: RideStateStatus.handingOff, errorMessage: null),
+    );
+    try {
+      final updatedRide = await privateRideService.handOffRide(
+        event.rideId,
+        externalDriverId: event.externalDriverId,
+        partnerCompanyId: event.partnerCompanyId,
+      );
+      final updatedRides = state.rides.map((r) {
+        return r.id == updatedRide.id ? updatedRide : r;
+      }).toList();
+      emit(RideState.loaded(updatedRides));
+    } on ApiException catch (e) {
+      emit(
+        state.copyWith(status: RideStateStatus.error, errorMessage: e.message),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: RideStateStatus.error,
+          errorMessage: 'Failed to hand off ride: $e',
+        ),
+      );
+    }
   }
 
   @override

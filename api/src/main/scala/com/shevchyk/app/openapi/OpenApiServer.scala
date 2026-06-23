@@ -39,7 +39,16 @@ import com.shevchyk.ride.application.service.{
   RideEstimateService,
   RideService
 }
-import com.shevchyk.ride.openapi.{ClientAddressApi, ExpenseApi, ExportApi, RideApi, RideTemplateApi, StatsApi}
+import com.shevchyk.ride.openapi.{
+  ClientAddressApi,
+  ExternalDriverApi,
+  ExpenseApi,
+  ExportApi,
+  PartnerCompanyApi,
+  RideApi,
+  RideTemplateApi,
+  StatsApi
+}
 import com.shevchyk.ride.repository.{
   ClientLocationRepository,
   ExpenseRepository,
@@ -118,7 +127,9 @@ object OpenApiServer:
       RidePoolApi.serverEndpoints.map(_.endpoint) :::
       ClientCompanyApi.serverEndpoints.map(_.endpoint) :::
       SuperAdminApi.serverEndpoints.map(_.endpoint) :::
-      SuperAdminAirportApi.serverEndpoints.map(_.endpoint)
+      SuperAdminAirportApi.serverEndpoints.map(_.endpoint) :::
+      PartnerCompanyApi.serverEndpoints.map(_.endpoint) :::
+      ExternalDriverApi.serverEndpoints.map(_.endpoint)
 
   /**
    * Swagger UI + the generated OpenAPI document, served under `/docs`.
@@ -156,4 +167,6 @@ object OpenApiServer:
       http(ClientCompanyApi.serverEndpoints) ++
       http(SuperAdminApi.serverEndpoints) ++
       http(SuperAdminAirportApi.serverEndpoints) ++
+      http(PartnerCompanyApi.serverEndpoints) ++
+      http(ExternalDriverApi.serverEndpoints) ++
       http(swaggerEndpoints)

@@ -1472,4 +1472,56 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get commissionLabel => 'Комісія: ';
+
+  @override
+  String get rideStatusHandedOff => 'Передано';
+
+  @override
+  String get handOffRide => 'Передати поїздку';
+
+  @override
+  String get handOffRideTitle => 'Передати поїздку';
+
+  @override
+  String get handOffPartnerCompany => 'Компанія-партнер';
+
+  @override
+  String get handOffExternalDriver => 'Зовнішній водій';
+
+  @override
+  String get handOffSelectCompany => 'Оберіть компанію';
+
+  @override
+  String get handOffSelectDriver => 'Оберіть водія';
+
+  @override
+  String get handOffAddNewCompany => '+ Додати нову компанію';
+
+  @override
+  String get handOffAddNewDriver => '+ Додати нового водія';
+
+  @override
+  String get handOffCompanyName => 'Назва компанії *';
+
+  @override
+  String get handOffDriverName => 'Ім\'я водія *';
+
+  @override
+  String get handOffPhoneOptional => 'Телефон (необов\'язково)';
+
+  @override
+  String get handOffButton => 'Передати';
+
+  @override
+  String get closeRide => 'Закрити';
+
+  @override
+  String get closeRideTitle => 'Закрити поїздку?';
+
+  @override
+  String get closeRideConfirmMessage =>
+      'Це скасує непризначену поїздку. Клієнт отримає сповіщення.';
+
+  @override
+  String get closeRideButton => 'Закрити поїздку';
 }

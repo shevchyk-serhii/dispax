@@ -8,7 +8,8 @@ enum RideStatus {
   assigned('Assigned'),
   inProgress('InProgress'),
   completed('Completed'),
-  cancelled('Cancelled');
+  cancelled('Cancelled'),
+  handedOff('HandedOff');
 
   const RideStatus(this.value);
   final String value;
@@ -25,6 +26,8 @@ enum RideStatus {
         return 'Completed';
       case RideStatus.cancelled:
         return 'Cancelled';
+      case RideStatus.handedOff:
+        return 'Handed Off';
     }
   }
 
@@ -87,6 +90,12 @@ class Ride {
   final String?
   airportCheckpoint; // "landed" | "arrivals_hall" | "terminal_exit" | null
 
+  /// Set when the ride was handed off to an external driver.
+  final String? externalDriverId;
+
+  /// Set when the ride was handed off to a partner company.
+  final String? partnerCompanyId;
+
   const Ride({
     required this.id,
     required this.clientId,
@@ -130,6 +139,8 @@ class Ride {
     this.preferredDriverUsed = false,
     this.poolId,
     this.airportCheckpoint,
+    this.externalDriverId,
+    this.partnerCompanyId,
   });
 
   factory Ride.fromJson(Map<String, dynamic> json) {
@@ -183,6 +194,8 @@ class Ride {
       preferredDriverUsed: json['preferredDriverUsed'] ?? false,
       poolId: json['poolId'],
       airportCheckpoint: json['airportCheckpoint'],
+      externalDriverId: json['externalDriverId']?.toString(),
+      partnerCompanyId: json['partnerCompanyId']?.toString(),
     );
   }
 
@@ -230,6 +243,8 @@ class Ride {
       'preferredDriverUsed': preferredDriverUsed,
       'poolId': poolId,
       'airportCheckpoint': airportCheckpoint,
+      'externalDriverId': externalDriverId,
+      'partnerCompanyId': partnerCompanyId,
     };
   }
 
@@ -276,6 +291,8 @@ class Ride {
     bool? preferredDriverUsed,
     String? poolId,
     Object? airportCheckpoint = _sentinel,
+    Object? externalDriverId = _sentinel,
+    Object? partnerCompanyId = _sentinel,
   }) {
     return Ride(
       id: id ?? this.id,
@@ -322,6 +339,12 @@ class Ride {
       airportCheckpoint: airportCheckpoint == _sentinel
           ? this.airportCheckpoint
           : airportCheckpoint as String?,
+      externalDriverId: externalDriverId == _sentinel
+          ? this.externalDriverId
+          : externalDriverId as String?,
+      partnerCompanyId: partnerCompanyId == _sentinel
+          ? this.partnerCompanyId
+          : partnerCompanyId as String?,
     );
   }
 

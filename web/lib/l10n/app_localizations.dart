@@ -2841,6 +2841,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Commission: '**
   String get commissionLabel;
+
+  /// No description provided for @rideStatusHandedOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Handed Off'**
+  String get rideStatusHandedOff;
+
+  /// No description provided for @handOffRide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand Off Ride'**
+  String get handOffRide;
+
+  /// No description provided for @handOffRideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand Off Ride'**
+  String get handOffRideTitle;
+
+  /// No description provided for @handOffPartnerCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner Company'**
+  String get handOffPartnerCompany;
+
+  /// No description provided for @handOffExternalDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'External Driver'**
+  String get handOffExternalDriver;
+
+  /// No description provided for @handOffSelectCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Select company'**
+  String get handOffSelectCompany;
+
+  /// No description provided for @handOffSelectDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Select driver'**
+  String get handOffSelectDriver;
+
+  /// No description provided for @handOffAddNewCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'+ Add new company'**
+  String get handOffAddNewCompany;
+
+  /// No description provided for @handOffAddNewDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'+ Add new driver'**
+  String get handOffAddNewDriver;
+
+  /// No description provided for @handOffCompanyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Company name *'**
+  String get handOffCompanyName;
+
+  /// No description provided for @handOffDriverName.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver name *'**
+  String get handOffDriverName;
+
+  /// No description provided for @handOffPhoneOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone (optional)'**
+  String get handOffPhoneOptional;
+
+  /// No description provided for @handOffButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand Off'**
+  String get handOffButton;
+
+  /// No description provided for @closeRide.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeRide;
+
+  /// No description provided for @closeRideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close ride?'**
+  String get closeRideTitle;
+
+  /// No description provided for @closeRideConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will cancel the unassigned ride. The client will be notified.'**
+  String get closeRideConfirmMessage;
+
+  /// No description provided for @closeRideButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Close ride'**
+  String get closeRideButton;
 }
 
 class _AppLocalizationsDelegate

@@ -1474,4 +1474,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commissionLabel => 'Commission: ';
+
+  @override
+  String get rideStatusHandedOff => 'Handed Off';
+
+  @override
+  String get handOffRide => 'Hand Off Ride';
+
+  @override
+  String get handOffRideTitle => 'Hand Off Ride';
+
+  @override
+  String get handOffPartnerCompany => 'Partner Company';
+
+  @override
+  String get handOffExternalDriver => 'External Driver';
+
+  @override
+  String get handOffSelectCompany => 'Select company';
+
+  @override
+  String get handOffSelectDriver => 'Select driver';
+
+  @override
+  String get handOffAddNewCompany => '+ Add new company';
+
+  @override
+  String get handOffAddNewDriver => '+ Add new driver';
+
+  @override
+  String get handOffCompanyName => 'Company name *';
+
+  @override
+  String get handOffDriverName => 'Driver name *';
+
+  @override
+  String get handOffPhoneOptional => 'Phone (optional)';
+
+  @override
+  String get handOffButton => 'Hand Off';
+
+  @override
+  String get closeRide => 'Close';
+
+  @override
+  String get closeRideTitle => 'Close ride?';
+
+  @override
+  String get closeRideConfirmMessage =>
+      'This will cancel the unassigned ride. The client will be notified.';
+
+  @override
+  String get closeRideButton => 'Close ride';
 }
