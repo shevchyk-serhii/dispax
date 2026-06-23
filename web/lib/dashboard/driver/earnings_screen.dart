@@ -65,6 +65,21 @@ class _EarningsHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Back arrow, shown only when this screen was pushed onto the
+                // stack (e.g. from the Settings tab). Mirrors the conditional
+                // back pattern used in SettingsScreen's graphite header.
+                if (Navigator.of(context).canPop())
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
                 // Period label (subtitle)
                 Text(
                   rangeLabel.toUpperCase(),
