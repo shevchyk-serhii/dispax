@@ -69,6 +69,13 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
                   backgroundColor: AppColors.success,
                 ),
               );
+              // The ride is persisted, so reset the form: the submit button
+              // re-enables and no stale data triggers the "Discard changes?"
+              // dialog next time. Without this the shared CreateRideFormBloc
+              // stays in `submitting` forever — the button is stuck on
+              // "Creating Ride..." — because the success branch (unlike the
+              // error branch) never clears the status.
+              context.read<CreateRideFormBloc>().add(const FormCleared());
               if (widget.onCreated != null) {
                 widget.onCreated!();
               } else if (Navigator.of(context).canPop()) {
