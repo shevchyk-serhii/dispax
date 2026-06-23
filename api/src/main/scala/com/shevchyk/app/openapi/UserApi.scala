@@ -514,8 +514,11 @@ object UserApi:
     user =>
       { case (changeReq, ip) =>
         (for {
-          _ <- checkRateLimit(ip)
-          _ <- ZIO.serviceWithZIO[AuthService](_.changePassword(user.userId, changeReq)).mapError(mapAuthError)
+          _         <- checkRateLimit(ip)
+          companyId <- requireCompanyId(user)
+          _         <- ZIO
+                         .serviceWithZIO[AuthService](_.changePassword(user.userId, companyId, changeReq))
+                         .mapError(mapAuthError)
         } yield ()).unit
       }
   }
@@ -533,9 +536,12 @@ object UserApi:
 
   private val updateProfileServer: ZServerEndpoint[UserEnv, Any] = updateProfileEndpoint.serverLogic[UserEnv] {
     user => updateReq =>
-      ZIO
-        .serviceWithZIO[AuthService](_.updateUser(user.userId, updateReq))
-        .mapError(mapAuthError)
+      for {
+        companyId <- requireCompanyId(user)
+        userDto   <- ZIO
+                       .serviceWithZIO[AuthService](_.updateUser(user.userId, companyId, updateReq))
+                       .mapError(mapAuthError)
+      } yield userDto
   }
 
   private val listDriversServer: ZServerEndpoint[UserEnv, Any] = listDriversEndpoint.serverLogic[UserEnv] { user => _ =>
@@ -639,10 +645,11 @@ object UserApi:
   private val updateUserServer: ZServerEndpoint[UserEnv, Any] = updateUserEndpoint.serverLogic[UserEnv] { user =>
     { case (userId, updateReq) =>
       for {
-        uid     <- parseUuid(userId)
-        _       <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
-        _       <- requireSameCompany(user, uid)
-        userDto <- ZIO.serviceWithZIO[AuthService](_.updateUser(uid, updateReq)).mapError(mapAuthError)
+        uid       <- parseUuid(userId)
+        _         <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+        _         <- requireSameCompany(user, uid)
+        companyId <- requireCompanyId(user)
+        userDto   <- ZIO.serviceWithZIO[AuthService](_.updateUser(uid, companyId, updateReq)).mapError(mapAuthError)
       } yield userDto
     }
   }
@@ -650,12 +657,13 @@ object UserApi:
   private val deleteUserServer: ZServerEndpoint[UserEnv, Any] = deleteUserEndpoint.serverLogic[UserEnv] {
     user => userId =>
       (for {
-        _   <- checkRole(user, "DISPATCHER", "ADMIN")
-        uid <- parseUuid(userId)
-        _   <- requireSameCompany(user, uid)
-        _   <- ZIO
-                 .serviceWithZIO[AuthService](_.updateUser(uid, UpdateUserRequest(status = Some("INACTIVE"))))
-                 .mapError(mapAuthError)
+        _         <- checkRole(user, "DISPATCHER", "ADMIN")
+        uid       <- parseUuid(userId)
+        _         <- requireSameCompany(user, uid)
+        companyId <- requireCompanyId(user)
+        _         <- ZIO
+                       .serviceWithZIO[AuthService](_.updateUser(uid, companyId, UpdateUserRequest(status = Some("INACTIVE"))))
+                       .mapError(mapAuthError)
       } yield ()).unit
   }
 
@@ -663,15 +671,18 @@ object UserApi:
     user =>
       { case (userId, roleReq) =>
         for {
-          _       <- checkRole(user, "DISPATCHER")
-          uid     <- parseUuid(userId)
-          _       <- ZIO
-                       .fail(internal(new RuntimeException("Cannot change your own role")))
-                       .when(user.userId == uid)
-          _       <- requireSameCompany(user, uid)
-          userDto <- ZIO
-                       .serviceWithZIO[AuthService](_.updateUser(uid, UpdateUserRequest(role = roleReq.role)))
-                       .mapError(mapAuthError)
+          _         <- checkRole(user, "DISPATCHER")
+          uid       <- parseUuid(userId)
+          _         <- ZIO
+                         .fail(internal(new RuntimeException("Cannot change your own role")))
+                         .when(user.userId == uid)
+          _         <- requireSameCompany(user, uid)
+          companyId <- requireCompanyId(user)
+          userDto   <- ZIO
+                         .serviceWithZIO[AuthService](
+                           _.updateUser(uid, companyId, UpdateUserRequest(role = roleReq.role))
+                         )
+                         .mapError(mapAuthError)
         } yield userDto
       }
   }
@@ -680,12 +691,15 @@ object UserApi:
     user =>
       { case (userId, statusReq) =>
         for {
-          uid     <- parseUuid(userId)
-          _       <- checkRole(user, "DISPATCHER")
-          _       <- requireSameCompany(user, uid)
-          userDto <- ZIO
-                       .serviceWithZIO[AuthService](_.updateUser(uid, UpdateUserRequest(status = statusReq.status)))
-                       .mapError(mapAuthError)
+          uid       <- parseUuid(userId)
+          _         <- checkRole(user, "DISPATCHER")
+          _         <- requireSameCompany(user, uid)
+          companyId <- requireCompanyId(user)
+          userDto   <- ZIO
+                         .serviceWithZIO[AuthService](
+                           _.updateUser(uid, companyId, UpdateUserRequest(status = statusReq.status))
+                         )
+                         .mapError(mapAuthError)
         } yield userDto
       }
   }

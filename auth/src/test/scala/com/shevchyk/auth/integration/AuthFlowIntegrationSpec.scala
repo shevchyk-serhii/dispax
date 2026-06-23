@@ -55,7 +55,9 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
         )
       }.provide(layers),
       test("createUser → login → changePassword → login with new password") {
+        val companyId = CompanyId(UUID.randomUUID())
         for {
+          repo    <- ZIO.service[PersonRepository]
           service <- ZIO.service[AuthService]
           user    <- service.createUser(
                        CreateUserRequest(
@@ -65,14 +67,18 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
                          password = "OldPass123"
                        )
                      )
+          // changePassword is tenant-scoped; stamp the created user with a company first
+          // (createUser leaves it None) so the requester's companyId matches.
+          person  <- repo.findById(PersonId(user.id)).someOrFailException
+          _       <- repo.update(person.copy(companyId = Some(companyId)))
           login1  <- service.login("flow2@example.com", "OldPass123")
-          _       <- service.changePassword(user.id, ChangePasswordRequest("OldPass123", "NewPass456"))
+          _       <- service.changePassword(user.id, companyId, ChangePasswordRequest("OldPass123", "NewPass456"))
           login2  <- service.login("flow2@example.com", "NewPass456")
         } yield assertTrue(
           login1.person.email == "flow2@example.com" &&
             login2.person.email == "flow2@example.com"
         )
-      }.provide(layers),
+      }.provide(layersWithRepo),
       test("createUser → deleteUser → login fails") {
         val companyId = CompanyId(UUID.randomUUID())
         for {

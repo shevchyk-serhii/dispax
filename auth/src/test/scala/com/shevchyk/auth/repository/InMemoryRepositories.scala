@@ -1,6 +1,6 @@
 package com.shevchyk.auth.repository
 
-import com.shevchyk.core.domain.{ClientCompanyId, Person, PersonId, PersonRole, UserStatus}
+import com.shevchyk.core.domain.{ClientCompanyId, CompanyId, Person, PersonId, PersonRole, UserStatus}
 import com.shevchyk.core.repository.PersonRepository
 import zio.*
 import java.time.Instant
@@ -12,6 +12,11 @@ object TestUUIDs:
   val testUserId50 = UUID.fromString("50505050-5050-5050-5050-505050505050")
   val testUserId10 = UUID.fromString("10101010-1010-1010-1010-101010101010")
   val testUserId99 = UUID.fromString("99999999-9999-9999-9999-999999999999")
+
+  // Company tenants for isolation tests. All seeded users belong to company A;
+  // company B is a foreign tenant used to assert that cross-tenant access is rejected.
+  val testCompanyA = CompanyId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+  val testCompanyB = CompanyId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
 
 /**
  * InMemoryPersonRepository with pre-seeded test users for auth tests
@@ -40,7 +45,8 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
               PersonRole.Client,
               passwordHash = hashPassword("Password123"),
               phone = Some("+1234567890"),
-              status = UserStatus.ACTIVE
+              status = UserStatus.ACTIVE,
+              companyId = Some(testCompanyA)
             ),
             PersonId(testUserId50) -> Person(
               PersonId(testUserId50),
@@ -49,7 +55,8 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
               PersonRole.Client,
               passwordHash = hashPassword("Password123"),
               phone = Some("+1111111111"),
-              status = UserStatus.ACTIVE
+              status = UserStatus.ACTIVE,
+              companyId = Some(testCompanyA)
             ),
             PersonId(testUserId10) -> Person(
               PersonId(testUserId10),
@@ -58,7 +65,8 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
               PersonRole.Driver,
               passwordHash = hashPassword("Password123"),
               phone = Some("+2222222222"),
-              status = UserStatus.ACTIVE
+              status = UserStatus.ACTIVE,
+              companyId = Some(testCompanyA)
             ),
             PersonId(testUserId99) -> Person(
               PersonId(testUserId99),
@@ -67,7 +75,8 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
               PersonRole.Admin,
               passwordHash = hashPassword("Password123"),
               phone = Some("+3333333333"),
-              status = UserStatus.ACTIVE
+              status = UserStatus.ACTIVE,
+              companyId = Some(testCompanyA)
             )
           )
         )
