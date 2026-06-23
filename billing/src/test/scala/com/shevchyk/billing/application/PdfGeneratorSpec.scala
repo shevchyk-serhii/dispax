@@ -235,6 +235,80 @@ object PdfGeneratorSpec extends ZIOSpecDefault {
               testClientCompanyMinimal
             )
             .map(bytes => assertTrue(bytes.nonEmpty))
+        },
+        test("renders pickup date/time in Europe/Berlin, not UTC (day boundary, winter)") {
+          // 2026-01-15T23:30:00Z is 2026-01-16 00:30 in Munich (winter, UTC+1).
+          // UTC formatting would wrongly show 15.01.2026 23:30.
+          PdfGenerator
+            .generateReceiptBytes(
+              "Q-TZ-WINTER",
+              "Flughafen München",
+              "Marienplatz 1, München",
+              Instant.parse("2026-01-15T23:30:00Z"),
+              BigDecimal(100.00),
+              BigDecimal(19),
+              CompanyBillingProfile(companyId, legalName = Some("TestTaxi GmbH")),
+              testClientCompany
+            )
+            .map { bytes =>
+              val reader    = new com.lowagie.text.pdf.PdfReader(bytes)
+              val extractor = new com.lowagie.text.pdf.parser.PdfTextExtractor(reader)
+              val text      = extractor.getTextFromPage(1)
+              reader.close()
+              assertTrue(
+                text.contains("16.01.2026 00:30"),
+                !text.contains("15.01.2026 23:30")
+              )
+            }
+        },
+        test("renders pickup date/time in Europe/Berlin, not UTC (day boundary, summer DST)") {
+          // 2026-07-15T22:30:00Z is 2026-07-16 00:30 in Munich (summer, UTC+2).
+          // UTC formatting would wrongly show 15.07.2026 22:30.
+          PdfGenerator
+            .generateReceiptBytes(
+              "Q-TZ-SUMMER",
+              "Flughafen München",
+              "Marienplatz 1, München",
+              Instant.parse("2026-07-15T22:30:00Z"),
+              BigDecimal(100.00),
+              BigDecimal(19),
+              CompanyBillingProfile(companyId, legalName = Some("TestTaxi GmbH")),
+              testClientCompany
+            )
+            .map { bytes =>
+              val reader    = new com.lowagie.text.pdf.PdfReader(bytes)
+              val extractor = new com.lowagie.text.pdf.parser.PdfTextExtractor(reader)
+              val text      = extractor.getTextFromPage(1)
+              reader.close()
+              assertTrue(
+                text.contains("16.07.2026 00:30"),
+                !text.contains("15.07.2026 22:30")
+              )
+            }
+        },
+        test("renders the receipt issuer header date in Europe/Berlin (day boundary)") {
+          // The header shows only the date; at 2026-01-15T23:30:00Z Munich is already 16.01.2026.
+          PdfGenerator
+            .generateReceiptBytes(
+              "Q-TZ-HEADER",
+              "A",
+              "B",
+              Instant.parse("2026-01-15T23:30:00Z"),
+              BigDecimal(50.00),
+              BigDecimal(19),
+              CompanyBillingProfile(companyId, legalName = Some("TestTaxi GmbH")),
+              testClientCompany
+            )
+            .map { bytes =>
+              val reader    = new com.lowagie.text.pdf.PdfReader(bytes)
+              val extractor = new com.lowagie.text.pdf.parser.PdfTextExtractor(reader)
+              val text      = extractor.getTextFromPage(1)
+              reader.close()
+              assertTrue(
+                text.contains("16.01.2026"),
+                !text.contains("15.01.2026")
+              )
+            }
         }
       ),
       suite("generateToFile")(

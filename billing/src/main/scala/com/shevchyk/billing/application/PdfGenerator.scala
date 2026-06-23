@@ -10,12 +10,16 @@ import zio.*
 import java.awt.Color
 import java.io.{ByteArrayOutputStream, File, FileOutputStream}
 import java.time.format.DateTimeFormatter
-import java.time.{ZoneOffset, format => _}
+import java.time.{ZoneId, format => _}
 
 object PdfGenerator:
 
   // iText's `Document.add` / `PdfPTable.addCell` return a value we intentionally ignore.
   extension [A](a: A) private def discard: Unit = ()
+
+  // Documents are issued in Munich; format all stored UTC instants in the local zone
+  // so dates/times near midnight do not shift to the previous/next calendar day.
+  private val BerlinZone = ZoneId.of("Europe/Berlin")
 
   private val dateFormatter     = DateTimeFormatter.ofPattern("dd.MM.yyyy")
   private val dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
@@ -180,7 +184,7 @@ object PdfGenerator:
     profile.addressLine2.foreach(a => issuer.addElement(new Phrase(a, fontNormal)))
     table.addCell(issuer)
 
-    val date     = pickupDatetime.atOffset(ZoneOffset.UTC).toLocalDate
+    val date     = pickupDatetime.atZone(BerlinZone).toLocalDate
     val dateCell = new PdfPCell(new Phrase(date.format(dateFormatter), fontNormal))
     dateCell.setBorder(Rectangle.NO_BORDER)
     dateCell.setHorizontalAlignment(Element.ALIGN_RIGHT)
@@ -238,7 +242,7 @@ object PdfGenerator:
     row("Fahrtart:", "Stadtfahrt")
     row("Fahrt von:", pickupAddress)
     row("nach:", dropoffAddress)
-    row("Datum/Uhrzeit:", pickupDatetime.atOffset(ZoneOffset.UTC).toLocalDateTime.format(dateTimeFormatter))
+    row("Datum/Uhrzeit:", pickupDatetime.atZone(BerlinZone).toLocalDateTime.format(dateTimeFormatter))
     row("Zahlungsart:", "Bar")
 
     doc.add(table).discard
@@ -290,7 +294,7 @@ object PdfGenerator:
     profile.addressLine2.foreach(a => issuer.addElement(new Phrase(a, fontNormal)))
     table.addCell(issuer)
 
-    val invoiceDate = invoice.sentAt.getOrElse(invoice.createdAt).atOffset(ZoneOffset.UTC).toLocalDate
+    val invoiceDate = invoice.sentAt.getOrElse(invoice.createdAt).atZone(BerlinZone).toLocalDate
     val dateCell    = new PdfPCell(new Phrase(invoiceDate.format(dateFormatter), fontNormal))
     dateCell.setBorder(Rectangle.NO_BORDER)
     dateCell.setHorizontalAlignment(Element.ALIGN_RIGHT)
@@ -404,7 +408,7 @@ object PdfGenerator:
         c.setHorizontalAlignment(align)
         c
 
-      val date = item.createdAt.atOffset(ZoneOffset.UTC).toLocalDate.format(dateFormatter)
+      val date = item.createdAt.atZone(BerlinZone).toLocalDate.format(dateFormatter)
       table.addCell(dataCell(date))
       table.addCell(dataCell(item.description))
       table.addCell(dataCell(item.quantity.setScale(0, BigDecimal.RoundingMode.HALF_UP).toString, Element.ALIGN_CENTER))
