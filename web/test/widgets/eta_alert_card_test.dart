@@ -6,20 +6,25 @@ import 'package:dispax/dashboard/dispatcher/widgets/eta_alert_card.dart';
 import 'package:dispax/constants/lucide_compat.dart';
 import 'package:dispax/constants/app_colors.dart';
 
-Widget _wrap(Widget child, {Brightness brightness = Brightness.light}) {
+Widget _wrap(
+  Widget child, {
+  Brightness brightness = Brightness.light,
+  Locale locale = const Locale('en'),
+}) {
   // Use darkTheme + ThemeMode.dark so that Theme.of(context).brightness
   // actually returns Brightness.dark inside the widget tree.
   const delegates = [
     AppLocalizations.delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
   ];
-  const supportedLocales = [Locale('en')];
+  const supportedLocales = [Locale('en'), Locale('de')];
   if (brightness == Brightness.dark) {
     return MaterialApp(
       localizationsDelegates: delegates,
       supportedLocales: supportedLocales,
-      locale: const Locale('en'),
+      locale: locale,
       theme: ThemeData(useMaterial3: true),
       darkTheme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
       themeMode: ThemeMode.dark,
@@ -31,7 +36,7 @@ Widget _wrap(Widget child, {Brightness brightness = Brightness.light}) {
   return MaterialApp(
     localizationsDelegates: delegates,
     supportedLocales: supportedLocales,
-    locale: const Locale('en'),
+    locale: locale,
     theme: ThemeData(brightness: brightness, useMaterial3: true),
     home: Scaffold(
       body: Padding(padding: const EdgeInsets.all(16), child: child),
@@ -254,6 +259,64 @@ void main() {
             '(higher than light-mode 0.06); '
             'ensure _wrap uses darkTheme+ThemeMode.dark so brightness is Brightness.dark',
       );
+    });
+  });
+
+  group('EtaAlertCard — layout (narrow / German)', () {
+    // Regression for the title rendering one character per line: on a phone the
+    // long DE title and the long DE badge competed for one Row, leaving the
+    // title a few pixels of width so it collapsed into a vertical column of
+    // letters. The title and badge must now live on separate lines.
+
+    // Localised DE strings, pulled from AppLocalizations rather than hardcoded.
+    Future<(String title, String badge)> deStrings(WidgetTester tester) async {
+      late String title;
+      late String badge;
+      await tester.pumpWidget(
+        _wrap(
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context)!;
+              title = l10n.rideAtRiskTitle;
+              badge = l10n.etaMonitorBadgeLabel;
+              return const SizedBox.shrink();
+            },
+          ),
+          locale: const Locale('de'),
+        ),
+      );
+      return (title, badge);
+    }
+
+    testWidgets('title renders as a couple of lines, not one letter per line', (
+      tester,
+    ) async {
+      final (title, _) = await deStrings(tester);
+
+      await tester.pumpWidget(
+        _wrap(
+          const SizedBox(width: 360, child: EtaAlertCard(info: _info)),
+          locale: const Locale('de'),
+        ),
+      );
+
+      // The DE title must word-wrap into at most a couple of lines. With the old
+      // title+badge Row the title was squeezed to a few pixels of width and
+      // collapsed into a vertical column of letters — a height of hundreds of
+      // pixels. A single line at fontSize 15 is ~20px; cap generously at 3 lines.
+      final titleHeight = tester.getSize(find.text(title)).height;
+      expect(
+        titleHeight,
+        lessThan(70),
+        reason:
+            'DE title "$title" must wrap by word into at most a couple of lines, '
+            'not one character per line',
+      );
+
+      // No RenderFlex/text overflow may be left pending after layout. The benign
+      // "locale de unsupported by all delegates" warning is gone now that
+      // GlobalCupertinoLocalizations.delegate is registered in _wrap.
+      expect(tester.takeException(), isNull);
     });
   });
 }
