@@ -115,6 +115,7 @@ class ScheduleServiceImpl(
     for {
       _ <- validateTimeRange(req.startTime, req.endTime)
       _ <- validateDriverBelongsToCompany(req.driverId, req.companyId)
+      _ <- validateNoShiftOverlap(req)
 
       scheduleDay = ScheduleMapper.fromRequest(req)
       persisted  <- scheduleDayRepository.create(scheduleDay).mapError {
@@ -284,6 +285,27 @@ class ScheduleServiceImpl(
         ZIO.fail(ScheduleError.ValidationError("Start time must be before end time"))
       )
       .unit
+
+  /**
+   * Rejects a new shift that overlaps any existing (non-cancelled) shift for the same driver on the same date. Two
+   * half-open intervals [start, end) overlap iff `newStart < existingEnd && existingStart < newEnd`, so back-to-back
+   * shifts (e.g. 09:00–12:00 then 12:00–15:00) are allowed. Cancelled shifts free up their slot and never block a new
+   * shift.
+   */
+  private def validateNoShiftOverlap(req: CreateScheduleDayRequest): IO[ScheduleError, Unit] = scheduleDayRepository
+    .findShiftsForDriverOnDate(req.driverId, req.companyId, req.date)
+    .mapDatabaseError
+    .flatMap { existing =>
+      val overlaps = existing.exists { d =>
+        d.status != ScheduleDayStatus.Cancelled &&
+        req.startTime.isBefore(d.endTime) && d.startTime.isBefore(req.endTime)
+      }
+      ZIO
+        .when(overlaps)(
+          ZIO.fail(ScheduleError.OverlapConflict(req.driverId, req.date))
+        )
+        .unit
+    }
 
   private def validateDriverBelongsToCompany(driverId: PersonId, companyId: CompanyId): IO[ScheduleError, Unit] =
     for {
