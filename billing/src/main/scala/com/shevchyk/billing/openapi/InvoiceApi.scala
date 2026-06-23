@@ -165,7 +165,7 @@ object InvoiceApi:
       for {
         companyId <- requireCompanyId(user.companyId)
         _         <- checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
-        status     = statusOpt.flatMap(s => scala.util.Try(InvoiceStatus.fromString(s)).toOption)
+        status     = statusOpt.flatMap(InvoiceStatus.fromString)
         limit      = limitOpt.getOrElse(50)
         offset     = offsetOpt.getOrElse(0)
         service   <- ZIO.service[InvoiceService]
