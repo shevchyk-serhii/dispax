@@ -56,9 +56,16 @@ object EmergencyApi:
     user => req =>
       for {
         _                <- checkRole(user, "DISPATCHER")
+        companyId        <- requireCompanyId(user.companyId)
         rideService      <- ZIO.service[RideService]
         rideId           <- parseRideId(req.rideId)
         ride             <- rideService.getRideById(rideId).mapError(e => internal(new RuntimeException(e.toString)))
+        // Enforce tenant isolation: a dispatcher must not initiate an emergency
+        // reassignment on a ride that belongs to another company. NotFound to
+        // avoid leaking cross-tenant existence.
+        _                <- ZIO
+                              .fail((StatusCode.NotFound, ApiError("Not found")): Err)
+                              .when(ride.companyId != companyId)
         _                <- ZIO
                               .fail(internal(new RuntimeException("Ride must be assigned or in progress for emergency reassignment")))
                               .when(
