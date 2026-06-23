@@ -21,6 +21,12 @@ import 'multi_column_view_widget.dart';
 class CalendarScheduleScreen extends StatefulWidget {
   const CalendarScheduleScreen({super.key});
 
+  /// Exposes the shared view-type notifier for tests so they can drive the
+  /// screen between calendar views without poking at private state.
+  @visibleForTesting
+  static ValueNotifier<CalendarViewType> get viewTypeNotifierForTest =>
+      _CalendarScheduleScreenState.viewTypeNotifier;
+
   @override
   State<CalendarScheduleScreen> createState() => _CalendarScheduleScreenState();
 }
@@ -139,9 +145,22 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: _canViewOtherSchedules && _colleagues.isNotEmpty
-            ? _buildDriverDropdown(myId, titleText)
-            : Text(titleText),
+        title: ValueListenableBuilder<CalendarViewType>(
+          valueListenable: viewTypeNotifier,
+          builder: (context, viewType, child) {
+            // The driver picker only filters the single-driver views
+            // (month/week/day). The Board view already lays out every driver
+            // in its own column, so the dropdown has no effect there — show a
+            // plain title instead to avoid the misleading control.
+            final canPickDriver =
+                _canViewOtherSchedules &&
+                _colleagues.isNotEmpty &&
+                viewType != CalendarViewType.multiColumn;
+            return canPickDriver
+                ? _buildDriverDropdown(myId, titleText)
+                : Text(titleText);
+          },
+        ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.light,
