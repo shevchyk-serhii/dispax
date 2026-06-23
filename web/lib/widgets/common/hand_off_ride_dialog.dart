@@ -311,12 +311,26 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
     required VoidCallback onCancel,
     required bool submitting,
   }) {
+    // Follow the active theme: a soft orange tint in light mode, a deep orange
+    // surface in dark mode. Without this the inline form would render as a
+    // light patch on the dark dialog (the AlertDialog itself is theme-aware via
+    // dialogTheme, but this nested Container has to opt in explicitly).
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
+      key: const Key('handOffInlineForm'),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.rideHandedOffBg,
+        color: isDark
+            ? AppColors.rideHandedOffBgDark
+            : AppColors.rideHandedOffBg,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.rideHandedOffBorder),
+        border: Border.all(
+          // In dark mode the saturated status color doubles as a subtle
+          // outline (mirrors RideStatusStyles.getStatusBorderColor).
+          color: isDark
+              ? AppColors.rideHandedOff.withValues(alpha: 0.4)
+              : AppColors.rideHandedOffBorder,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
