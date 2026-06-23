@@ -340,6 +340,33 @@ void main() {
       final ride = TestFixtures.ride(driverId: 'driver-1', driverName: null);
       expect(ride.driver, isNull);
     });
+
+    // driverEnRoute getter — gates the "Driver on the way" label on the client
+    // side; true only when the driver has started location tracking.
+    test('driverEnRoute is false when driverLocation is null', () {
+      final ride = TestFixtures.ride(); // no driverLocation by default
+      expect(ride.driverEnRoute, isFalse);
+    });
+
+    test('driverEnRoute is true when driverLocation is non-null', () {
+      final ride = Ride(
+        id: 'ride-1',
+        clientId: 'client-1',
+        creatorId: 'creator-1',
+        companyId: 'company-1',
+        pickupDateTime: DateTime(2026, 3, 15, 10, 0),
+        from: TestFixtures.location(),
+        to: TestFixtures.location(address: 'Dropoff St'),
+        clientName: 'Test Client',
+        status: RideStatus.assigned,
+        driverLocation: TestFixtures.location(
+          address: 'Driver current position',
+          latitude: 48.14,
+          longitude: 11.57,
+        ),
+      );
+      expect(ride.driverEnRoute, isTrue);
+    });
   });
 
   group('Ride equality', () {

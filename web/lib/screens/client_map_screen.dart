@@ -22,14 +22,19 @@ class ClientMapScreen extends StatefulWidget {
 
   /// Client-facing wording for the ride status shown on the map pill.
   ///
-  /// Friendlier than the raw status label (e.g. "Driver on the way" instead of
-  /// "Assigned").
-  static String clientStatusLabel(RideStatus status) {
+  /// Friendlier than the raw status label. For the [RideStatus.assigned] case,
+  /// [driverEnRoute] gates whether the driver is actively heading to the client
+  /// (location tracking started) or merely assigned in advance: pass
+  /// `ride.driverEnRoute` from the caller.
+  static String clientStatusLabel(
+    RideStatus status, {
+    bool driverEnRoute = false,
+  }) {
     switch (status) {
       case RideStatus.requested:
         return 'Finding a driver';
       case RideStatus.assigned:
-        return 'Driver on the way';
+        return driverEnRoute ? 'Driver on the way' : 'Driver assigned';
       case RideStatus.inProgress:
         return 'On trip';
       case RideStatus.completed:
@@ -566,7 +571,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           ),
           const SizedBox(width: 6),
           Text(
-            ClientMapScreen.clientStatusLabel(status),
+            ClientMapScreen.clientStatusLabel(
+              status,
+              driverEnRoute: ride.driverEnRoute,
+            ),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,

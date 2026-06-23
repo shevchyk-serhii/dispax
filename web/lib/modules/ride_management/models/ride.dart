@@ -354,6 +354,11 @@ class Ride {
     return 'Ride(id: $id, from: $from, to: $to, status: ${status.value}, pickupDateTime: $pickupDateTime, flightNumber: $flightNumber, gate: $gate, isArrival: $isArrival, flightStatus: $flightStatus)';
   }
 
+  /// True when the driver has started location tracking and is actively heading
+  /// to the client. Used to gate "Driver on the way" labels vs. the neutral
+  /// "Driver assigned" label for a future/pre-departure assigned ride.
+  bool get driverEnRoute => driverLocation != null;
+
   String get statusDisplayName {
     return status.displayName;
   }

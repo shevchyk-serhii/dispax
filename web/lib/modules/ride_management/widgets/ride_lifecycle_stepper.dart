@@ -237,7 +237,9 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
             : 'Awaiting assignment';
       case RideStatus.assigned:
         return widget.isClientView
-            ? 'Driver is on the way'
+            ? (widget.ride.driverEnRoute
+                  ? 'Driver is on the way'
+                  : 'Driver assigned')
             : 'You are assigned to this ride';
       case RideStatus.inProgress:
         return widget.isClientView ? 'Ride in progress' : 'Drive safely';
