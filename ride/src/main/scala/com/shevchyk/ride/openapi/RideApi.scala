@@ -41,6 +41,16 @@ object RideApi:
 
   private val rideTag = "Rides"
 
+  // -- Pagination ----------------------------------------------------------
+  // Clamp client-supplied paging params so negative / oversized values never
+  // reach the SQL LIMIT/OFFSET clauses.
+  private[ride] object Paging:
+    val MinLimit: Int = 1
+    val MaxLimit: Int = 200
+
+    def clampLimit(limit: Int): Int   = limit.max(MinLimit).min(MaxLimit)
+    def clampOffset(offset: Int): Int = offset.max(0)
+
   // -- Environment ---------------------------------------------------------
   type RideEnv =
     RideService & ClientAddressService & ClientLocationService & AirportCheckpointService & ChatService &
@@ -613,8 +623,8 @@ object RideApi:
     user => (offsetOpt, limitOpt) =>
       for {
         companyId   <- requireCompanyId(user.companyId)
-        offset       = offsetOpt.getOrElse(0)
-        limit        = limitOpt.getOrElse(50)
+        offset       = Paging.clampOffset(offsetOpt.getOrElse(0))
+        limit        = Paging.clampLimit(limitOpt.getOrElse(50))
         service     <- ZIO.service[RideService]
         personRepo  <- ZIO.service[PersonRepository]
         ratingRepo  <- ZIO.service[RideRatingRepository]
