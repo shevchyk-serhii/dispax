@@ -162,8 +162,36 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
             case None    => ZIO.fail(RideError.RideNotFound(rideId))
         }
 
+      // createRide echoes a fresh Requested ride for the request's client/company, so the
+      // create endpoint reaches RideDto.fromDomain and the clientName-enrichment path is exercised.
+      def createRide(req: CreateRideRequest): IO[RideError, Ride] = ZIO.succeed(
+        Ride(
+          id = rideAId,
+          clientId = req.clientId,
+          creatorId = req.clientId,
+          companyId = req.companyId,
+          status = RideStatus.Requested,
+          pickupLocation = req.pickupLocation,
+          dropoffLocation = req.dropoffLocation,
+          pickupDateTime = req.pickupDateTime.getOrElse(Instant.now().plusSeconds(3600)),
+          requestTime = Instant.now()
+        )
+      )
+
+      // updateRideDetails returns the known ride unchanged so the update endpoint reaches
+      // RideDto.fromDomain and the clientName-enrichment path is exercised.
+      def updateRideDetails(
+          rideId: RideId,
+          req: UpdateRideDetailsRequest,
+          userId: PersonId,
+          role: PersonRole,
+          cid: Option[CompanyId]
+      ): IO[RideError, Ride] =
+        rides.get(rideId) match
+          case Some(r) => ZIO.succeed(r)
+          case None    => ZIO.fail(RideError.RideNotFound(rideId))
+
       // All other methods die (they must not be reached in these tests)
-      def createRide(req: CreateRideRequest): IO[RideError, Ride]                                              = notImplemented
       def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                         = notImplemented
       def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                   = notImplemented
       def completeRide(rideId: RideId): IO[RideError, Ride]                                                    = notImplemented
@@ -196,13 +224,6 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           offset: Int,
           limit: Int
       ): IO[RideError, List[Ride]] = notImplemented
-      def updateRideDetails(
-          rideId: RideId,
-          req: UpdateRideDetailsRequest,
-          userId: PersonId,
-          role: PersonRole,
-          cid: Option[CompanyId]
-      ): IO[RideError, Ride] = notImplemented
       def markPayment(
           rideId: RideId,
           ps: PaymentStatus,
@@ -383,6 +404,17 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
     s"""{"driverId":"${driverId.value}","overrideScheduleConflict":false}"""
   )
 
+  // A minimal-valid create-ride body for `clientId` (far-future pickup so it never trips the
+  // "pickup time cannot be in the past" rule).
+  private def createBody(clientId: PersonId): Body = Body.fromString(
+    s"""{"clientId":"${clientId.value}","creatorId":"${clientId.value}",""" +
+      """"pickupDateTime":"2090-01-01T10:00:00Z",""" +
+      """"from":{"address":"Munich Airport"},"to":{"address":"City Center"},""" +
+      """"clientName":"ignored-by-server"}"""
+  )
+
+  private val updateBody: Body = Body.fromString("""{"notes":"updated"}""")
+
   // ---------------------------------------------------------------------------
   // Tests
   // ---------------------------------------------------------------------------
@@ -550,6 +582,74 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           resp.status == Status.Ok,
           body.contains("\"clientName\":\"Anna Schmidt\""),
           !body.contains("Unknown Client")
+        )
+      },
+
+      // ── clientName enrichment: reassign-driver response must surface the real client name ──
+      test("[REGRESSION] reassign-driver response returns the real clientName, not 'Unknown Client'") {
+        val rideA = makeAssignedRide(rideAId, companyAId)
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map(rideAId -> rideA), assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .put(
+                               URL.decode(s"/api/rides/${rideAId.value}/reassign-driver").toOption.get,
+                               reassignBody(driverAId)
+                             )
+                             .addHeader(Header.Authorization.Bearer(token))
+                             .addHeader(Header.ContentType(zio.http.MediaType.application.json))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          body.contains("\"clientName\":\"Anna Schmidt\""),
+          !body.contains("Unknown Client")
+        )
+      },
+
+      // ── clientName enrichment: update-ride response must surface the real client name ──
+      test("[REGRESSION] update-ride response returns the real clientName, not 'Unknown Client'") {
+        val rideA = makeAssignedRide(rideAId, companyAId)
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map(rideAId -> rideA), assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .put(URL.decode(s"/api/rides/${rideAId.value}").toOption.get, updateBody)
+                             .addHeader(Header.Authorization.Bearer(token))
+                             .addHeader(Header.ContentType(zio.http.MediaType.application.json))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          body.contains("\"clientName\":\"Anna Schmidt\""),
+          !body.contains("Unknown Client")
+        )
+      },
+
+      // ── clientName enrichment: create-ride response must surface the real client name ──
+      // The server must derive clientName from PersonRepository (Anna), never from the request
+      // body — createBody deliberately sends clientName="ignored-by-server".
+      test("[REGRESSION] create-ride response returns the real clientName from the repo, not the request") {
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map.empty, assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .post(URL.decode("/api/rides").toOption.get, createBody(clientAId))
+                             .addHeader(Header.Authorization.Bearer(token))
+                             .addHeader(Header.ContentType(zio.http.MediaType.application.json))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Created,
+          body.contains("\"clientName\":\"Anna Schmidt\""),
+          !body.contains("Unknown Client"),
+          !body.contains("ignored-by-server")
         )
       },
 
