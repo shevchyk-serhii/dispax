@@ -167,5 +167,27 @@ object EtaServiceSpec extends ZIOSpecDefault:
       test("estimateEtaMinutes: non-trivial distance yields result >= 1") {
         val result = EtaService.estimateEtaMinutes(48.1, 11.5, 48.2, 11.6)
         assertTrue(result.exists(_ >= 1))
+      },
+      // -----------------------------------------------------------------------
+      // MUTATION KILL: haversine longitude weight + urban speed
+      // -----------------------------------------------------------------------
+      // Two points at Munich latitude (48.137°N) separated by exactly 1 degree of
+      // longitude and ZERO latitude difference.  At this latitude the cos² factor
+      // shrinks the longitudinal arc from ~111 km (equator) to ~74 km.
+      //
+      // Mutations targeted:
+      //   • cos weight dropped (L40–L41) → dist ~111 km → ETA ~134 min (kills range [85,95])
+      //   • longitude term zeroed (L41)  → dist ≈ 0    → ETA clamped to 1 min (kills range)
+      //   • urban speed 50→60 km/h (L43) → ETA 75 min              (kills range)
+      //
+      // Correct: dist ≈ 74 206 m at 50 km/h → ETA = ceil(74206 / 833.33) = 90 min
+      test(
+        "estimateEtaMinutes: purely longitudinal separation at Munich latitude kills cos-weight and speed mutations"
+      ) {
+        // 48.137°N, 10.000°E  →  48.137°N, 11.000°E  (1° longitude, 0° latitude)
+        // Expected distance ≈ 74 206 m  (= 111 195 m * cos(48.137°))
+        // Expected ETA at 50 km/h: ceil(74206 / (50000/60)) = ceil(89.05) = 90 min
+        val result = EtaService.estimateEtaMinutes(48.137, 10.0, 48.137, 11.0)
+        assertTrue(result.exists(e => e >= 85 && e <= 95))
       }
     )
