@@ -151,25 +151,25 @@ object AvatarApiSpec extends ZIOSpecDefault:
 
   private val stubAuthServiceLayer: ZLayer[Any, Nothing, AuthService] = ZLayer.succeed(
     new AuthService:
-      private def notImpl                                                                                 = ZIO.die(new NotImplementedError("AvatarApiSpec AuthService stub"))
+      private def notImpl                                                                                     = ZIO.die(new NotImplementedError("AvatarApiSpec AuthService stub"))
       def login(
           email: String,
           password: String,
           deviceInfo: Option[String],
           ipAddress: Option[String]
       ): IO[AuthError, LoginResponse] = notImpl
-      def createUser(req: CreateUserRequest): IO[AuthError, UserDto]                                      = notImpl
-      def getUserById(id: UUID): IO[AuthError, UserDto]                                                   = notImpl
-      def getUserByEmail(email: String): IO[AuthError, UserDto]                                           = notImpl
-      def updateUser(id: UUID, req: UpdateUserRequest): IO[AuthError, UserDto]                            = notImpl
-      def deleteUser(id: UUID, companyId: CompanyId): IO[AuthError, Unit]                                 = notImpl
-      def changePassword(userId: UUID, req: ChangePasswordRequest): IO[AuthError, Unit]                   = notImpl
-      def validateToken(token: String): IO[AuthError, UserDto]                                            = notImpl
-      def refreshToken(token: String): IO[AuthError, String]                                              = notImpl
-      def getAllUsers(role: Option[PersonRole], status: Option[UserStatus]): IO[AuthError, List[UserDto]] = ZIO.succeed(
+      def createUser(req: CreateUserRequest): IO[AuthError, UserDto]                                          = notImpl
+      def getUserById(id: UUID): IO[AuthError, UserDto]                                                       = notImpl
+      def getUserByEmail(email: String): IO[AuthError, UserDto]                                               = notImpl
+      def updateUser(id: UUID, companyId: CompanyId, req: UpdateUserRequest): IO[AuthError, UserDto]          = notImpl
+      def deleteUser(id: UUID, companyId: CompanyId): IO[AuthError, Unit]                                     = notImpl
+      def changePassword(userId: UUID, companyId: CompanyId, req: ChangePasswordRequest): IO[AuthError, Unit] = notImpl
+      def validateToken(token: String): IO[AuthError, UserDto]                                                = notImpl
+      def refreshToken(token: String): IO[AuthError, String]                                                  = notImpl
+      def getAllUsers(role: Option[PersonRole], status: Option[UserStatus]): IO[AuthError, List[UserDto]]     = ZIO.succeed(
         Nil
       )
-      def searchUsers(query: String): IO[AuthError, List[UserDto]]                                        = ZIO.succeed(Nil)
+      def searchUsers(query: String): IO[AuthError, List[UserDto]]                                            = ZIO.succeed(Nil)
   )
 
   private val stubRideServiceLayer: ZLayer[Any, Nothing, RideService] = ZLayer.succeed(
