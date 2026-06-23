@@ -205,8 +205,9 @@ object AvatarServiceSpec extends ZIOSpecDefault:
       test("uploadAvatar with mixed-case content type stores normalized (lowercase) type in repository") {
         val id = PersonId(UUID.randomUUID())
         for {
+          _       <- seedPerson(id)
           service <- ZIO.service[AvatarService]
-          _       <- service.uploadAvatar(id, smallBytes, "IMAGE/JPEG")
+          _       <- service.uploadAvatar(id, companyId, smallBytes, "IMAGE/JPEG")
           result  <- service.getAvatar(id)
         } yield assertTrue(
           result.isDefined &&
