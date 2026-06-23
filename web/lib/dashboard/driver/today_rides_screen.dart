@@ -936,14 +936,17 @@ class _LiveRideCard extends StatelessWidget {
             const SizedBox(height: 14),
 
             // ETA chip + flight badge + approaching chip
-            if (etaMinutes != null ||
+            // ETA is only shown after the driver starts the ride (inProgress)
+            if ((etaMinutes != null && ride.status == RideStatus.inProgress) ||
                 ride.flightNumber != null ||
                 approachingDistanceMeters != null)
               Wrap(
                 spacing: 8,
                 runSpacing: 6,
                 children: [
-                  if (etaMinutes != null) _EtaChip(etaMinutes: etaMinutes!),
+                  if (etaMinutes != null &&
+                      ride.status == RideStatus.inProgress)
+                    _EtaChip(etaMinutes: etaMinutes!),
                   if (ride.flightNumber != null)
                     _FlightBadge(flightNumber: ride.flightNumber!),
                   if (approachingDistanceMeters != null)
@@ -953,7 +956,7 @@ class _LiveRideCard extends StatelessWidget {
                 ],
               ),
 
-            if (etaMinutes != null ||
+            if ((etaMinutes != null && ride.status == RideStatus.inProgress) ||
                 ride.flightNumber != null ||
                 approachingDistanceMeters != null)
               const SizedBox(height: 14),

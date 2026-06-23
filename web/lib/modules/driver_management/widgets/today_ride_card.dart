@@ -175,7 +175,7 @@ class TodayRideCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              if (etaMinutes != null)
+              if (etaMinutes != null && ride.status == RideStatus.inProgress)
                 Container(
                   margin: const EdgeInsets.only(left: 8),
                   padding: const EdgeInsets.symmetric(
