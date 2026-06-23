@@ -13,6 +13,14 @@ object WebSocketEvent:
       newStatus: String,
       driverId: Option[UUID],
       clientId: UUID,
+      companyId: UUID,
+      cancellationReason: Option[String] = None
+  ) extends WebSocketEvent
+
+  final case class RideDetailsUpdated(
+      rideId: UUID,
+      driverId: Option[UUID],
+      clientId: UUID,
       companyId: UUID
   ) extends WebSocketEvent
 

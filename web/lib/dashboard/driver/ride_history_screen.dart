@@ -523,6 +523,18 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
+                    if (isCancelled && ride.cancellationReason != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Reason: ${ride.cancellationReason}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.rideCancelledText,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),

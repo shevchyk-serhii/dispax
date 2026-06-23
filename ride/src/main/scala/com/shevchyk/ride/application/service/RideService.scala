@@ -466,7 +466,8 @@ class RideServiceImpl(
               newStatus = "Cancelled",
               driverId = persistedRide.driverId.map(_.value),
               clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
+              companyId = persistedRide.companyId.value,
+              cancellationReason = Some(request.reason)
             )
           )
           .ignore
@@ -645,6 +646,17 @@ class RideServiceImpl(
       persistedRide    <- rideRepository.update(updatedRide).mapDatabaseError
       pickupTimeChanged = request.pickupDateTime.exists(_ != ride.pickupDateTime)
       _                <- ZIO.when(pickupTimeChanged)(rideRepository.clearReminders(rideId).mapDatabaseError)
+      _                <-
+        eventHub
+          .publish(
+            WebSocketEvent.RideDetailsUpdated(
+              rideId = persistedRide.id.value,
+              driverId = persistedRide.driverId.map(_.value),
+              clientId = persistedRide.clientId.value,
+              companyId = persistedRide.companyId.value
+            )
+          )
+          .ignore
     } yield persistedRide
 
   def assignDriver(

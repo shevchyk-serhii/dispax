@@ -4,6 +4,7 @@ class WebSocketEvent {
   final String? driverId;
   final String? clientId;
   final String? newStatus;
+  final String? cancellationReason;
   final double? latitude;
   final double? longitude;
   final String? locationType;
@@ -16,6 +17,7 @@ class WebSocketEvent {
     this.driverId,
     this.clientId,
     this.newStatus,
+    this.cancellationReason,
     this.latitude,
     this.longitude,
     this.locationType,
@@ -40,6 +42,7 @@ class WebSocketEvent {
       driverId: payload['driverId'] ?? payload['userId'],
       clientId: payload['clientId'],
       newStatus: payload['newStatus'],
+      cancellationReason: payload['cancellationReason'] as String?,
       latitude: payload['latitude']?.toDouble(),
       longitude: payload['longitude']?.toDouble(),
       locationType: payload['locationType'],
@@ -59,6 +62,7 @@ class WebSocketEvent {
       type == 'RideStatusChanged' && data['newStatus'] == 'PooledRide';
   bool get isAirportCheckpointReached => type == 'AirportCheckpointReached';
   bool get isEtaAtRisk => type == 'EtaAtRisk';
+  bool get isRideDetailsUpdated => type == 'RideDetailsUpdated';
 
   String? get geofenceName => data['geofenceName'];
   String? get alertType => data['alertType'];
