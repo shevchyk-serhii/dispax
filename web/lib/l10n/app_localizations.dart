@@ -5427,6 +5427,690 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'General Settings'**
   String get generalSettingsSectionTitle;
+
+  /// No description provided for @gdprScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Data (GDPR)'**
+  String get gdprScreenTitle;
+
+  /// No description provided for @consentManagementSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Consent Management'**
+  String get consentManagementSectionTitle;
+
+  /// No description provided for @consentDataProcessingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Processing'**
+  String get consentDataProcessingLabel;
+
+  /// No description provided for @consentDataProcessingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow processing of ride and account data'**
+  String get consentDataProcessingSubtitle;
+
+  /// No description provided for @consentMarketingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Marketing'**
+  String get consentMarketingLabel;
+
+  /// No description provided for @consentMarketingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive promotional emails and offers'**
+  String get consentMarketingSubtitle;
+
+  /// No description provided for @consentAnalyticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get consentAnalyticsLabel;
+
+  /// No description provided for @consentAnalyticsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help improve the app with usage analytics'**
+  String get consentAnalyticsSubtitle;
+
+  /// No description provided for @consentThirdPartySharingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Third-Party Sharing'**
+  String get consentThirdPartySharingLabel;
+
+  /// No description provided for @consentThirdPartySharingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share data with partner services'**
+  String get consentThirdPartySharingSubtitle;
+
+  /// No description provided for @yourDataSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Data'**
+  String get yourDataSectionTitle;
+
+  /// No description provided for @exportMyDataLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Export My Data'**
+  String get exportMyDataLabel;
+
+  /// No description provided for @exportMyDataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download all personal data we have stored about you'**
+  String get exportMyDataSubtitle;
+
+  /// No description provided for @dataDeletionSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Deletion'**
+  String get dataDeletionSectionTitle;
+
+  /// No description provided for @requestDataDeletionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Data Deletion'**
+  String get requestDataDeletionLabel;
+
+  /// No description provided for @requestDataDeletionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete all your data and account'**
+  String get requestDataDeletionSubtitle;
+
+  /// No description provided for @pendingDeletionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A deletion request is already pending'**
+  String get pendingDeletionSubtitle;
+
+  /// No description provided for @pendingChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pendingChipLabel;
+
+  /// No description provided for @requestHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request History'**
+  String get requestHistoryTitle;
+
+  /// No description provided for @requestDeletionDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Data Deletion'**
+  String get requestDeletionDialogTitle;
+
+  /// No description provided for @requestDeletionDialogContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This will submit a request to delete all your personal data. This action cannot be undone. Your account will be deactivated once the request is processed.\n\nAre you sure you want to proceed?'**
+  String get requestDeletionDialogContent;
+
+  /// No description provided for @requestDeletionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Deletion'**
+  String get requestDeletionButton;
+
+  /// No description provided for @dataExportCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Data export copied to clipboard'**
+  String get dataExportCopied;
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: {error}'**
+  String exportFailed(String error);
+
+  /// No description provided for @deletionRequestSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion request submitted'**
+  String get deletionRequestSubmitted;
+
+  /// No description provided for @failedToLoadGdprData.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load GDPR data ({consentsCode}/{requestsCode})'**
+  String failedToLoadGdprData(String consentsCode, String requestsCode);
+
+  /// No description provided for @dataDeletionRequestType.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Deletion'**
+  String get dataDeletionRequestType;
+
+  /// No description provided for @dataExportRequestType.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Export'**
+  String get dataExportRequestType;
+
+  /// No description provided for @paymentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get paymentsTitle;
+
+  /// No description provided for @unpaidBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpaid'**
+  String get unpaidBadgeLabel;
+
+  /// No description provided for @allRidesPaidLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All rides are paid'**
+  String get allRidesPaidLabel;
+
+  /// No description provided for @markAsPaidDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Paid'**
+  String get markAsPaidDialogTitle;
+
+  /// No description provided for @paymentMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method:'**
+  String get paymentMethodLabel;
+
+  /// No description provided for @paymentMethodCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get paymentMethodCash;
+
+  /// No description provided for @paymentMethodCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Card'**
+  String get paymentMethodCard;
+
+  /// No description provided for @paymentMethodInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get paymentMethodInvoice;
+
+  /// No description provided for @amountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount: {amount} EUR'**
+  String amountLabel(String amount);
+
+  /// No description provided for @confirmPaymentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Payment'**
+  String get confirmPaymentButton;
+
+  /// No description provided for @paymentRecordedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment recorded'**
+  String get paymentRecordedSuccess;
+
+  /// No description provided for @failedToMarkPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed: {error}'**
+  String failedToMarkPaid(String error);
+
+  /// No description provided for @failedToLoadUnpaidRides.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load unpaid rides'**
+  String get failedToLoadUnpaidRides;
+
+  /// No description provided for @myRideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Ride #{id}'**
+  String myRideTitle(String id);
+
+  /// No description provided for @rideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride #{id}'**
+  String rideTitle(String id);
+
+  /// No description provided for @confirmationSentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation sent'**
+  String get confirmationSentLabel;
+
+  /// No description provided for @cancellationDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation Details'**
+  String get cancellationDetailsTitle;
+
+  /// No description provided for @cancellationReasonDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String cancellationReasonDetail(String reason);
+
+  /// No description provided for @cancelledByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled by: {name}'**
+  String cancelledByLabel(String name);
+
+  /// No description provided for @cancellationFeeDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee: €{fee}'**
+  String cancellationFeeDisplay(String fee);
+
+  /// No description provided for @ratingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get ratingTitle;
+
+  /// No description provided for @notesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesTitle;
+
+  /// No description provided for @openChatButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Chat'**
+  String get openChatButton;
+
+  /// No description provided for @rideStatusUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride status updated successfully'**
+  String get rideStatusUpdatedSuccess;
+
+  /// No description provided for @failedToUpdateRideStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update ride status: {error}'**
+  String failedToUpdateRideStatus(String error);
+
+  /// No description provided for @driverAssignedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver assigned successfully'**
+  String get driverAssignedSuccess;
+
+  /// No description provided for @failedToAssignDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to assign driver: {error}'**
+  String failedToAssignDriver(String error);
+
+  /// No description provided for @rideCancelledSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride cancelled'**
+  String get rideCancelledSuccess;
+
+  /// No description provided for @completeRideDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Ride'**
+  String get completeRideDialogTitle;
+
+  /// No description provided for @completeRideDialogContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this ride as completed?'**
+  String get completeRideDialogContent;
+
+  /// No description provided for @createNewRideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Ride'**
+  String get createNewRideTitle;
+
+  /// No description provided for @rideCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride created successfully!'**
+  String get rideCreatedSuccess;
+
+  /// No description provided for @conflictDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule conflict'**
+  String get conflictDialogTitle;
+
+  /// No description provided for @conflictDialogContent.
+  ///
+  /// In en, this message translates to:
+  /// **'{message}\n\nThe ride was created and is in the dispatcher pool. Assign it to yourself anyway?'**
+  String conflictDialogContent(String message);
+
+  /// No description provided for @conflictDialogContentDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a ride around this time. The ride was created and is in the dispatcher pool. Assign it to yourself anyway?'**
+  String get conflictDialogContentDefault;
+
+  /// No description provided for @keepInPoolButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep in pool'**
+  String get keepInPoolButton;
+
+  /// No description provided for @assignAnywayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign anyway'**
+  String get assignAnywayButton;
+
+  /// No description provided for @exportRidesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Rides'**
+  String get exportRidesTitle;
+
+  /// No description provided for @copyCsvButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy CSV'**
+  String get copyCsvButton;
+
+  /// No description provided for @dateRangeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Date Range'**
+  String get dateRangeButton;
+
+  /// No description provided for @noRidesMatchFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'No rides match the filters'**
+  String get noRidesMatchFilters;
+
+  /// No description provided for @exportSummaryTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get exportSummaryTotal;
+
+  /// No description provided for @exportSummaryCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get exportSummaryCompleted;
+
+  /// No description provided for @exportSummaryRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get exportSummaryRevenue;
+
+  /// No description provided for @csvCopiedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'CSV data copied to clipboard ({count} rides)'**
+  String csvCopiedSnackbar(int count);
+
+  /// No description provided for @okButton.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get okButton;
+
+  /// No description provided for @flightsMunichAirportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights · Munich Airport'**
+  String get flightsMunichAirportTitle;
+
+  /// No description provided for @autoSyncedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'auto-synced'**
+  String get autoSyncedLabel;
+
+  /// No description provided for @arrivalsTabLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrivals'**
+  String get arrivalsTabLabel;
+
+  /// No description provided for @departuresTabLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Departures'**
+  String get departuresTabLabel;
+
+  /// No description provided for @noArrivalsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No arrivals found'**
+  String get noArrivalsFound;
+
+  /// No description provided for @noDeparturesFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No departures found'**
+  String get noDeparturesFound;
+
+  /// No description provided for @errorLoadingFlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading flights: {error}'**
+  String errorLoadingFlights(String error);
+
+  /// No description provided for @flightColumnFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight'**
+  String get flightColumnFlight;
+
+  /// No description provided for @flightColumnOriginDest.
+  ///
+  /// In en, this message translates to:
+  /// **'Origin / Dest.'**
+  String get flightColumnOriginDest;
+
+  /// No description provided for @flightColumnSched.
+  ///
+  /// In en, this message translates to:
+  /// **'Sched.'**
+  String get flightColumnSched;
+
+  /// No description provided for @flightColumnStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get flightColumnStatus;
+
+  /// No description provided for @flightColumnLinkedRide.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked ride'**
+  String get flightColumnLinkedRide;
+
+  /// No description provided for @flightStatusOnTime.
+  ///
+  /// In en, this message translates to:
+  /// **'On time'**
+  String get flightStatusOnTime;
+
+  /// No description provided for @flightStatusDelayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delayed'**
+  String get flightStatusDelayed;
+
+  /// No description provided for @flightStatusBoarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Boarding'**
+  String get flightStatusBoarding;
+
+  /// No description provided for @flightStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get flightStatusCancelled;
+
+  /// No description provided for @flightStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get flightStatusUnknown;
+
+  /// No description provided for @flightNotLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'— not linked'**
+  String get flightNotLinked;
+
+  /// No description provided for @whoCanSeeWhomTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Who can see whom'**
+  String get whoCanSeeWhomTitle;
+
+  /// No description provided for @visibleToAllDispatchers.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible to all dispatchers'**
+  String get visibleToAllDispatchers;
+
+  /// No description provided for @scheduleHiddenFromOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule hidden from others'**
+  String get scheduleHiddenFromOthers;
+
+  /// No description provided for @noDriversInCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'No drivers in your company.'**
+  String get noDriversInCompany;
+
+  /// No description provided for @failedToUpdateVisibilityError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update visibility: {error}'**
+  String failedToUpdateVisibilityError(String error);
+
+  /// No description provided for @auditLogScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit Log'**
+  String get auditLogScreenTitle;
+
+  /// No description provided for @searchByEntityIdHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by entity ID...'**
+  String get searchByEntityIdHint;
+
+  /// No description provided for @noAuditEntriesFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No audit entries found'**
+  String get noAuditEntriesFound;
+
+  /// No description provided for @onlineOnRideLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Online · on ride #{id}'**
+  String onlineOnRideLabel(String id);
+
+  /// No description provided for @startConversationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the conversation with the driver'**
+  String get startConversationSubtitle;
+
+  /// No description provided for @failedToSendMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send: {error}'**
+  String failedToSendMessage(String error);
+
+  /// No description provided for @totalRidesStatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Rides'**
+  String get totalRidesStatLabel;
+
+  /// No description provided for @onTimeStatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'On-time'**
+  String get onTimeStatLabel;
+
+  /// No description provided for @avgSlackStatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg Slack'**
+  String get avgSlackStatLabel;
+
+  /// No description provided for @gmvStatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'GMV'**
+  String get gmvStatLabel;
+
+  /// No description provided for @ridesByTenantTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rides by Tenant'**
+  String get ridesByTenantTitle;
+
+  /// No description provided for @rideStatusBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride Status Breakdown'**
+  String get rideStatusBreakdownTitle;
+
+  /// No description provided for @platformActiveSessionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform Active Sessions'**
+  String get platformActiveSessionsLabel;
+
+  /// No description provided for @clientPaymentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get clientPaymentTitle;
+
+  /// No description provided for @paymentMethodsSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PAYMENT METHODS'**
+  String get paymentMethodsSectionLabel;
+
+  /// No description provided for @corporateInvoiceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate invoice'**
+  String get corporateInvoiceLabel;
+
+  /// No description provided for @addPaymentMethodButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add payment method'**
+  String get addPaymentMethodButton;
 }
 
 class _AppLocalizationsDelegate

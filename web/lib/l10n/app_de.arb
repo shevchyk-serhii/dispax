@@ -1331,5 +1331,229 @@
     }
   },
   "settingsCompanyProfile": "Unternehmensprofil",
-  "generalSettingsSectionTitle": "Allgemeine Einstellungen"
+  "generalSettingsSectionTitle": "Allgemeine Einstellungen",
+
+  "gdprScreenTitle": "Datenschutz & Daten (DSGVO)",
+  "consentManagementSectionTitle": "Einwilligungsverwaltung",
+  "consentDataProcessingLabel": "Datenverarbeitung",
+  "consentDataProcessingSubtitle": "Verarbeitung von Fahrt- und Kontodaten zulassen",
+  "consentMarketingLabel": "Marketing",
+  "consentMarketingSubtitle": "Werbe-E-Mails und Angebote erhalten",
+  "consentAnalyticsLabel": "Analyse",
+  "consentAnalyticsSubtitle": "Helfen Sie uns mit Nutzungsanalysen",
+  "consentThirdPartySharingLabel": "Weitergabe an Dritte",
+  "consentThirdPartySharingSubtitle": "Daten mit Partnerdiensten teilen",
+  "yourDataSectionTitle": "Ihre Daten",
+  "exportMyDataLabel": "Meine Daten exportieren",
+  "exportMyDataSubtitle": "Alle gespeicherten persönlichen Daten herunterladen",
+  "dataDeletionSectionTitle": "Datenlöschung",
+  "requestDataDeletionLabel": "Datenlöschung beantragen",
+  "requestDataDeletionSubtitle": "Alle Daten und Ihr Konto dauerhaft löschen",
+  "pendingDeletionSubtitle": "Eine Löschanfrage ist bereits ausstehend",
+  "pendingChipLabel": "Ausstehend",
+  "requestHistoryTitle": "Anfrageverlauf",
+  "requestDeletionDialogTitle": "Datenlöschung beantragen",
+  "requestDeletionDialogContent": "Dies sendet eine Anfrage zur Löschung aller Ihrer persönlichen Daten. Diese Aktion kann nicht rückgängig gemacht werden. Ihr Konto wird nach Bearbeitung der Anfrage deaktiviert.\n\nMöchten Sie wirklich fortfahren?",
+  "requestDeletionButton": "Löschung beantragen",
+  "dataExportCopied": "Datenexport in Zwischenablage kopiert",
+  "exportFailed": "Export fehlgeschlagen: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "deletionRequestSubmitted": "Löschanfrage eingereicht",
+  "failedToLoadGdprData": "Fehler beim Laden der DSGVO-Daten ({consentsCode}/{requestsCode})",
+  "@failedToLoadGdprData": {
+    "placeholders": {
+      "consentsCode": {"type": "String"},
+      "requestsCode": {"type": "String"}
+    }
+  },
+  "dataDeletionRequestType": "Datenlöschung",
+  "dataExportRequestType": "Datenexport",
+
+  "paymentsTitle": "Zahlungen",
+  "unpaidBadgeLabel": "Unbezahlt",
+  "allRidesPaidLabel": "Alle Fahrten sind bezahlt",
+  "markAsPaidDialogTitle": "Als bezahlt markieren",
+  "paymentMethodLabel": "Zahlungsart:",
+  "paymentMethodCash": "Bar",
+  "paymentMethodCard": "Karte",
+  "paymentMethodInvoice": "Rechnung",
+  "amountLabel": "Betrag: {amount} EUR",
+  "@amountLabel": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "confirmPaymentButton": "Zahlung bestätigen",
+  "paymentRecordedSuccess": "Zahlung erfasst",
+  "failedToMarkPaid": "Fehler: {error}",
+  "@failedToMarkPaid": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToLoadUnpaidRides": "Fehler beim Laden unbezahlter Fahrten",
+
+  "myRideTitle": "Meine Fahrt #{id}",
+  "@myRideTitle": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "rideTitle": "Fahrt #{id}",
+  "@rideTitle": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "confirmationSentLabel": "Bestätigung gesendet",
+  "cancellationDetailsTitle": "Stornierungsdetails",
+  "cancellationReasonDetail": "Grund: {reason}",
+  "@cancellationReasonDetail": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  },
+  "cancelledByLabel": "Storniert von: {name}",
+  "@cancelledByLabel": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "cancellationFeeDisplay": "Gebühr: €{fee}",
+  "@cancellationFeeDisplay": {
+    "placeholders": {
+      "fee": {"type": "String"}
+    }
+  },
+  "ratingTitle": "Bewertung",
+  "notesTitle": "Notizen",
+  "openChatButton": "Chat öffnen",
+  "rideStatusUpdatedSuccess": "Fahrtsstatus erfolgreich aktualisiert",
+  "failedToUpdateRideStatus": "Fehler beim Aktualisieren des Fahrtstatus: {error}",
+  "@failedToUpdateRideStatus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "driverAssignedSuccess": "Fahrer erfolgreich zugewiesen",
+  "failedToAssignDriver": "Fehler bei der Fahrerzuweisung: {error}",
+  "@failedToAssignDriver": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "rideCancelledSuccess": "Fahrt storniert",
+  "failedToCancelRide": "Fehler beim Stornieren: {error}",
+  "@failedToCancelRide": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToSubmitRating": "Fehler beim Absenden der Bewertung: {error}",
+  "@failedToSubmitRating": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "completeRideDialogTitle": "Fahrt abschließen",
+  "completeRideDialogContent": "Diese Fahrt als abgeschlossen markieren?",
+
+  "createNewRideTitle": "Neue Fahrt erstellen",
+  "rideCreatedSuccess": "Fahrt erfolgreich erstellt!",
+  "failedToCreateRide": "Fehler beim Erstellen der Fahrt",
+  "conflictDialogTitle": "Terminkonflikt",
+  "conflictDialogContent": "{message}\n\nDie Fahrt wurde erstellt und befindet sich im Dispatcher-Pool. Trotzdem zuweisen?",
+  "@conflictDialogContent": {
+    "placeholders": {
+      "message": {"type": "String"}
+    }
+  },
+  "conflictDialogContentDefault": "Sie haben bereits eine Fahrt zu dieser Zeit. Die Fahrt wurde erstellt und befindet sich im Pool. Trotzdem zuweisen?",
+  "keepInPoolButton": "Im Pool belassen",
+  "assignAnywayButton": "Trotzdem zuweisen",
+
+  "exportRidesTitle": "Fahrten exportieren",
+  "copyCsvButton": "CSV kopieren",
+  "dateRangeButton": "Zeitraum",
+  "noRidesMatchFilters": "Keine Fahrten entsprechen den Filtern",
+  "exportSummaryTotal": "Gesamt",
+  "exportSummaryCompleted": "Abgeschlossen",
+  "exportSummaryRevenue": "Umsatz",
+  "csvCopiedSnackbar": "CSV-Daten in Zwischenablage ({count} Fahrten)",
+  "@csvCopiedSnackbar": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "okButton": "OK",
+
+  "flightsMunichAirportTitle": "Flüge · Flughafen München",
+  "autoSyncedLabel": "automatisch synchronisiert",
+  "arrivalsTabLabel": "Ankünfte",
+  "departuresTabLabel": "Abflüge",
+  "noArrivalsFound": "Keine Ankünfte gefunden",
+  "noDeparturesFound": "Keine Abflüge gefunden",
+  "errorLoadingFlights": "Fehler beim Laden der Flüge: {error}",
+  "@errorLoadingFlights": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "flightColumnFlight": "Flug",
+  "flightColumnOriginDest": "Herkunft / Ziel",
+  "flightColumnSched": "Plan",
+  "flightColumnStatus": "Status",
+  "flightColumnLinkedRide": "Verknüpfte Fahrt",
+  "flightStatusOnTime": "Pünktlich",
+  "flightStatusDelayed": "Verspätet",
+  "flightStatusBoarding": "Boarding",
+  "flightStatusCancelled": "Gestrichen",
+  "flightStatusUnknown": "Unbekannt",
+  "flightNotLinked": "— nicht verknüpft",
+
+  "whoCanSeeWhomTitle": "Wer sieht wen",
+  "visibleToAllDispatchers": "Für alle Disponenten sichtbar",
+  "scheduleHiddenFromOthers": "Zeitplan für andere verborgen",
+  "noDriversInCompany": "Keine Fahrer in Ihrem Unternehmen.",
+  "failedToUpdateVisibilityError": "Fehler beim Aktualisieren der Sichtbarkeit: {error}",
+  "@failedToUpdateVisibilityError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "auditLogScreenTitle": "Audit-Protokoll",
+  "searchByEntityIdHint": "Nach Entitäts-ID suchen...",
+  "noAuditEntriesFound": "Keine Audit-Einträge gefunden",
+
+  "onlineOnRideLabel": "Online · Fahrt #{id}",
+  "@onlineOnRideLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "startConversationSubtitle": "Beginnen Sie die Unterhaltung mit dem Fahrer",
+  "failedToSendMessage": "Fehler beim Senden: {error}",
+  "@failedToSendMessage": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "totalRidesStatLabel": "Fahrten gesamt",
+  "onTimeStatLabel": "Pünktlich",
+  "avgSlackStatLabel": "Ø Puffer",
+  "gmvStatLabel": "GMV",
+  "ridesByTenantTitle": "Fahrten nach Mandant",
+  "rideStatusBreakdownTitle": "Fahrtsstatus-Übersicht",
+  "platformActiveSessionsLabel": "Aktive Plattformsitzungen",
+
+  "clientPaymentTitle": "Zahlung",
+  "paymentMethodsSectionLabel": "ZAHLUNGSARTEN",
+  "corporateInvoiceLabel": "Firmenrechnung",
+  "addPaymentMethodButton": "Zahlungsart hinzufügen"
 }

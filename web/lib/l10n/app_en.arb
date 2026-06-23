@@ -1399,5 +1399,229 @@
     }
   },
   "settingsCompanyProfile": "Company Profile",
-  "generalSettingsSectionTitle": "General Settings"
+  "generalSettingsSectionTitle": "General Settings",
+
+  "gdprScreenTitle": "Privacy & Data (GDPR)",
+  "consentManagementSectionTitle": "Consent Management",
+  "consentDataProcessingLabel": "Data Processing",
+  "consentDataProcessingSubtitle": "Allow processing of ride and account data",
+  "consentMarketingLabel": "Marketing",
+  "consentMarketingSubtitle": "Receive promotional emails and offers",
+  "consentAnalyticsLabel": "Analytics",
+  "consentAnalyticsSubtitle": "Help improve the app with usage analytics",
+  "consentThirdPartySharingLabel": "Third-Party Sharing",
+  "consentThirdPartySharingSubtitle": "Share data with partner services",
+  "yourDataSectionTitle": "Your Data",
+  "exportMyDataLabel": "Export My Data",
+  "exportMyDataSubtitle": "Download all personal data we have stored about you",
+  "dataDeletionSectionTitle": "Data Deletion",
+  "requestDataDeletionLabel": "Request Data Deletion",
+  "requestDataDeletionSubtitle": "Permanently delete all your data and account",
+  "pendingDeletionSubtitle": "A deletion request is already pending",
+  "pendingChipLabel": "Pending",
+  "requestHistoryTitle": "Request History",
+  "requestDeletionDialogTitle": "Request Data Deletion",
+  "requestDeletionDialogContent": "This will submit a request to delete all your personal data. This action cannot be undone. Your account will be deactivated once the request is processed.\n\nAre you sure you want to proceed?",
+  "requestDeletionButton": "Request Deletion",
+  "dataExportCopied": "Data export copied to clipboard",
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "deletionRequestSubmitted": "Deletion request submitted",
+  "failedToLoadGdprData": "Failed to load GDPR data ({consentsCode}/{requestsCode})",
+  "@failedToLoadGdprData": {
+    "placeholders": {
+      "consentsCode": {"type": "String"},
+      "requestsCode": {"type": "String"}
+    }
+  },
+  "dataDeletionRequestType": "Data Deletion",
+  "dataExportRequestType": "Data Export",
+
+  "paymentsTitle": "Payments",
+  "unpaidBadgeLabel": "Unpaid",
+  "allRidesPaidLabel": "All rides are paid",
+  "markAsPaidDialogTitle": "Mark as Paid",
+  "paymentMethodLabel": "Payment Method:",
+  "paymentMethodCash": "Cash",
+  "paymentMethodCard": "Card",
+  "paymentMethodInvoice": "Invoice",
+  "amountLabel": "Amount: {amount} EUR",
+  "@amountLabel": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "confirmPaymentButton": "Confirm Payment",
+  "paymentRecordedSuccess": "Payment recorded",
+  "failedToMarkPaid": "Failed: {error}",
+  "@failedToMarkPaid": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToLoadUnpaidRides": "Failed to load unpaid rides",
+
+  "myRideTitle": "My Ride #{id}",
+  "@myRideTitle": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "rideTitle": "Ride #{id}",
+  "@rideTitle": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "confirmationSentLabel": "Confirmation sent",
+  "cancellationDetailsTitle": "Cancellation Details",
+  "cancellationReasonDetail": "Reason: {reason}",
+  "@cancellationReasonDetail": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  },
+  "cancelledByLabel": "Cancelled by: {name}",
+  "@cancelledByLabel": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "cancellationFeeDisplay": "Fee: €{fee}",
+  "@cancellationFeeDisplay": {
+    "placeholders": {
+      "fee": {"type": "String"}
+    }
+  },
+  "ratingTitle": "Rating",
+  "notesTitle": "Notes",
+  "openChatButton": "Open Chat",
+  "rideStatusUpdatedSuccess": "Ride status updated successfully",
+  "failedToUpdateRideStatus": "Failed to update ride status: {error}",
+  "@failedToUpdateRideStatus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "driverAssignedSuccess": "Driver assigned successfully",
+  "failedToAssignDriver": "Failed to assign driver: {error}",
+  "@failedToAssignDriver": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "rideCancelledSuccess": "Ride cancelled",
+  "failedToCancelRide": "Failed to cancel ride: {error}",
+  "@failedToCancelRide": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToSubmitRating": "Failed to submit rating: {error}",
+  "@failedToSubmitRating": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "completeRideDialogTitle": "Complete Ride",
+  "completeRideDialogContent": "Mark this ride as completed?",
+
+  "createNewRideTitle": "Create New Ride",
+  "rideCreatedSuccess": "Ride created successfully!",
+  "failedToCreateRide": "Failed to create ride",
+  "conflictDialogTitle": "Schedule conflict",
+  "conflictDialogContent": "{message}\n\nThe ride was created and is in the dispatcher pool. Assign it to yourself anyway?",
+  "@conflictDialogContent": {
+    "placeholders": {
+      "message": {"type": "String"}
+    }
+  },
+  "conflictDialogContentDefault": "You already have a ride around this time. The ride was created and is in the dispatcher pool. Assign it to yourself anyway?",
+  "keepInPoolButton": "Keep in pool",
+  "assignAnywayButton": "Assign anyway",
+
+  "exportRidesTitle": "Export Rides",
+  "copyCsvButton": "Copy CSV",
+  "dateRangeButton": "Date Range",
+  "noRidesMatchFilters": "No rides match the filters",
+  "exportSummaryTotal": "Total",
+  "exportSummaryCompleted": "Completed",
+  "exportSummaryRevenue": "Revenue",
+  "csvCopiedSnackbar": "CSV data copied to clipboard ({count} rides)",
+  "@csvCopiedSnackbar": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "okButton": "OK",
+
+  "flightsMunichAirportTitle": "Flights · Munich Airport",
+  "autoSyncedLabel": "auto-synced",
+  "arrivalsTabLabel": "Arrivals",
+  "departuresTabLabel": "Departures",
+  "noArrivalsFound": "No arrivals found",
+  "noDeparturesFound": "No departures found",
+  "errorLoadingFlights": "Error loading flights: {error}",
+  "@errorLoadingFlights": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "flightColumnFlight": "Flight",
+  "flightColumnOriginDest": "Origin / Dest.",
+  "flightColumnSched": "Sched.",
+  "flightColumnStatus": "Status",
+  "flightColumnLinkedRide": "Linked ride",
+  "flightStatusOnTime": "On time",
+  "flightStatusDelayed": "Delayed",
+  "flightStatusBoarding": "Boarding",
+  "flightStatusCancelled": "Cancelled",
+  "flightStatusUnknown": "Unknown",
+  "flightNotLinked": "— not linked",
+
+  "whoCanSeeWhomTitle": "Who can see whom",
+  "visibleToAllDispatchers": "Visible to all dispatchers",
+  "scheduleHiddenFromOthers": "Schedule hidden from others",
+  "noDriversInCompany": "No drivers in your company.",
+  "failedToUpdateVisibilityError": "Failed to update visibility: {error}",
+  "@failedToUpdateVisibilityError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "auditLogScreenTitle": "Audit Log",
+  "searchByEntityIdHint": "Search by entity ID...",
+  "noAuditEntriesFound": "No audit entries found",
+
+  "onlineOnRideLabel": "Online · on ride #{id}",
+  "@onlineOnRideLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "startConversationSubtitle": "Start the conversation with the driver",
+  "failedToSendMessage": "Failed to send: {error}",
+  "@failedToSendMessage": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "totalRidesStatLabel": "Total Rides",
+  "onTimeStatLabel": "On-time",
+  "avgSlackStatLabel": "Avg Slack",
+  "gmvStatLabel": "GMV",
+  "ridesByTenantTitle": "Rides by Tenant",
+  "rideStatusBreakdownTitle": "Ride Status Breakdown",
+  "platformActiveSessionsLabel": "Platform Active Sessions",
+
+  "clientPaymentTitle": "Payment",
+  "paymentMethodsSectionLabel": "PAYMENT METHODS",
+  "corporateInvoiceLabel": "Corporate invoice",
+  "addPaymentMethodButton": "Add payment method"
 }

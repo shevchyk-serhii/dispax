@@ -7,6 +7,7 @@ import '../modules/flight_management/services/flight_service.dart';
 import '../modules/ride_management/models/ride.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
+import '../l10n/app_localizations.dart';
 
 // ─── Flight status badge helpers ──────────────────────────────────────────────
 
@@ -56,23 +57,23 @@ Color _statusBadgeBg(_FlightStatus s) {
   }
 }
 
-String _statusLabel(_FlightStatus s, String? raw) {
+String _statusLabel(_FlightStatus s, String? raw, AppLocalizations l10n) {
   switch (s) {
     case _FlightStatus.onTime:
-      return 'On time';
+      return l10n.flightStatusOnTime;
     case _FlightStatus.delayed:
       // Try to extract delay minutes from raw, e.g. "+35min"
       if (raw != null) {
         final numMatch = RegExp(r'\d+').firstMatch(raw);
         if (numMatch != null) return '+${numMatch.group(0)}min';
       }
-      return 'Delayed';
+      return l10n.flightStatusDelayed;
     case _FlightStatus.boarding:
-      return 'Boarding';
+      return l10n.flightStatusBoarding;
     case _FlightStatus.cancelled:
-      return 'Cancelled';
+      return l10n.flightStatusCancelled;
     case _FlightStatus.unknown:
-      return raw ?? 'Unknown';
+      return raw ?? l10n.flightStatusUnknown;
   }
 }
 
@@ -119,9 +120,10 @@ class _FlightScreenState extends State<FlightScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error loading flights: $e')));
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.errorLoadingFlights(e.toString()))),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -132,6 +134,7 @@ class _FlightScreenState extends State<FlightScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       children: [
@@ -161,30 +164,30 @@ class _FlightScreenState extends State<FlightScreen>
                           size: 22,
                         ),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Flights · Munich Airport',
-                                style: TextStyle(
+                                l10n.flightsMunichAirportTitle,
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 17,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              SizedBox(height: 1),
+                              const SizedBox(height: 1),
                               Row(
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.sync_rounded,
                                     color: Colors.white60,
                                     size: 12,
                                   ),
-                                  SizedBox(width: 4),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    'auto-synced',
-                                    style: TextStyle(
+                                    l10n.autoSyncedLabel,
+                                    style: const TextStyle(
                                       color: Colors.white60,
                                       fontSize: 11,
                                     ),
@@ -201,7 +204,7 @@ class _FlightScreenState extends State<FlightScreen>
                             size: 22,
                           ),
                           onPressed: _loadFlights,
-                          tooltip: 'Refresh',
+                          tooltip: l10n.refresh,
                         ),
                       ],
                     ),
@@ -217,14 +220,14 @@ class _FlightScreenState extends State<FlightScreen>
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
-                    tabs: const [
+                    tabs: [
                       Tab(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.flight_land, size: 16),
-                            SizedBox(width: 6),
-                            Text('Arrivals'),
+                            const Icon(Icons.flight_land, size: 16),
+                            const SizedBox(width: 6),
+                            Text(l10n.arrivalsTabLabel),
                           ],
                         ),
                       ),
@@ -232,9 +235,9 @@ class _FlightScreenState extends State<FlightScreen>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.flight_takeoff, size: 16),
-                            SizedBox(width: 6),
-                            Text('Departures'),
+                            const Icon(Icons.flight_takeoff, size: 16),
+                            const SizedBox(width: 6),
+                            Text(l10n.departuresTabLabel),
                           ],
                         ),
                       ),
@@ -257,11 +260,13 @@ class _FlightScreenState extends State<FlightScreen>
                       _arrivals,
                       isArrival: true,
                       isDark: isDark,
+                      l10n: l10n,
                     ),
                     _buildFlightTable(
                       _departures,
                       isArrival: false,
                       isDark: isDark,
+                      l10n: l10n,
                     ),
                   ],
                 ),
@@ -276,6 +281,7 @@ class _FlightScreenState extends State<FlightScreen>
     List<FlightData> flights, {
     required bool isArrival,
     required bool isDark,
+    required AppLocalizations l10n,
   }) {
     if (flights.isEmpty) {
       return Center(
@@ -289,7 +295,7 @@ class _FlightScreenState extends State<FlightScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'No ${isArrival ? 'arrivals' : 'departures'} found',
+              isArrival ? l10n.noArrivalsFound : l10n.noDeparturesFound,
               style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -319,12 +325,12 @@ class _FlightScreenState extends State<FlightScreen>
                 vertical: 10,
               ),
               child: Row(
-                children: const [
-                  _TableHeaderCell('Flight', flex: 2),
-                  _TableHeaderCell('Origin / Dest.', flex: 3),
-                  _TableHeaderCell('Sched.', flex: 2),
-                  _TableHeaderCell('Status', flex: 2),
-                  _TableHeaderCell('Linked ride', flex: 3),
+                children: [
+                  _TableHeaderCell(l10n.flightColumnFlight, flex: 2),
+                  _TableHeaderCell(l10n.flightColumnOriginDest, flex: 3),
+                  _TableHeaderCell(l10n.flightColumnSched, flex: 2),
+                  _TableHeaderCell(l10n.flightColumnStatus, flex: 2),
+                  _TableHeaderCell(l10n.flightColumnLinkedRide, flex: 3),
                 ],
               ),
             ),
@@ -362,6 +368,7 @@ class _FlightScreenState extends State<FlightScreen>
                 status: status,
                 linkedRide: linkedRide,
                 isDark: isDark,
+                l10n: l10n,
               );
             }),
           ],
@@ -377,6 +384,7 @@ class _FlightScreenState extends State<FlightScreen>
     required _FlightStatus status,
     required Ride? linkedRide,
     required bool isDark,
+    required AppLocalizations l10n,
   }) {
     final bg = isDark ? AppColors.surfaceDark : AppColors.surface;
     final badgeColor = _statusBadgeColor(status);
@@ -448,7 +456,7 @@ class _FlightScreenState extends State<FlightScreen>
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      _statusLabel(status, null),
+                      _statusLabel(status, null, l10n),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -481,7 +489,7 @@ class _FlightScreenState extends State<FlightScreen>
                           ),
                         )
                       : Text(
-                          '— not linked',
+                          l10n.flightNotLinked,
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark

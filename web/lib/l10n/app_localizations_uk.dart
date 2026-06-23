@@ -1672,7 +1672,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String failedToCancelRide(String error) {
-    return 'Не вдалося скасувати поїздку: $error';
+    return 'Помилка скасування поїздки: $error';
   }
 
   @override
@@ -1743,7 +1743,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get rideBookedSuccessfully => 'Поїздку успішно заброньовано!';
 
   @override
-  String get failedToCreateRide => 'Не вдалося створити поїздку';
+  String get failedToCreateRide => 'Помилка створення поїздки';
 
   @override
   String get failedToLoadRideHistory =>
@@ -1766,7 +1766,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String failedToSubmitRating(String error) {
-    return 'Не вдалося надіслати оцінку: $error';
+    return 'Помилка надсилання оцінки: $error';
   }
 
   @override
@@ -2881,4 +2881,390 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get generalSettingsSectionTitle => 'Загальні налаштування';
+
+  @override
+  String get gdprScreenTitle => 'Конфіденційність та дані (GDPR)';
+
+  @override
+  String get consentManagementSectionTitle => 'Управління згодами';
+
+  @override
+  String get consentDataProcessingLabel => 'Обробка даних';
+
+  @override
+  String get consentDataProcessingSubtitle =>
+      'Дозволити обробку даних поїздок та акаунту';
+
+  @override
+  String get consentMarketingLabel => 'Маркетинг';
+
+  @override
+  String get consentMarketingSubtitle =>
+      'Отримувати рекламні листи та пропозиції';
+
+  @override
+  String get consentAnalyticsLabel => 'Аналітика';
+
+  @override
+  String get consentAnalyticsSubtitle =>
+      'Допомогти покращити застосунок за допомогою аналітики';
+
+  @override
+  String get consentThirdPartySharingLabel => 'Передача третім сторонам';
+
+  @override
+  String get consentThirdPartySharingSubtitle =>
+      'Ділитися даними з партнерськими сервісами';
+
+  @override
+  String get yourDataSectionTitle => 'Ваші дані';
+
+  @override
+  String get exportMyDataLabel => 'Експортувати мої дані';
+
+  @override
+  String get exportMyDataSubtitle =>
+      'Завантажити всі особисті дані, що ми зберігаємо про вас';
+
+  @override
+  String get dataDeletionSectionTitle => 'Видалення даних';
+
+  @override
+  String get requestDataDeletionLabel => 'Запросити видалення даних';
+
+  @override
+  String get requestDataDeletionSubtitle =>
+      'Назавжди видалити всі ваші дані та акаунт';
+
+  @override
+  String get pendingDeletionSubtitle =>
+      'Запит на видалення вже очікує розгляду';
+
+  @override
+  String get pendingChipLabel => 'Очікує';
+
+  @override
+  String get requestHistoryTitle => 'Історія запитів';
+
+  @override
+  String get requestDeletionDialogTitle => 'Запросити видалення даних';
+
+  @override
+  String get requestDeletionDialogContent =>
+      'Це надішле запит на видалення всіх ваших особистих даних. Цю дію не можна скасувати. Ваш акаунт буде деактивований після обробки запиту.\n\nВи впевнені, що хочете продовжити?';
+
+  @override
+  String get requestDeletionButton => 'Запросити видалення';
+
+  @override
+  String get dataExportCopied => 'Дані скопійовано в буфер обміну';
+
+  @override
+  String exportFailed(String error) {
+    return 'Помилка експорту: $error';
+  }
+
+  @override
+  String get deletionRequestSubmitted => 'Запит на видалення надіслано';
+
+  @override
+  String failedToLoadGdprData(String consentsCode, String requestsCode) {
+    return 'Помилка завантаження даних GDPR ($consentsCode/$requestsCode)';
+  }
+
+  @override
+  String get dataDeletionRequestType => 'Видалення даних';
+
+  @override
+  String get dataExportRequestType => 'Експорт даних';
+
+  @override
+  String get paymentsTitle => 'Платежі';
+
+  @override
+  String get unpaidBadgeLabel => 'Не оплачено';
+
+  @override
+  String get allRidesPaidLabel => 'Усі поїздки оплачені';
+
+  @override
+  String get markAsPaidDialogTitle => 'Позначити як оплачено';
+
+  @override
+  String get paymentMethodLabel => 'Спосіб оплати:';
+
+  @override
+  String get paymentMethodCash => 'Готівка';
+
+  @override
+  String get paymentMethodCard => 'Картка';
+
+  @override
+  String get paymentMethodInvoice => 'Рахунок';
+
+  @override
+  String amountLabel(String amount) {
+    return 'Сума: $amount EUR';
+  }
+
+  @override
+  String get confirmPaymentButton => 'Підтвердити оплату';
+
+  @override
+  String get paymentRecordedSuccess => 'Платіж зафіксовано';
+
+  @override
+  String failedToMarkPaid(String error) {
+    return 'Помилка: $error';
+  }
+
+  @override
+  String get failedToLoadUnpaidRides =>
+      'Помилка завантаження неоплачених поїздок';
+
+  @override
+  String myRideTitle(String id) {
+    return 'Моя поїздка #$id';
+  }
+
+  @override
+  String rideTitle(String id) {
+    return 'Поїздка #$id';
+  }
+
+  @override
+  String get confirmationSentLabel => 'Підтвердження надіслано';
+
+  @override
+  String get cancellationDetailsTitle => 'Деталі скасування';
+
+  @override
+  String cancellationReasonDetail(String reason) {
+    return 'Причина: $reason';
+  }
+
+  @override
+  String cancelledByLabel(String name) {
+    return 'Скасовано: $name';
+  }
+
+  @override
+  String cancellationFeeDisplay(String fee) {
+    return 'Штраф: €$fee';
+  }
+
+  @override
+  String get ratingTitle => 'Оцінка';
+
+  @override
+  String get notesTitle => 'Примітки';
+
+  @override
+  String get openChatButton => 'Відкрити чат';
+
+  @override
+  String get rideStatusUpdatedSuccess => 'Статус поїздки успішно оновлено';
+
+  @override
+  String failedToUpdateRideStatus(String error) {
+    return 'Помилка оновлення статусу поїздки: $error';
+  }
+
+  @override
+  String get driverAssignedSuccess => 'Водія успішно призначено';
+
+  @override
+  String failedToAssignDriver(String error) {
+    return 'Помилка призначення водія: $error';
+  }
+
+  @override
+  String get rideCancelledSuccess => 'Поїздку скасовано';
+
+  @override
+  String get completeRideDialogTitle => 'Завершити поїздку';
+
+  @override
+  String get completeRideDialogContent => 'Позначити цю поїздку як завершену?';
+
+  @override
+  String get createNewRideTitle => 'Створити нову поїздку';
+
+  @override
+  String get rideCreatedSuccess => 'Поїздку успішно створено!';
+
+  @override
+  String get conflictDialogTitle => 'Конфлікт розкладу';
+
+  @override
+  String conflictDialogContent(String message) {
+    return '$message\n\nПоїздку створено та додано до пулу диспетчера. Все одно призначити собі?';
+  }
+
+  @override
+  String get conflictDialogContentDefault =>
+      'У вас вже є поїздка в цей час. Поїздку створено та додано до пулу. Все одно призначити собі?';
+
+  @override
+  String get keepInPoolButton => 'Залишити в пулі';
+
+  @override
+  String get assignAnywayButton => 'Призначити все одно';
+
+  @override
+  String get exportRidesTitle => 'Експорт поїздок';
+
+  @override
+  String get copyCsvButton => 'Копіювати CSV';
+
+  @override
+  String get dateRangeButton => 'Діапазон дат';
+
+  @override
+  String get noRidesMatchFilters => 'Жодна поїздка не відповідає фільтрам';
+
+  @override
+  String get exportSummaryTotal => 'Всього';
+
+  @override
+  String get exportSummaryCompleted => 'Завершено';
+
+  @override
+  String get exportSummaryRevenue => 'Виручка';
+
+  @override
+  String csvCopiedSnackbar(int count) {
+    return 'Дані CSV скопійовано ($count поїздок)';
+  }
+
+  @override
+  String get okButton => 'OK';
+
+  @override
+  String get flightsMunichAirportTitle => 'Рейси · Аеропорт Мюнхен';
+
+  @override
+  String get autoSyncedLabel => 'авто-синхронізація';
+
+  @override
+  String get arrivalsTabLabel => 'Прильоти';
+
+  @override
+  String get departuresTabLabel => 'Відльоти';
+
+  @override
+  String get noArrivalsFound => 'Прильотів не знайдено';
+
+  @override
+  String get noDeparturesFound => 'Відльотів не знайдено';
+
+  @override
+  String errorLoadingFlights(String error) {
+    return 'Помилка завантаження рейсів: $error';
+  }
+
+  @override
+  String get flightColumnFlight => 'Рейс';
+
+  @override
+  String get flightColumnOriginDest => 'Звідки / Куди';
+
+  @override
+  String get flightColumnSched => 'Розклад';
+
+  @override
+  String get flightColumnStatus => 'Статус';
+
+  @override
+  String get flightColumnLinkedRide => 'Пов\'язана поїздка';
+
+  @override
+  String get flightStatusOnTime => 'Вчасно';
+
+  @override
+  String get flightStatusDelayed => 'Затримано';
+
+  @override
+  String get flightStatusBoarding => 'Посадка';
+
+  @override
+  String get flightStatusCancelled => 'Скасовано';
+
+  @override
+  String get flightStatusUnknown => 'Невідомо';
+
+  @override
+  String get flightNotLinked => '— не пов\'язано';
+
+  @override
+  String get whoCanSeeWhomTitle => 'Хто може бачити кого';
+
+  @override
+  String get visibleToAllDispatchers => 'Видимий для всіх диспетчерів';
+
+  @override
+  String get scheduleHiddenFromOthers => 'Розклад прихований від інших';
+
+  @override
+  String get noDriversInCompany => 'У вашій компанії немає водіїв.';
+
+  @override
+  String failedToUpdateVisibilityError(String error) {
+    return 'Помилка оновлення видимості: $error';
+  }
+
+  @override
+  String get auditLogScreenTitle => 'Журнал аудиту';
+
+  @override
+  String get searchByEntityIdHint => 'Пошук за ID сутності...';
+
+  @override
+  String get noAuditEntriesFound => 'Записів аудиту не знайдено';
+
+  @override
+  String onlineOnRideLabel(String id) {
+    return 'Онлайн · поїздка #$id';
+  }
+
+  @override
+  String get startConversationSubtitle => 'Почніть розмову з водієм';
+
+  @override
+  String failedToSendMessage(String error) {
+    return 'Помилка надсилання: $error';
+  }
+
+  @override
+  String get totalRidesStatLabel => 'Всього поїздок';
+
+  @override
+  String get onTimeStatLabel => 'Вчасно';
+
+  @override
+  String get avgSlackStatLabel => 'Сер. запас';
+
+  @override
+  String get gmvStatLabel => 'GMV';
+
+  @override
+  String get ridesByTenantTitle => 'Поїздки за тенантом';
+
+  @override
+  String get rideStatusBreakdownTitle => 'Розбивка за статусом поїздок';
+
+  @override
+  String get platformActiveSessionsLabel => 'Активні сесії платформи';
+
+  @override
+  String get clientPaymentTitle => 'Оплата';
+
+  @override
+  String get paymentMethodsSectionLabel => 'СПОСОБИ ОПЛАТИ';
+
+  @override
+  String get corporateInvoiceLabel => 'Корпоративний рахунок';
+
+  @override
+  String get addPaymentMethodButton => 'Додати спосіб оплати';
 }

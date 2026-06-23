@@ -1678,7 +1678,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String failedToCancelRide(String error) {
-    return 'Fahrt konnte nicht storniert werden: $error';
+    return 'Fehler beim Stornieren: $error';
   }
 
   @override
@@ -1749,7 +1749,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get rideBookedSuccessfully => 'Fahrt erfolgreich gebucht!';
 
   @override
-  String get failedToCreateRide => 'Fahrt konnte nicht erstellt werden';
+  String get failedToCreateRide => 'Fehler beim Erstellen der Fahrt';
 
   @override
   String get failedToLoadRideHistory =>
@@ -1772,7 +1772,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String failedToSubmitRating(String error) {
-    return 'Bewertung konnte nicht übermittelt werden: $error';
+    return 'Fehler beim Absenden der Bewertung: $error';
   }
 
   @override
@@ -2888,4 +2888,390 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get generalSettingsSectionTitle => 'Allgemeine Einstellungen';
+
+  @override
+  String get gdprScreenTitle => 'Datenschutz & Daten (DSGVO)';
+
+  @override
+  String get consentManagementSectionTitle => 'Einwilligungsverwaltung';
+
+  @override
+  String get consentDataProcessingLabel => 'Datenverarbeitung';
+
+  @override
+  String get consentDataProcessingSubtitle =>
+      'Verarbeitung von Fahrt- und Kontodaten zulassen';
+
+  @override
+  String get consentMarketingLabel => 'Marketing';
+
+  @override
+  String get consentMarketingSubtitle => 'Werbe-E-Mails und Angebote erhalten';
+
+  @override
+  String get consentAnalyticsLabel => 'Analyse';
+
+  @override
+  String get consentAnalyticsSubtitle => 'Helfen Sie uns mit Nutzungsanalysen';
+
+  @override
+  String get consentThirdPartySharingLabel => 'Weitergabe an Dritte';
+
+  @override
+  String get consentThirdPartySharingSubtitle =>
+      'Daten mit Partnerdiensten teilen';
+
+  @override
+  String get yourDataSectionTitle => 'Ihre Daten';
+
+  @override
+  String get exportMyDataLabel => 'Meine Daten exportieren';
+
+  @override
+  String get exportMyDataSubtitle =>
+      'Alle gespeicherten persönlichen Daten herunterladen';
+
+  @override
+  String get dataDeletionSectionTitle => 'Datenlöschung';
+
+  @override
+  String get requestDataDeletionLabel => 'Datenlöschung beantragen';
+
+  @override
+  String get requestDataDeletionSubtitle =>
+      'Alle Daten und Ihr Konto dauerhaft löschen';
+
+  @override
+  String get pendingDeletionSubtitle =>
+      'Eine Löschanfrage ist bereits ausstehend';
+
+  @override
+  String get pendingChipLabel => 'Ausstehend';
+
+  @override
+  String get requestHistoryTitle => 'Anfrageverlauf';
+
+  @override
+  String get requestDeletionDialogTitle => 'Datenlöschung beantragen';
+
+  @override
+  String get requestDeletionDialogContent =>
+      'Dies sendet eine Anfrage zur Löschung aller Ihrer persönlichen Daten. Diese Aktion kann nicht rückgängig gemacht werden. Ihr Konto wird nach Bearbeitung der Anfrage deaktiviert.\n\nMöchten Sie wirklich fortfahren?';
+
+  @override
+  String get requestDeletionButton => 'Löschung beantragen';
+
+  @override
+  String get dataExportCopied => 'Datenexport in Zwischenablage kopiert';
+
+  @override
+  String exportFailed(String error) {
+    return 'Export fehlgeschlagen: $error';
+  }
+
+  @override
+  String get deletionRequestSubmitted => 'Löschanfrage eingereicht';
+
+  @override
+  String failedToLoadGdprData(String consentsCode, String requestsCode) {
+    return 'Fehler beim Laden der DSGVO-Daten ($consentsCode/$requestsCode)';
+  }
+
+  @override
+  String get dataDeletionRequestType => 'Datenlöschung';
+
+  @override
+  String get dataExportRequestType => 'Datenexport';
+
+  @override
+  String get paymentsTitle => 'Zahlungen';
+
+  @override
+  String get unpaidBadgeLabel => 'Unbezahlt';
+
+  @override
+  String get allRidesPaidLabel => 'Alle Fahrten sind bezahlt';
+
+  @override
+  String get markAsPaidDialogTitle => 'Als bezahlt markieren';
+
+  @override
+  String get paymentMethodLabel => 'Zahlungsart:';
+
+  @override
+  String get paymentMethodCash => 'Bar';
+
+  @override
+  String get paymentMethodCard => 'Karte';
+
+  @override
+  String get paymentMethodInvoice => 'Rechnung';
+
+  @override
+  String amountLabel(String amount) {
+    return 'Betrag: $amount EUR';
+  }
+
+  @override
+  String get confirmPaymentButton => 'Zahlung bestätigen';
+
+  @override
+  String get paymentRecordedSuccess => 'Zahlung erfasst';
+
+  @override
+  String failedToMarkPaid(String error) {
+    return 'Fehler: $error';
+  }
+
+  @override
+  String get failedToLoadUnpaidRides => 'Fehler beim Laden unbezahlter Fahrten';
+
+  @override
+  String myRideTitle(String id) {
+    return 'Meine Fahrt #$id';
+  }
+
+  @override
+  String rideTitle(String id) {
+    return 'Fahrt #$id';
+  }
+
+  @override
+  String get confirmationSentLabel => 'Bestätigung gesendet';
+
+  @override
+  String get cancellationDetailsTitle => 'Stornierungsdetails';
+
+  @override
+  String cancellationReasonDetail(String reason) {
+    return 'Grund: $reason';
+  }
+
+  @override
+  String cancelledByLabel(String name) {
+    return 'Storniert von: $name';
+  }
+
+  @override
+  String cancellationFeeDisplay(String fee) {
+    return 'Gebühr: €$fee';
+  }
+
+  @override
+  String get ratingTitle => 'Bewertung';
+
+  @override
+  String get notesTitle => 'Notizen';
+
+  @override
+  String get openChatButton => 'Chat öffnen';
+
+  @override
+  String get rideStatusUpdatedSuccess =>
+      'Fahrtsstatus erfolgreich aktualisiert';
+
+  @override
+  String failedToUpdateRideStatus(String error) {
+    return 'Fehler beim Aktualisieren des Fahrtstatus: $error';
+  }
+
+  @override
+  String get driverAssignedSuccess => 'Fahrer erfolgreich zugewiesen';
+
+  @override
+  String failedToAssignDriver(String error) {
+    return 'Fehler bei der Fahrerzuweisung: $error';
+  }
+
+  @override
+  String get rideCancelledSuccess => 'Fahrt storniert';
+
+  @override
+  String get completeRideDialogTitle => 'Fahrt abschließen';
+
+  @override
+  String get completeRideDialogContent =>
+      'Diese Fahrt als abgeschlossen markieren?';
+
+  @override
+  String get createNewRideTitle => 'Neue Fahrt erstellen';
+
+  @override
+  String get rideCreatedSuccess => 'Fahrt erfolgreich erstellt!';
+
+  @override
+  String get conflictDialogTitle => 'Terminkonflikt';
+
+  @override
+  String conflictDialogContent(String message) {
+    return '$message\n\nDie Fahrt wurde erstellt und befindet sich im Dispatcher-Pool. Trotzdem zuweisen?';
+  }
+
+  @override
+  String get conflictDialogContentDefault =>
+      'Sie haben bereits eine Fahrt zu dieser Zeit. Die Fahrt wurde erstellt und befindet sich im Pool. Trotzdem zuweisen?';
+
+  @override
+  String get keepInPoolButton => 'Im Pool belassen';
+
+  @override
+  String get assignAnywayButton => 'Trotzdem zuweisen';
+
+  @override
+  String get exportRidesTitle => 'Fahrten exportieren';
+
+  @override
+  String get copyCsvButton => 'CSV kopieren';
+
+  @override
+  String get dateRangeButton => 'Zeitraum';
+
+  @override
+  String get noRidesMatchFilters => 'Keine Fahrten entsprechen den Filtern';
+
+  @override
+  String get exportSummaryTotal => 'Gesamt';
+
+  @override
+  String get exportSummaryCompleted => 'Abgeschlossen';
+
+  @override
+  String get exportSummaryRevenue => 'Umsatz';
+
+  @override
+  String csvCopiedSnackbar(int count) {
+    return 'CSV-Daten in Zwischenablage ($count Fahrten)';
+  }
+
+  @override
+  String get okButton => 'OK';
+
+  @override
+  String get flightsMunichAirportTitle => 'Flüge · Flughafen München';
+
+  @override
+  String get autoSyncedLabel => 'automatisch synchronisiert';
+
+  @override
+  String get arrivalsTabLabel => 'Ankünfte';
+
+  @override
+  String get departuresTabLabel => 'Abflüge';
+
+  @override
+  String get noArrivalsFound => 'Keine Ankünfte gefunden';
+
+  @override
+  String get noDeparturesFound => 'Keine Abflüge gefunden';
+
+  @override
+  String errorLoadingFlights(String error) {
+    return 'Fehler beim Laden der Flüge: $error';
+  }
+
+  @override
+  String get flightColumnFlight => 'Flug';
+
+  @override
+  String get flightColumnOriginDest => 'Herkunft / Ziel';
+
+  @override
+  String get flightColumnSched => 'Plan';
+
+  @override
+  String get flightColumnStatus => 'Status';
+
+  @override
+  String get flightColumnLinkedRide => 'Verknüpfte Fahrt';
+
+  @override
+  String get flightStatusOnTime => 'Pünktlich';
+
+  @override
+  String get flightStatusDelayed => 'Verspätet';
+
+  @override
+  String get flightStatusBoarding => 'Boarding';
+
+  @override
+  String get flightStatusCancelled => 'Gestrichen';
+
+  @override
+  String get flightStatusUnknown => 'Unbekannt';
+
+  @override
+  String get flightNotLinked => '— nicht verknüpft';
+
+  @override
+  String get whoCanSeeWhomTitle => 'Wer sieht wen';
+
+  @override
+  String get visibleToAllDispatchers => 'Für alle Disponenten sichtbar';
+
+  @override
+  String get scheduleHiddenFromOthers => 'Zeitplan für andere verborgen';
+
+  @override
+  String get noDriversInCompany => 'Keine Fahrer in Ihrem Unternehmen.';
+
+  @override
+  String failedToUpdateVisibilityError(String error) {
+    return 'Fehler beim Aktualisieren der Sichtbarkeit: $error';
+  }
+
+  @override
+  String get auditLogScreenTitle => 'Audit-Protokoll';
+
+  @override
+  String get searchByEntityIdHint => 'Nach Entitäts-ID suchen...';
+
+  @override
+  String get noAuditEntriesFound => 'Keine Audit-Einträge gefunden';
+
+  @override
+  String onlineOnRideLabel(String id) {
+    return 'Online · Fahrt #$id';
+  }
+
+  @override
+  String get startConversationSubtitle =>
+      'Beginnen Sie die Unterhaltung mit dem Fahrer';
+
+  @override
+  String failedToSendMessage(String error) {
+    return 'Fehler beim Senden: $error';
+  }
+
+  @override
+  String get totalRidesStatLabel => 'Fahrten gesamt';
+
+  @override
+  String get onTimeStatLabel => 'Pünktlich';
+
+  @override
+  String get avgSlackStatLabel => 'Ø Puffer';
+
+  @override
+  String get gmvStatLabel => 'GMV';
+
+  @override
+  String get ridesByTenantTitle => 'Fahrten nach Mandant';
+
+  @override
+  String get rideStatusBreakdownTitle => 'Fahrtsstatus-Übersicht';
+
+  @override
+  String get platformActiveSessionsLabel => 'Aktive Plattformsitzungen';
+
+  @override
+  String get clientPaymentTitle => 'Zahlung';
+
+  @override
+  String get paymentMethodsSectionLabel => 'ZAHLUNGSARTEN';
+
+  @override
+  String get corporateInvoiceLabel => 'Firmenrechnung';
+
+  @override
+  String get addPaymentMethodButton => 'Zahlungsart hinzufügen';
 }

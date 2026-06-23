@@ -6,6 +6,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/models/audit_entry.dart';
+import '../l10n/app_localizations.dart';
 
 class AuditLogScreen extends StatefulWidget {
   const AuditLogScreen({super.key});
@@ -112,12 +113,22 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
+  String _formatTimestamp(DateTime dt, AppLocalizations l10n) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 60) return l10n.notifMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.notifHoursAgo(diff.inHours);
+    if (diff.inDays < 7) return l10n.notifDaysAgo(diff.inDays);
+    return '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        _buildHeader(),
-        _buildFilters(),
+        _buildHeader(l10n),
+        _buildFilters(l10n),
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
@@ -136,21 +147,21 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: _loadAuditLog,
-                        child: const Text('Retry'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
                 )
               : RefreshIndicator(
                   onRefresh: _loadAuditLog,
-                  child: _buildContent(),
+                  child: _buildContent(l10n),
                 ),
         ),
       ],
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -165,10 +176,10 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
             children: [
               const Icon(Icons.history, color: Colors.white, size: 24),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Audit Log',
-                  style: TextStyle(
+                  l10n.auditLogScreenTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -186,7 +197,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildFilters(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(12),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -197,12 +208,12 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
               Expanded(
                 child: TextField(
                   controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Search by entity ID...',
-                    prefixIcon: Icon(Icons.search, size: 20),
+                  decoration: InputDecoration(
+                    hintText: l10n.searchByEntityIdHint,
+                    prefixIcon: const Icon(Icons.search, size: 20),
                     isDense: true,
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
+                    border: const OutlineInputBorder(),
+                    contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
                     ),
@@ -216,9 +227,17 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
               DropdownButton<String>(
                 value: _entityTypeFilter,
                 underline: const SizedBox(),
-                items: ['All', 'Ride', 'User', 'Driver']
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                    .toList(),
+                // 'All' is localised for display but stored as 'All' for logic.
+                // 'Ride', 'User', 'Driver' are backend entity-type values —
+                // leave hardcoded so the filter comparison stays correct.
+                items: [
+                  DropdownMenuItem(value: 'All', child: Text(l10n.allLabel)),
+                  ...[
+                    'Ride',
+                    'User',
+                    'Driver',
+                  ].map((t) => DropdownMenuItem(value: t, child: Text(t))),
+                ],
                 onChanged: (v) {
                   if (v != null) {
                     setState(() {
@@ -235,7 +254,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(AppLocalizations l10n) {
     if (_filteredEntries.isEmpty) {
       return Center(
         child: Column(
@@ -248,7 +267,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'No audit entries found',
+              l10n.noAuditEntriesFound,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -335,7 +354,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                         ),
                       ),
                       Text(
-                        _formatTimestamp(entry.createdAt),
+                        _formatTimestamp(entry.createdAt, l10n),
                         style: TextStyle(
                           fontSize: 11,
                           color: Theme.of(context).colorScheme.outlineVariant,
@@ -350,14 +369,5 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
         );
       },
     );
-  }
-
-  String _formatTimestamp(DateTime dt) {
-    final now = DateTime.now();
-    final diff = now.difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

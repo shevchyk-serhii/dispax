@@ -5,6 +5,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../modules/ride_management/models/ride.dart';
 import '../modules/ride_management/services/ride_service.dart';
+import '../l10n/app_localizations.dart';
 
 class RideExportScreen extends StatefulWidget {
   const RideExportScreen({super.key});
@@ -93,6 +94,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
   }
 
   Future<void> _exportCsv() async {
+    final l10n = AppLocalizations.of(context)!;
     final csv = _generateCsv();
 
     await Clipboard.setData(ClipboardData(text: csv));
@@ -100,10 +102,8 @@ class _RideExportScreenState extends State<RideExportScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'CSV data copied to clipboard (${_filteredRides.length} rides)',
-          ),
-          action: SnackBarAction(label: 'OK', onPressed: () {}),
+          content: Text(l10n.csvCopiedSnackbar(_filteredRides.length)),
+          action: SnackBarAction(label: l10n.okButton, onPressed: () {}),
         ),
       );
     }
@@ -124,6 +124,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final filtered = _filteredRides;
     final totalRevenue = filtered.fold<double>(
       0,
@@ -135,9 +136,9 @@ class _RideExportScreenState extends State<RideExportScreen> {
 
     return Column(
       children: [
-        _buildHeader(),
-        _buildFilters(),
-        _buildSummary(filtered.length, completedCount, totalRevenue),
+        _buildHeader(l10n),
+        _buildFilters(l10n),
+        _buildSummary(l10n, filtered.length, completedCount, totalRevenue),
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
@@ -155,13 +156,13 @@ class _RideExportScreenState extends State<RideExportScreen> {
                       Text(_error!),
                       ElevatedButton(
                         onPressed: _loadRides,
-                        child: const Text('Retry'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
                 )
               : filtered.isEmpty
-              ? const Center(child: Text('No rides match the filters'))
+              ? Center(child: Text(l10n.noRidesMatchFilters))
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   itemCount: filtered.length,
@@ -173,7 +174,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -188,10 +189,10 @@ class _RideExportScreenState extends State<RideExportScreen> {
             children: [
               const Icon(Icons.download, color: Colors.white, size: 24),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Export Rides',
-                  style: TextStyle(
+                  l10n.exportRidesTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -201,7 +202,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
               FilledButton.icon(
                 onPressed: _filteredRides.isNotEmpty ? _exportCsv : null,
                 icon: const Icon(Icons.copy, size: 18),
-                label: const Text('Copy CSV'),
+                label: Text(l10n.copyCsvButton),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.white.withAlpha(40),
                   foregroundColor: Colors.white,
@@ -219,7 +220,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildFilters(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -227,23 +228,29 @@ class _RideExportScreenState extends State<RideExportScreen> {
           Expanded(
             child: DropdownButtonFormField<String>(
               initialValue: _filterStatus,
-              decoration: const InputDecoration(
-                labelText: 'Status',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.statusLabel,
+                border: const OutlineInputBorder(),
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 10,
                 ),
               ),
               items: [
-                'All',
-                'Requested',
-                'Assigned',
-                'InProgress',
-                'Completed',
-                'Cancelled',
-              ].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                // 'All' shows a localised label, but we track the filter value
+                // separately: the first item has value 'All' for the existing
+                // _filterStatus == 'All' comparison. The remaining items are
+                // backend enum strings and must stay in English.
+                DropdownMenuItem(value: 'All', child: Text(l10n.allLabel)),
+                ...[
+                  'Requested',
+                  'Assigned',
+                  'InProgress',
+                  'Completed',
+                  'Cancelled',
+                ].map((s) => DropdownMenuItem(value: s, child: Text(s))),
+              ],
               onChanged: (v) {
                 if (v != null) setState(() => _filterStatus = v);
               },
@@ -256,7 +263,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
             label: Text(
               _dateRange != null
                   ? '${_dateRange!.start.day}.${_dateRange!.start.month} - ${_dateRange!.end.day}.${_dateRange!.end.month}'
-                  : 'Date Range',
+                  : l10n.dateRangeButton,
               style: const TextStyle(fontSize: 12),
             ),
           ),
@@ -270,7 +277,12 @@ class _RideExportScreenState extends State<RideExportScreen> {
     );
   }
 
-  Widget _buildSummary(int total, int completed, double revenue) {
+  Widget _buildSummary(
+    AppLocalizations l10n,
+    int total,
+    int completed,
+    double revenue,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12),
       padding: const EdgeInsets.all(12),
@@ -282,11 +294,15 @@ class _RideExportScreenState extends State<RideExportScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildSummaryItem('Total', '$total', Icons.list),
-          _buildSummaryItem('Completed', '$completed', Icons.check_circle),
+          _buildSummaryItem(l10n.exportSummaryTotal, '$total', Icons.list),
           _buildSummaryItem(
-            'Revenue',
-            '\u20AC${revenue.toStringAsFixed(0)}',
+            l10n.exportSummaryCompleted,
+            '$completed',
+            Icons.check_circle,
+          ),
+          _buildSummaryItem(
+            l10n.exportSummaryRevenue,
+            '€${revenue.toStringAsFixed(0)}',
             Icons.euro,
           ),
         ],
@@ -361,7 +377,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
                     ),
                   ),
                   Text(
-                    '${ride.from.address} \u2192 ${ride.to.address}',
+                    '${ride.from.address} → ${ride.to.address}',
                     style: TextStyle(
                       fontSize: 11,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -392,9 +408,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
             SizedBox(
               width: 50,
               child: Text(
-                ride.price != null
-                    ? '\u20AC${ride.price!.toStringAsFixed(0)}'
-                    : '-',
+                ride.price != null ? '€${ride.price!.toStringAsFixed(0)}' : '-',
                 textAlign: TextAlign.right,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,

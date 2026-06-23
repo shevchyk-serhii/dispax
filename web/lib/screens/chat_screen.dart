@@ -8,6 +8,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/services/websocket_service.dart';
 import '../modules/ride_management/models/ride.dart';
+import '../l10n/app_localizations.dart';
 
 class ChatScreen extends StatefulWidget {
   final Ride ride;
@@ -80,9 +81,10 @@ class _ChatScreenState extends State<ChatScreen> {
       await _loadMessages();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToSendMessage(e.toString()))),
+        );
       }
     }
   }
@@ -103,6 +105,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final currentUserId = context.read<AuthBloc>().state.user?.id;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isChatAvailable =
@@ -167,7 +170,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Online · on ride #$rideShortId',
+                        l10n.onlineOnRideLabel(rideShortId),
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 11,
@@ -188,14 +191,14 @@ class _ChatScreenState extends State<ChatScreen> {
             child: _isLoading
                 ? Center(child: CircularProgressIndicator.adaptive())
                 : _messages.isEmpty
-                ? _buildEmptyState(context)
+                ? _buildEmptyState(context, l10n)
                 : ListView.builder(
                     controller: _scrollCtrl,
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     itemCount: _messages.length + 1, // +1 for date separator
                     itemBuilder: (context, index) {
                       // First item = date separator
-                      if (index == 0) return _buildDateSeparator();
+                      if (index == 0) return _buildDateSeparator(l10n);
                       final msg = _messages[index - 1];
                       final isMe = msg.senderId == currentUserId;
                       return _buildMessageBubble(msg, isMe);
@@ -205,7 +208,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
           // ── Input bar ──────────────────────────────────────────────────────
           if (isChatAvailable)
-            _buildInputBar(isDark)
+            _buildInputBar(isDark, l10n)
           else
             Container(
               padding: const EdgeInsets.all(AppDimensions.paddingMedium),
@@ -213,7 +216,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   ? AppColors.surfaceVariantDark
                   : AppColors.surfaceVariant,
               child: Text(
-                'Chat is available only during active rides',
+                l10n.chatUnavailable,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
@@ -230,7 +233,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ── Date separator "Today" ────────────────────────────────────────────────
 
-  Widget _buildDateSeparator() {
+  Widget _buildDateSeparator(AppLocalizations l10n) {
     final cs = Theme.of(context).colorScheme;
     final lineColor = cs.outlineVariant;
     return Padding(
@@ -247,7 +250,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                'Today',
+                l10n.today,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -264,7 +267,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ── Empty state ───────────────────────────────────────────────────────────
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -284,13 +287,13 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No messages yet',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          Text(
+            l10n.noMessages,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
-            'Start the conversation with the driver',
+            l10n.startConversationSubtitle,
             style: TextStyle(
               fontSize: 13,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -370,7 +373,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ── Input pill ────────────────────────────────────────────────────────────
 
-  Widget _buildInputBar(bool isDark) {
+  Widget _buildInputBar(bool isDark, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       decoration: BoxDecoration(
@@ -396,7 +399,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: TextField(
                   controller: _messageCtrl,
                   decoration: InputDecoration(
-                    hintText: 'Type a message…',
+                    hintText: l10n.typeMessage,
                     hintStyle: TextStyle(
                       fontSize: 14,
                       color: isDark

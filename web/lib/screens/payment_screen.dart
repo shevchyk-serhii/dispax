@@ -7,6 +7,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/ride_management/models/ride.dart';
+import '../l10n/app_localizations.dart';
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -27,6 +28,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _loadUnpaidRides() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -45,7 +47,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       } else {
         setState(() {
           _isLoading = false;
-          _error = 'Failed to load unpaid rides';
+          _error = l10n.failedToLoadUnpaidRides;
         });
       }
     } catch (e) {
@@ -59,71 +61,80 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _markAsPaid(Ride ride) async {
-    String selectedMethod = 'Cash';
+    final l10n = AppLocalizations.of(context)!;
+    // API values must remain as English strings; labels are localised.
+    final methodValues = ['Cash', 'Card', 'Invoice'];
+    String selectedMethodValue = 'Cash';
 
     final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Mark as Paid'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${ride.clientName}: ${ride.from.address} -> ${ride.to.address}',
-              ),
-              if (ride.price != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Amount: ${ride.price!.toStringAsFixed(2)} EUR',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+        builder: (ctx, setDialogState) {
+          final dialogL10n = AppLocalizations.of(ctx)!;
+          final methodLabels = [
+            dialogL10n.paymentMethodCash,
+            dialogL10n.paymentMethodCard,
+            dialogL10n.paymentMethodInvoice,
+          ];
+          return AlertDialog(
+            title: Text(dialogL10n.markAsPaidDialogTitle),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${ride.clientName}: ${ride.from.address} -> ${ride.to.address}',
+                ),
+                if (ride.price != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      dialogL10n.amountLabel(ride.price!.toStringAsFixed(2)),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
+                const SizedBox(height: 16),
+                Text(
+                  dialogL10n.paymentMethodLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
-              const SizedBox(height: 16),
-              const Text(
-                'Payment Method:',
-                style: TextStyle(fontWeight: FontWeight.w500),
+                const SizedBox(height: 8),
+                RadioGroup<String>(
+                  groupValue: selectedMethodValue,
+                  onChanged: (v) =>
+                      setDialogState(() => selectedMethodValue = v ?? 'Cash'),
+                  child: Column(
+                    children: List.generate(methodValues.length, (i) {
+                      return RadioListTile<String>(
+                        title: Text(methodLabels[i]),
+                        value: methodValues[i],
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(dialogL10n.cancel),
               ),
-              const SizedBox(height: 8),
-              RadioGroup<String>(
-                groupValue: selectedMethod,
-                onChanged: (v) =>
-                    setDialogState(() => selectedMethod = v ?? 'Cash'),
-                child: Column(
-                  children: ['Cash', 'Card', 'Invoice']
-                      .map(
-                        (method) => RadioListTile<String>(
-                          title: Text(method),
-                          value: method,
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                        ),
-                      )
-                      .toList(),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: Colors.white,
                 ),
+                child: Text(dialogL10n.confirmPaymentButton),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Confirm Payment'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
 
@@ -132,15 +143,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       final response = await apiClient.put('/rides/${ride.id}/payment', {
-        'paymentMethod': selectedMethod,
+        'paymentMethod': selectedMethodValue,
         'paymentStatus': 'Paid',
       });
       if (!mounted) return;
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Payment recorded'),
+          SnackBar(
+            content: Text(l10n.paymentRecordedSuccess),
             backgroundColor: AppColors.success,
           ),
         );
@@ -148,7 +159,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed: ${response.body}'),
+            content: Text(l10n.operationFailed(response.body)),
             backgroundColor: AppColors.error,
           ),
         );
@@ -156,7 +167,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text(l10n.genericError(e.toString())),
+          backgroundColor: AppColors.error,
+        ),
       );
     }
   }
@@ -174,6 +188,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -188,10 +203,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             children: [
               const Icon(Icons.payment, color: Colors.white, size: 24),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Payments',
-                  style: TextStyle(
+                  l10n.paymentsTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -210,6 +225,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
@@ -225,7 +241,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loadUnpaidRides,
-              child: const Text('Retry'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -240,7 +256,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             Icon(Icons.check_circle, size: 56, color: AppColors.success),
             const SizedBox(height: 12),
             Text(
-              'All rides are paid',
+              l10n.allRidesPaidLabel,
               style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -289,9 +305,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           color: AppColors.warning.withAlpha(30),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Text(
-                          'Unpaid',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.unpaidBadgeLabel,
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: AppColors.warning,
@@ -361,7 +377,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () => _markAsPaid(ride),
                       icon: const Icon(Icons.check, size: 18),
-                      label: const Text('Mark as Paid'),
+                      label: Text(l10n.markAsPaidButton),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success,
                         foregroundColor: Colors.white,

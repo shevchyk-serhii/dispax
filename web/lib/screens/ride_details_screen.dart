@@ -13,6 +13,7 @@ import '../widgets/common/cancel_ride_dialog.dart';
 import '../widgets/common/rate_ride_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'chat_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class RideDetailsScreen extends StatefulWidget {
   final Ride ride;
@@ -60,12 +61,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text(
           widget.isClientView
-              ? 'My Ride #${_currentRide.id}'
-              : 'Ride #${_currentRide.id}',
+              ? l10n.myRideTitle(_currentRide.id)
+              : l10n.rideTitle(_currentRide.id),
         ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
@@ -114,7 +116,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Confirmation sent',
+                                l10n.confirmationSentLabel,
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: isDark
@@ -204,7 +206,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Cancellation Details',
+                                l10n.cancellationDetailsTitle,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -215,7 +217,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Reason: ${_currentRide.cancellationReason}',
+                                l10n.cancellationReasonDetail(
+                                  _currentRide.cancellationReason!,
+                                ),
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: isDark
@@ -225,7 +229,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               ),
                               if (_currentRide.cancelledBy != null)
                                 Text(
-                                  'Cancelled by: ${_currentRide.cancelledBy}',
+                                  l10n.cancelledByLabel(
+                                    _currentRide.cancelledBy!,
+                                  ),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: isDark
@@ -236,7 +242,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               if (_currentRide.cancellationFee != null &&
                                   _currentRide.cancellationFee! > 0)
                                 Text(
-                                  'Fee: \u20AC${_currentRide.cancellationFee!.toStringAsFixed(2)}',
+                                  l10n.cancellationFeeDisplay(
+                                    _currentRide.cancellationFee!
+                                        .toStringAsFixed(2),
+                                  ),
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
@@ -267,7 +276,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Rating',
+                                l10n.ratingTitle,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -317,7 +326,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                           child: ElevatedButton.icon(
                             onPressed: () => _rateRide(context),
                             icon: const Icon(Icons.star),
-                            label: const Text('Rate This Ride'),
+                            label: Text(l10n.rateThisRide),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.warning,
                               foregroundColor: Colors.white,
@@ -345,7 +354,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Notes',
+                                l10n.notesTitle,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -433,7 +442,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                 );
                               },
                               icon: const Icon(Icons.chat),
-                              label: const Text('Open Chat'),
+                              label: Text(l10n.openChatButton),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.accent,
                                 foregroundColor: Colors.white,
@@ -533,6 +542,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _cancelRide(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final authState = context.read<AuthBloc>().state;
     // Default to the most-restricted role (client) when unknown, so a missing
     // role never unlocks staff-only cancellation reasons.
@@ -559,9 +569,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             cancelledBy: authState.user?.name,
           );
         });
-        _showSuccessMessage('Ride cancelled');
+        _showSuccessMessage(l10n.rideCancelledSuccess);
       } catch (e) {
-        _showErrorMessage('Failed to cancel ride: $e');
+        _showErrorMessage(l10n.failedToCancelRide(e.toString()));
       } finally {
         setState(() => _isLoading = false);
       }
@@ -569,6 +579,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _rateRide(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final apiClient = context.read<AuthBloc>().apiClient;
 
     final result = await showAdaptiveDialog<Map<String, dynamic>?>(
@@ -589,9 +600,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             ratingComment: result['comment'] as String?,
           );
         });
-        _showSuccessMessage('Thank you for your rating!');
+        _showSuccessMessage(l10n.thankYouForRating);
       } catch (e) {
-        _showErrorMessage('Failed to submit rating: $e');
+        _showErrorMessage(l10n.failedToSubmitRating(e.toString()));
       } finally {
         setState(() => _isLoading = false);
       }
@@ -603,10 +614,11 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _completeRide(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await _showConfirmationDialog(
       context,
-      'Complete Ride',
-      'Mark this ride as completed?',
+      l10n.completeRideDialogTitle,
+      l10n.completeRideDialogContent,
     );
 
     if (confirmed) {
@@ -639,6 +651,7 @@ Status: ${_currentRide.status.name}
   }
 
   Future<void> _updateRideStatus(RideStatus newStatus) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
     try {
@@ -652,15 +665,16 @@ Status: ${_currentRide.status.name}
         });
       }
 
-      _showSuccessMessage('Ride status updated successfully');
+      _showSuccessMessage(l10n.rideStatusUpdatedSuccess);
     } catch (e) {
-      _showErrorMessage('Failed to update ride status: $e');
+      _showErrorMessage(l10n.failedToUpdateRideStatus(e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _updateRideWithDriver(Person driver) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
     try {
@@ -672,9 +686,9 @@ Status: ${_currentRide.status.name}
         _currentRide = updatedRide;
       });
 
-      _showSuccessMessage('Driver assigned successfully');
+      _showSuccessMessage(l10n.driverAssignedSuccess);
     } catch (e) {
-      _showErrorMessage('Failed to assign driver: $e');
+      _showErrorMessage(l10n.failedToAssignDriver(e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -685,6 +699,7 @@ Status: ${_currentRide.status.name}
     String title,
     String message,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     return await showAdaptiveDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -693,11 +708,11 @@ Status: ${_currentRide.status.name}
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancel),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Confirm'),
+                child: Text(l10n.confirm),
               ),
             ],
           ),

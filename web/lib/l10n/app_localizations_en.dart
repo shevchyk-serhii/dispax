@@ -2875,4 +2875,389 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get generalSettingsSectionTitle => 'General Settings';
+
+  @override
+  String get gdprScreenTitle => 'Privacy & Data (GDPR)';
+
+  @override
+  String get consentManagementSectionTitle => 'Consent Management';
+
+  @override
+  String get consentDataProcessingLabel => 'Data Processing';
+
+  @override
+  String get consentDataProcessingSubtitle =>
+      'Allow processing of ride and account data';
+
+  @override
+  String get consentMarketingLabel => 'Marketing';
+
+  @override
+  String get consentMarketingSubtitle =>
+      'Receive promotional emails and offers';
+
+  @override
+  String get consentAnalyticsLabel => 'Analytics';
+
+  @override
+  String get consentAnalyticsSubtitle =>
+      'Help improve the app with usage analytics';
+
+  @override
+  String get consentThirdPartySharingLabel => 'Third-Party Sharing';
+
+  @override
+  String get consentThirdPartySharingSubtitle =>
+      'Share data with partner services';
+
+  @override
+  String get yourDataSectionTitle => 'Your Data';
+
+  @override
+  String get exportMyDataLabel => 'Export My Data';
+
+  @override
+  String get exportMyDataSubtitle =>
+      'Download all personal data we have stored about you';
+
+  @override
+  String get dataDeletionSectionTitle => 'Data Deletion';
+
+  @override
+  String get requestDataDeletionLabel => 'Request Data Deletion';
+
+  @override
+  String get requestDataDeletionSubtitle =>
+      'Permanently delete all your data and account';
+
+  @override
+  String get pendingDeletionSubtitle => 'A deletion request is already pending';
+
+  @override
+  String get pendingChipLabel => 'Pending';
+
+  @override
+  String get requestHistoryTitle => 'Request History';
+
+  @override
+  String get requestDeletionDialogTitle => 'Request Data Deletion';
+
+  @override
+  String get requestDeletionDialogContent =>
+      'This will submit a request to delete all your personal data. This action cannot be undone. Your account will be deactivated once the request is processed.\n\nAre you sure you want to proceed?';
+
+  @override
+  String get requestDeletionButton => 'Request Deletion';
+
+  @override
+  String get dataExportCopied => 'Data export copied to clipboard';
+
+  @override
+  String exportFailed(String error) {
+    return 'Export failed: $error';
+  }
+
+  @override
+  String get deletionRequestSubmitted => 'Deletion request submitted';
+
+  @override
+  String failedToLoadGdprData(String consentsCode, String requestsCode) {
+    return 'Failed to load GDPR data ($consentsCode/$requestsCode)';
+  }
+
+  @override
+  String get dataDeletionRequestType => 'Data Deletion';
+
+  @override
+  String get dataExportRequestType => 'Data Export';
+
+  @override
+  String get paymentsTitle => 'Payments';
+
+  @override
+  String get unpaidBadgeLabel => 'Unpaid';
+
+  @override
+  String get allRidesPaidLabel => 'All rides are paid';
+
+  @override
+  String get markAsPaidDialogTitle => 'Mark as Paid';
+
+  @override
+  String get paymentMethodLabel => 'Payment Method:';
+
+  @override
+  String get paymentMethodCash => 'Cash';
+
+  @override
+  String get paymentMethodCard => 'Card';
+
+  @override
+  String get paymentMethodInvoice => 'Invoice';
+
+  @override
+  String amountLabel(String amount) {
+    return 'Amount: $amount EUR';
+  }
+
+  @override
+  String get confirmPaymentButton => 'Confirm Payment';
+
+  @override
+  String get paymentRecordedSuccess => 'Payment recorded';
+
+  @override
+  String failedToMarkPaid(String error) {
+    return 'Failed: $error';
+  }
+
+  @override
+  String get failedToLoadUnpaidRides => 'Failed to load unpaid rides';
+
+  @override
+  String myRideTitle(String id) {
+    return 'My Ride #$id';
+  }
+
+  @override
+  String rideTitle(String id) {
+    return 'Ride #$id';
+  }
+
+  @override
+  String get confirmationSentLabel => 'Confirmation sent';
+
+  @override
+  String get cancellationDetailsTitle => 'Cancellation Details';
+
+  @override
+  String cancellationReasonDetail(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String cancelledByLabel(String name) {
+    return 'Cancelled by: $name';
+  }
+
+  @override
+  String cancellationFeeDisplay(String fee) {
+    return 'Fee: €$fee';
+  }
+
+  @override
+  String get ratingTitle => 'Rating';
+
+  @override
+  String get notesTitle => 'Notes';
+
+  @override
+  String get openChatButton => 'Open Chat';
+
+  @override
+  String get rideStatusUpdatedSuccess => 'Ride status updated successfully';
+
+  @override
+  String failedToUpdateRideStatus(String error) {
+    return 'Failed to update ride status: $error';
+  }
+
+  @override
+  String get driverAssignedSuccess => 'Driver assigned successfully';
+
+  @override
+  String failedToAssignDriver(String error) {
+    return 'Failed to assign driver: $error';
+  }
+
+  @override
+  String get rideCancelledSuccess => 'Ride cancelled';
+
+  @override
+  String get completeRideDialogTitle => 'Complete Ride';
+
+  @override
+  String get completeRideDialogContent => 'Mark this ride as completed?';
+
+  @override
+  String get createNewRideTitle => 'Create New Ride';
+
+  @override
+  String get rideCreatedSuccess => 'Ride created successfully!';
+
+  @override
+  String get conflictDialogTitle => 'Schedule conflict';
+
+  @override
+  String conflictDialogContent(String message) {
+    return '$message\n\nThe ride was created and is in the dispatcher pool. Assign it to yourself anyway?';
+  }
+
+  @override
+  String get conflictDialogContentDefault =>
+      'You already have a ride around this time. The ride was created and is in the dispatcher pool. Assign it to yourself anyway?';
+
+  @override
+  String get keepInPoolButton => 'Keep in pool';
+
+  @override
+  String get assignAnywayButton => 'Assign anyway';
+
+  @override
+  String get exportRidesTitle => 'Export Rides';
+
+  @override
+  String get copyCsvButton => 'Copy CSV';
+
+  @override
+  String get dateRangeButton => 'Date Range';
+
+  @override
+  String get noRidesMatchFilters => 'No rides match the filters';
+
+  @override
+  String get exportSummaryTotal => 'Total';
+
+  @override
+  String get exportSummaryCompleted => 'Completed';
+
+  @override
+  String get exportSummaryRevenue => 'Revenue';
+
+  @override
+  String csvCopiedSnackbar(int count) {
+    return 'CSV data copied to clipboard ($count rides)';
+  }
+
+  @override
+  String get okButton => 'OK';
+
+  @override
+  String get flightsMunichAirportTitle => 'Flights · Munich Airport';
+
+  @override
+  String get autoSyncedLabel => 'auto-synced';
+
+  @override
+  String get arrivalsTabLabel => 'Arrivals';
+
+  @override
+  String get departuresTabLabel => 'Departures';
+
+  @override
+  String get noArrivalsFound => 'No arrivals found';
+
+  @override
+  String get noDeparturesFound => 'No departures found';
+
+  @override
+  String errorLoadingFlights(String error) {
+    return 'Error loading flights: $error';
+  }
+
+  @override
+  String get flightColumnFlight => 'Flight';
+
+  @override
+  String get flightColumnOriginDest => 'Origin / Dest.';
+
+  @override
+  String get flightColumnSched => 'Sched.';
+
+  @override
+  String get flightColumnStatus => 'Status';
+
+  @override
+  String get flightColumnLinkedRide => 'Linked ride';
+
+  @override
+  String get flightStatusOnTime => 'On time';
+
+  @override
+  String get flightStatusDelayed => 'Delayed';
+
+  @override
+  String get flightStatusBoarding => 'Boarding';
+
+  @override
+  String get flightStatusCancelled => 'Cancelled';
+
+  @override
+  String get flightStatusUnknown => 'Unknown';
+
+  @override
+  String get flightNotLinked => '— not linked';
+
+  @override
+  String get whoCanSeeWhomTitle => 'Who can see whom';
+
+  @override
+  String get visibleToAllDispatchers => 'Visible to all dispatchers';
+
+  @override
+  String get scheduleHiddenFromOthers => 'Schedule hidden from others';
+
+  @override
+  String get noDriversInCompany => 'No drivers in your company.';
+
+  @override
+  String failedToUpdateVisibilityError(String error) {
+    return 'Failed to update visibility: $error';
+  }
+
+  @override
+  String get auditLogScreenTitle => 'Audit Log';
+
+  @override
+  String get searchByEntityIdHint => 'Search by entity ID...';
+
+  @override
+  String get noAuditEntriesFound => 'No audit entries found';
+
+  @override
+  String onlineOnRideLabel(String id) {
+    return 'Online · on ride #$id';
+  }
+
+  @override
+  String get startConversationSubtitle =>
+      'Start the conversation with the driver';
+
+  @override
+  String failedToSendMessage(String error) {
+    return 'Failed to send: $error';
+  }
+
+  @override
+  String get totalRidesStatLabel => 'Total Rides';
+
+  @override
+  String get onTimeStatLabel => 'On-time';
+
+  @override
+  String get avgSlackStatLabel => 'Avg Slack';
+
+  @override
+  String get gmvStatLabel => 'GMV';
+
+  @override
+  String get ridesByTenantTitle => 'Rides by Tenant';
+
+  @override
+  String get rideStatusBreakdownTitle => 'Ride Status Breakdown';
+
+  @override
+  String get platformActiveSessionsLabel => 'Platform Active Sessions';
+
+  @override
+  String get clientPaymentTitle => 'Payment';
+
+  @override
+  String get paymentMethodsSectionLabel => 'PAYMENT METHODS';
+
+  @override
+  String get corporateInvoiceLabel => 'Corporate invoice';
+
+  @override
+  String get addPaymentMethodButton => 'Add payment method';
 }

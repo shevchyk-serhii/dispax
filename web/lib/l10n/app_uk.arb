@@ -1331,5 +1331,229 @@
     }
   },
   "settingsCompanyProfile": "Профіль компанії",
-  "generalSettingsSectionTitle": "Загальні налаштування"
+  "generalSettingsSectionTitle": "Загальні налаштування",
+
+  "gdprScreenTitle": "Конфіденційність та дані (GDPR)",
+  "consentManagementSectionTitle": "Управління згодами",
+  "consentDataProcessingLabel": "Обробка даних",
+  "consentDataProcessingSubtitle": "Дозволити обробку даних поїздок та акаунту",
+  "consentMarketingLabel": "Маркетинг",
+  "consentMarketingSubtitle": "Отримувати рекламні листи та пропозиції",
+  "consentAnalyticsLabel": "Аналітика",
+  "consentAnalyticsSubtitle": "Допомогти покращити застосунок за допомогою аналітики",
+  "consentThirdPartySharingLabel": "Передача третім сторонам",
+  "consentThirdPartySharingSubtitle": "Ділитися даними з партнерськими сервісами",
+  "yourDataSectionTitle": "Ваші дані",
+  "exportMyDataLabel": "Експортувати мої дані",
+  "exportMyDataSubtitle": "Завантажити всі особисті дані, що ми зберігаємо про вас",
+  "dataDeletionSectionTitle": "Видалення даних",
+  "requestDataDeletionLabel": "Запросити видалення даних",
+  "requestDataDeletionSubtitle": "Назавжди видалити всі ваші дані та акаунт",
+  "pendingDeletionSubtitle": "Запит на видалення вже очікує розгляду",
+  "pendingChipLabel": "Очікує",
+  "requestHistoryTitle": "Історія запитів",
+  "requestDeletionDialogTitle": "Запросити видалення даних",
+  "requestDeletionDialogContent": "Це надішле запит на видалення всіх ваших особистих даних. Цю дію не можна скасувати. Ваш акаунт буде деактивований після обробки запиту.\n\nВи впевнені, що хочете продовжити?",
+  "requestDeletionButton": "Запросити видалення",
+  "dataExportCopied": "Дані скопійовано в буфер обміну",
+  "exportFailed": "Помилка експорту: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "deletionRequestSubmitted": "Запит на видалення надіслано",
+  "failedToLoadGdprData": "Помилка завантаження даних GDPR ({consentsCode}/{requestsCode})",
+  "@failedToLoadGdprData": {
+    "placeholders": {
+      "consentsCode": {"type": "String"},
+      "requestsCode": {"type": "String"}
+    }
+  },
+  "dataDeletionRequestType": "Видалення даних",
+  "dataExportRequestType": "Експорт даних",
+
+  "paymentsTitle": "Платежі",
+  "unpaidBadgeLabel": "Не оплачено",
+  "allRidesPaidLabel": "Усі поїздки оплачені",
+  "markAsPaidDialogTitle": "Позначити як оплачено",
+  "paymentMethodLabel": "Спосіб оплати:",
+  "paymentMethodCash": "Готівка",
+  "paymentMethodCard": "Картка",
+  "paymentMethodInvoice": "Рахунок",
+  "amountLabel": "Сума: {amount} EUR",
+  "@amountLabel": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "confirmPaymentButton": "Підтвердити оплату",
+  "paymentRecordedSuccess": "Платіж зафіксовано",
+  "failedToMarkPaid": "Помилка: {error}",
+  "@failedToMarkPaid": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToLoadUnpaidRides": "Помилка завантаження неоплачених поїздок",
+
+  "myRideTitle": "Моя поїздка #{id}",
+  "@myRideTitle": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "rideTitle": "Поїздка #{id}",
+  "@rideTitle": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "confirmationSentLabel": "Підтвердження надіслано",
+  "cancellationDetailsTitle": "Деталі скасування",
+  "cancellationReasonDetail": "Причина: {reason}",
+  "@cancellationReasonDetail": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  },
+  "cancelledByLabel": "Скасовано: {name}",
+  "@cancelledByLabel": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "cancellationFeeDisplay": "Штраф: €{fee}",
+  "@cancellationFeeDisplay": {
+    "placeholders": {
+      "fee": {"type": "String"}
+    }
+  },
+  "ratingTitle": "Оцінка",
+  "notesTitle": "Примітки",
+  "openChatButton": "Відкрити чат",
+  "rideStatusUpdatedSuccess": "Статус поїздки успішно оновлено",
+  "failedToUpdateRideStatus": "Помилка оновлення статусу поїздки: {error}",
+  "@failedToUpdateRideStatus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "driverAssignedSuccess": "Водія успішно призначено",
+  "failedToAssignDriver": "Помилка призначення водія: {error}",
+  "@failedToAssignDriver": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "rideCancelledSuccess": "Поїздку скасовано",
+  "failedToCancelRide": "Помилка скасування поїздки: {error}",
+  "@failedToCancelRide": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToSubmitRating": "Помилка надсилання оцінки: {error}",
+  "@failedToSubmitRating": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "completeRideDialogTitle": "Завершити поїздку",
+  "completeRideDialogContent": "Позначити цю поїздку як завершену?",
+
+  "createNewRideTitle": "Створити нову поїздку",
+  "rideCreatedSuccess": "Поїздку успішно створено!",
+  "failedToCreateRide": "Помилка створення поїздки",
+  "conflictDialogTitle": "Конфлікт розкладу",
+  "conflictDialogContent": "{message}\n\nПоїздку створено та додано до пулу диспетчера. Все одно призначити собі?",
+  "@conflictDialogContent": {
+    "placeholders": {
+      "message": {"type": "String"}
+    }
+  },
+  "conflictDialogContentDefault": "У вас вже є поїздка в цей час. Поїздку створено та додано до пулу. Все одно призначити собі?",
+  "keepInPoolButton": "Залишити в пулі",
+  "assignAnywayButton": "Призначити все одно",
+
+  "exportRidesTitle": "Експорт поїздок",
+  "copyCsvButton": "Копіювати CSV",
+  "dateRangeButton": "Діапазон дат",
+  "noRidesMatchFilters": "Жодна поїздка не відповідає фільтрам",
+  "exportSummaryTotal": "Всього",
+  "exportSummaryCompleted": "Завершено",
+  "exportSummaryRevenue": "Виручка",
+  "csvCopiedSnackbar": "Дані CSV скопійовано ({count} поїздок)",
+  "@csvCopiedSnackbar": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "okButton": "OK",
+
+  "flightsMunichAirportTitle": "Рейси · Аеропорт Мюнхен",
+  "autoSyncedLabel": "авто-синхронізація",
+  "arrivalsTabLabel": "Прильоти",
+  "departuresTabLabel": "Відльоти",
+  "noArrivalsFound": "Прильотів не знайдено",
+  "noDeparturesFound": "Відльотів не знайдено",
+  "errorLoadingFlights": "Помилка завантаження рейсів: {error}",
+  "@errorLoadingFlights": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "flightColumnFlight": "Рейс",
+  "flightColumnOriginDest": "Звідки / Куди",
+  "flightColumnSched": "Розклад",
+  "flightColumnStatus": "Статус",
+  "flightColumnLinkedRide": "Пов'язана поїздка",
+  "flightStatusOnTime": "Вчасно",
+  "flightStatusDelayed": "Затримано",
+  "flightStatusBoarding": "Посадка",
+  "flightStatusCancelled": "Скасовано",
+  "flightStatusUnknown": "Невідомо",
+  "flightNotLinked": "— не пов'язано",
+
+  "whoCanSeeWhomTitle": "Хто може бачити кого",
+  "visibleToAllDispatchers": "Видимий для всіх диспетчерів",
+  "scheduleHiddenFromOthers": "Розклад прихований від інших",
+  "noDriversInCompany": "У вашій компанії немає водіїв.",
+  "failedToUpdateVisibilityError": "Помилка оновлення видимості: {error}",
+  "@failedToUpdateVisibilityError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "auditLogScreenTitle": "Журнал аудиту",
+  "searchByEntityIdHint": "Пошук за ID сутності...",
+  "noAuditEntriesFound": "Записів аудиту не знайдено",
+
+  "onlineOnRideLabel": "Онлайн · поїздка #{id}",
+  "@onlineOnRideLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "startConversationSubtitle": "Почніть розмову з водієм",
+  "failedToSendMessage": "Помилка надсилання: {error}",
+  "@failedToSendMessage": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "totalRidesStatLabel": "Всього поїздок",
+  "onTimeStatLabel": "Вчасно",
+  "avgSlackStatLabel": "Сер. запас",
+  "gmvStatLabel": "GMV",
+  "ridesByTenantTitle": "Поїздки за тенантом",
+  "rideStatusBreakdownTitle": "Розбивка за статусом поїздок",
+  "platformActiveSessionsLabel": "Активні сесії платформи",
+
+  "clientPaymentTitle": "Оплата",
+  "paymentMethodsSectionLabel": "СПОСОБИ ОПЛАТИ",
+  "corporateInvoiceLabel": "Корпоративний рахунок",
+  "addPaymentMethodButton": "Додати спосіб оплати"
 }
