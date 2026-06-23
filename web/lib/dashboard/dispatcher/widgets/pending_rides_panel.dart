@@ -140,6 +140,33 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     );
   }
 
+  /// Closes the dialog rooted at [dialogCtx], then dispatches [event] to the
+  /// [RideBloc] *after the current frame settles*.
+  ///
+  /// Dispatching synchronously inside a dialog button callback — while
+  /// `Navigator.pop()` is tearing the dialog route's element down — re-enters
+  /// the surrounding [BlocListener] (the new state arrives before the popped
+  /// route has finished deactivating). Rebuilding the tree mid-deactivation
+  /// trips Flutter's `_dependents.isEmpty` assertion and red-screens the
+  /// dispatcher. Deferring the dispatch to a post-frame callback lets the pop
+  /// complete first. The bloc is captured up-front so we never touch a
+  /// defunct [context] after the dialog is gone.
+  void _closeDialogThenDispatch(BuildContext dialogCtx, RideEvent event) {
+    Navigator.of(dialogCtx).pop();
+    _dispatchAfterFrame(event);
+  }
+
+  /// Dispatches [event] to the [RideBloc] after the current frame settles,
+  /// guarding against the panel being disposed in the meantime. See
+  /// [_closeDialogThenDispatch] for why the deferral is required.
+  void _dispatchAfterFrame(RideEvent event) {
+    final rideBloc = context.read<RideBloc>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      rideBloc.add(event);
+    });
+  }
+
   /// Shown when the backend rejects a primary assignment with a schedule
   /// conflict the client didn't detect locally. Lets the dispatcher assign
   /// anyway.
@@ -166,16 +193,14 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              context.read<RideBloc>().add(
-                RideAssignRequested(
-                  rideId: rideId,
-                  driverId: driverId,
-                  overrideScheduleConflict: true,
-                ),
-              );
-            },
+            onPressed: () => _closeDialogThenDispatch(
+              dialogCtx,
+              RideAssignRequested(
+                rideId: rideId,
+                driverId: driverId,
+                overrideScheduleConflict: true,
+              ),
+            ),
             child: const Text('Assign anyway'),
           ),
         ],
@@ -208,16 +233,14 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              context.read<RideBloc>().add(
-                RideReassignRequested(
-                  rideId: rideId,
-                  newDriverId: driverId,
-                  overrideScheduleConflict: true,
-                ),
-              );
-            },
+            onPressed: () => _closeDialogThenDispatch(
+              dialogCtx,
+              RideReassignRequested(
+                rideId: rideId,
+                newDriverId: driverId,
+                overrideScheduleConflict: true,
+              ),
+            ),
             child: const Text('Reassign anyway'),
           ),
         ],
@@ -659,30 +682,26 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               driverId: driverId,
               conflicts: conflicts,
               onConfirm: () {
-                if (isReassign) {
-                  // If the dispatcher already saw locally-detected conflicts and
-                  // confirmed ("Assign anyway"), tell the backend to override so
-                  // it doesn't reject the reassignment.
-                  context.read<RideBloc>().add(
-                    RideReassignRequested(
-                      rideId: ride.id,
-                      newDriverId: driverId,
-                      overrideScheduleConflict: conflicts.isNotEmpty,
-                    ),
-                  );
-                } else {
-                  // Same as the reassign branch: if the dispatcher already saw
-                  // locally-detected conflicts and confirmed ("Assign anyway"),
-                  // tell the backend to override so it doesn't reject the
-                  // assignment with a 409.
-                  context.read<RideBloc>().add(
-                    RideAssignRequested(
-                      rideId: ride.id,
-                      driverId: driverId,
-                      overrideScheduleConflict: conflicts.isNotEmpty,
-                    ),
-                  );
-                }
+                // If the dispatcher already saw locally-detected conflicts and
+                // confirmed ("Assign anyway"), tell the backend to override so
+                // it doesn't reject the (re)assignment with a 409.
+                final event = isReassign
+                    ? RideReassignRequested(
+                        rideId: ride.id,
+                        newDriverId: driverId,
+                        overrideScheduleConflict: conflicts.isNotEmpty,
+                      )
+                    : RideAssignRequested(
+                        rideId: ride.id,
+                        driverId: driverId,
+                        overrideScheduleConflict: conflicts.isNotEmpty,
+                      );
+                // AssignmentDialog already popped itself before invoking this
+                // callback. Defer the dispatch past the current frame so the
+                // re-entrant BlocListener (assign/reassign-conflict dialogs)
+                // doesn't rebuild the tree while the popped route is still
+                // deactivating — see [_closeDialogThenDispatch].
+                _dispatchAfterFrame(event);
               },
             ),
           );
