@@ -751,7 +751,7 @@ class _RideRow extends StatelessWidget {
         : Colors.transparent;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: rowBg,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -762,55 +762,165 @@ class _RideRow extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status badge
-            RideStatusStyles.createStatusBadge(
-              ride.status,
-              context: context,
-              fontSize: 10,
-              iconSize: 12,
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            // Header: status badge + VIP · price
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                RideStatusStyles.createStatusBadge(
+                  ride.status,
+                  context: context,
+                  fontSize: 10,
+                  iconSize: 12,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3,
+                  ),
+                ),
+                if (ride.isVipRide) ...[const SizedBox(width: 6), _vipChip()],
+                const Spacer(),
+                if (ride.price != null)
+                  Text(
+                    '€${ride.price!.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(width: 10),
-            // Route + meta
-            Expanded(
-              child: Column(
+            const SizedBox(height: 12),
+            // Address block: full From / To, no truncation
+            _addressRow(
+              context,
+              icon: Icons.trip_origin,
+              iconColor: colorScheme.onSurfaceVariant,
+              address: ride.from.address,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 8.5),
+              child: SizedBox(
+                height: 14,
+                child: VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: isDark
+                      ? AppColors.borderDark
+                      : AppColors.borderPrimary,
+                ),
+              ),
+            ),
+            _addressRow(
+              context,
+              icon: Icons.location_on,
+              iconColor: colorScheme.primary,
+              address: ride.to.address,
+            ),
+            const SizedBox(height: 12),
+            // Meta: time · client [· driver] [· ETA]
+            Text(
+              _buildMetaLine(),
+              style: TextStyle(
+                fontSize: 12.5,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            // Airport / flight info
+            if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Route: A → B
-                  Text(
-                    '${_shortAddress(ride.from.address)} → ${_shortAddress(ride.to.address)}',
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-                  // Meta: time · client [· driver]
-                  Text(
-                    _buildMetaLine(),
-                    style: TextStyle(
-                      fontSize: 11.5,
+                  if (ride.flightIconData != null) ...[
+                    Icon(
+                      ride.flightIconData,
+                      size: 14,
                       color: colorScheme.onSurfaceVariant,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 6),
+                  ],
+                  Expanded(
+                    child: Text(
+                      ride.fullFlightInfo,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
-            ),
-            // Action button
+            ],
+            // Action button (full width)
             if (onAction != null) ...[
-              const SizedBox(width: 8),
-              _buildActionButton(context),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: _buildActionButton(context),
+              ),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// A single address line with a leading icon and full, untruncated text.
+  Widget _addressRow(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconColor,
+    required String address,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, size: 16, color: iconColor),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            address,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _vipChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.star, size: 11, color: AppColors.warning),
+          SizedBox(width: 3),
+          Text(
+            'VIP',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.warning,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -867,16 +977,12 @@ class _RideRow extends StatelessWidget {
     final time = DateFormat('dd.MM HH:mm').format(ride.pickupDateTime);
     final parts = [time, ride.clientName];
     if (ride.driverName != null) parts.add(ride.driverName!);
-    if (ride.isAirportTransfer && ride.flightNumber != null) {
-      parts.add(ride.flightNumber!);
+    if (ride.etaMinutes != null) parts.add('${ride.etaMinutes} min');
+    if (ride.driverDistanceMeters != null) {
+      final km = ride.driverDistanceMeters! / 1000;
+      parts.add('${km.toStringAsFixed(1)} km');
     }
     return parts.join(' · ');
-  }
-
-  /// Truncates a long address to roughly 25 chars to keep the route line brief.
-  String _shortAddress(String address) {
-    if (address.length <= 25) return address;
-    return '${address.substring(0, 22)}…';
   }
 }
 
