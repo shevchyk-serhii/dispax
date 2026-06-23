@@ -401,6 +401,7 @@ object UserApi:
       for {
         uid        <- parseUuid(userId)
         _          <- requireSameCompany(user, uid)
+        companyId  <- requireCompanyId(user)
         _          <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
         filePart   <- ZIO
                         .fromOption(parts.find(_.name == "file"))
@@ -408,7 +409,7 @@ object UserApi:
         bytes       = filePart.body
         contentType = filePart.contentType.getOrElse("image/jpeg")
         _          <- ZIO
-                        .serviceWithZIO[AvatarService](_.uploadAvatar(PersonId(uid), bytes, contentType))
+                        .serviceWithZIO[AvatarService](_.uploadAvatar(PersonId(uid), companyId, bytes, contentType))
                         .mapError { case e: AvatarError => (StatusCode.BadRequest, ApiError(e.message)) }
       } yield AvatarUploadResponse(success = true, avatarUrl = s"/api/users/$userId/avatar")
     }
@@ -429,10 +430,11 @@ object UserApi:
   private val deleteAvatarServer: ZServerEndpoint[UserEnv, Any] = deleteAvatarEndpoint.serverLogic[UserEnv] {
     user => userId =>
       (for {
-        uid <- parseUuid(userId)
-        _   <- requireSameCompany(user, uid)
-        _   <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
-        _   <- ZIO.serviceWithZIO[AvatarService](_.deleteAvatar(PersonId(uid))).mapError(internal)
+        uid       <- parseUuid(userId)
+        _         <- requireSameCompany(user, uid)
+        companyId <- requireCompanyId(user)
+        _         <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+        _         <- ZIO.serviceWithZIO[AvatarService](_.deleteAvatar(PersonId(uid), companyId)).mapError(internal)
       } yield ()).unit
   }
 

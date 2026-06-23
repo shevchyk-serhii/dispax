@@ -103,23 +103,23 @@ object AvatarApiSpec extends ZIOSpecDefault:
                       )
                     )
     } yield new PersonRepository:
-      def create(p: Person): Task[Person]                                         = peopleRef.update(_.updated(p.id, p)).as(p)
-      def findById(id: PersonId): Task[Option[Person]]                            = peopleRef.get.map(_.get(id))
-      def findByIdAndCompany(id: PersonId, cid: CompanyId): Task[Option[Person]]  = peopleRef.get.map(
+      def create(p: Person): Task[Person]                                                       = peopleRef.update(_.updated(p.id, p)).as(p)
+      def findById(id: PersonId): Task[Option[Person]]                                          = peopleRef.get.map(_.get(id))
+      def findByIdAndCompany(id: PersonId, cid: CompanyId): Task[Option[Person]]                = peopleRef.get.map(
         _.get(id).filter(_.companyId.contains(cid))
       )
-      def findByEmail(e: String): Task[Option[Person]]                            = peopleRef.get.map(_.values.find(_.email == e))
-      def findByRole(r: PersonRole): Task[List[Person]]                           = peopleRef.get.map(_.values.filter(_.hasRole(r)).toList)
-      def findByRoleAndCompany(r: PersonRole, cid: CompanyId): Task[List[Person]] = peopleRef.get.map(
+      def findByEmail(e: String): Task[Option[Person]]                                          = peopleRef.get.map(_.values.find(_.email == e))
+      def findByRole(r: PersonRole): Task[List[Person]]                                         = peopleRef.get.map(_.values.filter(_.hasRole(r)).toList)
+      def findByRoleAndCompany(r: PersonRole, cid: CompanyId): Task[List[Person]]               = peopleRef.get.map(
         _.values.filter(p => p.hasRole(r) && p.companyId.contains(cid)).toList
       )
-      def findByCompanyId(cid: CompanyId): Task[List[Person]]                     = peopleRef.get.map(
+      def findByCompanyId(cid: CompanyId): Task[List[Person]]                                   = peopleRef.get.map(
         _.values.filter(_.companyId.contains(cid)).toList
       )
-      def findAll(): Task[List[Person]]                                           = peopleRef.get.map(_.values.toList)
-      def update(p: Person): Task[Person]                                         = peopleRef.update(_.updated(p.id, p)).as(p)
-      def delete(id: PersonId): Task[Unit]                                        = peopleRef.update(_.removed(id)).unit
-      def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]         =
+      def findAll(): Task[List[Person]]                                                         = peopleRef.get.map(_.values.toList)
+      def update(p: Person): Task[Person]                                                       = peopleRef.update(_.updated(p.id, p)).as(p)
+      def delete(id: PersonId): Task[Unit]                                                      = peopleRef.update(_.removed(id)).unit
+      def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                       =
         peopleRef
           .update(m =>
             m.get(id) match
@@ -127,17 +127,26 @@ object AvatarApiSpec extends ZIOSpecDefault:
               case _                                          => m
           )
           .unit
-      def findByStatus(s: UserStatus): Task[List[Person]]                         = peopleRef.get.map(_.values.filter(_.status == s).toList)
-      def searchByQuery(q: String): Task[List[Person]]                            = peopleRef.get.map(
+      def findByStatus(s: UserStatus): Task[List[Person]]                                       = peopleRef.get.map(_.values.filter(_.status == s).toList)
+      def searchByQuery(q: String): Task[List[Person]]                                          = peopleRef.get.map(
         _.values.filter(p => p.name.contains(q) || p.email.contains(q)).toList
       )
-      def updateLastLogin(id: PersonId): Task[Unit]                               = ZIO.unit
-      def findByClientCompany(ccid: ClientCompanyId): Task[List[Person]]          = ZIO.succeed(Nil)
-      def upsertDriverRow(pid: PersonId): Task[Unit]                              = ZIO.unit
-      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]            = avatarsRef.get.map(_.get(id))
-      def setAvatar(id: PersonId, b: Array[Byte], ct: String): Task[Unit]         =
-        avatarsRef.update(_.updated(id, (b, ct))).unit
-      def deleteAvatar(id: PersonId): Task[Unit]                                  = avatarsRef.update(_.removed(id)).unit
+      def updateLastLogin(id: PersonId): Task[Unit]                                             = ZIO.unit
+      def findByClientCompany(ccid: ClientCompanyId): Task[List[Person]]                        = ZIO.succeed(Nil)
+      def upsertDriverRow(pid: PersonId): Task[Unit]                                            = ZIO.unit
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                          = avatarsRef.get.map(_.get(id))
+      def setAvatar(id: PersonId, companyId: CompanyId, b: Array[Byte], ct: String): Task[Unit] =
+        ZIO
+          .whenZIO(peopleRef.get.map(_.get(id).exists(_.companyId.contains(companyId))))(
+            avatarsRef.update(_.updated(id, (b, ct)))
+          )
+          .unit
+      def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                          =
+        ZIO
+          .whenZIO(peopleRef.get.map(_.get(id).exists(_.companyId.contains(companyId))))(
+            avatarsRef.update(_.removed(id))
+          )
+          .unit
   )
 
   private val stubAuthServiceLayer: ZLayer[Any, Nothing, AuthService] = ZLayer.succeed(
@@ -400,14 +409,14 @@ object AvatarApiSpec extends ZIOSpecDefault:
           val testMime  = "image/jpeg"
           for {
             token   <- generateToken(userA)
-            _       <- ZIO.serviceWithZIO[PersonRepository](_.setAvatar(userAId, testBytes, testMime))
+            _       <- ZIO.serviceWithZIO[PersonRepository](_.setAvatar(userAId, companyAId, testBytes, testMime))
             getReq   = Request
                          .get(URL.decode(s"/api/users/${userAId.value}/avatar").toOption.get)
                          .addHeader(Header.Authorization.Bearer(token))
             getResp <- run(getReq)
             // Tapir encodes the Content-Type header via header[String]("Content-Type"); read raw value.
             ctRaw    = getResp.rawHeader("Content-Type").getOrElse("")
-            _       <- ZIO.serviceWithZIO[PersonRepository](_.deleteAvatar(userAId)) // cleanup
+            _       <- ZIO.serviceWithZIO[PersonRepository](_.deleteAvatar(userAId, companyAId)) // cleanup
           } yield assertTrue(
             getResp.status == Status.Ok,
             ctRaw.contains("image/jpeg")
@@ -447,7 +456,7 @@ object AvatarApiSpec extends ZIOSpecDefault:
           for {
             token    <- generateToken(userA)
             // Seed avatar directly (bypassing broken upload endpoint)
-            _        <- ZIO.serviceWithZIO[PersonRepository](_.setAvatar(userAId, testBytes, testMime))
+            _        <- ZIO.serviceWithZIO[PersonRepository](_.setAvatar(userAId, companyAId, testBytes, testMime))
             deleteReq = Request
                           .delete(URL.decode(s"/api/users/${userAId.value}/avatar").toOption.get)
                           .addHeader(Header.Authorization.Bearer(token))

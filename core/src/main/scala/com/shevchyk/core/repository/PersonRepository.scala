@@ -45,14 +45,16 @@ trait PersonRepository {
 
   /**
    * Store (or replace) the avatar for the given person. Validation (MIME type, size limit) is enforced by AvatarService
-   * before this method is called.
+   * before this method is called. Tenant-scoped: the write is a no-op unless the person belongs to `companyId`
+   * (defense-in-depth on top of the route-level company check).
    */
-  def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]
+  def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit]
 
   /**
-   * Remove the avatar for the given person. Idempotent: safe to call when no avatar exists.
+   * Remove the avatar for the given person. Idempotent: safe to call when no avatar exists. Tenant-scoped: the write is
+   * a no-op unless the person belongs to `companyId` (defense-in-depth on top of the route-level company check).
    */
-  def deleteAvatar(id: PersonId): Task[Unit]
+  def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]
 }
 
 object PersonRepository {

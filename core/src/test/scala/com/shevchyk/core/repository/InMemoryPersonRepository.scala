@@ -78,10 +78,17 @@ class InMemoryPersonRepository extends PersonRepository:
 
   override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]] = avatars.get.map(_.get(id))
 
-  override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] =
-    avatars.update(_.updated(id, (bytes, contentType))).unit
+  // Tenant-scoped: mirror the SQL "AND company_id = ?" guard so an avatar write for a
+  // person in another company is a no-op.
+  private def belongsToCompany(id: PersonId, companyId: CompanyId): Task[Boolean] = people.get.map(
+    _.get(id).exists(_.companyId.contains(companyId))
+  )
 
-  override def deleteAvatar(id: PersonId): Task[Unit] = avatars.update(_.removed(id)).unit
+  override def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] =
+    ZIO.whenZIO(belongsToCompany(id, companyId))(avatars.update(_.updated(id, (bytes, contentType)))).unit
+
+  override def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit] =
+    ZIO.whenZIO(belongsToCompany(id, companyId))(avatars.update(_.removed(id))).unit
 
 object InMemoryPersonRepository:
   val layer: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(new InMemoryPersonRepository)
