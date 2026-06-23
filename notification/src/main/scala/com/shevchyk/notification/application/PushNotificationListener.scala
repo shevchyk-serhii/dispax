@@ -204,10 +204,26 @@ object PushNotificationListener:
         ZIO.unit
 
       case WebSocketEvent.GeofenceTriggered(geofenceId, geofenceName, driverId, alertType, _, _, companyId) =>
-        val actionText = if alertType == "entry" then "entered" else "exited"
-        // Send to dispatchers via the notification - they subscribe to company events
-        // For now, we log it. In production, we'd query dispatchers for the company.
-        ZIO.logInfo(s"Geofence alert: driver $driverId $actionText '$geofenceName'").unit
+        val actionText   = if alertType == "entry" then "entered" else "exited"
+        val notification = PushNotification(
+          title = "Geofence alert",
+          body = s"Driver $driverId $actionText '$geofenceName'.",
+          data = Map(
+            "type"         -> "geofence",
+            "geofenceId"   -> geofenceId.toString,
+            "geofenceName" -> geofenceName,
+            "driverId"     -> driverId.toString,
+            "alertType"    -> alertType
+          )
+        )
+        // Alert every dispatcher of the event's company. Company isolation: only
+        // dispatchers of `companyId` are resolved.
+        ZIO.logInfo(s"Geofence alert: driver $driverId $actionText '$geofenceName'") *>
+          personRepo.findByRoleAndCompany(PersonRole.Dispatcher, CompanyId(companyId)).flatMap { dispatchers =>
+            ZIO.foreachDiscard(dispatchers) { dispatcher =>
+              notifyUser(fcmService, notifRepo, dispatcher.id, CompanyId(companyId), notification, "geofence")
+            }
+          }
 
       case WebSocketEvent.DriverApproaching(rideId, driverId, clientId, distanceMeters, threshold, companyId) =>
         val notification = PushNotification(
