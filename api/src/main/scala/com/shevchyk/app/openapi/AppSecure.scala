@@ -12,8 +12,7 @@ import zio.ZIO
 
 import java.util.UUID
 
-private def effectiveRoles(user: AuthenticatedUser): Set[String] =
-  if user.roles.nonEmpty then user.roles else Set(user.role)
+private def effectiveRoles(user: AuthenticatedUser): Set[String] = user.effectiveRoles
 
 /**
  * Shared building blocks for the api-module Tapir endpoints (package `com.shevchyk.app.openapi`).

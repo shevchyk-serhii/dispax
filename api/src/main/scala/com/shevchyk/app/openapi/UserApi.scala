@@ -91,16 +91,14 @@ object UserApi:
    * Reproduce `AuthMiddleware.checkRole`: fail 403 unless the user has one of the roles.
    */
   private def checkRole(user: AuthenticatedUser, roles: String*): ZIO[Any, Err, Unit] =
-    val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) then ZIO.unit
+    if user.hasAnyRole(roles*) then ZIO.unit
     else ZIO.fail(forbidden)
 
   /**
    * Reproduce `AuthMiddleware.checkRoleOrOwner`: 403 ("Access denied") unless role or owner.
    */
   private def checkRoleOrOwner(user: AuthenticatedUser, ownerId: UUID, roles: String*): ZIO[Any, Err, Unit] =
-    val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) || user.userId == ownerId then ZIO.unit
+    if user.hasAnyRole(roles*) || user.userId == ownerId then ZIO.unit
     else ZIO.fail(accessDenied)
 
   /**
@@ -181,12 +179,16 @@ object UserApi:
         case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
       },
       payload =>
+        val wireRoles = payload.roles
+          .map(_.map(PersonRole.toWire).toSet)
+          .getOrElse(Set(PersonRole.toWire(payload.role)))
         AuthenticatedUser(
           userId = payload.userId,
           email = payload.email,
-          role = payload.role.toString,
+          role = PersonRole.toWire(payload.role),
           companyId = payload.companyId,
-          clientCompanyId = payload.clientCompanyId
+          clientCompanyId = payload.clientCompanyId,
+          roles = wireRoles
         )
     )
 

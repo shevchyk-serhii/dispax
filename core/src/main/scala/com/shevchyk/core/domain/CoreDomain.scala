@@ -95,22 +95,31 @@ object PersonRole:
       case PersonRole.SuperAdmin      => "SUPER_ADMIN"
       case other                      => other.toString.toUpperCase
 
-  given JsonEncoder[PersonRole] = JsonEncoder[String].contramap(toWire)
-
-  given JsonDecoder[PersonRole] = JsonDecoder[String].mapOrFail { s =>
+  /**
+   * Parse a wire-format role string (the SCREAMING_SNAKE_CASE produced by [[toWire]], or the raw enum name) back into a
+   * [[PersonRole]]. Returns `None` for unknown values instead of silently collapsing them to a default — callers must
+   * decide how to handle an unrecognised role. Recognises both the canonical CLIENT_SECRETARY / SUPER_ADMIN spellings
+   * and the enum `.toString` form so the two distinct multi-word roles never collapse into Client.
+   */
+  def fromWire(s: String): Option[PersonRole] =
     val normalized =
-      s match
+      s.toUpperCase match
         case "CLIENT"           => "Client"
         case "DRIVER"           => "Driver"
         case "DISPATCHER"       => "Dispatcher"
         case "SECRETARY"        => "Secretary"
         case "ADMIN"            => "Admin"
         case "CLIENT_SECRETARY" => "ClientSecretary"
-        case "client_secretary" => "ClientSecretary"
+        case "CLIENTSECRETARY"  => "ClientSecretary"
         case "SUPER_ADMIN"      => "SuperAdmin"
-        case "super_admin"      => "SuperAdmin"
-        case other              => other
-    scala.util.Try(PersonRole.valueOf(normalized)).toEither.left.map(_ => s"Invalid PersonRole: $s")
+        case "SUPERADMIN"       => "SuperAdmin"
+        case _                  => s
+    scala.util.Try(PersonRole.valueOf(normalized)).toOption
+
+  given JsonEncoder[PersonRole] = JsonEncoder[String].contramap(toWire)
+
+  given JsonDecoder[PersonRole] = JsonDecoder[String].mapOrFail { s =>
+    fromWire(s).toRight(s"Invalid PersonRole: $s")
   }
 
 enum UserStatus derives JsonCodec:

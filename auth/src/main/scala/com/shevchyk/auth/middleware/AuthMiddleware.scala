@@ -26,6 +26,20 @@ case class AuthenticatedUser(
    */
   def primaryRole: String = role
 
+  /**
+   * The effective set of wire-format role strings the user carries. Uses the full `roles` set when present (multi-role
+   * users such as a dispatcher who can also drive) and falls back to the primary `role` for legacy tokens that lack the
+   * `roles` payload field. Single source of truth for every Tapir secure layer's role check.
+   */
+  def effectiveRoles: Set[String] = if roles.nonEmpty then roles else Set(role)
+
+  /**
+   * True when any of the user's effective roles matches one of the allowed roles (case-insensitive).
+   */
+  def hasAnyRole(allowedRoles: String*): Boolean =
+    val userRoles = effectiveRoles
+    allowedRoles.exists(r => userRoles.exists(_.toUpperCase == r.toUpperCase))
+
 object AuthenticatedUser:
   implicit val encoder: JsonEncoder[AuthenticatedUser] = DeriveJsonEncoder.gen[AuthenticatedUser]
 

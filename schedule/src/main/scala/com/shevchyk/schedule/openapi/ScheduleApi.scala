@@ -3,7 +3,7 @@ package com.shevchyk.schedule.openapi
 import com.shevchyk.auth.domain.{ExpiredTokenError, InvalidTokenError, JwtError}
 import com.shevchyk.auth.middleware.AuthenticatedUser
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.domain.{CompanyId, DriverUnavailabilityId, PersonId, ScheduleDayId}
+import com.shevchyk.core.domain.{CompanyId, DriverUnavailabilityId, PersonId, PersonRole, ScheduleDayId}
 import com.shevchyk.core.openapi.{ApiError, ErrorMapper}
 import com.shevchyk.schedule.application.ScheduleService
 import com.shevchyk.schedule.domain.*
@@ -55,12 +55,16 @@ object ScheduleApi:
             case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
           },
           payload =>
+            val wireRoles = payload.roles
+              .map(_.map(PersonRole.toWire).toSet)
+              .getOrElse(Set(PersonRole.toWire(payload.role)))
             AuthenticatedUser(
               userId = payload.userId,
               email = payload.email,
-              role = payload.role.toString,
+              role = PersonRole.toWire(payload.role),
               companyId = payload.companyId,
-              clientCompanyId = payload.clientCompanyId
+              clientCompanyId = payload.clientCompanyId,
+              roles = wireRoles
             )
         )
     }
@@ -71,15 +75,27 @@ object ScheduleApi:
     .orElseFail(ScheduleError.ValidationError("User must belong to a company"))
 
   /**
+   * The role string to hand to driver-only-self service checks (currently `createUnavailability`, which only lets a
+   * Driver mark their own unavailability). A multi-role user such as a dispatcher who can also drive must be recognised
+   * as a Driver here, since a single primary role would otherwise lock them out of marking their own unavailability.
+   * Returns "DRIVER" when the user carries the Driver role among their effective roles, otherwise the primary role.
+   *
+   * NOTE: only use this for endpoints whose service-side check is *driver-self*. Endpoints where Dispatcher/Admin are
+   * the privileged roles (e.g. `deleteUnavailability`, `getDriverScheduleAs` for viewing others) must keep `user.role`
+   * so the dispatcher/admin privilege is not downgraded to the more restrictive Driver path.
+   */
+  private[openapi] def driverSelfRole(user: AuthenticatedUser): String =
+    if user.hasAnyRole("DRIVER") then "DRIVER" else user.role
+
+  /**
    * Reject roles that are neither Dispatcher nor Admin. Maps to a 403 Forbidden.
    */
-  private def requireDispatcherOrAdmin(
+  private[openapi] def requireDispatcherOrAdmin(
       user: AuthenticatedUser
   ): ZIO[Any, (StatusCode, ApiError), Unit] =
-    val role = user.role.toUpperCase
     ZIO
       .fail((StatusCode.Forbidden, ApiError("Insufficient permissions")))
-      .unless(role == "DISPATCHER" || role == "ADMIN")
+      .unless(user.hasAnyRole("DISPATCHER", "ADMIN"))
       .unit
 
   // -- Endpoint descriptions -----------------------------------------------
@@ -360,7 +376,7 @@ object ScheduleApi:
         domainRequest <- CreateDriverUnavailabilityApiRequest.toDomain(validRequest, companyId)
         requesterId    = PersonId(user.userId)
         service       <- ZIO.service[ScheduleService]
-        result        <- service.createUnavailability(domainRequest, requesterId, user.role)
+        result        <- service.createUnavailability(domainRequest, requesterId, driverSelfRole(user))
       } yield DriverUnavailabilityDto.fromDomain(result)).mapError(toError)
   }
 

@@ -173,6 +173,31 @@ object AuthMiddlewareSpec extends ZIOSpecDefault {
           AuthMiddleware.requireRole("DRIVER").provideEnvironment(ZEnvironment(user)).map(_ => assertCompletes)
         }
       ),
+      // ── AuthenticatedUser.effectiveRoles / hasAnyRole (shared by every Tapir secure layer) ──
+      suite("AuthenticatedUser.effectiveRoles")(
+        test("uses the roles set when non-empty") {
+          val user = AuthenticatedUser(userId, "e@e.com", "DISPATCHER", roles = Set("DISPATCHER", "DRIVER"))
+          assertTrue(user.effectiveRoles == Set("DISPATCHER", "DRIVER"))
+        },
+        test("falls back to the primary role when roles set is empty (legacy token)") {
+          val user = AuthenticatedUser(userId, "e@e.com", "DRIVER", roles = Set.empty)
+          assertTrue(user.effectiveRoles == Set("DRIVER"))
+        }
+      ),
+      suite("AuthenticatedUser.hasAnyRole")(
+        test("dispatcher-driver has the DRIVER role via the roles set") {
+          val user = AuthenticatedUser(userId, "e@e.com", "DISPATCHER", roles = Set("DISPATCHER", "DRIVER"))
+          assertTrue(user.hasAnyRole("DRIVER"))
+        },
+        test("pure dispatcher does not have the DRIVER role") {
+          val user = AuthenticatedUser(userId, "e@e.com", "DISPATCHER", roles = Set("DISPATCHER"))
+          assertTrue(!user.hasAnyRole("DRIVER"))
+        },
+        test("is case-insensitive") {
+          val user = AuthenticatedUser(userId, "e@e.com", "Admin", roles = Set.empty)
+          assertTrue(user.hasAnyRole("admin"))
+        }
+      ),
       suite("multi-role: isSuperAdmin")(
         test("isSuperAdmin true when SUPER_ADMIN is in roles set") {
           val user = AuthenticatedUser(

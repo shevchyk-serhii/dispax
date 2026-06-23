@@ -36,12 +36,16 @@ object RideSecure:
             case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
           },
           payload =>
+            val wireRoles = payload.roles
+              .map(_.map(PersonRole.toWire).toSet)
+              .getOrElse(Set(PersonRole.toWire(payload.role)))
             AuthenticatedUser(
               userId = payload.userId,
               email = payload.email,
-              role = payload.role.toString,
+              role = PersonRole.toWire(payload.role),
               companyId = payload.companyId,
-              clientCompanyId = payload.clientCompanyId
+              clientCompanyId = payload.clientCompanyId,
+              roles = wireRoles
             )
         )
     }
@@ -51,13 +55,11 @@ object RideSecure:
   // -- Role checks (mirror AuthMiddleware.checkRole / checkRoleOrOwner) -----
 
   def checkRole(user: AuthenticatedUser, roles: String*): ZIO[Any, Err, Unit] =
-    val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) then ZIO.unit
+    if user.hasAnyRole(roles*) then ZIO.unit
     else ZIO.fail((StatusCode.Forbidden, ApiError("Insufficient permissions")))
 
   def checkRoleOrOwner(user: AuthenticatedUser, resourceOwnerId: UUID, roles: String*): ZIO[Any, Err, Unit] =
-    val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) || user.userId == resourceOwnerId then ZIO.unit
+    if user.hasAnyRole(roles*) || user.userId == resourceOwnerId then ZIO.unit
     else ZIO.fail((StatusCode.Forbidden, ApiError("Access denied")))
 
   // -- UUID parsing (mirrors UuidParser, which fails with 400) -------------
@@ -75,15 +77,10 @@ object RideSecure:
     .map(CompanyId(_))
     .orElseFail((StatusCode.BadRequest, ApiError("User must belong to a company")))
 
-  def toPersonRole(role: String): PersonRole =
-    role.toUpperCase match
-      case "DRIVER"           => PersonRole.Driver
-      case "CLIENT"           => PersonRole.Client
-      case "SECRETARY"        => PersonRole.Secretary
-      case "DISPATCHER"       => PersonRole.Dispatcher
-      case "ADMIN"            => PersonRole.Admin
-      case "CLIENT_SECRETARY" => PersonRole.ClientSecretary
-      case _                  => PersonRole.Client
+  // Parse a wire-format role string into a PersonRole via the canonical PersonRole.fromWire, so the two multi-word
+  // roles (CLIENT_SECRETARY, SUPER_ADMIN) are recognised instead of silently collapsing into Client. Unknown values
+  // fall back to the least-privileged Client.
+  def toPersonRole(role: String): PersonRole = PersonRole.fromWire(role).getOrElse(PersonRole.Client)
 
   /**
    * Map a `RideError` (or any throwable) to the same status/body as `RideRoutes.handleRideError`.
