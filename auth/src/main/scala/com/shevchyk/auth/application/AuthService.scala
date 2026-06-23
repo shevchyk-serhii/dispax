@@ -26,7 +26,13 @@ trait AuthService:
   def createUser(request: CreateUserRequest): ZIO[Any, AuthError, UserDto]
   def getUserById(id: UUID): ZIO[Any, AuthError, UserDto]
   def getUserByEmail(email: String): ZIO[Any, AuthError, UserDto]
-  def updateUser(id: UUID, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto]
+
+  /**
+   * Updates a user by id, scoped to `companyId`: the row is read and updated only when it belongs to that company, so a
+   * caller cannot read or mutate another tenant's user even with a guessed id. Closes a TOCTOU/existence-leak gap where
+   * the preceding read used `findById` (no company) while the SQL update was already company-guarded.
+   */
+  def updateUser(id: UUID, companyId: CompanyId, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto]
 
   /**
    * Hard-deletes a user by id, scoped to `companyId`: the row is only removed when it belongs to that company, so a
@@ -35,7 +41,12 @@ trait AuthService:
    * any future hard-delete path.
    */
   def deleteUser(id: UUID, companyId: CompanyId): ZIO[Any, AuthError, Unit]
-  def changePassword(userId: UUID, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit]
+
+  /**
+   * Changes a user's password, scoped to `companyId`: the row is read only when it belongs to that company, so a caller
+   * cannot probe the existence of (or mutate) another tenant's user even with a guessed id.
+   */
+  def changePassword(userId: UUID, companyId: CompanyId, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit]
   def validateToken(token: String): ZIO[Any, AuthError, UserDto]
   def refreshToken(token: String): ZIO[Any, AuthError, String]
 
@@ -181,9 +192,9 @@ class AuthServiceImpl(
       person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(email))
     yield UserDto.fromPerson(person)
 
-  override def updateUser(id: UUID, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto] =
+  override def updateUser(id: UUID, companyId: CompanyId, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto] =
     for
-      existingOpt <- personRepository.findById(PersonId(id)).orElseFail(UserNotFound(s"ID: $id"))
+      existingOpt <- personRepository.findByIdAndCompany(PersonId(id), companyId).orElseFail(UserNotFound(s"ID: $id"))
       existing    <- ZIO.fromOption(existingOpt).orElseFail(UserNotFound(s"ID: $id"))
       _           <-
         request.email.fold(ZIO.unit)(email =>
@@ -233,13 +244,19 @@ class AuthServiceImpl(
       _         <- tokenRepository.deleteByUserId(id).orElseFail(ValidationError("token", "Failed to delete tokens"))
     yield ()
 
-  override def changePassword(userId: UUID, request: ChangePasswordRequest): ZIO[Any, AuthError, Unit] =
+  override def changePassword(
+      userId: UUID,
+      companyId: CompanyId,
+      request: ChangePasswordRequest
+  ): ZIO[Any, AuthError, Unit] =
     for
       _         <-
         ZIO.when(!validatePassword(request.newPassword))(
           ZIO.fail(WeakPassword("Password must be at least 8 characters with uppercase, lowercase, and digit"))
         )
-      personOpt <- personRepository.findById(PersonId(userId)).orElseFail(UserNotFound(s"ID: $userId"))
+      personOpt <- personRepository
+                     .findByIdAndCompany(PersonId(userId), companyId)
+                     .orElseFail(UserNotFound(s"ID: $userId"))
       person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(s"ID: $userId"))
       pwMatch   <- checkPassword(request.currentPassword, person.passwordHash).orElseFail(
                      InvalidCredentials(person.email)

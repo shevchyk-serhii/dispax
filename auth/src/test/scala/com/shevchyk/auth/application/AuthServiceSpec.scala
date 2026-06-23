@@ -482,19 +482,19 @@ object AuthServiceSpec extends ZIOSpecDefault {
         test("valid preferredLanguage 'de' is saved and returned") {
           for {
             service <- ZIO.service[AuthService]
-            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("de")))
+            updated <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(preferredLanguage = Some("de")))
           } yield assertTrue(updated.preferredLanguage.contains("de"))
         }.provide(layers),
         test("valid preferredLanguage 'en' is saved and returned") {
           for {
             service <- ZIO.service[AuthService]
-            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("en")))
+            updated <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(preferredLanguage = Some("en")))
           } yield assertTrue(updated.preferredLanguage.contains("en"))
         }.provide(layers),
         test("valid preferredLanguage 'uk' is saved and returned") {
           for {
             service <- ZIO.service[AuthService]
-            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("uk")))
+            updated <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(preferredLanguage = Some("uk")))
           } yield assertTrue(updated.preferredLanguage.contains("uk"))
         }.provide(layers),
         // Negative/mutation-critical: unsupported code must NOT be persisted —
@@ -503,8 +503,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
           for {
             service <- ZIO.service[AuthService]
             // Set a known-good language first so we have a baseline to check against.
-            _       <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("de")))
-            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("fr")))
+            _       <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(preferredLanguage = Some("de")))
+            updated <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(preferredLanguage = Some("fr")))
           } yield assertTrue(
             // 'fr' must not overwrite 'de'; the unsupported code is silently dropped.
             !updated.preferredLanguage.contains("fr") &&
@@ -515,21 +515,21 @@ object AuthServiceSpec extends ZIOSpecDefault {
           for {
             service <- ZIO.service[AuthService]
             // testUserId1 has no preferredLanguage in seed data → after an invalid update, it stays None.
-            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("xx")))
+            updated <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(preferredLanguage = Some("xx")))
           } yield assertTrue(updated.preferredLanguage.isEmpty)
         }.provide(layers),
         test("empty string language code is silently ignored — remains None") {
           for {
             service <- ZIO.service[AuthService]
-            updated <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("")))
+            updated <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(preferredLanguage = Some("")))
           } yield assertTrue(updated.preferredLanguage.isEmpty)
         }.provide(layers),
         test("omitting preferredLanguage in update preserves the current value") {
           for {
             service <- ZIO.service[AuthService]
-            _       <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("uk")))
+            _       <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(preferredLanguage = Some("uk")))
             // Second update omits preferredLanguage entirely — current value must be preserved.
-            updated <- service.updateUser(testUserId1, UpdateUserRequest(name = Some("No Lang Change")))
+            updated <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(name = Some("No Lang Change")))
           } yield assertTrue(
             updated.name == "No Lang Change" &&
               updated.preferredLanguage.contains("uk")
@@ -550,9 +550,9 @@ object AuthServiceSpec extends ZIOSpecDefault {
         test("updateUser with preferredLanguage succeeds and returns updated person") {
           for {
             service <- ZIO.service[AuthService]
-            _       <- service.updateUser(testUserId1, UpdateUserRequest(preferredLanguage = Some("de")))
+            _       <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(preferredLanguage = Some("de")))
             // A second call with a different field must not lose the already-stored language.
-            updated <- service.updateUser(testUserId1, UpdateUserRequest(name = Some("Lang Verified")))
+            updated <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(name = Some("Lang Verified")))
           } yield assertTrue(
             updated.name == "Lang Verified" &&
               updated.preferredLanguage.contains("de")
@@ -563,7 +563,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
         test("partial update changes only specified fields") {
           for {
             service <- ZIO.service[AuthService]
-            updated <- service.updateUser(testUserId1, UpdateUserRequest(name = Some("Updated Name")))
+            updated <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(name = Some("Updated Name")))
           } yield assertTrue(
             updated.name == "Updated Name" &&
               updated.email == "test@example.com" &&
@@ -576,7 +576,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
             result  <-
               service
                 .updateUser(
-                  UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                  UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                  testCompanyA,
                   UpdateUserRequest(name = Some("Test"))
                 )
                 .exit
@@ -585,10 +586,33 @@ object AuthServiceSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(layers),
+        // ── tenant isolation (regression for BUG #11) ─────────────────────────
+        // updateUser must not read or mutate a user that belongs to another company,
+        // even with a known/guessed id. A request from a foreign tenant must fail with
+        // UserNotFound (no existence leak) and must NOT change the row. This fails if the
+        // read uses findById (no company) instead of findByIdAndCompany.
+        test("does not update a user from another company") {
+          for {
+            service   <- ZIO.service[AuthService]
+            repo      <- ZIO.service[PersonRepository]
+            result    <-
+              service
+                .updateUser(testUserId1, testCompanyB, UpdateUserRequest(name = Some("Hijacked")))
+                .exit
+            untouched <- repo.findById(PersonId(testUserId1))
+          } yield assertTrue(
+            result match {
+              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[UserNotFound])
+              case _                   => false
+            },
+            // The victim's record must be unchanged by the cross-tenant attempt.
+            untouched.exists(_.name == "Test User")
+          )
+        }.provide(layersWithRepo),
         test("invalid email in update returns ValidationError") {
           for {
             service <- ZIO.service[AuthService]
-            result  <- service.updateUser(testUserId1, UpdateUserRequest(email = Some("bad-email"))).exit
+            result  <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(email = Some("bad-email"))).exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
@@ -601,7 +625,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
         test("invalid role in update returns ValidationError") {
           for {
             service <- ZIO.service[AuthService]
-            result  <- service.updateUser(testUserId1, UpdateUserRequest(role = Some("INVALID"))).exit
+            result  <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(role = Some("INVALID"))).exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
@@ -614,7 +638,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
         test("invalid status in update returns ValidationError") {
           for {
             service <- ZIO.service[AuthService]
-            result  <- service.updateUser(testUserId1, UpdateUserRequest(status = Some("INVALID"))).exit
+            result  <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(status = Some("INVALID"))).exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
@@ -628,7 +652,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
           for {
             service  <- ZIO.service[AuthService]
             original <- service.getUserById(testUserId10)
-            updated  <- service.updateUser(testUserId10, UpdateUserRequest(name = Some("New Name")))
+            updated  <- service.updateUser(testUserId10, testCompanyA, UpdateUserRequest(name = Some("New Name")))
           } yield assertTrue(
             updated.name == "New Name" &&
               updated.email == original.email &&
@@ -640,7 +664,9 @@ object AuthServiceSpec extends ZIOSpecDefault {
         test("updateUser adding DRIVER role to dispatcher propagates roles") {
           for {
             service <- ZIO.service[AuthService]
-            // testUserId10 is a Driver; create a fresh dispatcher to update
+            repo    <- ZIO.service[PersonRepository]
+            // Create a fresh dispatcher to update, then scope it to testCompanyA so the
+            // tenant-guarded updateUser can find it (createUser does not assign a company).
             created <- service.createUser(
                          CreateUserRequest(
                            email = "tobedriver@example.com",
@@ -649,8 +675,11 @@ object AuthServiceSpec extends ZIOSpecDefault {
                            password = "Secure123"
                          )
                        )
+            person  <- repo.findById(PersonId(created.id)).someOrFailException
+            _       <- repo.update(person.copy(companyId = Some(testCompanyA)))
             updated <- service.updateUser(
                          created.id,
+                         testCompanyA,
                          UpdateUserRequest(
                            role = Some("DISPATCHER"),
                            roles = Some(List("DISPATCHER", "DRIVER"))
@@ -661,7 +690,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
             updated.roles.contains("DISPATCHER"),
             updated.roles.contains("DRIVER")
           )
-        }.provide(layers),
+        }.provide(layersWithRepo),
         test("updateUser with primary role not in new roles returns ValidationError") {
           for {
             service <- ZIO.service[AuthService]
@@ -669,6 +698,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
               service
                 .updateUser(
                   testUserId10,
+                  testCompanyA,
                   UpdateUserRequest(
                     role = Some("DRIVER"),
                     roles = Some(List("DISPATCHER")) // primary DRIVER missing
@@ -753,7 +783,9 @@ object AuthServiceSpec extends ZIOSpecDefault {
         test("happy path with correct current password") {
           for {
             service <- ZIO.service[AuthService]
-            // Create user, then change password, then login with new password
+            repo    <- ZIO.service[PersonRepository]
+            // Create user, scope it to testCompanyA (createUser assigns no company),
+            // then change password, then login with the new password.
             user    <- service.createUser(
                          CreateUserRequest(
                            email = "changepw@example.com",
@@ -762,14 +794,19 @@ object AuthServiceSpec extends ZIOSpecDefault {
                            password = "OldPassword1"
                          )
                        )
-            _       <- service.changePassword(user.id, ChangePasswordRequest("OldPassword1", "NewPassword1"))
+            person  <- repo.findById(PersonId(user.id)).someOrFailException
+            _       <- repo.update(person.copy(companyId = Some(testCompanyA)))
+            _       <- service.changePassword(user.id, testCompanyA, ChangePasswordRequest("OldPassword1", "NewPassword1"))
             result  <- service.login("changepw@example.com", "NewPassword1")
           } yield assertTrue(result.person.email == "changepw@example.com")
-        }.provide(layers),
+        }.provide(layersWithRepo),
         test("wrong current password returns InvalidCredentials") {
           for {
             service <- ZIO.service[AuthService]
-            result  <- service.changePassword(testUserId1, ChangePasswordRequest("wrongcurrent", "NewPass123")).exit
+            result  <-
+              service
+                .changePassword(testUserId1, testCompanyA, ChangePasswordRequest("wrongcurrent", "NewPass123"))
+                .exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[InvalidCredentials])
             case _                   => false
@@ -778,9 +815,24 @@ object AuthServiceSpec extends ZIOSpecDefault {
         test("weak new password returns WeakPassword") {
           for {
             service <- ZIO.service[AuthService]
-            result  <- service.changePassword(testUserId1, ChangePasswordRequest("Password123", "short")).exit
+            result  <-
+              service.changePassword(testUserId1, testCompanyA, ChangePasswordRequest("Password123", "short")).exit
           } yield assertTrue(result match {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[WeakPassword])
+            case _                   => false
+          })
+        }.provide(layers),
+        // ── tenant isolation (regression for BUG #11) ─────────────────────────
+        // changePassword must not read or mutate a user that belongs to another company,
+        // even with a guessed id. A foreign tenant must see UserNotFound, never reach the
+        // password check. This fails if the read uses findById instead of findByIdAndCompany.
+        test("cannot change password of a user from another company") {
+          for {
+            service <- ZIO.service[AuthService]
+            result  <-
+              service.changePassword(testUserId1, testCompanyB, ChangePasswordRequest("Password123", "NewPass456")).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[UserNotFound])
             case _                   => false
           })
         }.provide(layers)
