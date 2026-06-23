@@ -15,6 +15,7 @@ import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/location_service.dart';
 import '../../widgets/common/notification_bell.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
 import '../../utils/ride_status_styles.dart';
@@ -124,20 +125,21 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     }
     if (!mounted) return;
 
+    final l10n = AppLocalizations.of(context)!;
     final accepted = await showAdaptiveDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('New ride assigned'),
+        title: Text(l10n.newRideAssigned),
         content: RideAssignedDetails(ride: ride),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Decline'),
+            child: Text(l10n.decline),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Accept'),
+            child: Text(l10n.accept),
           ),
         ],
       ),
@@ -295,6 +297,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
   // ─── Graphite header ──────────────────────────────────────────────────────
 
   Widget _buildHeader(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: SafeArea(
@@ -326,9 +329,9 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
                         ),
                         const SizedBox(height: 2),
                         // Title "Today"
-                        const Text(
-                          'Today',
-                          style: TextStyle(
+                        Text(
+                          l10n.today,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
@@ -346,7 +349,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
                       size: 22,
                     ),
                     onPressed: () => refreshRides(context),
-                    tooltip: 'Refresh',
+                    tooltip: l10n.refresh,
                   ),
                 ],
               ),
@@ -550,6 +553,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
   }
 
   void _showContactOptions(BuildContext context, String phone) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -558,7 +562,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
           children: [
             ListTile(
               leading: const Icon(Icons.phone, color: AppColors.success),
-              title: const Text('Call'),
+              title: Text(l10n.call),
               subtitle: Text(phone),
               onTap: () {
                 Navigator.pop(ctx);
@@ -567,7 +571,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
             ),
             ListTile(
               leading: const Icon(Icons.message, color: AppColors.info),
-              title: const Text('SMS'),
+              title: Text(l10n.sms),
               subtitle: Text(phone),
               onTap: () {
                 Navigator.pop(ctx);
@@ -589,17 +593,18 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
   }
 
   void _handleCompleteRide(BuildContext context, Ride ride) {
+    final l10n = AppLocalizations.of(context)!;
     showAdaptiveDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Complete Ride'),
+        title: Text(l10n.completeRideTitle),
         content: Text(
           'Mark ride from ${ride.from.address} to ${ride.to.address} as completed?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -613,7 +618,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
               _stopLocationTracking();
               NavigationHelper.showSnackBar(context, 'Ride completed');
             },
-            child: const Text('Complete'),
+            child: Text(l10n.completeRideButton),
           ),
         ],
       ),
@@ -683,9 +688,10 @@ class _AvailabilityPillState extends State<_AvailabilityPill> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update: $e'),
+            content: Text(l10n.failedToUpdate(e.toString())),
             backgroundColor: AppColors.error,
           ),
         );
@@ -697,6 +703,7 @@ class _AvailabilityPillState extends State<_AvailabilityPill> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     const greenDot = Color(0xFF22C55E);
 
     return Container(
@@ -742,7 +749,7 @@ class _AvailabilityPillState extends State<_AvailabilityPill> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              _isAvailable ? "You're online" : "You're offline",
+              _isAvailable ? l10n.youreOnline : l10n.youreOffline,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
@@ -804,6 +811,7 @@ class _SegmentedControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       height: 36,
       padding: const EdgeInsets.all(4),
@@ -814,17 +822,17 @@ class _SegmentedControl extends StatelessWidget {
       child: Row(
         children: [
           _SegmentTab(
-            label: 'Today · $todayCount',
+            label: '${l10n.today} · $todayCount',
             active: activeTab == _TodayTab.today,
             onTap: () => onTabChanged(_TodayTab.today),
           ),
           _SegmentTab(
-            label: 'Upcoming',
+            label: l10n.upcoming,
             active: activeTab == _TodayTab.upcoming,
             onTap: () => onTabChanged(_TodayTab.upcoming),
           ),
           _SegmentTab(
-            label: 'History',
+            label: l10n.history,
             active: activeTab == _TodayTab.history,
             onTap: () => onTabChanged(_TodayTab.history),
           ),
@@ -1008,9 +1016,9 @@ class _LiveRideCard extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: () => _handleNavigate(context, ride),
                       icon: const Icon(Icons.map_outlined, size: 16),
-                      label: const Text(
-                        'Navigate',
-                        style: TextStyle(
+                      label: Text(
+                        AppLocalizations.of(context)!.navigate,
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1063,9 +1071,9 @@ class _LiveRideCard extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: onStartRide,
                       icon: const Icon(Icons.play_arrow_rounded, size: 16),
-                      label: const Text(
-                        'Start',
-                        style: TextStyle(
+                      label: Text(
+                        AppLocalizations.of(context)!.start,
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1090,9 +1098,9 @@ class _LiveRideCard extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: onCompleteRide,
                       icon: const Icon(Icons.check_rounded, size: 16),
-                      label: const Text(
-                        'Complete',
-                        style: TextStyle(
+                      label: Text(
+                        AppLocalizations.of(context)!.completeRideButton,
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1118,11 +1126,12 @@ class _LiveRideCard extends StatelessWidget {
   }
 
   static void _handleNavigate(BuildContext context, Ride ride) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final choice = await showAdaptiveDialog<String>(
         context: context,
         builder: (BuildContext ctx) => SimpleDialog(
-          title: const Text('Navigate to'),
+          title: Text(l10n.navigateTo),
           children: [
             SimpleDialogOption(
               onPressed: () => Navigator.of(ctx).pop('pickup'),
@@ -1132,7 +1141,7 @@ class _LiveRideCard extends StatelessWidget {
                   color: AppColors.success,
                 ),
                 title: Text(ride.from.address),
-                subtitle: const Text('Google Maps — Pickup'),
+                subtitle: Text(l10n.googleMapsPickup),
               ),
             ),
             SimpleDialogOption(
@@ -1140,7 +1149,7 @@ class _LiveRideCard extends StatelessWidget {
               child: ListTile(
                 leading: const Icon(Icons.flag, color: AppColors.error),
                 title: Text(ride.to.address),
-                subtitle: const Text('Google Maps — Drop-off'),
+                subtitle: Text(l10n.googleMapsDropoff),
               ),
             ),
           ],
@@ -1167,16 +1176,13 @@ class _LiveRideCard extends StatelessWidget {
       await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
 
       if (context.mounted) {
-        NavigationHelper.showSnackBar(
-          context,
-          'Opening navigation in Google Maps...',
-        );
+        NavigationHelper.showSnackBar(context, l10n.openingNavigation);
       }
     } catch (e) {
       if (context.mounted) {
         NavigationHelper.showSnackBar(
           context,
-          'Could not open navigation: $e',
+          l10n.couldNotOpenNavigation(e.toString()),
           isError: true,
         );
       }
@@ -1352,7 +1358,7 @@ class _EtaChip extends StatelessWidget {
           Icon(Icons.access_time_rounded, size: 13, color: fg),
           const SizedBox(width: 5),
           Text(
-            'Arriving in $etaMinutes min',
+            AppLocalizations.of(context)!.arrivingInMinutes(etaMinutes),
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
@@ -1609,7 +1615,7 @@ class _EmbeddedHistoryTab extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No completed rides yet',
+              AppLocalizations.of(context)!.noCompletedRides,
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ],

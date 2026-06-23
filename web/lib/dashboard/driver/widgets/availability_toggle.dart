@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../modules/driver_management/services/driver_availability_service.dart';
 
 class AvailabilityToggle extends StatefulWidget {
@@ -54,9 +55,10 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update: $e'),
+            content: Text(l10n.failedToUpdate(e.toString())),
             backgroundColor: AppColors.error,
           ),
         );
@@ -70,6 +72,7 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -93,7 +96,7 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _isAvailable ? 'Available' : 'Offline',
+                    _isAvailable ? l10n.available : l10n.offline,
                     style: AppStyles.labelLarge.copyWith(
                       color: _isAvailable
                           ? AppColors.success
@@ -101,9 +104,7 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
                     ),
                   ),
                   Text(
-                    _isAvailable
-                        ? 'You are accepting rides'
-                        : 'You are not accepting rides',
+                    _isAvailable ? l10n.acceptingRides : l10n.notAcceptingRides,
                     style: AppStyles.bodySmall.copyWith(
                       color: Theme.of(context).colorScheme.outlineVariant,
                     ),

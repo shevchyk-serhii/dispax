@@ -479,5 +479,76 @@
   },
   "noExpenses": "Keine Ausgaben",
   "noReceiptWarning": "Kein Beleg",
-  "totalExpensesLabel": "Gesamt"
+  "totalExpensesLabel": "Gesamt",
+
+  "newRideAssigned": "Neue Fahrt zugewiesen",
+  "newRideAssignedContent": "Ihnen wurde eine neue Fahrt zugewiesen. Möchten Sie sie annehmen?",
+  "decline": "Ablehnen",
+  "accept": "Annehmen",
+  "call": "Anrufen",
+  "sms": "SMS",
+  "completeRideTitle": "Fahrt abschließen",
+  "navigate": "Navigieren",
+  "navigateTo": "Navigieren zu",
+  "googleMapsPickup": "Google Maps — Abholung",
+  "googleMapsDropoff": "Google Maps — Ziel",
+  "openingNavigation": "Navigation in Google Maps wird geöffnet...",
+  "arrivingInMinutes": "Ankunft in {etaMinutes} Min.",
+  "@arrivingInMinutes": {
+    "placeholders": {
+      "etaMinutes": {"type": "int"}
+    }
+  },
+  "noCompletedRides": "Noch keine abgeschlossenen Fahrten",
+  "refresh": "Aktualisieren",
+  "youreOnline": "Sie sind online",
+  "youreOffline": "Sie sind offline",
+  "discardChangesTitle": "Änderungen verwerfen?",
+  "discardChangesMessage": "Sie haben nicht gespeicherte Fahrtdetails. Wenn Sie die Seite verlassen, gehen sie verloren.",
+  "stay": "Bleiben",
+  "discard": "Verwerfen",
+  "bookLabel": "Buchen",
+  "monthView": "Monatsansicht",
+  "weekView": "Wochenansicht",
+  "dayView": "Tagesansicht",
+  "board": "Übersicht",
+  "goToday": "Zum heutigen Tag",
+  "todaysSchedule": "Heutiger Zeitplan",
+  "noRidesScheduled": "Keine Fahrten geplant",
+  "enjoyYourFreeDay": "Genießen Sie Ihren freien Tag!",
+  "callClient": "Kunden anrufen",
+  "startNavigation": "Navigation starten",
+  "start": "Starten",
+  "completeRideButton": "Abschließen",
+  "pickupLocation": "Abholort",
+  "dropoffLocation": "Zielort",
+  "couldNotOpenNavigation": "Navigation konnte nicht geöffnet werden: {error}",
+  "@couldNotOpenNavigation": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "travelTimeMinutes": "{minutes} Min. Fahrzeit",
+  "@travelTimeMinutes": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "failedToSetPrice": "Preis konnte nicht gesetzt werden: {error}",
+  "@failedToSetPrice": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "setRidePrice": "Fahrtpreis festlegen",
+  "setPrice": "Preis festlegen",
+  "offline": "Offline",
+  "acceptingRides": "Sie nehmen Fahrten an",
+  "notAcceptingRides": "Sie nehmen keine Fahrten an",
+  "failedToUpdate": "Aktualisierung fehlgeschlagen: {error}",
+  "@failedToUpdate": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

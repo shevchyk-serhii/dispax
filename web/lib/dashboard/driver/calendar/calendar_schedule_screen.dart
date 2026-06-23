@@ -11,6 +11,7 @@ import '../../../modules/schedule_management/services/schedule_service.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../screens/ride_details_screen.dart';
+import '../../../l10n/app_localizations.dart';
 export '../../../modules/core/widgets/calendar_controls.dart'
     show CalendarViewType;
 import 'month_view_widget.dart';
@@ -174,42 +175,44 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
                 onSelected: (CalendarViewType result) {
                   viewTypeNotifier.value = result;
                 },
-                itemBuilder: (BuildContext context) =>
-                    <PopupMenuEntry<CalendarViewType>>[
-                      const PopupMenuItem<CalendarViewType>(
-                        value: CalendarViewType.month,
+                itemBuilder: (BuildContext context) {
+                  final l10n = AppLocalizations.of(context)!;
+                  return <PopupMenuEntry<CalendarViewType>>[
+                    PopupMenuItem<CalendarViewType>(
+                      value: CalendarViewType.month,
+                      child: ListTile(
+                        leading: const Icon(Icons.calendar_month),
+                        title: Text(l10n.monthView),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    PopupMenuItem<CalendarViewType>(
+                      value: CalendarViewType.week,
+                      child: ListTile(
+                        leading: const Icon(Icons.view_week),
+                        title: Text(l10n.weekView),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    PopupMenuItem<CalendarViewType>(
+                      value: CalendarViewType.day,
+                      child: ListTile(
+                        leading: const Icon(Icons.view_day),
+                        title: Text(l10n.dayView),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    if (_canViewOtherSchedules)
+                      PopupMenuItem<CalendarViewType>(
+                        value: CalendarViewType.multiColumn,
                         child: ListTile(
-                          leading: Icon(Icons.calendar_month),
-                          title: Text('Month View'),
+                          leading: const Icon(Icons.view_column),
+                          title: Text(l10n.board),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),
-                      const PopupMenuItem<CalendarViewType>(
-                        value: CalendarViewType.week,
-                        child: ListTile(
-                          leading: Icon(Icons.view_week),
-                          title: Text('Week View'),
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                      const PopupMenuItem<CalendarViewType>(
-                        value: CalendarViewType.day,
-                        child: ListTile(
-                          leading: Icon(Icons.view_day),
-                          title: Text('Day View'),
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                      if (_canViewOtherSchedules)
-                        const PopupMenuItem<CalendarViewType>(
-                          value: CalendarViewType.multiColumn,
-                          child: ListTile(
-                            leading: Icon(Icons.view_column),
-                            title: Text('Board'),
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                    ],
+                  ];
+                },
               );
             },
           ),
@@ -218,7 +221,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
             onPressed: () {
               selectedDayNotifier.value = DateTime.now();
             },
-            tooltip: 'Go to Today',
+            tooltip: AppLocalizations.of(context)!.goToday,
           ),
         ],
       ),
@@ -272,6 +275,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       floatingActionButton: Builder(
         builder: (context) {
           final cs = Theme.of(context).colorScheme;
+          final l10n = AppLocalizations.of(context)!;
           return FloatingActionButton(
             onPressed: () {
               selectedDayNotifier.value = DateTime.now();
@@ -279,7 +283,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
             },
             backgroundColor: cs.primary,
             foregroundColor: cs.onPrimary,
-            tooltip: 'Today\'s Schedule',
+            tooltip: l10n.todaysSchedule,
             child: const Icon(Icons.today),
           );
         },

@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:dispax/blocs/auth/auth_bloc.dart';
 import 'package:dispax/blocs/auth/auth_event.dart';
 import 'package:dispax/blocs/auth/auth_state.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/dashboard/driver/calendar/multi_column_view_widget.dart';
@@ -70,6 +71,9 @@ Widget _buildTestWidget({
   void Function(dynamic)? onRideSelected,
 }) {
   return MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    locale: const Locale('en'),
     home: BlocProvider<AuthBloc>.value(
       value: authBloc,
       child: Scaffold(

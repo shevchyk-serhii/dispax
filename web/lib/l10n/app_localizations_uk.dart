@@ -1041,4 +1041,150 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get totalExpensesLabel => 'Всього';
+
+  @override
+  String get newRideAssigned => 'Нова поїздка призначена';
+
+  @override
+  String get newRideAssignedContent => 'Вам призначено нову поїздку. Прийняти?';
+
+  @override
+  String get decline => 'Відхилити';
+
+  @override
+  String get accept => 'Прийняти';
+
+  @override
+  String get call => 'Зателефонувати';
+
+  @override
+  String get sms => 'SMS';
+
+  @override
+  String get completeRideTitle => 'Завершити поїздку';
+
+  @override
+  String get navigate => 'Навігація';
+
+  @override
+  String get navigateTo => 'Маршрут до';
+
+  @override
+  String get googleMapsPickup => 'Google Maps — Посадка';
+
+  @override
+  String get googleMapsDropoff => 'Google Maps — Висадка';
+
+  @override
+  String get openingNavigation => 'Відкриття навігації в Google Maps...';
+
+  @override
+  String arrivingInMinutes(int etaMinutes) {
+    return 'Прибуття через $etaMinutes хв';
+  }
+
+  @override
+  String get noCompletedRides => 'Ще немає завершених поїздок';
+
+  @override
+  String get refresh => 'Оновити';
+
+  @override
+  String get youreOnline => 'Ви онлайн';
+
+  @override
+  String get youreOffline => 'Ви офлайн';
+
+  @override
+  String get discardChangesTitle => 'Відхилити зміни?';
+
+  @override
+  String get discardChangesMessage =>
+      'У вас є незбережені деталі поїздки. Якщо ви підете, вони будуть втрачені.';
+
+  @override
+  String get stay => 'Залишитись';
+
+  @override
+  String get discard => 'Відхилити';
+
+  @override
+  String get bookLabel => 'Замовити';
+
+  @override
+  String get monthView => 'Перегляд місяця';
+
+  @override
+  String get weekView => 'Перегляд тижня';
+
+  @override
+  String get dayView => 'Перегляд дня';
+
+  @override
+  String get board => 'Дошка';
+
+  @override
+  String get goToday => 'До сьогодні';
+
+  @override
+  String get todaysSchedule => 'Розклад на сьогодні';
+
+  @override
+  String get noRidesScheduled => 'Поїздок не заплановано';
+
+  @override
+  String get enjoyYourFreeDay => 'Насолоджуйтесь вихідним днем!';
+
+  @override
+  String get callClient => 'Зателефонувати клієнту';
+
+  @override
+  String get startNavigation => 'Розпочати навігацію';
+
+  @override
+  String get start => 'Старт';
+
+  @override
+  String get completeRideButton => 'Завершити';
+
+  @override
+  String get pickupLocation => 'Місце посадки';
+
+  @override
+  String get dropoffLocation => 'Місце висадки';
+
+  @override
+  String couldNotOpenNavigation(String error) {
+    return 'Не вдалося відкрити навігацію: $error';
+  }
+
+  @override
+  String travelTimeMinutes(int minutes) {
+    return '$minutes хв їзди';
+  }
+
+  @override
+  String failedToSetPrice(String error) {
+    return 'Не вдалося встановити ціну: $error';
+  }
+
+  @override
+  String get setRidePrice => 'Встановити ціну поїздки';
+
+  @override
+  String get setPrice => 'Встановити ціну';
+
+  @override
+  String get offline => 'Офлайн';
+
+  @override
+  String get acceptingRides => 'Ви приймаєте поїздки';
+
+  @override
+  String get notAcceptingRides => 'Ви не приймаєте поїздки';
+
+  @override
+  String failedToUpdate(String error) {
+    return 'Не вдалося оновити: $error';
+  }
 }

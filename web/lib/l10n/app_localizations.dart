@@ -2043,6 +2043,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total'**
   String get totalExpensesLabel;
+
+  /// No description provided for @newRideAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'New ride assigned'**
+  String get newRideAssigned;
+
+  /// No description provided for @newRideAssignedContent.
+  ///
+  /// In en, this message translates to:
+  /// **'You have been assigned a new ride. Do you accept it?'**
+  String get newRideAssignedContent;
+
+  /// No description provided for @decline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get decline;
+
+  /// No description provided for @accept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get accept;
+
+  /// No description provided for @call.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get call;
+
+  /// No description provided for @sms.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS'**
+  String get sms;
+
+  /// No description provided for @completeRideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Ride'**
+  String get completeRideTitle;
+
+  /// No description provided for @navigate.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate'**
+  String get navigate;
+
+  /// No description provided for @navigateTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate to'**
+  String get navigateTo;
+
+  /// No description provided for @googleMapsPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps — Pickup'**
+  String get googleMapsPickup;
+
+  /// No description provided for @googleMapsDropoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps — Drop-off'**
+  String get googleMapsDropoff;
+
+  /// No description provided for @openingNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening navigation in Google Maps...'**
+  String get openingNavigation;
+
+  /// No description provided for @arrivingInMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Arriving in {etaMinutes} min'**
+  String arrivingInMinutes(int etaMinutes);
+
+  /// No description provided for @noCompletedRides.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed rides yet'**
+  String get noCompletedRides;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @youreOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re online'**
+  String get youreOnline;
+
+  /// No description provided for @youreOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline'**
+  String get youreOffline;
+
+  /// No description provided for @discardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get discardChangesTitle;
+
+  /// No description provided for @discardChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved ride details. If you leave, they will be lost.'**
+  String get discardChangesMessage;
+
+  /// No description provided for @stay.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay'**
+  String get stay;
+
+  /// No description provided for @discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discard;
+
+  /// No description provided for @bookLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Book'**
+  String get bookLabel;
+
+  /// No description provided for @monthView.
+  ///
+  /// In en, this message translates to:
+  /// **'Month View'**
+  String get monthView;
+
+  /// No description provided for @weekView.
+  ///
+  /// In en, this message translates to:
+  /// **'Week View'**
+  String get weekView;
+
+  /// No description provided for @dayView.
+  ///
+  /// In en, this message translates to:
+  /// **'Day View'**
+  String get dayView;
+
+  /// No description provided for @board.
+  ///
+  /// In en, this message translates to:
+  /// **'Board'**
+  String get board;
+
+  /// No description provided for @goToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Today'**
+  String get goToday;
+
+  /// No description provided for @todaysSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Schedule'**
+  String get todaysSchedule;
+
+  /// No description provided for @noRidesScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'No rides scheduled'**
+  String get noRidesScheduled;
+
+  /// No description provided for @enjoyYourFreeDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoy your free day!'**
+  String get enjoyYourFreeDay;
+
+  /// No description provided for @callClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Call Client'**
+  String get callClient;
+
+  /// No description provided for @startNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Navigation'**
+  String get startNavigation;
+
+  /// No description provided for @start.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get start;
+
+  /// No description provided for @completeRideButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get completeRideButton;
+
+  /// No description provided for @pickupLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup location'**
+  String get pickupLocation;
+
+  /// No description provided for @dropoffLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop-off location'**
+  String get dropoffLocation;
+
+  /// No description provided for @couldNotOpenNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open navigation: {error}'**
+  String couldNotOpenNavigation(String error);
+
+  /// No description provided for @travelTimeMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min travel time'**
+  String travelTimeMinutes(int minutes);
+
+  /// No description provided for @failedToSetPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to set price: {error}'**
+  String failedToSetPrice(String error);
+
+  /// No description provided for @setRidePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Set ride price'**
+  String get setRidePrice;
+
+  /// No description provided for @setPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Set price'**
+  String get setPrice;
+
+  /// No description provided for @offline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get offline;
+
+  /// No description provided for @acceptingRides.
+  ///
+  /// In en, this message translates to:
+  /// **'You are accepting rides'**
+  String get acceptingRides;
+
+  /// No description provided for @notAcceptingRides.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not accepting rides'**
+  String get notAcceptingRides;
+
+  /// No description provided for @failedToUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update: {error}'**
+  String failedToUpdate(String error);
 }
 
 class _AppLocalizationsDelegate

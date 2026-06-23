@@ -497,5 +497,76 @@
   },
   "noExpenses": "No Expenses",
   "noReceiptWarning": "No Receipt",
-  "totalExpensesLabel": "Total"
+  "totalExpensesLabel": "Total",
+
+  "newRideAssigned": "New ride assigned",
+  "newRideAssignedContent": "You have been assigned a new ride. Do you accept it?",
+  "decline": "Decline",
+  "accept": "Accept",
+  "call": "Call",
+  "sms": "SMS",
+  "completeRideTitle": "Complete Ride",
+  "navigate": "Navigate",
+  "navigateTo": "Navigate to",
+  "googleMapsPickup": "Google Maps — Pickup",
+  "googleMapsDropoff": "Google Maps — Drop-off",
+  "openingNavigation": "Opening navigation in Google Maps...",
+  "arrivingInMinutes": "Arriving in {etaMinutes} min",
+  "@arrivingInMinutes": {
+    "placeholders": {
+      "etaMinutes": {"type": "int"}
+    }
+  },
+  "noCompletedRides": "No completed rides yet",
+  "refresh": "Refresh",
+  "youreOnline": "You're online",
+  "youreOffline": "You're offline",
+  "discardChangesTitle": "Discard changes?",
+  "discardChangesMessage": "You have unsaved ride details. If you leave, they will be lost.",
+  "stay": "Stay",
+  "discard": "Discard",
+  "bookLabel": "Book",
+  "monthView": "Month View",
+  "weekView": "Week View",
+  "dayView": "Day View",
+  "board": "Board",
+  "goToday": "Go to Today",
+  "todaysSchedule": "Today's Schedule",
+  "noRidesScheduled": "No rides scheduled",
+  "enjoyYourFreeDay": "Enjoy your free day!",
+  "callClient": "Call Client",
+  "startNavigation": "Start Navigation",
+  "start": "Start",
+  "completeRideButton": "Complete",
+  "pickupLocation": "Pickup location",
+  "dropoffLocation": "Drop-off location",
+  "couldNotOpenNavigation": "Could not open navigation: {error}",
+  "@couldNotOpenNavigation": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "travelTimeMinutes": "{minutes} min travel time",
+  "@travelTimeMinutes": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "failedToSetPrice": "Failed to set price: {error}",
+  "@failedToSetPrice": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "setRidePrice": "Set ride price",
+  "setPrice": "Set price",
+  "offline": "Offline",
+  "acceptingRides": "You are accepting rides",
+  "notAcceptingRides": "You are not accepting rides",
+  "failedToUpdate": "Failed to update: {error}",
+  "@failedToUpdate": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

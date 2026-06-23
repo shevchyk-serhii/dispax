@@ -389,108 +389,124 @@ void main() {
         localeNotifier.value = null;
       });
 
-      test('login with preferredLanguage "de" sets localeNotifier to Locale("de")',
-          () async {
-        final person = TestFixtures.person(preferredLanguage: 'de');
-        when(() => mockApiClient.login(any(), any())).thenAnswer(
-          (_) async => {'person': person.toJson(), 'token': 'test-token'},
-        );
+      test(
+        'login with preferredLanguage "de" sets localeNotifier to Locale("de")',
+        () async {
+          final person = TestFixtures.person(preferredLanguage: 'de');
+          when(() => mockApiClient.login(any(), any())).thenAnswer(
+            (_) async => {'person': person.toJson(), 'token': 'test-token'},
+          );
 
-        final bloc = buildBloc();
-        bloc.add(
-          const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
-        );
-        await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
+          final bloc = buildBloc();
+          bloc.add(
+            const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.status == AuthStatus.authenticated,
+          );
 
-        expect(localeNotifier.value, const Locale('de'));
+          expect(localeNotifier.value, const Locale('de'));
 
-        await bloc.close();
-      });
-
-      test('login with preferredLanguage "uk" sets localeNotifier to Locale("uk")',
-          () async {
-        final person = TestFixtures.person(preferredLanguage: 'uk');
-        when(() => mockApiClient.login(any(), any())).thenAnswer(
-          (_) async => {'person': person.toJson(), 'token': 'test-token'},
-        );
-
-        final bloc = buildBloc();
-        bloc.add(
-          const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
-        );
-        await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
-
-        expect(localeNotifier.value, const Locale('uk'));
-
-        await bloc.close();
-      });
-
-      test('login with null preferredLanguage does not change localeNotifier',
-          () async {
-        // Set a pre-existing locale to confirm it is not touched.
-        localeNotifier.value = const Locale('en');
-
-        final person = TestFixtures.person(preferredLanguage: null);
-        when(() => mockApiClient.login(any(), any())).thenAnswer(
-          (_) async => {'person': person.toJson(), 'token': 'test-token'},
-        );
-
-        final bloc = buildBloc();
-        bloc.add(
-          const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
-        );
-        await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
-
-        // localeNotifier must remain unchanged — we did not override it.
-        expect(localeNotifier.value, const Locale('en'));
-
-        await bloc.close();
-      });
+          await bloc.close();
+        },
+      );
 
       test(
-          'AuthInitializeRequested with stored user that has preferredLanguage "de" sets localeNotifier',
-          () async {
-        final person = TestFixtures.person(preferredLanguage: 'de');
-        when(
-          () => mockStorage.read(AuthBloc.privateUserKey),
-        ).thenAnswer((_) async => jsonEncode(person.toJson()));
-        when(
-          () => mockStorage.read(AuthBloc.privateTokenKey),
-        ).thenAnswer((_) async => 'test-token');
+        'login with preferredLanguage "uk" sets localeNotifier to Locale("uk")',
+        () async {
+          final person = TestFixtures.person(preferredLanguage: 'uk');
+          when(() => mockApiClient.login(any(), any())).thenAnswer(
+            (_) async => {'person': person.toJson(), 'token': 'test-token'},
+          );
 
-        final bloc = buildBloc();
-        bloc.add(const AuthInitializeRequested());
-        await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
+          final bloc = buildBloc();
+          bloc.add(
+            const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.status == AuthStatus.authenticated,
+          );
 
-        expect(localeNotifier.value, const Locale('de'));
+          expect(localeNotifier.value, const Locale('uk'));
 
-        await bloc.close();
-      });
+          await bloc.close();
+        },
+      );
 
       test(
-          'AuthInitializeRequested with stored user without preferredLanguage does not change localeNotifier',
-          () async {
-        localeNotifier.value = const Locale('uk');
+        'login with null preferredLanguage does not change localeNotifier',
+        () async {
+          // Set a pre-existing locale to confirm it is not touched.
+          localeNotifier.value = const Locale('en');
 
-        final person = TestFixtures.person(preferredLanguage: null);
-        when(
-          () => mockStorage.read(AuthBloc.privateUserKey),
-        ).thenAnswer((_) async => jsonEncode(person.toJson()));
-        when(
-          () => mockStorage.read(AuthBloc.privateTokenKey),
-        ).thenAnswer((_) async => 'test-token');
+          final person = TestFixtures.person(preferredLanguage: null);
+          when(() => mockApiClient.login(any(), any())).thenAnswer(
+            (_) async => {'person': person.toJson(), 'token': 'test-token'},
+          );
 
-        final bloc = buildBloc();
-        bloc.add(const AuthInitializeRequested());
-        await bloc.stream.firstWhere((s) => s.status == AuthStatus.authenticated);
+          final bloc = buildBloc();
+          bloc.add(
+            const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.status == AuthStatus.authenticated,
+          );
 
-        // Pre-existing locale must be preserved — bloc must not clear it.
-        expect(localeNotifier.value, const Locale('uk'));
+          // localeNotifier must remain unchanged — we did not override it.
+          expect(localeNotifier.value, const Locale('en'));
 
-        await bloc.close();
-      });
+          await bloc.close();
+        },
+      );
+
+      test(
+        'AuthInitializeRequested with stored user that has preferredLanguage "de" sets localeNotifier',
+        () async {
+          final person = TestFixtures.person(preferredLanguage: 'de');
+          when(
+            () => mockStorage.read(AuthBloc.privateUserKey),
+          ).thenAnswer((_) async => jsonEncode(person.toJson()));
+          when(
+            () => mockStorage.read(AuthBloc.privateTokenKey),
+          ).thenAnswer((_) async => 'test-token');
+
+          final bloc = buildBloc();
+          bloc.add(const AuthInitializeRequested());
+          await bloc.stream.firstWhere(
+            (s) => s.status == AuthStatus.authenticated,
+          );
+
+          expect(localeNotifier.value, const Locale('de'));
+
+          await bloc.close();
+        },
+      );
+
+      test(
+        'AuthInitializeRequested with stored user without preferredLanguage does not change localeNotifier',
+        () async {
+          localeNotifier.value = const Locale('uk');
+
+          final person = TestFixtures.person(preferredLanguage: null);
+          when(
+            () => mockStorage.read(AuthBloc.privateUserKey),
+          ).thenAnswer((_) async => jsonEncode(person.toJson()));
+          when(
+            () => mockStorage.read(AuthBloc.privateTokenKey),
+          ).thenAnswer((_) async => 'test-token');
+
+          final bloc = buildBloc();
+          bloc.add(const AuthInitializeRequested());
+          await bloc.stream.firstWhere(
+            (s) => s.status == AuthStatus.authenticated,
+          );
+
+          // Pre-existing locale must be preserved — bloc must not clear it.
+          expect(localeNotifier.value, const Locale('uk'));
+
+          await bloc.close();
+        },
+      );
     });
-
   });
 }
-

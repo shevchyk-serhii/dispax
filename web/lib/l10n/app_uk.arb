@@ -479,5 +479,76 @@
   },
   "noExpenses": "Немає витрат",
   "noReceiptWarning": "Немає квитанції",
-  "totalExpensesLabel": "Всього"
+  "totalExpensesLabel": "Всього",
+
+  "newRideAssigned": "Нова поїздка призначена",
+  "newRideAssignedContent": "Вам призначено нову поїздку. Прийняти?",
+  "decline": "Відхилити",
+  "accept": "Прийняти",
+  "call": "Зателефонувати",
+  "sms": "SMS",
+  "completeRideTitle": "Завершити поїздку",
+  "navigate": "Навігація",
+  "navigateTo": "Маршрут до",
+  "googleMapsPickup": "Google Maps — Посадка",
+  "googleMapsDropoff": "Google Maps — Висадка",
+  "openingNavigation": "Відкриття навігації в Google Maps...",
+  "arrivingInMinutes": "Прибуття через {etaMinutes} хв",
+  "@arrivingInMinutes": {
+    "placeholders": {
+      "etaMinutes": {"type": "int"}
+    }
+  },
+  "noCompletedRides": "Ще немає завершених поїздок",
+  "refresh": "Оновити",
+  "youreOnline": "Ви онлайн",
+  "youreOffline": "Ви офлайн",
+  "discardChangesTitle": "Відхилити зміни?",
+  "discardChangesMessage": "У вас є незбережені деталі поїздки. Якщо ви підете, вони будуть втрачені.",
+  "stay": "Залишитись",
+  "discard": "Відхилити",
+  "bookLabel": "Замовити",
+  "monthView": "Перегляд місяця",
+  "weekView": "Перегляд тижня",
+  "dayView": "Перегляд дня",
+  "board": "Дошка",
+  "goToday": "До сьогодні",
+  "todaysSchedule": "Розклад на сьогодні",
+  "noRidesScheduled": "Поїздок не заплановано",
+  "enjoyYourFreeDay": "Насолоджуйтесь вихідним днем!",
+  "callClient": "Зателефонувати клієнту",
+  "startNavigation": "Розпочати навігацію",
+  "start": "Старт",
+  "completeRideButton": "Завершити",
+  "pickupLocation": "Місце посадки",
+  "dropoffLocation": "Місце висадки",
+  "couldNotOpenNavigation": "Не вдалося відкрити навігацію: {error}",
+  "@couldNotOpenNavigation": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "travelTimeMinutes": "{minutes} хв їзди",
+  "@travelTimeMinutes": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "failedToSetPrice": "Не вдалося встановити ціну: {error}",
+  "@failedToSetPrice": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "setRidePrice": "Встановити ціну поїздки",
+  "setPrice": "Встановити ціну",
+  "offline": "Офлайн",
+  "acceptingRides": "Ви приймаєте поїздки",
+  "notAcceptingRides": "Ви не приймаєте поїздки",
+  "failedToUpdate": "Не вдалося оновити: {error}",
+  "@failedToUpdate": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

@@ -19,6 +19,7 @@ import 'package:dispax/blocs/ride/ride_state.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:dispax/modules/core/models/location.dart';
 import 'package:dispax/dashboard/client/calendar/client_day_view_widget.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,9 @@ Future<void> _pump(
   final day = selectedDay ?? _selectedDay;
   await tester.pumpWidget(
     MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'),
       theme: ThemeData(useMaterial3: true),
       home: BlocProvider<RideBloc>.value(
         value: rideBloc,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dispax/dashboard/driver/calendar/widgets/ride_calendar_card.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:dispax/modules/core/models/location.dart';
 
@@ -33,6 +34,9 @@ Future<void> _pump(
 }) {
   return tester.pumpWidget(
     MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'),
       theme: ThemeData(brightness: brightness, useMaterial3: true),
       home: Scaffold(body: SizedBox(height: 500, child: child)),
     ),
@@ -278,6 +282,9 @@ void main() {
       );
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           theme: ThemeData(useMaterial3: true),
           home: Scaffold(
             body: SizedBox(
@@ -367,6 +374,9 @@ void main() {
       );
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           theme: ThemeData(useMaterial3: true),
           home: Scaffold(
             body: SizedBox(
@@ -415,6 +425,9 @@ void main() {
       );
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           theme: ThemeData(useMaterial3: true),
           home: Scaffold(
             body: SizedBox(
