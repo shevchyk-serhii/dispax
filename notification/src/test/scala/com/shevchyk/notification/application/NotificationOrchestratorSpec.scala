@@ -1,6 +1,6 @@
 package com.shevchyk.notification.application
 
-import com.shevchyk.core.domain.PersonId
+import com.shevchyk.core.domain.{CompanyId, PersonId}
 import com.shevchyk.notification.domain.PushNotification
 import com.shevchyk.notification.repository.InMemoryFcmTokenRepository
 import zio.test.*
@@ -13,6 +13,7 @@ object NotificationOrchestratorSpec extends ZIOSpecDefault {
   private val testLayers = InMemoryFcmTokenRepository.layer >>> FcmService.layer >>> NotificationOrchestrator.layer
 
   private val testPerson   = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000001"))
+  private val testCompany  = CompanyId(UUID.fromString("00000050-0000-0000-0000-000000000001"))
   private val notification = PushNotification(title = "Ride assigned", body = "You have a new ride")
 
   /**
@@ -20,13 +21,13 @@ object NotificationOrchestratorSpec extends ZIOSpecDefault {
    */
   final private class RecordingFcmService(fail: Boolean) extends FcmService {
 
-    val calls: Ref[Int]                                                                = Unsafe.unsafe { implicit u =>
+    val calls: Ref[Int]                                                                                      = Unsafe.unsafe { implicit u =>
       Runtime.default.unsafe.run(Ref.make(0)).getOrThrowFiberFailure()
     }
-    def registerToken(personId: PersonId, token: String, platform: String): Task[Unit] = ZIO.unit
-    def unregisterToken(token: String): Task[Unit]                                     = ZIO.unit
+    def registerToken(personId: PersonId, companyId: CompanyId, token: String, platform: String): Task[Unit] = ZIO.unit
+    def unregisterToken(token: String): Task[Unit]                                                           = ZIO.unit
 
-    def sendToUser(personId: PersonId, n: PushNotification): Task[Unit] =
+    def sendToUser(personId: PersonId, companyId: CompanyId, n: PushNotification): Task[Unit] =
       calls.update(_ + 1) *> (if fail then ZIO.fail(new RuntimeException("FCM down")) else ZIO.unit)
   }
 
@@ -62,7 +63,7 @@ object NotificationOrchestratorSpec extends ZIOSpecDefault {
           val fcm = new RecordingFcmService(fail = false)
           for {
             orchestrator <- ZIO.service[NotificationOrchestrator].provide(orchestratorWith(fcm))
-            _            <- orchestrator.sendPushToUser(testPerson, notification)
+            _            <- orchestrator.sendPushToUser(testPerson, testCompany, notification)
             calls        <- fcm.calls.get
           } yield assertTrue(calls == 1)
         },
@@ -71,7 +72,7 @@ object NotificationOrchestratorSpec extends ZIOSpecDefault {
           for {
             orchestrator <- ZIO.service[NotificationOrchestrator].provide(orchestratorWith(fcm))
             // .ignore in the orchestrator must turn the FCM failure into a successful Unit
-            exit         <- orchestrator.sendPushToUser(testPerson, notification).exit
+            exit         <- orchestrator.sendPushToUser(testPerson, testCompany, notification).exit
             calls        <- fcm.calls.get
           } yield assertTrue(exit.isSuccess, calls == 1)
         },
@@ -79,7 +80,7 @@ object NotificationOrchestratorSpec extends ZIOSpecDefault {
           val fcm = new RecordingFcmService(fail = true)
           for {
             orchestrator <- ZIO.service[NotificationOrchestrator].provide(orchestratorWith(fcm))
-            _            <- orchestrator.sendPushToUser(testPerson, notification)
+            _            <- orchestrator.sendPushToUser(testPerson, testCompany, notification)
             logs         <- ZTestLogger.logOutput
           } yield assertTrue(
             logs.exists(e => e.logLevel == zio.LogLevel.Warning && e.message().contains("Push notification failed"))
@@ -91,8 +92,8 @@ object NotificationOrchestratorSpec extends ZIOSpecDefault {
           val withoutData = PushNotification(title = "T", body = "B")
           for {
             orchestrator <- ZIO.service[NotificationOrchestrator].provide(orchestratorWith(fcm))
-            _            <- orchestrator.sendPushToUser(testPerson, withoutData)
-            _            <- orchestrator.sendPushToUser(testPerson, withData)
+            _            <- orchestrator.sendPushToUser(testPerson, testCompany, withoutData)
+            _            <- orchestrator.sendPushToUser(testPerson, testCompany, withData)
             calls        <- fcm.calls.get
           } yield assertTrue(calls == 2)
         }

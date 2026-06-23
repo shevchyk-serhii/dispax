@@ -1,15 +1,16 @@
 package com.shevchyk.notification.repository
 
-import com.shevchyk.core.domain.PersonId
+import com.shevchyk.core.domain.{CompanyId, PersonId}
 import com.shevchyk.notification.domain.FcmToken
 import zio.*
-import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters.*
 
 trait FcmTokenRepository:
   def save(token: FcmToken): Task[Unit]
-  def findByPersonId(personId: PersonId): Task[List[FcmToken]]
+  // Tenant-scoped lookup: only returns tokens that belong to the given company,
+  // so a push can never be delivered to a person's token from another tenant.
+  def findByPersonIdAndCompany(personId: PersonId, companyId: CompanyId): Task[List[FcmToken]]
   def deleteByToken(token: String): Task[Unit]
   def deleteByPersonId(personId: PersonId): Task[Unit]
 
@@ -28,8 +29,8 @@ object InMemoryFcmTokenRepository:
         store.put(token.token, token)
       }
 
-      def findByPersonId(personId: PersonId): Task[List[FcmToken]] = ZIO.succeed {
-        store.values().asScala.filter(_.personId == personId).toList
+      def findByPersonIdAndCompany(personId: PersonId, companyId: CompanyId): Task[List[FcmToken]] = ZIO.succeed {
+        store.values().asScala.filter(t => t.personId == personId && t.companyId == companyId).toList
       }
 
       def deleteByToken(token: String): Task[Unit] = ZIO.succeed {

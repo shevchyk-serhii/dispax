@@ -584,10 +584,14 @@ object UserApi:
 
   private val registerFcmTokenServer: ZServerEndpoint[UserEnv, Any] = registerFcmTokenEndpoint.serverLogic[UserEnv] {
     user => tokenReq =>
-      ZIO
-        .serviceWithZIO[FcmService](_.registerToken(PersonId(user.userId), tokenReq.token, tokenReq.platform))
-        .mapError(internal)
-        .unit
+      (for {
+        companyId <- requireCompanyId(user)
+        _         <- ZIO
+                       .serviceWithZIO[FcmService](
+                         _.registerToken(PersonId(user.userId), companyId, tokenReq.token, tokenReq.platform)
+                       )
+                       .mapError(internal)
+      } yield ()).unit
   }
 
   private val unregisterFcmTokenServer: ZServerEndpoint[UserEnv, Any] = unregisterFcmTokenEndpoint

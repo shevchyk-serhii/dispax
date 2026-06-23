@@ -1,6 +1,6 @@
 package com.shevchyk.notification.repository
 
-import com.shevchyk.core.domain.PersonId
+import com.shevchyk.core.domain.{CompanyId, PersonId}
 import com.shevchyk.notification.domain.FcmToken
 import doobie.*
 import doobie.implicits.*
@@ -20,17 +20,20 @@ final class PostgresFcmTokenRepository(xa: Transactor[Task]) extends FcmTokenRep
 
   override def save(token: FcmToken): Task[Unit] =
     sql"""
-      INSERT INTO fcm_tokens (person_id, token, platform, created_at)
-      VALUES (${token.personId.value}, ${token.token}, ${token.platform}, ${token.createdAt})
-      ON CONFLICT (token) DO UPDATE SET person_id = ${token.personId.value}, platform = ${token.platform}
+      INSERT INTO fcm_tokens (person_id, company_id, token, platform, created_at)
+      VALUES (${token.personId.value}, ${token.companyId.value}, ${token.token}, ${token.platform}, ${token.createdAt})
+      ON CONFLICT (token) DO UPDATE SET
+        person_id = ${token.personId.value},
+        company_id = ${token.companyId.value},
+        platform = ${token.platform}
     """.update.run
       .transact(xa)
       .unit
 
-  override def findByPersonId(personId: PersonId): Task[List[FcmToken]] =
+  override def findByPersonIdAndCompany(personId: PersonId, companyId: CompanyId): Task[List[FcmToken]] =
     sql"""
-      SELECT person_id, token, platform, created_at
-      FROM fcm_tokens WHERE person_id = ${personId.value}
+      SELECT person_id, company_id, token, platform, created_at
+      FROM fcm_tokens WHERE person_id = ${personId.value} AND company_id = ${companyId.value}
     """
       .query[FcmToken]
       .to[List]
@@ -46,10 +49,11 @@ final class PostgresFcmTokenRepository(xa: Transactor[Task]) extends FcmTokenRep
       .transact(xa)
       .unit
 
-  implicit val fcmTokenRead: Read[FcmToken] = Read[(UUID, String, String, Instant)].map {
-    case (personId, token, platform, createdAt) =>
+  implicit val fcmTokenRead: Read[FcmToken] = Read[(UUID, UUID, String, String, Instant)].map {
+    case (personId, companyId, token, platform, createdAt) =>
       FcmToken(
         personId = PersonId(personId),
+        companyId = CompanyId(companyId),
         token = token,
         platform = platform,
         createdAt = createdAt

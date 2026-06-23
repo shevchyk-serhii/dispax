@@ -3,16 +3,16 @@ package com.shevchyk.notification.application
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.{FirebaseApp, FirebaseOptions}
 import com.google.firebase.messaging.{FirebaseMessaging, Message, Notification}
-import com.shevchyk.core.domain.PersonId
+import com.shevchyk.core.domain.{CompanyId, PersonId}
 import com.shevchyk.notification.domain.{FcmToken, PushNotification}
 import com.shevchyk.notification.repository.FcmTokenRepository
 import zio.*
 import java.time.Instant
 
 trait FcmService:
-  def registerToken(personId: PersonId, token: String, platform: String): Task[Unit]
+  def registerToken(personId: PersonId, companyId: CompanyId, token: String, platform: String): Task[Unit]
   def unregisterToken(token: String): Task[Unit]
-  def sendToUser(personId: PersonId, notification: PushNotification): Task[Unit]
+  def sendToUser(personId: PersonId, companyId: CompanyId, notification: PushNotification): Task[Unit]
 
 object FcmService:
 
@@ -21,15 +21,16 @@ object FcmService:
       messagingOpt: Option[FirebaseMessaging]
   ) extends FcmService:
 
-    def registerToken(personId: PersonId, token: String, platform: String): Task[Unit] = tokenRepo.save(
-      FcmToken(personId, token, platform, Instant.now())
-    )
+    def registerToken(personId: PersonId, companyId: CompanyId, token: String, platform: String): Task[Unit] = tokenRepo
+      .save(
+        FcmToken(personId, companyId, token, platform, Instant.now())
+      )
 
     def unregisterToken(token: String): Task[Unit] = tokenRepo.deleteByToken(token)
 
-    def sendToUser(personId: PersonId, notification: PushNotification): Task[Unit] =
+    def sendToUser(personId: PersonId, companyId: CompanyId, notification: PushNotification): Task[Unit] =
       for
-        tokens <- tokenRepo.findByPersonId(personId)
+        tokens <- tokenRepo.findByPersonIdAndCompany(personId, companyId)
         _      <- ZIO.foreachDiscard(tokens)(t => sendToToken(t.token, notification))
       yield ()
 

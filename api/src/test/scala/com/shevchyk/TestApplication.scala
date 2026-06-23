@@ -378,14 +378,14 @@ object TestApplication extends ZIOAppDefault:
 
   private val resettableFcmTokenRepositoryLayer: ZLayer[Any, Nothing, FcmTokenRepository] = ZLayer.succeed {
     new FcmTokenRepository:
-      private val store                                            = new ConcurrentHashMap[String, FcmToken]()
+      private val store                                                                            = new ConcurrentHashMap[String, FcmToken]()
       registerReset(ZIO.succeed(store.clear()))
-      def save(token: FcmToken): Task[Unit]                        = ZIO.succeed { store.put(token.token, token); () }
-      def findByPersonId(personId: PersonId): Task[List[FcmToken]] = ZIO.succeed(
-        store.values.asScala.filter(_.personId == personId).toList
+      def save(token: FcmToken): Task[Unit]                                                        = ZIO.succeed { store.put(token.token, token); () }
+      def findByPersonIdAndCompany(personId: PersonId, companyId: CompanyId): Task[List[FcmToken]] = ZIO.succeed(
+        store.values.asScala.filter(t => t.personId == personId && t.companyId == companyId).toList
       )
-      def deleteByToken(token: String): Task[Unit]                 = ZIO.succeed { store.remove(token); () }
-      def deleteByPersonId(personId: PersonId): Task[Unit]         = ZIO.succeed {
+      def deleteByToken(token: String): Task[Unit]                                                 = ZIO.succeed { store.remove(token); () }
+      def deleteByPersonId(personId: PersonId): Task[Unit]                                         = ZIO.succeed {
         store.values.asScala.filter(_.personId == personId).map(_.token).foreach(store.remove); ()
       }
   }

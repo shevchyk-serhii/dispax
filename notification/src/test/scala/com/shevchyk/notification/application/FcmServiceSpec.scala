@@ -1,17 +1,18 @@
 package com.shevchyk.notification.application
 
-import com.shevchyk.core.domain.PersonId
-import com.shevchyk.notification.domain.{FcmToken, PushNotification}
+import com.shevchyk.core.domain.{CompanyId, PersonId}
+import com.shevchyk.notification.domain.PushNotification
 import com.shevchyk.notification.repository.{FcmTokenRepository, InMemoryFcmTokenRepository}
 import zio.*
 import zio.test.*
-import java.time.Instant
 import java.util.UUID
 
 object FcmServiceSpec extends ZIOSpecDefault {
 
   val personId1 = PersonId(UUID.fromString("00000001-0000-0000-0000-000000000001"))
   val personId2 = PersonId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+  val companyA  = CompanyId(UUID.fromString("00000050-0000-0000-0000-00000000000a"))
+  val companyB  = CompanyId(UUID.fromString("00000050-0000-0000-0000-00000000000b"))
 
   /**
    * FcmService layer without Firebase -- passes None so push sends log instead of calling FCM.
@@ -33,33 +34,64 @@ object FcmServiceSpec extends ZIOSpecDefault {
         test("registers token for user") {
           for {
             service   <- ZIO.service[FcmService]
-            _         <- service.registerToken(personId1, "token-abc-123", "android")
+            _         <- service.registerToken(personId1, companyA, "token-abc-123", "android")
             tokenRepo <- ZIO.service[FcmTokenRepository]
-            tokens    <- tokenRepo.findByPersonId(personId1)
+            tokens    <- tokenRepo.findByPersonIdAndCompany(personId1, companyA)
           } yield assertTrue(
             tokens.size == 1 &&
               tokens.head.token == "token-abc-123" &&
-              tokens.head.platform == "android"
+              tokens.head.platform == "android" &&
+              tokens.head.companyId == companyA
           )
         }.provide(sharedLayers),
         test("registers multiple tokens for same user") {
           for {
             service   <- ZIO.service[FcmService]
-            _         <- service.registerToken(personId1, "token-1", "android")
-            _         <- service.registerToken(personId1, "token-2", "ios")
+            _         <- service.registerToken(personId1, companyA, "token-1", "android")
+            _         <- service.registerToken(personId1, companyA, "token-2", "ios")
             tokenRepo <- ZIO.service[FcmTokenRepository]
-            tokens    <- tokenRepo.findByPersonId(personId1)
+            tokens    <- tokenRepo.findByPersonIdAndCompany(personId1, companyA)
           } yield assertTrue(tokens.size == 2)
+        }.provide(sharedLayers)
+      ),
+      suite("tenant isolation")(
+        test("findByPersonIdAndCompany never returns tokens from another company for the same person") {
+          // The same person id is registered under two companies (e.g. a person who exists in
+          // both tenants). A lookup scoped to companyA must NOT leak the companyB token, otherwise
+          // a push could be delivered cross-tenant.
+          for {
+            service   <- ZIO.service[FcmService]
+            _         <- service.registerToken(personId1, companyA, "token-company-a", "android")
+            _         <- service.registerToken(personId1, companyB, "token-company-b", "ios")
+            tokenRepo <- ZIO.service[FcmTokenRepository]
+            inA       <- tokenRepo.findByPersonIdAndCompany(personId1, companyA)
+            inB       <- tokenRepo.findByPersonIdAndCompany(personId1, companyB)
+          } yield assertTrue(
+            inA.map(_.token) == List("token-company-a"),
+            inB.map(_.token) == List("token-company-b")
+          )
+        }.provide(sharedLayers),
+        test("sendToUser scoped to a company does not push to that person's other-company tokens") {
+          // personId1 has a token under companyB only. A send scoped to companyA must find no
+          // tokens, so no "FCM not configured, skipping push" log is emitted (token loop never runs).
+          for {
+            service <- ZIO.service[FcmService]
+            _       <- service.registerToken(personId1, companyB, "token-b-only", "android")
+            _       <- service.sendToUser(personId1, companyA, PushNotification("Title", "Body"))
+            logs    <- ZTestLogger.logOutput
+          } yield assertTrue(
+            !logs.exists(_.message().contains("FCM not configured, skipping push"))
+          )
         }.provide(sharedLayers)
       ),
       suite("unregisterToken")(
         test("removes token") {
           for {
             service   <- ZIO.service[FcmService]
-            _         <- service.registerToken(personId1, "token-to-remove", "android")
+            _         <- service.registerToken(personId1, companyA, "token-to-remove", "android")
             _         <- service.unregisterToken("token-to-remove")
             tokenRepo <- ZIO.service[FcmTokenRepository]
-            tokens    <- tokenRepo.findByPersonId(personId1)
+            tokens    <- tokenRepo.findByPersonIdAndCompany(personId1, companyA)
           } yield assertTrue(tokens.isEmpty)
         }.provide(sharedLayers),
         test("unregisterToken for nonexistent token is a no-op and does not fail") {
@@ -74,10 +106,10 @@ object FcmServiceSpec extends ZIOSpecDefault {
           // with the last platform — confirming the upsert-by-token semantic.
           for {
             service   <- ZIO.service[FcmService]
-            _         <- service.registerToken(personId1, "shared-token", "android")
-            _         <- service.registerToken(personId1, "shared-token", "ios")
+            _         <- service.registerToken(personId1, companyA, "shared-token", "android")
+            _         <- service.registerToken(personId1, companyA, "shared-token", "ios")
             tokenRepo <- ZIO.service[FcmTokenRepository]
-            tokens    <- tokenRepo.findByPersonId(personId1)
+            tokens    <- tokenRepo.findByPersonIdAndCompany(personId1, companyA)
           } yield assertTrue(tokens.size == 1 && tokens.head.platform == "ios")
         }.provide(sharedLayers)
       ),
@@ -88,8 +120,8 @@ object FcmServiceSpec extends ZIOSpecDefault {
           // ZTestLogger captures that log so we can assert the code path was taken.
           for {
             service <- ZIO.service[FcmService]
-            _       <- service.registerToken(personId1, "test-token", "android")
-            _       <- service.sendToUser(personId1, PushNotification("Title", "Body"))
+            _       <- service.registerToken(personId1, companyA, "test-token", "android")
+            _       <- service.sendToUser(personId1, companyA, PushNotification("Title", "Body"))
             logs    <- ZTestLogger.logOutput
           } yield assertTrue(
             logs.exists(e =>
@@ -102,7 +134,7 @@ object FcmServiceSpec extends ZIOSpecDefault {
           // No "FCM not configured" log should appear — the token-iteration body is never entered.
           for {
             service <- ZIO.service[FcmService]
-            _       <- service.sendToUser(personId2, PushNotification("Title", "Body"))
+            _       <- service.sendToUser(personId2, companyA, PushNotification("Title", "Body"))
             logs    <- ZTestLogger.logOutput
           } yield assertTrue(
             !logs.exists(_.message().contains("FCM not configured, skipping push"))

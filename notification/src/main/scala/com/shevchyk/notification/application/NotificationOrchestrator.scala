@@ -1,12 +1,12 @@
 package com.shevchyk.notification.application
 
-import com.shevchyk.core.domain.PersonId
+import com.shevchyk.core.domain.{CompanyId, PersonId}
 import com.shevchyk.notification.domain.PushNotification
 import zio.*
 
 trait NotificationOrchestrator:
   def sendNotification(message: String): UIO[Unit]
-  def sendPushToUser(personId: PersonId, notification: PushNotification): UIO[Unit]
+  def sendPushToUser(personId: PersonId, companyId: CompanyId, notification: PushNotification): UIO[Unit]
 
 object NotificationOrchestrator:
 
@@ -15,9 +15,9 @@ object NotificationOrchestrator:
     yield new NotificationOrchestrator {
       def sendNotification(message: String): UIO[Unit] = ZIO.logInfo(s"Notification: $message")
 
-      def sendPushToUser(personId: PersonId, notification: PushNotification): UIO[Unit] =
+      def sendPushToUser(personId: PersonId, companyId: CompanyId, notification: PushNotification): UIO[Unit] =
         fcmService
-          .sendToUser(personId, notification)
+          .sendToUser(personId, companyId, notification)
           .tapError(e => ZIO.logWarning(s"Push notification failed: ${e.getMessage}"))
           .ignore
     }
