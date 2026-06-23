@@ -47,8 +47,27 @@ Future<void> loginViaUi(
   await $(LoginScreen).waitUntilVisible(timeout: const Duration(seconds: 15));
   await $(TextFormField).at(0).enterText(email);
   await $(TextFormField).at(1).enterText(password);
-  await $('Sign In').tap();
-  await $.pumpAndSettle(timeout: const Duration(seconds: 20));
+  // The login button label is "Sign in" (graphite redesign); match it exactly.
+  await $('Sign in').tap();
+  // Don't pumpAndSettle here: the post-login dashboards run perpetual animations
+  // (e.g. the driver Today screen's pulse controller, live maps), so settle never
+  // completes. Pump in bounded steps until the login screen is gone instead.
+  await _pumpUntilLoggedIn($);
+}
+
+/// Pumps in fixed steps (no settle) until the LoginScreen disappears or a timeout
+/// elapses. Tolerates dashboards with never-ending animations.
+Future<void> _pumpUntilLoggedIn(
+  PatrolIntegrationTester $, {
+  Duration timeout = const Duration(seconds: 25),
+}) async {
+  final step = const Duration(milliseconds: 300);
+  var elapsed = Duration.zero;
+  while (elapsed < timeout) {
+    await $.pump(step);
+    elapsed += step;
+    if (!$(LoginScreen).exists) return;
+  }
 }
 
 /// Returns true (and marks the test skipped) when the app is still on the login

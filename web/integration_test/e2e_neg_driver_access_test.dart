@@ -17,7 +17,9 @@ void main() {
     await loginViaUi($, kDevDriver1, kDevPassword);
     if (skipIfBackendDown($)) return;
 
-    await $.pumpAndSettle(timeout: const Duration(seconds: 10));
+    // The driver dashboard runs perpetual animations (pulse controller), so a
+    // plain settle would time out — pump a few frames to let it render instead.
+    await $.pump(const Duration(seconds: 2));
 
     for (final forbidden in const [
       'New Ride',
