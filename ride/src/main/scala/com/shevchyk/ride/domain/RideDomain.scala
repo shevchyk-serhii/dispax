@@ -286,6 +286,9 @@ final case class CreateRideRequest(
     specifics: Option[RideSpecifics] = None,
     specialRequirements: Option[String] = None,
     vehicleClass: VehicleClass = VehicleClass.Default,
+    // Client/operator-supplied fare estimate. Stored on the ride as estimatedPrice when present;
+    // None leaves the ride unpriced (RideEstimateService is invoked separately, not here).
+    estimatedPrice: Option[BigDecimal] = None,
     // pickupDateTime carries the operator-supplied pickup time (when Some) or "compute it" (when
     // None, for airport departure rides only). For all other ride types this field is always Some.
     pickupDateTime: Option[Instant] = None,

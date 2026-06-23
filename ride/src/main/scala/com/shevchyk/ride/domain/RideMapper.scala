@@ -17,6 +17,8 @@ object RideMapper:
     pickupDateTime = request.pickupDateTime.orElse(request.scheduledTime).getOrElse(Instant.now()),
     scheduledTime = request.scheduledTime,
     requestTime = Instant.now(),
+    // Carry the client/operator-supplied fare estimate through to the ride (None leaves it unpriced).
+    estimatedPrice = request.estimatedPrice,
     notes = request.notes,
     specifics = request.specifics,
     specialRequirements = request.specialRequirements,
