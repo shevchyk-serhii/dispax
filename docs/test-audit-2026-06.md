@@ -9,17 +9,17 @@ business- and security-critical logic**, where hidden bugs are possible.
 
 ### Statistics by module
 
-| Module        | Files  | Test cases  | Focus |
-|---------------|--------|-------------|-------|
-| ride          | 20     | 288         | Lifecycle, assignment, revenue, chat, locations |
-| api           | 13     | 165         | HTTP routes, integration |
-| core          | 15     | 124         | Repositories, Audit, Geofence, EventHub |
-| auth          | 8      | 97          | JWT, rate limiting, middleware |
-| schedule      | 6      | 74          | Schedule, validation |
-| billing       | 5      | 64          | Invoices, PDF, DATEV |
-| notification  | 5      | 41          | FCM, orchestration |
-| driver        | 4      | 37          | Location, routes |
-| **Total**     | **76** | **890**     | |
+| Module       | Files  | Test cases | Focus                                           |
+|--------------|--------|------------|-------------------------------------------------|
+| ride         | 20     | 288        | Lifecycle, assignment, revenue, chat, locations |
+| api          | 13     | 165        | HTTP routes, integration                        |
+| core         | 15     | 124        | Repositories, Audit, Geofence, EventHub         |
+| auth         | 8      | 97         | JWT, rate limiting, middleware                  |
+| schedule     | 6      | 74         | Schedule, validation                            |
+| billing      | 5      | 64         | Invoices, PDF, DATEV                            |
+| notification | 5      | 41         | FCM, orchestration                              |
+| driver       | 4      | 37         | Location, routes                                |
+| **Total**    | **76** | **890**    |                                                 |
 
 ---
 

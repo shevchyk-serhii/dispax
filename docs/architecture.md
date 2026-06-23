@@ -2,17 +2,17 @@
 
 ## Modules
 
-| Module         | Description                                         |
-|----------------|-----------------------------------------------------|
-| **core**       | Shared domain: IDs, Location, Person, Company, Sessions, Blacklist, Geofences, GDPR, Audit, CompanySettings, RidePools, EmergencyReassignments, NotificationPreferences       |
-| **auth**       | Authentication: JWT login, user management, tokens  |
-| **ride**       | Ride lifecycle: CRUD, assignment, status transitions |
-| **driver**     | Driver location tracking, proximity calculation, HERE routing ETA     |
-| **schedule**   | Driver schedule management (daily shifts)            |
-| **notification** | Push notifications (FCM), orchestrator, preferences                |
-| **billing**    | Invoices, client companies, PDF generation, DATEV export |
-| **api**        | HTTP entry point, route aggregation, config, DB migrations |
-| **web** | Flutter/Dart mobile client (iOS, Android, macOS)                          |
+| Module           | Description                                                                                                                                                             |
+|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **core**         | Shared domain: IDs, Location, Person, Company, Sessions, Blacklist, Geofences, GDPR, Audit, CompanySettings, RidePools, EmergencyReassignments, NotificationPreferences |
+| **auth**         | Authentication: JWT login, user management, tokens                                                                                                                      |
+| **ride**         | Ride lifecycle: CRUD, assignment, status transitions                                                                                                                    |
+| **driver**       | Driver location tracking, proximity calculation, HERE routing ETA                                                                                                       |
+| **schedule**     | Driver schedule management (daily shifts)                                                                                                                               |
+| **notification** | Push notifications (FCM), orchestrator, preferences                                                                                                                     |
+| **billing**      | Invoices, client companies, PDF generation, DATEV export                                                                                                                |
+| **api**          | HTTP entry point, route aggregation, config, DB migrations                                                                                                              |
+| **web**          | Flutter/Dart mobile client (iOS, Android, macOS)                                                                                                                        |
 
 ## Module Dependencies
 

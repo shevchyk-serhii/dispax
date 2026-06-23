@@ -75,13 +75,13 @@ Status predicates live on the `Ride` domain object (`ride/domain/RideDomain.scal
 
 ### Role matrix (creation)
 
-| Role             | Can create? | clientId source                     | May assign driver at create? |
-|------------------|-------------|-------------------------------------|------------------------------|
-| CLIENT           | yes         | forced to JWT `userId` (`:263-264`) | no (own ride only)           |
-| DRIVER           | yes         | only own (`clientId == userId`, else passes through) (`:265-266`) | self-booking only |
-| SECRETARY        | yes         | any (subject to tenant check)       | yes (`driverId` in request)  |
-| DISPATCHER       | yes         | any (subject to tenant check)       | yes                          |
-| CLIENT_SECRETARY | yes         | any (subject to tenant check)       | yes                          |
+| Role             | Can create? | clientId source                                                   | May assign driver at create? |
+|------------------|-------------|-------------------------------------------------------------------|------------------------------|
+| CLIENT           | yes         | forced to JWT `userId` (`:263-264`)                               | no (own ride only)           |
+| DRIVER           | yes         | only own (`clientId == userId`, else passes through) (`:265-266`) | self-booking only            |
+| SECRETARY        | yes         | any (subject to tenant check)                                     | yes (`driverId` in request)  |
+| DISPATCHER       | yes         | any (subject to tenant check)                                     | yes                          |
+| CLIENT_SECRETARY | yes         | any (subject to tenant check)                                     | yes                          |
 
 `checkRole`: `DISPATCHER, SECRETARY, CLIENT, DRIVER, CLIENT_SECRETARY` (`:256`). ADMIN / SUPER_ADMIN
 are **not** in this list — they cannot create via this endpoint.
@@ -432,13 +432,13 @@ Scenario: Race — two concurrent checkpoint advances
 
 Cross-checked against [`docs/audit-tasks.md`](audit-tasks.md). Each is a regression-test candidate.
 
-| # | Gap | Where | Test to add |
-|---|-----|-------|-------------|
-| 1 | **Cancel endpoint has no HTTP-level `companyId` check** (unlike assign/reassign/markPayment/getRide which all compare `existing.companyId != companyId`). | `RideApi.scala:559-575` | A dispatcher of company A must not be able to cancel a ride of company B. |
-| 2 | `validateCancelPermission` has no `case _` → **MatchError** if a new `PersonRole` is added. | `RideService.scala:808-816` | Adding a role must default to deny, not crash. |
-| 3 | **markPayment field-level lost-update** — CAS guards ride status only, not the payment fields. | `RideService.scala:729-731` | Two concurrent `markPayment(Paid)` must not clobber each other. |
-| 4 | **ETA reminders not cleared on cancel** (only on edit-details). | `cancelRideWithReason` vs `updateRideDetails` `:453-503` | A reminder must not fire for a cancelled ride. |
-| 5 | `cancellationFee` is stored but **never auto-charged**; no waiting fee logic. | `RideDomain.scala:202`, billing | Document expected billing behaviour before testing. |
+| # | Gap                                                                                                                                                       | Where                                                    | Test to add                                                               |
+|---|-----------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|---------------------------------------------------------------------------|
+| 1 | **Cancel endpoint has no HTTP-level `companyId` check** (unlike assign/reassign/markPayment/getRide which all compare `existing.companyId != companyId`). | `RideApi.scala:559-575`                                  | A dispatcher of company A must not be able to cancel a ride of company B. |
+| 2 | `validateCancelPermission` has no `case _` → **MatchError** if a new `PersonRole` is added.                                                               | `RideService.scala:808-816`                              | Adding a role must default to deny, not crash.                            |
+| 3 | **markPayment field-level lost-update** — CAS guards ride status only, not the payment fields.                                                            | `RideService.scala:729-731`                              | Two concurrent `markPayment(Paid)` must not clobber each other.           |
+| 4 | **ETA reminders not cleared on cancel** (only on edit-details).                                                                                           | `cancelRideWithReason` vs `updateRideDetails` `:453-503` | A reminder must not fire for a cancelled ride.                            |
+| 5 | `cancellationFee` is stored but **never auto-charged**; no waiting fee logic.                                                                             | `RideDomain.scala:202`, billing                          | Document expected billing behaviour before testing.                       |
 
 ---
 
@@ -448,27 +448,27 @@ Existing service-level tests: `ride/src/test/scala/com/shevchyk/ride/application
 (cancel + concurrency around lines 562–889). BDD scenarios: `api/src/test/scala/com/shevchyk/app/`.
 Flutter: `bloc_test` + `mocktail`.
 
-| Flow / case | Backend unit | Integration / BDD | Flutter | Notes |
-|-------------|-------------|-------------------|---------|-------|
-| Create — happy path per role | partial | ? | ? | verify each of the 5 roles |
-| Create — tenant isolation (sec A → client B) | ✅ (createRide) | ? | n/a | see memory `createride-client-tenant-isolation` |
-| Create — from==to / past pickup / airport-no-flight / price≤0 | ? | n/a | ? | validator-level |
-| Estimate — MissingCoordinates | ? | n/a | ? | |
-| Cancel — each valid source status | ✅ `RideServiceSpec` ~683-889 | ? | ? | |
-| Cancel — already cancelled / completed | ✅ | ? | n/a | |
-| Cancel — ownership (client/driver) | ✅ | ? | n/a | |
-| Cancel — negative fee | ✅ | n/a | ? | |
-| Cancel — race vs start/complete | ✅ ~562-680, 816-868 | n/a | n/a | CAS tests |
-| **Cancel — HTTP tenant check (gap #1)** | ❌ | ❌ | n/a | **TODO regression** |
-| **validateCancelPermission default-deny (gap #2)** | ❌ | n/a | n/a | **TODO** |
-| Assign — happy / conflict / blacklist / cross-tenant | partial | ? | ? | |
-| Reassign — override conflict | ? | ? | ? | |
-| Start / Complete — happy + race | ✅ (CAS) | ? | ? | |
-| Edit details — editable statuses + reminder clear | ? | ? | n/a | no CAS — concurrent-edit case |
-| Mark payment — Paid requires Completed | ? | ? | n/a | |
-| **Mark payment — concurrent lost-update (gap #3)** | ❌ | ❌ | n/a | **TODO** |
-| Rate — completed / duplicate / out-of-range / ownership | ? | ? | ? | |
-| Airport checkpoint — forward-only + race | ? | ? | ? | |
+| Flow / case                                                   | Backend unit                 | Integration / BDD | Flutter | Notes                                           |
+|---------------------------------------------------------------|------------------------------|-------------------|---------|-------------------------------------------------|
+| Create — happy path per role                                  | partial                      | ?                 | ?       | verify each of the 5 roles                      |
+| Create — tenant isolation (sec A → client B)                  | ✅ (createRide)               | ?                 | n/a     | see memory `createride-client-tenant-isolation` |
+| Create — from==to / past pickup / airport-no-flight / price≤0 | ?                            | n/a               | ?       | validator-level                                 |
+| Estimate — MissingCoordinates                                 | ?                            | n/a               | ?       |                                                 |
+| Cancel — each valid source status                             | ✅ `RideServiceSpec` ~683-889 | ?                 | ?       |                                                 |
+| Cancel — already cancelled / completed                        | ✅                            | ?                 | n/a     |                                                 |
+| Cancel — ownership (client/driver)                            | ✅                            | ?                 | n/a     |                                                 |
+| Cancel — negative fee                                         | ✅                            | n/a               | ?       |                                                 |
+| Cancel — race vs start/complete                               | ✅ ~562-680, 816-868          | n/a               | n/a     | CAS tests                                       |
+| **Cancel — HTTP tenant check (gap #1)**                       | ❌                            | ❌                 | n/a     | **TODO regression**                             |
+| **validateCancelPermission default-deny (gap #2)**            | ❌                            | n/a               | n/a     | **TODO**                                        |
+| Assign — happy / conflict / blacklist / cross-tenant          | partial                      | ?                 | ?       |                                                 |
+| Reassign — override conflict                                  | ?                            | ?                 | ?       |                                                 |
+| Start / Complete — happy + race                               | ✅ (CAS)                      | ?                 | ?       |                                                 |
+| Edit details — editable statuses + reminder clear             | ?                            | ?                 | n/a     | no CAS — concurrent-edit case                   |
+| Mark payment — Paid requires Completed                        | ?                            | ?                 | n/a     |                                                 |
+| **Mark payment — concurrent lost-update (gap #3)**            | ❌                            | ❌                 | n/a     | **TODO**                                        |
+| Rate — completed / duplicate / out-of-range / ownership       | ?                            | ?                 | ?       |                                                 |
+| Airport checkpoint — forward-only + race                      | ?                            | ?                 | ?       |                                                 |
 
 Legend: ✅ exists · partial · ? unverified · ❌ missing.
 

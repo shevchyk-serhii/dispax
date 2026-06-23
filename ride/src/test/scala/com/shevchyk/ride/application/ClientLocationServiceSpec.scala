@@ -31,7 +31,10 @@ class InMemoryClientLocationRepository extends ClientLocationRepository:
   private val store = new ConcurrentHashMap[RideId, ClientLocation]()
 
   def updateLocation(rideId: RideId, clientId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO
-    .succeed(store.put(rideId, ClientLocation(rideId, clientId, latitude, longitude)))
+    .succeed {
+      store.put(rideId, ClientLocation(rideId, clientId, latitude, longitude))
+      ()
+    }
 
   def getLocation(rideId: RideId): Task[Option[ClientLocation]] = ZIO.succeed(Option(store.get(rideId)))
 

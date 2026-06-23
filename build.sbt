@@ -35,6 +35,9 @@ ThisBuild / scalacOptions ++= Seq(
 // not from cross-spec parallelism (which would be unsafe on a shared DB).
 ThisBuild / Test / parallelExecution := false
 
+// Resolve java.lang.NoClassDefFoundError when running tests with nested objects/classes
+ThisBuild / Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
+
 ThisBuild / assembly / assemblyMergeStrategy := {
   case x if x.endsWith("module-info.class")                  => MergeStrategy.discard
   case x if x.contains("io.netty.versions.properties")       => MergeStrategy.first

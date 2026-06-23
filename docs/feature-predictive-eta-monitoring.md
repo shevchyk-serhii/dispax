@@ -26,20 +26,20 @@ Auto-suggest / auto-reassign are explicitly out of scope (see *Future work*).
 
 ## What already exists (reuse, don't rebuild)
 
-| Building block | Location | Role in this feature |
-|---|---|---|
-| ETA via HERE Routing API | `driver/.../application/HereRoutingService.scala` — `getEtaMinutes(oLat,oLng,dLat,dLng): Task[Option[Int]]` | Primary ETA source |
-| Haversine ETA fallback (50 km/h) | `DriverRoutes.scala` `estimateEtaMinutes(...)` | Fallback when HERE key/route absent |
-| On-demand ETA assembly (driver loc → client/pickup coords → HERE → fallback) | `DriverRoutes.scala` lines ~300–314 | **Extract into a shared service** (see step 1) |
-| Driver live location | `DriverLocationService.getLocation(driverId): Task[Option[DriverLocation]]` | Origin for ETA |
-| Real-time client location | `ClientLocationRepository.getLocation(rideId)` | Preferred destination if present |
-| Lazy geocoding of pickup | `GeocodingService.enrichLocation(location)` | Fill missing pickup coords |
-| Assigned rides in a time window | `RideRepository.findAssignedRidesInWindow(from, to): Task[List[Ride]]` | Select rides to monitor |
-| Background job pattern | `app/ReminderScheduler.scala` — `tick.repeat(Schedule.fixed(1.minute)).forkDaemon` | Template for the monitor |
-| Dedup of repeated sends | `SentReminderRepository` (`isAlreadySent` / `markSent`) | Template for alert dedup |
-| Event bus → WebSocket + push | `EventHub.publish(event)`; `PushNotificationListener` maps events → FCM + `AppNotification` | Deliver the alert |
-| WebSocket events | `core/.../domain/WebSocketEvent.scala` | Add a new `EtaAtRisk` event |
-| Daemon startup | `Application.scala` `run` (`PushNotificationListener.start *> ReminderScheduler.start *> ...`) | Wire in the new monitor |
+| Building block                                                               | Location                                                                                                    | Role in this feature                           |
+|------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|------------------------------------------------|
+| ETA via HERE Routing API                                                     | `driver/.../application/HereRoutingService.scala` — `getEtaMinutes(oLat,oLng,dLat,dLng): Task[Option[Int]]` | Primary ETA source                             |
+| Haversine ETA fallback (50 km/h)                                             | `DriverRoutes.scala` `estimateEtaMinutes(...)`                                                              | Fallback when HERE key/route absent            |
+| On-demand ETA assembly (driver loc → client/pickup coords → HERE → fallback) | `DriverRoutes.scala` lines ~300–314                                                                         | **Extract into a shared service** (see step 1) |
+| Driver live location                                                         | `DriverLocationService.getLocation(driverId): Task[Option[DriverLocation]]`                                 | Origin for ETA                                 |
+| Real-time client location                                                    | `ClientLocationRepository.getLocation(rideId)`                                                              | Preferred destination if present               |
+| Lazy geocoding of pickup                                                     | `GeocodingService.enrichLocation(location)`                                                                 | Fill missing pickup coords                     |
+| Assigned rides in a time window                                              | `RideRepository.findAssignedRidesInWindow(from, to): Task[List[Ride]]`                                      | Select rides to monitor                        |
+| Background job pattern                                                       | `app/ReminderScheduler.scala` — `tick.repeat(Schedule.fixed(1.minute)).forkDaemon`                          | Template for the monitor                       |
+| Dedup of repeated sends                                                      | `SentReminderRepository` (`isAlreadySent` / `markSent`)                                                     | Template for alert dedup                       |
+| Event bus → WebSocket + push                                                 | `EventHub.publish(event)`; `PushNotificationListener` maps events → FCM + `AppNotification`                 | Deliver the alert                              |
+| WebSocket events                                                             | `core/.../domain/WebSocketEvent.scala`                                                                      | Add a new `EtaAtRisk` event                    |
+| Daemon startup                                                               | `Application.scala` `run` (`PushNotificationListener.start *> ReminderScheduler.start *> ...`)              | Wire in the new monitor                        |
 
 Note: ETA is implemented on **HERE**, not Google (CLAUDE.md names Google as a
 requirement, but the code uses HERE — reuse `HereRoutingService`).

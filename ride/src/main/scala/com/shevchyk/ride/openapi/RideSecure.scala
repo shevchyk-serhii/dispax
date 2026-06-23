@@ -33,7 +33,6 @@ object RideSecure:
             case _: InvalidTokenError | _: ExpiredTokenError =>
               (StatusCode.Unauthorized, ApiError("Invalid or expired token"))
             case _: JwtError                                 => (StatusCode.Unauthorized, ApiError("Authentication failed"))
-            case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
           },
           payload =>
             val wireRoles = payload.roles

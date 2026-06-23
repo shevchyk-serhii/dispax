@@ -16,6 +16,7 @@ class InMemoryAuditService extends AuditService:
 
   def log(entry: AuditLogEntry): Task[Unit] = ZIO.succeed {
     store.put(entry.id, entry)
+    ()
   }
 
   def findByEntity(entityType: String, entityId: UUID): Task[List[AuditLogEntry]] = ZIO.succeed {

@@ -26,6 +26,7 @@ object InMemoryFcmTokenRepository:
 
       def save(token: FcmToken): Task[Unit] = ZIO.succeed {
         store.put(token.token, token)
+        ()
       }
 
       def findByPersonId(personId: PersonId): Task[List[FcmToken]] = ZIO.succeed {
@@ -34,6 +35,7 @@ object InMemoryFcmTokenRepository:
 
       def deleteByToken(token: String): Task[Unit] = ZIO.succeed {
         store.remove(token)
+        ()
       }
 
       def deleteByPersonId(personId: PersonId): Task[Unit] = ZIO.succeed {

@@ -129,14 +129,14 @@ mistaken for a bug.
 
 ## Requirements Coverage Matrix (key constraints, CLAUDE.md §Business Rules)
 
-| Constraint | Code | Tests | Status |
-|---|---|---|---|
-| 1. Companies isolated; drivers assigned only to own-company rides | yes (assignDriver company_isolation guard) | yes | COVERED |
-| 2. Only `Requested` ride can be assigned | yes (`canBeAssigned`, atomic `updateIfStatus`) | yes | COVERED |
-| 3. Assignment must reference a valid ScheduleDay | **no** | no | **MISSING (H2)** |
-| 4. Travel time via Google API to validate schedule | partial (HERE-based ETA monitor; assign-time check uses a flat overlap heuristic, not real ETA) | partial | PARTIAL |
-| 5. Client doesn't wait — punctuality > utilization | partial (predictive ETA monitor) | partial | PARTIAL |
-| 6. Rides created by secretary/dispatcher/driver/client | yes | yes | COVERED |
+| Constraint                                                        | Code                                                                                            | Tests   | Status           |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|---------|------------------|
+| 1. Companies isolated; drivers assigned only to own-company rides | yes (assignDriver company_isolation guard)                                                      | yes     | COVERED          |
+| 2. Only `Requested` ride can be assigned                          | yes (`canBeAssigned`, atomic `updateIfStatus`)                                                  | yes     | COVERED          |
+| 3. Assignment must reference a valid ScheduleDay                  | **no**                                                                                          | no      | **MISSING (H2)** |
+| 4. Travel time via Google API to validate schedule                | partial (HERE-based ETA monitor; assign-time check uses a flat overlap heuristic, not real ETA) | partial | PARTIAL          |
+| 5. Client doesn't wait — punctuality > utilization                | partial (predictive ETA monitor)                                                                | partial | PARTIAL          |
+| 6. Rides created by secretary/dispatcher/driver/client            | yes                                                                                             | yes     | COVERED          |
 
 ---
 

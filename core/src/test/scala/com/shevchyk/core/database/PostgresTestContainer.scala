@@ -88,6 +88,7 @@ object PostgresTestContainer {
       zio.Runtime.default.unsafe
         .run(FlywayServiceImpl(dbConfig, "production").migrate())
         .getOrThrowFiberFailure()
+      ()
     }
   }
 
