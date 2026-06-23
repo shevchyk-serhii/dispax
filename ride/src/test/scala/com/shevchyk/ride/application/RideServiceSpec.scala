@@ -353,6 +353,59 @@ object RideServiceSpec extends ZIOSpecDefault {
           })
         }.provide(standardLayers)
       ),
+      suite("getRidesForUser")(
+        test("multi-role user: returns rides where they are the client AND where they are the driver") {
+          // dispatcherDriver has roles {Dispatcher, Driver}. They are the client of one ride
+          // and the assigned driver of another. getRidesForUser must union both result sets,
+          // not silently drop the driver-side rides (the .orElse regression).
+          for {
+            service    <- ZIO.service[RideService]
+            clientRide <- service.createRide(
+                            CreateRideRequest(
+                              clientId = dispatcherDriverId,
+                              companyId = testCompanyId,
+                              pickupLocation = Location("Client A"),
+                              dropoffLocation = Location("Client B")
+                            )
+                          )
+            otherRide  <- service.createRide(
+                            CreateRideRequest(
+                              clientId = testClientId,
+                              companyId = testCompanyId,
+                              pickupLocation = Location("Driver A"),
+                              dropoffLocation = Location("Driver B")
+                            )
+                          )
+            driverRide <- service.assignDriver(otherRide.id, dispatcherDriverId)
+            rides      <- service.getRidesForUser(dispatcherDriverId)
+            rideIds     = rides.map(_.id).toSet
+          } yield assertTrue(
+            rideIds.contains(clientRide.id),
+            rideIds.contains(driverRide.id),
+            rides.size == 2
+          )
+        }.provide(standardLayers),
+        test("de-duplicates a ride where the user is both client and driver") {
+          // The same person is the client AND the driver of one single ride: it appears in
+          // both findByClientId and findByDriverId. distinctBy(_.id) must collapse it to one.
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(
+                          CreateRideRequest(
+                            clientId = dispatcherDriverId,
+                            companyId = testCompanyId,
+                            pickupLocation = Location("Same A"),
+                            dropoffLocation = Location("Same B")
+                          )
+                        )
+            assigned <- service.assignDriver(ride.id, dispatcherDriverId)
+            rides    <- service.getRidesForUser(dispatcherDriverId)
+          } yield assertTrue(
+            rides.size == 1,
+            rides.head.id == assigned.id
+          )
+        }.provide(standardLayers)
+      ),
       suite("assignDriver")(
         test("happy path: Requested ride + valid driver same company → Assigned") {
           for {
