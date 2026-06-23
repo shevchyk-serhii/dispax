@@ -342,7 +342,7 @@ object RideApi:
           .recordUsage(ride.clientId, ride.dropoffLocation.address, "Dropoff", None, None)
           .tapError(e => ZIO.logWarning(s"Failed to record to address: $e"))
           .ignore
-    } yield RideDto.fromDomain(ride)
+    } yield RideDto.fromDomain(ride, clientName = clientPerson.map(_.name))
   }
 
   private val getPendingRidesServer: ZServerEndpoint[RideEnv, Any] = getPendingRidesEndpoint.serverLogic { user => _ =>
@@ -481,6 +481,7 @@ object RideApi:
         parsedDriverId <- parsePersonId(validated.driverId)
         companyId      <- requireCompanyId(user.companyId)
         service        <- ZIO.service[RideService]
+        personRepo     <- ZIO.service[PersonRepository]
         existing       <- service.getRideById(parsedRideId).mapError(fromRideError)
         // Company isolation: a dispatcher may only assign drivers to rides of their own company.
         // Hide cross-tenant rides as not found instead of leaking their existence.
@@ -491,7 +492,8 @@ object RideApi:
         ride           <- service
                             .assignDriver(parsedRideId, parsedDriverId, validated.overrideScheduleConflict)
                             .mapError(fromRideError)
-      } yield RideDto.fromDomain(ride)
+        clientName     <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
+      } yield RideDto.fromDomain(ride, clientName = clientName)
   }
 
   private val reassignDriverServer: ZServerEndpoint[RideEnv, Any] = reassignDriverEndpoint.serverLogic {
@@ -503,6 +505,7 @@ object RideApi:
         parsedDriverId <- parsePersonId(validated.driverId)
         companyId      <- requireCompanyId(user.companyId)
         service        <- ZIO.service[RideService]
+        personRepo     <- ZIO.service[PersonRepository]
         existing       <- service.getRideById(parsedRideId).mapError(fromRideError)
         // Company isolation: a dispatcher may only reassign drivers on rides of their own company.
         _              <- ZIO
@@ -512,7 +515,8 @@ object RideApi:
         ride           <- service
                             .reassignDriver(parsedRideId, parsedDriverId, validated.overrideScheduleConflict)
                             .mapError(fromRideError)
-      } yield RideDto.fromDomain(ride)
+        clientName     <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
+      } yield RideDto.fromDomain(ride, clientName = clientName)
   }
 
   private val updateRideServer: ZServerEndpoint[RideEnv, Any] = updateRideEndpoint.serverLogic {
@@ -522,6 +526,7 @@ object RideApi:
         parsedRideId <- parseRideId(rideId)
         companyId    <- requireCompanyId(user.companyId)
         service      <- ZIO.service[RideService]
+        personRepo   <- ZIO.service[PersonRepository]
         ride         <- service
                           .updateRideDetails(
                             parsedRideId,
@@ -531,7 +536,8 @@ object RideApi:
                             Some(companyId)
                           )
                           .mapError(fromRideError)
-      } yield RideDto.fromDomain(ride)
+        clientName   <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
+      } yield RideDto.fromDomain(ride, clientName = clientName)
   }
 
   private val getRideServer: ZServerEndpoint[RideEnv, Any] = getRideEndpoint.serverLogic { user => rideId =>
@@ -539,6 +545,7 @@ object RideApi:
       _            <- checkRole(user, "DRIVER", "CLIENT", "DISPATCHER", "SECRETARY")
       parsedRideId <- parseRideId(rideId)
       service      <- ZIO.service[RideService]
+      personRepo   <- ZIO.service[PersonRepository]
       ride         <- service.getRideById(parsedRideId).mapError(fromRideError)
       companyId    <- requireCompanyId(user.companyId)
       _            <- ZIO
@@ -553,7 +560,8 @@ object RideApi:
                         .fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
                         .when(user.role.toUpperCase == "DRIVER" && !ride.driverId.exists(_.value == user.userId))
                         .mapError(fromRideError)
-    } yield RideDto.fromDomain(ride)
+      clientName   <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
+    } yield RideDto.fromDomain(ride, clientName = clientName)
   }
 
   private val airportTimingServer: ZServerEndpoint[RideEnv, Any] = airportTimingEndpoint.serverLogic { user => rideId =>

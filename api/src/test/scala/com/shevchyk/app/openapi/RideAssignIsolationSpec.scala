@@ -242,10 +242,24 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
   // No-op stubs for the remaining RideEnv dependencies
   // ---------------------------------------------------------------------------
 
-  private val stubPersonRepo: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
+  /**
+   * The client whose name must surface in ride DTOs. Used by `clientPersonRepo` so the clientName-enrichment regression
+   * tests can assert the real name is returned (not the "Unknown Client" fallback baked into RideDto.fromDomain).
+   */
+  private val clientPerson: Person = Person(
+    id = clientAId,
+    email = "anna@test.de",
+    name = "Anna Schmidt",
+    role = PersonRole.Client,
+    passwordHash = "hash",
+    companyId = Some(companyAId),
+    status = UserStatus.ACTIVE
+  )
+
+  private def makePersonRepo(known: Map[PersonId, Person]): ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
     new PersonRepository:
       def create(person: Person): Task[Person]                                                               = ZIO.succeed(person)
-      def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.succeed(None)
+      def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.succeed(known.get(id))
       def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]                       = ZIO.succeed(None)
       def findByEmail(email: String): Task[Option[Person]]                                                   = ZIO.succeed(None)
       def findByRole(role: PersonRole): Task[List[Person]]                                                   = ZIO.succeed(Nil)
@@ -264,6 +278,9 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
       def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
   )
+
+  private val stubPersonRepo: ZLayer[Any, Nothing, PersonRepository]   = makePersonRepo(Map.empty)
+  private val clientPersonRepo: ZLayer[Any, Nothing, PersonRepository] = makePersonRepo(Map(clientAId -> clientPerson))
 
   private val stubClientAddressService: ZLayer[Any, Nothing, ClientAddressService] = ZLayer.succeed(
     new ClientAddressService:
@@ -326,7 +343,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
   private def buildLayers(
       rides: Map[RideId, Ride],
       assignedRef: Ref[Boolean],
-      reassignedRef: Ref[Boolean]
+      reassignedRef: Ref[Boolean],
+      personRepo: ZLayer[Any, Nothing, PersonRepository] = stubPersonRepo
   ): ZLayer[Any, Throwable, RideApi.RideEnv] =
     testJwtService ++
       makeStubRideService(rides, assignedRef, reassignedRef) ++
@@ -335,7 +353,7 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       stubAirportCheckpointService ++
       stubChatService ++
       stubRideRatingRepo ++
-      stubPersonRepo ++
+      personRepo ++
       stubTariffRepo ++
       stubRideEstimateService ++
       GeocodingService.noop
@@ -486,6 +504,53 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
                              .addHeader(Header.ContentType(zio.http.MediaType.application.json))
           resp          <- run(req, layers)
         } yield assertTrue(resp.status == Status.Forbidden)
+      },
+
+      // ── clientName enrichment: GET /rides/{id} must surface the real client name ──
+      // Regression for the "Unknown Client" bug: the driver's "New ride assigned" dialog
+      // fetches the ride via GET /rides/{id}; that endpoint must enrich clientName from
+      // PersonRepository instead of falling back to "Unknown Client".
+      test("[REGRESSION] GET /rides/{id} returns the real clientName, not 'Unknown Client'") {
+        val rideA = makeAssignedRide(rideAId, companyAId)
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map(rideAId -> rideA), assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .get(URL.decode(s"/api/rides/${rideAId.value}").toOption.get)
+                             .addHeader(Header.Authorization.Bearer(token))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          body.contains("\"clientName\":\"Anna Schmidt\""),
+          !body.contains("Unknown Client")
+        )
+      },
+
+      // ── clientName enrichment: assign-driver response must surface the real client name ──
+      test("[REGRESSION] assign-driver response returns the real clientName, not 'Unknown Client'") {
+        val rideA = makeRequestedRide(rideAId, companyAId)
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map(rideAId -> rideA), assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .put(
+                               URL.decode(s"/api/rides/${rideAId.value}/assign-driver").toOption.get,
+                               assignBody(driverAId)
+                             )
+                             .addHeader(Header.Authorization.Bearer(token))
+                             .addHeader(Header.ContentType(zio.http.MediaType.application.json))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          body.contains("\"clientName\":\"Anna Schmidt\""),
+          !body.contains("Unknown Client")
+        )
       },
 
       // ── Unauthenticated request → 401 ──────────────────────────────────────
