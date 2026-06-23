@@ -1,3 +1,5 @@
+import '../../core/json_parse.dart';
+
 class ClientCompany {
   final String id;
   final String name;
@@ -18,9 +20,9 @@ class ClientCompany {
   });
 
   factory ClientCompany.fromJson(Map<String, dynamic> json) => ClientCompany(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    taxiCompanyId: json['taxiCompanyId'] as String,
+    id: JsonParse.requiredString(json, 'id'),
+    name: JsonParse.requiredString(json, 'name'),
+    taxiCompanyId: JsonParse.requiredString(json, 'taxiCompanyId'),
     email: json['email'] as String?,
     phone: json['phone'] as String?,
     address: json['address'] as String?,

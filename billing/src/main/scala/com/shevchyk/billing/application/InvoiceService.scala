@@ -79,6 +79,8 @@ class InvoiceServiceImpl(
 
   override def createInvoice(taxiCompanyId: CompanyId, req: CreateInvoiceRequest): IO[InvoiceError, Invoice] =
     for {
+      // A tax rate outside [0, 100] distorts Netto/MwSt (at -100 it divides by zero in `recalculate`).
+      _      <- ZIO.when(req.taxRate < 0 || req.taxRate > 100)(ZIO.fail(InvoiceError.InvalidTaxRate(req.taxRate)))
       year   <- ZIO.succeed(req.periodFrom.getYear)
       number <- invoiceRepo.nextInvoiceNumber(taxiCompanyId, year).mapError(InvoiceError.DatabaseError(_))
       _      <- clientCompanyRepo
@@ -320,6 +322,11 @@ class InvoiceServiceImpl(
         ZIO.when(invoice.status != InvoiceStatus.Draft)(
           ZIO.fail(InvoiceError.NotDraft(id))
         )
+      // An empty draft would email a €0.00 PDF, an invalid financial document.
+      _       <-
+        ZIO.when(invoice.items.isEmpty)(
+          ZIO.fail(InvoiceError.EmptyInvoice(id))
+        )
       _       <- emailInvoice(invoice, taxiCompanyId, companyName, storageDir, isReminder = false)
       updated  = invoice.copy(status = InvoiceStatus.Sent, sentAt = Some(Instant.now()))
       saved   <- invoiceRepo.update(updated).mapError(InvoiceError.DatabaseError(_))
@@ -370,9 +377,13 @@ class InvoiceServiceImpl(
     // (net = gross / (1 + rate)), matching the receipt path in PdfGenerator. Previously this treated
     // the sum as Netto and added tax on top, double-charging MwSt and overstating the total.
     // Round monetary values to 2 decimals (HALF_UP) so stored amounts match the PDF/DATEV output.
-    val gross = invoice.items.map(_.total).sum.setScale(2, BigDecimal.RoundingMode.HALF_UP)
-    val net   = (gross / (1 + invoice.taxRate / 100)).setScale(2, BigDecimal.RoundingMode.HALF_UP)
-    val tax   = (gross - net).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    val gross    = invoice.items.map(_.total).sum.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    // Defense-in-depth: `createInvoice` rejects an out-of-range taxRate, but a legacy/corrupt row could
+    // still reach here. Clamp an invalid rate to 0 (treat gross as net, no tax) rather than divide by
+    // zero (taxRate = -100) since this UIO can't fail.
+    val safeRate = if invoice.taxRate < 0 || invoice.taxRate > 100 then BigDecimal(0) else invoice.taxRate
+    val net      = (gross / (1 + safeRate / 100)).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    val tax      = (gross - net).setScale(2, BigDecimal.RoundingMode.HALF_UP)
     invoice.copy(subtotalAmount = net, taxAmount = tax, totalAmount = gross)
   }
 

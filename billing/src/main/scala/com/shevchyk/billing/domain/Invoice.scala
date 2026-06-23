@@ -119,12 +119,16 @@ enum InvoiceError extends Throwable:
   case ClientCompanyNotFound(id: UUID)
   case InvalidStatus(current: InvoiceStatus, required: String)
   case NotDraft(id: InvoiceId)
+  // The invoice has no line items: an empty draft must not be sent (it would
+  // email a €0.00 PDF, an invalid financial document).
+  case EmptyInvoice(id: InvoiceId)
   // A selected ride can't be billed on this invoice: it belongs to another
   // client company, another taxi company, isn't completed, or is already billed.
   case RideNotBillable(rideId: UUID)
   // The invoice's client company has no email address to send to.
   case NoRecipientEmail(id: InvoiceId)
-  // The supplied tax rate (percent) is outside the valid range [0, 100].
+  // The tax rate (percent) is outside the valid range [0, 100]: a negative rate
+  // distorts Netto/MwSt (at -100 it divides by zero), and >100 understates the tax.
   case InvalidTaxRate(taxRate: BigDecimal)
   case DatabaseError(cause: Throwable)
   case PdfGenerationError(cause: Throwable)

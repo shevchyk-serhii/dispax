@@ -172,6 +172,20 @@ void main() {
       expect(inv.items.first.total, 50.0);
     });
 
+    test('throws a FormatException naming status when it is missing', () {
+      final json = invoiceJson()..remove('status');
+      expect(
+        () => Invoice.fromJson(json),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('status'),
+          ),
+        ),
+      );
+    });
+
     test('parses all invoice statuses from server format', () {
       for (final entry in {
         'Draft': InvoiceStatus.draft,

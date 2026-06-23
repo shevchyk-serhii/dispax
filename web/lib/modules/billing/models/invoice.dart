@@ -114,7 +114,7 @@ class Invoice {
     number: JsonParse.requiredString(json, 'number'),
     clientCompanyId: JsonParse.requiredString(json, 'clientCompanyId'),
     taxiCompanyId: JsonParse.requiredString(json, 'taxiCompanyId'),
-    status: InvoiceStatus.fromString(json['status'] as String),
+    status: InvoiceStatus.fromString(JsonParse.requiredString(json, 'status')),
     periodFrom: JsonParse.requiredDateTime(json, 'periodFrom'),
     periodTo: JsonParse.requiredDateTime(json, 'periodTo'),
     subtotalAmount: JsonParse.requiredDouble(json, 'subtotalAmount'),

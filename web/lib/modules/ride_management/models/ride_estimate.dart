@@ -1,3 +1,5 @@
+import '../../core/json_parse.dart';
+
 /// Result returned by POST /rides/estimate.
 class RideEstimate {
   final double distanceKm;
@@ -13,9 +15,9 @@ class RideEstimate {
   });
 
   factory RideEstimate.fromJson(Map<String, dynamic> json) => RideEstimate(
-    distanceKm: (json['distanceKm'] as num).toDouble(),
-    durationMinutes: json['durationMinutes'] as int,
-    estimatedPrice: (json['estimatedPrice'] as num).toDouble(),
-    currency: json['currency'] as String? ?? 'EUR',
+    distanceKm: JsonParse.requiredDouble(json, 'distanceKm'),
+    durationMinutes: JsonParse.requiredInt(json, 'durationMinutes'),
+    estimatedPrice: JsonParse.requiredDouble(json, 'estimatedPrice'),
+    currency: JsonParse.optionalString(json, 'currency') ?? 'EUR',
   );
 }

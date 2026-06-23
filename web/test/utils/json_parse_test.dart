@@ -80,6 +80,44 @@ void main() {
     });
   });
 
+  group('JsonParse.requiredInt', () {
+    test('accepts int, integral double, and numeric string', () {
+      expect(JsonParse.requiredInt({'d': 12}, 'd'), 12);
+      expect(JsonParse.requiredInt({'d': 5.0}, 'd'), 5);
+      expect(JsonParse.requiredInt({'d': '7'}, 'd'), 7);
+    });
+
+    test('throws naming the field when missing or not an integer', () {
+      expect(
+        () => JsonParse.requiredInt({}, 'durationMinutes'),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('durationMinutes'),
+          ),
+        ),
+      );
+      expect(
+        () => JsonParse.requiredInt({'d': 'abc'}, 'd'),
+        throwsA(isA<FormatException>()),
+      );
+      // A fractional double is not an integer.
+      expect(
+        () => JsonParse.requiredInt({'d': 5.5}, 'd'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+  });
+
+  group('JsonParse.optionalInt', () {
+    test('falls back when missing or invalid', () {
+      expect(JsonParse.optionalInt({}, 'd'), 0);
+      expect(JsonParse.optionalInt({'d': 'x'}, 'd', fallback: -1), -1);
+      expect(JsonParse.optionalInt({'d': 4}, 'd'), 4);
+    });
+  });
+
   group('JsonParse.requiredString / optionalString', () {
     test('requiredString returns the string or throws', () {
       expect(JsonParse.requiredString({'s': 'hi'}, 's'), 'hi');

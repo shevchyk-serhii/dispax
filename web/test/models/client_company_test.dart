@@ -25,6 +25,20 @@ void main() {
       expect(cc.taxiCompanyId, 'tc-1');
     });
 
+    test('throws a FormatException naming a missing required field', () {
+      final json = json0()..remove('taxiCompanyId');
+      expect(
+        () => ClientCompany.fromJson(json),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('taxiCompanyId'),
+          ),
+        ),
+      );
+    });
+
     test('optional fields are null when absent', () {
       final cc = ClientCompany.fromJson(json0());
       expect(cc.email, isNull);

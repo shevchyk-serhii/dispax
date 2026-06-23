@@ -555,6 +555,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           sent   <- Ref.make(List.empty[InvoiceEmailData])
           svc     = makeRecordingService(xa, sent)
           inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          _      <- addItem(xa, inv.id)
           result <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir)
           emails <- sent.get
         } yield assertTrue(
@@ -581,6 +582,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           sent   <- Ref.make(List.empty[InvoiceEmailData])
           svc     = makeRecordingService(xa, sent)
           inv    <- svc.createInvoice(testCompanyId, makeRequest(clientId = noEmailClient.value))
+          _      <- addItem(xa, inv.id)
           result <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir).either
           emails <- sent.get
         } yield assertTrue(
@@ -599,6 +601,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           sent    <- Ref.make(List.empty[InvoiceEmailData])
           svc      = makeRecordingService(xa, sent)
           inv     <- svc.createInvoice(testCompanyId, makeRequest())
+          _       <- addItem(xa, inv.id)
           _       <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir)
           updated <- svc.sendReminder(inv.id, testCompanyId, "Test GmbH", storageDir)
           emails  <- sent.get
@@ -624,6 +627,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           sent   <- Ref.make(List.empty[InvoiceEmailData])
           svc     = makeRecordingService(xa, sent)
           inv    <- svc.createInvoice(testCompanyId, makeRequest(clientId = enClient.value))
+          _      <- addItem(xa, inv.id)
           _      <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir)
           emails <- sent.get
         } yield assertTrue(
@@ -647,6 +651,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           // Use default "de" language (the InvoiceServiceImpl default constructor param).
           svc     = makeRecordingService(xa, sent)
           inv    <- svc.createInvoice(testCompanyId, makeRequest(clientId = noLangClient.value))
+          _      <- addItem(xa, inv.id)
           _      <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir)
           emails <- sent.get
         } yield assertTrue(
@@ -664,6 +669,22 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           svc     = makeService(xa)
           bytes  <- svc.generateRideReceipt(rideId, testCompanyId, BigDecimal("19"), "Test GmbH")
         } yield assertTrue(bytes.nonEmpty, bytes.take(4).sameElements("%PDF".getBytes("US-ASCII")))
+      },
+      test("generateRideReceipt rejects an out-of-range taxRate before generating a PDF") {
+        val rate = BigDecimal("-100")
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("100.00"), LocalDate.of(2026, 3, 7))
+          svc     = makeService(xa)
+          // -100 would divide by zero in PdfGenerator; the guard must fail first.
+          res    <- svc.generateRideReceipt(rideId, testCompanyId, rate, "Test GmbH").either
+        } yield assertTrue(res match
+          case Left(InvoiceError.InvalidTaxRate(`rate`)) => true
+          case _                                         => false
+        )
       },
       test("generateRideReceipt works even after the ride has been billed") {
         for {
@@ -814,6 +835,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           _       <- cleanData(xa)
           svc      = makeFailingEmailService(xa)
           inv     <- svc.createInvoice(testCompanyId, makeRequest())
+          _       <- addItem(xa, inv.id)
           result  <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir).either
           // Re-fetch the invoice directly from the repo to confirm no status change.
           repo     = PostgresInvoiceRepository(xa)
@@ -841,17 +863,98 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
                        testCompanyId,
                        makeRequest().copy(dueDate = Some(LocalDate.now().minusDays(3)))
                      )
+          _       <- addItem(xa, overdue.id)
           _       <- svc.sendInvoice(overdue.id, testCompanyId, "Test GmbH", storageDir)
           // Still in the future — should be skipped.
           future  <- svc.createInvoice(
                        testCompanyId,
                        makeRequest().copy(dueDate = Some(LocalDate.now().plusDays(10)))
                      )
+          _       <- addItem(xa, future.id)
           _       <- svc.sendInvoice(future.id, testCompanyId, "Test GmbH", storageDir)
           found   <- repo.findOverdueUnpaid(java.time.Instant.now())
         } yield assertTrue(
           found.map(_.id).contains(overdue.id),
           !found.map(_.id).contains(future.id)
+        )
+      },
+      // -- Audit fix: empty invoice must not be sent (would email a €0.00 PDF) -------
+      test("sendInvoice rejects an empty draft with EmptyInvoice and does not email") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          sent   <- Ref.make(List.empty[InvoiceEmailData])
+          svc     = makeRecordingService(xa, sent)
+          inv    <- svc.createInvoice(testCompanyId, makeRequest())
+          // No items added: the draft is empty.
+          result <- svc.sendInvoice(inv.id, testCompanyId, "Test GmbH", storageDir).either
+          emails <- sent.get
+          repo    = PostgresInvoiceRepository(xa)
+          re     <- repo.findById(inv.id)
+        } yield assertTrue(
+          result match
+            case Left(InvoiceError.EmptyInvoice(id)) => id == inv.id
+            case _                                   => false
+          ,
+          emails.isEmpty,
+          // Status must stay Draft — not advanced to Sent.
+          re.exists(_.status == InvoiceStatus.Draft)
+        )
+      },
+      // -- Audit fix: tax rate must be within [0, 100] ------------------------------
+      test("createInvoice rejects a negative taxRate with InvalidTaxRate") {
+        val rate = BigDecimal("-100")
+        for {
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedTestData(xa)
+          _   <- cleanData(xa)
+          svc  = makeService(xa)
+          res <- svc.createInvoice(testCompanyId, makeRequest(taxRate = rate)).either
+        } yield assertTrue(res match
+          case Left(InvoiceError.InvalidTaxRate(`rate`)) => true
+          case _                                         => false
+        )
+      },
+      test("createInvoice rejects a taxRate above 100 with InvalidTaxRate") {
+        val rate = BigDecimal("150")
+        for {
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedTestData(xa)
+          _   <- cleanData(xa)
+          svc  = makeService(xa)
+          res <- svc.createInvoice(testCompanyId, makeRequest(taxRate = rate)).either
+        } yield assertTrue(res match
+          case Left(InvoiceError.InvalidTaxRate(`rate`)) => true
+          case _                                         => false
+        )
+      },
+      test("createInvoice still accepts a valid 19% taxRate") {
+        for {
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedTestData(xa)
+          _   <- cleanData(xa)
+          svc  = makeService(xa)
+          inv <- svc.createInvoice(testCompanyId, makeRequest(taxRate = BigDecimal("19")))
+        } yield assertTrue(inv.taxRate == BigDecimal("19"))
+      },
+      // -- Audit fix: paging on listInvoices (clamp itself is asserted in InvoiceApiPagingSpec) --
+      // The repository must honour a normal limit/offset window; the API clamp guarantees only
+      // sane values ever reach here.
+      test("listInvoices honours the clamped limit/offset window") {
+        for {
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedTestData(xa)
+          _   <- cleanData(xa)
+          svc  = makeService(xa)
+          req  = makeRequest()
+          _   <- svc.createInvoice(testCompanyId, req)
+          _   <- svc.createInvoice(testCompanyId, req)
+          all <- svc.listInvoices(testCompanyId, None, 100, 0)
+          one <- svc.listInvoices(testCompanyId, None, 1, 0)
+        } yield assertTrue(
+          all.length == 2,
+          one.length == 1
         )
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
@@ -873,6 +976,15 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
       PostgresCompanyBillingProfileRepository(xa),
       recording
     )
+
+  // Adds a single line item to a draft invoice so it is non-empty (sendInvoice now rejects
+  // empty drafts). Inserts straight into invoice_items, bypassing the ride-billing plumbing.
+  private def addItem(xa: Transactor[Task], invoiceId: InvoiceId, total: BigDecimal = BigDecimal("40.00")): Task[Unit] =
+    val itemId = UUID.randomUUID()
+    sql"""INSERT INTO invoice_items (id, invoice_id, ride_id, description, quantity, unit_price, total, created_at)
+          VALUES ($itemId, ${invoiceId.value}, NULL, 'Test item', 1, $total, $total, ${Instant.now()})""".update.run
+      .transact(xa)
+      .unit
 
   // Link the seeded client person to the client company so findUnbilledRides' JOIN matches.
   private def linkClientToCompany(xa: Transactor[Task]): Task[Unit] =

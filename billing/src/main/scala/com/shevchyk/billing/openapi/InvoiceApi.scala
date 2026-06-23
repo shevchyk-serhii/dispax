@@ -166,8 +166,10 @@ object InvoiceApi:
         companyId <- requireCompanyId(user.companyId)
         _         <- checkRole(user, "DISPATCHER", "SECRETARY", "ADMIN")
         status     = statusOpt.flatMap(InvoiceStatus.fromString)
-        limit      = limitOpt.getOrElse(50)
-        offset     = offsetOpt.getOrElse(0)
+        // Clamp paging so a hostile/huge limit can't dump the whole table and a negative offset
+        // can't error out Postgres (mirrors NotificationApi/AuditApi).
+        limit      = Paging.clampLimit(limitOpt.getOrElse(Paging.DefaultLimit))
+        offset     = Paging.clampOffset(offsetOpt.getOrElse(0))
         service   <- ZIO.service[InvoiceService]
         invoices  <- service.listInvoices(companyId, status, limit, offset).mapError(_ => internalError)
       } yield invoices
@@ -240,6 +242,10 @@ object InvoiceApi:
         companyId <- requireCompanyId(user.companyId)
         rid       <- parseUuid(rideId)
         taxRate    = taxRateOpt.flatMap(s => scala.util.Try(BigDecimal(s)).toOption).getOrElse(BigDecimal(19))
+        // Reject an out-of-range rate before it reaches PdfGenerator (taxRate = -100 divides by zero).
+        _         <- ZIO
+                       .when(taxRate < 0 || taxRate > 100)(ZIO.fail(InvoiceError.InvalidTaxRate(taxRate)))
+                       .mapError(fromInvoiceError)
         service   <- ZIO.service[InvoiceService]
         bytes     <- service.generateRideReceipt(rid, companyId, taxRate, companyName).mapError(fromInvoiceError)
       } yield (bytes, s"""attachment; filename="quittung-$rideId.pdf"""")

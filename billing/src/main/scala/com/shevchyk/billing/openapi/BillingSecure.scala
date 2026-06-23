@@ -24,6 +24,16 @@ object BillingSecure:
 
   type Err = (StatusCode, ApiError)
 
+  /**
+   * Paging guards for billing list endpoints: a hostile/huge `limit` must not dump the whole table and a negative
+   * `offset` must not error out Postgres. Mirrors the inline clamps in NotificationApi/AuditApi.
+   */
+  object Paging:
+    val DefaultLimit                  = 50
+    val MaxLimit                      = 100
+    def clampLimit(limit: Int): Int   = limit.min(MaxLimit).max(1)
+    def clampOffset(offset: Int): Int = offset.max(0)
+
   // -- Authenticated base endpoint (mirrors AuthMiddleware.authenticateRequest) --
   val secureEndpoint = endpoint
     .securityIn(auth.bearer[String]())
@@ -78,6 +88,7 @@ object BillingSecure:
       case InvoiceError.NotFound(_)              => (StatusCode.NotFound, ApiError("Invoice not found"))
       case InvoiceError.ClientCompanyNotFound(_) => (StatusCode.NotFound, ApiError("Client company not found"))
       case InvoiceError.NotDraft(_)              => (StatusCode.Conflict, ApiError("Invoice must be in draft status"))
+      case InvoiceError.EmptyInvoice(_)          => (StatusCode.Conflict, ApiError("Invoice has no line items"))
       case InvoiceError.InvalidStatus(cur, req)  =>
         (StatusCode.Conflict, ApiError(s"Invalid status: ${cur}, required: $req"))
       case InvoiceError.RideNotBillable(rideId)  =>

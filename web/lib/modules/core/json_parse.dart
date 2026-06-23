@@ -54,6 +54,26 @@ class JsonParse {
     double fallback = 0,
   }) => _tryDouble(json[key]) ?? fallback;
 
+  /// Parses a required integer. Throws [FormatException] naming [key] when the
+  /// value is missing or not an integer (a non-integral number is rejected).
+  static int requiredInt(Map<String, dynamic> json, String key) {
+    final parsed = _tryInt(json[key]);
+    if (parsed == null) {
+      throw FormatException(
+        'Expected an integer for "$key", got: ${json[key] ?? 'null'}',
+      );
+    }
+    return parsed;
+  }
+
+  /// Parses an optional integer, falling back to [fallback] (default 0) when
+  /// missing or not an integer.
+  static int optionalInt(
+    Map<String, dynamic> json,
+    String key, {
+    int fallback = 0,
+  }) => _tryInt(json[key]) ?? fallback;
+
   /// Reads a required string. Throws [FormatException] naming [key] when missing
   /// or not a string.
   static String requiredString(Map<String, dynamic> json, String key) {
@@ -78,6 +98,14 @@ class JsonParse {
   static double? _tryDouble(Object? raw) {
     if (raw is num) return raw.toDouble();
     if (raw is String) return double.tryParse(raw);
+    return null;
+  }
+
+  static int? _tryInt(Object? raw) {
+    if (raw is int) return raw;
+    // Accept an integral double (e.g. JSON `5.0`) but reject a fractional one.
+    if (raw is num && raw == raw.truncate()) return raw.toInt();
+    if (raw is String) return int.tryParse(raw);
     return null;
   }
 }
