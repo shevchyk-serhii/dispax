@@ -17,6 +17,7 @@ object AvatarServiceSpec extends ZIOSpecDefault:
 
   private val testPersonId = PersonId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
   private val companyId    = CompanyId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+  private val otherCompany = CompanyId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"))
 
   // 1 MB of bytes — within the 5 MB limit
   private val smallBytes: Array[Byte] = Array.fill(1024 * 1024)(0x42.toByte)
@@ -26,12 +27,29 @@ object AvatarServiceSpec extends ZIOSpecDefault:
   private val validJpegType   = "image/jpeg"
   private val invalidMimeType = "application/pdf"
 
+  // Seed a person belonging to `companyId` so the tenant-scoped avatar write is not a no-op.
+  private def seedPerson(id: PersonId, company: CompanyId = companyId): ZIO[PersonRepository, Throwable, Unit] =
+    ZIO
+      .serviceWithZIO[PersonRepository](
+        _.create(
+          Person(
+            id = id,
+            name = "Test",
+            email = s"${id.value}@example.com",
+            role = PersonRole.Client,
+            companyId = Some(company)
+          )
+        )
+      )
+      .unit
+
   def spec =
     suite("AvatarService")(
       test("uploadAvatar with valid JPEG bytes succeeds") {
         for {
+          _       <- seedPerson(testPersonId)
           service <- ZIO.service[AvatarService]
-          _       <- service.uploadAvatar(testPersonId, smallBytes, validJpegType)
+          _       <- service.uploadAvatar(testPersonId, companyId, smallBytes, validJpegType)
           result  <- service.getAvatar(testPersonId)
         } yield assertTrue(
           result.isDefined,
@@ -41,29 +59,42 @@ object AvatarServiceSpec extends ZIOSpecDefault:
       },
       test("uploadAvatar with valid PNG bytes succeeds") {
         for {
+          _       <- seedPerson(testPersonId)
           service <- ZIO.service[AvatarService]
-          _       <- service.uploadAvatar(testPersonId, smallBytes, "image/png")
+          _       <- service.uploadAvatar(testPersonId, companyId, smallBytes, "image/png")
           result  <- service.getAvatar(testPersonId)
         } yield assertTrue(result.isDefined, result.get._2 == "image/png")
       },
       test("uploadAvatar with valid WebP bytes succeeds") {
         for {
+          _       <- seedPerson(testPersonId)
           service <- ZIO.service[AvatarService]
-          _       <- service.uploadAvatar(testPersonId, smallBytes, "image/webp")
+          _       <- service.uploadAvatar(testPersonId, companyId, smallBytes, "image/webp")
           result  <- service.getAvatar(testPersonId)
         } yield assertTrue(result.isDefined)
       },
       test("uploadAvatar with valid GIF bytes succeeds") {
         for {
+          _       <- seedPerson(testPersonId)
           service <- ZIO.service[AvatarService]
-          _       <- service.uploadAvatar(testPersonId, smallBytes, "image/gif")
+          _       <- service.uploadAvatar(testPersonId, companyId, smallBytes, "image/gif")
           result  <- service.getAvatar(testPersonId)
         } yield assertTrue(result.isDefined)
       },
+      test("uploadAvatar for a person in another company is a no-op (tenant isolation)") {
+        val id = PersonId(UUID.randomUUID())
+        for {
+          _       <- seedPerson(id, companyId)
+          service <- ZIO.service[AvatarService]
+          _       <- service.uploadAvatar(id, otherCompany, smallBytes, validJpegType)
+          result  <- service.getAvatar(id)
+        } yield assertTrue(result.isEmpty)
+      },
       test("uploadAvatar with invalid MIME type (PDF) fails with InvalidContentType") {
         for {
+          _       <- seedPerson(testPersonId)
           service <- ZIO.service[AvatarService]
-          result  <- service.uploadAvatar(testPersonId, smallBytes, invalidMimeType).either
+          result  <- service.uploadAvatar(testPersonId, companyId, smallBytes, invalidMimeType).either
         } yield assertTrue(
           result.isLeft,
           result.left.get.isInstanceOf[AvatarError.InvalidContentType]
@@ -71,8 +102,9 @@ object AvatarServiceSpec extends ZIOSpecDefault:
       },
       test("uploadAvatar with image/bmp (not in allowed set) fails with InvalidContentType") {
         for {
+          _       <- seedPerson(testPersonId)
           service <- ZIO.service[AvatarService]
-          result  <- service.uploadAvatar(testPersonId, smallBytes, "image/bmp").either
+          result  <- service.uploadAvatar(testPersonId, companyId, smallBytes, "image/bmp").either
         } yield assertTrue(
           result.isLeft,
           result.left.get.isInstanceOf[AvatarError.InvalidContentType]
@@ -80,8 +112,9 @@ object AvatarServiceSpec extends ZIOSpecDefault:
       },
       test("uploadAvatar with 6 MB bytes fails with FileTooLarge") {
         for {
+          _       <- seedPerson(testPersonId)
           service <- ZIO.service[AvatarService]
-          result  <- service.uploadAvatar(testPersonId, largeBytes, validJpegType).either
+          result  <- service.uploadAvatar(testPersonId, companyId, largeBytes, validJpegType).either
         } yield assertTrue(
           result.isLeft,
           result.left.get == AvatarError.FileTooLarge
@@ -90,15 +123,17 @@ object AvatarServiceSpec extends ZIOSpecDefault:
       test("uploadAvatar with exactly 5 MB succeeds (at the limit)") {
         val exactLimitBytes = Array.fill(AvatarService.MaxBytes)(0x00.toByte)
         for {
+          _       <- seedPerson(testPersonId)
           service <- ZIO.service[AvatarService]
-          result  <- service.uploadAvatar(testPersonId, exactLimitBytes, validJpegType).either
+          result  <- service.uploadAvatar(testPersonId, companyId, exactLimitBytes, validJpegType).either
         } yield assertTrue(result.isRight)
       },
       test("uploadAvatar with 5 MB + 1 byte fails with FileTooLarge (just over limit)") {
         val overLimitBytes = Array.fill(AvatarService.MaxBytes + 1)(0x00.toByte)
         for {
+          _       <- seedPerson(testPersonId)
           service <- ZIO.service[AvatarService]
-          result  <- service.uploadAvatar(testPersonId, overLimitBytes, validJpegType).either
+          result  <- service.uploadAvatar(testPersonId, companyId, overLimitBytes, validJpegType).either
         } yield assertTrue(
           result.isLeft,
           result.left.get == AvatarError.FileTooLarge
@@ -114,27 +149,40 @@ object AvatarServiceSpec extends ZIOSpecDefault:
       test("deleteAvatar is idempotent — no error when no avatar is set") {
         val freshId = PersonId(UUID.randomUUID())
         for {
+          _       <- seedPerson(freshId)
           service <- ZIO.service[AvatarService]
-          result  <- service.deleteAvatar(freshId).either
+          result  <- service.deleteAvatar(freshId, companyId).either
         } yield assertTrue(result.isRight)
       },
       test("deleteAvatar removes the avatar — subsequent getAvatar returns None") {
         val id = PersonId(UUID.randomUUID())
         for {
+          _       <- seedPerson(id)
           service <- ZIO.service[AvatarService]
-          _       <- service.uploadAvatar(id, smallBytes, validJpegType)
-          _       <- service.deleteAvatar(id)
+          _       <- service.uploadAvatar(id, companyId, smallBytes, validJpegType)
+          _       <- service.deleteAvatar(id, companyId)
           result  <- service.getAvatar(id)
         } yield assertTrue(result.isEmpty)
+      },
+      test("deleteAvatar for a person in another company is a no-op (tenant isolation)") {
+        val id = PersonId(UUID.randomUUID())
+        for {
+          _       <- seedPerson(id, companyId)
+          service <- ZIO.service[AvatarService]
+          _       <- service.uploadAvatar(id, companyId, smallBytes, validJpegType)
+          _       <- service.deleteAvatar(id, otherCompany)
+          result  <- service.getAvatar(id)
+        } yield assertTrue(result.isDefined)
       },
       test("uploadAvatar replaces an existing avatar") {
         val id          = PersonId(UUID.randomUUID())
         val firstBytes  = Array.fill(512)(0x01.toByte)
         val secondBytes = Array.fill(1024)(0x02.toByte)
         for {
+          _       <- seedPerson(id)
           service <- ZIO.service[AvatarService]
-          _       <- service.uploadAvatar(id, firstBytes, "image/jpeg")
-          _       <- service.uploadAvatar(id, secondBytes, "image/png")
+          _       <- service.uploadAvatar(id, companyId, firstBytes, "image/jpeg")
+          _       <- service.uploadAvatar(id, companyId, secondBytes, "image/png")
           result  <- service.getAvatar(id)
         } yield assertTrue(
           result.isDefined,
@@ -145,14 +193,16 @@ object AvatarServiceSpec extends ZIOSpecDefault:
       test("MIME type check is case-insensitive — IMAGE/JPEG is accepted") {
         val id = PersonId(UUID.randomUUID())
         for {
+          _       <- seedPerson(id)
           service <- ZIO.service[AvatarService]
-          result  <- service.uploadAvatar(id, smallBytes, "IMAGE/JPEG").either
+          result  <- service.uploadAvatar(id, companyId, smallBytes, "IMAGE/JPEG").either
         } yield assertTrue(result.isRight)
       },
       test("InvalidContentType error carries the unsupported MIME type in message") {
         for {
+          _       <- seedPerson(testPersonId)
           service <- ZIO.service[AvatarService]
-          result  <- service.uploadAvatar(testPersonId, smallBytes, "text/plain").either
+          result  <- service.uploadAvatar(testPersonId, companyId, smallBytes, "text/plain").either
         } yield result match
           case Left(AvatarError.InvalidContentType(ct)) => assertTrue(ct == "text/plain")
           case _                                        => assertTrue(false)

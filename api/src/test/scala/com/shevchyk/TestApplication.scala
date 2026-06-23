@@ -227,36 +227,37 @@ object TestApplication extends ZIOAppDefault:
       .map { peopleRef =>
         registerReset(peopleRef.set(personSeed))
         new PersonRepository:
-          def create(person: Person): Task[Person]                                                     = peopleRef.update(_.updated(person.id, person)).as(person)
-          def findById(id: PersonId): Task[Option[Person]]                                             = peopleRef.get.map(_.get(id))
-          def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]             = peopleRef.get
+          def create(person: Person): Task[Person]                                                               = peopleRef.update(_.updated(person.id, person)).as(person)
+          def findById(id: PersonId): Task[Option[Person]]                                                       = peopleRef.get.map(_.get(id))
+          def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]                       = peopleRef.get
             .map(_.get(id).filter(_.companyId.contains(companyId)))
-          def findByEmail(email: String): Task[Option[Person]]                                         = peopleRef.get.map(_.values.find(_.email == email))
-          def findByRole(role: PersonRole): Task[List[Person]]                                         = peopleRef.get
+          def findByEmail(email: String): Task[Option[Person]]                                                   = peopleRef.get.map(_.values.find(_.email == email))
+          def findByRole(role: PersonRole): Task[List[Person]]                                                   = peopleRef.get
             .map(_.values.filter(_.role == role).toList)
-          def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]         = peopleRef.get
+          def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]                   = peopleRef.get
             .map(_.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList)
-          def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                = peopleRef.get
+          def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                          = peopleRef.get
             .map(_.values.filter(_.companyId.contains(companyId)).toList)
-          def findAll(): Task[List[Person]]                                                            = peopleRef.get.map(_.values.toList)
-          def update(person: Person): Task[Person]                                                     = peopleRef.update(_.updated(person.id, person)).as(person)
-          def delete(id: PersonId): Task[Unit]                                                         = peopleRef.update(_.removed(id)).unit
-          def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit] = ZIO.unit
-          def findByStatus(status: UserStatus): Task[List[Person]]                                     = peopleRef.get
+          def findAll(): Task[List[Person]]                                                                      = peopleRef.get.map(_.values.toList)
+          def update(person: Person): Task[Person]                                                               = peopleRef.update(_.updated(person.id, person)).as(person)
+          def delete(id: PersonId): Task[Unit]                                                                   = peopleRef.update(_.removed(id)).unit
+          def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit]           = ZIO.unit
+          def findByStatus(status: UserStatus): Task[List[Person]]                                               = peopleRef.get
             .map(_.values.filter(_.status == status).toList)
-          def searchByQuery(query: String): Task[List[Person]]                                         = peopleRef.get.map(
+          def searchByQuery(query: String): Task[List[Person]]                                                   = peopleRef.get.map(
             _.values
               .filter(p =>
                 p.name.toLowerCase.contains(query.toLowerCase) || p.email.toLowerCase.contains(query.toLowerCase)
               )
               .toList
           )
-          def updateLastLogin(id: PersonId): Task[Unit]                                                = ZIO.unit
-          def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                = ZIO.succeed(Nil)
-          def upsertDriverRow(personId: PersonId): Task[Unit]                                          = ZIO.unit
-          def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                             = ZIO.succeed(None)
-          def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]             = ZIO.unit
-          def deleteAvatar(id: PersonId): Task[Unit]                                                   = ZIO.unit
+          def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
+          def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
+          def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
+          def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.succeed(None)
+          def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] =
+            ZIO.unit
+          def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
       }
   )
 

@@ -39,30 +39,30 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
 
   private val personRepoStub: PersonRepository =
     new PersonRepository:
-      def findByRoleAndCompany(role: PersonRole, company: CompanyId): Task[List[Person]]           = ZIO.succeed(
+      def findByRoleAndCompany(role: PersonRole, company: CompanyId): Task[List[Person]]                     = ZIO.succeed(
         if role == PersonRole.Dispatcher && company == CompanyId(companyId) then List(dispatcher) else Nil
       )
-      private def nope(m: String): Nothing                                                         = throw new NotImplementedError(s"unexpected PersonRepository.$m")
-      def create(person: Person): Task[Person]                                                     = nope("create")
-      def findById(id: PersonId): Task[Option[Person]]                                             = nope("findById")
-      def findByIdAndCompany(id: PersonId, company: CompanyId): Task[Option[Person]]               = nope("findByIdAndCompany")
-      def findByEmail(email: String): Task[Option[Person]]                                         = nope("findByEmail")
-      def findByRole(role: PersonRole): Task[List[Person]]                                         = nope("findByRole")
-      def findByCompanyId(company: CompanyId): Task[List[Person]]                                  = nope("findByCompanyId")
-      def findAll(): Task[List[Person]]                                                            = nope("findAll")
-      def update(person: Person): Task[Person]                                                     = nope("update")
-      def delete(id: PersonId): Task[Unit]                                                         = nope("delete")
-      def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit] = nope(
+      private def nope(m: String): Nothing                                                                   = throw new NotImplementedError(s"unexpected PersonRepository.$m")
+      def create(person: Person): Task[Person]                                                               = nope("create")
+      def findById(id: PersonId): Task[Option[Person]]                                                       = nope("findById")
+      def findByIdAndCompany(id: PersonId, company: CompanyId): Task[Option[Person]]                         = nope("findByIdAndCompany")
+      def findByEmail(email: String): Task[Option[Person]]                                                   = nope("findByEmail")
+      def findByRole(role: PersonRole): Task[List[Person]]                                                   = nope("findByRole")
+      def findByCompanyId(company: CompanyId): Task[List[Person]]                                            = nope("findByCompanyId")
+      def findAll(): Task[List[Person]]                                                                      = nope("findAll")
+      def update(person: Person): Task[Person]                                                               = nope("update")
+      def delete(id: PersonId): Task[Unit]                                                                   = nope("delete")
+      def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit]           = nope(
         "deleteInCompany"
       )
-      def findByStatus(status: UserStatus): Task[List[Person]]                                     = nope("findByStatus")
-      def searchByQuery(query: String): Task[List[Person]]                                         = nope("searchByQuery")
-      def updateLastLogin(id: PersonId): Task[Unit]                                                = nope("updateLastLogin")
-      def findByClientCompany(c: ClientCompanyId): Task[List[Person]]                              = nope("findByClientCompany")
-      def upsertDriverRow(personId: PersonId): Task[Unit]                                          = ZIO.unit
-      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                             = ZIO.succeed(None)
-      def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit]             = ZIO.unit
-      def deleteAvatar(id: PersonId): Task[Unit]                                                   = ZIO.unit
+      def findByStatus(status: UserStatus): Task[List[Person]]                                               = nope("findByStatus")
+      def searchByQuery(query: String): Task[List[Person]]                                                   = nope("searchByQuery")
+      def updateLastLogin(id: PersonId): Task[Unit]                                                          = nope("updateLastLogin")
+      def findByClientCompany(c: ClientCompanyId): Task[List[Person]]                                        = nope("findByClientCompany")
+      def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.succeed(None)
+      def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
+      def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
 
   private val baseLayers =
     EventHub.layer ++

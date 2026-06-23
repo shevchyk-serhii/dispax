@@ -275,7 +275,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           repo   = PostgresPersonRepository(xa)
           person = makePerson(email = "avatar-roundtrip@test.com")
           _     <- repo.create(person)
-          _     <- repo.setAvatar(person.id, bytes, contentType)
+          _     <- repo.setAvatar(person.id, testCompanyId, bytes, contentType)
           found <- repo.getAvatar(person.id)
         } yield assertTrue(
           found.isDefined,
@@ -283,6 +283,36 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           found.get._1.toSeq == bytes.toSeq,
           found.get._2 == contentType
         )
+      },
+      // ── avatar tenant isolation (defense-in-depth: AND company_id) ─────────
+      test("setAvatar with a foreign company id is a no-op — avatar is not written") {
+        val bytes        = Array.fill(256)(0x55.toByte)
+        val otherCompany = CompanyId(UUID.fromString("00000099-0000-0000-0000-000000000099"))
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "avatar-foreign-set@test.com")
+          _     <- repo.create(person)
+          _     <- repo.setAvatar(person.id, otherCompany, bytes, "image/png")
+          found <- repo.getAvatar(person.id)
+        } yield assertTrue(found.isEmpty)
+      },
+      test("deleteAvatar with a foreign company id is a no-op — existing avatar survives") {
+        val bytes        = Array.fill(256)(0x66.toByte)
+        val otherCompany = CompanyId(UUID.fromString("00000099-0000-0000-0000-000000000099"))
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "avatar-foreign-del@test.com")
+          _     <- repo.create(person)
+          _     <- repo.setAvatar(person.id, testCompanyId, bytes, "image/png")
+          _     <- repo.deleteAvatar(person.id, otherCompany)
+          found <- repo.getAvatar(person.id)
+        } yield assertTrue(found.isDefined)
       },
       test("getAvatar on person without avatar returns None") {
         for {
@@ -304,8 +334,8 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           repo   = PostgresPersonRepository(xa)
           person = makePerson(email = "delete-avatar@test.com")
           _     <- repo.create(person)
-          _     <- repo.setAvatar(person.id, bytes, "image/png")
-          _     <- repo.deleteAvatar(person.id)
+          _     <- repo.setAvatar(person.id, testCompanyId, bytes, "image/png")
+          _     <- repo.deleteAvatar(person.id, testCompanyId)
           found <- repo.getAvatar(person.id)
         } yield assertTrue(found.isEmpty)
       },
@@ -318,8 +348,8 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           person = makePerson(email = "idempotent-delete@test.com")
           _     <- repo.create(person)
           // delete on a person with no avatar must not fail
-          _     <- repo.deleteAvatar(person.id)
-          _     <- repo.deleteAvatar(person.id)
+          _     <- repo.deleteAvatar(person.id, testCompanyId)
+          _     <- repo.deleteAvatar(person.id, testCompanyId)
         } yield assertCompletes
       },
       test("findById after setAvatar — avatarPresent == true") {
@@ -332,7 +362,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           repo   = PostgresPersonRepository(xa)
           person = makePerson(email = "has-avatar@test.com")
           _     <- repo.create(person)
-          _     <- repo.setAvatar(person.id, bytes, "image/webp")
+          _     <- repo.setAvatar(person.id, testCompanyId, bytes, "image/webp")
           found <- repo.findById(person.id)
         } yield assertTrue(
           found.isDefined,
@@ -362,8 +392,8 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           repo   = PostgresPersonRepository(xa)
           person = makePerson(email = "avatar-flag-revert@test.com")
           _     <- repo.create(person)
-          _     <- repo.setAvatar(person.id, bytes, "image/jpeg")
-          _     <- repo.deleteAvatar(person.id)
+          _     <- repo.setAvatar(person.id, testCompanyId, bytes, "image/jpeg")
+          _     <- repo.deleteAvatar(person.id, testCompanyId)
           found <- repo.findById(person.id)
         } yield assertTrue(
           found.isDefined,
@@ -485,9 +515,9 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           repo    = PostgresPersonRepository(xa)
           person  = makePerson(email = "mime-types@test.com")
           _      <- repo.create(person)
-          _      <- repo.setAvatar(person.id, Array(0x01.toByte), "image/png")
+          _      <- repo.setAvatar(person.id, testCompanyId, Array(0x01.toByte), "image/png")
           found1 <- repo.getAvatar(person.id)
-          _      <- repo.setAvatar(person.id, Array(0x02.toByte), "image/webp")
+          _      <- repo.setAvatar(person.id, testCompanyId, Array(0x02.toByte), "image/webp")
           found2 <- repo.getAvatar(person.id)
         } yield assertTrue(
           found1.get._2 == "image/png",
