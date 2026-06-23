@@ -142,6 +142,24 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
           deleted <- repo.delete(invoice.id, testCompanyId)
         } yield assertTrue(!deleted)
       },
+      test("findById fails on a corrupted status instead of silently reading Draft") {
+        // Regression: a paid invoice whose status column is corrupted/unknown must
+        // NOT be read back as Draft. The read has to fail loudly.
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanInvoices(xa)
+          repo    = PostgresInvoiceRepository(xa)
+          invoice = makeInvoice()
+          _      <- repo.create(invoice)
+          _      <- sql"UPDATE invoices SET status = 'totally-bogus' WHERE id = ${invoice.id.value}".update.run
+                      .transact(xa)
+          result <- repo.findById(invoice.id).either
+        } yield assertTrue(
+          result.isLeft,
+          result.left.toOption.exists(_.isInstanceOf[InvoiceError.DatabaseError])
+        )
+      },
       test("addItems and findById includes items") {
         for {
           xa     <- ZIO.service[Transactor[Task]]

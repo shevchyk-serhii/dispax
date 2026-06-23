@@ -33,13 +33,17 @@ enum InvoiceStatus derives JsonCodec:
 
 object InvoiceStatus:
 
-  def fromString(s: String): InvoiceStatus =
+  // Safe parser: an unknown/corrupted status must NOT silently become Draft.
+  // Invoices are financial/legal documents; misreading a paid invoice as a draft
+  // is a correctness bug. Callers decide how to handle None (e.g. the DB read path
+  // fails loudly instead of fabricating a Draft).
+  def fromString(s: String): Option[InvoiceStatus] =
     s.toLowerCase match
-      case "draft"     => Draft
-      case "sent"      => Sent
-      case "paid"      => Paid
-      case "cancelled" => Cancelled
-      case _           => Draft
+      case "draft"     => Some(Draft)
+      case "sent"      => Some(Sent)
+      case "paid"      => Some(Paid)
+      case "cancelled" => Some(Cancelled)
+      case _           => None
 
   def asString(s: InvoiceStatus): String = s.toString.toLowerCase
 

@@ -58,7 +58,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
       number: String,
       clientCompanyId: UUID,
       taxiCompanyId: UUID,
-      status: String,
+      status: InvoiceStatus,
       periodFrom: LocalDate,
       periodTo: LocalDate,
       subtotal: BigDecimal,
@@ -79,7 +79,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
     number = number,
     clientCompanyId = ClientCompanyId(clientCompanyId),
     taxiCompanyId = CompanyId(taxiCompanyId),
-    status = InvoiceStatus.fromString(status),
+    status = status,
     periodFrom = periodFrom,
     periodTo = periodTo,
     subtotalAmount = subtotal,
@@ -96,6 +96,67 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
     createdAt = createdAt,
     updatedAt = updatedAt
   )
+
+  // Map a raw invoice row to a domain Invoice, validating the persisted status.
+  // An unknown/corrupted status column must fail the read loudly rather than be
+  // silently coerced to Draft — these are financial/legal documents and a paid
+  // invoice read back as a draft would be a data-integrity incident.
+  private def parseInvoiceRow(row: InvoiceRow): Task[Invoice] =
+    val (
+      id,
+      number,
+      clientCompanyId,
+      taxiCompanyId,
+      rawStatus,
+      periodFrom,
+      periodTo,
+      subtotal,
+      taxRate,
+      taxAmount,
+      total,
+      currency,
+      notes,
+      dueDate,
+      sentAt,
+      paidAt,
+      reminderSentAt,
+      pdfPath,
+      createdAt,
+      updatedAt
+    ) = row
+    InvoiceStatus.fromString(rawStatus) match
+      case Some(status) =>
+        ZIO.succeed(
+          toInvoice(
+            id,
+            number,
+            clientCompanyId,
+            taxiCompanyId,
+            status,
+            periodFrom,
+            periodTo,
+            subtotal,
+            taxRate,
+            taxAmount,
+            total,
+            currency,
+            notes,
+            dueDate,
+            sentAt,
+            paidAt,
+            reminderSentAt,
+            pdfPath,
+            createdAt,
+            updatedAt
+          )
+        )
+      case None         =>
+        ZIO.logError(s"Invoice $id has an unknown status '$rawStatus' in the database") *>
+          ZIO.fail(
+            InvoiceError.DatabaseError(
+              new IllegalStateException(s"Unknown invoice status '$rawStatus' for invoice $id")
+            )
+          )
 
   private def toItem(
       id: UUID,
@@ -157,7 +218,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
                       .query[InvoiceRow]
                       .option
                       .transact(xa)
-                      .map(_.map(toInvoice.tupled))
+                      .flatMap(ZIO.foreach(_)(parseInvoiceRow))
       items      <-
         invoiceOpt match
           case None    => ZIO.succeed(Nil)
@@ -188,7 +249,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
     q.query[InvoiceRow]
       .to[List]
       .transact(xa)
-      .map(_.map(toInvoice.tupled))
+      .flatMap(ZIO.foreach(_)(parseInvoiceRow))
 
   override def update(invoice: Invoice): Task[Invoice] =
     sql"""
@@ -222,7 +283,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
       .query[InvoiceRow]
       .to[List]
       .transact(xa)
-      .map(_.map(toInvoice.tupled))
+      .flatMap(ZIO.foreach(_)(parseInvoiceRow))
 
   override def delete(id: InvoiceId, taxiCompanyId: CompanyId): Task[Boolean] =
     sql"""DELETE FROM invoices
@@ -400,7 +461,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
       .query[InvoiceRow]
       .to[List]
       .transact(xa)
-      .map(_.map(toInvoice.tupled))
+      .flatMap(ZIO.foreach(_)(parseInvoiceRow))
 
   override def sumRevenueByCompany(
       from: java.time.Instant,
