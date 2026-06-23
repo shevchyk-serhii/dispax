@@ -126,6 +126,18 @@ make flutter-test-integration # Flutter integration tests → local TestApplicat
 
 **Test data:** the Flyway migration `V1001__Insert_dev_data.sql` (dev environment only)
 
+**Tests are mandatory — ALWAYS, no exceptions.**
+Every implementation of new behaviour or change to existing behaviour MUST ship with tests that
+lock that behaviour in, so it cannot silently regress later. "It's a small change", "it's just a
+mapping", "it obviously works" are NOT exemptions. Code without covering tests is not done and must
+not be merged.
+
+**New functionality → tests rule:**
+When you implement something new, write tests for it in the same change — **a unit test at minimum**
+(in-memory double), plus an integration/BDD test when the feature crosses a repository or HTTP
+boundary. The tests must assert the actual new behaviour (the real value, the real status), not just
+that the code runs.
+
 **Fix / change functionality → tests rule:**
 Before fixing or changing any functionality, verify that tests covering that functionality exist —
 **at minimum a unit test** (in-memory double). If none exist, add them before/alongside the change.
@@ -136,6 +148,11 @@ requirements (when such a change is requested) instead of leaving stale assertio
 When a bug is found, first check whether a test already covers that case. If none exists, add one
 **before/alongside the fix — a unit test first** (in-memory double); add an integration/BDD test
 too if the bug crosses a repository or HTTP boundary. A bug fix without a covering test is not done.
+
+**Verify the test actually catches the bug (mutation check):**
+A new/changed test must fail when the fix is reverted and pass when it is restored. Before merging,
+confirm this — temporarily back out the fix, run the new test, see it go red, then restore the fix.
+A test that stays green with the fix reverted is false-green and does not count as coverage.
 
 ---
 
@@ -202,6 +219,9 @@ PORT=8080
 - Do not use `Future` or `throw` — only ZIO effects
 - Do not put business logic in route handlers — only in the application layer
 - Do not hardcode secrets — only via env vars
+- Do not implement new functionality without shipping tests for it in the same change (a unit test at minimum)
+- Do not merge any behaviour change without tests that lock it in — no "too small to test" exemptions
 - Do not fix a bug without adding a regression test for it (a unit test first)
 - Do not fix or change functionality without first verifying tests exist for it (at minimum a unit test); if the tests are wrong, rewrite them to the new requirements
+- Do not trust a new/changed test without a mutation check — revert the fix, confirm it goes red, then restore
 - Do not write comments, documentation, commit messages, or identifiers in any language other than English
