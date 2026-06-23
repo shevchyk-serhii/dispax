@@ -83,6 +83,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noDriversScheduled => 'No drivers scheduled';
 
   @override
+  String get selectDriverToViewSchedule =>
+      'Select a driver to view their schedule';
+
+  @override
+  String get noScheduleForDriver => 'No schedule entries for this driver';
+
+  @override
   String get noPendingRides => 'No pending rides';
 
   @override

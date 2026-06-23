@@ -21,6 +21,7 @@ import '../../screens/notification_center_screen.dart';
 import '../../screens/gdpr_screen.dart';
 import '../../screens/session_management_screen.dart';
 import '../../screens/driver_schedule_visibility_screen.dart';
+import '../../screens/dispatcher_driver_schedules_screen.dart';
 import '../../screens/driver_map_screen.dart';
 import '../driver/today_rides_screen.dart';
 import 'widgets/payroll_screen.dart';
@@ -96,10 +97,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     return result ?? false;
   }
 
+  // Driver Schedules viewer (index 29): always available to dispatchers.
+  static const int _driverSchedulesScreenIndex = 29;
   // Screen indices for driver screens added at the end of the list (only when canDrive).
-  // These must not collide with the hard-coded indices 0..28 (DriverScheduleVisibilityScreen).
-  static const int _driverMapScreenIndex = 29;
-  static const int _driverMyRidesScreenIndex = 30;
+  // These must not collide with the hard-coded indices 0..29.
+  static const int _driverMapScreenIndex = 30;
+  static const int _driverMyRidesScreenIndex = 31;
 
   // All screens in order
   List<Widget> _buildAllScreens(bool canDrive) {
@@ -149,10 +152,11 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       const GdprScreen(), // 26
       const SessionManagementScreen(), // 27
       const DriverScheduleVisibilityScreen(), // 28
-      // Driver screens — only meaningful when canDrive; appended at indices 29..30
+      const DispatcherDriverSchedulesScreen(), // 29
+      // Driver screens — only meaningful when canDrive; appended at indices 30..31
       // so existing hard-coded indices are never renumbered.
-      if (canDrive) const DriverMapScreen(), // 29
-      if (canDrive) const TodayRidesScreen(), // 30
+      if (canDrive) const DriverMapScreen(), // 30
+      if (canDrive) const TodayRidesScreen(), // 31
     ];
   }
 
@@ -431,6 +435,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         Icons.visibility,
         'Sched. Visibility',
         28,
+        Theme.of(context).colorScheme.primary,
+      ),
+      _MoreMenuItem(
+        Icons.event_note,
+        'Schedules',
+        _driverSchedulesScreenIndex,
         Theme.of(context).colorScheme.primary,
       ),
       // Driver screens — only visible when this dispatcher also has the Driver role

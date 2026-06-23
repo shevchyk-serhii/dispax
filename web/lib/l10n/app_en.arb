@@ -34,6 +34,8 @@
   },
   "driverSchedules": "Driver Schedules",
   "noDriversScheduled": "No drivers scheduled",
+  "selectDriverToViewSchedule": "Select a driver to view their schedule",
+  "noScheduleForDriver": "No schedule entries for this driver",
   "noPendingRides": "No pending rides",
   "allRidesAssigned": "All rides have been assigned",
   "selectDriver": "Select Driver",

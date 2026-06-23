@@ -244,6 +244,18 @@ abstract class AppLocalizations {
   /// **'No drivers scheduled'**
   String get noDriversScheduled;
 
+  /// No description provided for @selectDriverToViewSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a driver to view their schedule'**
+  String get selectDriverToViewSchedule;
+
+  /// No description provided for @noScheduleForDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedule entries for this driver'**
+  String get noScheduleForDriver;
+
   /// No description provided for @noPendingRides.
   ///
   /// In en, this message translates to:
