@@ -1,7 +1,7 @@
 package com.shevchyk.notification.integration
 
 import com.shevchyk.core.database.PostgresTestContainer
-import com.shevchyk.core.domain.PersonId
+import com.shevchyk.core.domain.{CompanyId, PersonId}
 import com.shevchyk.notification.domain.FcmToken
 import com.shevchyk.notification.repository.PostgresFcmTokenRepository
 import doobie.*
@@ -19,14 +19,20 @@ import java.util.UUID
  */
 object PostgresFcmTokenRepositorySpec extends ZIOSpecDefault {
 
-  val testCompanyId = UUID.fromString("00000050-0000-0000-0000-000000000001")
-  val personId      = PersonId(UUID.fromString("00000060-0000-0000-0000-000000000001"))
-  val otherPersonId = PersonId(UUID.fromString("00000060-0000-0000-0000-000000000002"))
+  val testCompanyId  = UUID.fromString("00000050-0000-0000-0000-000000000001")
+  val otherCompanyId = UUID.fromString("00000050-0000-0000-0000-000000000002")
+  val companyId      = CompanyId(testCompanyId)
+  val otherCompany   = CompanyId(otherCompanyId)
+  val personId       = PersonId(UUID.fromString("00000060-0000-0000-0000-000000000001"))
+  val otherPersonId  = PersonId(UUID.fromString("00000060-0000-0000-0000-000000000002"))
 
   private def seedTestData(xa: Transactor[Task]): Task[Unit] =
     (for {
       _ <-
         sql"""INSERT INTO companies (id, name, email) VALUES ($testCompanyId, 'Fcm Test GmbH', 'fcm-test@example.com')
+                 ON CONFLICT DO NOTHING""".update.run
+      _ <-
+        sql"""INSERT INTO companies (id, name, email) VALUES ($otherCompanyId, 'Fcm Other GmbH', 'fcm-other-co@example.com')
                  ON CONFLICT DO NOTHING""".update.run
       _ <-
         sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
@@ -43,10 +49,12 @@ object PostgresFcmTokenRepositorySpec extends ZIOSpecDefault {
 
   private def makeToken(
       person: PersonId = personId,
+      company: CompanyId = companyId,
       token: String = "fcm-token-1",
       platform: String = "android"
   ): FcmToken = FcmToken(
     personId = person,
+    companyId = company,
     token = token,
     platform = platform,
     createdAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
@@ -62,7 +70,7 @@ object PostgresFcmTokenRepositorySpec extends ZIOSpecDefault {
           repo   = PostgresFcmTokenRepository(xa)
           tok    = makeToken(token = "fcm-roundtrip", platform = "ios")
           _     <- repo.save(tok)
-          found <- repo.findByPersonId(personId)
+          found <- repo.findByPersonIdAndCompany(personId, companyId)
         } yield assertTrue(
           found.length == 1,
           found.head.token == "fcm-roundtrip",
@@ -78,8 +86,8 @@ object PostgresFcmTokenRepositorySpec extends ZIOSpecDefault {
           repo   = PostgresFcmTokenRepository(xa)
           _     <- repo.save(makeToken(person = personId, token = "fcm-shared", platform = "android"))
           _     <- repo.save(makeToken(person = otherPersonId, token = "fcm-shared", platform = "ios"))
-          old   <- repo.findByPersonId(personId)
-          moved <- repo.findByPersonId(otherPersonId)
+          old   <- repo.findByPersonIdAndCompany(personId, companyId)
+          moved <- repo.findByPersonIdAndCompany(otherPersonId, companyId)
         } yield assertTrue(
           old.isEmpty,
           moved.length == 1,
@@ -96,7 +104,7 @@ object PostgresFcmTokenRepositorySpec extends ZIOSpecDefault {
           _    <- repo.save(makeToken(person = personId, token = "fcm-a"))
           _    <- repo.save(makeToken(person = personId, token = "fcm-b"))
           _    <- repo.save(makeToken(person = otherPersonId, token = "fcm-c"))
-          mine <- repo.findByPersonId(personId)
+          mine <- repo.findByPersonIdAndCompany(personId, companyId)
         } yield assertTrue(
           mine.length == 2,
           mine.forall(_.personId == personId),
@@ -112,10 +120,29 @@ object PostgresFcmTokenRepositorySpec extends ZIOSpecDefault {
           _      <- repo.save(makeToken(person = personId, token = "fcm-keep"))
           _      <- repo.save(makeToken(person = personId, token = "fcm-drop"))
           _      <- repo.deleteByToken("fcm-drop")
-          remain <- repo.findByPersonId(personId)
+          remain <- repo.findByPersonIdAndCompany(personId, companyId)
         } yield assertTrue(
           remain.length == 1,
           remain.head.token == "fcm-keep"
+        )
+      },
+      test("findByPersonIdAndCompany never returns tokens registered under another company") {
+        // Same person id registered under two companies. A lookup scoped to companyId must not
+        // leak the otherCompany token — this is the cross-tenant push leak the fix closes.
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanFcmTokens(xa)
+          repo   = PostgresFcmTokenRepository(xa)
+          _     <- repo.save(makeToken(person = personId, company = companyId, token = "fcm-co-1"))
+          _     <- repo.save(makeToken(person = personId, company = otherCompany, token = "fcm-co-2"))
+          inOne <- repo.findByPersonIdAndCompany(personId, companyId)
+          inTwo <- repo.findByPersonIdAndCompany(personId, otherCompany)
+        } yield assertTrue(
+          inOne.map(_.token) == List("fcm-co-1"),
+          inOne.forall(_.companyId == companyId),
+          inTwo.map(_.token) == List("fcm-co-2"),
+          inTwo.forall(_.companyId == otherCompany)
         )
       },
       test("deleteByPersonId removes only that person's tokens") {
@@ -128,8 +155,8 @@ object PostgresFcmTokenRepositorySpec extends ZIOSpecDefault {
           _    <- repo.save(makeToken(person = personId, token = "fcm-p1-b"))
           _    <- repo.save(makeToken(person = otherPersonId, token = "fcm-p2"))
           _    <- repo.deleteByPersonId(personId)
-          gone <- repo.findByPersonId(personId)
-          kept <- repo.findByPersonId(otherPersonId)
+          gone <- repo.findByPersonIdAndCompany(personId, companyId)
+          kept <- repo.findByPersonIdAndCompany(otherPersonId, companyId)
         } yield assertTrue(
           gone.isEmpty,
           kept.length == 1,

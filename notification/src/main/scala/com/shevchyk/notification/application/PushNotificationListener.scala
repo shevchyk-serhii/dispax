@@ -79,7 +79,7 @@ object PushNotificationListener:
       notification: PushNotification,
       notifType: String
   ): Task[Unit] =
-    fcmService.sendToUser(personId, notification) *>
+    fcmService.sendToUser(personId, companyId, notification) *>
       saveNotification(
         repo,
         personId,

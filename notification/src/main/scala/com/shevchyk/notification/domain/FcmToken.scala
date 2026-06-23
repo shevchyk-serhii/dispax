@@ -1,12 +1,13 @@
 package com.shevchyk.notification.domain
 
-import com.shevchyk.core.domain.PersonId
+import com.shevchyk.core.domain.{CompanyId, PersonId}
 import sttp.tapir.Schema
 import zio.json.*
 import java.time.Instant
 
 case class FcmToken(
     personId: PersonId,
+    companyId: CompanyId,
     token: String,
     platform: String,
     createdAt: Instant

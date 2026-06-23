@@ -55,7 +55,7 @@ object ReminderScheduler:
                           body = s"At $timeStr (UTC): ${ride.pickupLocation.address} → ${ride.dropoffLocation.address}",
                           data = Map("rideId" -> ride.id.value.toString, "type" -> "ride_reminder")
                         )
-                        fcm.sendToUser(driverId, notification) *>
+                        fcm.sendToUser(driverId, ride.companyId, notification) *>
                           sentRepo.markSent(ride.id, driverId) *>
                           ZIO.logInfo(s"Reminder sent to driver ${driver.name} for ride ${ride.id.value}")
                     }
