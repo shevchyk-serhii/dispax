@@ -309,6 +309,59 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           found.get.paidAt.isDefined
         )
       },
+      test("markPaidIfCompleted is an atomic field-level CAS: only one of two concurrent calls wins") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanRides(xa)
+          repo     = PostgresRideRepository(xa)
+          ride     = makeRide(status = RideStatus.Completed)
+          _       <- repo.create(ride)
+          // Two concurrent markPaid calls on the same Completed ride: exactly one writes the payment
+          // columns, the other is a no-op (payment_status <> 'Paid' guard fails for the loser).
+          results <- repo
+                       .markPaidIfCompleted(ride.id, Some(PaymentMethod.Cash))
+                       .zipPar(repo.markPaidIfCompleted(ride.id, Some(PaymentMethod.Card)))
+          found   <- repo.findById(ride.id).map(_.get)
+        } yield assertTrue(
+          // Exactly one winner across the race.
+          List(results._1, results._2).count(identity) == 1,
+          found.paymentStatus == PaymentStatus.Paid,
+          // The persisted method is the winner's, never None and never torn.
+          found.paymentMethod.contains(PaymentMethod.Cash) || found.paymentMethod.contains(PaymentMethod.Card),
+          found.paidAt.isDefined
+        )
+      },
+      test("markPaidIfCompleted rejects a non-Completed ride and is idempotent on an already-Paid ride") {
+        for {
+          xa            <- ZIO.service[Transactor[Task]]
+          _             <- seedTestData(xa)
+          _             <- cleanRides(xa)
+          repo           = PostgresRideRepository(xa)
+          // Not Completed -> CAS does not apply.
+          inProgress     = makeRide(status = RideStatus.InProgress)
+          _             <- repo.create(inProgress)
+          notApplied    <- repo.markPaidIfCompleted(inProgress.id, Some(PaymentMethod.Cash))
+          afterIp       <- repo.findById(inProgress.id).map(_.get)
+          // Completed -> first pay applies, second is a no-op (does not overwrite paid_at/method).
+          completed      = makeRide(status = RideStatus.Completed)
+          _             <- repo.create(completed)
+          firstApplied  <- repo.markPaidIfCompleted(completed.id, Some(PaymentMethod.Cash))
+          afterFirst    <- repo.findById(completed.id).map(_.get)
+          secondApplied <- repo.markPaidIfCompleted(completed.id, Some(PaymentMethod.Card))
+          afterSecond   <- repo.findById(completed.id).map(_.get)
+        } yield assertTrue(
+          !notApplied,
+          afterIp.paymentStatus != PaymentStatus.Paid,
+          firstApplied,
+          afterFirst.paymentMethod.contains(PaymentMethod.Cash),
+          afterFirst.paidAt.isDefined,
+          !secondApplied,
+          // Idempotent: original method and timestamp untouched by the second call.
+          afterSecond.paymentMethod.contains(PaymentMethod.Cash),
+          afterSecond.paidAt == afterFirst.paidAt
+        )
+      },
       test("cancellation fields round-trip") {
         for {
           xa    <- ZIO.service[Transactor[Task]]

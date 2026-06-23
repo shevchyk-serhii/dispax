@@ -580,6 +580,22 @@ object TestApplication extends ZIOAppDefault:
               case Some(c) if expectedStatuses.contains(c.status) => (true, m.updated(ride.id, ride))
               case _                                              => (false, m)
           }
+          def markPaidIfCompleted(
+              rideId: RideId,
+              paymentMethod: Option[com.shevchyk.ride.domain.PaymentMethod]
+          ): Task[Boolean] = ridesRef.modify { m =>
+            m.get(rideId) match
+              case Some(c)
+                  if c.status == RideStatus.Completed &&
+                    c.paymentStatus != com.shevchyk.ride.domain.PaymentStatus.Paid =>
+                val updated = c.copy(
+                  paymentStatus = com.shevchyk.ride.domain.PaymentStatus.Paid,
+                  paymentMethod = paymentMethod,
+                  paidAt = Some(Instant.now())
+                )
+                (true, m.updated(rideId, updated))
+              case _ => (false, m)
+          }
           def findByClientId(cid: PersonId): Task[List[Ride]]                                                   = ridesRef.get
             .map(_.values.filter(_.clientId == cid).toList)
           def findByDriverId(did: PersonId): Task[List[Ride]]                                                   = ridesRef.get
