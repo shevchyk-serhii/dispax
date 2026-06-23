@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 
 class DriverEarningsPanel extends StatefulWidget {
   const DriverEarningsPanel({super.key});
@@ -86,22 +87,27 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
               ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(_error!),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _loadStats,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+                  child: Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context)!;
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(_error!),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _loadStats,
+                            child: Text(l10n.retry),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 )
               : RefreshIndicator(onRefresh: _loadStats, child: _buildContent()),
@@ -121,64 +127,73 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
         ),
         child: SafeArea(
           bottom: false,
-          child: Row(
-            children: [
-              const Icon(Icons.euro, color: Colors.white, size: 24),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Driver Earnings',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.sort, color: Colors.white, size: 22),
-                onSelected: (v) => setState(() => _sortBy = v),
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'earnings',
-                    child: Row(
-                      children: [
-                        if (_sortBy == 'earnings')
-                          const Icon(Icons.check, size: 16),
-                        if (_sortBy == 'earnings') const SizedBox(width: 8),
-                        const Text('Sort by Earnings'),
-                      ],
+          child: Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context)!;
+              return Row(
+                children: [
+                  const Icon(Icons.euro, color: Colors.white, size: 24),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      l10n.driverEarningsTitle,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  PopupMenuItem(
-                    value: 'rides',
-                    child: Row(
-                      children: [
-                        if (_sortBy == 'rides')
-                          const Icon(Icons.check, size: 16),
-                        if (_sortBy == 'rides') const SizedBox(width: 8),
-                        const Text('Sort by Rides'),
-                      ],
-                    ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.sort, color: Colors.white, size: 22),
+                    onSelected: (v) => setState(() => _sortBy = v),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'earnings',
+                        child: Row(
+                          children: [
+                            if (_sortBy == 'earnings')
+                              const Icon(Icons.check, size: 16),
+                            if (_sortBy == 'earnings') const SizedBox(width: 8),
+                            Text(l10n.sortByEarnings),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'rides',
+                        child: Row(
+                          children: [
+                            if (_sortBy == 'rides')
+                              const Icon(Icons.check, size: 16),
+                            if (_sortBy == 'rides') const SizedBox(width: 8),
+                            Text(l10n.sortByRides),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'name',
+                        child: Row(
+                          children: [
+                            if (_sortBy == 'name')
+                              const Icon(Icons.check, size: 16),
+                            if (_sortBy == 'name') const SizedBox(width: 8),
+                            Text(l10n.sortByName),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  PopupMenuItem(
-                    value: 'name',
-                    child: Row(
-                      children: [
-                        if (_sortBy == 'name')
-                          const Icon(Icons.check, size: 16),
-                        if (_sortBy == 'name') const SizedBox(width: 8),
-                        const Text('Sort by Name'),
-                      ],
+                  IconButton(
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 22,
                     ),
+                    onPressed: _loadStats,
                   ),
                 ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
-                onPressed: _loadStats,
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),

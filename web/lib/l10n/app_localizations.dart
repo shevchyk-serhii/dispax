@@ -2313,6 +2313,534 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to update: {error}'**
   String failedToUpdate(String error);
+
+  /// No description provided for @homeTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get homeTab;
+
+  /// No description provided for @scheduleTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get scheduleTab;
+
+  /// No description provided for @calendarTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendarTab;
+
+  /// No description provided for @newRideTab.
+  ///
+  /// In en, this message translates to:
+  /// **'New Ride'**
+  String get newRideTab;
+
+  /// No description provided for @moreTab.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get moreTab;
+
+  /// No description provided for @billingTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get billingTab;
+
+  /// No description provided for @moreScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get moreScreenTitle;
+
+  /// No description provided for @dispatchBoardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatch board'**
+  String get dispatchBoardTitle;
+
+  /// No description provided for @dispatcherSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{weekday}, {date} · {count} active rides'**
+  String dispatcherSubtitle(String weekday, String date, int count);
+
+  /// No description provided for @searchRidesDrivers.
+  ///
+  /// In en, this message translates to:
+  /// **'Search rides, drivers…'**
+  String get searchRidesDrivers;
+
+  /// No description provided for @newRideButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New ride'**
+  String get newRideButtonLabel;
+
+  /// No description provided for @activeRidesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active rides'**
+  String get activeRidesLabel;
+
+  /// No description provided for @atRiskLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'At risk'**
+  String get atRiskLabel;
+
+  /// No description provided for @driversOnlineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivers online'**
+  String get driversOnlineLabel;
+
+  /// No description provided for @onTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'On-time'**
+  String get onTimeLabel;
+
+  /// No description provided for @earningsMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings'**
+  String get earningsMenuItem;
+
+  /// No description provided for @peakHoursMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Peak Hours'**
+  String get peakHoursMenuItem;
+
+  /// No description provided for @clientValueMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Value'**
+  String get clientValueMenuItem;
+
+  /// No description provided for @driversMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivers'**
+  String get driversMenuItem;
+
+  /// No description provided for @ratingsMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings'**
+  String get ratingsMenuItem;
+
+  /// No description provided for @auditLogMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit Log'**
+  String get auditLogMenuItem;
+
+  /// No description provided for @adminMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get adminMenuItem;
+
+  /// No description provided for @companyMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get companyMenuItem;
+
+  /// No description provided for @expensesMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get expensesMenuItem;
+
+  /// No description provided for @exportMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get exportMenuItem;
+
+  /// No description provided for @templatesMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates'**
+  String get templatesMenuItem;
+
+  /// No description provided for @paymentsMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get paymentsMenuItem;
+
+  /// No description provided for @payrollMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll'**
+  String get payrollMenuItem;
+
+  /// No description provided for @settingsMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsMenuItem;
+
+  /// No description provided for @geofencesMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Geofences'**
+  String get geofencesMenuItem;
+
+  /// No description provided for @datevMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'DATEV'**
+  String get datevMenuItem;
+
+  /// No description provided for @blacklistMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Blacklist'**
+  String get blacklistMenuItem;
+
+  /// No description provided for @emergencyMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency'**
+  String get emergencyMenuItem;
+
+  /// No description provided for @ridePoolsMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride Pools'**
+  String get ridePoolsMenuItem;
+
+  /// No description provided for @notificationsMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsMenuItem;
+
+  /// No description provided for @gdprMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'GDPR'**
+  String get gdprMenuItem;
+
+  /// No description provided for @sessionsMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get sessionsMenuItem;
+
+  /// No description provided for @schedVisibilityMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Sched. Visibility'**
+  String get schedVisibilityMenuItem;
+
+  /// No description provided for @analyticsMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get analyticsMenuItem;
+
+  /// No description provided for @driverBoardMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Board'**
+  String get driverBoardMenuItem;
+
+  /// No description provided for @driverMapMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Map'**
+  String get driverMapMenuItem;
+
+  /// No description provided for @assignRideDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Ride #{rideId}'**
+  String assignRideDialogTitle(String rideId);
+
+  /// No description provided for @rideDetailsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride details'**
+  String get rideDetailsLabel;
+
+  /// No description provided for @clientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client'**
+  String get clientLabel;
+
+  /// No description provided for @timeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get timeLabel;
+
+  /// No description provided for @fromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get fromLabel;
+
+  /// No description provided for @toLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get toLabel;
+
+  /// No description provided for @flightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight'**
+  String get flightLabel;
+
+  /// No description provided for @fareLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fare'**
+  String get fareLabel;
+
+  /// No description provided for @assigningToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigning to'**
+  String get assigningToLabel;
+
+  /// No description provided for @scheduleConflictsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule conflicts ({count})'**
+  String scheduleConflictsCount(int count);
+
+  /// No description provided for @assignDriverButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign driver'**
+  String get assignDriverButton;
+
+  /// No description provided for @reassignRideDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reassign ride #{rideId}'**
+  String reassignRideDialogTitle(String rideId);
+
+  /// No description provided for @nearestAvailableDriversLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'NEAREST AVAILABLE DRIVERS · RANKED BY ETA'**
+  String get nearestAvailableDriversLabel;
+
+  /// No description provided for @noDriversAvailableForReassignment.
+  ///
+  /// In en, this message translates to:
+  /// **'No other drivers available for reassignment.'**
+  String get noDriversAvailableForReassignment;
+
+  /// No description provided for @reassignNRides.
+  ///
+  /// In en, this message translates to:
+  /// **'Reassign {count} ride(s)'**
+  String reassignNRides(int count);
+
+  /// No description provided for @driverDelayedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{driverName} is delayed — slack {slack} min'**
+  String driverDelayedMessage(String driverName, String slack);
+
+  /// No description provided for @ridesToReassignLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rides to reassign ({selected}/{total})'**
+  String ridesToReassignLabel(int selected, int total);
+
+  /// No description provided for @deselectAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all'**
+  String get deselectAllButton;
+
+  /// No description provided for @selectAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get selectAllButton;
+
+  /// No description provided for @bestMatchBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Best match'**
+  String get bestMatchBadge;
+
+  /// No description provided for @stillLateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'still late'**
+  String get stillLateLabel;
+
+  /// No description provided for @slackRestoredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'slack restored'**
+  String get slackRestoredLabel;
+
+  /// No description provided for @tightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'tight'**
+  String get tightLabel;
+
+  /// No description provided for @ridesReassignedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} ride(s) reassigned to {driverName}'**
+  String ridesReassignedMessage(int count, String driverName);
+
+  /// No description provided for @reassignAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Reassign anyway'**
+  String get reassignAnyway;
+
+  /// No description provided for @pendingTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pendingTab;
+
+  /// No description provided for @assignedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get assignedTab;
+
+  /// No description provided for @sortTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sortTooltip;
+
+  /// No description provided for @noAssignedRides.
+  ///
+  /// In en, this message translates to:
+  /// **'No assigned rides'**
+  String get noAssignedRides;
+
+  /// No description provided for @noRidesCurrentlyAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No rides currently assigned to drivers'**
+  String get noRidesCurrentlyAssigned;
+
+  /// No description provided for @pendingRequestsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending requests'**
+  String get pendingRequestsHeader;
+
+  /// No description provided for @unassignedRidesBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unassigned'**
+  String unassignedRidesBadge(int count);
+
+  /// No description provided for @rideAtRiskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride at risk of delay'**
+  String get rideAtRiskTitle;
+
+  /// No description provided for @etaMonitorBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PREDICTIVE ETA MONITOR · 60S'**
+  String get etaMonitorBadgeLabel;
+
+  /// No description provided for @viewButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get viewButton;
+
+  /// No description provided for @etaDriverEtaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'DRIVER ETA'**
+  String get etaDriverEtaLabel;
+
+  /// No description provided for @etaPickupInLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PICKUP IN'**
+  String get etaPickupInLabel;
+
+  /// No description provided for @etaSlackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SLACK'**
+  String get etaSlackLabel;
+
+  /// No description provided for @driverEarningsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Earnings'**
+  String get driverEarningsTitle;
+
+  /// No description provided for @sortByEarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by Earnings'**
+  String get sortByEarnings;
+
+  /// No description provided for @sortByName.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by Name'**
+  String get sortByName;
+
+  /// No description provided for @sortByRides.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by Rides'**
+  String get sortByRides;
+
+  /// No description provided for @driverPayrollTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Payroll'**
+  String get driverPayrollTitle;
+
+  /// No description provided for @payrollSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll Summary'**
+  String get payrollSummaryTitle;
+
+  /// No description provided for @loadPayrollButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Load Payroll'**
+  String get loadPayrollButton;
+
+  /// No description provided for @payrollCsvCopiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll CSV copied to clipboard'**
+  String get payrollCsvCopiedMessage;
+
+  /// No description provided for @commissionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Commission: '**
+  String get commissionLabel;
 }
 
 class _AppLocalizationsDelegate

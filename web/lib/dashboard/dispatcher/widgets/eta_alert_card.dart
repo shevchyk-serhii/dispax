@@ -3,6 +3,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../constants/lucide_compat.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Data class holding information about an at-risk ETA.
 class EtaAtRiskInfo {
@@ -44,6 +45,7 @@ class EtaAlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgAlpha = isDark ? 0.12 : 0.06;
     final colorScheme = Theme.of(context).colorScheme;
@@ -101,7 +103,7 @@ class EtaAlertCard extends StatelessWidget {
                                   children: [
                                     Flexible(
                                       child: Text(
-                                        'Ride at risk of delay',
+                                        l10n.rideAtRiskTitle,
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700,
@@ -121,7 +123,7 @@ class EtaAlertCard extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
-                                        'PREDICTIVE ETA MONITOR · 60S',
+                                        l10n.etaMonitorBadgeLabel,
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w600,
@@ -164,19 +166,19 @@ class EtaAlertCard extends StatelessWidget {
                       Row(
                         children: [
                           _StatTile(
-                            label: 'DRIVER ETA',
+                            label: l10n.etaDriverEtaLabel,
                             value: '${info.etaMinutes}min',
                             isRed: false,
                           ),
                           const SizedBox(width: 8),
                           _StatTile(
-                            label: 'PICKUP IN',
+                            label: l10n.etaPickupInLabel,
                             value: '${info.pickupInMinutes}min',
                             isRed: false,
                           ),
                           const SizedBox(width: 8),
                           _StatTile(
-                            label: 'SLACK',
+                            label: l10n.etaSlackLabel,
                             value: '${info.slackMinutes}min',
                             isRed: true,
                           ),
@@ -206,7 +208,7 @@ class EtaAlertCard extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  child: const Text('Reassign'),
+                                  child: Text(l10n.reassign),
                                 ),
                               ),
                             if (onReassign != null && onView != null)
@@ -232,7 +234,7 @@ class EtaAlertCard extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  child: const Text('View'),
+                                  child: Text(l10n.viewButton),
                                 ),
                               ),
                           ],

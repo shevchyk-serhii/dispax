@@ -1,4 +1,6 @@
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dispax/dashboard/dispatcher/widgets/eta_alert_card.dart';
 import 'package:dispax/constants/lucide_compat.dart';
@@ -7,8 +9,17 @@ import 'package:dispax/constants/app_colors.dart';
 Widget _wrap(Widget child, {Brightness brightness = Brightness.light}) {
   // Use darkTheme + ThemeMode.dark so that Theme.of(context).brightness
   // actually returns Brightness.dark inside the widget tree.
+  const delegates = [
+    AppLocalizations.delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
+  const supportedLocales = [Locale('en')];
   if (brightness == Brightness.dark) {
     return MaterialApp(
+      localizationsDelegates: delegates,
+      supportedLocales: supportedLocales,
+      locale: const Locale('en'),
       theme: ThemeData(useMaterial3: true),
       darkTheme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
       themeMode: ThemeMode.dark,
@@ -18,6 +29,9 @@ Widget _wrap(Widget child, {Brightness brightness = Brightness.light}) {
     );
   }
   return MaterialApp(
+    localizationsDelegates: delegates,
+    supportedLocales: supportedLocales,
+    locale: const Locale('en'),
     theme: ThemeData(brightness: brightness, useMaterial3: true),
     home: Scaffold(
       body: Padding(padding: const EdgeInsets.all(16), child: child),

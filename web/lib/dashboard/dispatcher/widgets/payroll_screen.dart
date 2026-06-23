@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../modules/core/models/person.dart';
 
 class PayrollScreen extends StatefulWidget {
@@ -122,9 +123,10 @@ class _PayrollScreenState extends State<PayrollScreen> {
 
     Clipboard.setData(ClipboardData(text: csv.toString()));
 
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Payroll CSV copied to clipboard'),
+      SnackBar(
+        content: Text(l10n.payrollCsvCopiedMessage),
         backgroundColor: AppColors.success,
       ),
     );
@@ -172,31 +174,40 @@ class _PayrollScreenState extends State<PayrollScreen> {
         ),
         child: SafeArea(
           bottom: false,
-          child: Row(
-            children: [
-              const Icon(
-                Icons.account_balance_wallet,
-                color: Colors.white,
-                size: 24,
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Driver Payroll',
-                  style: TextStyle(
+          child: Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context)!;
+              return Row(
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet,
                     color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    size: 24,
                   ),
-                ),
-              ),
-              if (_payrollData != null)
-                IconButton(
-                  icon: const Icon(Icons.copy, color: Colors.white, size: 22),
-                  onPressed: _copyPayrollCsv,
-                  tooltip: 'Copy CSV',
-                ),
-            ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      l10n.driverPayrollTitle,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (_payrollData != null)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.copy,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      onPressed: _copyPayrollCsv,
+                      tooltip: 'Copy CSV',
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -208,6 +219,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppDimensions.paddingMedium),
       child: Column(
@@ -215,7 +227,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
         children: [
           // Driver picker
           DropdownButtonFormField<String>(
-            decoration: const InputDecoration(labelText: 'Select Driver'),
+            decoration: InputDecoration(labelText: l10n.selectDriver),
             initialValue: _selectedDriverId,
             items: _drivers
                 .map((d) => DropdownMenuItem(value: d.id, child: Text(d.name)))
@@ -231,7 +243,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 child: InkWell(
                   onTap: () => _pickDate(true),
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'From'),
+                    decoration: InputDecoration(labelText: l10n.fromLabel),
                     child: Text(DateFormat('dd.MM.yyyy').format(_fromDate)),
                   ),
                 ),
@@ -241,7 +253,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 child: InkWell(
                   onTap: () => _pickDate(false),
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'To'),
+                    decoration: InputDecoration(labelText: l10n.toLabel),
                     child: Text(DateFormat('dd.MM.yyyy').format(_toDate)),
                   ),
                 ),
@@ -253,9 +265,9 @@ class _PayrollScreenState extends State<PayrollScreen> {
           // Commission slider
           Row(
             children: [
-              const Text(
-                'Commission: ',
-                style: TextStyle(fontWeight: FontWeight.w500),
+              Text(
+                l10n.commissionLabel,
+                style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               Expanded(
                 child: Slider(
@@ -281,7 +293,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
             child: ElevatedButton.icon(
               onPressed: _selectedDriverId != null ? _loadPayroll : null,
               icon: const Icon(Icons.search),
-              label: const Text('Load Payroll'),
+              label: Text(l10n.loadPayrollButton),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.dispatcherColor,
                 foregroundColor: Colors.white,
@@ -307,6 +319,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
   }
 
   Widget _buildPayrollSummary() {
+    final l10n = AppLocalizations.of(context)!;
     final totalRides = _payrollData!['totalRides'] ?? 0;
     final totalEarnings = (_payrollData!['totalEarnings'] ?? 0).toDouble();
     final totalExpenses = (_payrollData!['totalExpenses'] ?? 0).toDouble();
@@ -316,9 +329,9 @@ class _PayrollScreenState extends State<PayrollScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Payroll Summary',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          l10n.payrollSummaryTitle,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         _buildStatRow(

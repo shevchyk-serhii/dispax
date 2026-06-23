@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 
 class AnalyticsPanel extends StatefulWidget {
   const AnalyticsPanel({super.key});
@@ -64,22 +65,27 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
               ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(_error!),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _loadStats,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+                  child: Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context)!;
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(_error!),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _loadStats,
+                            child: Text(l10n.retry),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 )
               : RefreshIndicator(onRefresh: _loadStats, child: _buildContent()),

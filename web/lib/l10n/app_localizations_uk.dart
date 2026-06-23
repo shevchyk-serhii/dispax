@@ -1187,4 +1187,289 @@ class AppLocalizationsUk extends AppLocalizations {
   String failedToUpdate(String error) {
     return 'Не вдалося оновити: $error';
   }
+
+  @override
+  String get homeTab => 'Головна';
+
+  @override
+  String get scheduleTab => 'Розклад';
+
+  @override
+  String get calendarTab => 'Календар';
+
+  @override
+  String get newRideTab => 'Нова поїздка';
+
+  @override
+  String get moreTab => 'Ще';
+
+  @override
+  String get billingTab => 'Виставлення рахунків';
+
+  @override
+  String get moreScreenTitle => 'Ще';
+
+  @override
+  String get dispatchBoardTitle => 'Дошка диспетчера';
+
+  @override
+  String dispatcherSubtitle(String weekday, String date, int count) {
+    return '$weekday, $date · $count активних поїздок';
+  }
+
+  @override
+  String get searchRidesDrivers => 'Пошук поїздок, водіїв…';
+
+  @override
+  String get newRideButtonLabel => 'Нова поїздка';
+
+  @override
+  String get activeRidesLabel => 'Активні поїздки';
+
+  @override
+  String get atRiskLabel => 'Під загрозою';
+
+  @override
+  String get driversOnlineLabel => 'Водіїв онлайн';
+
+  @override
+  String get onTimeLabel => 'Вчасно';
+
+  @override
+  String get earningsMenuItem => 'Заробіток';
+
+  @override
+  String get peakHoursMenuItem => 'Пік годин';
+
+  @override
+  String get clientValueMenuItem => 'Цінність клієнта';
+
+  @override
+  String get driversMenuItem => 'Водії';
+
+  @override
+  String get ratingsMenuItem => 'Рейтинги';
+
+  @override
+  String get auditLogMenuItem => 'Журнал аудиту';
+
+  @override
+  String get adminMenuItem => 'Адміністрування';
+
+  @override
+  String get companyMenuItem => 'Компанія';
+
+  @override
+  String get expensesMenuItem => 'Витрати';
+
+  @override
+  String get exportMenuItem => 'Експорт';
+
+  @override
+  String get templatesMenuItem => 'Шаблони';
+
+  @override
+  String get paymentsMenuItem => 'Платежі';
+
+  @override
+  String get payrollMenuItem => 'Відомість зарплат';
+
+  @override
+  String get settingsMenuItem => 'Налаштування';
+
+  @override
+  String get geofencesMenuItem => 'Геозони';
+
+  @override
+  String get datevMenuItem => 'DATEV';
+
+  @override
+  String get blacklistMenuItem => 'Чорний список';
+
+  @override
+  String get emergencyMenuItem => 'Аварійне';
+
+  @override
+  String get ridePoolsMenuItem => 'Пули поїздок';
+
+  @override
+  String get notificationsMenuItem => 'Сповіщення';
+
+  @override
+  String get gdprMenuItem => 'GDPR';
+
+  @override
+  String get sessionsMenuItem => 'Сесії';
+
+  @override
+  String get schedVisibilityMenuItem => 'Видимість розкладу';
+
+  @override
+  String get analyticsMenuItem => 'Аналітика';
+
+  @override
+  String get driverBoardMenuItem => 'Дошка водіїв';
+
+  @override
+  String get driverMapMenuItem => 'Карта водія';
+
+  @override
+  String assignRideDialogTitle(String rideId) {
+    return 'Призначити поїздку #$rideId';
+  }
+
+  @override
+  String get rideDetailsLabel => 'Деталі поїздки';
+
+  @override
+  String get clientLabel => 'Клієнт';
+
+  @override
+  String get timeLabel => 'Час';
+
+  @override
+  String get fromLabel => 'Від';
+
+  @override
+  String get toLabel => 'До';
+
+  @override
+  String get flightLabel => 'Рейс';
+
+  @override
+  String get fareLabel => 'Тариф';
+
+  @override
+  String get assigningToLabel => 'Призначення для';
+
+  @override
+  String scheduleConflictsCount(int count) {
+    return 'Конфлікти розкладу ($count)';
+  }
+
+  @override
+  String get assignDriverButton => 'Призначити водія';
+
+  @override
+  String reassignRideDialogTitle(String rideId) {
+    return 'Перепризначити поїздку #$rideId';
+  }
+
+  @override
+  String get nearestAvailableDriversLabel =>
+      'НАЙБЛИЖЧІ ДОСТУПНІ ВОДІЇ · СОРТУВАННЯ ЗА ETA';
+
+  @override
+  String get noDriversAvailableForReassignment =>
+      'Немає інших водіїв для перепризначення.';
+
+  @override
+  String reassignNRides(int count) {
+    return 'Перепризначити $count поїздку(-ок)';
+  }
+
+  @override
+  String driverDelayedMessage(String driverName, String slack) {
+    return '$driverName затримується — резерв $slack хв';
+  }
+
+  @override
+  String ridesToReassignLabel(int selected, int total) {
+    return 'Поїздки для перепризначення ($selected/$total)';
+  }
+
+  @override
+  String get deselectAllButton => 'Зняти вибір';
+
+  @override
+  String get selectAllButton => 'Вибрати всі';
+
+  @override
+  String get bestMatchBadge => 'Найкращий збіг';
+
+  @override
+  String get stillLateLabel => 'все одно пізно';
+
+  @override
+  String get slackRestoredLabel => 'резерв відновлено';
+
+  @override
+  String get tightLabel => 'щільно';
+
+  @override
+  String ridesReassignedMessage(int count, String driverName) {
+    return '$count поїздку(-ок) перепризначено водію $driverName';
+  }
+
+  @override
+  String get reassignAnyway => 'Перепризначити все одно';
+
+  @override
+  String get pendingTab => 'Очікування';
+
+  @override
+  String get assignedTab => 'Призначені';
+
+  @override
+  String get sortTooltip => 'Сортування';
+
+  @override
+  String get noAssignedRides => 'Немає призначених поїздок';
+
+  @override
+  String get noRidesCurrentlyAssigned =>
+      'Наразі жодних поїздок не призначено водіям';
+
+  @override
+  String get pendingRequestsHeader => 'Очікувані запити';
+
+  @override
+  String unassignedRidesBadge(int count) {
+    return '$count не призначено';
+  }
+
+  @override
+  String get rideAtRiskTitle => 'Поїздка під загрозою затримки';
+
+  @override
+  String get etaMonitorBadgeLabel => 'ПРОГНОЗНИЙ МОНІТОР ETA · 60С';
+
+  @override
+  String get viewButton => 'Переглянути';
+
+  @override
+  String get etaDriverEtaLabel => 'ETA ВОДІЯ';
+
+  @override
+  String get etaPickupInLabel => 'ЗАБІР ЧЕРЕЗ';
+
+  @override
+  String get etaSlackLabel => 'РЕЗЕРВ';
+
+  @override
+  String get driverEarningsTitle => 'Заробіток водіїв';
+
+  @override
+  String get sortByEarnings => 'Сортувати за заробітком';
+
+  @override
+  String get sortByName => 'Сортувати за іменем';
+
+  @override
+  String get sortByRides => 'Сортувати за поїздками';
+
+  @override
+  String get driverPayrollTitle => 'Відомість зарплати водіїв';
+
+  @override
+  String get payrollSummaryTitle => 'Підсумок зарплати';
+
+  @override
+  String get loadPayrollButton => 'Завантажити відомість';
+
+  @override
+  String get payrollCsvCopiedMessage => 'CSV зарплатної відомості скопійовано';
+
+  @override
+  String get commissionLabel => 'Комісія: ';
 }

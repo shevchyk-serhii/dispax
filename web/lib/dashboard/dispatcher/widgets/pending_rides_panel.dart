@@ -10,6 +10,7 @@ import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../utils/conflict_detector.dart';
 import '../../../widgets/common/notification_bell.dart';
@@ -176,11 +177,12 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     required String driverId,
     String? message,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     showAdaptiveDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-        title: const Text('Driver is busy'),
+        title: Text(l10n.assignAnywayTitle),
         content: Text(
           message ??
               'The selected driver already has a ride at this time. '
@@ -189,7 +191,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
@@ -201,7 +203,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                 overrideScheduleConflict: true,
               ),
             ),
-            child: const Text('Assign anyway'),
+            child: Text(l10n.assignAnyway),
           ),
         ],
       ),
@@ -216,11 +218,12 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     required String driverId,
     String? message,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     showAdaptiveDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-        title: const Text('Driver is busy'),
+        title: Text(l10n.assignAnywayTitle),
         content: Text(
           message ??
               'The selected driver already has a ride at this time. '
@@ -229,7 +232,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
@@ -241,7 +244,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                 overrideScheduleConflict: true,
               ),
             ),
-            child: const Text('Reassign anyway'),
+            child: Text(l10n.reassignAnyway),
           ),
         ],
       ),
@@ -374,12 +377,13 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         final assignedCount = state.rides
             .where((r) => r.status == RideStatus.assigned)
             .length;
+        final l10n = AppLocalizations.of(context)!;
         return Container(
           color: Theme.of(context).colorScheme.surface,
           child: Row(
             children: [
-              Expanded(child: _buildTab(0, 'Pending', pendingCount)),
-              Expanded(child: _buildTab(1, 'Assigned', assignedCount)),
+              Expanded(child: _buildTab(0, l10n.pendingTab, pendingCount)),
+              Expanded(child: _buildTab(1, l10n.assignedTab, assignedCount)),
             ],
           ),
         );
@@ -438,6 +442,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   }
 
   Widget _buildFilterBar() {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -448,7 +453,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             height: 36,
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Search client, address...',
+                hintText: l10n.searchClientAddress,
                 hintStyle: TextStyle(
                   fontSize: 13,
                   color: colorScheme.onSurfaceVariant,
@@ -486,13 +491,13 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                   size: 20,
                   color: colorScheme.onSurfaceVariant,
                 ),
-                tooltip: 'Sort',
+                tooltip: l10n.sortTooltip,
                 onSelected: (mode) => setState(() => _sortMode = mode),
                 itemBuilder: (_) => [
                   PopupMenuItem(
                     value: _SortMode.timeAsc,
                     child: Text(
-                      'Time (earliest first)',
+                      l10n.sortTimeEarliest,
                       style: TextStyle(
                         fontWeight: _sortMode == _SortMode.timeAsc
                             ? FontWeight.bold
@@ -503,7 +508,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                   PopupMenuItem(
                     value: _SortMode.timeDesc,
                     child: Text(
-                      'Time (latest first)',
+                      l10n.sortTimeLatest,
                       style: TextStyle(
                         fontWeight: _sortMode == _SortMode.timeDesc
                             ? FontWeight.bold
@@ -514,7 +519,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                   PopupMenuItem(
                     value: _SortMode.client,
                     child: Text(
-                      'Client name',
+                      l10n.sortClientName,
                       style: TextStyle(
                         fontWeight: _sortMode == _SortMode.client
                             ? FontWeight.bold
@@ -565,6 +570,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   Widget _buildHeader() {
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, state) {
+        final l10n = AppLocalizations.of(context)!;
         final unassignedCount = state.rides
             .where((r) => r.status == RideStatus.requested)
             .length;
@@ -586,7 +592,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                   child: Row(
                     children: [
                       Text(
-                        'Pending requests',
+                        l10n.pendingRequestsHeader,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -610,7 +616,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                             ),
                           ),
                           child: Text(
-                            '$unassignedCount unassigned',
+                            l10n.unassignedRidesBadge(unassignedCount),
                             style: TextStyle(
                               color:
                                   Theme.of(context).brightness ==
@@ -711,6 +717,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   }
 
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
     final isPending = _tabIndex == 0;
     final colorScheme = Theme.of(context).colorScheme;
     return Center(
@@ -720,7 +727,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           Icon(Icons.check_circle_outline, size: 56, color: AppColors.success),
           const SizedBox(height: 12),
           Text(
-            isPending ? 'No pending rides' : 'No assigned rides',
+            isPending ? l10n.noPendingRides : l10n.noAssignedRides,
             style: TextStyle(
               fontSize: 16,
               color: colorScheme.onSurfaceVariant,
@@ -729,9 +736,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           ),
           const SizedBox(height: 6),
           Text(
-            isPending
-                ? 'All rides have been assigned'
-                : 'No rides currently assigned to drivers',
+            isPending ? l10n.allRidesAssigned : l10n.noRidesCurrentlyAssigned,
             style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
           ),
         ],

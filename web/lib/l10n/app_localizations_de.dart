@@ -1193,4 +1193,289 @@ class AppLocalizationsDe extends AppLocalizations {
   String failedToUpdate(String error) {
     return 'Aktualisierung fehlgeschlagen: $error';
   }
+
+  @override
+  String get homeTab => 'Startseite';
+
+  @override
+  String get scheduleTab => 'Zeitplan';
+
+  @override
+  String get calendarTab => 'Kalender';
+
+  @override
+  String get newRideTab => 'Neue Fahrt';
+
+  @override
+  String get moreTab => 'Mehr';
+
+  @override
+  String get billingTab => 'Abrechnung';
+
+  @override
+  String get moreScreenTitle => 'Mehr';
+
+  @override
+  String get dispatchBoardTitle => 'Dispositionsbrett';
+
+  @override
+  String dispatcherSubtitle(String weekday, String date, int count) {
+    return '$weekday, $date · $count aktive Fahrten';
+  }
+
+  @override
+  String get searchRidesDrivers => 'Fahrten, Fahrer suchen…';
+
+  @override
+  String get newRideButtonLabel => 'Neue Fahrt';
+
+  @override
+  String get activeRidesLabel => 'Aktive Fahrten';
+
+  @override
+  String get atRiskLabel => 'Gefährdet';
+
+  @override
+  String get driversOnlineLabel => 'Fahrer online';
+
+  @override
+  String get onTimeLabel => 'Pünktlich';
+
+  @override
+  String get earningsMenuItem => 'Einnahmen';
+
+  @override
+  String get peakHoursMenuItem => 'Stoßzeiten';
+
+  @override
+  String get clientValueMenuItem => 'Kundenwert';
+
+  @override
+  String get driversMenuItem => 'Fahrer';
+
+  @override
+  String get ratingsMenuItem => 'Bewertungen';
+
+  @override
+  String get auditLogMenuItem => 'Prüfprotokoll';
+
+  @override
+  String get adminMenuItem => 'Administration';
+
+  @override
+  String get companyMenuItem => 'Unternehmen';
+
+  @override
+  String get expensesMenuItem => 'Ausgaben';
+
+  @override
+  String get exportMenuItem => 'Export';
+
+  @override
+  String get templatesMenuItem => 'Vorlagen';
+
+  @override
+  String get paymentsMenuItem => 'Zahlungen';
+
+  @override
+  String get payrollMenuItem => 'Lohnabrechnung';
+
+  @override
+  String get settingsMenuItem => 'Einstellungen';
+
+  @override
+  String get geofencesMenuItem => 'Geofences';
+
+  @override
+  String get datevMenuItem => 'DATEV';
+
+  @override
+  String get blacklistMenuItem => 'Sperrliste';
+
+  @override
+  String get emergencyMenuItem => 'Notfall';
+
+  @override
+  String get ridePoolsMenuItem => 'Fahrgemeinschaften';
+
+  @override
+  String get notificationsMenuItem => 'Benachrichtigungen';
+
+  @override
+  String get gdprMenuItem => 'Datenschutz';
+
+  @override
+  String get sessionsMenuItem => 'Sitzungen';
+
+  @override
+  String get schedVisibilityMenuItem => 'Terminplan-Sichtbarkeit';
+
+  @override
+  String get analyticsMenuItem => 'Analysen';
+
+  @override
+  String get driverBoardMenuItem => 'Fahrerbrett';
+
+  @override
+  String get driverMapMenuItem => 'Fahrerkarte';
+
+  @override
+  String assignRideDialogTitle(String rideId) {
+    return 'Fahrt #$rideId zuweisen';
+  }
+
+  @override
+  String get rideDetailsLabel => 'Fahrtdetails';
+
+  @override
+  String get clientLabel => 'Kunde';
+
+  @override
+  String get timeLabel => 'Uhrzeit';
+
+  @override
+  String get fromLabel => 'Von';
+
+  @override
+  String get toLabel => 'Nach';
+
+  @override
+  String get flightLabel => 'Flug';
+
+  @override
+  String get fareLabel => 'Fahrpreis';
+
+  @override
+  String get assigningToLabel => 'Zuweisen an';
+
+  @override
+  String scheduleConflictsCount(int count) {
+    return 'Terminüberschneidungen ($count)';
+  }
+
+  @override
+  String get assignDriverButton => 'Fahrer zuweisen';
+
+  @override
+  String reassignRideDialogTitle(String rideId) {
+    return 'Fahrt #$rideId neu zuweisen';
+  }
+
+  @override
+  String get nearestAvailableDriversLabel =>
+      'NÄCHSTE VERFÜGBARE FAHRER · NACH ETA SORTIERT';
+
+  @override
+  String get noDriversAvailableForReassignment =>
+      'Keine anderen Fahrer für die Neuzuweisung verfügbar.';
+
+  @override
+  String reassignNRides(int count) {
+    return '$count Fahrt(en) neu zuweisen';
+  }
+
+  @override
+  String driverDelayedMessage(String driverName, String slack) {
+    return '$driverName hat Verspätung — Puffer $slack min';
+  }
+
+  @override
+  String ridesToReassignLabel(int selected, int total) {
+    return 'Fahrten zur Neuzuweisung ($selected/$total)';
+  }
+
+  @override
+  String get deselectAllButton => 'Alle abwählen';
+
+  @override
+  String get selectAllButton => 'Alle auswählen';
+
+  @override
+  String get bestMatchBadge => 'Beste Übereinstimmung';
+
+  @override
+  String get stillLateLabel => 'noch zu spät';
+
+  @override
+  String get slackRestoredLabel => 'Puffer wiederhergestellt';
+
+  @override
+  String get tightLabel => 'knapp';
+
+  @override
+  String ridesReassignedMessage(int count, String driverName) {
+    return '$count Fahrt(en) wurden $driverName neu zugewiesen';
+  }
+
+  @override
+  String get reassignAnyway => 'Trotzdem neu zuweisen';
+
+  @override
+  String get pendingTab => 'Ausstehend';
+
+  @override
+  String get assignedTab => 'Zugewiesen';
+
+  @override
+  String get sortTooltip => 'Sortieren';
+
+  @override
+  String get noAssignedRides => 'Keine zugewiesenen Fahrten';
+
+  @override
+  String get noRidesCurrentlyAssigned =>
+      'Derzeit keine Fahrten den Fahrern zugewiesen';
+
+  @override
+  String get pendingRequestsHeader => 'Ausstehende Anfragen';
+
+  @override
+  String unassignedRidesBadge(int count) {
+    return '$count nicht zugewiesen';
+  }
+
+  @override
+  String get rideAtRiskTitle => 'Fahrt mit Verspätungsrisiko';
+
+  @override
+  String get etaMonitorBadgeLabel => 'PRÄDIKTIVE ETA-ÜBERWACHUNG · 60S';
+
+  @override
+  String get viewButton => 'Anzeigen';
+
+  @override
+  String get etaDriverEtaLabel => 'FAHRER ETA';
+
+  @override
+  String get etaPickupInLabel => 'ABHOLUNG IN';
+
+  @override
+  String get etaSlackLabel => 'PUFFER';
+
+  @override
+  String get driverEarningsTitle => 'Fahrereinnahmen';
+
+  @override
+  String get sortByEarnings => 'Nach Einnahmen sortieren';
+
+  @override
+  String get sortByName => 'Nach Name sortieren';
+
+  @override
+  String get sortByRides => 'Nach Fahrten sortieren';
+
+  @override
+  String get driverPayrollTitle => 'Fahrerlohnabrechnung';
+
+  @override
+  String get payrollSummaryTitle => 'Gehaltsübersicht';
+
+  @override
+  String get loadPayrollButton => 'Lohnabrechnung laden';
+
+  @override
+  String get payrollCsvCopiedMessage => 'Gehalts-CSV in Zwischenablage kopiert';
+
+  @override
+  String get commissionLabel => 'Provision: ';
 }
