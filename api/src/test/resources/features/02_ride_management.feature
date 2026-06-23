@@ -50,3 +50,22 @@ Feature: Ride Management
       {"status":"InProgress"}
       """
     Then the response status should be 200
+
+  # A driver may opt in to "Assign to me" while creating a ride. The ride is
+  # always created into the pool first; the self-assign is best-effort. When it
+  # conflicts with an existing ride (30-min buffer), the create still succeeds
+  # (201) and the ride stays in the pool unassigned (status Requested) instead
+  # of the whole request failing with 409 — the ride must never be lost.
+  Scenario: Self-assign on create stays in the pool when it conflicts
+    Given I am authenticated as a dispatcher
+    And I send a POST request to "/api/rides" with body:
+      """
+      {"clientId":"11111111-1111-1111-1111-111111111111","creatorId":"33333333-3333-3333-3333-333333333333","clientName":"Test User","from":{"address":"Hauptbahnhof München"},"to":{"address":"Flughafen München"},"pickupDateTime":"2026-12-12T09:00:00Z","driverId":"10101010-1010-1010-1010-101010101010"}
+      """
+    And the response status should be 201
+    When I send a POST request to "/api/rides" with body:
+      """
+      {"clientId":"11111111-1111-1111-1111-111111111111","creatorId":"33333333-3333-3333-3333-333333333333","clientName":"Test User","from":{"address":"Hauptbahnhof München"},"to":{"address":"Flughafen München"},"pickupDateTime":"2026-12-12T09:10:00Z","driverId":"10101010-1010-1010-1010-101010101010"}
+      """
+    Then the response status should be 201
+    And the response should contain "Requested"

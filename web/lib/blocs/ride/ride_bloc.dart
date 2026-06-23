@@ -79,7 +79,27 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     try {
       final createdRide = await privateRideService.createRide(event.request);
       final updatedRides = List<Ride>.from(state.rides)..add(createdRide);
-      emit(RideState(status: RideStateStatus.created, rides: updatedRides));
+
+      // A driver may opt in to "Assign to me" while creating the ride. The
+      // backend creates the ride into the pool first and only then tries to
+      // self-assign; if that hits a schedule conflict it swallows the error and
+      // returns the ride still unassigned (the ride is never lost). Detect that
+      // case — self-assign was requested (driverId in the request) but the
+      // created ride came back without a driver — and surface assignConflict so
+      // the UI can offer "assign anyway" via the existing override path.
+      final requestedDriverId = event.request.driverId;
+      if (requestedDriverId != null && createdRide.driverId == null) {
+        emit(
+          RideState(
+            status: RideStateStatus.assignConflict,
+            rides: updatedRides,
+            conflictRideId: createdRide.id,
+            conflictDriverId: requestedDriverId,
+          ),
+        );
+      } else {
+        emit(RideState(status: RideStateStatus.created, rides: updatedRides));
+      }
     } catch (e) {
       emit(
         state.copyWith(
