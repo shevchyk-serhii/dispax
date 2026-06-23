@@ -115,8 +115,10 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   Widget build(BuildContext context) {
     return BlocListener<RideBloc, RideState>(
       listenWhen: (prev, curr) =>
-          curr.status == RideStateStatus.reassignConflict &&
-          prev.status != RideStateStatus.reassignConflict,
+          (curr.status == RideStateStatus.reassignConflict &&
+              prev.status != RideStateStatus.reassignConflict) ||
+          (curr.status == RideStateStatus.assignConflict &&
+              prev.status != RideStateStatus.assignConflict),
       listener: (context, state) {
         if (state.hasReassignConflict) {
           _showReassignConflictDialog(
@@ -125,9 +127,59 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             driverId: state.conflictDriverId!,
             message: state.errorMessage,
           );
+        } else if (state.hasAssignConflict) {
+          _showAssignConflictDialog(
+            context,
+            rideId: state.conflictRideId!,
+            driverId: state.conflictDriverId!,
+            message: state.errorMessage,
+          );
         }
       },
       child: _buildBody(),
+    );
+  }
+
+  /// Shown when the backend rejects a primary assignment with a schedule
+  /// conflict the client didn't detect locally. Lets the dispatcher assign
+  /// anyway.
+  void _showAssignConflictDialog(
+    BuildContext context, {
+    required String rideId,
+    required String driverId,
+    String? message,
+  }) {
+    showAdaptiveDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+        title: const Text('Driver is busy'),
+        content: Text(
+          message ??
+              'The selected driver already has a ride at this time. '
+                  'Assign anyway?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
+            onPressed: () {
+              Navigator.of(dialogCtx).pop();
+              context.read<RideBloc>().add(
+                RideAssignRequested(
+                  rideId: rideId,
+                  driverId: driverId,
+                  overrideScheduleConflict: true,
+                ),
+              );
+            },
+            child: const Text('Assign anyway'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -619,8 +671,16 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                     ),
                   );
                 } else {
+                  // Same as the reassign branch: if the dispatcher already saw
+                  // locally-detected conflicts and confirmed ("Assign anyway"),
+                  // tell the backend to override so it doesn't reject the
+                  // assignment with a 409.
                   context.read<RideBloc>().add(
-                    RideAssignRequested(rideId: ride.id, driverId: driverId),
+                    RideAssignRequested(
+                      rideId: ride.id,
+                      driverId: driverId,
+                      overrideScheduleConflict: conflicts.isNotEmpty,
+                    ),
                   );
                 }
               },
