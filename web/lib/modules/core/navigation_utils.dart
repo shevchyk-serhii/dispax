@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'models/location.dart';
 import 'models/person.dart';
 import '../ride_management/models/ride.dart';
@@ -137,11 +138,10 @@ class NavigationUtils {
   static Future<Person?> navigateToDriverSelection(BuildContext context) async {
     // Driver selection is now handled by the dispatcher dashboard's
     // tap-to-assign flow (pending_rides_panel.dart _showDriverSelectionSheet)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Use the Dispatcher Dashboard to assign drivers'),
-      ),
-    );
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.useDispatcherDashboardInfo)));
     return null;
   }
 
@@ -195,6 +195,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
       _error = null;
     });
 
+    final l10n = AppLocalizations.of(context)!;
     final apiClient = context.read<AuthBloc>().apiClient;
     // Parse local time and convert to UTC ISO-8601 for the backend
     DateTime localDt;
@@ -204,7 +205,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
       ).parseStrict(_dateCtrl.text.trim());
     } catch (_) {
       setState(() {
-        _error = 'Invalid date format. Use: yyyy-MM-ddTHH:mm';
+        _error = l10n.invalidDateFormatError;
         _saving = false;
       });
       return;
@@ -227,7 +228,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
         if (mounted) Navigator.of(context).pop(updated);
       } else {
         setState(() {
-          _error = 'Server error: ${response.statusCode}';
+          _error = l10n.serverErrorMessage(response.statusCode.toString());
           _saving = false;
         });
       }
@@ -241,8 +242,9 @@ class _EditRideDialogState extends State<_EditRideDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Edit Ride'),
+      title: Text(l10n.editRideDialogTitle),
       content: SizedBox(
         width: 400,
         child: SingleChildScrollView(
@@ -251,41 +253,41 @@ class _EditRideDialogState extends State<_EditRideDialog> {
             children: [
               TextField(
                 controller: _fromCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'From',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.fromLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _toCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'To',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.toLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _dateCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Pickup date/time (yyyy-MM-ddTHH:mm)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.pickupDateTimeLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _flightCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Flight number (optional)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.flightNumberOptionalLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _notesCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.notesOptionalLabel,
+                  border: const OutlineInputBorder(),
                 ),
                 maxLines: 3,
               ),
@@ -303,7 +305,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed: _saving ? null : _save,
@@ -313,7 +315,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Save'),
+              : Text(l10n.save),
         ),
       ],
     );

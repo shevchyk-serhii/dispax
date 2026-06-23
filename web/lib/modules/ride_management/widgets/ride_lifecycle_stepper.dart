@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../models/ride.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_styles.dart';
@@ -60,6 +61,7 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final brightness = Theme.of(context).brightness;
     final isCancelled = widget.ride.status == RideStatus.cancelled;
 
@@ -70,22 +72,25 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Ride Status',
+            l10n.rideStatusLabel,
             style: AppStyles.titleMedium.copyWith(
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppDimensions.paddingMedium),
           if (isCancelled)
-            _buildCancelledIndicator(brightness)
+            _buildCancelledIndicator(l10n, brightness)
           else
-            ..._buildStepList(brightness),
+            ..._buildStepList(l10n, brightness),
         ],
       ),
     );
   }
 
-  Widget _buildCancelledIndicator(Brightness brightness) {
+  Widget _buildCancelledIndicator(
+    AppLocalizations l10n,
+    Brightness brightness,
+  ) {
     return Row(
       children: [
         Container(
@@ -102,26 +107,26 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Cancelled',
+              l10n.cancelled,
               style: AppStyles.labelLarge.copyWith(
                 color: AppColors.rideCancelled,
               ),
             ),
-            Text('This ride has been cancelled', style: AppStyles.bodySmall),
+            Text(l10n.rideHasBeenCancelledLabel, style: AppStyles.bodySmall),
           ],
         ),
       ],
     );
   }
 
-  List<Widget> _buildStepList(Brightness brightness) {
+  List<Widget> _buildStepList(AppLocalizations l10n, Brightness brightness) {
     final widgets = <Widget>[];
     for (int i = 0; i < _steps.length; i++) {
       final status = _steps[i];
       final isCurrent = i == _currentStepIndex;
       final isCompleted = i < _currentStepIndex;
 
-      widgets.add(_buildStep(status, isCurrent, isCompleted, brightness));
+      widgets.add(_buildStep(l10n, status, isCurrent, isCompleted, brightness));
 
       if (i < _steps.length - 1) {
         widgets.add(_buildConnector(isCompleted));
@@ -131,6 +136,7 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
   }
 
   Widget _buildStep(
+    AppLocalizations l10n,
     RideStatus status,
     bool isCurrent,
     bool isCompleted,
@@ -141,7 +147,7 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
       children: [
         _buildStepDot(status, isCurrent, isCompleted, brightness),
         const SizedBox(width: 12),
-        Expanded(child: _buildStepLabel(status, isCurrent, isCompleted)),
+        Expanded(child: _buildStepLabel(l10n, status, isCurrent, isCompleted)),
       ],
     );
   }
@@ -197,7 +203,12 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
     );
   }
 
-  Widget _buildStepLabel(RideStatus status, bool isCurrent, bool isCompleted) {
+  Widget _buildStepLabel(
+    AppLocalizations l10n,
+    RideStatus status,
+    bool isCurrent,
+    bool isCompleted,
+  ) {
     final labelColor = isCurrent
         ? RideStatusStyles.getStatusColor(status)
         : isCompleted
@@ -215,7 +226,7 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
           ),
         ),
         if (isCurrent)
-          Text(_getStatusSubLabel(status), style: AppStyles.bodySmall),
+          Text(_getStatusSubLabel(status, l10n), style: AppStyles.bodySmall),
       ],
     );
   }
@@ -229,26 +240,28 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
     );
   }
 
-  String _getStatusSubLabel(RideStatus status) {
+  String _getStatusSubLabel(RideStatus status, AppLocalizations l10n) {
     switch (status) {
       case RideStatus.requested:
         return widget.isClientView
-            ? 'Waiting for driver assignment'
-            : 'Awaiting assignment';
+            ? l10n.rideStatusRequestedClientLabel
+            : l10n.rideStatusRequestedStaffLabel;
       case RideStatus.assigned:
         return widget.isClientView
             ? (widget.ride.driverEnRoute
-                  ? 'Driver is on the way'
-                  : 'Driver assigned')
-            : 'You are assigned to this ride';
+                  ? l10n.rideStatusAssignedEnRouteLabel
+                  : l10n.rideStatusAssignedLabel)
+            : l10n.rideStatusAssignedDriverLabel;
       case RideStatus.inProgress:
-        return widget.isClientView ? 'Ride in progress' : 'Drive safely';
+        return widget.isClientView
+            ? l10n.rideStatusInProgressClientLabel
+            : l10n.rideStatusInProgressDriverLabel;
       case RideStatus.completed:
-        return 'Completed successfully';
+        return l10n.rideStatusCompletedLabel;
       case RideStatus.cancelled:
-        return 'Ride cancelled';
+        return l10n.rideStatusCancelledLabel;
       case RideStatus.handedOff:
-        return 'Handed off to partner';
+        return l10n.rideStatusHandedOffLabel;
     }
   }
 }

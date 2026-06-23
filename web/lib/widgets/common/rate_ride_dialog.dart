@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../constants/app_colors.dart';
 
 class RateRideDialog extends StatefulWidget {
@@ -22,13 +23,14 @@ class _RateRideDialogState extends State<RateRideDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Rate Your Ride'),
+      title: Text(l10n.rateThisRide),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('How was your experience?'),
+            Text(l10n.rateRideExperienceQuestion),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -50,10 +52,10 @@ class _RateRideDialogState extends State<RateRideDialog> {
             TextField(
               controller: _commentController,
               maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Comment (optional)',
-                hintText: 'Tell us about your experience...',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.rateRideCommentLabel,
+                hintText: l10n.rateRideCommentHint,
+                border: const OutlineInputBorder(),
               ),
             ),
           ],
@@ -62,7 +64,7 @@ class _RateRideDialogState extends State<RateRideDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(null),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed: _rating == 0
@@ -79,7 +81,7 @@ class _RateRideDialogState extends State<RateRideDialog> {
             backgroundColor: AppColors.success,
             foregroundColor: Colors.white,
           ),
-          child: const Text('Submit'),
+          child: Text(l10n.confirm),
         ),
       ],
     );

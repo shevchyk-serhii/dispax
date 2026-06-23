@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 
@@ -22,20 +23,26 @@ class DeleteConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Confirmation'),
-      content: Text('Delete ride ${ride.from} → ${ride.to}?'),
+      title: Text(l10n.deleteConfirmationTitle),
+      content: Text(
+        l10n.deleteRideConfirmMessage(ride.from.address, ride.to.address),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         TextButton(
           onPressed: () {
             Navigator.of(context).pop();
             onConfirm();
           },
-          child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+          child: Text(
+            l10n.delete,
+            style: const TextStyle(color: AppColors.error),
+          ),
         ),
       ],
     );

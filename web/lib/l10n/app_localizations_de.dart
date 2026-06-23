@@ -1774,4 +1774,293 @@ class AppLocalizationsDe extends AppLocalizations {
   String failedToSubmitRating(String error) {
     return 'Bewertung konnte nicht übermittelt werden: $error';
   }
+
+  @override
+  String rideCardTimeLabel(String time) {
+    return 'Zeit: $time';
+  }
+
+  @override
+  String get deleteConfirmationTitle => 'Bestätigung';
+
+  @override
+  String deleteRideConfirmMessage(String from, String to) {
+    return 'Fahrt $from → $to löschen?';
+  }
+
+  @override
+  String get cancelRideDialogTitle => 'Fahrt stornieren';
+
+  @override
+  String get selectCancellationReason =>
+      'Bitte wählen Sie einen Stornierungsgrund:';
+
+  @override
+  String get cancellationReasonLabel => 'Grund';
+
+  @override
+  String get cancellationReasonClientRequest => 'Kundenwunsch';
+
+  @override
+  String get cancellationReasonWeather => 'Wetter';
+
+  @override
+  String get cancellationReasonOther => 'Sonstiges';
+
+  @override
+  String get cancellationReasonClientNoShow => 'Kunde nicht erschienen';
+
+  @override
+  String get cancellationReasonDriverUnavailable => 'Fahrer nicht verfügbar';
+
+  @override
+  String get cancellationReasonVehicleIssue => 'Fahrzeugproblem';
+
+  @override
+  String get cancellationFeeLabel => 'Stornogebühr (optional)';
+
+  @override
+  String get rateRideExperienceQuestion => 'Wie war Ihre Erfahrung?';
+
+  @override
+  String get rateRideCommentLabel => 'Kommentar (optional)';
+
+  @override
+  String get rateRideCommentHint => 'Erzählen Sie uns von Ihrer Erfahrung...';
+
+  @override
+  String get airportTransferLabel => 'Flughafentransfer';
+
+  @override
+  String get airportTransferHint =>
+      'Aktivieren, wenn es sich um eine Flughafenabholung/-abgabe handelt';
+
+  @override
+  String get airportDepartureLabel => 'Abflug';
+
+  @override
+  String get airportDepartureHint => 'Zum Flughafen';
+
+  @override
+  String get airportArrivalLabel => 'Ankunft';
+
+  @override
+  String get airportArrivalHint => 'Vom Flughafen';
+
+  @override
+  String get flightNumberLabel => 'Flugnummer';
+
+  @override
+  String get flightNumberHint => 'z.B. LH123, BA456';
+
+  @override
+  String get flightNumberRequired =>
+      'Flugnummer ist für Flughafentransfers erforderlich';
+
+  @override
+  String get gateLabel => 'Gate';
+
+  @override
+  String get terminalLabel => 'Terminal';
+
+  @override
+  String get creatingRideLabel => 'Fahrt wird erstellt...';
+
+  @override
+  String get createRideButton => 'Fahrt erstellen';
+
+  @override
+  String get clearFormButton => 'Formular leeren';
+
+  @override
+  String get vehicleInformationLabel => 'Fahrzeuginformationen';
+
+  @override
+  String get messageButton => 'Nachricht';
+
+  @override
+  String get routeInformationLabel => 'Routeninformationen';
+
+  @override
+  String get pickupTimeLabel => 'Abholzeit';
+
+  @override
+  String get distanceLabel => 'Entfernung';
+
+  @override
+  String get durationLabel => 'Dauer';
+
+  @override
+  String get etaToClientLabel => 'ETA zum Kunden';
+
+  @override
+  String get openInGoogleMapsButton => 'In Google Maps öffnen';
+
+  @override
+  String get rideStatusLabel => 'Fahrtsstatus';
+
+  @override
+  String get rideHasBeenCancelledLabel => 'Diese Fahrt wurde storniert';
+
+  @override
+  String get rideStatusRequestedClientLabel => 'Warte auf Fahrerzuweisung';
+
+  @override
+  String get rideStatusRequestedStaffLabel => 'Warte auf Zuweisung';
+
+  @override
+  String get rideStatusAssignedEnRouteLabel => 'Fahrer ist unterwegs';
+
+  @override
+  String get rideStatusAssignedLabel => 'Fahrer zugewiesen';
+
+  @override
+  String get rideStatusAssignedDriverLabel =>
+      'Sie sind dieser Fahrt zugewiesen';
+
+  @override
+  String get rideStatusInProgressClientLabel => 'Fahrt in Gange';
+
+  @override
+  String get rideStatusInProgressDriverLabel => 'Gute Fahrt';
+
+  @override
+  String get rideStatusCompletedLabel => 'Erfolgreich abgeschlossen';
+
+  @override
+  String get rideStatusCancelledLabel => 'Fahrt storniert';
+
+  @override
+  String get rideStatusHandedOffLabel => 'An Partner übergeben';
+
+  @override
+  String get authenticationRequiredError => 'Authentifizierung erforderlich';
+
+  @override
+  String get selectOrCreateClientError =>
+      'Bitte wählen oder erstellen Sie einen Kunden';
+
+  @override
+  String get enterClientNameError => 'Bitte geben Sie den Kundennamen ein';
+
+  @override
+  String get editRideDialogTitle => 'Fahrt bearbeiten';
+
+  @override
+  String get pickupDateTimeLabel => 'Abholdatum/-uhrzeit (yyyy-MM-ddTHH:mm)';
+
+  @override
+  String get flightNumberOptionalLabel => 'Flugnummer (optional)';
+
+  @override
+  String get notesOptionalLabel => 'Notizen (optional)';
+
+  @override
+  String get invalidDateFormatError =>
+      'Ungültiges Datumsformat. Verwenden Sie: yyyy-MM-ddTHH:mm';
+
+  @override
+  String serverErrorMessage(String statusCode) {
+    return 'Serverfehler: $statusCode';
+  }
+
+  @override
+  String get useDispatcherDashboardInfo =>
+      'Verwenden Sie das Dispatcher-Dashboard, um Fahrer zuzuweisen';
+
+  @override
+  String get updateLocationTitle => 'Standort aktualisieren';
+
+  @override
+  String get tellDriverWhereYouAreLabel =>
+      'Sagen Sie dem Fahrer, wo Sie sich befinden:';
+
+  @override
+  String get quickSelectLabel => 'Schnellauswahl:';
+
+  @override
+  String get locationQuickMainEntrance => 'Am Haupteingang';
+
+  @override
+  String get locationQuickBaggageClaim => 'Am Gepäckband';
+
+  @override
+  String get locationQuickCafe => 'Am Café';
+
+  @override
+  String get locationQuickParking => 'Am Parkplatz';
+
+  @override
+  String get locationQuickInformationDesk => 'Am Informationsschalter';
+
+  @override
+  String get locationQuickSecondFloor => 'Im zweiten Stockwerk';
+
+  @override
+  String get locationQuickExit1 => 'Am Ausgang Nr. 1';
+
+  @override
+  String get locationQuickExit2 => 'Am Ausgang Nr. 2';
+
+  @override
+  String get locationQuickOther => 'Anderer Standort';
+
+  @override
+  String get orSpecifyExactlyLabel => 'Oder genau angeben:';
+
+  @override
+  String get locationExampleHint => 'Beispiel: „Am Terminal-A-Eingang“';
+
+  @override
+  String get additionalInstructionsLabel =>
+      'Zusätzliche Anweisungen (optional):';
+
+  @override
+  String get additionalInstructionsExampleHint => 'Beispiel: „Stehe beim Café“';
+
+  @override
+  String get specifyLocationError => 'Bitte geben Sie Ihren Standort an';
+
+  @override
+  String get failedToUpdateLocationError =>
+      'Standort konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get callClientTooltip => 'Kunden anrufen';
+
+  @override
+  String get navigateTooltip => 'Navigieren';
+
+  @override
+  String get delayByHowLongTitle => 'Wie lange verzögern?';
+
+  @override
+  String minutesLabel(int minutes) {
+    return '$minutes Minuten';
+  }
+
+  @override
+  String get appSubtitle => 'Intelligente Mobilitätslösungen';
+
+  @override
+  String get orLabel => 'oder';
+
+  @override
+  String get touchIdLabel => 'Touch ID';
+
+  @override
+  String get biometricsLabel => 'Biometrie';
+
+  @override
+  String get biometricSetupTitle => 'Biometrische Einrichtung';
+
+  @override
+  String get biometricSetupMessage =>
+      'Möchten Sie die schnelle Anmeldung per Biometrie aktivieren?\n\nDamit können Sie sich per Face ID, Touch ID oder Fingerabdruck anmelden.';
+
+  @override
+  String get laterButton => 'Später';
+
+  @override
+  String get enableButton => 'Aktivieren';
 }

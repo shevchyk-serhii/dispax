@@ -1768,4 +1768,293 @@ class AppLocalizationsUk extends AppLocalizations {
   String failedToSubmitRating(String error) {
     return 'Не вдалося надіслати оцінку: $error';
   }
+
+  @override
+  String rideCardTimeLabel(String time) {
+    return 'Час: $time';
+  }
+
+  @override
+  String get deleteConfirmationTitle => 'Підтвердження';
+
+  @override
+  String deleteRideConfirmMessage(String from, String to) {
+    return 'Видалити поїздку $from → $to?';
+  }
+
+  @override
+  String get cancelRideDialogTitle => 'Скасувати поїздку';
+
+  @override
+  String get selectCancellationReason =>
+      'Будь ласка, виберіть причину скасування:';
+
+  @override
+  String get cancellationReasonLabel => 'Причина';
+
+  @override
+  String get cancellationReasonClientRequest => 'За проханням клієнта';
+
+  @override
+  String get cancellationReasonWeather => 'Погодні умови';
+
+  @override
+  String get cancellationReasonOther => 'Інше';
+
+  @override
+  String get cancellationReasonClientNoShow => 'Клієнт не з\'явився';
+
+  @override
+  String get cancellationReasonDriverUnavailable => 'Водій недоступний';
+
+  @override
+  String get cancellationReasonVehicleIssue => 'Проблема з автомобілем';
+
+  @override
+  String get cancellationFeeLabel => 'Штраф за скасування (необов\'язково)';
+
+  @override
+  String get rateRideExperienceQuestion => 'Як пройшла ваша поїздка?';
+
+  @override
+  String get rateRideCommentLabel => 'Коментар (необов\'язково)';
+
+  @override
+  String get rateRideCommentHint => 'Розкажіть про свій досвід...';
+
+  @override
+  String get airportTransferLabel => 'Трансфер до аеропорту';
+
+  @override
+  String get airportTransferHint => 'Увімкніть, якщо це поїздка до/з аеропорту';
+
+  @override
+  String get airportDepartureLabel => 'Відправлення';
+
+  @override
+  String get airportDepartureHint => 'До аеропорту';
+
+  @override
+  String get airportArrivalLabel => 'Прибуття';
+
+  @override
+  String get airportArrivalHint => 'З аеропорту';
+
+  @override
+  String get flightNumberLabel => 'Номер рейсу';
+
+  @override
+  String get flightNumberHint => 'напр. LH123, BA456';
+
+  @override
+  String get flightNumberRequired =>
+      'Номер рейсу обов\'язковий для трансферів до аеропорту';
+
+  @override
+  String get gateLabel => 'Гейт';
+
+  @override
+  String get terminalLabel => 'Термінал';
+
+  @override
+  String get creatingRideLabel => 'Створення поїздки...';
+
+  @override
+  String get createRideButton => 'Створити поїздку';
+
+  @override
+  String get clearFormButton => 'Очистити форму';
+
+  @override
+  String get vehicleInformationLabel => 'Інформація про транспортний засіб';
+
+  @override
+  String get messageButton => 'Повідомлення';
+
+  @override
+  String get routeInformationLabel => 'Інформація про маршрут';
+
+  @override
+  String get pickupTimeLabel => 'Час подачі';
+
+  @override
+  String get distanceLabel => 'Відстань';
+
+  @override
+  String get durationLabel => 'Тривалість';
+
+  @override
+  String get etaToClientLabel => 'Очікуваний час до клієнта';
+
+  @override
+  String get openInGoogleMapsButton => 'Відкрити в Google Maps';
+
+  @override
+  String get rideStatusLabel => 'Статус поїздки';
+
+  @override
+  String get rideHasBeenCancelledLabel => 'Цю поїздку скасовано';
+
+  @override
+  String get rideStatusRequestedClientLabel => 'Очікування призначення водія';
+
+  @override
+  String get rideStatusRequestedStaffLabel => 'Очікує призначення';
+
+  @override
+  String get rideStatusAssignedEnRouteLabel => 'Водій у дорозі';
+
+  @override
+  String get rideStatusAssignedLabel => 'Водія призначено';
+
+  @override
+  String get rideStatusAssignedDriverLabel => 'Вас призначено на цю поїздку';
+
+  @override
+  String get rideStatusInProgressClientLabel => 'Поїздка триває';
+
+  @override
+  String get rideStatusInProgressDriverLabel => 'Щасливої дороги';
+
+  @override
+  String get rideStatusCompletedLabel => 'Успішно завершено';
+
+  @override
+  String get rideStatusCancelledLabel => 'Поїздку скасовано';
+
+  @override
+  String get rideStatusHandedOffLabel => 'Передано партнеру';
+
+  @override
+  String get authenticationRequiredError => 'Необхідна автентифікація';
+
+  @override
+  String get selectOrCreateClientError =>
+      'Будь ласка, виберіть або створіть клієнта';
+
+  @override
+  String get enterClientNameError => 'Будь ласка, введіть ім\'я клієнта';
+
+  @override
+  String get editRideDialogTitle => 'Редагувати поїздку';
+
+  @override
+  String get pickupDateTimeLabel => 'Дата/час подачі (yyyy-MM-ddTHH:mm)';
+
+  @override
+  String get flightNumberOptionalLabel => 'Номер рейсу (необов\'язково)';
+
+  @override
+  String get notesOptionalLabel => 'Примітки (необов\'язково)';
+
+  @override
+  String get invalidDateFormatError =>
+      'Неправильний формат дати. Використовуйте: yyyy-MM-ddTHH:mm';
+
+  @override
+  String serverErrorMessage(String statusCode) {
+    return 'Помилка сервера: $statusCode';
+  }
+
+  @override
+  String get useDispatcherDashboardInfo =>
+      'Використовуйте панель диспетчера для призначення водіїв';
+
+  @override
+  String get updateLocationTitle => 'Оновити місцезнаходження';
+
+  @override
+  String get tellDriverWhereYouAreLabel =>
+      'Повідомте водія, де ви зараз знаходитесь:';
+
+  @override
+  String get quickSelectLabel => 'Швидкий вибір:';
+
+  @override
+  String get locationQuickMainEntrance => 'Біля головного входу';
+
+  @override
+  String get locationQuickBaggageClaim => 'На видачі багажу';
+
+  @override
+  String get locationQuickCafe => 'У кафе';
+
+  @override
+  String get locationQuickParking => 'На парковці';
+
+  @override
+  String get locationQuickInformationDesk => 'Біля інформаційної стійки';
+
+  @override
+  String get locationQuickSecondFloor => 'На другому поверсі';
+
+  @override
+  String get locationQuickExit1 => 'Біля виходу №1';
+
+  @override
+  String get locationQuickExit2 => 'Біля виходу №2';
+
+  @override
+  String get locationQuickOther => 'Інше місце';
+
+  @override
+  String get orSpecifyExactlyLabel => 'Або вкажіть точно:';
+
+  @override
+  String get locationExampleHint => 'Приклад: «Біля входу в термінал A»';
+
+  @override
+  String get additionalInstructionsLabel =>
+      'Додаткові інструкції (необов\'язково):';
+
+  @override
+  String get additionalInstructionsExampleHint =>
+      'Приклад: «Стою біля кав\'ярні»';
+
+  @override
+  String get specifyLocationError =>
+      'Будь ласка, вкажіть ваше місцезнаходження';
+
+  @override
+  String get failedToUpdateLocationError =>
+      'Не вдалося оновити місцезнаходження. Будь ласка, спробуйте ще раз.';
+
+  @override
+  String get callClientTooltip => 'Зателефонувати клієнту';
+
+  @override
+  String get navigateTooltip => 'Навігація';
+
+  @override
+  String get delayByHowLongTitle => 'На скільки затримати?';
+
+  @override
+  String minutesLabel(int minutes) {
+    return '$minutes хвилин';
+  }
+
+  @override
+  String get appSubtitle => 'Розумні рішення для мобільності';
+
+  @override
+  String get orLabel => 'або';
+
+  @override
+  String get touchIdLabel => 'Touch ID';
+
+  @override
+  String get biometricsLabel => 'Біометрія';
+
+  @override
+  String get biometricSetupTitle => 'Налаштування біометрії';
+
+  @override
+  String get biometricSetupMessage =>
+      'Хочете увімкнути швидкий вхід за допомогою біометрії?\n\nЦе дозволить вам входити за допомогою Face ID, Touch ID або відбитка пальця.';
+
+  @override
+  String get laterButton => 'Пізніше';
+
+  @override
+  String get enableButton => 'Увімкнути';
 }

@@ -844,5 +844,132 @@
     "placeholders": {
       "error": {"type": "String"}
     }
-  }
+  },
+
+  "rideCardTimeLabel": "Time: {time}",
+  "@rideCardTimeLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "deleteConfirmationTitle": "Confirmation",
+  "deleteRideConfirmMessage": "Delete ride {from} → {to}?",
+  "@deleteRideConfirmMessage": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  },
+
+  "cancelRideDialogTitle": "Cancel Ride",
+  "selectCancellationReason": "Please select a reason for cancellation:",
+  "cancellationReasonLabel": "Reason",
+  "cancellationReasonClientRequest": "Client Request",
+  "cancellationReasonWeather": "Weather",
+  "cancellationReasonOther": "Other",
+  "cancellationReasonClientNoShow": "Client No-Show",
+  "cancellationReasonDriverUnavailable": "Driver Unavailable",
+  "cancellationReasonVehicleIssue": "Vehicle Issue",
+  "cancellationFeeLabel": "Cancellation Fee (optional)",
+
+  "rateRideExperienceQuestion": "How was your experience?",
+  "rateRideCommentLabel": "Comment (optional)",
+  "rateRideCommentHint": "Tell us about your experience...",
+
+  "airportTransferLabel": "Airport Transfer",
+  "airportTransferHint": "Enable if this is an airport pickup/drop-off",
+  "airportDepartureLabel": "Departure",
+  "airportDepartureHint": "To airport",
+  "airportArrivalLabel": "Arrival",
+  "airportArrivalHint": "From airport",
+  "flightNumberLabel": "Flight Number",
+  "flightNumberHint": "e.g. LH123, BA456",
+  "flightNumberRequired": "Flight number is required for airport transfers",
+  "gateLabel": "Gate",
+  "terminalLabel": "Terminal",
+
+  "creatingRideLabel": "Creating Ride...",
+  "createRideButton": "Create Ride",
+  "clearFormButton": "Clear Form",
+
+  "vehicleInformationLabel": "Vehicle Information",
+  "messageButton": "Message",
+
+  "routeInformationLabel": "Route Information",
+  "pickupTimeLabel": "Pickup Time",
+  "distanceLabel": "Distance",
+  "durationLabel": "Duration",
+  "etaToClientLabel": "ETA to client",
+  "openInGoogleMapsButton": "Open in Google Maps",
+
+  "rideStatusLabel": "Ride Status",
+  "rideHasBeenCancelledLabel": "This ride has been cancelled",
+  "rideStatusRequestedClientLabel": "Waiting for driver assignment",
+  "rideStatusRequestedStaffLabel": "Awaiting assignment",
+  "rideStatusAssignedEnRouteLabel": "Driver is on the way",
+  "rideStatusAssignedLabel": "Driver assigned",
+  "rideStatusAssignedDriverLabel": "You are assigned to this ride",
+  "rideStatusInProgressClientLabel": "Ride in progress",
+  "rideStatusInProgressDriverLabel": "Drive safely",
+  "rideStatusCompletedLabel": "Completed successfully",
+  "rideStatusCancelledLabel": "Ride cancelled",
+  "rideStatusHandedOffLabel": "Handed off to partner",
+
+  "authenticationRequiredError": "Authentication required",
+  "selectOrCreateClientError": "Please select or create a client",
+  "enterClientNameError": "Please enter client name",
+
+  "editRideDialogTitle": "Edit Ride",
+  "pickupDateTimeLabel": "Pickup date/time (yyyy-MM-ddTHH:mm)",
+  "flightNumberOptionalLabel": "Flight number (optional)",
+  "notesOptionalLabel": "Notes (optional)",
+  "invalidDateFormatError": "Invalid date format. Use: yyyy-MM-ddTHH:mm",
+  "serverErrorMessage": "Server error: {statusCode}",
+  "@serverErrorMessage": {
+    "placeholders": {
+      "statusCode": {"type": "String"}
+    }
+  },
+  "useDispatcherDashboardInfo": "Use the Dispatcher Dashboard to assign drivers",
+
+  "updateLocationTitle": "Update Location",
+  "tellDriverWhereYouAreLabel": "Tell the driver where you are now:",
+  "quickSelectLabel": "Quick select:",
+  "locationQuickMainEntrance": "At main entrance",
+  "locationQuickBaggageClaim": "At baggage claim",
+  "locationQuickCafe": "At cafe",
+  "locationQuickParking": "At parking",
+  "locationQuickInformationDesk": "At information desk",
+  "locationQuickSecondFloor": "On second floor",
+  "locationQuickExit1": "At exit #1",
+  "locationQuickExit2": "At exit #2",
+  "locationQuickOther": "Other location",
+  "orSpecifyExactlyLabel": "Or specify exactly:",
+  "locationExampleHint": "Example: \"At Terminal A entrance\"",
+  "additionalInstructionsLabel": "Additional instructions (optional):",
+  "additionalInstructionsExampleHint": "Example: \"Standing near the coffee shop\"",
+  "specifyLocationError": "Please specify your location",
+  "failedToUpdateLocationError": "Failed to update location. Please try again.",
+
+  "callClientTooltip": "Call Client",
+  "navigateTooltip": "Navigate",
+
+  "delayByHowLongTitle": "Delay by how long?",
+  "minutesLabel": "{minutes} minutes",
+  "@minutesLabel": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+
+  "appSubtitle": "Smart Mobility Solutions",
+
+  "orLabel": "or",
+  "touchIdLabel": "Touch ID",
+  "biometricsLabel": "Biometrics",
+  "biometricSetupTitle": "Biometric Setup",
+  "biometricSetupMessage": "Would you like to enable quick login using biometrics?\n\nThis will allow you to sign in using Face ID, Touch ID, or fingerprint.",
+  "laterButton": "Later",
+  "enableButton": "Enable"
 }

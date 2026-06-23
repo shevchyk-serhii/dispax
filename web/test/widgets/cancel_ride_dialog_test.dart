@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/widgets/common/cancel_ride_dialog.dart';
 import 'package:dispax/modules/core/models/person.dart';
 
@@ -9,6 +10,8 @@ void main() {
   Future<void> openReasons(WidgetTester tester, PersonRole role) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        locale: const Locale('en'),
         home: Scaffold(body: CancelRideDialog(role: role)),
       ),
     );
@@ -51,8 +54,10 @@ void main() {
   group('CancelRideDialog fee field by role', () {
     testWidgets('client cannot set a cancellation fee', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: CancelRideDialog(role: PersonRole.client)),
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          locale: const Locale('en'),
+          home: const Scaffold(body: CancelRideDialog(role: PersonRole.client)),
         ),
       );
 
@@ -61,8 +66,12 @@ void main() {
 
     testWidgets('dispatcher can set a cancellation fee', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: CancelRideDialog(role: PersonRole.dispatcher)),
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          locale: const Locale('en'),
+          home: const Scaffold(
+            body: CancelRideDialog(role: PersonRole.dispatcher),
+          ),
         ),
       );
 
@@ -77,6 +86,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        locale: const Locale('en'),
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../ride_management/models/ride.dart';
 import '../../core/services/location_clarification_service.dart';
 import '../../../constants/app_colors.dart';
@@ -26,18 +27,6 @@ class _LocationClarificationDialogState
   String? _errorMessage;
   String _selectedQuickLocation = '';
 
-  final List<String> _quickLocations = [
-    'At main entrance',
-    'At baggage claim',
-    'At cafe',
-    'At parking',
-    'At information desk',
-    'On second floor',
-    'At exit #1',
-    'At exit #2',
-    'Other location',
-  ];
-
   @override
   void dispose() {
     _locationController.dispose();
@@ -45,14 +34,14 @@ class _LocationClarificationDialogState
     super.dispose();
   }
 
-  Future<void> _updateLocation() async {
+  Future<void> _updateLocation(AppLocalizations l10n) async {
     final location = _selectedQuickLocation.isNotEmpty
         ? _selectedQuickLocation
         : _locationController.text.trim();
 
     if (location.isEmpty) {
       setState(() {
-        _errorMessage = 'Please specify your location';
+        _errorMessage = l10n.specifyLocationError;
       });
       return;
     }
@@ -77,13 +66,13 @@ class _LocationClarificationDialogState
         }
       } else {
         setState(() {
-          _errorMessage = 'Failed to update location. Please try again.';
+          _errorMessage = l10n.failedToUpdateLocationError;
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error: $e';
+        _errorMessage = l10n.genericError(e.toString());
         _isLoading = false;
       });
     }
@@ -91,6 +80,19 @@ class _LocationClarificationDialogState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final quickLocations = [
+      l10n.locationQuickMainEntrance,
+      l10n.locationQuickBaggageClaim,
+      l10n.locationQuickCafe,
+      l10n.locationQuickParking,
+      l10n.locationQuickInformationDesk,
+      l10n.locationQuickSecondFloor,
+      l10n.locationQuickExit1,
+      l10n.locationQuickExit2,
+      l10n.locationQuickOther,
+    ];
+
     return AlertDialog(
       backgroundColor: Theme.of(context).colorScheme.surface,
       title: Row(
@@ -103,7 +105,7 @@ class _LocationClarificationDialogState
           const SizedBox(width: AppDimensions.paddingSmall),
           Expanded(
             child: Text(
-              'Update Location',
+              l10n.updateLocationTitle,
               style: AppStyles.titleMedium.copyWith(
                 color: Theme.of(context).colorScheme.onSurface,
               ),
@@ -117,7 +119,7 @@ class _LocationClarificationDialogState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tell the driver where you are now:',
+              l10n.tellDriverWhereYouAreLabel,
               style: AppStyles.bodyMedium.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -126,7 +128,7 @@ class _LocationClarificationDialogState
             const SizedBox(height: AppDimensions.paddingLarge),
 
             Text(
-              'Quick select:',
+              l10n.quickSelectLabel,
               style: AppStyles.labelMedium.copyWith(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
@@ -138,15 +140,15 @@ class _LocationClarificationDialogState
             Wrap(
               spacing: AppDimensions.paddingSmall,
               runSpacing: AppDimensions.paddingSmall,
-              children: _quickLocations
-                  .map((location) => _buildQuickLocationChip(location))
+              children: quickLocations
+                  .map((location) => _buildQuickLocationChip(location, l10n))
                   .toList(),
             ),
 
             const SizedBox(height: AppDimensions.paddingLarge),
 
             Text(
-              'Or specify exactly:',
+              l10n.orSpecifyExactlyLabel,
               style: AppStyles.labelMedium.copyWith(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
@@ -158,7 +160,7 @@ class _LocationClarificationDialogState
             TextField(
               controller: _locationController,
               decoration: InputDecoration(
-                hintText: 'Example: "At Terminal A entrance"',
+                hintText: l10n.locationExampleHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(
                     AppDimensions.radiusMedium,
@@ -174,7 +176,7 @@ class _LocationClarificationDialogState
             const SizedBox(height: AppDimensions.paddingLarge),
 
             Text(
-              'Additional instructions (optional):',
+              l10n.additionalInstructionsLabel,
               style: AppStyles.labelMedium.copyWith(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
@@ -186,7 +188,7 @@ class _LocationClarificationDialogState
             TextField(
               controller: _instructionsController,
               decoration: InputDecoration(
-                hintText: 'Example: "Standing near the coffee shop"',
+                hintText: l10n.additionalInstructionsExampleHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(
                     AppDimensions.radiusMedium,
@@ -236,14 +238,14 @@ class _LocationClarificationDialogState
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(false),
           child: Text(
-            'Cancel',
+            l10n.cancel,
             style: AppStyles.labelMedium.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
         ElevatedButton(
-          onPressed: _isLoading ? null : _updateLocation,
+          onPressed: _isLoading ? null : () => _updateLocation(l10n),
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -259,13 +261,13 @@ class _LocationClarificationDialogState
                     ),
                   ),
                 )
-              : const Text('Send'),
+              : Text(l10n.send),
         ),
       ],
     );
   }
 
-  Widget _buildQuickLocationChip(String location) {
+  Widget _buildQuickLocationChip(String location, AppLocalizations l10n) {
     final isSelected = _selectedQuickLocation == location;
 
     return FilterChip(
@@ -283,7 +285,7 @@ class _LocationClarificationDialogState
         setState(() {
           if (selected) {
             _selectedQuickLocation = location;
-            if (location != 'Other location') {
+            if (location != l10n.locationQuickOther) {
               _locationController.clear();
             }
           } else {

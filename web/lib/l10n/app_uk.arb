@@ -776,5 +776,132 @@
     "placeholders": {
       "error": {"type": "String"}
     }
-  }
+  },
+
+  "rideCardTimeLabel": "Час: {time}",
+  "@rideCardTimeLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "deleteConfirmationTitle": "Підтвердження",
+  "deleteRideConfirmMessage": "Видалити поїздку {from} → {to}?",
+  "@deleteRideConfirmMessage": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  },
+
+  "cancelRideDialogTitle": "Скасувати поїздку",
+  "selectCancellationReason": "Будь ласка, виберіть причину скасування:",
+  "cancellationReasonLabel": "Причина",
+  "cancellationReasonClientRequest": "За проханням клієнта",
+  "cancellationReasonWeather": "Погодні умови",
+  "cancellationReasonOther": "Інше",
+  "cancellationReasonClientNoShow": "Клієнт не з'явився",
+  "cancellationReasonDriverUnavailable": "Водій недоступний",
+  "cancellationReasonVehicleIssue": "Проблема з автомобілем",
+  "cancellationFeeLabel": "Штраф за скасування (необов'язково)",
+
+  "rateRideExperienceQuestion": "Як пройшла ваша поїздка?",
+  "rateRideCommentLabel": "Коментар (необов'язково)",
+  "rateRideCommentHint": "Розкажіть про свій досвід...",
+
+  "airportTransferLabel": "Трансфер до аеропорту",
+  "airportTransferHint": "Увімкніть, якщо це поїздка до/з аеропорту",
+  "airportDepartureLabel": "Відправлення",
+  "airportDepartureHint": "До аеропорту",
+  "airportArrivalLabel": "Прибуття",
+  "airportArrivalHint": "З аеропорту",
+  "flightNumberLabel": "Номер рейсу",
+  "flightNumberHint": "напр. LH123, BA456",
+  "flightNumberRequired": "Номер рейсу обов'язковий для трансферів до аеропорту",
+  "gateLabel": "Гейт",
+  "terminalLabel": "Термінал",
+
+  "creatingRideLabel": "Створення поїздки...",
+  "createRideButton": "Створити поїздку",
+  "clearFormButton": "Очистити форму",
+
+  "vehicleInformationLabel": "Інформація про транспортний засіб",
+  "messageButton": "Повідомлення",
+
+  "routeInformationLabel": "Інформація про маршрут",
+  "pickupTimeLabel": "Час подачі",
+  "distanceLabel": "Відстань",
+  "durationLabel": "Тривалість",
+  "etaToClientLabel": "Очікуваний час до клієнта",
+  "openInGoogleMapsButton": "Відкрити в Google Maps",
+
+  "rideStatusLabel": "Статус поїздки",
+  "rideHasBeenCancelledLabel": "Цю поїздку скасовано",
+  "rideStatusRequestedClientLabel": "Очікування призначення водія",
+  "rideStatusRequestedStaffLabel": "Очікує призначення",
+  "rideStatusAssignedEnRouteLabel": "Водій у дорозі",
+  "rideStatusAssignedLabel": "Водія призначено",
+  "rideStatusAssignedDriverLabel": "Вас призначено на цю поїздку",
+  "rideStatusInProgressClientLabel": "Поїздка триває",
+  "rideStatusInProgressDriverLabel": "Щасливої дороги",
+  "rideStatusCompletedLabel": "Успішно завершено",
+  "rideStatusCancelledLabel": "Поїздку скасовано",
+  "rideStatusHandedOffLabel": "Передано партнеру",
+
+  "authenticationRequiredError": "Необхідна автентифікація",
+  "selectOrCreateClientError": "Будь ласка, виберіть або створіть клієнта",
+  "enterClientNameError": "Будь ласка, введіть ім'я клієнта",
+
+  "editRideDialogTitle": "Редагувати поїздку",
+  "pickupDateTimeLabel": "Дата/час подачі (yyyy-MM-ddTHH:mm)",
+  "flightNumberOptionalLabel": "Номер рейсу (необов'язково)",
+  "notesOptionalLabel": "Примітки (необов'язково)",
+  "invalidDateFormatError": "Неправильний формат дати. Використовуйте: yyyy-MM-ddTHH:mm",
+  "serverErrorMessage": "Помилка сервера: {statusCode}",
+  "@serverErrorMessage": {
+    "placeholders": {
+      "statusCode": {"type": "String"}
+    }
+  },
+  "useDispatcherDashboardInfo": "Використовуйте панель диспетчера для призначення водіїв",
+
+  "updateLocationTitle": "Оновити місцезнаходження",
+  "tellDriverWhereYouAreLabel": "Повідомте водія, де ви зараз знаходитесь:",
+  "quickSelectLabel": "Швидкий вибір:",
+  "locationQuickMainEntrance": "Біля головного входу",
+  "locationQuickBaggageClaim": "На видачі багажу",
+  "locationQuickCafe": "У кафе",
+  "locationQuickParking": "На парковці",
+  "locationQuickInformationDesk": "Біля інформаційної стійки",
+  "locationQuickSecondFloor": "На другому поверсі",
+  "locationQuickExit1": "Біля виходу №1",
+  "locationQuickExit2": "Біля виходу №2",
+  "locationQuickOther": "Інше місце",
+  "orSpecifyExactlyLabel": "Або вкажіть точно:",
+  "locationExampleHint": "Приклад: «Біля входу в термінал A»",
+  "additionalInstructionsLabel": "Додаткові інструкції (необов'язково):",
+  "additionalInstructionsExampleHint": "Приклад: «Стою біля кав'ярні»",
+  "specifyLocationError": "Будь ласка, вкажіть ваше місцезнаходження",
+  "failedToUpdateLocationError": "Не вдалося оновити місцезнаходження. Будь ласка, спробуйте ще раз.",
+
+  "callClientTooltip": "Зателефонувати клієнту",
+  "navigateTooltip": "Навігація",
+
+  "delayByHowLongTitle": "На скільки затримати?",
+  "minutesLabel": "{minutes} хвилин",
+  "@minutesLabel": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+
+  "appSubtitle": "Розумні рішення для мобільності",
+
+  "orLabel": "або",
+  "touchIdLabel": "Touch ID",
+  "biometricsLabel": "Біометрія",
+  "biometricSetupTitle": "Налаштування біометрії",
+  "biometricSetupMessage": "Хочете увімкнути швидкий вхід за допомогою біометрії?\n\nЦе дозволить вам входити за допомогою Face ID, Touch ID або відбитка пальця.",
+  "laterButton": "Пізніше",
+  "enableButton": "Увімкнути"
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import 'clearable_text_field.dart';
@@ -37,6 +38,7 @@ class AirportTransferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Material(
       color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -57,18 +59,19 @@ class AirportTransferCard extends StatelessWidget {
                   size: 24,
                 ),
                 const SizedBox(width: AppDimensions.paddingSmall),
-                const Text(
-                  'Airport Transfer',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  l10n.airportTransferLabel,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: AppDimensions.paddingMedium),
             SwitchListTile(
-              title: const Text('Airport Transfer'),
-              subtitle: const Text(
-                'Enable if this is an airport pickup/drop-off',
-              ),
+              title: Text(l10n.airportTransferLabel),
+              subtitle: Text(l10n.airportTransferHint),
               value: isAirportTransfer,
               onChanged: onAirportTransferChanged,
             ),
@@ -95,13 +98,13 @@ class AirportTransferCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                'Departure',
+                                l10n.airportDepartureLabel,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                        subtitle: const Text('To airport'),
+                        subtitle: Text(l10n.airportDepartureHint),
                         value: false,
                       ),
                     ),
@@ -118,13 +121,13 @@ class AirportTransferCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                'Arrival',
+                                l10n.airportArrivalLabel,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                        subtitle: const Text('From airport'),
+                        subtitle: Text(l10n.airportArrivalHint),
                         value: true,
                       ),
                     ),
@@ -134,8 +137,8 @@ class AirportTransferCard extends StatelessWidget {
               const SizedBox(height: AppDimensions.paddingMedium),
               ClearableTextField(
                 value: flightNumber,
-                labelText: 'Flight Number',
-                hintText: 'e.g. LH123, BA456',
+                labelText: l10n.flightNumberLabel,
+                hintText: l10n.flightNumberHint,
                 prefixIconData: isArrival
                     ? Icons.flight_land
                     : Icons.flight_takeoff,
@@ -146,7 +149,7 @@ class AirportTransferCard extends StatelessWidget {
                     (isAirportTransfer
                         ? (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Flight number is required for airport transfers';
+                              return l10n.flightNumberRequired;
                             }
                             return null;
                           }
@@ -158,7 +161,7 @@ class AirportTransferCard extends StatelessWidget {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       decoration: InputDecoration(
-                        labelText: 'Gate',
+                        labelText: l10n.gateLabel,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             AppDimensions.radiusSmall,
@@ -186,7 +189,7 @@ class AirportTransferCard extends StatelessWidget {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       decoration: InputDecoration(
-                        labelText: 'Terminal',
+                        labelText: l10n.terminalLabel,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             AppDimensions.radiusSmall,

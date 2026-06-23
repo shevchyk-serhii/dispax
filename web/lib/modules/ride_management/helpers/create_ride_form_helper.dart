@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/core/models/location.dart';
 import '../models/create_ride_request.dart';
@@ -80,11 +81,12 @@ class CreateRideFormHelper {
     BuildContext context,
     CreateRideFormState formState,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final authState = context.read<AuthBloc>().state;
     if (!authState.isAuthenticated || authState.user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Authentication required'),
+        SnackBar(
+          content: Text(l10n.authenticationRequiredError),
           backgroundColor: AppColors.error,
         ),
       );
@@ -93,8 +95,8 @@ class CreateRideFormHelper {
 
     if (!formState.isNewClient && formState.selectedClientId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select or create a client'),
+        SnackBar(
+          content: Text(l10n.selectOrCreateClientError),
           backgroundColor: AppColors.error,
         ),
       );
@@ -103,8 +105,8 @@ class CreateRideFormHelper {
 
     if (formState.isNewClient && formState.clientName.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter client name'),
+        SnackBar(
+          content: Text(l10n.enterClientNameError),
           backgroundColor: AppColors.error,
         ),
       );

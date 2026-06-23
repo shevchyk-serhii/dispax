@@ -776,5 +776,132 @@
     "placeholders": {
       "error": {"type": "String"}
     }
-  }
+  },
+
+  "rideCardTimeLabel": "Zeit: {time}",
+  "@rideCardTimeLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "deleteConfirmationTitle": "Bestätigung",
+  "deleteRideConfirmMessage": "Fahrt {from} → {to} löschen?",
+  "@deleteRideConfirmMessage": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  },
+
+  "cancelRideDialogTitle": "Fahrt stornieren",
+  "selectCancellationReason": "Bitte wählen Sie einen Stornierungsgrund:",
+  "cancellationReasonLabel": "Grund",
+  "cancellationReasonClientRequest": "Kundenwunsch",
+  "cancellationReasonWeather": "Wetter",
+  "cancellationReasonOther": "Sonstiges",
+  "cancellationReasonClientNoShow": "Kunde nicht erschienen",
+  "cancellationReasonDriverUnavailable": "Fahrer nicht verfügbar",
+  "cancellationReasonVehicleIssue": "Fahrzeugproblem",
+  "cancellationFeeLabel": "Stornogebühr (optional)",
+
+  "rateRideExperienceQuestion": "Wie war Ihre Erfahrung?",
+  "rateRideCommentLabel": "Kommentar (optional)",
+  "rateRideCommentHint": "Erzählen Sie uns von Ihrer Erfahrung...",
+
+  "airportTransferLabel": "Flughafentransfer",
+  "airportTransferHint": "Aktivieren, wenn es sich um eine Flughafenabholung/-abgabe handelt",
+  "airportDepartureLabel": "Abflug",
+  "airportDepartureHint": "Zum Flughafen",
+  "airportArrivalLabel": "Ankunft",
+  "airportArrivalHint": "Vom Flughafen",
+  "flightNumberLabel": "Flugnummer",
+  "flightNumberHint": "z.B. LH123, BA456",
+  "flightNumberRequired": "Flugnummer ist für Flughafentransfers erforderlich",
+  "gateLabel": "Gate",
+  "terminalLabel": "Terminal",
+
+  "creatingRideLabel": "Fahrt wird erstellt...",
+  "createRideButton": "Fahrt erstellen",
+  "clearFormButton": "Formular leeren",
+
+  "vehicleInformationLabel": "Fahrzeuginformationen",
+  "messageButton": "Nachricht",
+
+  "routeInformationLabel": "Routeninformationen",
+  "pickupTimeLabel": "Abholzeit",
+  "distanceLabel": "Entfernung",
+  "durationLabel": "Dauer",
+  "etaToClientLabel": "ETA zum Kunden",
+  "openInGoogleMapsButton": "In Google Maps öffnen",
+
+  "rideStatusLabel": "Fahrtsstatus",
+  "rideHasBeenCancelledLabel": "Diese Fahrt wurde storniert",
+  "rideStatusRequestedClientLabel": "Warte auf Fahrerzuweisung",
+  "rideStatusRequestedStaffLabel": "Warte auf Zuweisung",
+  "rideStatusAssignedEnRouteLabel": "Fahrer ist unterwegs",
+  "rideStatusAssignedLabel": "Fahrer zugewiesen",
+  "rideStatusAssignedDriverLabel": "Sie sind dieser Fahrt zugewiesen",
+  "rideStatusInProgressClientLabel": "Fahrt in Gange",
+  "rideStatusInProgressDriverLabel": "Gute Fahrt",
+  "rideStatusCompletedLabel": "Erfolgreich abgeschlossen",
+  "rideStatusCancelledLabel": "Fahrt storniert",
+  "rideStatusHandedOffLabel": "An Partner übergeben",
+
+  "authenticationRequiredError": "Authentifizierung erforderlich",
+  "selectOrCreateClientError": "Bitte wählen oder erstellen Sie einen Kunden",
+  "enterClientNameError": "Bitte geben Sie den Kundennamen ein",
+
+  "editRideDialogTitle": "Fahrt bearbeiten",
+  "pickupDateTimeLabel": "Abholdatum/-uhrzeit (yyyy-MM-ddTHH:mm)",
+  "flightNumberOptionalLabel": "Flugnummer (optional)",
+  "notesOptionalLabel": "Notizen (optional)",
+  "invalidDateFormatError": "Ungültiges Datumsformat. Verwenden Sie: yyyy-MM-ddTHH:mm",
+  "serverErrorMessage": "Serverfehler: {statusCode}",
+  "@serverErrorMessage": {
+    "placeholders": {
+      "statusCode": {"type": "String"}
+    }
+  },
+  "useDispatcherDashboardInfo": "Verwenden Sie das Dispatcher-Dashboard, um Fahrer zuzuweisen",
+
+  "updateLocationTitle": "Standort aktualisieren",
+  "tellDriverWhereYouAreLabel": "Sagen Sie dem Fahrer, wo Sie sich befinden:",
+  "quickSelectLabel": "Schnellauswahl:",
+  "locationQuickMainEntrance": "Am Haupteingang",
+  "locationQuickBaggageClaim": "Am Gepäckband",
+  "locationQuickCafe": "Am Café",
+  "locationQuickParking": "Am Parkplatz",
+  "locationQuickInformationDesk": "Am Informationsschalter",
+  "locationQuickSecondFloor": "Im zweiten Stockwerk",
+  "locationQuickExit1": "Am Ausgang Nr. 1",
+  "locationQuickExit2": "Am Ausgang Nr. 2",
+  "locationQuickOther": "Anderer Standort",
+  "orSpecifyExactlyLabel": "Oder genau angeben:",
+  "locationExampleHint": "Beispiel: „Am Terminal-A-Eingang“",
+  "additionalInstructionsLabel": "Zusätzliche Anweisungen (optional):",
+  "additionalInstructionsExampleHint": "Beispiel: „Stehe beim Café“",
+  "specifyLocationError": "Bitte geben Sie Ihren Standort an",
+  "failedToUpdateLocationError": "Standort konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
+
+  "callClientTooltip": "Kunden anrufen",
+  "navigateTooltip": "Navigieren",
+
+  "delayByHowLongTitle": "Wie lange verzögern?",
+  "minutesLabel": "{minutes} Minuten",
+  "@minutesLabel": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+
+  "appSubtitle": "Intelligente Mobilitätslösungen",
+
+  "orLabel": "oder",
+  "touchIdLabel": "Touch ID",
+  "biometricsLabel": "Biometrie",
+  "biometricSetupTitle": "Biometrische Einrichtung",
+  "biometricSetupMessage": "Möchten Sie die schnelle Anmeldung per Biometrie aktivieren?\n\nDamit können Sie sich per Face ID, Touch ID oder Fingerabdruck anmelden.",
+  "laterButton": "Später",
+  "enableButton": "Aktivieren"
 }

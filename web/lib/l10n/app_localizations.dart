@@ -3405,6 +3405,546 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to submit rating: {error}'**
   String failedToSubmitRating(String error);
+
+  /// No description provided for @rideCardTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time: {time}'**
+  String rideCardTimeLabel(String time);
+
+  /// No description provided for @deleteConfirmationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation'**
+  String get deleteConfirmationTitle;
+
+  /// No description provided for @deleteRideConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ride {from} → {to}?'**
+  String deleteRideConfirmMessage(String from, String to);
+
+  /// No description provided for @cancelRideDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Ride'**
+  String get cancelRideDialogTitle;
+
+  /// No description provided for @selectCancellationReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a reason for cancellation:'**
+  String get selectCancellationReason;
+
+  /// No description provided for @cancellationReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get cancellationReasonLabel;
+
+  /// No description provided for @cancellationReasonClientRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Request'**
+  String get cancellationReasonClientRequest;
+
+  /// No description provided for @cancellationReasonWeather.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather'**
+  String get cancellationReasonWeather;
+
+  /// No description provided for @cancellationReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get cancellationReasonOther;
+
+  /// No description provided for @cancellationReasonClientNoShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Client No-Show'**
+  String get cancellationReasonClientNoShow;
+
+  /// No description provided for @cancellationReasonDriverUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Unavailable'**
+  String get cancellationReasonDriverUnavailable;
+
+  /// No description provided for @cancellationReasonVehicleIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle Issue'**
+  String get cancellationReasonVehicleIssue;
+
+  /// No description provided for @cancellationFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation Fee (optional)'**
+  String get cancellationFeeLabel;
+
+  /// No description provided for @rateRideExperienceQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How was your experience?'**
+  String get rateRideExperienceQuestion;
+
+  /// No description provided for @rateRideCommentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment (optional)'**
+  String get rateRideCommentLabel;
+
+  /// No description provided for @rateRideCommentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us about your experience...'**
+  String get rateRideCommentHint;
+
+  /// No description provided for @airportTransferLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Airport Transfer'**
+  String get airportTransferLabel;
+
+  /// No description provided for @airportTransferHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable if this is an airport pickup/drop-off'**
+  String get airportTransferHint;
+
+  /// No description provided for @airportDepartureLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Departure'**
+  String get airportDepartureLabel;
+
+  /// No description provided for @airportDepartureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'To airport'**
+  String get airportDepartureHint;
+
+  /// No description provided for @airportArrivalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival'**
+  String get airportArrivalLabel;
+
+  /// No description provided for @airportArrivalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'From airport'**
+  String get airportArrivalHint;
+
+  /// No description provided for @flightNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight Number'**
+  String get flightNumberLabel;
+
+  /// No description provided for @flightNumberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. LH123, BA456'**
+  String get flightNumberHint;
+
+  /// No description provided for @flightNumberRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight number is required for airport transfers'**
+  String get flightNumberRequired;
+
+  /// No description provided for @gateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gate'**
+  String get gateLabel;
+
+  /// No description provided for @terminalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal'**
+  String get terminalLabel;
+
+  /// No description provided for @creatingRideLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating Ride...'**
+  String get creatingRideLabel;
+
+  /// No description provided for @createRideButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Ride'**
+  String get createRideButton;
+
+  /// No description provided for @clearFormButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Form'**
+  String get clearFormButton;
+
+  /// No description provided for @vehicleInformationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle Information'**
+  String get vehicleInformationLabel;
+
+  /// No description provided for @messageButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get messageButton;
+
+  /// No description provided for @routeInformationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Route Information'**
+  String get routeInformationLabel;
+
+  /// No description provided for @pickupTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup Time'**
+  String get pickupTimeLabel;
+
+  /// No description provided for @distanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get distanceLabel;
+
+  /// No description provided for @durationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get durationLabel;
+
+  /// No description provided for @etaToClientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ETA to client'**
+  String get etaToClientLabel;
+
+  /// No description provided for @openInGoogleMapsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Google Maps'**
+  String get openInGoogleMapsButton;
+
+  /// No description provided for @rideStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride Status'**
+  String get rideStatusLabel;
+
+  /// No description provided for @rideHasBeenCancelledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'This ride has been cancelled'**
+  String get rideHasBeenCancelledLabel;
+
+  /// No description provided for @rideStatusRequestedClientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for driver assignment'**
+  String get rideStatusRequestedClientLabel;
+
+  /// No description provided for @rideStatusRequestedStaffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting assignment'**
+  String get rideStatusRequestedStaffLabel;
+
+  /// No description provided for @rideStatusAssignedEnRouteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver is on the way'**
+  String get rideStatusAssignedEnRouteLabel;
+
+  /// No description provided for @rideStatusAssignedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver assigned'**
+  String get rideStatusAssignedLabel;
+
+  /// No description provided for @rideStatusAssignedDriverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'You are assigned to this ride'**
+  String get rideStatusAssignedDriverLabel;
+
+  /// No description provided for @rideStatusInProgressClientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride in progress'**
+  String get rideStatusInProgressClientLabel;
+
+  /// No description provided for @rideStatusInProgressDriverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Drive safely'**
+  String get rideStatusInProgressDriverLabel;
+
+  /// No description provided for @rideStatusCompletedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed successfully'**
+  String get rideStatusCompletedLabel;
+
+  /// No description provided for @rideStatusCancelledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride cancelled'**
+  String get rideStatusCancelledLabel;
+
+  /// No description provided for @rideStatusHandedOffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Handed off to partner'**
+  String get rideStatusHandedOffLabel;
+
+  /// No description provided for @authenticationRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication required'**
+  String get authenticationRequiredError;
+
+  /// No description provided for @selectOrCreateClientError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select or create a client'**
+  String get selectOrCreateClientError;
+
+  /// No description provided for @enterClientNameError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter client name'**
+  String get enterClientNameError;
+
+  /// No description provided for @editRideDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Ride'**
+  String get editRideDialogTitle;
+
+  /// No description provided for @pickupDateTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup date/time (yyyy-MM-ddTHH:mm)'**
+  String get pickupDateTimeLabel;
+
+  /// No description provided for @flightNumberOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight number (optional)'**
+  String get flightNumberOptionalLabel;
+
+  /// No description provided for @notesOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get notesOptionalLabel;
+
+  /// No description provided for @invalidDateFormatError.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid date format. Use: yyyy-MM-ddTHH:mm'**
+  String get invalidDateFormatError;
+
+  /// No description provided for @serverErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Server error: {statusCode}'**
+  String serverErrorMessage(String statusCode);
+
+  /// No description provided for @useDispatcherDashboardInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the Dispatcher Dashboard to assign drivers'**
+  String get useDispatcherDashboardInfo;
+
+  /// No description provided for @updateLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Location'**
+  String get updateLocationTitle;
+
+  /// No description provided for @tellDriverWhereYouAreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell the driver where you are now:'**
+  String get tellDriverWhereYouAreLabel;
+
+  /// No description provided for @quickSelectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick select:'**
+  String get quickSelectLabel;
+
+  /// No description provided for @locationQuickMainEntrance.
+  ///
+  /// In en, this message translates to:
+  /// **'At main entrance'**
+  String get locationQuickMainEntrance;
+
+  /// No description provided for @locationQuickBaggageClaim.
+  ///
+  /// In en, this message translates to:
+  /// **'At baggage claim'**
+  String get locationQuickBaggageClaim;
+
+  /// No description provided for @locationQuickCafe.
+  ///
+  /// In en, this message translates to:
+  /// **'At cafe'**
+  String get locationQuickCafe;
+
+  /// No description provided for @locationQuickParking.
+  ///
+  /// In en, this message translates to:
+  /// **'At parking'**
+  String get locationQuickParking;
+
+  /// No description provided for @locationQuickInformationDesk.
+  ///
+  /// In en, this message translates to:
+  /// **'At information desk'**
+  String get locationQuickInformationDesk;
+
+  /// No description provided for @locationQuickSecondFloor.
+  ///
+  /// In en, this message translates to:
+  /// **'On second floor'**
+  String get locationQuickSecondFloor;
+
+  /// No description provided for @locationQuickExit1.
+  ///
+  /// In en, this message translates to:
+  /// **'At exit #1'**
+  String get locationQuickExit1;
+
+  /// No description provided for @locationQuickExit2.
+  ///
+  /// In en, this message translates to:
+  /// **'At exit #2'**
+  String get locationQuickExit2;
+
+  /// No description provided for @locationQuickOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other location'**
+  String get locationQuickOther;
+
+  /// No description provided for @orSpecifyExactlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Or specify exactly:'**
+  String get orSpecifyExactlyLabel;
+
+  /// No description provided for @locationExampleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: \"At Terminal A entrance\"'**
+  String get locationExampleHint;
+
+  /// No description provided for @additionalInstructionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional instructions (optional):'**
+  String get additionalInstructionsLabel;
+
+  /// No description provided for @additionalInstructionsExampleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: \"Standing near the coffee shop\"'**
+  String get additionalInstructionsExampleHint;
+
+  /// No description provided for @specifyLocationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please specify your location'**
+  String get specifyLocationError;
+
+  /// No description provided for @failedToUpdateLocationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update location. Please try again.'**
+  String get failedToUpdateLocationError;
+
+  /// No description provided for @callClientTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Call Client'**
+  String get callClientTooltip;
+
+  /// No description provided for @navigateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate'**
+  String get navigateTooltip;
+
+  /// No description provided for @delayByHowLongTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay by how long?'**
+  String get delayByHowLongTitle;
+
+  /// No description provided for @minutesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} minutes'**
+  String minutesLabel(int minutes);
+
+  /// No description provided for @appSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Mobility Solutions'**
+  String get appSubtitle;
+
+  /// No description provided for @orLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get orLabel;
+
+  /// No description provided for @touchIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Touch ID'**
+  String get touchIdLabel;
+
+  /// No description provided for @biometricsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometrics'**
+  String get biometricsLabel;
+
+  /// No description provided for @biometricSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric Setup'**
+  String get biometricSetupTitle;
+
+  /// No description provided for @biometricSetupMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Would you like to enable quick login using biometrics?\n\nThis will allow you to sign in using Face ID, Touch ID, or fingerprint.'**
+  String get biometricSetupMessage;
+
+  /// No description provided for @laterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get laterButton;
+
+  /// No description provided for @enableButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get enableButton;
 }
 
 class _AppLocalizationsDelegate
