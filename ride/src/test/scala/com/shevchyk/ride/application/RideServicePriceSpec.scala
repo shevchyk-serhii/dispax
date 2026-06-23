@@ -103,16 +103,18 @@ object RideServicePriceSpec extends ZIOSpecDefault {
     override def delete(id: PersonId): Task[Unit]                                = ZIO.unit
     override def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit] = ZIO.unit
 
-    override def findByStatus(status: UserStatus): Task[List[Person]]                         = ZIO.succeed(
+    override def findByStatus(status: UserStatus): Task[List[Person]]                                               = ZIO.succeed(
       persons.values.filter(_.status == status).toList
     )
-    override def searchByQuery(query: String): Task[List[Person]]                             = ZIO.succeed(Nil)
-    override def updateLastLogin(id: PersonId): Task[Unit]                                    = ZIO.unit
-    override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]    = ZIO.succeed(Nil)
-    override def upsertDriverRow(personId: PersonId): Task[Unit]                              = ZIO.unit
-    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                 = ZIO.succeed(None)
-    override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
-    override def deleteAvatar(id: PersonId): Task[Unit]                                       = ZIO.unit
+    override def searchByQuery(query: String): Task[List[Person]]                                                   = ZIO.succeed(Nil)
+    override def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
+    override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
+    override def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
+    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.succeed(None)
+
+    override def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] =
+      ZIO.unit
+    override def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
   }
 
   val testPersonRepo = TestPersonRepository(

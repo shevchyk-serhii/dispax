@@ -97,9 +97,11 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
 
     override def upsertDriverRow(personId: PersonId): Task[Unit] = ZIO.unit
 
-    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                 = ZIO.succeed(None)
-    override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
-    override def deleteAvatar(id: PersonId): Task[Unit]                                       = ZIO.unit
+    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.succeed(None)
+
+    override def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] =
+      ZIO.unit
+    override def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
 
   private val noopEmailSms: ZLayer[Any, Nothing, EmailSmsService] = ZLayer.succeed(new EmailSmsService:
     def sendRideConfirmation(data: RideConfirmationData): Task[Unit]                       = ZIO.unit

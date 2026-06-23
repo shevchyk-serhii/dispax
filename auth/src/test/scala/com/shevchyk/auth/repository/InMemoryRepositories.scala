@@ -1,6 +1,6 @@
 package com.shevchyk.auth.repository
 
-import com.shevchyk.core.domain.{ClientCompanyId, Person, PersonId, PersonRole, UserStatus}
+import com.shevchyk.core.domain.{ClientCompanyId, CompanyId, Person, PersonId, PersonRole, UserStatus}
 import com.shevchyk.core.repository.PersonRepository
 import zio.*
 import java.time.Instant
@@ -143,10 +143,10 @@ final class InMemoryPersonRepositoryWithUsers extends PersonRepository:
 
   override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]] = avatars.get.map(_.get(id))
 
-  override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] =
+  override def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] =
     avatars.update(_.updated(id, (bytes, contentType))).unit
 
-  override def deleteAvatar(id: PersonId): Task[Unit] = avatars.update(_.removed(id)).unit
+  override def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit] = avatars.update(_.removed(id)).unit
 
 final class InMemoryTokenRepository extends TokenRepository:
   import TestUUIDs._

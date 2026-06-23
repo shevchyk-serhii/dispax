@@ -246,13 +246,13 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       .option
       .transact(xa)
 
-  override def setAvatar(id: PersonId, bytes: Array[Byte], contentType: String): Task[Unit] =
-    sql"UPDATE persons SET avatar = $bytes, avatar_content_type = $contentType WHERE id = ${id.value}".update.run
+  override def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] =
+    sql"UPDATE persons SET avatar = $bytes, avatar_content_type = $contentType WHERE id = ${id.value} AND company_id = ${companyId.value}".update.run
       .transact(xa)
       .unit
 
-  override def deleteAvatar(id: PersonId): Task[Unit] =
-    sql"UPDATE persons SET avatar = NULL, avatar_content_type = NULL WHERE id = ${id.value}".update.run
+  override def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit] =
+    sql"UPDATE persons SET avatar = NULL, avatar_content_type = NULL WHERE id = ${id.value} AND company_id = ${companyId.value}".update.run
       .transact(xa)
       .unit
 
