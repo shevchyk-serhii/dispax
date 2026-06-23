@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 
 class BlacklistScreen extends StatefulWidget {
   const BlacklistScreen({super.key});
@@ -57,6 +58,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
   }
 
   Future<void> _showAddDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final clientIdCtrl = TextEditingController();
     final driverIdCtrl = TextEditingController();
     final reasonCtrl = TextEditingController();
@@ -64,33 +66,33 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
     final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Blacklist Entry'),
+        title: Text(l10n.addBlacklistEntryDialogTitle),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: clientIdCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Client ID',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.clientIdLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: driverIdCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Driver ID',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.driverIdLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: reasonCtrl,
                 maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Reason (optional)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.reasonOptionalLabel,
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ],
@@ -99,15 +101,13 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
               if (clientIdCtrl.text.isEmpty || driverIdCtrl.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Client ID and Driver ID are required'),
-                  ),
+                  SnackBar(content: Text(l10n.clientDriverIdRequired)),
                 );
                 return;
               }
@@ -121,13 +121,19 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
                 if (context.mounted) Navigator.pop(context, true);
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(
+                          context,
+                        )!.genericError(e.toString()),
+                      ),
+                    ),
+                  );
                 }
               }
             },
-            child: const Text('Add'),
+            child: Text(l10n.addButton),
           ),
         ],
       ),
@@ -137,22 +143,21 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
   }
 
   Future<void> _removeEntry(String id) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove Blacklist Entry'),
-        content: const Text(
-          'Are you sure you want to remove this blacklist entry?',
-        ),
+        title: Text(l10n.removeBlacklistEntryDialogTitle),
+        content: Text(l10n.removeBlacklistEntryContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Remove'),
+            child: Text(l10n.removeBlacklistEntryButton),
           ),
         ],
       ),
@@ -166,17 +171,22 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
       _loadEntries();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.genericError(e.toString()),
+          ),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        _buildHeader(),
+        _buildHeader(l10n),
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
@@ -194,7 +204,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
                       Text(_error!),
                       ElevatedButton(
                         onPressed: _loadEntries,
-                        child: const Text('Retry'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
@@ -211,7 +221,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No blacklist entries',
+                        l10n.noBlacklistEntries,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -233,7 +243,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -248,10 +258,10 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
             children: [
               const Icon(Icons.block, color: Colors.white, size: 24),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Blacklist',
-                  style: TextStyle(
+                  l10n.blacklistTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

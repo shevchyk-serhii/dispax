@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 
 class SessionManagementScreen extends StatefulWidget {
   const SessionManagementScreen({super.key});
@@ -57,22 +58,21 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
   }
 
   Future<void> _revokeSession(String sessionId) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Revoke Session'),
-        content: const Text(
-          'This will log out the device associated with this session.',
-        ),
+        title: Text(l10n.revokeSessionDialogTitle),
+        content: Text(l10n.revokeSessionDialogContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Revoke'),
+            child: Text(l10n.revokeSessionButton),
           ),
         ],
       ),
@@ -85,34 +85,37 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       await apiClient.delete('/sessions/$sessionId');
       _loadSessions();
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Session revoked')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.sessionRevoked)),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.genericError(e.toString()),
+          ),
+        ),
+      );
     }
   }
 
   Future<void> _revokeAllOtherSessions() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Revoke All Other Sessions'),
-        content: const Text(
-          'This will log out all other devices. Only your current session will remain active.',
-        ),
+        title: Text(l10n.revokeAllOtherSessionsDialogTitle),
+        content: Text(l10n.revokeAllOtherSessionsDialogContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Revoke All'),
+            child: Text(l10n.revokeAllButton),
           ),
         ],
       ),
@@ -126,25 +129,32 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       _loadSessions();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All other sessions revoked')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.allOtherSessionsRevoked),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.genericError(e.toString()),
+          ),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final otherSessions = _sessions
         .where((s) => s['isCurrent'] != true)
         .toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Active Sessions'),
+        title: Text(l10n.activeSessions),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.light,
@@ -153,9 +163,9 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
           if (otherSessions.isNotEmpty)
             TextButton(
               onPressed: _revokeAllOtherSessions,
-              child: const Text(
-                'Revoke All',
-                style: TextStyle(color: Colors.white),
+              child: Text(
+                l10n.revokeAllButton,
+                style: const TextStyle(color: Colors.white),
               ),
             ),
         ],
@@ -172,13 +182,13 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                   Text(_error!),
                   ElevatedButton(
                     onPressed: _loadSessions,
-                    child: const Text('Retry'),
+                    child: Text(l10n.retry),
                   ),
                 ],
               ),
             )
           : _sessions.isEmpty
-          ? const Center(child: Text('No active sessions'))
+          ? Center(child: Text(l10n.noActiveSessions))
           : RefreshIndicator(
               onRefresh: _loadSessions,
               child: ListView.builder(
@@ -192,6 +202,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
   }
 
   Widget _buildSessionCard(Map<String, dynamic> session) {
+    final l10n = AppLocalizations.of(context)!;
     final isCurrent = session['isCurrent'] == true;
     final deviceInfo = session['deviceInfo'] as String? ?? 'Unknown device';
     final ipAddress = session['ipAddress'] as String? ?? 'Unknown IP';
@@ -248,9 +259,9 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                                 color: AppColors.success.withAlpha(20),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Text(
-                                'Current',
-                                style: TextStyle(
+                              child: Text(
+                                l10n.sessionCurrentLabel,
+                                style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.success,
@@ -261,7 +272,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'IP: $ipAddress',
+                        l10n.sessionIpLabel(ipAddress),
                         style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -282,7 +293,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Created: ${_formatDateTime(createdAt)}',
+                  l10n.sessionCreatedLabel(_formatDateTime(createdAt)),
                   style: TextStyle(
                     fontSize: 11,
                     color: Theme.of(context).colorScheme.outlineVariant,
@@ -290,7 +301,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Last active: ${_formatDateTime(lastActive)}',
+                  l10n.sessionLastActiveLabel(_formatDateTime(lastActive)),
                   style: TextStyle(
                     fontSize: 11,
                     color: Theme.of(context).colorScheme.outlineVariant,
@@ -305,7 +316,10 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                 child: TextButton.icon(
                   onPressed: () => _revokeSession(session['id']),
                   icon: const Icon(Icons.logout, size: 16),
-                  label: const Text('Revoke', style: TextStyle(fontSize: 13)),
+                  label: Text(
+                    l10n.revokeSessionAction,
+                    style: const TextStyle(fontSize: 13),
+                  ),
                   style: TextButton.styleFrom(foregroundColor: AppColors.error),
                 ),
               ),

@@ -2055,4 +2055,824 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enableButton => 'Enable';
+
+  @override
+  String get createButton => 'Create';
+
+  @override
+  String get allLabel => 'All';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String operationFailed(String error) {
+    return 'Failed: $error';
+  }
+
+  @override
+  String get roleLabel => 'Role';
+
+  @override
+  String get addGeofenceTooltip => 'Add geofence';
+
+  @override
+  String get savedTemplatesTitle => 'Saved templates';
+
+  @override
+  String get createTemplateDialogTitle => 'Create Template';
+
+  @override
+  String get templateNameLabel => 'Template Name';
+
+  @override
+  String get fromAddressLabel => 'From Address';
+
+  @override
+  String get toAddressLabel => 'To Address';
+
+  @override
+  String get templatePickupTimeLabel => 'Pickup Time (HH:mm)';
+
+  @override
+  String get recurrenceLabel => 'Recurrence';
+
+  @override
+  String get recurrenceDaily => 'Daily';
+
+  @override
+  String get recurrenceWeekdays => 'Weekdays';
+
+  @override
+  String get recurrenceWeeklyMonday => 'Weekly Monday';
+
+  @override
+  String get recurrenceWeeklyTuesday => 'Weekly Tuesday';
+
+  @override
+  String get recurrenceWeeklyWednesday => 'Weekly Wednesday';
+
+  @override
+  String get recurrenceWeeklyThursday => 'Weekly Thursday';
+
+  @override
+  String get recurrenceWeeklyFriday => 'Weekly Friday';
+
+  @override
+  String get recurrenceSaturdayLabel => 'Weekly Saturday';
+
+  @override
+  String get recurrenceSundayLabel => 'Weekly Sunday';
+
+  @override
+  String get priceOptionalLabel => 'Price (optional)';
+
+  @override
+  String get generateRidesMenuLabel => 'Generate rides';
+
+  @override
+  String get deactivateTemplateMenuLabel => 'Deactivate';
+
+  @override
+  String get noTemplatesYet => 'No templates yet';
+
+  @override
+  String get noTemplatesSubtitle =>
+      'Create a template to schedule recurring rides';
+
+  @override
+  String get addTemplateButton => 'Add template';
+
+  @override
+  String get ridesGeneratedSuccess => 'Rides generated successfully';
+
+  @override
+  String failedToGenerateRides(String error) {
+    return 'Failed to generate rides: $error';
+  }
+
+  @override
+  String failedToDeactivateTemplate(String error) {
+    return 'Failed to deactivate: $error';
+  }
+
+  @override
+  String get templateBadgeActive => 'Active';
+
+  @override
+  String get templateBadgePaused => 'Paused';
+
+  @override
+  String get geofenceScreenTitle => 'Geofences';
+
+  @override
+  String get zonesTabLabel => 'Zones';
+
+  @override
+  String get recentAlertsTabLabel => 'Recent Alerts';
+
+  @override
+  String get createGeofenceDialogTitle => 'Create Geofence';
+
+  @override
+  String get zoneNameLabel => 'Zone name';
+
+  @override
+  String get geofenceTypeLabel => 'Type';
+
+  @override
+  String get geofenceTypeServiceArea => 'Service Area';
+
+  @override
+  String get geofenceTypeClientPickup => 'Client Pickup';
+
+  @override
+  String get geofenceTypeCustomZone => 'Custom Zone';
+
+  @override
+  String get latitudeLabel => 'Latitude';
+
+  @override
+  String get longitudeLabel => 'Longitude';
+
+  @override
+  String get radiusLabel => 'Radius';
+
+  @override
+  String get notifyOnEntryLabel => 'Notify on entry';
+
+  @override
+  String get notifyOnExitLabel => 'Notify on exit';
+
+  @override
+  String get noGeofenceZonesYet => 'No geofence zones yet';
+
+  @override
+  String get createZonesToMonitorSubtitle =>
+      'Create zones to monitor driver entry and exit events';
+
+  @override
+  String get createZoneButton => 'Create zone';
+
+  @override
+  String get deleteZoneConfirmTitle => 'Delete zone';
+
+  @override
+  String deleteZoneConfirmMsg(String name) {
+    return 'Delete \"$name\"?';
+  }
+
+  @override
+  String get geofenceDeletedSuccess => 'Geofence deleted';
+
+  @override
+  String failedToDeleteGeofence(String error) {
+    return 'Failed to delete: $error';
+  }
+
+  @override
+  String failedToToggleGeofence(String code) {
+    return 'Failed to toggle geofence ($code)';
+  }
+
+  @override
+  String failedToCreateGeofence(String code) {
+    return 'Failed to create geofence ($code)';
+  }
+
+  @override
+  String get geofenceCreatedSuccess => 'Geofence created';
+
+  @override
+  String get fillRequiredFieldsError => 'Please fill in all required fields';
+
+  @override
+  String get noAlertsFound => 'No alerts found';
+
+  @override
+  String driverEnteredGeofence(String geofenceName) {
+    return 'Driver entered $geofenceName';
+  }
+
+  @override
+  String driverLeftGeofence(String geofenceName) {
+    return 'Driver left $geofenceName';
+  }
+
+  @override
+  String get alertFilterAll => 'All';
+
+  @override
+  String get alertFilterEntry => 'Entry';
+
+  @override
+  String get alertFilterExit => 'Exit';
+
+  @override
+  String get alertFilterLabel => 'Filter:';
+
+  @override
+  String geofenceSubtitleAirport(int radius) {
+    return 'Airport zone · ${radius}m radius';
+  }
+
+  @override
+  String geofenceSubtitleServiceArea(int radius) {
+    return 'Service area · ${radius}m radius';
+  }
+
+  @override
+  String geofenceSubtitleClientPickup(int radius) {
+    return 'Client pickup point · ${radius}m radius';
+  }
+
+  @override
+  String geofenceSubtitleCustomZone(int radius) {
+    return 'Custom zone · ${radius}m radius';
+  }
+
+  @override
+  String failedToLoadGeofences(String code) {
+    return 'Failed to load geofences ($code)';
+  }
+
+  @override
+  String failedToLoadAlerts(String code) {
+    return 'Failed to load alerts ($code)';
+  }
+
+  @override
+  String get notifTabNotifications => 'Notifications';
+
+  @override
+  String get notifTabSettings => 'Settings';
+
+  @override
+  String get markAllReadButton => 'Mark all read';
+
+  @override
+  String get clearAllNotificationsMenuLabel => 'Clear All';
+
+  @override
+  String get clearAllConfirmTitle => 'Clear All Notifications';
+
+  @override
+  String get clearAllConfirmContent =>
+      'Are you sure you want to delete all notifications?';
+
+  @override
+  String get deleteAllNotificationsButton => 'Delete All';
+
+  @override
+  String get noNotificationsYet => 'No notifications';
+
+  @override
+  String get notifFilterAll => 'All';
+
+  @override
+  String get notifFilterRides => 'Rides';
+
+  @override
+  String get notifFilterChat => 'Chat';
+
+  @override
+  String get notifFilterGeofence => 'Geofence';
+
+  @override
+  String get notifFilterPools => 'Pools';
+
+  @override
+  String get notifFilterCheckpoints => 'Checkpoints';
+
+  @override
+  String get notifJustNow => 'Just now';
+
+  @override
+  String notifMinutesAgo(int count) {
+    return '${count}m ago';
+  }
+
+  @override
+  String notifHoursAgo(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String notifDaysAgo(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String get notifPrefSectionPush => 'Push Notifications';
+
+  @override
+  String get notifPrefSectionAdditional => 'Additional Channels';
+
+  @override
+  String get notifPrefRideUpdatesSubtitle => 'Status changes, assignments';
+
+  @override
+  String get notifPrefChatMessagesSubtitle => 'New messages from driver/client';
+
+  @override
+  String get notifPrefDriverApproachingLabel => 'Driver Approaching';
+
+  @override
+  String get notifPrefDriverApproachingSubtitle => 'When driver is near pickup';
+
+  @override
+  String get notifPrefGeofenceAlertsLabel => 'Geofence Alerts';
+
+  @override
+  String get notifPrefGeofenceAlertsSubtitle => 'Entry/exit zone alerts';
+
+  @override
+  String get notifPrefPoolUpdatesLabel => 'Pool Updates';
+
+  @override
+  String get notifPrefPoolUpdatesSubtitle => 'Ride pooling notifications';
+
+  @override
+  String get notifPrefEmailLabel => 'Email Notifications';
+
+  @override
+  String get notifPrefEmailSubtitle => 'Receive notifications via email';
+
+  @override
+  String get notifPrefSmsLabel => 'SMS Notifications';
+
+  @override
+  String get notifPrefSmsSubtitle => 'Receive notifications via SMS';
+
+  @override
+  String get notifPrefQuietHours => 'Quiet Hours';
+
+  @override
+  String get notifPrefQuietHoursFrom => 'From';
+
+  @override
+  String get notifPrefQuietHoursTo => 'To';
+
+  @override
+  String get notifPrefNotSet => 'Not set';
+
+  @override
+  String get savePreferencesButton => 'Save Preferences';
+
+  @override
+  String get preferencesSaved => 'Preferences saved';
+
+  @override
+  String get revokeSessionDialogTitle => 'Revoke Session';
+
+  @override
+  String get revokeSessionDialogContent =>
+      'This will log out the device associated with this session.';
+
+  @override
+  String get revokeSessionButton => 'Revoke';
+
+  @override
+  String get revokeAllOtherSessionsDialogTitle => 'Revoke All Other Sessions';
+
+  @override
+  String get revokeAllOtherSessionsDialogContent =>
+      'This will log out all other devices. Only your current session will remain active.';
+
+  @override
+  String get revokeAllButton => 'Revoke All';
+
+  @override
+  String get sessionRevoked => 'Session revoked';
+
+  @override
+  String get allOtherSessionsRevoked => 'All other sessions revoked';
+
+  @override
+  String get noActiveSessions => 'No active sessions';
+
+  @override
+  String get sessionCurrentLabel => 'Current';
+
+  @override
+  String sessionIpLabel(String ip) {
+    return 'IP: $ip';
+  }
+
+  @override
+  String sessionCreatedLabel(String date) {
+    return 'Created: $date';
+  }
+
+  @override
+  String sessionLastActiveLabel(String date) {
+    return 'Last active: $date';
+  }
+
+  @override
+  String get revokeSessionAction => 'Revoke';
+
+  @override
+  String get userManagementTitle => 'User Management';
+
+  @override
+  String get createUserDialogTitle => 'Create User';
+
+  @override
+  String get searchUsersHint => 'Search users...';
+
+  @override
+  String get changeRoleMenuHeader => 'Change Role';
+
+  @override
+  String get changeStatusMenuHeader => 'Change Status';
+
+  @override
+  String get activateUserAction => 'Activate';
+
+  @override
+  String get suspendUserAction => 'Suspend';
+
+  @override
+  String get deactivateUserAction => 'Deactivate';
+
+  @override
+  String get noUsersFound => 'No users found';
+
+  @override
+  String get totalUsersLabel => 'Total';
+
+  @override
+  String get driversStatLabel => 'Drivers';
+
+  @override
+  String get clientsStatLabel => 'Clients';
+
+  @override
+  String get staffStatLabel => 'Staff';
+
+  @override
+  String roleChangedSuccess(String role) {
+    return 'Role updated to $role';
+  }
+
+  @override
+  String statusChangedSuccess(String status) {
+    return 'Status updated to $status';
+  }
+
+  @override
+  String failedToChangeRole(String error) {
+    return 'Failed: $error';
+  }
+
+  @override
+  String failedToChangeStatus(String error) {
+    return 'Failed: $error';
+  }
+
+  @override
+  String failedToCreateUser(String error) {
+    return 'Failed: $error';
+  }
+
+  @override
+  String get blacklistTitle => 'Blacklist';
+
+  @override
+  String get addBlacklistEntryDialogTitle => 'Add Blacklist Entry';
+
+  @override
+  String get clientIdLabel => 'Client ID';
+
+  @override
+  String get driverIdLabel => 'Driver ID';
+
+  @override
+  String get reasonOptionalLabel => 'Reason (optional)';
+
+  @override
+  String get clientDriverIdRequired => 'Client ID and Driver ID are required';
+
+  @override
+  String get removeBlacklistEntryDialogTitle => 'Remove Blacklist Entry';
+
+  @override
+  String get removeBlacklistEntryContent =>
+      'Are you sure you want to remove this blacklist entry?';
+
+  @override
+  String get removeBlacklistEntryButton => 'Remove';
+
+  @override
+  String get noBlacklistEntries => 'No blacklist entries';
+
+  @override
+  String get tenantsTitle => 'Tenants';
+
+  @override
+  String tenantsWithCount(int count) {
+    return 'Tenants · $count companies';
+  }
+
+  @override
+  String get onboardButton => '+ Onboard';
+
+  @override
+  String get noTenantsFound => 'No tenants found';
+
+  @override
+  String get onboardCompanyDialogTitle => 'Onboard Company';
+
+  @override
+  String get editCompanyDialogTitle => 'Edit Company';
+
+  @override
+  String get subscriptionPlanLabel => 'Subscription Plan';
+
+  @override
+  String get colHeaderCompany => 'COMPANY';
+
+  @override
+  String get colHeaderPlan => 'PLAN';
+
+  @override
+  String get colHeaderDrivers => 'DRIVERS';
+
+  @override
+  String get colHeaderRidesPerMonth => 'RIDES / MO';
+
+  @override
+  String get colHeaderStatus => 'STATUS';
+
+  @override
+  String get deactivateCompanyDialogTitle => 'Deactivate Company?';
+
+  @override
+  String deactivateCompanyDialogContent(String name) {
+    return 'Are you sure you want to deactivate \"$name\"?\n\nThe company will be marked as Inactive but all data (rides, invoices, users) will be preserved.';
+  }
+
+  @override
+  String get setActiveAction => 'Set Active';
+
+  @override
+  String get setTrialAction => 'Set Trial';
+
+  @override
+  String get suspendAction => 'Suspend';
+
+  @override
+  String get emergencyReassignmentTitle => 'Emergency Reassignments';
+
+  @override
+  String get emergencyReassignmentDialogTitle => 'Emergency Reassignment';
+
+  @override
+  String get rideIdLabel => 'Ride ID';
+
+  @override
+  String get emergencyReasonLabel => 'Reason';
+
+  @override
+  String get availableDriversLabel => 'Available Drivers:';
+
+  @override
+  String get newDriverIdLabel => 'New Driver ID (optional)';
+
+  @override
+  String get newDriverIdHelper =>
+      'Leave empty to unassign and return to pending';
+
+  @override
+  String get reassignButton => 'Reassign';
+
+  @override
+  String get rideIdRequired => 'Ride ID is required';
+
+  @override
+  String get emergencyReassignmentCreated => 'Emergency reassignment created';
+
+  @override
+  String get noEmergencyReassignments => 'No emergency reassignments';
+
+  @override
+  String get emergencyReasonDriverIllness => 'Driver Illness';
+
+  @override
+  String get emergencyReasonVehicleBreakdown => 'Vehicle Breakdown';
+
+  @override
+  String get emergencyReasonDriverNoShow => 'Driver No-Show';
+
+  @override
+  String get emergencyReasonAccident => 'Accident';
+
+  @override
+  String get emergencyReasonPersonalEmergency => 'Personal Emergency';
+
+  @override
+  String get emergencyReasonOther => 'Other';
+
+  @override
+  String get preferredDriverLabel => 'Preferred';
+
+  @override
+  String emergencyRideLabel(String id) {
+    return 'Ride: $id';
+  }
+
+  @override
+  String emergencyOriginalDriverLabel(String id) {
+    return 'Original driver: $id';
+  }
+
+  @override
+  String emergencyNewDriverLabel(String id) {
+    return 'New driver: $id';
+  }
+
+  @override
+  String get ridePoolsTitle => 'Ride Pools';
+
+  @override
+  String get createRidePoolDialogTitle => 'Create Ride Pool';
+
+  @override
+  String get poolNameOptionalLabel => 'Pool Name (optional)';
+
+  @override
+  String get poolNameHint => 'e.g., Airport Morning Shuttle';
+
+  @override
+  String get routeDirectionOptionalLabel => 'Route Direction (optional)';
+
+  @override
+  String get routeDirectionHint => 'e.g., City Center → Airport';
+
+  @override
+  String get maxPassengersLabel => 'Max Passengers:';
+
+  @override
+  String get ridePoolCreated => 'Ride pool created';
+
+  @override
+  String get noRidePools => 'No ride pools';
+
+  @override
+  String get createPoolToCombineRides => 'Create a pool to combine rides';
+
+  @override
+  String errorLoadingPoolDetails(String error) {
+    return 'Error loading pool details: $error';
+  }
+
+  @override
+  String get poolDetailStatusLabel => 'Status';
+
+  @override
+  String get poolDetailPassengersLabel => 'Passengers';
+
+  @override
+  String get poolDetailRouteLabel => 'Route';
+
+  @override
+  String get poolDetailDriverLabel => 'Driver';
+
+  @override
+  String get poolMembersLabel => 'Members:';
+
+  @override
+  String get noRidesInPool => 'No rides in this pool yet';
+
+  @override
+  String get companySettingsTitle => 'Company Settings';
+
+  @override
+  String get navItemCompany => 'Company';
+
+  @override
+  String get navItemUsersRoles => 'Users & Roles';
+
+  @override
+  String get navItemCompliance => 'Compliance';
+
+  @override
+  String get navItemBillingDatev => 'Billing & DATEV';
+
+  @override
+  String get navItemGeofences => 'Geofences';
+
+  @override
+  String get companyProfileSectionTitle => 'Company profile';
+
+  @override
+  String get companyProfileSubtitle =>
+      'Legal entity information displayed on invoices and reports.';
+
+  @override
+  String get complianceSectionTitle => 'Compliance & Security';
+
+  @override
+  String get complianceSubtitle =>
+      'Data privacy, access management, and audit controls.';
+
+  @override
+  String get billingDatevSectionTitle => 'Billing & DATEV';
+
+  @override
+  String get billingDatevSubtitle =>
+      'Tariff configuration and DATEV export settings.';
+
+  @override
+  String get tariffSettingsSectionTitle => 'Tariff Settings';
+
+  @override
+  String get datevIntegrationSectionTitle => 'DATEV Integration';
+
+  @override
+  String get datevIntegrationSubtitle =>
+      'Beraternummer und Mandantennummer werden im EXTF-Buchungsstapel-Header verwendet.';
+
+  @override
+  String get legalNameLabel => 'Legal name';
+
+  @override
+  String get vatIdLabel => 'VAT ID';
+
+  @override
+  String get defaultCurrencyLabel => 'Default currency';
+
+  @override
+  String get timezoneLabel => 'Timezone';
+
+  @override
+  String get commissionRateLabel => 'Commission Rate (%)';
+
+  @override
+  String get cancellationFeeSettingsLabel => 'Cancellation Fee (€)';
+
+  @override
+  String get noShowFeeLabel => 'No-Show Fee (€)';
+
+  @override
+  String get basePriceLabel => 'Base Price (€)';
+
+  @override
+  String get pricePerKmLabel => 'Price per Km (€)';
+
+  @override
+  String get airportSurchargeLabel => 'Airport Surcharge (€)';
+
+  @override
+  String get nightSurchargeLabel => 'Night Surcharge (€)';
+
+  @override
+  String get workStartLabel => 'Work Start';
+
+  @override
+  String get workEndLabel => 'Work End';
+
+  @override
+  String get settingsSavedSuccess => 'Settings saved successfully';
+
+  @override
+  String failedToSaveSettings(String error) {
+    return 'Failed to save: $error';
+  }
+
+  @override
+  String get gdprExportTitle => 'GDPR export';
+
+  @override
+  String get gdprExportSubtitle => 'Download all personal data';
+
+  @override
+  String get auditLogTitle => 'Audit log';
+
+  @override
+  String get auditLogSubtitle => 'Review system activity';
+
+  @override
+  String get activeSessionsCardTitle => 'Active sessions';
+
+  @override
+  String get activeSessionsCardSubtitle => 'Manage logged-in devices';
+
+  @override
+  String get blacklistCardTitle => 'Blacklist';
+
+  @override
+  String get blacklistCardSubtitle => 'Manage blocked accounts';
+
+  @override
+  String comingSoonLabel(String label) {
+    return '$label coming soon';
+  }
+
+  @override
+  String get settingsCompanyProfile => 'Company Profile';
+
+  @override
+  String get generalSettingsSectionTitle => 'General Settings';
 }

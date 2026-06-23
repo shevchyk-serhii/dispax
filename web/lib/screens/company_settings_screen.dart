@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
+import '../l10n/app_localizations.dart';
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
 
@@ -15,14 +16,6 @@ class _NavItem {
 
   const _NavItem(this.label, this.icon);
 }
-
-const _navItems = [
-  _NavItem('Company', Icons.business_outlined),
-  _NavItem('Users & Roles', Icons.people_outline),
-  _NavItem('Compliance', Icons.security_outlined),
-  _NavItem('Billing & DATEV', Icons.receipt_long_outlined),
-  _NavItem('Geofences', Icons.map_outlined),
-];
 
 class CompanySettingsScreen extends StatefulWidget {
   const CompanySettingsScreen({super.key});
@@ -60,6 +53,14 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
   final _datevBeraternummerController = TextEditingController();
   final _datevMandantennummerController = TextEditingController();
   final _datevSachkontenlaengeController = TextEditingController();
+
+  List<_NavItem> _buildNavItems(AppLocalizations l10n) => [
+    _NavItem(l10n.navItemCompany, Icons.business_outlined),
+    _NavItem(l10n.navItemUsersRoles, Icons.people_outline),
+    _NavItem(l10n.navItemCompliance, Icons.security_outlined),
+    _NavItem(l10n.navItemBillingDatev, Icons.receipt_long_outlined),
+    _NavItem(l10n.navItemGeofences, Icons.map_outlined),
+  ];
 
   @override
   void initState() {
@@ -155,6 +156,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
   }
 
   Future<void> _saveSettings() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isSaving = true);
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
@@ -207,8 +209,8 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Settings saved successfully'),
+          SnackBar(
+            content: Text(l10n.settingsSavedSuccess),
             backgroundColor: AppColors.success,
           ),
         );
@@ -217,7 +219,9 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save: $e'),
+            content: Text(
+              AppLocalizations.of(context)!.failedToSaveSettings(e.toString()),
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -229,28 +233,30 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final navItems = _buildNavItems(l10n);
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= AppDimensions.breakpointDesktop;
 
     return Column(
       children: [
-        _buildGraphiteHeader(isDesktop),
+        _buildGraphiteHeader(l10n),
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
               : _error != null
-              ? _buildError()
+              ? _buildError(l10n)
               : isDesktop
-              ? _buildDesktopLayout()
-              : _buildMobileContent(),
+              ? _buildDesktopLayout(l10n, navItems)
+              : _buildMobileContent(l10n, navItems),
         ),
       ],
     );
   }
 
-  // ─── Graphite header ──────────────────────────────────────────────────────
+  // --- Graphite header ---
 
-  Widget _buildGraphiteHeader(bool isDesktop) {
+  Widget _buildGraphiteHeader(AppLocalizations l10n) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -261,10 +267,10 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Company Settings',
-                    style: TextStyle(
+                    l10n.companySettingsTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
@@ -294,9 +300,9 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     );
   }
 
-  // ─── Error state ──────────────────────────────────────────────────────────
+  // --- Error state ---
 
-  Widget _buildError() {
+  Widget _buildError(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -305,31 +311,31 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
           const SizedBox(height: 12),
           Text(_error!),
           const SizedBox(height: 12),
-          ElevatedButton(onPressed: _loadSettings, child: const Text('Retry')),
+          ElevatedButton(onPressed: _loadSettings, child: Text(l10n.retry)),
         ],
       ),
     );
   }
 
-  // ─── Desktop layout: left nav + content ──────────────────────────────────
+  // --- Desktop layout: left nav + content ---
 
-  Widget _buildDesktopLayout() {
+  Widget _buildDesktopLayout(AppLocalizations l10n, List<_NavItem> navItems) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLeftNav(),
+        _buildLeftNav(l10n, navItems),
         const VerticalDivider(width: 1),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(32),
-            child: _buildNavContent(),
+            child: _buildNavContent(l10n, navItems),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildLeftNav() {
+  Widget _buildLeftNav(AppLocalizations l10n, List<_NavItem> navItems) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: 220,
@@ -338,13 +344,14 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (int i = 0; i < _navItems.length; i++) _buildNavTile(i, isDark),
+          for (int i = 0; i < navItems.length; i++)
+            _buildNavTile(i, isDark, navItems),
         ],
       ),
     );
   }
 
-  Widget _buildNavTile(int index, bool isDark) {
+  Widget _buildNavTile(int index, bool isDark, List<_NavItem> navItems) {
     final isActive = _activeNav == index;
     return GestureDetector(
       onTap: () => setState(() => _activeNav = index),
@@ -366,7 +373,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
           child: Row(
             children: [
               Icon(
-                _navItems[index].icon,
+                navItems[index].icon,
                 size: 18,
                 color: isActive
                     ? AppColors.accent
@@ -374,7 +381,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
               ),
               const SizedBox(width: 10),
               Text(
-                _navItems[index].label,
+                navItems[index].label,
                 style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
@@ -390,114 +397,114 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     );
   }
 
-  Widget _buildNavContent() {
+  Widget _buildNavContent(AppLocalizations l10n, List<_NavItem> navItems) {
     switch (_activeNav) {
       case 0:
-        return _buildCompanyProfileContent();
+        return _buildCompanyProfileContent(l10n);
       case 2:
-        return _buildComplianceContent();
+        return _buildComplianceContent(l10n);
       case 3:
-        return _buildBillingContent();
+        return _buildBillingContent(l10n);
       default:
-        return _buildComingSoon(_navItems[_activeNav].label);
+        return _buildComingSoon(l10n, navItems[_activeNav].label);
     }
   }
 
-  // ─── Mobile fallback: scrollable content ─────────────────────────────────
+  // --- Mobile fallback: scrollable content ---
 
-  Widget _buildMobileContent() {
+  Widget _buildMobileContent(AppLocalizations l10n, List<_NavItem> navItems) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildSectionTitle('Company Profile'),
+        _buildSectionTitle(l10n.settingsCompanyProfile),
         const SizedBox(height: 16),
-        _buildProfileFormGrid(),
+        _buildProfileFormGrid(l10n),
         const SizedBox(height: 24),
-        _buildSectionTitle('Compliance & Security'),
+        _buildSectionTitle(l10n.complianceSectionTitle),
         const SizedBox(height: 12),
-        _buildComplianceCards(),
+        _buildComplianceCards(l10n),
         const SizedBox(height: 24),
-        _buildSectionTitle('General Settings'),
+        _buildSectionTitle(l10n.generalSettingsSectionTitle),
         const SizedBox(height: 12),
         _buildTextField(
           _commissionController,
-          'Commission Rate (%)',
+          l10n.commissionRateLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _cancellationFeeController,
-          'Cancellation Fee (€)',
+          l10n.cancellationFeeSettingsLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _noShowFeeController,
-          'No-Show Fee (€)',
+          l10n.noShowFeeLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 16),
-        _buildTimePickers(),
+        _buildTimePickers(l10n),
         const SizedBox(height: 24),
-        _buildSectionTitle('Tariff Settings'),
+        _buildSectionTitle(l10n.tariffSettingsSectionTitle),
         const SizedBox(height: 12),
         _buildTextField(
           _basePriceController,
-          'Base Price (€)',
+          l10n.basePriceLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _pricePerKmController,
-          'Price per Km (€)',
+          l10n.pricePerKmLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _airportSurchargeController,
-          'Airport Surcharge (€)',
+          l10n.airportSurchargeLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _nightSurchargeController,
-          'Night Surcharge (€)',
+          l10n.nightSurchargeLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 24),
-        _buildSaveButtons(),
+        _buildSaveButtons(l10n),
         const SizedBox(height: 24),
       ],
     );
   }
 
-  // ─── Company Profile section ──────────────────────────────────────────────
+  // --- Company Profile section ---
 
-  Widget _buildCompanyProfileContent() {
+  Widget _buildCompanyProfileContent(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Company profile',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        Text(
+          l10n.companyProfileSectionTitle,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
         Text(
-          'Legal entity information displayed on invoices and reports.',
+          l10n.companyProfileSubtitle,
           style: TextStyle(
             fontSize: 13,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 24),
-        _buildProfileFormGrid(),
+        _buildProfileFormGrid(l10n),
         const SizedBox(height: 32),
-        _buildSaveButtons(),
+        _buildSaveButtons(l10n),
       ],
     );
   }
 
-  Widget _buildProfileFormGrid() {
+  Widget _buildProfileFormGrid(AppLocalizations l10n) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final twoCol = constraints.maxWidth >= 560;
@@ -507,10 +514,15 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: _buildFormField(_legalNameController, 'Legal name'),
+                    child: _buildFormField(
+                      _legalNameController,
+                      l10n.legalNameLabel,
+                    ),
                   ),
                   const SizedBox(width: 16),
-                  Expanded(child: _buildFormField(_vatIdController, 'VAT ID')),
+                  Expanded(
+                    child: _buildFormField(_vatIdController, l10n.vatIdLabel),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -519,12 +531,15 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
                   Expanded(
                     child: _buildFormField(
                       _defaultCurrencyController,
-                      'Default currency',
+                      l10n.defaultCurrencyLabel,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: _buildFormField(_timezoneController, 'Timezone'),
+                    child: _buildFormField(
+                      _timezoneController,
+                      l10n.timezoneLabel,
+                    ),
                   ),
                 ],
               ),
@@ -533,13 +548,16 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
         }
         return Column(
           children: [
-            _buildFormField(_legalNameController, 'Legal name'),
+            _buildFormField(_legalNameController, l10n.legalNameLabel),
             const SizedBox(height: 12),
-            _buildFormField(_vatIdController, 'VAT ID'),
+            _buildFormField(_vatIdController, l10n.vatIdLabel),
             const SizedBox(height: 12),
-            _buildFormField(_defaultCurrencyController, 'Default currency'),
+            _buildFormField(
+              _defaultCurrencyController,
+              l10n.defaultCurrencyLabel,
+            ),
             const SizedBox(height: 12),
-            _buildFormField(_timezoneController, 'Timezone'),
+            _buildFormField(_timezoneController, l10n.timezoneLabel),
           ],
         );
       },
@@ -580,31 +598,31 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     );
   }
 
-  // ─── Compliance section ───────────────────────────────────────────────────
+  // --- Compliance section ---
 
-  Widget _buildComplianceContent() {
+  Widget _buildComplianceContent(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Compliance & Security',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        Text(
+          l10n.complianceSectionTitle,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
         Text(
-          'Data privacy, access management, and audit controls.',
+          l10n.complianceSubtitle,
           style: TextStyle(
             fontSize: 13,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 24),
-        _buildComplianceCards(),
+        _buildComplianceCards(l10n),
       ],
     );
   }
 
-  Widget _buildComplianceCards() {
+  Widget _buildComplianceCards(AppLocalizations l10n) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -616,8 +634,8 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
                 ? AppColors.rideCompletedBgDark
                 : AppColors.successBg,
             iconColor: const Color(0xFF22C55E),
-            title: 'GDPR export',
-            subtitle: 'Download all personal data',
+            title: l10n.gdprExportTitle,
+            subtitle: l10n.gdprExportSubtitle,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const GdprScreen()),
@@ -627,8 +645,8 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
             icon: Icons.history_outlined,
             iconBg: isDark ? AppColors.rideAssignedBgDark : AppColors.infoBg,
             iconColor: const Color(0xFF3B82F6),
-            title: 'Audit log',
-            subtitle: 'Review system activity',
+            title: l10n.auditLogTitle,
+            subtitle: l10n.auditLogSubtitle,
             onTap: null, // TODO: audit log screen not yet implemented
           ),
           _ComplianceCard(
@@ -639,8 +657,8 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
             iconColor: isDark
                 ? AppColors.textSecondaryDark
                 : AppColors.textSecondary,
-            title: 'Active sessions',
-            subtitle: 'Manage logged-in devices',
+            title: l10n.activeSessionsCardTitle,
+            subtitle: l10n.activeSessionsCardSubtitle,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -652,8 +670,8 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
             icon: Icons.block_outlined,
             iconBg: isDark ? AppColors.rideCancelledBgDark : AppColors.errorBg,
             iconColor: const Color(0xFFEF4444),
-            title: 'Blacklist',
-            subtitle: 'Manage blocked accounts',
+            title: l10n.blacklistCardTitle,
+            subtitle: l10n.blacklistCardSubtitle,
             onTap: null, // TODO: blacklist screen not yet implemented
           ),
         ];
@@ -764,61 +782,62 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     );
   }
 
-  // ─── Billing & DATEV section ──────────────────────────────────────────────
+  // --- Billing & DATEV section ---
 
-  Widget _buildBillingContent() {
+  Widget _buildBillingContent(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Billing & DATEV',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        Text(
+          l10n.billingDatevSectionTitle,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
         Text(
-          'Tariff configuration and DATEV export settings.',
+          l10n.billingDatevSubtitle,
           style: TextStyle(
             fontSize: 13,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 24),
-        _buildSectionTitle('Tariff Settings'),
+        _buildSectionTitle(l10n.tariffSettingsSectionTitle),
         const SizedBox(height: 12),
         _buildTextField(
           _basePriceController,
-          'Base Price (€)',
+          l10n.basePriceLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _pricePerKmController,
-          'Price per Km (€)',
+          l10n.pricePerKmLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _airportSurchargeController,
-          'Airport Surcharge (€)',
+          l10n.airportSurchargeLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _nightSurchargeController,
-          'Night Surcharge (€)',
+          l10n.nightSurchargeLabel,
           TextInputType.number,
         ),
         const SizedBox(height: 24),
-        _buildSectionTitle('DATEV Integration'),
+        _buildSectionTitle(l10n.datevIntegrationSectionTitle),
         const SizedBox(height: 4),
         Text(
-          'Beraternummer und Mandantennummer werden im EXTF-Buchungsstapel-Header verwendet.',
+          l10n.datevIntegrationSubtitle,
           style: TextStyle(
             fontSize: 12,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 12),
+        // DATEV technical labels intentionally hardcoded (German field names)
         _buildTextField(
           _datevBeraternummerController,
           'Beraternummer (max. 7 Stellen)',
@@ -837,14 +856,14 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
           TextInputType.number,
         ),
         const SizedBox(height: 32),
-        _buildSaveButtons(),
+        _buildSaveButtons(l10n),
       ],
     );
   }
 
-  // ─── Coming soon placeholder ──────────────────────────────────────────────
+  // --- Coming soon placeholder ---
 
-  Widget _buildComingSoon(String label) {
+  Widget _buildComingSoon(AppLocalizations l10n, String label) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.only(top: 80),
@@ -857,7 +876,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              '$label coming soon',
+              l10n.comingSoonLabel(label),
               style: TextStyle(
                 fontSize: 15,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -869,7 +888,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     );
   }
 
-  // ─── Shared field / section helpers ──────────────────────────────────────
+  // --- Shared field / section helpers ---
 
   Widget _buildSectionTitle(String title) {
     return Text(
@@ -894,7 +913,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     );
   }
 
-  Widget _buildTimePickers() {
+  Widget _buildTimePickers(AppLocalizations l10n) {
     return Row(
       children: [
         Expanded(
@@ -907,9 +926,9 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
               if (picked != null) setState(() => _workStart = picked);
             },
             child: InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Work Start',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.workStartLabel,
+                border: const OutlineInputBorder(),
               ),
               child: Text(_workStart.format(context)),
             ),
@@ -926,9 +945,9 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
               if (picked != null) setState(() => _workEnd = picked);
             },
             child: InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Work End',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.workEndLabel,
+                border: const OutlineInputBorder(),
               ),
               child: Text(_workEnd.format(context)),
             ),
@@ -938,9 +957,9 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     );
   }
 
-  // ─── Cancel / Save buttons ────────────────────────────────────────────────
+  // --- Cancel / Save buttons ---
 
-  Widget _buildSaveButtons() {
+  Widget _buildSaveButtons(AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -957,7 +976,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
               foregroundColor: Theme.of(context).colorScheme.onSurface,
               padding: const EdgeInsets.symmetric(horizontal: 20),
             ),
-            child: const Text('Cancel', style: TextStyle(fontSize: 14)),
+            child: Text(l10n.cancel, style: const TextStyle(fontSize: 14)),
           ),
         ),
         const SizedBox(width: 12),
@@ -984,7 +1003,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
                       color: Colors.white,
                     ),
                   )
-                : const Text('Save', style: TextStyle(fontSize: 14)),
+                : Text(l10n.save, style: const TextStyle(fontSize: 14)),
           ),
         ),
       ],

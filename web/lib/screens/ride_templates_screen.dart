@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
+import '../l10n/app_localizations.dart';
 import '../modules/core/models/ride_template.dart';
 import '../modules/core/models/person.dart';
 
@@ -69,9 +70,10 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
       _loadData();
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to deactivate: $e'),
+          content: Text(l10n.failedToDeactivateTemplate(e.toString())),
           backgroundColor: AppColors.error,
         ),
       );
@@ -96,30 +98,36 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
           });
 
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Rides generated successfully'),
+          SnackBar(
+            content: Text(l10n.ridesGeneratedSuccess),
             backgroundColor: AppColors.success,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate rides: ${response.body}'),
+            content: Text(l10n.failedToGenerateRides(response.body)),
             backgroundColor: AppColors.error,
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text(l10n.genericError(e.toString())),
+          backgroundColor: AppColors.error,
+        ),
       );
     }
   }
 
   void _showCreateDialog() {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
     final fromController = TextEditingController();
     final toController = TextEditingController();
@@ -136,7 +144,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Create Template'),
+          title: Text(l10n.createTemplateDialogTitle),
           content: SizedBox(
             width: 400,
             child: Form(
@@ -147,15 +155,15 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   children: [
                     TextFormField(
                       controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Template Name',
+                      decoration: InputDecoration(
+                        labelText: l10n.templateNameLabel,
                       ),
                       validator: (v) =>
-                          v == null || v.isEmpty ? 'Required' : null,
+                          v == null || v.isEmpty ? l10n.required : null,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Client'),
+                      decoration: InputDecoration(labelText: l10n.clientLabel),
                       initialValue: selectedClientId,
                       items: _clients
                           .map(
@@ -167,74 +175,77 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                           .toList(),
                       onChanged: (v) =>
                           setDialogState(() => selectedClientId = v),
-                      validator: (v) => v == null ? 'Required' : null,
+                      validator: (v) => v == null ? l10n.required : null,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     TextFormField(
                       controller: fromController,
-                      decoration: const InputDecoration(
-                        labelText: 'From Address',
+                      decoration: InputDecoration(
+                        labelText: l10n.fromAddressLabel,
                       ),
                       validator: (v) =>
-                          v == null || v.isEmpty ? 'Required' : null,
+                          v == null || v.isEmpty ? l10n.required : null,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     TextFormField(
                       controller: toController,
-                      decoration: const InputDecoration(
-                        labelText: 'To Address',
+                      decoration: InputDecoration(
+                        labelText: l10n.toAddressLabel,
                       ),
                       validator: (v) =>
-                          v == null || v.isEmpty ? 'Required' : null,
+                          v == null || v.isEmpty ? l10n.required : null,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     TextFormField(
                       controller: timeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Pickup Time (HH:mm)',
+                      decoration: InputDecoration(
+                        labelText: l10n.templatePickupTimeLabel,
                       ),
                       validator: (v) =>
-                          v == null || v.isEmpty ? 'Required' : null,
+                          v == null || v.isEmpty ? l10n.required : null,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Recurrence',
+                      decoration: InputDecoration(
+                        labelText: l10n.recurrenceLabel,
                       ),
                       initialValue: recurrencePattern,
-                      items: const [
-                        DropdownMenuItem(value: 'Daily', child: Text('Daily')),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'Daily',
+                          child: Text(l10n.recurrenceDaily),
+                        ),
                         DropdownMenuItem(
                           value: 'Weekdays',
-                          child: Text('Weekdays'),
+                          child: Text(l10n.recurrenceWeekdays),
                         ),
                         DropdownMenuItem(
                           value: 'Weekly-Mon',
-                          child: Text('Weekly Monday'),
+                          child: Text(l10n.recurrenceWeeklyMonday),
                         ),
                         DropdownMenuItem(
                           value: 'Weekly-Tue',
-                          child: Text('Weekly Tuesday'),
+                          child: Text(l10n.recurrenceWeeklyTuesday),
                         ),
                         DropdownMenuItem(
                           value: 'Weekly-Wed',
-                          child: Text('Weekly Wednesday'),
+                          child: Text(l10n.recurrenceWeeklyWednesday),
                         ),
                         DropdownMenuItem(
                           value: 'Weekly-Thu',
-                          child: Text('Weekly Thursday'),
+                          child: Text(l10n.recurrenceWeeklyThursday),
                         ),
                         DropdownMenuItem(
                           value: 'Weekly-Fri',
-                          child: Text('Weekly Friday'),
+                          child: Text(l10n.recurrenceWeeklyFriday),
                         ),
                         DropdownMenuItem(
                           value: 'Weekly-Sat',
-                          child: Text('Weekly Saturday'),
+                          child: Text(l10n.recurrenceSaturdayLabel),
                         ),
                         DropdownMenuItem(
                           value: 'Weekly-Sun',
-                          child: Text('Weekly Sunday'),
+                          child: Text(l10n.recurrenceSundayLabel),
                         ),
                       ],
                       onChanged: (v) => setDialogState(
@@ -244,16 +255,16 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                     const SizedBox(height: AppDimensions.paddingSmall),
                     TextFormField(
                       controller: notesController,
-                      decoration: const InputDecoration(
-                        labelText: 'Notes (optional)',
+                      decoration: InputDecoration(
+                        labelText: l10n.notesOptionalLabel,
                       ),
                       maxLines: 2,
                     ),
                     const SizedBox(height: AppDimensions.paddingSmall),
                     TextFormField(
                       controller: priceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Price (optional)',
+                      decoration: InputDecoration(
+                        labelText: l10n.priceOptionalLabel,
                       ),
                       keyboardType: TextInputType.number,
                     ),
@@ -265,7 +276,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -301,7 +312,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   } else {
                     messenger.showSnackBar(
                       SnackBar(
-                        content: Text('Failed: ${response.body}'),
+                        content: Text(l10n.operationFailed(response.body)),
                         backgroundColor: AppColors.error,
                       ),
                     );
@@ -310,7 +321,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   if (!mounted) return;
                   messenger.showSnackBar(
                     SnackBar(
-                      content: Text('Error: $e'),
+                      content: Text(l10n.genericError(e.toString())),
                       backgroundColor: AppColors.error,
                     ),
                   );
@@ -320,7 +331,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                 backgroundColor: AppColors.accent,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Create'),
+              child: Text(l10n.createButton),
             ),
           ],
         ),
@@ -341,6 +352,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
   }
 
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -355,9 +367,9 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
           child: Row(
             children: [
               Expanded(
-                child: const Text(
-                  'Saved templates',
-                  style: TextStyle(
+                child: Text(
+                  l10n.savedTemplatesTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -368,12 +380,12 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
               IconButton(
                 icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
                 onPressed: _loadData,
-                tooltip: 'Refresh',
+                tooltip: l10n.refresh,
               ),
               IconButton(
                 icon: const Icon(Icons.add, color: Colors.white, size: 22),
                 onPressed: _showCreateDialog,
-                tooltip: 'Add template',
+                tooltip: l10n.addTemplateButton,
               ),
             ],
           ),
@@ -388,6 +400,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
     }
 
     if (_error != null) {
+      final l10n = AppLocalizations.of(context)!;
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -396,13 +409,14 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
             const SizedBox(height: 12),
             Text(_error!, textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
+            ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
           ],
         ),
       );
     }
 
     if (_templates.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -414,7 +428,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'No templates yet',
+              l10n.noTemplatesYet,
               style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -423,7 +437,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Create a template to schedule recurring rides',
+              l10n.noTemplatesSubtitle,
               style: TextStyle(
                 fontSize: 13,
                 color: Theme.of(context).colorScheme.outlineVariant,
@@ -433,7 +447,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
             FilledButton.icon(
               onPressed: _showCreateDialog,
               icon: const Icon(Icons.add, size: 16),
-              label: const Text('Add template'),
+              label: Text(l10n.addTemplateButton),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: Colors.white,
@@ -636,10 +650,11 @@ class _TemplateBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isActive) {
       return _badge(
-        label: 'Active',
+        label: l10n.templateBadgeActive,
         bg: isDark ? AppColors.rideCompletedBgDark : const Color(0xFFF0FDF4),
         border: isDark
             ? AppColors.rideCompletedBgDark
@@ -648,7 +663,7 @@ class _TemplateBadge extends StatelessWidget {
       );
     }
     return _badge(
-      label: 'Paused',
+      label: l10n.templateBadgePaused,
       bg: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF4F4F5),
       border: isDark ? AppColors.borderDark : const Color(0xFFE4E4E7),
       fg: isDark ? AppColors.textSecondaryDark : const Color(0xFFA1A1AA),
@@ -687,6 +702,7 @@ class _TemplateActionsMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return PopupMenuButton<String>(
       icon: Icon(
         Icons.more_vert,
@@ -698,13 +714,13 @@ class _TemplateActionsMenu extends StatelessWidget {
         if (value == 'deactivate') onDeactivate();
       },
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'generate',
           child: Row(
             children: [
-              Icon(Icons.auto_awesome, size: 16),
-              SizedBox(width: 8),
-              Text('Generate rides'),
+              const Icon(Icons.auto_awesome, size: 16),
+              const SizedBox(width: 8),
+              Text(l10n.generateRidesMenuLabel),
             ],
           ),
         ),
@@ -714,7 +730,10 @@ class _TemplateActionsMenu extends StatelessWidget {
             children: [
               Icon(Icons.block, size: 16, color: AppColors.error),
               const SizedBox(width: 8),
-              Text('Deactivate', style: TextStyle(color: AppColors.error)),
+              Text(
+                l10n.deactivateAction,
+                style: TextStyle(color: AppColors.error),
+              ),
             ],
           ),
         ),

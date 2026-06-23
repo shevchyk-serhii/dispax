@@ -6,6 +6,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../constants/app_styles.dart';
+import '../l10n/app_localizations.dart';
 import '../modules/core/models/geofence.dart';
 
 class GeofenceScreen extends StatefulWidget {
@@ -62,7 +63,11 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         });
       } else {
         setState(() {
-          _geofenceError = 'Failed to load geofences (${response.statusCode})';
+          _geofenceError = mounted
+              ? AppLocalizations.of(
+                  context,
+                )!.failedToLoadGeofences(response.statusCode.toString())
+              : 'Failed to load geofences (${response.statusCode})';
           _isLoadingGeofences = false;
         });
       }
@@ -90,7 +95,11 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         });
       } else {
         setState(() {
-          _alertError = 'Failed to load alerts (${response.statusCode})';
+          _alertError = mounted
+              ? AppLocalizations.of(
+                  context,
+                )!.failedToLoadAlerts(response.statusCode.toString())
+              : 'Failed to load alerts (${response.statusCode})';
           _isLoadingAlerts = false;
         });
       }
@@ -142,7 +151,9 @@ class _GeofenceScreenState extends State<GeofenceScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Failed to toggle geofence (${response.statusCode})',
+                AppLocalizations.of(
+                  context,
+                )!.failedToToggleGeofence(response.statusCode.toString()),
               ),
             ),
           );
@@ -158,7 +169,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
     }
   }
 
-  Future<void> _deleteGeofence(String id) async {
+  Future<void> _deleteGeofence(String id, String name) async {
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       final response = await apiClient.delete('/geofences/$id');
@@ -167,16 +178,26 @@ class _GeofenceScreenState extends State<GeofenceScreen>
           _geofences.removeWhere((g) => g.id == id);
         });
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Geofence deleted')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.geofenceDeletedSuccess,
+              ),
+            ),
+          );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(
+                context,
+              )!.failedToDeleteGeofence(e.toString()),
+            ),
+          ),
+        );
       }
     }
   }
@@ -188,16 +209,22 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       if (response.statusCode == 200 || response.statusCode == 201) {
         await _loadGeofences();
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Geofence created')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.geofenceCreatedSuccess,
+              ),
+            ),
+          );
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Failed to create geofence (${response.statusCode})',
+                AppLocalizations.of(
+                  context,
+                )!.failedToCreateGeofence(response.statusCode.toString()),
               ),
             ),
           );
@@ -205,9 +232,13 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.genericError(e.toString()),
+            ),
+          ),
+        );
       }
     }
   }
@@ -215,6 +246,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
   // ── Create dialog ─────────────────────────────────────────────────────────
 
   void _showCreateDialog() {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
     final latController = TextEditingController();
     final lngController = TextEditingController();
@@ -256,10 +288,10 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                         size: 20,
                       ),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Create Geofence',
-                          style: TextStyle(
+                          l10n.createGeofenceDialogTitle,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -287,31 +319,31 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                         TextField(
                           controller: nameController,
                           decoration: AppStyles.textFieldDecoration(
-                            labelText: 'Zone name',
+                            labelText: l10n.zoneNameLabel,
                           ),
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
                           initialValue: selectedType,
                           decoration: AppStyles.textFieldDecoration(
-                            labelText: 'Type',
+                            labelText: l10n.geofenceTypeLabel,
                           ),
-                          items: const [
+                          items: [
                             DropdownMenuItem(
                               value: 'Airport',
-                              child: Text('Airport'),
+                              child: Text(l10n.airport),
                             ),
                             DropdownMenuItem(
                               value: 'ServiceArea',
-                              child: Text('Service Area'),
+                              child: Text(l10n.geofenceTypeServiceArea),
                             ),
                             DropdownMenuItem(
                               value: 'ClientPickup',
-                              child: Text('Client Pickup'),
+                              child: Text(l10n.geofenceTypeClientPickup),
                             ),
                             DropdownMenuItem(
                               value: 'CustomZone',
-                              child: Text('Custom Zone'),
+                              child: Text(l10n.geofenceTypeCustomZone),
                             ),
                           ],
                           onChanged: (v) {
@@ -332,7 +364,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                                       signed: true,
                                     ),
                                 decoration: AppStyles.textFieldDecoration(
-                                  labelText: 'Latitude',
+                                  labelText: l10n.latitudeLabel,
                                 ),
                               ),
                             ),
@@ -346,7 +378,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                                       signed: true,
                                     ),
                                 decoration: AppStyles.textFieldDecoration(
-                                  labelText: 'Longitude',
+                                  labelText: l10n.longitudeLabel,
                                 ),
                               ),
                             ),
@@ -357,7 +389,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Radius: ${radiusMeters.toInt()}m',
+                              '${l10n.radiusLabel}: ${radiusMeters.toInt()}m',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
@@ -376,9 +408,9 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                           ],
                         ),
                         SwitchListTile(
-                          title: const Text(
-                            'Notify on entry',
-                            style: TextStyle(fontSize: 14),
+                          title: Text(
+                            l10n.notifyOnEntryLabel,
+                            style: const TextStyle(fontSize: 14),
                           ),
                           value: notifyOnEntry,
                           activeThumbColor: AppColors.accent,
@@ -388,9 +420,9 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                           contentPadding: EdgeInsets.zero,
                         ),
                         SwitchListTile(
-                          title: const Text(
-                            'Notify on exit',
-                            style: TextStyle(fontSize: 14),
+                          title: Text(
+                            l10n.notifyOnExitLabel,
+                            style: const TextStyle(fontSize: 14),
                           ),
                           value: notifyOnExit,
                           activeThumbColor: AppColors.accent,
@@ -412,7 +444,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                       TextButton(
                         style: AppStyles.textButtonStyle,
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Cancel'),
+                        child: Text(l10n.cancel),
                       ),
                       const SizedBox(width: 8),
                       FilledButton(
@@ -428,10 +460,8 @@ class _GeofenceScreenState extends State<GeofenceScreen>
 
                           if (name.isEmpty || lat == null || lng == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Please fill in all required fields',
-                                ),
+                              SnackBar(
+                                content: Text(l10n.fillRequiredFieldsError),
                               ),
                             );
                             return;
@@ -450,7 +480,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                             ),
                           );
                         },
-                        child: const Text('Save'),
+                        child: Text(l10n.save),
                       ),
                     ],
                   ),
@@ -495,19 +525,19 @@ class _GeofenceScreenState extends State<GeofenceScreen>
     }
   }
 
-  String _getTypeSubtitle(String type, int radiusMeters) {
-    final radius = '${radiusMeters}m radius';
+  String _getTypeSubtitle(BuildContext context, String type, int radiusMeters) {
+    final l10n = AppLocalizations.of(context)!;
     switch (type) {
       case 'Airport':
-        return 'Airport zone · $radius';
+        return l10n.geofenceSubtitleAirport(radiusMeters);
       case 'ServiceArea':
-        return 'Service area · $radius';
+        return l10n.geofenceSubtitleServiceArea(radiusMeters);
       case 'ClientPickup':
-        return 'Client pickup point · $radius';
+        return l10n.geofenceSubtitleClientPickup(radiusMeters);
       case 'CustomZone':
-        return 'Custom zone · $radius';
+        return l10n.geofenceSubtitleCustomZone(radiusMeters);
       default:
-        return radius;
+        return '${radiusMeters}m radius';
     }
   }
 
@@ -515,6 +545,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
@@ -535,9 +566,9 @@ class _GeofenceScreenState extends State<GeofenceScreen>
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
-            tabs: const [
-              Tab(text: 'Zones'),
-              Tab(text: 'Recent Alerts'),
+            tabs: [
+              Tab(text: l10n.zonesTabLabel),
+              Tab(text: l10n.recentAlertsTabLabel),
             ],
           ),
         ),
@@ -554,6 +585,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
   // ── Graphite header ───────────────────────────────────────────────────────
 
   Widget _buildHeader(bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -576,10 +608,10 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                   size: 22,
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Geofences',
-                    style: TextStyle(
+                    l10n.geofenceScreenTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -592,7 +624,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                     color: Colors.white,
                     size: 24,
                   ),
-                  tooltip: 'Add geofence',
+                  tooltip: l10n.addGeofenceTooltip,
                   onPressed: _showCreateDialog,
                 ),
                 IconButton(
@@ -601,7 +633,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                     color: Colors.white,
                     size: 22,
                   ),
-                  tooltip: 'Refresh',
+                  tooltip: l10n.refresh,
                   onPressed: () {
                     _loadGeofences();
                     _loadAlerts();
@@ -618,6 +650,8 @@ class _GeofenceScreenState extends State<GeofenceScreen>
   // ── Geofence list ─────────────────────────────────────────────────────────
 
   Widget _buildGeofenceList(bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_isLoadingGeofences) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
@@ -634,7 +668,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
             FilledButton(
               style: AppStyles.accentButtonStyle,
               onPressed: _loadGeofences,
-              child: const Text('Retry'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -653,7 +687,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
             ),
             const SizedBox(height: 12),
             Text(
-              'No geofence zones yet',
+              l10n.noGeofenceZonesYet,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -664,7 +698,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
             ),
             const SizedBox(height: 6),
             Text(
-              'Create zones to monitor driver entry and exit events',
+              l10n.createZonesToMonitorSubtitle,
               style: TextStyle(
                 fontSize: 13,
                 color: isDark
@@ -678,7 +712,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
               style: AppStyles.accentButtonStyle,
               onPressed: _showCreateDialog,
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Create zone'),
+              label: Text(l10n.createZoneButton),
             ),
           ],
         ),
@@ -702,6 +736,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
   // ── Zone row — dot + name + action subtitle + toggle ──────────────────────
 
   Widget _buildZoneRow(Geofence geofence, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final typeColor = _getTypeColor(geofence.geofenceType);
     final isToggling = _togglingIds.contains(geofence.id);
 
@@ -722,12 +757,12 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         return await showAdaptiveDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(
-                title: const Text('Delete zone'),
-                content: Text('Delete "${geofence.name}"?'),
+                title: Text(l10n.deleteZoneConfirmTitle),
+                content: Text(l10n.deleteZoneConfirmMsg(geofence.name)),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Cancel'),
+                    child: Text(l10n.cancel),
                   ),
                   FilledButton(
                     style: ElevatedButton.styleFrom(
@@ -735,14 +770,14 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Delete'),
+                    child: Text(l10n.delete),
                   ),
                 ],
               ),
             ) ??
             false;
       },
-      onDismissed: (_) => _deleteGeofence(geofence.id),
+      onDismissed: (_) => _deleteGeofence(geofence.id, geofence.name),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
@@ -804,6 +839,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                   const SizedBox(height: 2),
                   Text(
                     _getTypeSubtitle(
+                      context,
                       geofence.geofenceType,
                       geofence.radiusMeters,
                     ),
@@ -820,7 +856,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                     children: [
                       if (geofence.notifyOnEntry)
                         _notifyChip(
-                          'Entry',
+                          l10n.alertFilterEntry,
                           Icons.arrow_downward,
                           AppColors.success,
                         ),
@@ -828,7 +864,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                         const SizedBox(width: 4),
                       if (geofence.notifyOnExit)
                         _notifyChip(
-                          'Exit',
+                          l10n.alertFilterExit,
                           Icons.arrow_upward,
                           AppColors.error,
                         ),
@@ -890,6 +926,8 @@ class _GeofenceScreenState extends State<GeofenceScreen>
   // ── Alerts list ───────────────────────────────────────────────────────────
 
   Widget _buildAlertsList(bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_isLoadingAlerts) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
@@ -906,7 +944,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
             FilledButton(
               style: AppStyles.accentButtonStyle,
               onPressed: _loadAlerts,
-              child: const Text('Retry'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -930,7 +968,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
           child: Row(
             children: [
               Text(
-                'Filter:',
+                l10n.alertFilterLabel,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -940,30 +978,34 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                 ),
               ),
               const SizedBox(width: 8),
-              ...['All', 'Entry', 'Exit'].map(
-                (f) => Padding(
+              ...[
+                ('All', l10n.allLabel),
+                ('Entry', l10n.alertFilterEntry),
+                ('Exit', l10n.alertFilterExit),
+              ].map(
+                (entry) => Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: ChoiceChip(
-                    label: Text(f),
-                    selected: _alertFilter == f,
+                    label: Text(entry.$2),
+                    selected: _alertFilter == entry.$1,
                     selectedColor: AppColors.accent.withValues(alpha: 0.15),
                     labelStyle: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: _alertFilter == f
+                      color: _alertFilter == entry.$1
                           ? AppColors.accent
                           : (isDark
                                 ? AppColors.textSecondaryDark
                                 : AppColors.textSecondary),
                     ),
                     side: BorderSide(
-                      color: _alertFilter == f
+                      color: _alertFilter == entry.$1
                           ? AppColors.accent
                           : (isDark
                                 ? AppColors.borderDark
                                 : AppColors.borderPrimary),
                     ),
-                    onSelected: (_) => setState(() => _alertFilter = f),
+                    onSelected: (_) => setState(() => _alertFilter = entry.$1),
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
@@ -985,7 +1027,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No alerts found',
+                        l10n.noAlertsFound,
                         style: TextStyle(
                           color: isDark
                               ? AppColors.textSecondaryDark
@@ -1025,12 +1067,13 @@ class _GeofenceScreenState extends State<GeofenceScreen>
     int total,
     bool isDark,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final isEntry = alert.alertType == 'entry';
     final color = isEntry ? AppColors.success : AppColors.error;
     final icon = isEntry ? Icons.arrow_downward : Icons.arrow_upward;
     final text = isEntry
-        ? 'Driver entered ${alert.geofenceName}'
-        : 'Driver left ${alert.geofenceName}';
+        ? l10n.driverEnteredGeofence(alert.geofenceName)
+        : l10n.driverLeftGeofence(alert.geofenceName);
 
     final driverLabel = alert.driverId.length > 8
         ? '${alert.driverId.substring(0, 8)}…'

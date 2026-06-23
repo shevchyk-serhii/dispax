@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
+import '../l10n/app_localizations.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -17,8 +18,18 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   List<Map<String, dynamic>> _users = [];
   bool _isLoading = true;
   String? _error;
-  String _roleFilter = 'All';
+  // Internal filter key — compared with API role strings (lowercase)
+  String _roleFilterKey = 'all';
   final _searchController = TextEditingController();
+
+  // Map of internal filter key → display label (built with l10n)
+  Map<String, String> _filterEntries(AppLocalizations l10n) => {
+    'all': l10n.allLabel,
+    'driver': l10n.roleDriver,
+    'client': l10n.roleClient,
+    'secretary': l10n.roleSecretary,
+    'dispatcher': l10n.roleDispatcher,
+  };
 
   @override
   void initState() {
@@ -55,12 +66,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   List<Map<String, dynamic>> get _filteredUsers {
     var filtered = _users.toList();
-    if (_roleFilter != 'All') {
+    if (_roleFilterKey != 'all') {
       filtered = filtered
           .where(
-            (u) =>
-                (u['role'] as String? ?? '').toLowerCase() ==
-                _roleFilter.toLowerCase(),
+            (u) => (u['role'] as String? ?? '').toLowerCase() == _roleFilterKey,
           )
           .toList();
     }
@@ -127,7 +136,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Role updated to $newRole'),
+            content: Text(
+              AppLocalizations.of(context)!.roleChangedSuccess(newRole),
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -136,7 +147,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed: $e'),
+            content: Text(
+              AppLocalizations.of(context)!.failedToChangeRole(e.toString()),
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -157,7 +170,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Status updated to $newStatus'),
+            content: Text(
+              AppLocalizations.of(context)!.statusChangedSuccess(newStatus),
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -166,7 +181,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed: $e'),
+            content: Text(
+              AppLocalizations.of(context)!.failedToChangeStatus(e.toString()),
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -175,6 +192,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   void _showCreateUserDialog() {
+    final l10n = AppLocalizations.of(context)!;
     final nameCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
@@ -184,41 +202,41 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Create User'),
+          title: Text(l10n.createUserDialogTitle),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.name,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: emailCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.email,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: passwordCtrl,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.password,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: selectedRole,
-                  decoration: const InputDecoration(
-                    labelText: 'Role',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.roleLabel,
+                    border: const OutlineInputBorder(),
                   ),
                   items: ['driver', 'client', 'secretary', 'dispatcher']
                       .map((r) => DropdownMenuItem(value: r, child: Text(r)))
@@ -232,7 +250,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -250,14 +268,18 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Failed: $e'),
+                        content: Text(
+                          AppLocalizations.of(
+                            context,
+                          )!.failedToCreateUser(e.toString()),
+                        ),
                         backgroundColor: AppColors.error,
                       ),
                     );
                   }
                 }
               },
-              child: const Text('Create'),
+              child: Text(l10n.createButton),
             ),
           ],
         ),
@@ -290,7 +312,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: _loadUsers,
-                        child: const Text('Retry'),
+                        child: Text(AppLocalizations.of(context)!.retry),
                       ),
                     ],
                   ),
@@ -302,6 +324,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -320,10 +343,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 size: 24,
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'User Management',
-                  style: TextStyle(
+                  l10n.userManagementTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -350,6 +373,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Widget _buildStatsBar() {
+    final l10n = AppLocalizations.of(context)!;
     final counts = _roleCounts;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -358,22 +382,22 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatChip(
-            'Total',
+            l10n.totalUsersLabel,
             _users.length.toString(),
             Theme.of(context).colorScheme.primary,
           ),
           _buildStatChip(
-            'Drivers',
+            l10n.driversStatLabel,
             (counts['driver'] ?? 0).toString(),
             AppColors.driverColor,
           ),
           _buildStatChip(
-            'Clients',
+            l10n.clientsStatLabel,
             (counts['client'] ?? 0).toString(),
             AppColors.clientColor,
           ),
           _buildStatChip(
-            'Staff',
+            l10n.staffStatLabel,
             ((counts['secretary'] ?? 0) + (counts['dispatcher'] ?? 0))
                 .toString(),
             AppColors.secretaryColor,
@@ -406,6 +430,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Widget _buildSearchAndFilter() {
+    final l10n = AppLocalizations.of(context)!;
+    final filterMap = _filterEntries(l10n);
     return Container(
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -413,12 +439,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           Expanded(
             child: TextField(
               controller: _searchController,
-              decoration: const InputDecoration(
-                hintText: 'Search users...',
-                prefixIcon: Icon(Icons.search, size: 20),
+              decoration: InputDecoration(
+                hintText: l10n.searchUsersHint,
+                prefixIcon: const Icon(Icons.search, size: 20),
                 isDense: true,
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 8,
                 ),
@@ -428,17 +454,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
           const SizedBox(width: 12),
           DropdownButton<String>(
-            value: _roleFilter,
+            value: _roleFilterKey,
             underline: const SizedBox(),
-            items: [
-              'All',
-              'Driver',
-              'Client',
-              'Secretary',
-              'Dispatcher',
-            ].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+            items: filterMap.entries
+                .map(
+                  (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
+                )
+                .toList(),
             onChanged: (v) {
-              if (v != null) setState(() => _roleFilter = v);
+              if (v != null) setState(() => _roleFilterKey = v);
             },
           ),
         ],
@@ -447,6 +471,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Widget _buildContent() {
+    final l10n = AppLocalizations.of(context)!;
     final users = _filteredUsers;
     if (users.isEmpty) {
       return Center(
@@ -460,7 +485,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'No users found',
+              l10n.noUsersFound,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -577,11 +602,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   }
                 },
                 itemBuilder: (_) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     enabled: false,
                     child: Text(
-                      'Change Role',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      l10n.changeRoleMenuHeader,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                   ...['driver', 'client', 'secretary', 'dispatcher']
@@ -590,27 +615,27 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         (r) => PopupMenuItem(value: 'role:$r', child: Text(r)),
                       ),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     enabled: false,
                     child: Text(
-                      'Change Status',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      l10n.changeStatusMenuHeader,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                   if (status.toLowerCase() != 'active')
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'status:Active',
-                      child: Text('Activate'),
+                      child: Text(l10n.activateUserAction),
                     ),
                   if (status.toLowerCase() != 'suspended')
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'status:Suspended',
-                      child: Text('Suspend'),
+                      child: Text(l10n.suspendUserAction),
                     ),
                   if (status.toLowerCase() != 'inactive')
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'status:Inactive',
-                      child: Text('Deactivate'),
+                      child: Text(l10n.deactivateUserAction),
                     ),
                 ],
               ),

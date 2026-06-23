@@ -7,6 +7,7 @@ import '../blocs/auth/auth_bloc.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../constants/app_styles.dart';
+import '../l10n/app_localizations.dart';
 import '../modules/core/services/api_client.dart';
 
 // ---------------------------------------------------------------------------
@@ -305,7 +306,7 @@ class _CompaniesView extends StatelessWidget {
                         onPressed: () => context
                             .read<SuperAdminCompanyBloc>()
                             .add(LoadCompanies()),
-                        child: const Text('Retry'),
+                        child: Text(AppLocalizations.of(context)!.retry),
                       ),
                     ],
                   ),
@@ -333,10 +334,13 @@ class _GraphiteHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocBuilder<SuperAdminCompanyBloc, SuperAdminCompanyState>(
       builder: (context, state) {
         final count = state is CompaniesLoaded ? state.companies.length : null;
-        final title = count != null ? 'Tenants · $count companies' : 'Tenants';
+        final title = count != null
+            ? l10n.tenantsWithCount(count)
+            : l10n.tenantsTitle;
 
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle.light,
@@ -372,7 +376,7 @@ class _GraphiteHeader extends StatelessWidget {
                       size: 20,
                     ),
                     onPressed: onRefresh,
-                    tooltip: 'Refresh',
+                    tooltip: l10n.refresh,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -381,9 +385,9 @@ class _GraphiteHeader extends StatelessWidget {
                     builder: (ctx) => FilledButton.icon(
                       onPressed: () => _showAddDialog(ctx),
                       icon: const Icon(Icons.add, size: 16),
-                      label: const Text(
-                        '+ Onboard',
-                        style: TextStyle(
+                      label: Text(
+                        l10n.onboardButton,
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -419,6 +423,7 @@ class _CompaniesTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = isDark ? AppColors.borderDark : AppColors.borderPrimary;
     final headerBg = isDark
@@ -437,11 +442,14 @@ class _CompaniesTable extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  const Expanded(flex: 4, child: _ColHeader('COMPANY')),
-                  const Expanded(flex: 2, child: _ColHeader('PLAN')),
-                  const Expanded(flex: 2, child: _ColHeader('DRIVERS')),
-                  const Expanded(flex: 2, child: _ColHeader('RIDES / MO')),
-                  const Expanded(flex: 2, child: _ColHeader('STATUS')),
+                  Expanded(flex: 4, child: _ColHeader(l10n.colHeaderCompany)),
+                  Expanded(flex: 2, child: _ColHeader(l10n.colHeaderPlan)),
+                  Expanded(flex: 2, child: _ColHeader(l10n.colHeaderDrivers)),
+                  Expanded(
+                    flex: 2,
+                    child: _ColHeader(l10n.colHeaderRidesPerMonth),
+                  ),
+                  Expanded(flex: 2, child: _ColHeader(l10n.colHeaderStatus)),
                   const SizedBox(width: 72), // actions column
                 ],
               ),
@@ -450,7 +458,7 @@ class _CompaniesTable extends StatelessWidget {
             // Data rows
             Expanded(
               child: companies.isEmpty
-                  ? const Center(child: Text('No tenants found'))
+                  ? Center(child: Text(l10n.noTenantsFound))
                   : ListView.separated(
                       itemCount: companies.length,
                       separatorBuilder: (_, __) =>
@@ -595,19 +603,31 @@ class _CompanyRow extends StatelessWidget {
                       );
                     }
                   },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'Active', child: Text('Set Active')),
-                    PopupMenuItem(value: 'Trial', child: Text('Set Trial')),
-                    PopupMenuItem(value: 'Suspended', child: Text('Suspend')),
-                    PopupMenuDivider(),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text(
-                        'Deactivate',
-                        style: TextStyle(color: Colors.red),
+                  itemBuilder: (ctx) {
+                    final l10n = AppLocalizations.of(ctx)!;
+                    return [
+                      PopupMenuItem(
+                        value: 'Active',
+                        child: Text(l10n.setActiveAction),
                       ),
-                    ),
-                  ],
+                      PopupMenuItem(
+                        value: 'Trial',
+                        child: Text(l10n.setTrialAction),
+                      ),
+                      PopupMenuItem(
+                        value: 'Suspended',
+                        child: Text(l10n.suspendAction),
+                      ),
+                      const PopupMenuDivider(),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          l10n.deactivateAction,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ];
+                  },
                 ),
               ],
             ),
@@ -618,20 +638,17 @@ class _CompanyRow extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, CompanyInfo c) {
+    final l10n = AppLocalizations.of(context)!;
     final bloc = context.read<SuperAdminCompanyBloc>();
     showAdaptiveDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Deactivate Company?'),
-        content: Text(
-          'Are you sure you want to deactivate "${c.name}"?\n\n'
-          'The company will be marked as Inactive but all data '
-          '(rides, invoices, users) will be preserved.',
-        ),
+        title: Text(l10n.deactivateCompanyDialogTitle),
+        content: Text(l10n.deactivateCompanyDialogContent(c.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -639,7 +656,7 @@ class _CompanyRow extends StatelessWidget {
               bloc.add(DeleteCompany(c.id));
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Deactivate'),
+            child: Text(l10n.deactivateAction),
           ),
         ],
       ),
@@ -859,8 +876,11 @@ class _CompanyFormDialogState extends State<_CompanyFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(_isEdit ? 'Edit Company' : 'Onboard Company'),
+      title: Text(
+        _isEdit ? l10n.editCompanyDialogTitle : l10n.onboardCompanyDialogTitle,
+      ),
       content: SizedBox(
         width: 480,
         child: Form(
@@ -871,39 +891,37 @@ class _CompanyFormDialogState extends State<_CompanyFormDialog> {
               children: [
                 TextFormField(
                   controller: _nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Company Name'),
+                  decoration: InputDecoration(labelText: l10n.companyName),
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Required' : null,
+                      (v == null || v.trim().isEmpty) ? l10n.required : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _emailCtrl,
-                  decoration: const InputDecoration(labelText: 'Company Email'),
+                  decoration: InputDecoration(labelText: l10n.companyEmail),
                   keyboardType: TextInputType.emailAddress,
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Required' : null,
+                      (v == null || v.trim().isEmpty) ? l10n.required : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _phoneCtrl,
-                  decoration: const InputDecoration(labelText: 'Company Phone'),
+                  decoration: InputDecoration(labelText: l10n.companyPhone),
                   keyboardType: TextInputType.phone,
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Required' : null,
+                      (v == null || v.trim().isEmpty) ? l10n.required : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _addressCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Company Address',
-                  ),
+                  decoration: InputDecoration(labelText: l10n.companyAddress),
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Required' : null,
+                      (v == null || v.trim().isEmpty) ? l10n.required : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: _status,
-                  decoration: const InputDecoration(labelText: 'Status'),
+                  decoration: InputDecoration(labelText: l10n.statusLabel),
                   items: _statusOptions
                       .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                       .toList(),
@@ -912,8 +930,8 @@ class _CompanyFormDialogState extends State<_CompanyFormDialog> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: _plan,
-                  decoration: const InputDecoration(
-                    labelText: 'Subscription Plan',
+                  decoration: InputDecoration(
+                    labelText: l10n.subscriptionPlanLabel,
                   ),
                   items: _planOptions
                       .map((p) => DropdownMenuItem(value: p, child: Text(p)))
@@ -928,11 +946,11 @@ class _CompanyFormDialogState extends State<_CompanyFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: _submit,
-          child: Text(_isEdit ? 'Save' : 'Create'),
+          child: Text(_isEdit ? l10n.save : l10n.createButton),
         ),
       ],
     );

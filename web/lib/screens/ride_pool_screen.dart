@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 
 class RidePoolScreen extends StatefulWidget {
   const RidePoolScreen({super.key});
@@ -45,6 +46,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
   }
 
   Future<void> _showCreatePoolDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final nameCtrl = TextEditingController();
     final directionCtrl = TextEditingController();
     int maxPassengers = 4;
@@ -60,7 +62,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 8),
-              const Text('Create Ride Pool'),
+              Text(l10n.createRidePoolDialogTitle),
             ],
           ),
           content: SingleChildScrollView(
@@ -71,27 +73,27 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Pool Name (optional)',
-                      border: OutlineInputBorder(),
-                      hintText: 'e.g., Airport Morning Shuttle',
+                    decoration: InputDecoration(
+                      labelText: l10n.poolNameOptionalLabel,
+                      border: const OutlineInputBorder(),
+                      hintText: l10n.poolNameHint,
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: directionCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Route Direction (optional)',
-                      border: OutlineInputBorder(),
-                      hintText: 'e.g., City Center → Airport',
+                    decoration: InputDecoration(
+                      labelText: l10n.routeDirectionOptionalLabel,
+                      border: const OutlineInputBorder(),
+                      hintText: l10n.routeDirectionHint,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text(
-                        'Max Passengers:',
-                        style: TextStyle(fontSize: 14),
+                      Text(
+                        l10n.maxPassengersLabel,
+                        style: const TextStyle(fontSize: 14),
                       ),
                       const Spacer(),
                       IconButton(
@@ -122,7 +124,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             FilledButton.icon(
               onPressed: () async {
@@ -137,14 +139,20 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                   if (dialogContext.mounted) Navigator.pop(dialogContext, true);
                 } catch (e) {
                   if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(
-                      dialogContext,
-                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(
+                            dialogContext,
+                          )!.genericError(e.toString()),
+                        ),
+                      ),
+                    );
                   }
                 }
               },
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Create'),
+              label: Text(l10n.createButton),
             ),
           ],
         ),
@@ -154,14 +162,17 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
     if (result == true) {
       _loadPools();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Ride pool created')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.ridePoolCreated),
+          ),
+        );
       }
     }
   }
 
   Future<void> _showPoolDetails(Map<String, dynamic> pool) async {
+    final l10n = AppLocalizations.of(context)!;
     final poolId = pool['id']?['value'] ?? pool['id'] ?? '';
 
     try {
@@ -194,30 +205,36 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _detailRow('Status', pool['status'] ?? 'OPEN'),
                 _detailRow(
-                  'Passengers',
+                  l10n.poolDetailStatusLabel,
+                  pool['status'] ?? 'OPEN',
+                ),
+                _detailRow(
+                  l10n.poolDetailPassengersLabel,
                   '${pool['currentPassengers'] ?? 0}/${pool['maxPassengers'] ?? 4}',
                 ),
                 if (pool['routeDirection'] != null)
-                  _detailRow('Route', pool['routeDirection']),
+                  _detailRow(l10n.poolDetailRouteLabel, pool['routeDirection']),
                 if (pool['driverId'] != null)
                   _detailRow(
-                    'Driver',
+                    l10n.poolDetailDriverLabel,
                     _shortId(
                       (pool['driverId']?['value'] ?? pool['driverId'])
                           .toString(),
                     ),
                   ),
                 const Divider(),
-                const Text(
-                  'Members:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                Text(
+                  l10n.poolMembersLabel,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 if (members.isEmpty)
                   Text(
-                    'No rides in this pool yet',
+                    l10n.noRidesInPool,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12,
@@ -257,7 +274,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
+              child: Text(l10n.closeButton),
             ),
           ],
         ),
@@ -265,7 +282,13 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading pool details: $e')),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(
+                context,
+              )!.errorLoadingPoolDetails(e.toString()),
+            ),
+          ),
         );
       }
     }
@@ -301,9 +324,10 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        _buildHeader(),
+        _buildHeader(l10n),
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
@@ -321,7 +345,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                       Text(_error!),
                       ElevatedButton(
                         onPressed: _loadPools,
-                        child: const Text('Retry'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
@@ -338,14 +362,14 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No ride pools',
+                        l10n.noRidePools,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Create a pool to combine rides',
+                        l10n.createPoolToCombineRides,
                         style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.outlineVariant,
@@ -368,7 +392,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -383,10 +407,10 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
             children: [
               const Icon(Icons.groups, color: Colors.white, size: 24),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Ride Pools',
-                  style: TextStyle(
+                  l10n.ridePoolsTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

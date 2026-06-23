@@ -903,5 +903,433 @@
   "biometricSetupTitle": "Biometrische Einrichtung",
   "biometricSetupMessage": "Möchten Sie die schnelle Anmeldung per Biometrie aktivieren?\n\nDamit können Sie sich per Face ID, Touch ID oder Fingerabdruck anmelden.",
   "laterButton": "Später",
-  "enableButton": "Aktivieren"
+  "enableButton": "Aktivieren",
+
+  "createButton": "Erstellen",
+  "allLabel": "Alle",
+  "statusLabel": "Status",
+  "operationFailed": "Fehler: {error}",
+  "@operationFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "roleLabel": "Rolle",
+  "addGeofenceTooltip": "Geofence hinzufügen",
+
+  "savedTemplatesTitle": "Gespeicherte Vorlagen",
+  "createTemplateDialogTitle": "Vorlage erstellen",
+  "templateNameLabel": "Vorlagenname",
+  "fromAddressLabel": "Abfahrtsadresse",
+  "toAddressLabel": "Zieladresse",
+  "templatePickupTimeLabel": "Abholzeit (HH:mm)",
+  "recurrenceLabel": "Wiederholung",
+  "recurrenceDaily": "Täglich",
+  "recurrenceWeekdays": "Wochentags",
+  "recurrenceWeeklyMonday": "Wöchentlich Montag",
+  "recurrenceWeeklyTuesday": "Wöchentlich Dienstag",
+  "recurrenceWeeklyWednesday": "Wöchentlich Mittwoch",
+  "recurrenceWeeklyThursday": "Wöchentlich Donnerstag",
+  "recurrenceWeeklyFriday": "Wöchentlich Freitag",
+  "recurrenceSaturdayLabel": "Wöchentlich Samstag",
+  "recurrenceSundayLabel": "Wöchentlich Sonntag",
+  "priceOptionalLabel": "Preis (optional)",
+  "generateRidesMenuLabel": "Fahrten generieren",
+  "deactivateTemplateMenuLabel": "Deaktivieren",
+  "noTemplatesYet": "Noch keine Vorlagen",
+  "noTemplatesSubtitle": "Erstellen Sie eine Vorlage für wiederkehrende Fahrten",
+  "addTemplateButton": "Vorlage hinzufügen",
+  "ridesGeneratedSuccess": "Fahrten erfolgreich generiert",
+  "failedToGenerateRides": "Fehler beim Generieren: {error}",
+  "@failedToGenerateRides": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToDeactivateTemplate": "Fehler beim Deaktivieren: {error}",
+  "@failedToDeactivateTemplate": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "templateBadgeActive": "Aktiv",
+  "templateBadgePaused": "Pausiert",
+
+  "geofenceScreenTitle": "Geofences",
+  "zonesTabLabel": "Zonen",
+  "recentAlertsTabLabel": "Aktuelle Alarme",
+  "createGeofenceDialogTitle": "Geofence erstellen",
+  "zoneNameLabel": "Zonenname",
+  "geofenceTypeLabel": "Typ",
+  "geofenceTypeServiceArea": "Servicegebiet",
+  "geofenceTypeClientPickup": "Kundenabholung",
+  "geofenceTypeCustomZone": "Benutzerdefinierte Zone",
+  "latitudeLabel": "Breitengrad",
+  "longitudeLabel": "Längengrad",
+  "radiusLabel": "Radius",
+  "notifyOnEntryLabel": "Benachrichtigung bei Einfahrt",
+  "notifyOnExitLabel": "Benachrichtigung bei Ausfahrt",
+  "noGeofenceZonesYet": "Noch keine Geofence-Zonen",
+  "createZonesToMonitorSubtitle": "Erstellen Sie Zonen zur Überwachung von Ein- und Ausfahrten",
+  "createZoneButton": "Zone erstellen",
+  "deleteZoneConfirmTitle": "Zone löschen",
+  "deleteZoneConfirmMsg": "\"{name}\" löschen?",
+  "@deleteZoneConfirmMsg": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "geofenceDeletedSuccess": "Geofence gelöscht",
+  "failedToDeleteGeofence": "Fehler beim Löschen: {error}",
+  "@failedToDeleteGeofence": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToToggleGeofence": "Fehler beim Umschalten ({code})",
+  "@failedToToggleGeofence": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "failedToCreateGeofence": "Fehler beim Erstellen ({code})",
+  "@failedToCreateGeofence": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "geofenceCreatedSuccess": "Geofence erstellt",
+  "fillRequiredFieldsError": "Bitte alle Pflichtfelder ausfüllen",
+  "noAlertsFound": "Keine Alarme gefunden",
+  "driverEnteredGeofence": "Fahrer in {geofenceName} eingefahren",
+  "@driverEnteredGeofence": {
+    "placeholders": {
+      "geofenceName": {"type": "String"}
+    }
+  },
+  "driverLeftGeofence": "Fahrer aus {geofenceName} ausgefahren",
+  "@driverLeftGeofence": {
+    "placeholders": {
+      "geofenceName": {"type": "String"}
+    }
+  },
+  "alertFilterAll": "Alle",
+  "alertFilterEntry": "Einfahrt",
+  "alertFilterExit": "Ausfahrt",
+  "alertFilterLabel": "Filter:",
+  "geofenceSubtitleAirport": "Flughafen-Zone · {radius}m Radius",
+  "@geofenceSubtitleAirport": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "geofenceSubtitleServiceArea": "Servicegebiet · {radius}m Radius",
+  "@geofenceSubtitleServiceArea": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "geofenceSubtitleClientPickup": "Kundenabholpunkt · {radius}m Radius",
+  "@geofenceSubtitleClientPickup": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "geofenceSubtitleCustomZone": "Benutzerdefinierte Zone · {radius}m Radius",
+  "@geofenceSubtitleCustomZone": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "failedToLoadGeofences": "Fehler beim Laden ({code})",
+  "@failedToLoadGeofences": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "failedToLoadAlerts": "Fehler beim Laden der Alarme ({code})",
+  "@failedToLoadAlerts": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+
+  "notifTabNotifications": "Benachrichtigungen",
+  "notifTabSettings": "Einstellungen",
+  "markAllReadButton": "Alle gelesen",
+  "clearAllNotificationsMenuLabel": "Alle löschen",
+  "clearAllConfirmTitle": "Alle Benachrichtigungen löschen",
+  "clearAllConfirmContent": "Möchten Sie wirklich alle Benachrichtigungen löschen?",
+  "deleteAllNotificationsButton": "Alle löschen",
+  "noNotificationsYet": "Keine Benachrichtigungen",
+  "notifFilterAll": "Alle",
+  "notifFilterRides": "Fahrten",
+  "notifFilterChat": "Chat",
+  "notifFilterGeofence": "Geofence",
+  "notifFilterPools": "Pools",
+  "notifFilterCheckpoints": "Checkpoints",
+  "notifJustNow": "Gerade eben",
+  "notifMinutesAgo": "vor {count} Min.",
+  "@notifMinutesAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notifHoursAgo": "vor {count} Std.",
+  "@notifHoursAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notifDaysAgo": "vor {count} Tagen",
+  "@notifDaysAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notifPrefSectionPush": "Push-Benachrichtigungen",
+  "notifPrefSectionAdditional": "Weitere Kanäle",
+  "notifPrefRideUpdatesSubtitle": "Statusänderungen, Zuweisungen",
+  "notifPrefChatMessagesSubtitle": "Neue Nachrichten von Fahrer/Kunde",
+  "notifPrefDriverApproachingLabel": "Fahrer nähert sich",
+  "notifPrefDriverApproachingSubtitle": "Wenn Fahrer in der Nähe ist",
+  "notifPrefGeofenceAlertsLabel": "Geofence-Alarme",
+  "notifPrefGeofenceAlertsSubtitle": "Ein-/Ausfahrtalarme",
+  "notifPrefPoolUpdatesLabel": "Pool-Updates",
+  "notifPrefPoolUpdatesSubtitle": "Fahrgemeinschafts-Benachrichtigungen",
+  "notifPrefEmailLabel": "E-Mail-Benachrichtigungen",
+  "notifPrefEmailSubtitle": "Benachrichtigungen per E-Mail erhalten",
+  "notifPrefSmsLabel": "SMS-Benachrichtigungen",
+  "notifPrefSmsSubtitle": "Benachrichtigungen per SMS erhalten",
+  "notifPrefQuietHours": "Ruhezeiten",
+  "notifPrefQuietHoursFrom": "Von",
+  "notifPrefQuietHoursTo": "Bis",
+  "notifPrefNotSet": "Nicht gesetzt",
+  "savePreferencesButton": "Einstellungen speichern",
+  "preferencesSaved": "Einstellungen gespeichert",
+
+  "revokeSessionDialogTitle": "Sitzung widerrufen",
+  "revokeSessionDialogContent": "Das mit dieser Sitzung verbundene Gerät wird abgemeldet.",
+  "revokeSessionButton": "Widerrufen",
+  "revokeAllOtherSessionsDialogTitle": "Alle anderen Sitzungen widerrufen",
+  "revokeAllOtherSessionsDialogContent": "Alle anderen Geräte werden abgemeldet. Nur Ihre aktuelle Sitzung bleibt aktiv.",
+  "revokeAllButton": "Alle widerrufen",
+  "sessionRevoked": "Sitzung widerrufen",
+  "allOtherSessionsRevoked": "Alle anderen Sitzungen widerrufen",
+  "noActiveSessions": "Keine aktiven Sitzungen",
+  "sessionCurrentLabel": "Aktuell",
+  "sessionIpLabel": "IP: {ip}",
+  "@sessionIpLabel": {
+    "placeholders": {
+      "ip": {"type": "String"}
+    }
+  },
+  "sessionCreatedLabel": "Erstellt: {date}",
+  "@sessionCreatedLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "sessionLastActiveLabel": "Zuletzt aktiv: {date}",
+  "@sessionLastActiveLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "revokeSessionAction": "Widerrufen",
+
+  "userManagementTitle": "Benutzerverwaltung",
+  "createUserDialogTitle": "Benutzer erstellen",
+  "searchUsersHint": "Benutzer suchen...",
+  "changeRoleMenuHeader": "Rolle ändern",
+  "changeStatusMenuHeader": "Status ändern",
+  "activateUserAction": "Aktivieren",
+  "suspendUserAction": "Sperren",
+  "deactivateUserAction": "Deaktivieren",
+  "noUsersFound": "Keine Benutzer gefunden",
+  "totalUsersLabel": "Gesamt",
+  "driversStatLabel": "Fahrer",
+  "clientsStatLabel": "Kunden",
+  "staffStatLabel": "Personal",
+  "roleChangedSuccess": "Rolle geändert zu {role}",
+  "@roleChangedSuccess": {
+    "placeholders": {
+      "role": {"type": "String"}
+    }
+  },
+  "statusChangedSuccess": "Status geändert zu {status}",
+  "@statusChangedSuccess": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "failedToChangeRole": "Fehler: {error}",
+  "@failedToChangeRole": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToChangeStatus": "Fehler: {error}",
+  "@failedToChangeStatus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToCreateUser": "Fehler: {error}",
+  "@failedToCreateUser": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "blacklistTitle": "Sperrliste",
+  "addBlacklistEntryDialogTitle": "Eintrag hinzufügen",
+  "clientIdLabel": "Kunden-ID",
+  "driverIdLabel": "Fahrer-ID",
+  "reasonOptionalLabel": "Grund (optional)",
+  "clientDriverIdRequired": "Kunden-ID und Fahrer-ID sind erforderlich",
+  "removeBlacklistEntryDialogTitle": "Eintrag entfernen",
+  "removeBlacklistEntryContent": "Möchten Sie diesen Eintrag wirklich entfernen?",
+  "removeBlacklistEntryButton": "Entfernen",
+  "noBlacklistEntries": "Keine Einträge in der Sperrliste",
+
+  "tenantsTitle": "Mandanten",
+  "tenantsWithCount": "Mandanten · {count} Unternehmen",
+  "@tenantsWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "onboardButton": "+ Onboarding",
+  "noTenantsFound": "Keine Mandanten gefunden",
+  "onboardCompanyDialogTitle": "Unternehmen aufnehmen",
+  "editCompanyDialogTitle": "Unternehmen bearbeiten",
+  "subscriptionPlanLabel": "Abonnementplan",
+  "colHeaderCompany": "UNTERNEHMEN",
+  "colHeaderPlan": "PLAN",
+  "colHeaderDrivers": "FAHRER",
+  "colHeaderRidesPerMonth": "FAHRTEN / MO",
+  "colHeaderStatus": "STATUS",
+  "deactivateCompanyDialogTitle": "Unternehmen deaktivieren?",
+  "deactivateCompanyDialogContent": "Möchten Sie \"{name}\" wirklich deaktivieren?\n\nDas Unternehmen wird als Inaktiv markiert, alle Daten (Fahrten, Rechnungen, Benutzer) bleiben erhalten.",
+  "@deactivateCompanyDialogContent": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "setActiveAction": "Aktiv setzen",
+  "setTrialAction": "Testphase setzen",
+  "suspendAction": "Sperren",
+
+  "emergencyReassignmentTitle": "Notfall-Umbesetzungen",
+  "emergencyReassignmentDialogTitle": "Notfall-Umbesetzung",
+  "rideIdLabel": "Fahrt-ID",
+  "emergencyReasonLabel": "Grund",
+  "availableDriversLabel": "Verfügbare Fahrer:",
+  "newDriverIdLabel": "Neue Fahrer-ID (optional)",
+  "newDriverIdHelper": "Leer lassen, um Zuweisung aufzuheben",
+  "reassignButton": "Neu zuweisen",
+  "rideIdRequired": "Fahrt-ID ist erforderlich",
+  "emergencyReassignmentCreated": "Notfall-Umbesetzung erstellt",
+  "noEmergencyReassignments": "Keine Notfall-Umbesetzungen",
+  "emergencyReasonDriverIllness": "Fahrerkrankheit",
+  "emergencyReasonVehicleBreakdown": "Fahrzeugpanne",
+  "emergencyReasonDriverNoShow": "Fahrer erschienen nicht",
+  "emergencyReasonAccident": "Unfall",
+  "emergencyReasonPersonalEmergency": "Persönlicher Notfall",
+  "emergencyReasonOther": "Sonstiges",
+  "preferredDriverLabel": "Bevorzugt",
+  "emergencyRideLabel": "Fahrt: {id}",
+  "@emergencyRideLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "emergencyOriginalDriverLabel": "Ursprünglicher Fahrer: {id}",
+  "@emergencyOriginalDriverLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "emergencyNewDriverLabel": "Neuer Fahrer: {id}",
+  "@emergencyNewDriverLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+
+  "ridePoolsTitle": "Fahrgemeinschaften",
+  "createRidePoolDialogTitle": "Fahrgemeinschaft erstellen",
+  "poolNameOptionalLabel": "Pool-Name (optional)",
+  "poolNameHint": "z.B. Flughafen-Morgenbus",
+  "routeDirectionOptionalLabel": "Routenrichtung (optional)",
+  "routeDirectionHint": "z.B. Innenstadt → Flughafen",
+  "maxPassengersLabel": "Max. Passagiere:",
+  "ridePoolCreated": "Fahrgemeinschaft erstellt",
+  "noRidePools": "Keine Fahrgemeinschaften",
+  "createPoolToCombineRides": "Erstellen Sie einen Pool, um Fahrten zu kombinieren",
+  "errorLoadingPoolDetails": "Fehler beim Laden der Pool-Details: {error}",
+  "@errorLoadingPoolDetails": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "poolDetailStatusLabel": "Status",
+  "poolDetailPassengersLabel": "Passagiere",
+  "poolDetailRouteLabel": "Route",
+  "poolDetailDriverLabel": "Fahrer",
+  "poolMembersLabel": "Mitglieder:",
+  "noRidesInPool": "Noch keine Fahrten in diesem Pool",
+
+  "companySettingsTitle": "Unternehmenseinstellungen",
+  "navItemCompany": "Unternehmen",
+  "navItemUsersRoles": "Benutzer & Rollen",
+  "navItemCompliance": "Compliance",
+  "navItemBillingDatev": "Abrechnung & DATEV",
+  "navItemGeofences": "Geofences",
+  "companyProfileSectionTitle": "Unternehmensprofil",
+  "companyProfileSubtitle": "Rechtliche Informationen auf Rechnungen und Berichten.",
+  "complianceSectionTitle": "Compliance & Sicherheit",
+  "complianceSubtitle": "Datenschutz, Zugriffsverwaltung und Audit-Kontrollen.",
+  "billingDatevSectionTitle": "Abrechnung & DATEV",
+  "billingDatevSubtitle": "Tarifkonfiguration und DATEV-Exporteinstellungen.",
+  "tariffSettingsSectionTitle": "Tarifeinstellungen",
+  "datevIntegrationSectionTitle": "DATEV-Integration",
+  "datevIntegrationSubtitle": "Beraternummer und Mandantennummer werden im EXTF-Buchungsstapel-Header verwendet.",
+  "legalNameLabel": "Firmenname (rechtlich)",
+  "vatIdLabel": "USt-IdNr.",
+  "defaultCurrencyLabel": "Standardwährung",
+  "timezoneLabel": "Zeitzone",
+  "commissionRateLabel": "Provisionsrate (%)",
+  "cancellationFeeSettingsLabel": "Stornierungsgebühr (€)",
+  "noShowFeeLabel": "Nichterscheinen-Gebühr (€)",
+  "basePriceLabel": "Grundpreis (€)",
+  "pricePerKmLabel": "Preis pro km (€)",
+  "airportSurchargeLabel": "Flughafenzuschlag (€)",
+  "nightSurchargeLabel": "Nachtzuschlag (€)",
+  "workStartLabel": "Arbeitsbeginn",
+  "workEndLabel": "Arbeitsende",
+  "settingsSavedSuccess": "Einstellungen erfolgreich gespeichert",
+  "failedToSaveSettings": "Fehler beim Speichern: {error}",
+  "@failedToSaveSettings": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "gdprExportTitle": "DSGVO-Export",
+  "gdprExportSubtitle": "Alle persönlichen Daten herunterladen",
+  "auditLogTitle": "Audit-Protokoll",
+  "auditLogSubtitle": "Systemaktivität überprüfen",
+  "activeSessionsCardTitle": "Aktive Sitzungen",
+  "activeSessionsCardSubtitle": "Angemeldete Geräte verwalten",
+  "blacklistCardTitle": "Sperrliste",
+  "blacklistCardSubtitle": "Gesperrte Konten verwalten",
+  "comingSoonLabel": "{label} demnächst verfügbar",
+  "@comingSoonLabel": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "settingsCompanyProfile": "Unternehmensprofil",
+  "generalSettingsSectionTitle": "Allgemeine Einstellungen"
 }
