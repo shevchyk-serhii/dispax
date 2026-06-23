@@ -976,6 +976,9 @@ class RideServiceImpl(
         ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(ride.clientId != userId).unit
       case PersonRole.Driver =>
         ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).when(!ride.driverId.contains(userId)).unit
+      // Defensive default: any role not explicitly granted cancel rights is denied. Keeps the match
+      // exhaustive so a newly added PersonRole fails closed (no cancel) instead of throwing MatchError.
+      case _                 => ZIO.fail(RideError.UnauthorizedAccess(userId, ride.id)).unit
 
   // -- Schedule conflict detection ----------------------------------------
 
