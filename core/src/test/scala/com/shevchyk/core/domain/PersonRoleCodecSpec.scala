@@ -46,6 +46,35 @@ object PersonRoleCodecSpec extends ZIOSpecDefault:
           assertTrue(result.isLeft)
         }
       ),
+      suite("fromWire")(
+        test("'CLIENT_SECRETARY' parses to ClientSecretary (not collapsed to Client)") {
+          assertTrue(PersonRole.fromWire("CLIENT_SECRETARY") == Some(PersonRole.ClientSecretary))
+        },
+        test("'SUPER_ADMIN' parses to SuperAdmin (not collapsed to Client)") {
+          assertTrue(PersonRole.fromWire("SUPER_ADMIN") == Some(PersonRole.SuperAdmin))
+        },
+        test("'DRIVER' parses to Driver") {
+          assertTrue(PersonRole.fromWire("DRIVER") == Some(PersonRole.Driver))
+        },
+        test("enum .toString form 'SuperAdmin' parses to SuperAdmin") {
+          assertTrue(PersonRole.fromWire("SuperAdmin") == Some(PersonRole.SuperAdmin))
+        },
+        test("unknown value returns None (no silent Client fallback)") {
+          assertTrue(PersonRole.fromWire("NOT_A_ROLE").isEmpty)
+        },
+        test("every toWire output round-trips through fromWire") {
+          val roles = List(
+            PersonRole.Driver,
+            PersonRole.Client,
+            PersonRole.Secretary,
+            PersonRole.Dispatcher,
+            PersonRole.Admin,
+            PersonRole.ClientSecretary,
+            PersonRole.SuperAdmin
+          )
+          assertTrue(roles.forall(r => PersonRole.fromWire(PersonRole.toWire(r)) == Some(r)))
+        }
+      ),
       suite("roundtrip")(
         test("SuperAdmin encodes then decodes back to SuperAdmin") {
           val encoded = PersonRole.SuperAdmin.toJson

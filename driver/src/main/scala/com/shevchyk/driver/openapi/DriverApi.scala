@@ -55,7 +55,7 @@ object DriverApi:
     DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository &
       PersonRepository & JwtService
 
-  private type Err = (StatusCode, ApiError)
+  private[openapi] type Err = (StatusCode, ApiError)
 
   // -- Authenticated base endpoint (mirrors AuthMiddleware.authenticateRequest) --
   private val secureEndpoint = endpoint
@@ -72,12 +72,16 @@ object DriverApi:
             case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
           },
           payload =>
+            val wireRoles = payload.roles
+              .map(_.map(PersonRole.toWire).toSet)
+              .getOrElse(Set(PersonRole.toWire(payload.role)))
             AuthenticatedUser(
               userId = payload.userId,
               email = payload.email,
-              role = payload.role.toString,
+              role = PersonRole.toWire(payload.role),
               companyId = payload.companyId,
-              clientCompanyId = payload.clientCompanyId
+              clientCompanyId = payload.clientCompanyId,
+              roles = wireRoles
             )
         )
     }
@@ -95,18 +99,16 @@ object DriverApi:
     .map(CompanyId(_))
     .orElseFail((StatusCode.BadRequest, ApiError("User must belong to a company")))
 
-  private def checkRole(user: AuthenticatedUser, roles: String*): ZIO[Any, Err, Unit] =
-    val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) then ZIO.unit
+  private[openapi] def checkRole(user: AuthenticatedUser, roles: String*): ZIO[Any, Err, Unit] =
+    if user.hasAnyRole(roles*) then ZIO.unit
     else ZIO.fail((StatusCode.Forbidden, ApiError("Insufficient permissions")))
 
-  private def checkRoleOrOwner(
+  private[openapi] def checkRoleOrOwner(
       user: AuthenticatedUser,
       resourceOwnerId: UUID,
       roles: String*
   ): ZIO[Any, Err, Unit] =
-    val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) || user.userId == resourceOwnerId then ZIO.unit
+    if user.hasAnyRole(roles*) || user.userId == resourceOwnerId then ZIO.unit
     else ZIO.fail((StatusCode.Forbidden, ApiError("Access denied")))
 
   // Company isolation: ensure the target driver belongs to the caller's company.
@@ -299,7 +301,7 @@ object DriverApi:
                       parsedRideId,
                       com.shevchyk.ride.domain.UpdateRideDetailsRequest(pickupLocation = Some(enriched)),
                       PersonId(user.userId),
-                      PersonRole.valueOf(user.role),
+                      PersonRole.fromWire(user.role).getOrElse(PersonRole.Client),
                       Some(companyId)
                     )
                     .orElse(ZIO.succeed(ride0.copy(pickupLocation = enriched)))
