@@ -220,11 +220,19 @@ emulator-up:
 # tests (blacklist/admin) so their writes can't interfere with assignment.
 E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
               e2e_settings e2e_cancel_ride e2e_more_menu e2e_airport_ride \
-              e2e_chat e2e_reassign e2e_full_flow \
+              e2e_chat e2e_reassign e2e_reassign_conflict e2e_full_flow \
               e2e_admin_users e2e_expense e2e_blacklist e2e_geofence \
               e2e_neg_login e2e_neg_create_ride e2e_neg_role_access \
               e2e_book_discard_guard e2e_address_focus \
-              e2e_notif_driver_assigned e2e_notif_status_updates e2e_notif_mark_read
+              e2e_notif_driver_assigned e2e_notif_status_updates e2e_notif_mark_read \
+              e2e_templates e2e_ride_pool e2e_payments e2e_export_rides \
+              e2e_datev_export e2e_billing e2e_emergency_reassign \
+              e2e_notification_center e2e_company_settings \
+              e2e_superadmin_companies e2e_superadmin_analytics e2e_superadmin_airports \
+              e2e_neg_reassign_conflict e2e_neg_template_validation \
+              e2e_neg_superadmin_company e2e_neg_emergency_reassign \
+              e2e_neg_create_ride_fields e2e_neg_tenant_isolation \
+              e2e_neg_tenant_dispatcher e2e_neg_driver_access e2e_neg_secretary_access
 
 # Notification HTTP checks (flutter_test, no Patrol/UI) — assert the in-app inbox
 # over REST. Run with `flutter test` via `make e2e-notif-http`. These are green.
