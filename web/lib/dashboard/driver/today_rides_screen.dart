@@ -20,6 +20,13 @@ import '../../constants/app_dimensions.dart';
 import '../../utils/ride_status_styles.dart';
 import 'upcoming_rides_screen.dart';
 
+/// Narrows [rides] to those driven by [driverId]. Rides without an assigned
+/// driver (or assigned to someone else) are dropped. Used by "My Rides" so a
+/// multi-role user (e.g. a dispatcher who also drives) sees only their own
+/// driving work, not the whole company queue the shared RideBloc holds.
+List<Ride> ridesDrivenBy(List<Ride> rides, String driverId) =>
+    rides.where((r) => r.driverId == driverId).toList();
+
 // ─── Tab index for the segmented control ─────────────────────────────────────
 enum _TodayTab { today, upcoming, history }
 
@@ -87,10 +94,13 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
   // ── Preserved verbatim ────────────────────────────────────────────────────
   Future<void> _refreshEta() async {
     if (!mounted || _rideService == null) return;
+    final myId = context.read<AuthBloc>().state.user?.id;
     final rideState = context.read<RideBloc>().state;
     final activeRides = rideState.rides.where(
       (r) =>
-          r.status == RideStatus.assigned || r.status == RideStatus.inProgress,
+          r.driverId == myId &&
+          (r.status == RideStatus.assigned ||
+              r.status == RideStatus.inProgress),
     );
     for (final ride in activeRides) {
       final data = await _rideService!.getDriverProximity(ride.id);
@@ -236,8 +246,10 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
                 // Restore tracking if the ride is already in progress (after screen reload)
                 if (state.status == RideStateStatus.loaded &&
                     !_trackingStarted) {
+                  final myId = context.read<AuthBloc>().state.user?.id;
                   final hasActiveRide = state.rides.any(
-                    (r) => r.status == RideStatus.inProgress,
+                    (r) =>
+                        r.driverId == myId && r.status == RideStatus.inProgress,
                   );
                   if (hasActiveRide) _startLocationTracking();
                 }
@@ -341,7 +353,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
               // Segmented control (Today N | Upcoming | History)
               BlocBuilder<RideBloc, RideState>(
                 builder: (context, rideState) {
-                  final todayCount = getTodayRides(rideState.rides).length;
+                  final myRideState = _scopeToMyRides(context, rideState);
+                  final todayCount = getTodayRides(myRideState.rides).length;
                   return _SegmentedControl(
                     activeTab: _activeTab,
                     todayCount: todayCount,
@@ -368,14 +381,31 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
   // ─── Tab content switcher ─────────────────────────────────────────────────
 
   Widget _buildTabContent(BuildContext context, RideState rideState) {
+    // The shared RideBloc holds every ride the current user can see. For a
+    // dispatcher (or any multi-role user) that is the whole company queue, so
+    // this "My Rides" screen must narrow it down to the rides the current user
+    // drives themselves — otherwise it would mirror the dispatcher Home tab.
+    final myRideState = _scopeToMyRides(context, rideState);
     switch (_activeTab) {
       case _TodayTab.upcoming:
-        return _EmbeddedUpcomingTab(onRefresh: () => refreshRides(context));
+        return _EmbeddedUpcomingTab(
+          rideState: myRideState,
+          onRefresh: () => refreshRides(context),
+        );
       case _TodayTab.history:
-        return _EmbeddedHistoryTab();
+        return _EmbeddedHistoryTab(rideState: myRideState);
       case _TodayTab.today:
-        return buildBody(context, rideState);
+        return buildBody(context, myRideState);
     }
+  }
+
+  /// Returns [rideState] with its ride list narrowed to the rides assigned to
+  /// the current user. Rides without an assigned driver are excluded, since
+  /// "My Rides" only ever shows the user's own driving work.
+  RideState _scopeToMyRides(BuildContext context, RideState rideState) {
+    final myId = context.read<AuthBloc>().state.user?.id;
+    if (myId == null) return rideState;
+    return rideState.copyWith(rides: ridesDrivenBy(rideState.rides, myId));
   }
 
   // ─── Today body ───────────────────────────────────────────────────────────
@@ -1513,18 +1543,20 @@ class _NextRideCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _EmbeddedUpcomingTab extends StatelessWidget {
+  final RideState rideState;
   final VoidCallback onRefresh;
 
-  const _EmbeddedUpcomingTab({required this.onRefresh});
+  const _EmbeddedUpcomingTab({
+    required this.rideState,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RideBloc, RideState>(
-      builder: (context, rideState) {
-        final screen = UpcomingRidesScreen();
-        return screen.buildBody(context, rideState);
-      },
-    );
+    // [rideState] is already scoped to the current user's own rides by the
+    // parent, so the embedded Upcoming view never leaks other drivers' rides.
+    final screen = UpcomingRidesScreen();
+    return screen.buildBody(context, rideState);
   }
 }
 
@@ -1533,58 +1565,58 @@ class _EmbeddedUpcomingTab extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _EmbeddedHistoryTab extends StatelessWidget {
-  const _EmbeddedHistoryTab();
+  final RideState rideState;
+
+  const _EmbeddedHistoryTab({required this.rideState});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RideBloc, RideState>(
-      builder: (context, rideState) {
-        if (rideState.isLoading) {
-          return Center(child: CircularProgressIndicator.adaptive());
-        }
-        final finished =
-            rideState.rides
-                .where(
-                  (r) =>
-                      r.status == RideStatus.completed ||
-                      r.status == RideStatus.cancelled,
-                )
-                .toList()
-              ..sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
+    // [rideState] is already scoped to the current user's own rides by the
+    // parent, so History only shows the user's own completed/cancelled rides.
+    if (rideState.isLoading) {
+      return Center(child: CircularProgressIndicator.adaptive());
+    }
+    final finished =
+        rideState.rides
+            .where(
+              (r) =>
+                  r.status == RideStatus.completed ||
+                  r.status == RideStatus.cancelled,
+            )
+            .toList()
+          ..sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
 
-        if (finished.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.history_rounded,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No completed rides yet',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
+    if (finished.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.history_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.outlineVariant,
             ),
-          );
-        }
+            const SizedBox(height: 16),
+            Text(
+              'No completed rides yet',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
+        ),
+      );
+    }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: finished.length,
-          itemBuilder: (context, index) {
-            final ride = finished[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: TodayRideCard(
-                ride: ride,
-                isLast: index == finished.length - 1,
-              ),
-            );
-          },
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: finished.length,
+      itemBuilder: (context, index) {
+        final ride = finished[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: TodayRideCard(
+            ride: ride,
+            isLast: index == finished.length - 1,
+          ),
         );
       },
     );
