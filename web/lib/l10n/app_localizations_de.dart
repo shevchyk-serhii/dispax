@@ -83,6 +83,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noDriversScheduled => 'Keine Fahrer geplant';
 
   @override
+  String get selectDriverToViewSchedule =>
+      'Wählen Sie einen Fahrer, um seinen Zeitplan anzuzeigen';
+
+  @override
+  String get noScheduleForDriver => 'Keine Zeitplaneinträge für diesen Fahrer';
+
+  @override
   String get noPendingRides => 'Keine ausstehenden Fahrten';
 
   @override

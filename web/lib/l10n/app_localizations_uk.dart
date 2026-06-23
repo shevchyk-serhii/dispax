@@ -83,6 +83,13 @@ class AppLocalizationsUk extends AppLocalizations {
   String get noDriversScheduled => 'Водіїв не заплановано';
 
   @override
+  String get selectDriverToViewSchedule =>
+      'Оберіть водія, щоб переглянути його графік';
+
+  @override
+  String get noScheduleForDriver => 'Немає записів графіку для цього водія';
+
+  @override
   String get noPendingRides => 'Немає очікуючих поїздок';
 
   @override

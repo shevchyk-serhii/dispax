@@ -29,6 +29,8 @@
   "ridesAwaiting": "{count} поїздка(ок) очікує призначення",
   "driverSchedules": "Графіки водіїв",
   "noDriversScheduled": "Водіїв не заплановано",
+  "selectDriverToViewSchedule": "Оберіть водія, щоб переглянути його графік",
+  "noScheduleForDriver": "Немає записів графіку для цього водія",
   "noPendingRides": "Немає очікуючих поїздок",
   "allRidesAssigned": "Всі поїздки призначено",
   "selectDriver": "Обрати водія",

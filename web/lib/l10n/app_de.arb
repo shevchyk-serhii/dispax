@@ -29,6 +29,8 @@
   "ridesAwaiting": "{count} Fahrt(en) warten auf Zuweisung",
   "driverSchedules": "Fahrer-Zeitpläne",
   "noDriversScheduled": "Keine Fahrer geplant",
+  "selectDriverToViewSchedule": "Wählen Sie einen Fahrer, um seinen Zeitplan anzuzeigen",
+  "noScheduleForDriver": "Keine Zeitplaneinträge für diesen Fahrer",
   "noPendingRides": "Keine ausstehenden Fahrten",
   "allRidesAssigned": "Alle Fahrten wurden zugewiesen",
   "selectDriver": "Fahrer auswählen",
