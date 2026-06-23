@@ -927,6 +927,45 @@ object RideServiceSpec extends ZIOSpecDefault {
                          )
             cancelled <- service.cancelRide(ride.id, clientSecretaryId, PersonRole.ClientSecretary)
           } yield assertTrue(cancelled.status == RideStatus.Cancelled)
+        }.provide(standardLayers),
+        // Deny path: a Client may cancel only their OWN ride. validateCancelPermission must reject a
+        // foreign client. Removing the Client branch (or the defensive `case _`) would let this through.
+        test("denies a Client cancelling another client's ride") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B")
+                         )
+                       )
+            // vipClientId is a different Client; must not be allowed to cancel testClient's ride.
+            result  <- service.cancelRide(ride.id, vipClientId, PersonRole.Client).exit
+          } yield assertTrue(
+            result.isFailure,
+            ride.clientId != vipClientId
+          )
+        }.provide(standardLayers),
+        // Deny path: a Driver may cancel only a ride assigned to them. An unassigned ride must be rejected.
+        test("denies a Driver cancelling a ride not assigned to them") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B")
+                         )
+                       )
+            // ride has no driver assigned, so this driver is not the assignee.
+            result  <- service.cancelRide(ride.id, testDriverId, PersonRole.Driver).exit
+          } yield assertTrue(
+            result.isFailure,
+            !ride.driverId.contains(testDriverId)
+          )
         }.provide(standardLayers)
       ),
       suite("cancelRideWithReason")(
