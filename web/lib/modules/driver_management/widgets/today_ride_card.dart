@@ -100,113 +100,140 @@ class TodayRideCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.access_time,
-                color: colorScheme.onSurfaceVariant,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                DateFormat.Hm().format(ride.pickupDateTime),
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
+          // The chip group is wrapped in [Expanded] so it yields width to the
+          // status pill instead of overflowing when all chips (Soon, distance,
+          // ETA) are present on a narrow screen. Chip texts flex + ellipsis so
+          // the row can never blow past the available space.
+          Expanded(
+            child: Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 18,
                 ),
-              ),
-              if (isUpcoming && timeUntilRide.inHours < 2)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    'Soon',
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    DateFormat.Hm().format(ride.pickupDateTime),
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ),
-              if (approachingDistanceMeters != null)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: approachingDistanceMeters! <= 100
-                        ? AppColors.success
-                        : approachingDistanceMeters! <= 500
-                        ? AppColors.accent
-                        : AppColors.info,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.directions_car,
-                        color: Colors.white,
-                        size: 12,
+                if (isUpcoming && timeUntilRide.inHours < 2)
+                  Flexible(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        approachingDistanceMeters! <= 100
-                            ? 'Arrived'
-                            : approachingDistanceMeters! < 1000
-                            ? '${approachingDistanceMeters}m'
-                            : '${(approachingDistanceMeters! / 1000).toStringAsFixed(1)}km',
-                        style: const TextStyle(
+                      decoration: BoxDecoration(
+                        color: AppColors.warning,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'Soon',
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              if (etaMinutes != null && ride.status == RideStatus.inProgress)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.timer_outlined,
-                        color: Colors.white,
-                        size: 12,
+                if (approachingDistanceMeters != null)
+                  Flexible(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '~$etaMinutes min',
-                        style: AppStyles.labelLarge.copyWith(
-                          color: Colors.white,
-                          fontSize: 10,
-                        ),
+                      decoration: BoxDecoration(
+                        color: approachingDistanceMeters! <= 100
+                            ? AppColors.success
+                            : approachingDistanceMeters! <= 500
+                            ? AppColors.accent
+                            : AppColors.info,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.directions_car,
+                            color: Colors.white,
+                            size: 12,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              approachingDistanceMeters! <= 100
+                                  ? 'Arrived'
+                                  : approachingDistanceMeters! < 1000
+                                  ? '${approachingDistanceMeters}m'
+                                  : '${(approachingDistanceMeters! / 1000).toStringAsFixed(1)}km',
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-            ],
+                if (etaMinutes != null && ride.status == RideStatus.inProgress)
+                  Flexible(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.timer_outlined,
+                            color: Colors.white,
+                            size: 12,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '~$etaMinutes min',
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: AppStyles.labelLarge.copyWith(
+                                color: Colors.white,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
