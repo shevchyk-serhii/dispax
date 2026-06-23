@@ -138,5 +138,20 @@
 - [ ] **[LOW] Непокрыт unit-тестами адаптер доступности водителя** _(проверено лично — нет `*Spec`)_ — `schedule/.../application/ScheduleAvailabilityChecker.scala` (реализация core-порта `DriverAvailabilityChecker`) — маппинг недоступности/overlap-логика влияет на блокировку назначения, но нет юнит-теста на in-memory дубле. _Категория: Tests._
 - [ ] **[LOW] Непокрыты unit-тестами notification-сервисы** _(проверено лично — нет `*Spec`)_ — `notification/.../application/SmtpEmailService.scala` (сборка MIME/вложение PDF счёта) и `FcmService.sendToToken` (`.ignore` глушит сбой доставки) не имеют юнит-тестов; доставка счёта/пуша критична. _Категория: Tests._
 
-<!-- AUDIT-RUN-IN-PROGRESS 2026-06-23: продолжается поиск (functional backend дал 0 нового; ждут доп. проходы по driver/schedule/notification/billing) -->
+### Backend — billing (деньги/документы)
+
+- [ ] **[MEDIUM] `sendInvoice` не проверяет, что счёт непустой** _(проверено лично)_ — `billing/.../application/InvoiceService.scala:305-320` — гейт только `status == Draft`, нет `invoice.items.nonEmpty`. Черновик с нулём позиций переходит в `Sent`, генерит PDF на €0.00 и уходит письмом клиенту → невалидный финансовый документ. Добавить гард `items.nonEmpty` (и/или `totalAmount > 0`). _Категория: Functional._
+- [ ] **[MEDIUM] Отрицательная ставка налога не валидируется** _(проверено лично)_ — `billing/.../application/InvoiceService.scala:368` (`recalculate`: `net = gross / (1 + taxRate/100)`) + домен `Invoice`/`CreateInvoiceRequest` (`taxRate` без проверки `>= 0`) — `taxRate < 0` искажает Netto/MwSt (при -100 — деление на ноль/знак). Валидировать `taxRate ∈ [0, 100]` на входе. _Категория: Functional._
+- [ ] **[MEDIUM] Поездка без цены молча включается в счёт как €0.00** _(проверено лично)_ — `billing/.../repository/PostgresInvoiceRepository.scala:363,388,413,434` — `COALESCE(r.final_price_amount, r.estimated_price_amount, 0)`: если у поездки обе цены `NULL`, позиция счёта = €0.00 без предупреждения (пересекается с уже записанным «цена теряется при создании поездки»). Либо отсеивать беспрайсовые поездки из инвойсинга, либо явно фейлить. _Категория: Functional._
+
+### Backend — driver (defense-in-depth / edge)
+
+- [ ] **[LOW] `PostgresDriverLocationRepository` читает локацию/доступность без `company_id`** _(проверено лично)_ — `driver/.../repository/PostgresDriverLocationRepository.scala:41-52` (`getLocation`), `:62-68` (`getAvailability`), `:54-60` (`updateAvailability`) — SELECT/UPDATE по `PersonId` без `AND company_id`. Сейчас не эксплуатируется (один PersonId = одна компания), но тот же defense-in-depth-паттерн, что уже отмечен для `PersonRepository`. _Категория: Security._
+- [ ] **[LOW] ETA может считаться до «Null Island» при вырожденных координатах** _(проверено лично — узкий edge)_ — `driver/.../openapi/DriverApi.scala:327-329` — гард `if destLat != 0.0 || destLng != 0.0` пропускает случай, когда ровно одна координата назначения `0.0` (другая — нет): тогда ETA считается к точке с поддельной 0.0-координатой. Случай «обе отсутствуют → (0.0,0.0)» корректно отсекается; для Мюнхена (~48°N,11°E) недостижимо, но фолбэк `getOrElse(0.0)` лучше заменить на пропуск ETA при отсутствии любой координаты. _Категория: Functional._
+
+> Отброшены при личной верификации (ложные срабатывания этого прогона): `AuthService.validateToken:275` `user.email != payload.email` как timing-attack — токен уже проверен по подписи в `jwtService.validateToken` (строка 273), сравнение лишь sanity-check, подделать валидный токен без секрета нельзя; `DriverLocationService.checkGeofences:69` `findByDriverId` без company — дубль уже записанной LOW-ловушки (companyId берётся из своих же поездок, утечки нет).
+
+---
+
+> **Аудит 2026-06-23 завершён.** Итог: 8 новых проверенных находок (0 HIGH, 4 MEDIUM, 4 LOW) + добавлено регулярное направление №5 (небезопасный JSON-парсинг Flutter). Functional backend (ride/notification) и auth новых HIGH не дали — основная масса уже записана в разделах выше. Отброшено 4 ложных срабатывания (аватар cross-tenant, пустой выбор billing-экрана, email timing-attack, дубль findByDriverId).
 
