@@ -787,6 +787,17 @@ object TestApplication extends ZIOAppDefault:
           .map(_.values.filter(_.driverId == driverId).toList.sortBy(_.date))
         def findByDriverAndDate(driverId: PersonId, date: LocalDate): Task[Option[ScheduleDay]]                      = store.get
           .map(_.values.find(d => d.driverId == driverId && d.date == date))
+        def findShiftsForDriverOnDate(
+            driverId: PersonId,
+            companyId: CompanyId,
+            date: LocalDate
+        ): Task[List[ScheduleDay]] = store.get
+          .map(
+            _.values
+              .filter(d => d.driverId == driverId && d.companyId == companyId && d.date == date)
+              .toList
+              .sortBy(_.startTime)
+          )
         def findByCompanyAndDate(companyId: CompanyId, date: LocalDate): Task[List[ScheduleDay]]                     = store.get
           .map(_.values.filter(d => d.companyId == companyId && d.date == date).toList.sortBy(_.startTime))
         def findByCompanyAndDateRange(companyId: CompanyId, from: LocalDate, to: LocalDate): Task[List[ScheduleDay]] =

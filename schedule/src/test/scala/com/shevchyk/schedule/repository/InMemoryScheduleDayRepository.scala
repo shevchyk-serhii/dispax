@@ -29,6 +29,17 @@ class InMemoryScheduleDayRepository extends ScheduleDayRepository:
     _.values.find(d => d.driverId == driverId && d.date == date)
   )
 
+  override def findShiftsForDriverOnDate(
+      driverId: PersonId,
+      companyId: CompanyId,
+      date: LocalDate
+  ): Task[List[ScheduleDay]] = store.get.map(
+    _.values
+      .filter(d => d.driverId == driverId && d.companyId == companyId && d.date == date)
+      .toList
+      .sortBy(_.startTime)
+  )
+
   override def findByCompanyAndDate(companyId: CompanyId, date: LocalDate): Task[List[ScheduleDay]] = store.get.map(
     _.values.filter(d => d.companyId == companyId && d.date == date).toList.sortBy(_.startTime)
   )

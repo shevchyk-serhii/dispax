@@ -84,6 +84,7 @@ enum ScheduleError extends Throwable:
   case UnavailabilityNotFound(id: DriverUnavailabilityId)
   case DriverNotFound(id: PersonId)
   case DuplicateScheduleDay(driverId: PersonId, date: LocalDate)
+  case OverlapConflict(driverId: PersonId, date: LocalDate)
   case InvalidStatusTransition(from: ScheduleDayStatus, to: ScheduleDayStatus)
   case CompanyMismatch(expected: CompanyId, actual: CompanyId)
   case AccessDenied(message: String)
@@ -100,6 +101,8 @@ object ScheduleError:
     case DriverNotFound(id)                   => (StatusCode.NotFound, ApiError(s"Driver not found: ${id.value}"))
     case DuplicateScheduleDay(driverId, date) =>
       (StatusCode.Conflict, ApiError(s"Driver ${driverId.value} already has a schedule for $date"))
+    case OverlapConflict(driverId, date)      =>
+      (StatusCode.Conflict, ApiError(s"Driver ${driverId.value} already has an overlapping shift on $date"))
     case InvalidStatusTransition(from, to)    => (StatusCode.Conflict, ApiError(s"Cannot transition from $from to $to"))
     case CompanyMismatch(_, _)                => (StatusCode.Forbidden, ApiError("Schedule day belongs to a different company"))
     case AccessDenied(message)                => (StatusCode.Forbidden, ApiError(message))

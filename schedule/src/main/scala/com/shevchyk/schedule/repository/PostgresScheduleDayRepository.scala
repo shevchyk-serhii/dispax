@@ -114,6 +114,22 @@ final class PostgresScheduleDayRepository(xa: Transactor[Task]) extends Schedule
       .transact(xa)
       .mapError(ex => ScheduleError.DatabaseError(ex))
 
+  override def findShiftsForDriverOnDate(
+      driverId: PersonId,
+      companyId: CompanyId,
+      date: LocalDate
+  ): Task[List[ScheduleDay]] =
+    sql"""
+      SELECT id, driver_id, company_id, date, start_time, end_time, status, notes, created_at, updated_at
+      FROM schedule_days
+      WHERE driver_id = ${driverId.value} AND company_id = ${companyId.value} AND date = $date
+      ORDER BY start_time ASC
+    """
+      .query[ScheduleDay]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => ScheduleError.DatabaseError(ex))
+
   override def findByCompanyAndDate(companyId: CompanyId, date: LocalDate): Task[List[ScheduleDay]] =
     sql"""
       SELECT id, driver_id, company_id, date, start_time, end_time, status, notes, created_at, updated_at
