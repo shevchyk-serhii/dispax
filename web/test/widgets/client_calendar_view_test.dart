@@ -8,6 +8,7 @@
 //   5. Navigation increments/decrements correctly per view type.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,6 +38,8 @@ Future<void> _pump(WidgetTester tester, _MockRideBloc rideBloc) async {
 
   await tester.pumpWidget(
     MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: const Locale('en'),
       theme: ThemeData(useMaterial3: true),
       home: BlocProvider<RideBloc>.value(
         value: rideBloc,
@@ -96,7 +99,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       await _pump(tester, rideBloc);
 
-      await tester.tap(find.text('Week'));
+      await tester.tap(find.text('Week View'));
       await tester.pumpAndSettle();
 
       expect(find.byType(WeekViewWidget), findsOneWidget);
@@ -109,7 +112,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       await _pump(tester, rideBloc);
 
-      await tester.tap(find.text('Day'));
+      await tester.tap(find.text('Day View'));
       await tester.pumpAndSettle();
 
       expect(find.byType(ClientDayViewWidget), findsOneWidget);
@@ -123,11 +126,11 @@ void main() {
         await _pump(tester, rideBloc);
 
         // Switch to Day first, then back to Month.
-        await tester.tap(find.text('Day'));
+        await tester.tap(find.text('Day View'));
         await tester.pumpAndSettle();
         expect(find.byType(ClientDayViewWidget), findsOneWidget);
 
-        await tester.tap(find.text('Month'));
+        await tester.tap(find.text('Month View'));
         await tester.pumpAndSettle();
         expect(find.byType(MonthViewWidget), findsOneWidget);
       },
@@ -187,7 +190,7 @@ void main() {
       await _pump(tester, rideBloc);
 
       // Switch to Day view.
-      await tester.tap(find.text('Day'));
+      await tester.tap(find.text('Day View'));
       await tester.pumpAndSettle();
 
       final now = DateTime.now();
@@ -206,7 +209,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       await _pump(tester, rideBloc);
 
-      await tester.tap(find.text('Day'));
+      await tester.tap(find.text('Day View'));
       await tester.pumpAndSettle();
 
       final now = DateTime.now();

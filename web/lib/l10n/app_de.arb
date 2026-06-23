@@ -666,5 +666,115 @@
   "closeRide": "Schließen",
   "closeRideTitle": "Fahrt schließen?",
   "closeRideConfirmMessage": "Dadurch wird die nicht zugewiesene Fahrt storniert. Der Kunde wird benachrichtigt.",
-  "closeRideButton": "Fahrt schließen"
+  "closeRideButton": "Fahrt schließen",
+
+  "ridesTab": "Fahrten",
+  "createTab": "Erstellen",
+  "frontDeskTitle": "Empfang",
+  "quickBook": "Schnellbuchung",
+  "bookedToday": "Heute gebucht",
+  "awaitingConfirm": "Wartet auf Bestätigung",
+  "activeClientsLabel": "Aktive Kunden",
+  "templatesLabel": "Vorlagen",
+  "todaysBookings": "Heutige Buchungen",
+  "noRidesToday": "Keine Fahrten heute",
+  "loadRidesToSeeBookings": "Fahrten laden, um heutige Buchungen zu sehen",
+
+  "manageClientsTitle": "Kunden verwalten",
+  "searchClientsHint": "Kunden suchen...",
+  "noClientsMatchSearch": "Keine Kunden gefunden",
+  "noClientsYet": "Noch keine Kunden",
+  "addClientTitle": "Kunde hinzufügen",
+  "phoneOptional": "Telefon (optional)",
+  "nameRequired": "Name ist erforderlich",
+  "emailRequired": "E-Mail ist erforderlich",
+  "invalidEmail": "Ungültige E-Mail",
+  "addButton": "Hinzufügen",
+  "editAction": "Bearbeiten",
+  "deactivateAction": "Deaktivieren",
+  "editClientTitle": "Kunde bearbeiten",
+  "deactivateClientTitle": "Kunde deaktivieren",
+  "deactivateClientConfirmMsg": "Möchten Sie {name} wirklich deaktivieren?",
+  "@deactivateClientConfirmMsg": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+
+  "newRideButton": "Neue Fahrt",
+  "ridesCountLabel": "Fahrten",
+  "preferredDriverAssigned": "Bevorzugter Fahrer zugewiesen",
+  "noRidesYet": "Noch keine Fahrten",
+  "vipClientLabel": "VIP-Kunde",
+  "vipClientHelpText": "Prioritätsservice und bevorzugter Fahrer",
+  "driverLabel": "Fahrer: {name}",
+  "@driverLabel": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+
+  "reportsTitle": "Berichte",
+  "totalRidesLabel": "Fahrten gesamt",
+  "inProgressLabel": "In Bearbeitung",
+  "requestedLabel": "Angefordert",
+  "assignedLabel": "Zugewiesen",
+  "keyMetrics": "Kennzahlen",
+  "cancellationRateLabel": "Stornierungsrate",
+  "statusBreakdown": "Statusaufschlüsselung",
+  "noRideDataYet": "Noch keine Fahrtdaten",
+
+  "noActiveRides": "Sie haben keine aktiven Fahrten",
+  "useBookTabHint": "Verwenden Sie den Tab \"Buchen\"",
+  "trackDriver": "Fahrer verfolgen",
+  "departureTimeReachedFlight": "Abflugzeit für Flug {flightInfo} erreicht",
+  "@departureTimeReachedFlight": {
+    "placeholders": {
+      "flightInfo": {"type": "String"}
+    }
+  },
+  "failedToCancelRide": "Fahrt konnte nicht storniert werden: {error}",
+  "@failedToCancelRide": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToLoadRides": "Fahrten konnten nicht geladen werden",
+
+  "goodMorning": "Guten Morgen,",
+  "goodAfternoon": "Guten Tag,",
+  "goodEvening": "Guten Abend,",
+  "whereTo": "Wohin?",
+  "onTrip": "Auf Fahrt",
+  "driverOnTheWay": "Fahrer unterwegs",
+  "driverAssigned": "Fahrer zugewiesen",
+  "yourDriver": "Ihr Fahrer",
+  "savedPlaces": "GESPEICHERTE ORTE",
+  "savedPlaceHome": "Zuhause",
+  "savedPlaceOffice": "Büro",
+  "addAddress": "Adresse hinzufügen",
+  "bookARide": "Fahrt buchen",
+
+  "scheduled": "GEPLANT",
+  "nowLabel": "JETZT",
+  "asap": "BALDMÖGLICHST",
+  "vehicleClass": "FAHRZEUGKLASSE",
+  "estimatedTotal": "Geschätzter Gesamtpreis",
+  "estimateUnavailableHint": "Für diese Adresse konnte kein Preis ermittelt werden. Sie können trotzdem buchen — der Fahrpreis wird nachträglich bestätigt.",
+  "confirmBooking": "Buchung bestätigen",
+  "rideBookedSuccessfully": "Fahrt erfolgreich gebucht!",
+  "failedToCreateRide": "Fahrt konnte nicht erstellt werden",
+
+  "failedToLoadRideHistory": "Fahrtenverlauf konnte nicht geladen werden",
+  "listView": "Liste",
+  "pastLabel": "VERGANGEN",
+  "confirmedStatus": "Bestätigt",
+  "rateThisRide": "Fahrt bewerten",
+  "thankYouForRating": "Danke für Ihre Bewertung!",
+  "failedToSubmitRating": "Bewertung konnte nicht übermittelt werden: {error}",
+  "@failedToSubmitRating": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

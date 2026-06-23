@@ -666,5 +666,115 @@
   "closeRide": "Закрити",
   "closeRideTitle": "Закрити поїздку?",
   "closeRideConfirmMessage": "Це скасує непризначену поїздку. Клієнт отримає сповіщення.",
-  "closeRideButton": "Закрити поїздку"
+  "closeRideButton": "Закрити поїздку",
+
+  "ridesTab": "Поїздки",
+  "createTab": "Створити",
+  "frontDeskTitle": "Ресепшн",
+  "quickBook": "Швидке замовлення",
+  "bookedToday": "Заброньовано сьогодні",
+  "awaitingConfirm": "Очікує підтвердження",
+  "activeClientsLabel": "Активні клієнти",
+  "templatesLabel": "Шаблони",
+  "todaysBookings": "Бронювання на сьогодні",
+  "noRidesToday": "Немає поїздок сьогодні",
+  "loadRidesToSeeBookings": "Завантажте поїздки, щоб побачити бронювання",
+
+  "manageClientsTitle": "Управління клієнтами",
+  "searchClientsHint": "Пошук клієнтів...",
+  "noClientsMatchSearch": "Жодного клієнта не знайдено",
+  "noClientsYet": "Клієнтів ще немає",
+  "addClientTitle": "Додати клієнта",
+  "phoneOptional": "Телефон (необов'язково)",
+  "nameRequired": "Ім'я є обов'язковим",
+  "emailRequired": "Email є обов'язковим",
+  "invalidEmail": "Невірний email",
+  "addButton": "Додати",
+  "editAction": "Редагувати",
+  "deactivateAction": "Деактивувати",
+  "editClientTitle": "Редагувати клієнта",
+  "deactivateClientTitle": "Деактивувати клієнта",
+  "deactivateClientConfirmMsg": "Ви впевнені, що хочете деактивувати {name}?",
+  "@deactivateClientConfirmMsg": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+
+  "newRideButton": "Нова поїздка",
+  "ridesCountLabel": "поїздок",
+  "preferredDriverAssigned": "Призначений бажаний водій",
+  "noRidesYet": "Поїздок ще немає",
+  "vipClientLabel": "VIP-клієнт",
+  "vipClientHelpText": "Пріоритетне обслуговування та бажаний водій",
+  "driverLabel": "Водій: {name}",
+  "@driverLabel": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+
+  "reportsTitle": "Звіти",
+  "totalRidesLabel": "Всього поїздок",
+  "inProgressLabel": "В процесі",
+  "requestedLabel": "Запитано",
+  "assignedLabel": "Призначено",
+  "keyMetrics": "Ключові показники",
+  "cancellationRateLabel": "Відсоток скасувань",
+  "statusBreakdown": "Розбивка за статусом",
+  "noRideDataYet": "Даних про поїздки ще немає",
+
+  "noActiveRides": "У вас немає активних поїздок",
+  "useBookTabHint": "Використайте вкладку \"Замовлення\"",
+  "trackDriver": "Відстежити водія",
+  "departureTimeReachedFlight": "Час відправлення для рейсу {flightInfo} настав",
+  "@departureTimeReachedFlight": {
+    "placeholders": {
+      "flightInfo": {"type": "String"}
+    }
+  },
+  "failedToCancelRide": "Не вдалося скасувати поїздку: {error}",
+  "@failedToCancelRide": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToLoadRides": "Не вдалося завантажити поїздки",
+
+  "goodMorning": "Доброго ранку,",
+  "goodAfternoon": "Добрий день,",
+  "goodEvening": "Добрий вечір,",
+  "whereTo": "Куди?",
+  "onTrip": "У дорозі",
+  "driverOnTheWay": "Водій їде",
+  "driverAssigned": "Водія призначено",
+  "yourDriver": "Ваш водій",
+  "savedPlaces": "ЗБЕРЕЖЕНІ МІСЦЯ",
+  "savedPlaceHome": "Дім",
+  "savedPlaceOffice": "Офіс",
+  "addAddress": "Додати адресу",
+  "bookARide": "Замовити поїздку",
+
+  "scheduled": "ЗА РОЗКЛАДОМ",
+  "nowLabel": "ЗАРАЗ",
+  "asap": "ЯКНАЙШВИДШЕ",
+  "vehicleClass": "КЛАС АВТО",
+  "estimatedTotal": "Орієнтована вартість",
+  "estimateUnavailableHint": "Не вдалося розрахувати ціну для цієї адреси. Ви все одно можете замовити — вартість буде підтверджена пізніше.",
+  "confirmBooking": "Підтвердити замовлення",
+  "rideBookedSuccessfully": "Поїздку успішно заброньовано!",
+  "failedToCreateRide": "Не вдалося створити поїздку",
+
+  "failedToLoadRideHistory": "Не вдалося завантажити історію поїздок",
+  "listView": "Список",
+  "pastLabel": "МИНУЛІ",
+  "confirmedStatus": "Підтверджено",
+  "rateThisRide": "Оцінити поїздку",
+  "thankYouForRating": "Дякуємо за вашу оцінку!",
+  "failedToSubmitRating": "Не вдалося надіслати оцінку: {error}",
+  "@failedToSubmitRating": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

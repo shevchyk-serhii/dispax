@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
+import '../../l10n/app_localizations.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../modules/core/date_utils.dart';
@@ -64,22 +65,21 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   Future<bool> _confirmLeaveCreateRide(BuildContext context) async {
     if (!_createRideFormBloc.state.isModified) return true;
+    final l10n = AppLocalizations.of(context)!;
     final result = await showAdaptiveDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Discard changes?'),
-        content: const Text(
-          'You have unsaved ride details. If you leave, they will be lost.',
-        ),
+        title: Text(l10n.discardChangesTitle),
+        content: Text(l10n.discardChangesMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Stay'),
+            child: Text(l10n.stay),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Discard'),
+            child: Text(l10n.discard),
           ),
         ],
       ),
@@ -90,33 +90,35 @@ class _ClientDashboardState extends State<ClientDashboard> {
     return result ?? false;
   }
 
-  static const _destinations = [
-    NavigationDestination(
-      icon: Icon(Icons.home_outlined),
-      selectedIcon: Icon(Icons.home),
-      label: 'Home',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.list_outlined),
-      selectedIcon: Icon(Icons.list),
-      label: 'Rides',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.add_circle_outline),
-      selectedIcon: Icon(Icons.add_circle),
-      label: 'Book',
-    ),
-    NavigationDestination(
-      icon: Icon(LucideCompat.map),
-      selectedIcon: Icon(LucideCompat.map),
-      label: 'Map',
-    ),
-    NavigationDestination(
-      icon: Icon(LucideCompat.settings),
-      selectedIcon: Icon(LucideCompat.settings),
-      label: 'Settings',
-    ),
-  ];
+  List<NavigationDestination> _buildDestinations(AppLocalizations l10n) {
+    return [
+      NavigationDestination(
+        icon: const Icon(Icons.home_outlined),
+        selectedIcon: const Icon(Icons.home),
+        label: l10n.homeTab,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.list_outlined),
+        selectedIcon: const Icon(Icons.list),
+        label: l10n.ridesTab,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.add_circle_outline),
+        selectedIcon: const Icon(Icons.add_circle),
+        label: l10n.bookLabel,
+      ),
+      NavigationDestination(
+        icon: const Icon(LucideCompat.map),
+        selectedIcon: const Icon(LucideCompat.map),
+        label: l10n.map,
+      ),
+      NavigationDestination(
+        icon: const Icon(LucideCompat.settings),
+        selectedIcon: const Icon(LucideCompat.settings),
+        label: l10n.settings,
+      ),
+    ];
+  }
 
   Widget _buildCurrentTab() {
     switch (_selectedIndex) {
@@ -159,8 +161,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return ResponsiveScaffold(
-      destinations: _destinations,
+      destinations: _buildDestinations(l10n),
       selectedIndex: _selectedIndex,
       onDestinationSelected: (index) async {
         if (_selectedIndex == 2 && index != 2) {
@@ -190,6 +193,7 @@ class MyRidesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) {
         if (rideState.status == RideStateStatus.initial) {
@@ -207,7 +211,7 @@ class MyRidesTab extends StatelessWidget {
 
         if (rideState.hasError && rideState.rides.isEmpty) {
           return ErrorDisplayWidget(
-            title: 'Failed to load rides',
+            title: l10n.failedToLoadRides,
             message: rideState.errorMessage!,
             onRetry: () => loadRides(context),
           );
@@ -233,16 +237,13 @@ class MyRidesTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'You have no active rides',
+                  l10n.noActiveRides,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Use "Book" tab to create one',
-                  style: TextStyle(fontSize: 12),
-                ),
+                Text(l10n.useBookTabHint, style: const TextStyle(fontSize: 12)),
               ],
             ),
           );
@@ -276,7 +277,9 @@ class MyRidesTab extends StatelessWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Departure time reached for flight ${ride.fullFlightInfo}',
+                                  l10n.departureTimeReachedFlight(
+                                    ride.fullFlightInfo,
+                                  ),
                                 ),
                               ),
                             );
@@ -336,7 +339,7 @@ class MyRidesTab extends StatelessWidget {
                                 child: OutlinedButton.icon(
                                   onPressed: onOpenMap,
                                   icon: const Icon(Icons.location_on, size: 16),
-                                  label: const Text('Track driver'),
+                                  label: Text(l10n.trackDriver),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.clientColor,
                                   ),
@@ -352,7 +355,7 @@ class MyRidesTab extends StatelessWidget {
                                     Icons.cancel_outlined,
                                     size: 16,
                                   ),
-                                  label: const Text('Cancel'),
+                                  label: Text(l10n.cancel),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.error,
                                   ),
@@ -389,9 +392,10 @@ class MyRidesTab extends StatelessWidget {
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Failed to cancel ride: $e')));
+          final l10n = AppLocalizations.of(context)!;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.failedToCancelRide(e.toString()))),
+          );
         }
       }
     }

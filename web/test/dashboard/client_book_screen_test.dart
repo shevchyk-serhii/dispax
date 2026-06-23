@@ -4,6 +4,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:dispax/blocs/auth/auth_bloc.dart';
 import 'package:dispax/blocs/auth/auth_event.dart';
 import 'package:dispax/blocs/auth/auth_state.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/blocs/create_ride_form/create_ride_form_bloc.dart';
 import 'package:dispax/blocs/create_ride_form/create_ride_form_event.dart';
 import 'package:dispax/blocs/create_ride_form/create_ride_form_state.dart';
@@ -100,6 +101,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          locale: const Locale('en'),
           home: Scaffold(
             body: BlocProvider<AuthBloc>.value(
               value: authBloc,
@@ -199,6 +202,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            locale: const Locale('en'),
             home: Scaffold(
               body: MultiBlocProvider(
                 providers: [
@@ -213,7 +218,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Open the address picker via the FROM field.
-        await tester.tap(find.text('Pick up location'));
+        await tester.tap(find.text('Pickup location'));
         await tester.pumpAndSettle();
 
         // Search field and Confirm button are visible above the keyboard.
@@ -274,6 +279,8 @@ void main() {
         var onCreatedCalls = 0;
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            locale: const Locale('en'),
             home: Scaffold(
               body: BlocProvider<AuthBloc>.value(
                 value: authBloc,

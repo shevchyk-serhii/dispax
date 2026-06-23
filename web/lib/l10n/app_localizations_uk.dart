@@ -1524,4 +1524,248 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get closeRideButton => 'Закрити поїздку';
+
+  @override
+  String get ridesTab => 'Поїздки';
+
+  @override
+  String get createTab => 'Створити';
+
+  @override
+  String get frontDeskTitle => 'Ресепшн';
+
+  @override
+  String get quickBook => 'Швидке замовлення';
+
+  @override
+  String get bookedToday => 'Заброньовано сьогодні';
+
+  @override
+  String get awaitingConfirm => 'Очікує підтвердження';
+
+  @override
+  String get activeClientsLabel => 'Активні клієнти';
+
+  @override
+  String get templatesLabel => 'Шаблони';
+
+  @override
+  String get todaysBookings => 'Бронювання на сьогодні';
+
+  @override
+  String get noRidesToday => 'Немає поїздок сьогодні';
+
+  @override
+  String get loadRidesToSeeBookings =>
+      'Завантажте поїздки, щоб побачити бронювання';
+
+  @override
+  String get manageClientsTitle => 'Управління клієнтами';
+
+  @override
+  String get searchClientsHint => 'Пошук клієнтів...';
+
+  @override
+  String get noClientsMatchSearch => 'Жодного клієнта не знайдено';
+
+  @override
+  String get noClientsYet => 'Клієнтів ще немає';
+
+  @override
+  String get addClientTitle => 'Додати клієнта';
+
+  @override
+  String get phoneOptional => 'Телефон (необов\'язково)';
+
+  @override
+  String get nameRequired => 'Ім\'я є обов\'язковим';
+
+  @override
+  String get emailRequired => 'Email є обов\'язковим';
+
+  @override
+  String get invalidEmail => 'Невірний email';
+
+  @override
+  String get addButton => 'Додати';
+
+  @override
+  String get editAction => 'Редагувати';
+
+  @override
+  String get deactivateAction => 'Деактивувати';
+
+  @override
+  String get editClientTitle => 'Редагувати клієнта';
+
+  @override
+  String get deactivateClientTitle => 'Деактивувати клієнта';
+
+  @override
+  String deactivateClientConfirmMsg(String name) {
+    return 'Ви впевнені, що хочете деактивувати $name?';
+  }
+
+  @override
+  String get newRideButton => 'Нова поїздка';
+
+  @override
+  String get ridesCountLabel => 'поїздок';
+
+  @override
+  String get preferredDriverAssigned => 'Призначений бажаний водій';
+
+  @override
+  String get noRidesYet => 'Поїздок ще немає';
+
+  @override
+  String get vipClientLabel => 'VIP-клієнт';
+
+  @override
+  String get vipClientHelpText => 'Пріоритетне обслуговування та бажаний водій';
+
+  @override
+  String driverLabel(String name) {
+    return 'Водій: $name';
+  }
+
+  @override
+  String get reportsTitle => 'Звіти';
+
+  @override
+  String get totalRidesLabel => 'Всього поїздок';
+
+  @override
+  String get inProgressLabel => 'В процесі';
+
+  @override
+  String get requestedLabel => 'Запитано';
+
+  @override
+  String get assignedLabel => 'Призначено';
+
+  @override
+  String get keyMetrics => 'Ключові показники';
+
+  @override
+  String get cancellationRateLabel => 'Відсоток скасувань';
+
+  @override
+  String get statusBreakdown => 'Розбивка за статусом';
+
+  @override
+  String get noRideDataYet => 'Даних про поїздки ще немає';
+
+  @override
+  String get noActiveRides => 'У вас немає активних поїздок';
+
+  @override
+  String get useBookTabHint => 'Використайте вкладку \"Замовлення\"';
+
+  @override
+  String get trackDriver => 'Відстежити водія';
+
+  @override
+  String departureTimeReachedFlight(String flightInfo) {
+    return 'Час відправлення для рейсу $flightInfo настав';
+  }
+
+  @override
+  String failedToCancelRide(String error) {
+    return 'Не вдалося скасувати поїздку: $error';
+  }
+
+  @override
+  String get failedToLoadRides => 'Не вдалося завантажити поїздки';
+
+  @override
+  String get goodMorning => 'Доброго ранку,';
+
+  @override
+  String get goodAfternoon => 'Добрий день,';
+
+  @override
+  String get goodEvening => 'Добрий вечір,';
+
+  @override
+  String get whereTo => 'Куди?';
+
+  @override
+  String get onTrip => 'У дорозі';
+
+  @override
+  String get driverOnTheWay => 'Водій їде';
+
+  @override
+  String get driverAssigned => 'Водія призначено';
+
+  @override
+  String get yourDriver => 'Ваш водій';
+
+  @override
+  String get savedPlaces => 'ЗБЕРЕЖЕНІ МІСЦЯ';
+
+  @override
+  String get savedPlaceHome => 'Дім';
+
+  @override
+  String get savedPlaceOffice => 'Офіс';
+
+  @override
+  String get addAddress => 'Додати адресу';
+
+  @override
+  String get bookARide => 'Замовити поїздку';
+
+  @override
+  String get scheduled => 'ЗА РОЗКЛАДОМ';
+
+  @override
+  String get nowLabel => 'ЗАРАЗ';
+
+  @override
+  String get asap => 'ЯКНАЙШВИДШЕ';
+
+  @override
+  String get vehicleClass => 'КЛАС АВТО';
+
+  @override
+  String get estimatedTotal => 'Орієнтована вартість';
+
+  @override
+  String get estimateUnavailableHint =>
+      'Не вдалося розрахувати ціну для цієї адреси. Ви все одно можете замовити — вартість буде підтверджена пізніше.';
+
+  @override
+  String get confirmBooking => 'Підтвердити замовлення';
+
+  @override
+  String get rideBookedSuccessfully => 'Поїздку успішно заброньовано!';
+
+  @override
+  String get failedToCreateRide => 'Не вдалося створити поїздку';
+
+  @override
+  String get failedToLoadRideHistory =>
+      'Не вдалося завантажити історію поїздок';
+
+  @override
+  String get listView => 'Список';
+
+  @override
+  String get pastLabel => 'МИНУЛІ';
+
+  @override
+  String get confirmedStatus => 'Підтверджено';
+
+  @override
+  String get rateThisRide => 'Оцінити поїздку';
+
+  @override
+  String get thankYouForRating => 'Дякуємо за вашу оцінку!';
+
+  @override
+  String failedToSubmitRating(String error) {
+    return 'Не вдалося надіслати оцінку: $error';
+  }
 }

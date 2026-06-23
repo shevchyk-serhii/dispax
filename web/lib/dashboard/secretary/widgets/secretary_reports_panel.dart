@@ -6,6 +6,7 @@ import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../constants/app_styles.dart';
+import '../../../l10n/app_localizations.dart';
 
 class SecretaryReportsPanel extends StatefulWidget {
   const SecretaryReportsPanel({super.key});
@@ -50,6 +51,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         // Graphite header
@@ -66,10 +68,10 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
               bottom: false,
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Reports',
-                      style: TextStyle(
+                      l10n.reportsTitle,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -84,7 +86,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
                       size: 22,
                     ),
                     onPressed: _loadStats,
-                    tooltip: 'Refresh',
+                    tooltip: l10n.refresh,
                   ),
                 ],
               ),
@@ -97,6 +99,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
   }
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
@@ -109,7 +112,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
             const SizedBox(height: 12),
             Text(_error!, style: AppStyles.bodyMedium),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _loadStats, child: const Text('Retry')),
+            ElevatedButton(onPressed: _loadStats, child: Text(l10n.retry)),
           ],
         ),
       );
@@ -120,6 +123,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
   Widget _buildContent() {
     if (_stats == null) return const SizedBox.shrink();
 
+    final l10n = AppLocalizations.of(context)!;
     final stats = _stats!;
     final total = (stats['totalRides'] ?? 0) as num;
     final completed = (stats['completedRides'] ?? 0) as num;
@@ -137,14 +141,14 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
         Row(
           children: [
             _buildStatTile(
-              'Total Rides',
+              l10n.totalRidesLabel,
               total.toString(),
               Icons.directions_car,
               Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 10),
             _buildStatTile(
-              'Completed',
+              l10n.completed,
               completed.toString(),
               Icons.check_circle,
               AppColors.success,
@@ -155,14 +159,14 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
         Row(
           children: [
             _buildStatTile(
-              'In Progress',
+              l10n.inProgressLabel,
               inProgress.toString(),
               Icons.play_circle,
               AppColors.rideInProgress,
             ),
             const SizedBox(width: 10),
             _buildStatTile(
-              'Requested',
+              l10n.requestedLabel,
               requested.toString(),
               Icons.pending,
               AppColors.rideRequested,
@@ -173,14 +177,14 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
         Row(
           children: [
             _buildStatTile(
-              'Assigned',
+              l10n.assignedLabel,
               assigned.toString(),
               Icons.assignment,
               AppColors.rideAssigned,
             ),
             const SizedBox(width: 10),
             _buildStatTile(
-              'Cancelled',
+              l10n.cancelled,
               cancelled.toString(),
               Icons.cancel,
               AppColors.error,
@@ -198,7 +202,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Key Metrics',
+                l10n.keyMetrics,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -207,7 +211,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
               ),
               const SizedBox(height: 12),
               _buildMetricRow(
-                'Cancellation Rate',
+                l10n.cancellationRateLabel,
                 '${cancelRate.toStringAsFixed(1)}%',
                 cancelRate < 10
                     ? AppColors.success
@@ -216,7 +220,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
                     : AppColors.error,
               ),
               _buildMetricRow(
-                'Total Clients',
+                l10n.totalClients,
                 clients.toString(),
                 AppColors.accent,
               ),
@@ -234,7 +238,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Status Breakdown',
+                l10n.statusBreakdown,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -244,38 +248,43 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
               const SizedBox(height: 16),
               if (total > 0) ...[
                 _buildStatusBar(
-                  'Completed',
+                  l10n.completed,
                   completed,
                   total,
                   AppColors.success,
                 ),
                 const SizedBox(height: 8),
                 _buildStatusBar(
-                  'In Progress',
+                  l10n.inProgressLabel,
                   inProgress,
                   total,
                   AppColors.rideInProgress,
                 ),
                 const SizedBox(height: 8),
                 _buildStatusBar(
-                  'Assigned',
+                  l10n.assignedLabel,
                   assigned,
                   total,
                   AppColors.rideAssigned,
                 ),
                 const SizedBox(height: 8),
                 _buildStatusBar(
-                  'Requested',
+                  l10n.requestedLabel,
                   requested,
                   total,
                   AppColors.rideRequested,
                 ),
                 const SizedBox(height: 8),
-                _buildStatusBar('Cancelled', cancelled, total, AppColors.error),
+                _buildStatusBar(
+                  l10n.cancelled,
+                  cancelled,
+                  total,
+                  AppColors.error,
+                ),
               ] else
                 Center(
                   child: Text(
-                    'No ride data yet',
+                    l10n.noRideDataYet,
                     style: AppStyles.bodyMedium.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),

@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../modules/ride_management/models/vehicle_class.dart';
 import '../../modules/ride_management/widgets/address_picker_sheet.dart';
 import '../../modules/ride_management/services/ride_estimate_service.dart';
@@ -113,6 +115,7 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return MultiBlocListener(
       listeners: [
         BlocListener<CreateRideFormBloc, CreateRideFormState>(
@@ -135,8 +138,8 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
           listener: (ctx, state) {
             if (state.status == RideStateStatus.created) {
               ScaffoldMessenger.of(ctx).showSnackBar(
-                const SnackBar(
-                  content: Text('Ride booked successfully!'),
+                SnackBar(
+                  content: Text(l10n.rideBookedSuccessfully),
                   backgroundColor: AppColors.success,
                 ),
               );
@@ -149,7 +152,7 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
             } else if (state.status == RideStateStatus.error) {
               ScaffoldMessenger.of(ctx).showSnackBar(
                 SnackBar(
-                  content: Text(state.errorMessage ?? 'Failed to create ride'),
+                  content: Text(state.errorMessage ?? l10n.failedToCreateRide),
                   backgroundColor: AppColors.error,
                   duration: const Duration(seconds: 8),
                 ),
@@ -205,6 +208,7 @@ class _BookHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -215,10 +219,10 @@ class _BookHeader extends StatelessWidget {
           child: Row(
             children: [
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Book a ride',
-                  style: TextStyle(
+                  l10n.bookARide,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -250,6 +254,7 @@ class _RouteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
@@ -286,9 +291,9 @@ class _RouteCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'FROM',
-                        style: TextStyle(
+                      Text(
+                        l10n.fromLabel,
+                        style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textLight,
@@ -303,7 +308,7 @@ class _RouteCard extends StatelessWidget {
                         ),
                         child: Text(
                           fromAddress.isEmpty
-                              ? 'Pick up location'
+                              ? l10n.pickupLocation
                               : fromAddress,
                           style: TextStyle(
                             fontSize: 14,
@@ -344,9 +349,9 @@ class _RouteCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'TO',
-                        style: TextStyle(
+                      Text(
+                        l10n.toLabel,
+                        style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textLight,
@@ -360,7 +365,7 @@ class _RouteCard extends StatelessWidget {
                           current: toAddress,
                         ),
                         child: Text(
-                          toAddress.isEmpty ? 'Drop-off location' : toAddress,
+                          toAddress.isEmpty ? l10n.dropoffLocation : toAddress,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -415,29 +420,16 @@ class _WhenToggle extends StatelessWidget {
 
   const _WhenToggle({required this.isScheduled, required this.pickupDateTime});
 
-  String _formattedDateTime() {
+  String _formattedDateTime(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final d = pickupDateTime;
-    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
     final now = DateTime.now();
     final isToday =
         d.year == now.year && d.month == now.month && d.day == now.day;
     final dayLabel = isToday
-        ? 'Today'
-        : '${weekdays[d.weekday - 1]} ${d.day} ${months[d.month - 1]}';
+        ? l10n.today
+        : '${DateFormat('E', locale).format(d)} ${d.day} ${DateFormat('MMM', locale).format(d)}';
     final h = d.hour.toString().padLeft(2, '0');
     final m = d.minute.toString().padLeft(2, '0');
     return '$dayLabel $h:$m';
@@ -445,6 +437,7 @@ class _WhenToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
@@ -484,7 +477,7 @@ class _WhenToggle extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'SCHEDULED',
+                    l10n.scheduled,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -495,7 +488,7 @@ class _WhenToggle extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _formattedDateTime(),
+                    _formattedDateTime(context),
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w600,
@@ -543,7 +536,7 @@ class _WhenToggle extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'NOW',
+                    l10n.nowLabel,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -554,7 +547,7 @@ class _WhenToggle extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'ASAP',
+                    l10n.asap,
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w600,
@@ -582,13 +575,14 @@ class _VehicleClassSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'VEHICLE CLASS',
-          style: TextStyle(
+        Text(
+          l10n.vehicleClass,
+          style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
             color: AppColors.textLight,
@@ -734,6 +728,7 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final estimate = state.activeEstimate;
     final total = estimate != null
         ? '€${estimate.estimatedPrice.toStringAsFixed(2)}'
@@ -758,7 +753,7 @@ class _Footer extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Estimated total',
+                l10n.estimatedTotal,
                 style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
               ),
               Text(
@@ -774,8 +769,7 @@ class _Footer extends StatelessWidget {
           if (showEstimateHint) ...[
             const SizedBox(height: 6),
             Text(
-              "We couldn't estimate the price for this address. "
-              'You can still book — the fare will be confirmed afterwards.',
+              l10n.estimateUnavailableHint,
               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
             ),
           ],
@@ -799,9 +793,12 @@ class _Footer extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Confirm booking',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  child: Text(
+                    l10n.confirmBooking,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 );
               },
