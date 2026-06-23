@@ -95,7 +95,7 @@ import com.shevchyk.ride.repository.{
   TariffRepository,
   TimeBucket
 }
-import com.shevchyk.schedule.application.{ScheduleService => ScheduleSvc}
+import com.shevchyk.schedule.application.{ScheduleDayLookupAdapter, ScheduleService => ScheduleSvc}
 import com.shevchyk.schedule.domain.{DriverUnavailability, DriverScheduleVisibility, ScheduleDay, ScheduleError}
 import com.shevchyk.schedule.repository.{
   DriverScheduleVisibilityRepository,
@@ -1538,6 +1538,7 @@ object TestApplication extends ZIOAppDefault:
       RideService.layer,
       // Schedule
       inMemoryScheduleDayRepositoryLayer,
+      ScheduleDayLookupAdapter.layer,
       ZLayer.fromZIO(
         Ref.Synchronized.make(Map.empty[PersonId, DriverScheduleVisibility]).map { store =>
           registerReset(store.set(Map.empty[PersonId, DriverScheduleVisibility]))

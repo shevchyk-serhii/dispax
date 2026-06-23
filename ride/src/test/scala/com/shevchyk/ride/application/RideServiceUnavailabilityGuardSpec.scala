@@ -8,6 +8,7 @@ import com.shevchyk.core.application.{
   EmailSmsService,
   RideConfirmationData,
   GeocodingService,
+  ScheduleDayLookup,
   UnavailabilitySlot
 }
 import com.shevchyk.core.repository.BlacklistRepository
@@ -172,6 +173,11 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
         ): Task[List[UnavailabilitySlot]] = ZIO.succeed(slots)
     )
 
+  private val noopScheduleDayLookup: ZLayer[Any, Nothing, ScheduleDayLookup] = ZLayer.succeed(
+    new ScheduleDayLookup:
+      def find(id: ScheduleDayId) = ZIO.succeed(None)
+  )
+
   private def buildLayers(
       availabilityChecker: ZLayer[Any, Nothing, DriverAvailabilityChecker] = noopAvailabilityChecker
   ) =
@@ -184,7 +190,8 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
       GeocodingService.noop ++
       ExpenseRepository.inMemory ++
       PickupTimeService.noopLayer ++
-      availabilityChecker) >+> RideService.layer
+      availabilityChecker ++
+      noopScheduleDayLookup) >+> RideService.layer
 
   val standardLayers = buildLayers()
 

@@ -1,7 +1,13 @@
 package com.shevchyk.ride.application.service
 
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.application.{DriverAvailabilityChecker, EventHub, AuditService, GeocodingService}
+import com.shevchyk.core.application.{
+  DriverAvailabilityChecker,
+  EventHub,
+  AuditService,
+  GeocodingService,
+  ScheduleDayLookup
+}
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.domain.RepositoryExtensions.*
@@ -124,7 +130,8 @@ class RideServiceImpl(
     geocodingService: GeocodingService,
     expenseRepository: ExpenseRepository,
     pickupTimeService: PickupTimeService,
-    availabilityChecker: DriverAvailabilityChecker
+    availabilityChecker: DriverAvailabilityChecker,
+    scheduleDayLookup: ScheduleDayLookup
 ) extends RideService:
 
   /**
@@ -614,11 +621,15 @@ class RideServiceImpl(
       driverOpt <- personRepository.findById(driverId).mapDatabaseError
       driver    <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(driverId))
 
-      _       <- failRule("driver_role", "Person is not a driver").when(!driver.canDrive).unit
-      _       <-
+      _ <- failRule("driver_role", "Person is not a driver").when(!driver.canDrive).unit
+      _ <-
         failRule("company_isolation", "Driver belongs to a different company")
           .when(!driver.companyId.contains(ride.companyId))
           .unit
+
+      // Constraint #3: an assignment must reference a valid ScheduleDay. Only enforced when the
+      // ride carries a scheduleDayId — rides without one keep the previous behaviour.
+      _ <- validateScheduleDay(ride, driverId)
 
       // Check blacklist
       blocked <- blacklistRepository.isBlacklisted(ride.clientId, driverId).mapDatabaseError
@@ -990,6 +1001,39 @@ class RideServiceImpl(
   private val DefaultRideDurationMinutes = 60L
 
   /**
+   * Business constraint #3: an assignment must reference a valid ScheduleDay.
+   *
+   * When the ride does not carry a `scheduleDayId` this is a no-op (backward compatible). Otherwise the referenced day
+   * must:
+   *   - exist,
+   *   - belong to the ride's company (tenant isolation), and
+   *   - be assigned to the very driver being assigned, and
+   *   - be active (not cancelled).
+   *
+   * Tenant comparison uses the ride's `companyId`, never a caller-supplied value.
+   */
+  private def validateScheduleDay(ride: Ride, driverId: PersonId): IO[RideError, Unit] =
+    ride.scheduleDayId match
+      case None        => ZIO.unit
+      case Some(rawId) =>
+        val scheduleDayId = ScheduleDayId(rawId)
+        for {
+          dayOpt <- scheduleDayLookup.find(scheduleDayId).mapError(ex => RideError.DatabaseError(ex))
+          day    <- ZIO
+                      .fromOption(dayOpt)
+                      .orElse(failRule("schedule_day", s"Schedule day ${rawId} does not exist"))
+          _      <-
+            failRule("schedule_day", "Schedule day belongs to a different company")
+              .when(day.companyId != ride.companyId)
+              .unit
+          _      <-
+            failRule("schedule_day", "Schedule day is assigned to a different driver")
+              .when(day.driverId != driverId)
+              .unit
+          _      <- failRule("schedule_day", "Schedule day is cancelled or inactive").when(!day.active).unit
+        } yield ()
+
+  /**
    * Checks whether ``driverId`` has any active ride (Assigned / InProgress) or a manual unavailability window whose
    * time window overlaps with ``candidateRide``.
    *
@@ -1064,7 +1108,7 @@ class RideServiceImpl(
 object RideService:
 
   val layer: ZLayer[
-    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker,
+    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup,
     Nothing,
     RideService
   ] = ZLayer.fromFunction(

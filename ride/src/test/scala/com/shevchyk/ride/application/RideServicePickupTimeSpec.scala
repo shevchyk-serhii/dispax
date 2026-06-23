@@ -9,6 +9,7 @@ import com.shevchyk.core.application.{
   EmailSmsService,
   RideConfirmationData,
   GeocodingService,
+  ScheduleDayLookup,
   UnavailabilitySlot
 }
 import com.shevchyk.core.repository.{
@@ -160,6 +161,11 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
       ): Task[List[UnavailabilitySlot]] = ZIO.succeed(Nil)
   )
 
+  private val noopScheduleDayLookup: ZLayer[Any, Nothing, ScheduleDayLookup] = ZLayer.succeed(
+    new ScheduleDayLookup:
+      def find(id: ScheduleDayId) = ZIO.succeed(None)
+  )
+
   def rideLayers(
       travelTime: ZLayer[Any, Nothing, TravelTimeService] = hereAvailable
   ): ZLayer[Any, Nothing, RideService] =
@@ -172,7 +178,8 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
       deterministicGeocoding ++
       ExpenseRepository.inMemory ++
       pickupServiceLayer(travelTime) ++
-      noopAvailabilityChecker) >+> RideService.layer
+      noopAvailabilityChecker ++
+      noopScheduleDayLookup) >+> RideService.layer
 
   // ── Flight departure time used in all departure tests ───────────────────
   // 2030-06-15T12:00:00Z → with global defaults (buffer=15, checkIn=60) and travel=30:
