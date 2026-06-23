@@ -92,7 +92,13 @@ import com.shevchyk.notification.application.{
   SmtpEmailService
 }
 import com.shevchyk.notification.config.SmtpConfig
-import com.shevchyk.app.{ReminderScheduler, InvoiceReminderScheduler, PredictiveEtaMonitor, SentryInit}
+import com.shevchyk.app.{
+  ReminderScheduler,
+  InvoiceReminderScheduler,
+  PredictiveEtaMonitor,
+  ConfirmationReminderScheduler,
+  SentryInit
+}
 import com.shevchyk.notification.repository.{
   CheckpointNotificationRepository,
   InMemoryFcmTokenRepository,
@@ -102,8 +108,10 @@ import com.shevchyk.notification.repository.{
   PostgresFcmTokenRepository,
   PostgresNotificationRepository,
   SentReminderRepository,
+  PostgresSentConfirmationRequestRepository,
   EtaAlertRepository
 }
+import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import com.shevchyk.core.application.EmailSmsService
 import com.shevchyk.core.database.DatabaseConfig
 import com.shevchyk.core.config.{Environment, ServerConfig}
@@ -175,6 +183,7 @@ object Application extends ZIOAppDefault:
         ReminderScheduler.start *>
         InvoiceReminderScheduler.start *>
         PredictiveEtaMonitor.start *>
+        ConfirmationReminderScheduler.start *>
         ZIO.logInfo("Starting Dispax API Server (PostgreSQL)...") *>
         ZIO.logInfo("📋 Available APIs:") *>
         ZIO.logInfo("  🔍 /health - Liveness check") *>
@@ -247,6 +256,7 @@ object Application extends ZIOAppDefault:
       FcmTokenRepository.layer,
       FcmService.layer,
       SentReminderRepository.layer,
+      PostgresSentConfirmationRequestRepository.layer,
       EtaAlertRepository.layer,
       CheckpointNotificationRepository.layer,
       NotificationRepository.layer,

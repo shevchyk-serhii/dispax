@@ -20,6 +20,7 @@ import com.shevchyk.ride.repository.{
 }
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.core.application.{EmailSmsService, RideConfirmationData}
+import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.*
 import java.time.{Duration, Instant, LocalDate, ZoneOffset}
 import monocle.syntax.all.*
@@ -40,6 +41,9 @@ trait RideService:
       companyId: CompanyId
   ): IO[RideError, Ride]
   def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]
+
+  def confirmRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]
+  def rejectRide(rideId: RideId, driverId: PersonId, reason: String): IO[RideError, Ride]
 
   def handOffToExternal(
       rideId: RideId,
@@ -152,7 +156,8 @@ class RideServiceImpl(
     availabilityChecker: DriverAvailabilityChecker,
     scheduleDayLookup: ScheduleDayLookup,
     externalDriverRepo: ExternalDriverRepository,
-    partnerCompanyRepo: PartnerCompanyRepository
+    partnerCompanyRepo: PartnerCompanyRepository,
+    sentConfirmationRequestRepository: SentConfirmationRequestRepository
 ) extends RideService:
 
   /**
@@ -337,12 +342,164 @@ class RideServiceImpl(
                         .focus(_.startTime)
                         .replace(Some(Instant.now()))
 
-      // Atomic compare-and-set: only start while the ride is still `Assigned`. Guards against a
-      // concurrent cancel/reassign racing this start — the loser gets InvalidStatusTransition
-      // instead of silently overwriting the winner.
-      applied      <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Assigned)).mapDatabaseError
+      // Atomic compare-and-set: only start while the ride is still `Confirmed` (the driver must
+      // confirm before starting). Guards against a concurrent cancel/reassign racing this start —
+      // the loser gets InvalidStatusTransition instead of silently overwriting the winner.
+      applied      <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Confirmed)).mapDatabaseError
       _            <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.InProgress)).when(!applied).unit
       persistedRide = updatedRide
+    } yield persistedRide
+
+  def confirmRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride] =
+    for {
+      ride      <- getRideById(rideId)
+      _         <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Confirmed))
+          .when(!ride.canBeConfirmed)
+          .unit
+      // Verify the driver confirming is the one assigned to this ride.
+      _         <-
+        ZIO
+          .fail(RideError.UnauthorizedAccess(driverId, rideId))
+          .when(!ride.driverId.contains(driverId))
+          .unit
+      // Company isolation: the driver must belong to the ride's company.
+      driverOpt <- personRepository.findById(driverId).mapDatabaseError
+      driver    <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(driverId))
+      _         <-
+        ZIO
+          .fail(RideError.BusinessRuleViolation("company_isolation", "Driver belongs to a different company"))
+          .when(!driver.companyId.contains(ride.companyId))
+          .unit
+
+      updatedRide = ride
+                      .focus(_.status)
+                      .replace(RideStatus.Confirmed)
+                      .focus(_.confirmedAt)
+                      .replace(Some(Instant.now()))
+
+      applied      <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Assigned)).mapDatabaseError
+      _            <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(RideStatus.Assigned, RideStatus.Confirmed))
+          .when(!applied)
+          .unit
+      persistedRide = updatedRide
+      // Clear dedup so a re-assigned ride can receive a new confirmation request.
+      _            <- sentConfirmationRequestRepository.clear(rideId).ignore
+      _            <-
+        eventHub
+          .publish(
+            WebSocketEvent.RideConfirmed(
+              rideId = persistedRide.id.value,
+              driverId = driverId.value,
+              clientId = persistedRide.clientId.value,
+              companyId = persistedRide.companyId.value
+            )
+          )
+          .ignore
+      _            <-
+        auditService
+          .log(
+            AuditLogEntry.record(
+              companyId = persistedRide.companyId,
+              actorId = driverId,
+              action = AuditAction.RideStatusChanged,
+              entityType = "ride",
+              entityId = persistedRide.id.value,
+              oldValue = Some(ride.status.toString),
+              newValue = Some(RideStatus.Confirmed.toString)
+            )
+          )
+          .tapError(e => ZIO.logWarning(s"Failed to write audit log for ride confirmation: $e"))
+          .ignore
+    } yield persistedRide
+
+  def rejectRide(rideId: RideId, driverId: PersonId, reason: String): IO[RideError, Ride] =
+    for {
+      ride      <- getRideById(rideId)
+      _         <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Requested))
+          .when(!ride.canBeRejected)
+          .unit
+      // Verify the driver rejecting is the one assigned.
+      _         <-
+        ZIO
+          .fail(RideError.UnauthorizedAccess(driverId, rideId))
+          .when(!ride.driverId.contains(driverId))
+          .unit
+      // Rejection reason must not be empty.
+      _         <-
+        ZIO
+          .fail(RideError.RejectionReasonRequired(rideId))
+          .when(reason.trim.isEmpty)
+          .unit
+      // Company isolation.
+      driverOpt <- personRepository.findById(driverId).mapDatabaseError
+      driver    <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(driverId))
+      _         <-
+        ZIO
+          .fail(RideError.BusinessRuleViolation("company_isolation", "Driver belongs to a different company"))
+          .when(!driver.companyId.contains(ride.companyId))
+          .unit
+
+      now         = Instant.now()
+      updatedRide = ride
+                      .focus(_.status)
+                      .replace(RideStatus.Requested)
+                      .focus(_.driverId)
+                      .replace(None)
+                      .focus(_.rejectionReason)
+                      .replace(Some(reason))
+                      .focus(_.rejectedBy)
+                      .replace(Some(driverId))
+                      .focus(_.rejectedAt)
+                      .replace(Some(now))
+                      .focus(_.confirmedAt)
+                      .replace(None)
+
+      applied      <-
+        rideRepository
+          .updateIfStatus(updatedRide, Set(RideStatus.Assigned, RideStatus.Confirmed))
+          .mapDatabaseError
+      _            <-
+        ZIO
+          .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Requested))
+          .when(!applied)
+          .unit
+      persistedRide = updatedRide
+      // Clear dedup for both confirmations and reminders so a re-assigned ride starts fresh.
+      _            <- sentConfirmationRequestRepository.clear(rideId).ignore
+      _            <- rideRepository.clearReminders(rideId).mapDatabaseError
+      _            <-
+        eventHub
+          .publish(
+            WebSocketEvent.RideRejected(
+              rideId = persistedRide.id.value,
+              driverId = driverId.value,
+              clientId = persistedRide.clientId.value,
+              reason = reason,
+              companyId = persistedRide.companyId.value
+            )
+          )
+          .ignore
+      _            <-
+        auditService
+          .log(
+            AuditLogEntry.record(
+              companyId = persistedRide.companyId,
+              actorId = driverId,
+              action = AuditAction.RideStatusChanged,
+              entityType = "ride",
+              entityId = persistedRide.id.value,
+              oldValue = Some(ride.status.toString),
+              newValue = Some(s"Requested (rejected: $reason)")
+            )
+          )
+          .tapError(e => ZIO.logWarning(s"Failed to write audit log for ride rejection: $e"))
+          .ignore
     } yield persistedRide
 
   def completeRide(rideId: RideId): IO[RideError, Ride] =
@@ -385,7 +542,13 @@ class RideServiceImpl(
         rideRepository
           .updateIfStatus(
             updatedRide,
-            Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress, RideStatus.HandedOff)
+            Set(
+              RideStatus.Requested,
+              RideStatus.Assigned,
+              RideStatus.Confirmed,
+              RideStatus.InProgress,
+              RideStatus.HandedOff
+            )
           )
           .mapDatabaseError
       _            <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled)).when(!applied).unit
@@ -451,7 +614,13 @@ class RideServiceImpl(
         rideRepository
           .updateIfStatus(
             updatedRide,
-            Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress, RideStatus.HandedOff)
+            Set(
+              RideStatus.Requested,
+              RideStatus.Assigned,
+              RideStatus.Confirmed,
+              RideStatus.InProgress,
+              RideStatus.HandedOff
+            )
           )
           .mapDatabaseError
       _            <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled)).when(!applied).unit
@@ -515,13 +684,19 @@ class RideServiceImpl(
           .when(userRole != PersonRole.Driver && userRole != PersonRole.Dispatcher)
           .unit
 
-      // Validate transition
+      // Validate transition.
+      // Dispatchers may override the confirmation gate and move Assigned -> InProgress directly.
+      // Drivers must always go through Confirmed first.
       _               <-
         request.status match
           case RideStatus.InProgress =>
+            val dispatcherOverride =
+              userRole == PersonRole.Dispatcher &&
+                (ride.status == RideStatus.Assigned || ride.status == RideStatus.Confirmed) &&
+                ride.driverId.isDefined
             ZIO
               .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.InProgress))
-              .when(!ride.canBeStarted)
+              .when(!ride.canBeStarted && !dispatcherOverride)
               .unit
           case RideStatus.Completed  =>
             ZIO
@@ -533,6 +708,12 @@ class RideServiceImpl(
               .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Cancelled))
               .when(!ride.canBeCancelled)
               .unit
+          case RideStatus.Confirmed  =>
+            // A driver may confirm via updateRideStatus as well (same as confirmRide).
+            ZIO
+              .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Confirmed))
+              .when(!ride.canBeConfirmed)
+              .unit
           case target                => ZIO.fail(RideError.InvalidStatusTransition(ride.status, target))
 
       // Statuses the ride must still be in for this transition to apply. Mirrors the per-target
@@ -543,10 +724,19 @@ class RideServiceImpl(
       // to "always apply" (an empty set becomes `WHERE ... AND TRUE` in updateIfStatus).
       expectedStatuses =
         request.status match
-          case RideStatus.InProgress => Set(RideStatus.Assigned)
+          // Assigned is accepted alongside Confirmed so a dispatcher may override the
+          // confirm-before-start rule (Assigned -> InProgress); a driver still needs Confirmed.
+          case RideStatus.InProgress => Set(RideStatus.Assigned, RideStatus.Confirmed)
           case RideStatus.Completed  => Set(RideStatus.InProgress)
+          case RideStatus.Confirmed  => Set(RideStatus.Assigned)
           case RideStatus.Cancelled  =>
-            Set(RideStatus.Requested, RideStatus.Assigned, RideStatus.InProgress, RideStatus.HandedOff)
+            Set(
+              RideStatus.Requested,
+              RideStatus.Assigned,
+              RideStatus.Confirmed,
+              RideStatus.InProgress,
+              RideStatus.HandedOff
+            )
           case _                     => RideStatus.values.toSet
 
       updatedRide   = ride
@@ -784,18 +974,34 @@ class RideServiceImpl(
       // A dispatcher can knowingly override the conflict; tenant/role/blacklist checks above still apply.
       _ <- checkScheduleConflict(newDriverId, ride).unless(overrideScheduleConflict)
 
+      // Reset confirmation state when the driver changes so the new driver must confirm afresh.
       updatedRide   = ride
                         .focus(_.driverId)
                         .replace(Some(newDriverId))
+                        .focus(_.status)
+                        .replace(RideStatus.Assigned)
+                        .focus(_.confirmedAt)
+                        .replace(None)
+                        .focus(_.rejectionReason)
+                        .replace(None)
+                        .focus(_.rejectedBy)
+                        .replace(None)
+                        .focus(_.rejectedAt)
+                        .replace(None)
 
-      // Atomic compare-and-set: only reassign while the ride is still `Assigned`.
-      applied      <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Assigned)).mapDatabaseError
+      // Atomic compare-and-set: only reassign while the ride is still `Assigned` or `Confirmed`.
+      applied      <-
+        rideRepository
+          .updateIfStatus(updatedRide, Set(RideStatus.Assigned, RideStatus.Confirmed))
+          .mapDatabaseError
       _            <-
         ZIO
           .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Assigned))
           .when(!applied)
           .unit
       persistedRide = updatedRide
+      // Clear confirmation dedup so the new driver receives a confirmation request.
+      _            <- sentConfirmationRequestRepository.clear(rideId).ignore
       _            <-
         eventHub
           .publish(
@@ -1107,15 +1313,16 @@ class RideServiceImpl(
     for {
       driverRides      <- rideRepository.findByDriverId(driverId).mapDatabaseError
       activeRides       = driverRides.filter(r =>
-                            (r.status == RideStatus.Assigned || r.status == RideStatus.InProgress) &&
+                            (r.status == RideStatus.Assigned || r.status == RideStatus.Confirmed ||
+                              r.status == RideStatus.InProgress) &&
                               r.id != candidateRide.id // exclude self (relevant for reassign)
                           )
-      rideConflict      = activeRides.find { existing =>
+      conflict          = activeRides.find { existing =>
                             val existingTime = existing.scheduledTime.getOrElse(existing.requestTime)
                             ridesOverlap(candidateTime, existingTime)
                           }
       _                <-
-        rideConflict match
+        conflict match
           case Some(conflicting) =>
             val conflictTime = conflicting.scheduledTime.getOrElse(conflicting.requestTime)
             val msg          =
@@ -1265,7 +1472,7 @@ class RideServiceImpl(
 object RideService:
 
   val layer: ZLayer[
-    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository,
+    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository & SentConfirmationRequestRepository,
     Nothing,
     RideService
   ] = ZLayer.fromFunction(

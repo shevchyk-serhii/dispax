@@ -17,6 +17,7 @@ import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
+import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.*
 import zio.test.*
 import java.util.UUID
@@ -148,7 +149,8 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
       noopAvailabilityChecker ++
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
-      InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
+      InMemoryPartnerCompanyRepository.layer ++
+      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
 
   def createTestRide(service: RideService, clientId: PersonId = testClientId) = service.createRide(
     CreateRideRequest(
@@ -161,17 +163,20 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
 
   def spec =
     suite("RideLifecycle Integration")(
-      test("full lifecycle: create → assign → start → complete → markPayment") {
+      test("full lifecycle: create -> assign -> confirm -> start -> complete -> markPayment") {
         for {
           service   <- ZIO.service[RideService]
           ride      <- createTestRide(service)
           assigned  <- service.assignDriver(ride.id, testDriverId)
-          started   <- service.startRide(assigned.id, testDriverId)
+          confirmed <- service.confirmRide(assigned.id, testDriverId)
+          started   <- service.startRide(confirmed.id, testDriverId)
           completed <- service.completeRide(started.id)
           paid      <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
         } yield assertTrue(
           ride.status == RideStatus.Requested &&
             assigned.status == RideStatus.Assigned &&
+            confirmed.status == RideStatus.Confirmed &&
+            confirmed.confirmedAt.isDefined &&
             started.status == RideStatus.InProgress &&
             started.startTime.isDefined &&
             completed.status == RideStatus.Completed &&
@@ -257,7 +262,8 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
           service       <- ZIO.service[RideService]
           ride          <- createTestRide(service)
           assigned      <- service.assignDriver(ride.id, testDriverId)
-          _             <- service.startRide(assigned.id, testDriverId)
+          confirmed     <- service.confirmRide(assigned.id, testDriverId)
+          _             <- service.startRide(confirmed.id, testDriverId)
           afterStart    <- service.getRideById(ride.id)
           _             <- service.completeRide(ride.id)
           afterComplete <- service.getRideById(ride.id)

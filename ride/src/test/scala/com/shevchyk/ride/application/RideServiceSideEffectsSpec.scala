@@ -13,8 +13,7 @@ import com.shevchyk.core.application.{
   ScheduleDayLookup,
   UnavailabilitySlot
 }
-import com.shevchyk.core.repository.BlacklistRepository
-import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.repository.{BlacklistRepository, PersonRepository, SentConfirmationRequestRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{PickupTimeService, RideService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
@@ -135,7 +134,8 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
       auditConcrete ++ (auditConcrete >>> auditAsService) ++
       emailConcrete ++ (emailConcrete >>> emailAsService) ++
       InMemoryExternalDriverRepository.layer ++
-      InMemoryPartnerCompanyRepository.layer
+      InMemoryPartnerCompanyRepository.layer ++
+      SentConfirmationRequestRepository.inMemory
 
   private val fullLayers = baseLayers >+> RideService.layer
 

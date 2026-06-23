@@ -158,7 +158,7 @@ object CancellationReason:
   )
 
 enum RideStatus:
-  case Requested, Assigned, InProgress, Completed, Cancelled, HandedOff
+  case Requested, Assigned, Confirmed, InProgress, Completed, Cancelled, HandedOff
 
 enum PaymentStatus:
   case Unpaid, Pending, Paid
@@ -260,16 +260,25 @@ final case class Ride(
     airportCheckpoint: Option[AirportCheckpoint] = None,
     vehicleClass: VehicleClass = VehicleClass.Default,
     externalDriverId: Option[ExternalDriverId] = None,
-    partnerCompanyId: Option[PartnerCompanyId] = None
+    partnerCompanyId: Option[PartnerCompanyId] = None,
+    confirmedAt: Option[java.time.Instant] = None,
+    rejectionReason: Option[String] = None,
+    rejectedBy: Option[PersonId] = None,
+    rejectedAt: Option[java.time.Instant] = None
 ):
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
-  def canBeReassigned: Boolean = status == RideStatus.Assigned && driverId.isDefined
-  def canBeStarted: Boolean    = status == RideStatus.Assigned && driverId.isDefined
+  def canBeReassigned: Boolean = (status == RideStatus.Assigned || status == RideStatus.Confirmed) && driverId.isDefined
+  def canBeConfirmed: Boolean  = status == RideStatus.Assigned && driverId.isDefined
+  def canBeRejected: Boolean   = (status == RideStatus.Assigned || status == RideStatus.Confirmed) && driverId.isDefined
+  // Drivers must confirm before starting; dispatchers may override (Assigned -> InProgress) via updateRideStatus.
+  def canBeStarted: Boolean    = status == RideStatus.Confirmed && driverId.isDefined
   def canBeCompleted: Boolean  = status == RideStatus.InProgress
   def canBeCancelled: Boolean  = status != RideStatus.Completed && status != RideStatus.Cancelled
   def canBeHandedOff: Boolean  = status == RideStatus.Requested
-  def canBeEdited: Boolean     = status == RideStatus.Requested || status == RideStatus.Assigned
+
+  def canBeEdited: Boolean     =
+    status == RideStatus.Requested || status == RideStatus.Assigned || status == RideStatus.Confirmed
 
   def isAirportTransfer: Boolean = specifics.exists(_.isInstanceOf[RideSpecifics.AirportTransfer])
 
@@ -342,5 +351,7 @@ enum RideError extends Throwable:
   case InvalidOperation(message: String)
   case ExternalDriverNotFound(id: ExternalDriverId)
   case PartnerCompanyNotFound(id: PartnerCompanyId)
+  case RideAlreadyConfirmed(rideId: RideId)
+  case RejectionReasonRequired(rideId: RideId)
 
 object RideError

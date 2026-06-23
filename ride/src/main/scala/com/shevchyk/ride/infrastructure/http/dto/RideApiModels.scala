@@ -81,7 +81,10 @@ case class RideDto(
     // the computed value without re-parsing pickupDateTime.
     recommendedPickupDateTime: Option[String] = None,
     externalDriverId: Option[String] = None,
-    partnerCompanyId: Option[String] = None
+    partnerCompanyId: Option[String] = None,
+    confirmed: Boolean = false,
+    confirmedAt: Option[String] = None,
+    rejectionReason: Option[String] = None
 )
 
 given JsonEncoder[RideDto] = DeriveJsonEncoder.gen[RideDto]
@@ -238,6 +241,10 @@ case class CreateExternalDriverApiRequest(
     partnerCompanyId: Option[String] = None
 ) derives JsonCodec
 
+case class RejectRideRequest(
+    reason: String
+) derives JsonCodec
+
 case class ValidationErrorsResponse(
     errors: List[ValidationFieldError]
 ) derives JsonCodec
@@ -300,6 +307,7 @@ given sttp.tapir.Schema[CheckpointStateResponse]        = sttp.tapir.Schema.deri
 given sttp.tapir.Schema[SetRidePriceRequest]            = sttp.tapir.Schema.derived[SetRidePriceRequest]
 given sttp.tapir.Schema[EstimateRideRequest]            = sttp.tapir.Schema.derived[EstimateRideRequest]
 given sttp.tapir.Schema[EstimateRideResponse]           = sttp.tapir.Schema.derived[EstimateRideResponse]
+given sttp.tapir.Schema[RejectRideRequest]              = sttp.tapir.Schema.derived[RejectRideRequest]
 
 object LocationDto:
 
@@ -360,7 +368,8 @@ object RideDto:
 
     val approaching =
       distanceMeters.exists(_ <= APPROACHING_THRESHOLD_METERS) &&
-        (ride.status == RideStatus.Assigned || ride.status == RideStatus.InProgress)
+        (ride.status == RideStatus.Assigned || ride.status == RideStatus.Confirmed ||
+          ride.status == RideStatus.InProgress)
 
     RideDto(
       id = ride.id.value.toString,
@@ -402,7 +411,10 @@ object RideDto:
       driverRatingCount = driverRatingCount,
       recommendedPickupDateTime = recommendedPickupTime,
       externalDriverId = ride.externalDriverId.map(_.value.toString),
-      partnerCompanyId = ride.partnerCompanyId.map(_.value.toString)
+      partnerCompanyId = ride.partnerCompanyId.map(_.value.toString),
+      confirmed = ride.status == RideStatus.Confirmed,
+      confirmedAt = ride.confirmedAt.map(_.toString),
+      rejectionReason = ride.rejectionReason
     )
 
   private def distanceMetersHaversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Int =

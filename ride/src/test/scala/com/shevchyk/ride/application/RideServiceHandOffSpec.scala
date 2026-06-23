@@ -11,7 +11,7 @@ import com.shevchyk.core.application.{
   ScheduleDayLookup,
   UnavailabilitySlot
 }
-import com.shevchyk.core.repository.{BlacklistRepository, PersonRepository}
+import com.shevchyk.core.repository.{BlacklistRepository, PersonRepository, SentConfirmationRequestRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{
@@ -74,19 +74,19 @@ object RideServiceHandOffSpec extends ZIOSpecDefault {
 
   // ── Minimal PersonRepository stub ─────────────────────────────────────────
   final case class TestPersonRepo(persons: Map[PersonId, Person]) extends PersonRepository:
-    def create(p: Person): Task[Person]                                                           = ZIO.succeed(p)
-    def findById(id: PersonId): Task[Option[Person]]                                              = ZIO.succeed(persons.get(id))
+    def create(p: Person): Task[Person]              = ZIO.succeed(p)
+    def findById(id: PersonId): Task[Option[Person]] = ZIO.succeed(persons.get(id))
 
-    def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]              = ZIO.succeed(
+    def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]] = ZIO.succeed(
       persons.get(id).filter(_.companyId.contains(companyId))
     )
-    def findByEmail(email: String): Task[Option[Person]]                                          = ZIO.succeed(persons.values.find(_.email == email))
+    def findByEmail(email: String): Task[Option[Person]]                             = ZIO.succeed(persons.values.find(_.email == email))
 
-    def findByRole(role: PersonRole): Task[List[Person]]                                          = ZIO.succeed(
+    def findByRole(role: PersonRole): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(_.role == role).toList
     )
 
-    def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]          = ZIO.succeed(
+    def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(p => p.role == role && p.companyId.contains(companyId)).toList
     )
 
@@ -182,7 +182,8 @@ object RideServiceHandOffSpec extends ZIOSpecDefault {
       noopAvailability ++
       noopScheduleDayLookup ++
       edLayer ++
-      pcLayer) >+> RideService.layer
+      pcLayer ++
+      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
   }
 
   // ── Ride factory ──────────────────────────────────────────────────────────
