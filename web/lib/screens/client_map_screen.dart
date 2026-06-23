@@ -41,6 +41,8 @@ class ClientMapScreen extends StatefulWidget {
         return 'Trip completed';
       case RideStatus.cancelled:
         return 'Trip cancelled';
+      case RideStatus.confirmed:
+        return 'Driver confirmed';
       case RideStatus.handedOff:
         return 'Transferred to partner';
     }

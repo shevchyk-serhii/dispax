@@ -245,8 +245,8 @@ class _LiveRideCard extends StatelessWidget {
                       ride.status == RideStatus.inProgress
                           ? 'On trip'
                           : (ride.driverEnRoute
-                              ? 'Driver on the way'
-                              : 'Driver assigned'),
+                                ? 'Driver on the way'
+                                : 'Driver assigned'),
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,

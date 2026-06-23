@@ -17,6 +17,7 @@ import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
+import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.test.*
 import zio.*
 import java.time.Instant
@@ -167,7 +168,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       noopAvailabilityChecker ++
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
-      InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
+      InMemoryPartnerCompanyRepository.layer ++
+      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
 
   // ── Helpers ───────────────────────────────────────────────────────────
   private def mkRide(clientId: PersonId = testClientId, companyId: CompanyId = testCompanyId) = CreateRideRequest(
@@ -189,13 +191,14 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
   )
 
   /**
-   * Create a ride and drive it through to Completed status
+   * Create a ride and drive it through to Completed status (must go through Confirmed now)
    */
   private def createCompletedRide(service: RideService, clientId: PersonId = testClientId) =
     for {
       ride      <- service.createRide(mkRide(clientId))
       assigned  <- service.assignDriver(ride.id, testDriverId)
-      started   <- service.startRide(assigned.id, testDriverId)
+      confirmed <- service.confirmRide(assigned.id, testDriverId)
+      started   <- service.startRide(confirmed.id, testDriverId)
       completed <- service.completeRide(started.id)
     } yield completed
 
@@ -402,7 +405,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             service   <- ZIO.service[RideService]
             ride      <- service.createRide(mkRide())
             assigned  <- service.assignDriver(ride.id, testDriverId)
-            started   <- service.startRide(assigned.id, testDriverId)
+            confirmed <- service.confirmRide(assigned.id, testDriverId)
+            started   <- service.startRide(confirmed.id, testDriverId)
             completed <- service.completeRide(started.id)
             paid      <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
           } yield assertTrue(
@@ -431,11 +435,12 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
         }.provide(standardLayers),
         test("cannot mark an InProgress ride as Paid") {
           for {
-            service  <- ZIO.service[RideService]
-            ride     <- service.createRide(mkRide())
-            assigned <- service.assignDriver(ride.id, testDriverId)
-            started  <- service.startRide(assigned.id, testDriverId) // InProgress, not Completed
-            result   <- service.markPayment(started.id, PaymentStatus.Paid, Some(PaymentMethod.Cash)).exit
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(mkRide())
+            assigned  <- service.assignDriver(ride.id, testDriverId)
+            confirmed <- service.confirmRide(assigned.id, testDriverId)
+            started   <- service.startRide(confirmed.id, testDriverId) // InProgress, not Completed
+            result    <- service.markPayment(started.id, PaymentStatus.Paid, Some(PaymentMethod.Cash)).exit
           } yield assertTrue(result.isFailure)
         }.provide(standardLayers),
         test("re-paying a paid ride is idempotent (paidAt unchanged)") {
@@ -443,7 +448,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             service   <- ZIO.service[RideService]
             ride      <- service.createRide(mkRide())
             assigned  <- service.assignDriver(ride.id, testDriverId)
-            started   <- service.startRide(assigned.id, testDriverId)
+            confirmed <- service.confirmRide(assigned.id, testDriverId)
+            started   <- service.startRide(confirmed.id, testDriverId)
             completed <- service.completeRide(started.id)
             paid1     <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
             paid2     <- service.markPayment(paid1.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
@@ -454,7 +460,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             service   <- ZIO.service[RideService]
             ride      <- service.createRide(mkRide())
             assigned  <- service.assignDriver(ride.id, testDriverId)
-            started   <- service.startRide(assigned.id, testDriverId)
+            confirmed <- service.confirmRide(assigned.id, testDriverId)
+            started   <- service.startRide(confirmed.id, testDriverId)
             completed <- service.completeRide(started.id)
             _         <- service.markPayment(completed.id, PaymentStatus.Paid, Some(PaymentMethod.Card))
             retrieved <- service.getRideById(completed.id)
@@ -584,18 +591,20 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
         }.provide(standardLayers),
         test("getTotalRevenue sums completed ride prices") {
           for {
-            service   <- ZIO.service[RideService]
-            ride1     <- service.createRide(mkRide())
-            assigned1 <- service.assignDriver(ride1.id, testDriverId)
-            started1  <- service.startRide(assigned1.id, testDriverId)
-            _         <- service.completeRide(started1.id)
+            service    <- ZIO.service[RideService]
+            ride1      <- service.createRide(mkRide())
+            assigned1  <- service.assignDriver(ride1.id, testDriverId)
+            confirmed1 <- service.confirmRide(assigned1.id, testDriverId)
+            started1   <- service.startRide(confirmed1.id, testDriverId)
+            _          <- service.completeRide(started1.id)
             // Mark payment with final price to affect revenue
-            _         <- service.markPayment(started1.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
-            ride2     <- service.createRide(mkRide())
-            assigned2 <- service.assignDriver(ride2.id, testDriverId)
-            started2  <- service.startRide(assigned2.id, testDriverId)
-            _         <- service.completeRide(started2.id)
-            revenue   <- service.getTotalRevenue(testCompanyId)
+            _          <- service.markPayment(started1.id, PaymentStatus.Paid, Some(PaymentMethod.Cash))
+            ride2      <- service.createRide(mkRide())
+            assigned2  <- service.assignDriver(ride2.id, testDriverId)
+            confirmed2 <- service.confirmRide(assigned2.id, testDriverId)
+            started2   <- service.startRide(confirmed2.id, testDriverId)
+            _          <- service.completeRide(started2.id)
+            revenue    <- service.getTotalRevenue(testCompanyId)
           } yield assertTrue(
             // Both rides completed but have no estimatedPrice/finalPrice by default,
             // so revenue should be 0 (sum of None values)
@@ -721,7 +730,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             noopAvailabilityChecker ++
             noopScheduleDayLookup ++
             InMemoryExternalDriverRepository.layer ++
-            InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
+            InMemoryPartnerCompanyRepository.layer ++
+            SentConfirmationRequestRepository.inMemory) >+> RideService.layer
         ),
         test("assignment succeeds when driver is not blacklisted") {
           for {
@@ -772,7 +782,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             noopAvailabilityChecker ++
             noopScheduleDayLookup ++
             InMemoryExternalDriverRepository.layer ++
-            InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
+            InMemoryPartnerCompanyRepository.layer ++
+            SentConfirmationRequestRepository.inMemory) >+> RideService.layer
         )
       ),
 

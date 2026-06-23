@@ -352,6 +352,7 @@ class UpcomingRidesScreen extends StatelessWidget {
     return rides.where((ride) {
       return ride.pickupDateTime.isAfter(now) &&
           (ride.status == RideStatus.assigned ||
+              ride.status == RideStatus.confirmed ||
               ride.status == RideStatus.requested);
     }).toList()..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
   }

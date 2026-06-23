@@ -13,6 +13,8 @@ class RideStatusStyles {
         return AppColors.rideRequested;
       case RideStatus.assigned:
         return AppColors.rideAssigned;
+      case RideStatus.confirmed:
+        return AppColors.success;
       case RideStatus.inProgress:
         return AppColors.rideInProgress;
       case RideStatus.completed:
@@ -50,6 +52,8 @@ class RideStatusStyles {
             : AppColors.rideRequestedBg;
       case RideStatus.assigned:
         return isDark ? AppColors.rideAssignedBgDark : AppColors.rideAssignedBg;
+      case RideStatus.confirmed:
+        return isDark ? AppColors.rideCompletedBgDark : AppColors.successBg;
       case RideStatus.inProgress:
         return isDark
             ? AppColors.rideInProgressBgDark
@@ -88,6 +92,8 @@ class RideStatusStyles {
         return AppColors.rideRequestedBorder;
       case RideStatus.assigned:
         return AppColors.rideAssignedBorder;
+      case RideStatus.confirmed:
+        return AppColors.successBorder;
       case RideStatus.inProgress:
         return AppColors.rideInProgressBorder;
       case RideStatus.completed:
@@ -117,6 +123,10 @@ class RideStatusStyles {
         return isDark
             ? AppColors.rideAssignedTextDark
             : AppColors.rideAssignedText;
+      case RideStatus.confirmed:
+        return isDark
+            ? AppColors.rideCompletedTextDark
+            : AppColors.successStrong;
       case RideStatus.inProgress:
         return isDark
             ? AppColors.rideInProgressTextDark
@@ -143,6 +153,8 @@ class RideStatusStyles {
         return Icons.access_time;
       case RideStatus.assigned:
         return Icons.person_pin;
+      case RideStatus.confirmed:
+        return Icons.check_circle;
       case RideStatus.inProgress:
         return Icons.local_taxi;
       case RideStatus.completed:
@@ -161,6 +173,8 @@ class RideStatusStyles {
         return 'Requested';
       case RideStatus.assigned:
         return 'Assigned';
+      case RideStatus.confirmed:
+        return 'Confirmed';
       case RideStatus.inProgress:
         return 'In Progress';
       case RideStatus.completed:

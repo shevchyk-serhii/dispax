@@ -330,6 +330,28 @@ object PushNotificationListener:
           }
         }
 
+      case WebSocketEvent.RideConfirmed(rideId, driverId, clientId, companyId) =>
+        // An informational push to the driver is optional; dispatchers are notified via WebSocket.
+        // The client is not notified here — the ride is still pending departure.
+        ZIO.logInfo(s"Ride $rideId confirmed by driver $driverId").unit
+
+      case WebSocketEvent.RideRejected(rideId, driverId, clientId, reason, companyId) =>
+        // Alert all dispatchers of the company so they can reassign in time.
+        val notification = PushNotification(
+          title = "Ride rejected by driver",
+          body = s"Driver rejected the ride. Reason: $reason",
+          data = Map(
+            "type"   -> "ride_rejected",
+            "rideId" -> rideId.toString,
+            "reason" -> reason
+          )
+        )
+        personRepo.findByRoleAndCompany(PersonRole.Dispatcher, CompanyId(companyId)).flatMap { dispatchers =>
+          ZIO.foreachDiscard(dispatchers) { dispatcher =>
+            notifyUser(fcmService, notifRepo, dispatcher.id, CompanyId(companyId), notification, "ride_rejected")
+          }
+        }
+
       case WebSocketEvent.AirportCheckpointReached(
             rideId,
             driverId,

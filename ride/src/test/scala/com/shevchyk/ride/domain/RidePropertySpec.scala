@@ -77,10 +77,11 @@ object RidePropertySpec extends ZIOSpecDefault {
         test("only Requested rides can be assigned") {
           check(genRide)(ride => assertTrue(ride.canBeAssigned == (ride.status == RideStatus.Requested)))
         },
-        test("starting requires an assigned ride with a driver") {
+        test("starting requires a confirmed ride with a driver") {
           check(genRide) { ride =>
+            // canBeStarted now requires Confirmed status (driver must confirm before starting)
             assertTrue(
-              ride.canBeStarted == (ride.status == RideStatus.Assigned && ride.driverId.isDefined)
+              ride.canBeStarted == (ride.status == RideStatus.Confirmed && ride.driverId.isDefined)
             )
           }
         },

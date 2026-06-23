@@ -12,7 +12,7 @@ import com.shevchyk.core.application.{
   UnavailabilitySlot
 }
 import com.shevchyk.core.repository.BlacklistRepository
-import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.repository.{PersonRepository, SentConfirmationRequestRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
@@ -163,7 +163,8 @@ object RideServicePriceSpec extends ZIOSpecDefault {
       noopAvailabilityChecker ++
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
-      InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
+      InMemoryPartnerCompanyRepository.layer ++
+      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 

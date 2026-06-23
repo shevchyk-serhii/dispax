@@ -282,6 +282,15 @@ given updateRideApiRequestValidator: Validator[UpdateRideApiRequest] with
       )
       .unit
 
+given rejectRideRequestValidator: Validator[RejectRideRequest] with
+  type Error = RideError
+
+  def validate(request: RejectRideRequest): IO[RideError, RejectRideRequest] = ZIO
+    .when(request.reason.trim.isEmpty)(
+      ZIO.fail(RideError.ValidationError("Rejection reason must not be empty"))
+    )
+    .as(request)
+
 given markCheckpointRequestValidator: Validator[MarkCheckpointRequest] with
   type Error = RideError
 

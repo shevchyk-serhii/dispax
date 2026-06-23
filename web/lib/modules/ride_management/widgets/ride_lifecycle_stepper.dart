@@ -241,6 +241,10 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
                   ? 'Driver is on the way'
                   : 'Driver assigned')
             : 'You are assigned to this ride';
+      case RideStatus.confirmed:
+        return widget.isClientView
+            ? 'Driver confirmed your ride'
+            : 'You confirmed this ride';
       case RideStatus.inProgress:
         return widget.isClientView ? 'Ride in progress' : 'Drive safely';
       case RideStatus.completed:

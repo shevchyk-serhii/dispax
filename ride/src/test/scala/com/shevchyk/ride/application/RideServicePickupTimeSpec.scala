@@ -18,7 +18,8 @@ import com.shevchyk.core.repository.{
   CompanySettingsRepository,
   InMemoryClientCompanyRepository,
   InMemoryCompanySettingsRepository,
-  PersonRepository
+  PersonRepository,
+  SentConfirmationRequestRepository
 }
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{PickupTimeService, PickupTimeResult, RideService}
@@ -182,7 +183,8 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
       noopAvailabilityChecker ++
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
-      InMemoryPartnerCompanyRepository.layer) >+> RideService.layer
+      InMemoryPartnerCompanyRepository.layer ++
+      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
 
   // ── Flight departure time used in all departure tests ───────────────────
   // 2030-06-15T12:00:00Z → with global defaults (buffer=15, checkIn=60) and travel=30:

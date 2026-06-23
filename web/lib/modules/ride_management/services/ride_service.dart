@@ -216,6 +216,31 @@ class RideService {
     throw ApiException.fromResponse(response, 'Failed to assign driver');
   }
 
+  Future<Ride> confirmRide(String rideId) async {
+    final response = await privateApiClient.put(
+      '/rides/$rideId/confirm',
+      <String, dynamic>{},
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      return Ride.fromJson(json);
+    }
+    throw ApiException.fromResponse(response, 'Failed to confirm ride');
+  }
+
+  Future<Ride> rejectRide(String rideId, String reason) async {
+    final response = await privateApiClient.put('/rides/$rideId/reject', {
+      'reason': reason,
+    });
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      return Ride.fromJson(json);
+    }
+    throw ApiException.fromResponse(response, 'Failed to reject ride');
+  }
+
   Future<Ride> reassignDriver(
     String rideId,
     String newDriverId, {

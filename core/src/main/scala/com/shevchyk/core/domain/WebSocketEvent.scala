@@ -95,5 +95,28 @@ object WebSocketEvent:
       companyId: UUID
   ) extends WebSocketEvent
 
+  /**
+   * The assigned driver has confirmed the ride. All dispatchers of the company are notified. The dispatcher UI should
+   * re-colour the ride row from red (unconfirmed) to green.
+   */
+  final case class RideConfirmed(
+      rideId: UUID,
+      driverId: UUID,
+      clientId: UUID,
+      companyId: UUID
+  ) extends WebSocketEvent
+
+  /**
+   * The assigned driver has rejected the ride (with a reason). The ride reverts to Requested status and the driver is
+   * unassigned. All dispatchers of the company are notified so they can react in time.
+   */
+  final case class RideRejected(
+      rideId: UUID,
+      driverId: UUID,
+      clientId: UUID,
+      reason: String,
+      companyId: UUID
+  ) extends WebSocketEvent
+
   given JsonEncoder[WebSocketEvent] = DeriveJsonEncoder.gen[WebSocketEvent]
   given JsonDecoder[WebSocketEvent] = DeriveJsonDecoder.gen[WebSocketEvent]

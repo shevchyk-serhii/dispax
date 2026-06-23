@@ -39,6 +39,12 @@ Feature: Extended Ride Operations
 
   Scenario: Update ride status
     Given I am authenticated as a driver
+    # The driver must confirm the assigned ride before it can be started.
+    When I send a PUT request to "/api/rides/55555555-5555-5555-5555-555555555555/status" with body:
+      """
+      {"status":"Confirmed"}
+      """
+    Then the response status should be 200
     When I send a PUT request to "/api/rides/55555555-5555-5555-5555-555555555555/status" with body:
       """
       {"status":"InProgress"}

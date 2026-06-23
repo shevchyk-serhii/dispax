@@ -734,5 +734,13 @@
   "closeRide": "Close",
   "closeRideTitle": "Close ride?",
   "closeRideConfirmMessage": "This will cancel the unassigned ride. The client will be notified.",
-  "closeRideButton": "Close ride"
+  "closeRideButton": "Close ride",
+  "confirmRide": "Confirm Ride",
+  "rejectRide": "Reject Ride",
+  "rejectReasonPrompt": "Reason for rejection",
+  "rideConfirmed": "Ride confirmed",
+  "rideRejected": "Ride rejected",
+  "confirmationRequestTitle": "Ride confirmation needed",
+  "confirmationRequestBody": "Please confirm or reject your assigned ride",
+  "statusConfirmed": "Confirmed"
 }

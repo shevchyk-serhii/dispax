@@ -62,9 +62,10 @@ object RideDomainSpec extends ZIOSpecDefault {
             pickupDateTime = Instant.now().plusSeconds(3600)
           )
 
+          // Assigned: driver must confirm first — canBeStarted now requires Confirmed status
           assertTrue(
             !assignedRide.canBeAssigned &&
-              assignedRide.canBeStarted &&
+              !assignedRide.canBeStarted &&
               !assignedRide.canBeCompleted
           )
         },
@@ -146,7 +147,7 @@ object RideDomainSpec extends ZIOSpecDefault {
               ride.canBeEdited
           )
         },
-        test("Assigned with driver: all predicates verified") {
+        test("Assigned with driver: canBeStarted=false (must confirm first), other predicates verified") {
           val ride = Ride(
             id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
             clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
@@ -158,10 +159,11 @@ object RideDomainSpec extends ZIOSpecDefault {
             dropoffLocation = Location("End"),
             pickupDateTime = Instant.now().plusSeconds(3600)
           )
+          // canBeStarted is false for Assigned: driver must go through Confirmed first
           assertTrue(
             !ride.canBeAssigned &&
               ride.canBeReassigned &&
-              ride.canBeStarted &&
+              !ride.canBeStarted &&
               !ride.canBeCompleted &&
               ride.canBeCancelled &&
               ride.canBeEdited

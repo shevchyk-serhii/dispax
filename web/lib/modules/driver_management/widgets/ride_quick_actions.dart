@@ -12,6 +12,8 @@ class RideQuickActions extends StatelessWidget {
   final VoidCallback? onStartRide;
   final VoidCallback? onCompleteRide;
   final VoidCallback? onViewDetails;
+  final VoidCallback? onConfirmRide;
+  final VoidCallback? onRejectRide;
 
   const RideQuickActions({
     super.key,
@@ -20,6 +22,8 @@ class RideQuickActions extends StatelessWidget {
     this.onStartRide,
     this.onCompleteRide,
     this.onViewDetails,
+    this.onConfirmRide,
+    this.onRejectRide,
   });
 
   @override
@@ -108,6 +112,28 @@ class RideQuickActions extends StatelessWidget {
 
   Widget? _buildStatusButton(BuildContext context) {
     if (ride.status == RideStatus.assigned) {
+      // Assigned but not confirmed: show Confirm and Reject buttons.
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildActionButton(
+            icon: Icons.check_circle_rounded,
+            label: 'Confirm',
+            color: AppColors.success,
+            onPressed: onConfirmRide ?? () {},
+          ),
+          const SizedBox(width: 8),
+          _buildActionButton(
+            icon: Icons.cancel_rounded,
+            label: 'Reject',
+            color: AppColors.error,
+            onPressed: onRejectRide ?? () {},
+          ),
+        ],
+      );
+    }
+    if (ride.status == RideStatus.confirmed) {
+      // Confirmed: driver can now start the ride.
       return _buildActionButton(
         icon: Icons.play_circle_rounded,
         label: 'Start',

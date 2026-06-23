@@ -180,6 +180,8 @@ object AvatarApiSpec extends ZIOSpecDefault:
       def getRidesForUser(id: PersonId): IO[RideError, List[Ride]]                                                    = notImpl
       def startRide(id: RideId, did: PersonId): IO[RideError, Ride]                                                   = notImpl
       def completeRide(id: RideId): IO[RideError, Ride]                                                               = notImpl
+      def confirmRide(id: RideId, did: PersonId): IO[RideError, Ride]                                                 = notImpl
+      def rejectRide(id: RideId, did: PersonId, reason: String): IO[RideError, Ride]                                  = notImpl
       def cancelRide(id: RideId, uid: PersonId, role: PersonRole): IO[RideError, Ride]                                = notImpl
       def cancelRideWithReason(
           id: RideId,

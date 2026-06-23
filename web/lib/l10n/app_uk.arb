@@ -666,5 +666,13 @@
   "closeRide": "Закрити",
   "closeRideTitle": "Закрити поїздку?",
   "closeRideConfirmMessage": "Це скасує непризначену поїздку. Клієнт отримає сповіщення.",
-  "closeRideButton": "Закрити поїздку"
+  "closeRideButton": "Закрити поїздку",
+  "confirmRide": "Підтвердити поїздку",
+  "rejectRide": "Відхилити поїздку",
+  "rejectReasonPrompt": "Причина відмови",
+  "rideConfirmed": "Поїздку підтверджено",
+  "rideRejected": "Поїздку відхилено",
+  "confirmationRequestTitle": "Необхідне підтвердження поїздки",
+  "confirmationRequestBody": "Будь ласка, підтвердіть або відхиліть призначену поїздку",
+  "statusConfirmed": "Підтверджено"
 }

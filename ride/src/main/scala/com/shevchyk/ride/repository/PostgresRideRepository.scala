@@ -67,6 +67,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
     {
       case "Requested"  => RideStatus.Requested
       case "Assigned"   => RideStatus.Assigned
+      case "Confirmed"  => RideStatus.Confirmed
       case "InProgress" => RideStatus.InProgress
       case "Completed"  => RideStatus.Completed
       case "Cancelled"  => RideStatus.Cancelled
@@ -75,6 +76,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
     {
       case RideStatus.Requested  => "Requested"
       case RideStatus.Assigned   => "Assigned"
+      case RideStatus.Confirmed  => "Confirmed"
       case RideStatus.InProgress => "InProgress"
       case RideStatus.Completed  => "Completed"
       case RideStatus.Cancelled  => "Cancelled"
@@ -123,7 +125,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         cancellation_reason, cancellation_fee, cancelled_by,
         is_vip_ride, preferred_driver_used,
         pool_id, tariff_id, schedule_day_id, invoice_id, vehicle_class,
-        external_driver_id, partner_company_id
+        external_driver_id, partner_company_id,
+        confirmed_at, rejection_reason, rejected_by, rejected_at
       ) VALUES (
         ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.companyId.value}, ${ride.driverId.map(
         _.value
@@ -140,7 +143,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         ${ride.isVipRide}, ${ride.preferredDriverUsed},
         ${ride.poolId.map(_.value)}, ${ride.tariffId.map(_.value)}, ${ride.scheduleDayId}, ${ride.invoiceId},
         ${VehicleClass.toDbString(ride.vehicleClass)},
-        ${ride.externalDriverId.map(_.value)}, ${ride.partnerCompanyId.map(_.value)}
+        ${ride.externalDriverId.map(_.value)}, ${ride.partnerCompanyId.map(_.value)},
+        ${ride.confirmedAt}, ${ride.rejectionReason}, ${ride.rejectedBy.map(_.value)}, ${ride.rejectedAt}
       )
     """.update.run
       .transact(xa)
@@ -163,7 +167,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         schedule_day_id, invoice_id,
         flight_is_arrival, airport_checkpoint,
         vehicle_class,
-        external_driver_id, partner_company_id"""
+        external_driver_id, partner_company_id,
+        confirmed_at, rejection_reason, rejected_by, rejected_at"""
   // NOTE: columns are listed explicitly (not SELECT *) to guarantee order matches rideReadBase/rideReadExtra
 
   override def findById(id: RideId): Task[Option[Ride]] = {
@@ -311,6 +316,10 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       invoice_id = ${ride.invoiceId},
       external_driver_id = ${ride.externalDriverId.map(_.value)},
       partner_company_id = ${ride.partnerCompanyId.map(_.value)},
+      confirmed_at = ${ride.confirmedAt},
+      rejection_reason = ${ride.rejectionReason},
+      rejected_by = ${ride.rejectedBy.map(_.value)},
+      rejected_at = ${ride.rejectedAt},
       updated_at = NOW()"""
 
   override def update(ride: Ride): Task[Ride] =
@@ -555,7 +564,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         Option[AirportCheckpoint], // flight_is_arrival, airport_checkpoint
         Option[String],            // vehicle_class
         Option[UUID],
-        Option[UUID]               // external_driver_id, partner_company_id
+        Option[UUID],              // external_driver_id, partner_company_id
+        Option[Instant],
+        Option[String],
+        Option[UUID],
+        Option[Instant]            // confirmed_at, rejection_reason, rejected_by, rejected_at
     )
   ] =
     Read[
@@ -576,7 +589,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
           Option[AirportCheckpoint],
           Option[String],
           Option[UUID],
-          Option[UUID]
+          Option[UUID],
+          Option[Instant],
+          Option[String],
+          Option[UUID],
+          Option[Instant]
       )
     ]
 
@@ -623,7 +640,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
             airportCheckpoint,
             vehicleClassStr,
             externalDriverId,
-            partnerCompanyId
+            partnerCompanyId,
+            confirmedAt,
+            rejectionReason,
+            rejectedBy,
+            rejectedAt
           )
         ) =>
       Ride(
@@ -661,7 +682,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         airportCheckpoint = airportCheckpoint,
         vehicleClass = vehicleClassStr.flatMap(VehicleClass.fromString).getOrElse(VehicleClass.Default),
         externalDriverId = externalDriverId.map(ExternalDriverId.apply),
-        partnerCompanyId = partnerCompanyId.map(PartnerCompanyId.apply)
+        partnerCompanyId = partnerCompanyId.map(PartnerCompanyId.apply),
+        confirmedAt = confirmedAt,
+        rejectionReason = rejectionReason,
+        rejectedBy = rejectedBy.map(PersonId.apply),
+        rejectedAt = rejectedAt
       )
   }
 
@@ -702,6 +727,20 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
              AND driver_id IS NOT NULL
              AND pickup_datetime > $from
              AND pickup_datetime <= $to
+        """)
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
+  override def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++
+      fr"""FROM rides
+           WHERE status = 'Assigned'
+             AND driver_id IS NOT NULL
+             AND pickup_datetime >= $from
+             AND pickup_datetime < $to
         """)
       .query[Ride]
       .to[List]
