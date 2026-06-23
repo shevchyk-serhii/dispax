@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../modules/core/widgets/calendar_controls.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../driver/calendar/month_view_widget.dart';
@@ -75,6 +76,7 @@ class _ClientCalendarViewState extends State<ClientCalendarView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         // View type segmented button — stretched to the full width so the
@@ -86,16 +88,19 @@ class _ClientCalendarViewState extends State<ClientCalendarView> {
             width: double.infinity,
             child: SegmentedButton<CalendarViewType>(
               expandedInsets: EdgeInsets.zero,
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: CalendarViewType.month,
-                  label: Text('Month'),
+                  label: Text(l10n.monthView),
                 ),
                 ButtonSegment(
                   value: CalendarViewType.week,
-                  label: Text('Week'),
+                  label: Text(l10n.weekView),
                 ),
-                ButtonSegment(value: CalendarViewType.day, label: Text('Day')),
+                ButtonSegment(
+                  value: CalendarViewType.day,
+                  label: Text(l10n.dayView),
+                ),
               ],
               selected: {_viewType},
               onSelectionChanged: (selection) {

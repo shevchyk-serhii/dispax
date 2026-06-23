@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../blocs/blocs.dart';
+import '../../l10n/app_localizations.dart';
 import '../../modules/core/services/user_service.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../screens/create_ride_screen.dart';
@@ -27,28 +28,30 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
   int _selectedIndex = 0;
   late RideBloc _rideBloc;
 
-  static const _destinations = [
-    NavigationDestination(
-      icon: Icon(Icons.home_outlined),
-      selectedIcon: Icon(Icons.home),
-      label: 'Home',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.list_outlined),
-      selectedIcon: Icon(Icons.list),
-      label: 'Rides',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.add_circle_outline),
-      selectedIcon: Icon(Icons.add_circle),
-      label: 'Create',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.settings_outlined),
-      selectedIcon: Icon(Icons.settings),
-      label: 'Settings',
-    ),
-  ];
+  List<NavigationDestination> _buildDestinations(AppLocalizations l10n) {
+    return [
+      NavigationDestination(
+        icon: const Icon(Icons.home_outlined),
+        selectedIcon: const Icon(Icons.home),
+        label: l10n.homeTab,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.list_outlined),
+        selectedIcon: const Icon(Icons.list),
+        label: l10n.ridesTab,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.add_circle_outline),
+        selectedIcon: const Icon(Icons.add_circle),
+        label: l10n.createTab,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.settings_outlined),
+        selectedIcon: const Icon(Icons.settings),
+        label: l10n.settings,
+      ),
+    ];
+  }
 
   @override
   void didChangeDependencies() {
@@ -58,6 +61,7 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // IndexedStack keeps every tab's State alive across switches so panels
     // (e.g. SecretaryReportsPanel) don't re-fetch on each visit.
     final tabs = [
@@ -86,7 +90,7 @@ class _SecretaryDashboardState extends State<SecretaryDashboard> {
         )..add(const ClientLoadRequested());
       },
       child: ResponsiveScaffold(
-        destinations: _destinations,
+        destinations: _buildDestinations(l10n),
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) =>
             setState(() => _selectedIndex = index),
@@ -105,6 +109,7 @@ class _FrontDeskTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         // Graphite header
@@ -123,7 +128,7 @@ class _FrontDeskTab extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Front desk',
+                      l10n.frontDeskTitle,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -135,9 +140,9 @@ class _FrontDeskTab extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: onQuickBook,
                     icon: const Icon(Icons.add, size: 16),
-                    label: const Text(
-                      'Quick book',
-                      style: TextStyle(
+                    label: Text(
+                      l10n.quickBook,
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -211,6 +216,7 @@ class _StatTilesRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final bookedToday = rideState.isLoaded
         ? SecretaryFrontDeskStats.bookedCount(rideState.rides)
         : null;
@@ -225,7 +231,7 @@ class _StatTilesRow extends StatelessWidget {
       children: [
         Expanded(
           child: _StatTile(
-            label: 'Booked today',
+            label: l10n.bookedToday,
             value: bookedToday != null ? '$bookedToday' : '—',
             valueColor: null,
           ),
@@ -233,7 +239,7 @@ class _StatTilesRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _StatTile(
-            label: 'Awaiting confirm',
+            label: l10n.awaitingConfirm,
             value: awaitingConfirm != null ? '$awaitingConfirm' : '—',
             valueColor: awaitingConfirm != null && awaitingConfirm > 0
                 ? AppColors.rideRequested
@@ -243,7 +249,7 @@ class _StatTilesRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _StatTile(
-            label: 'Active clients',
+            label: l10n.activeClientsLabel,
             value: activeClients != null ? '$activeClients' : '—',
             valueColor: null,
           ),
@@ -347,6 +353,7 @@ class _TemplatesStatTileState extends State<_TemplatesStatTile> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingMedium),
@@ -375,7 +382,7 @@ class _TemplatesStatTileState extends State<_TemplatesStatTile> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Templates',
+            l10n.templatesLabel,
             style: TextStyle(
               fontSize: 12,
               color: isDark
@@ -398,6 +405,7 @@ class _TodaysBookingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final todayRides = rideState.isLoaded
         ? SecretaryFrontDeskStats.ridesOn(rideState.rides)
@@ -424,7 +432,7 @@ class _TodaysBookingsCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Text(
-              "Today's bookings",
+              l10n.todaysBookings,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -450,8 +458,8 @@ class _TodaysBookingsCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   rideState.isLoaded
-                      ? 'No rides today'
-                      : 'Load rides to see today\'s bookings',
+                      ? l10n.noRidesToday
+                      : l10n.loadRidesToSeeBookings,
                   style: TextStyle(
                     fontSize: 13,
                     color: isDark

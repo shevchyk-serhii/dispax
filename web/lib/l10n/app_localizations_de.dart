@@ -1562,4 +1562,248 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get statusConfirmed => 'Bestätigt';
+
+  @override
+  String get ridesTab => 'Fahrten';
+
+  @override
+  String get createTab => 'Erstellen';
+
+  @override
+  String get frontDeskTitle => 'Empfang';
+
+  @override
+  String get quickBook => 'Schnellbuchung';
+
+  @override
+  String get bookedToday => 'Heute gebucht';
+
+  @override
+  String get awaitingConfirm => 'Wartet auf Bestätigung';
+
+  @override
+  String get activeClientsLabel => 'Aktive Kunden';
+
+  @override
+  String get templatesLabel => 'Vorlagen';
+
+  @override
+  String get todaysBookings => 'Heutige Buchungen';
+
+  @override
+  String get noRidesToday => 'Keine Fahrten heute';
+
+  @override
+  String get loadRidesToSeeBookings =>
+      'Fahrten laden, um heutige Buchungen zu sehen';
+
+  @override
+  String get manageClientsTitle => 'Kunden verwalten';
+
+  @override
+  String get searchClientsHint => 'Kunden suchen...';
+
+  @override
+  String get noClientsMatchSearch => 'Keine Kunden gefunden';
+
+  @override
+  String get noClientsYet => 'Noch keine Kunden';
+
+  @override
+  String get addClientTitle => 'Kunde hinzufügen';
+
+  @override
+  String get phoneOptional => 'Telefon (optional)';
+
+  @override
+  String get nameRequired => 'Name ist erforderlich';
+
+  @override
+  String get emailRequired => 'E-Mail ist erforderlich';
+
+  @override
+  String get invalidEmail => 'Ungültige E-Mail';
+
+  @override
+  String get addButton => 'Hinzufügen';
+
+  @override
+  String get editAction => 'Bearbeiten';
+
+  @override
+  String get deactivateAction => 'Deaktivieren';
+
+  @override
+  String get editClientTitle => 'Kunde bearbeiten';
+
+  @override
+  String get deactivateClientTitle => 'Kunde deaktivieren';
+
+  @override
+  String deactivateClientConfirmMsg(String name) {
+    return 'Möchten Sie $name wirklich deaktivieren?';
+  }
+
+  @override
+  String get newRideButton => 'Neue Fahrt';
+
+  @override
+  String get ridesCountLabel => 'Fahrten';
+
+  @override
+  String get preferredDriverAssigned => 'Bevorzugter Fahrer zugewiesen';
+
+  @override
+  String get noRidesYet => 'Noch keine Fahrten';
+
+  @override
+  String get vipClientLabel => 'VIP-Kunde';
+
+  @override
+  String get vipClientHelpText => 'Prioritätsservice und bevorzugter Fahrer';
+
+  @override
+  String driverLabel(String name) {
+    return 'Fahrer: $name';
+  }
+
+  @override
+  String get reportsTitle => 'Berichte';
+
+  @override
+  String get totalRidesLabel => 'Fahrten gesamt';
+
+  @override
+  String get inProgressLabel => 'In Bearbeitung';
+
+  @override
+  String get requestedLabel => 'Angefordert';
+
+  @override
+  String get assignedLabel => 'Zugewiesen';
+
+  @override
+  String get keyMetrics => 'Kennzahlen';
+
+  @override
+  String get cancellationRateLabel => 'Stornierungsrate';
+
+  @override
+  String get statusBreakdown => 'Statusaufschlüsselung';
+
+  @override
+  String get noRideDataYet => 'Noch keine Fahrtdaten';
+
+  @override
+  String get noActiveRides => 'Sie haben keine aktiven Fahrten';
+
+  @override
+  String get useBookTabHint => 'Verwenden Sie den Tab \"Buchen\"';
+
+  @override
+  String get trackDriver => 'Fahrer verfolgen';
+
+  @override
+  String departureTimeReachedFlight(String flightInfo) {
+    return 'Abflugzeit für Flug $flightInfo erreicht';
+  }
+
+  @override
+  String failedToCancelRide(String error) {
+    return 'Fahrt konnte nicht storniert werden: $error';
+  }
+
+  @override
+  String get failedToLoadRides => 'Fahrten konnten nicht geladen werden';
+
+  @override
+  String get goodMorning => 'Guten Morgen,';
+
+  @override
+  String get goodAfternoon => 'Guten Tag,';
+
+  @override
+  String get goodEvening => 'Guten Abend,';
+
+  @override
+  String get whereTo => 'Wohin?';
+
+  @override
+  String get onTrip => 'Auf Fahrt';
+
+  @override
+  String get driverOnTheWay => 'Fahrer unterwegs';
+
+  @override
+  String get driverAssigned => 'Fahrer zugewiesen';
+
+  @override
+  String get yourDriver => 'Ihr Fahrer';
+
+  @override
+  String get savedPlaces => 'GESPEICHERTE ORTE';
+
+  @override
+  String get savedPlaceHome => 'Zuhause';
+
+  @override
+  String get savedPlaceOffice => 'Büro';
+
+  @override
+  String get addAddress => 'Adresse hinzufügen';
+
+  @override
+  String get bookARide => 'Fahrt buchen';
+
+  @override
+  String get scheduled => 'GEPLANT';
+
+  @override
+  String get nowLabel => 'JETZT';
+
+  @override
+  String get asap => 'BALDMÖGLICHST';
+
+  @override
+  String get vehicleClass => 'FAHRZEUGKLASSE';
+
+  @override
+  String get estimatedTotal => 'Geschätzter Gesamtpreis';
+
+  @override
+  String get estimateUnavailableHint =>
+      'Für diese Adresse konnte kein Preis ermittelt werden. Sie können trotzdem buchen — der Fahrpreis wird nachträglich bestätigt.';
+
+  @override
+  String get confirmBooking => 'Buchung bestätigen';
+
+  @override
+  String get rideBookedSuccessfully => 'Fahrt erfolgreich gebucht!';
+
+  @override
+  String get failedToCreateRide => 'Fahrt konnte nicht erstellt werden';
+
+  @override
+  String get failedToLoadRideHistory =>
+      'Fahrtenverlauf konnte nicht geladen werden';
+
+  @override
+  String get listView => 'Liste';
+
+  @override
+  String get pastLabel => 'VERGANGEN';
+
+  @override
+  String get confirmedStatus => 'Bestätigt';
+
+  @override
+  String get rateThisRide => 'Fahrt bewerten';
+
+  @override
+  String get thankYouForRating => 'Danke für Ihre Bewertung!';
+
+  @override
+  String failedToSubmitRating(String error) {
+    return 'Bewertung konnte nicht übermittelt werden: $error';
+  }
 }

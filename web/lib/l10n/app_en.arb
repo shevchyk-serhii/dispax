@@ -744,5 +744,115 @@
   "rideRejected": "Ride rejected",
   "confirmationRequestTitle": "Ride confirmation needed",
   "confirmationRequestBody": "Please confirm or reject your assigned ride",
-  "statusConfirmed": "Confirmed"
+  "statusConfirmed": "Confirmed",
+
+  "ridesTab": "Rides",
+  "createTab": "Create",
+  "frontDeskTitle": "Front desk",
+  "quickBook": "Quick book",
+  "bookedToday": "Booked today",
+  "awaitingConfirm": "Awaiting confirm",
+  "activeClientsLabel": "Active clients",
+  "templatesLabel": "Templates",
+  "todaysBookings": "Today's bookings",
+  "noRidesToday": "No rides today",
+  "loadRidesToSeeBookings": "Load rides to see today's bookings",
+
+  "manageClientsTitle": "Manage Clients",
+  "searchClientsHint": "Search clients...",
+  "noClientsMatchSearch": "No clients match your search",
+  "noClientsYet": "No clients yet",
+  "addClientTitle": "Add Client",
+  "phoneOptional": "Phone (optional)",
+  "nameRequired": "Name is required",
+  "emailRequired": "Email is required",
+  "invalidEmail": "Invalid email",
+  "addButton": "Add",
+  "editAction": "Edit",
+  "deactivateAction": "Deactivate",
+  "editClientTitle": "Edit Client",
+  "deactivateClientTitle": "Deactivate Client",
+  "deactivateClientConfirmMsg": "Are you sure you want to deactivate {name}?",
+  "@deactivateClientConfirmMsg": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+
+  "newRideButton": "New Ride",
+  "ridesCountLabel": "rides",
+  "preferredDriverAssigned": "Preferred driver assigned",
+  "noRidesYet": "No rides yet",
+  "vipClientLabel": "VIP Client",
+  "vipClientHelpText": "Priority service and preferred driver",
+  "driverLabel": "Driver: {name}",
+  "@driverLabel": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+
+  "reportsTitle": "Reports",
+  "totalRidesLabel": "Total Rides",
+  "inProgressLabel": "In Progress",
+  "requestedLabel": "Requested",
+  "assignedLabel": "Assigned",
+  "keyMetrics": "Key Metrics",
+  "cancellationRateLabel": "Cancellation Rate",
+  "statusBreakdown": "Status Breakdown",
+  "noRideDataYet": "No ride data yet",
+
+  "noActiveRides": "You have no active rides",
+  "useBookTabHint": "Use \"Book\" tab to create one",
+  "trackDriver": "Track driver",
+  "departureTimeReachedFlight": "Departure time reached for flight {flightInfo}",
+  "@departureTimeReachedFlight": {
+    "placeholders": {
+      "flightInfo": {"type": "String"}
+    }
+  },
+  "failedToCancelRide": "Failed to cancel ride: {error}",
+  "@failedToCancelRide": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToLoadRides": "Failed to load rides",
+
+  "goodMorning": "Good morning,",
+  "goodAfternoon": "Good afternoon,",
+  "goodEvening": "Good evening,",
+  "whereTo": "Where to?",
+  "onTrip": "On trip",
+  "driverOnTheWay": "Driver on the way",
+  "driverAssigned": "Driver assigned",
+  "yourDriver": "Your driver",
+  "savedPlaces": "SAVED PLACES",
+  "savedPlaceHome": "Home",
+  "savedPlaceOffice": "Office",
+  "addAddress": "Add address",
+  "bookARide": "Book a ride",
+
+  "scheduled": "SCHEDULED",
+  "nowLabel": "NOW",
+  "asap": "ASAP",
+  "vehicleClass": "VEHICLE CLASS",
+  "estimatedTotal": "Estimated total",
+  "estimateUnavailableHint": "We couldn't estimate the price for this address. You can still book — the fare will be confirmed afterwards.",
+  "confirmBooking": "Confirm booking",
+  "rideBookedSuccessfully": "Ride booked successfully!",
+  "failedToCreateRide": "Failed to create ride",
+
+  "failedToLoadRideHistory": "Failed to load ride history",
+  "listView": "List",
+  "pastLabel": "PAST",
+  "confirmedStatus": "Confirmed",
+  "rateThisRide": "Rate this ride",
+  "thankYouForRating": "Thank you for your rating!",
+  "failedToSubmitRating": "Failed to submit rating: {error}",
+  "@failedToSubmitRating": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

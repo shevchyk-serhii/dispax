@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/client/client_bloc.dart';
 import '../../../blocs/client/client_event.dart';
 import '../../../blocs/client/client_state.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/models/user_requests.dart';
 import '../../../constants/app_colors.dart';
@@ -35,10 +36,11 @@ class _ClientListPanelState extends State<ClientListPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Manage Clients',
+          l10n.manageClientsTitle,
           style: AppStyles.titleLarge.copyWith(color: AppColors.textOnPrimary),
         ),
         backgroundColor: AppColors.secretaryColor,
@@ -67,7 +69,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search clients...',
+                hintText: l10n.searchClientsHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -120,7 +122,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
                               const ClientLoadRequested(),
                             );
                           },
-                          child: const Text('Retry'),
+                          child: Text(l10n.retry),
                         ),
                       ],
                     ),
@@ -142,8 +144,8 @@ class _ClientListPanelState extends State<ClientListPanel> {
                         const SizedBox(height: 16),
                         Text(
                           state.searchQuery.isNotEmpty
-                              ? 'No clients match your search'
-                              : 'No clients yet',
+                              ? l10n.noClientsMatchSearch
+                              : l10n.noClientsYet,
                           style: AppStyles.bodyLarge.copyWith(
                             color: Theme.of(
                               context,
@@ -178,6 +180,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
   }
 
   Widget _buildClientCard(BuildContext context, Person client) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       margin: const EdgeInsets.only(bottom: AppDimensions.paddingSmall),
       child: ListTile(
@@ -235,12 +238,12 @@ class _ClientListPanelState extends State<ClientListPanel> {
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(value: 'edit', child: Text('Edit')),
-            const PopupMenuItem(
+            PopupMenuItem(value: 'edit', child: Text(l10n.editAction)),
+            PopupMenuItem(
               value: 'deactivate',
               child: Text(
-                'Deactivate',
-                style: TextStyle(color: AppColors.error),
+                l10n.deactivateAction,
+                style: const TextStyle(color: AppColors.error),
               ),
             ),
           ],
@@ -257,6 +260,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
   }
 
   void _showCreateClientDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
@@ -266,7 +270,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Add Client'),
+          title: Text(l10n.addClientTitle),
           content: Form(
             key: formKey,
             child: SingleChildScrollView(
@@ -275,36 +279,36 @@ class _ClientListPanelState extends State<ClientListPanel> {
                 children: [
                   TextFormField(
                     controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      prefixIcon: Icon(Icons.person),
+                    decoration: InputDecoration(
+                      labelText: l10n.name,
+                      prefixIcon: const Icon(Icons.person),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty
-                        ? 'Name is required'
+                        ? l10n.nameRequired
                         : null,
                   ),
                   const SizedBox(height: AppDimensions.paddingMedium),
                   TextFormField(
                     controller: emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email),
+                    decoration: InputDecoration(
+                      labelText: l10n.email,
+                      prefixIcon: const Icon(Icons.email),
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Email is required';
+                        return l10n.emailRequired;
                       }
-                      if (!v.contains('@')) return 'Invalid email';
+                      if (!v.contains('@')) return l10n.invalidEmail;
                       return null;
                     },
                   ),
                   const SizedBox(height: AppDimensions.paddingMedium),
                   TextFormField(
                     controller: phoneController,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone (optional)',
-                      prefixIcon: Icon(Icons.phone),
+                    decoration: InputDecoration(
+                      labelText: l10n.phoneOptional,
+                      prefixIcon: const Icon(Icons.phone),
                     ),
                     keyboardType: TextInputType.phone,
                   ),
@@ -315,7 +319,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -338,7 +342,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
                   Navigator.of(dialogContext).pop();
                 }
               },
-              child: const Text('Add'),
+              child: Text(l10n.addButton),
             ),
           ],
         );
@@ -347,6 +351,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
   }
 
   void _showEditClientDialog(BuildContext context, Person client) {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController(text: client.name);
     final emailController = TextEditingController(text: client.email);
     final phoneController = TextEditingController(text: client.phone ?? '');
@@ -356,7 +361,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Edit Client'),
+          title: Text(l10n.editClientTitle),
           content: Form(
             key: formKey,
             child: SingleChildScrollView(
@@ -365,36 +370,36 @@ class _ClientListPanelState extends State<ClientListPanel> {
                 children: [
                   TextFormField(
                     controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      prefixIcon: Icon(Icons.person),
+                    decoration: InputDecoration(
+                      labelText: l10n.name,
+                      prefixIcon: const Icon(Icons.person),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty
-                        ? 'Name is required'
+                        ? l10n.nameRequired
                         : null,
                   ),
                   const SizedBox(height: AppDimensions.paddingMedium),
                   TextFormField(
                     controller: emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email),
+                    decoration: InputDecoration(
+                      labelText: l10n.email,
+                      prefixIcon: const Icon(Icons.email),
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Email is required';
+                        return l10n.emailRequired;
                       }
-                      if (!v.contains('@')) return 'Invalid email';
+                      if (!v.contains('@')) return l10n.invalidEmail;
                       return null;
                     },
                   ),
                   const SizedBox(height: AppDimensions.paddingMedium),
                   TextFormField(
                     controller: phoneController,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone (optional)',
-                      prefixIcon: Icon(Icons.phone),
+                    decoration: InputDecoration(
+                      labelText: l10n.phoneOptional,
+                      prefixIcon: const Icon(Icons.phone),
                     ),
                     keyboardType: TextInputType.phone,
                   ),
@@ -405,7 +410,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -429,7 +434,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
                   Navigator.of(dialogContext).pop();
                 }
               },
-              child: const Text('Save'),
+              child: Text(l10n.save),
             ),
           ],
         );
@@ -438,16 +443,17 @@ class _ClientListPanelState extends State<ClientListPanel> {
   }
 
   void _showDeactivateConfirmation(BuildContext context, Person client) {
+    final l10n = AppLocalizations.of(context)!;
     showAdaptiveDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Deactivate Client'),
-          content: Text('Are you sure you want to deactivate ${client.name}?'),
+          title: Text(l10n.deactivateClientTitle),
+          content: Text(l10n.deactivateClientConfirmMsg(client.name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
@@ -457,7 +463,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
                 );
                 Navigator.of(dialogContext).pop();
               },
-              child: const Text('Deactivate'),
+              child: Text(l10n.deactivateAction),
             ),
           ],
         );

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../blocs/blocs.dart';
-import '../../modules/ride_management/models/ride.dart';
-import '../../widgets/widgets.dart';
-import '../../widgets/common/rate_ride_dialog.dart';
-import '../../modules/core/date_utils.dart';
-import '../../screens/ride_details_screen.dart';
 import '../../constants/app_colors.dart';
-import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
+import '../../constants/app_styles.dart';
+import '../../l10n/app_localizations.dart';
+import '../../modules/core/date_utils.dart';
+import '../../modules/ride_management/models/ride.dart';
+import '../../screens/ride_details_screen.dart';
 import '../../utils/ride_status_styles.dart';
+import '../../widgets/common/rate_ride_dialog.dart';
+import '../../widgets/widgets.dart';
 import 'calendar/client_calendar_view.dart';
 
 enum _ClientPeriodFilter { today, week, month, all }
@@ -95,6 +97,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: BlocBuilder<RideBloc, RideState>(
@@ -113,7 +116,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
           if (rideState.hasError && rideState.rides.isEmpty) {
             return ErrorDisplayWidget(
-              title: 'Failed to load ride history',
+              title: l10n.failedToLoadRideHistory,
               message: rideState.errorMessage!,
               onRetry: () => _loadRides(context),
             );
@@ -123,7 +126,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           if (_view == _ClientRidesView.calendar) {
             return Column(
               children: [
-                _buildHeader(context),
+                _buildHeader(context, l10n),
                 Expanded(
                   child: ClientCalendarView(
                     onRideSelected: (ride) => Navigator.of(context).push(
@@ -149,10 +152,10 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           if (upcoming.isEmpty &&
               past.isEmpty &&
               _period == _ClientPeriodFilter.all) {
-            return _buildEmptyState();
+            return _buildEmptyState(l10n);
           }
 
-          return _buildBody(upcoming, past);
+          return _buildBody(upcoming, past, l10n);
         },
       ),
     );
@@ -160,7 +163,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
   // ─── Header ─────────────────────────────────────────────────────────────────
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       color: AppColors.primary,
@@ -172,16 +175,16 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           // graphite header only carries the centered List / Calendar toggle.
           child: Center(
             child: SegmentedButton<_ClientRidesView>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: _ClientRidesView.list,
-                  label: Text('List'),
-                  icon: Icon(Icons.list),
+                  label: Text(l10n.listView),
+                  icon: const Icon(Icons.list),
                 ),
                 ButtonSegment(
                   value: _ClientRidesView.calendar,
-                  label: Text('Calendar'),
-                  icon: Icon(Icons.calendar_month),
+                  label: Text(l10n.calendar),
+                  icon: const Icon(Icons.calendar_month),
                 ),
               ],
               selected: {_view},
@@ -212,10 +215,10 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
   // ─── Empty state ─────────────────────────────────────────────────────────────
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     return Column(
       children: [
-        _buildHeader(context),
+        _buildHeader(context, l10n),
         Expanded(
           child: Center(
             child: Column(
@@ -228,14 +231,14 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                 ),
                 const SizedBox(height: AppDimensions.paddingLarge),
                 Text(
-                  'No Ride History',
+                  l10n.noRideHistory,
                   style: AppStyles.headlineMedium.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppDimensions.paddingSmall),
                 Text(
-                  'Your completed rides will appear here',
+                  l10n.completedRidesAppearHere,
                   textAlign: TextAlign.center,
                   style: AppStyles.bodyLarge.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -251,7 +254,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
   // ─── Period selector ─────────────────────────────────────────────────────────
 
-  Widget _buildPeriodSelector() {
+  Widget _buildPeriodSelector(AppLocalizations l10n) {
     return SizedBox(
       height: 34,
       child: ListView(
@@ -260,13 +263,13 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           horizontal: AppDimensions.paddingMedium,
         ),
         children: [
-          _buildPeriodChip('Today', _ClientPeriodFilter.today),
+          _buildPeriodChip(l10n.today, _ClientPeriodFilter.today),
           const SizedBox(width: 8),
-          _buildPeriodChip('Week', _ClientPeriodFilter.week),
+          _buildPeriodChip(l10n.week, _ClientPeriodFilter.week),
           const SizedBox(width: 8),
-          _buildPeriodChip('Month', _ClientPeriodFilter.month),
+          _buildPeriodChip(l10n.month, _ClientPeriodFilter.month),
           const SizedBox(width: 8),
-          _buildPeriodChip('All', _ClientPeriodFilter.all),
+          _buildPeriodChip(l10n.all, _ClientPeriodFilter.all),
         ],
       ),
     );
@@ -298,20 +301,24 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
   // ─── Main body ───────────────────────────────────────────────────────────────
 
-  Widget _buildBody(List<Ride> upcoming, List<Ride> past) {
+  Widget _buildBody(
+    List<Ride> upcoming,
+    List<Ride> past,
+    AppLocalizations l10n,
+  ) {
     return RefreshIndicator(
       onRefresh: () async => _loadRides(context),
       child: CustomScrollView(
         slivers: [
           // Graphite header
-          SliverToBoxAdapter(child: _buildHeader(context)),
+          SliverToBoxAdapter(child: _buildHeader(context, l10n)),
 
           const SliverToBoxAdapter(
             child: SizedBox(height: AppDimensions.paddingMedium),
           ),
 
           // Period filter
-          SliverToBoxAdapter(child: _buildPeriodSelector()),
+          SliverToBoxAdapter(child: _buildPeriodSelector(l10n)),
 
           const SliverToBoxAdapter(
             child: SizedBox(height: AppDimensions.paddingMedium),
@@ -319,11 +326,13 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
           // UPCOMING section
           if (upcoming.isNotEmpty) ...[
-            SliverToBoxAdapter(child: _buildSectionLabel('UPCOMING')),
+            SliverToBoxAdapter(
+              child: _buildSectionLabel(l10n.upcoming.toUpperCase()),
+            ),
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) =>
-                    _buildUpcomingCard(context, upcoming[index]),
+                    _buildUpcomingCard(context, upcoming[index], l10n),
                 childCount: upcoming.length,
               ),
             ),
@@ -334,10 +343,10 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
           // PAST section
           if (past.isNotEmpty) ...[
-            SliverToBoxAdapter(child: _buildSectionLabel('PAST')),
+            SliverToBoxAdapter(child: _buildSectionLabel(l10n.pastLabel)),
             SliverList(
               delegate: SliverChildBuilderDelegate(
-                (context, index) => _buildPastCard(context, past[index]),
+                (context, index) => _buildPastCard(context, past[index], l10n),
                 childCount: past.length,
               ),
             ),
@@ -346,7 +355,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
               hasScrollBody: false,
               child: Center(
                 child: Text(
-                  'No rides for this period',
+                  l10n.noRidesForPeriod,
                   style: AppStyles.bodyLarge.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -386,7 +395,11 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
   // ─── Upcoming card ────────────────────────────────────────────────────────────
 
   /// Card for rides that are assigned / in-progress / requested.
-  Widget _buildUpcomingCard(BuildContext context, Ride ride) {
+  Widget _buildUpcomingCard(
+    BuildContext context,
+    Ride ride,
+    AppLocalizations l10n,
+  ) {
     final cs = Theme.of(context).colorScheme;
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
@@ -399,12 +412,14 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
         ? AppColors.rideAssignedBorder.withValues(alpha: 0.4)
         : const Color(0xFF93C5FD);
     final dotColor = AppColors.rideAssigned; // #3B82F6
-    final pillText = isPillConfirmed ? 'Confirmed' : ride.status.displayName;
+    final pillText = isPillConfirmed
+        ? l10n.confirmedStatus
+        : ride.status.displayName;
     final pillTextColor = isDark
         ? AppColors.rideAssignedTextDark
         : AppColors.infoStrong; // #1E40AF
 
-    final timeLabel = _formatPickupTime(ride.pickupDateTime);
+    final timeLabel = _formatPickupTime(ride.pickupDateTime, l10n);
     final route = '${ride.from.address} → ${ride.to.address}';
 
     // Detail line: ✈ <flight> · <vehicleClass> · €<price>
@@ -551,28 +566,19 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
   // ─── Past card ────────────────────────────────────────────────────────────────
 
   /// Row card for completed / cancelled rides.
-  Widget _buildPastCard(BuildContext context, Ride ride) {
+  Widget _buildPastCard(
+    BuildContext context,
+    Ride ride,
+    AppLocalizations l10n,
+  ) {
     final cs = Theme.of(context).colorScheme;
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
+    final locale = Localizations.localeOf(context).toLanguageTag();
 
     final route = '${ride.from.address} → ${ride.to.address}';
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
     final dt = ride.pickupDateTime;
-    final dateStr = '${dt.day} ${months[dt.month - 1]}';
+    final dateStr = '${dt.day} ${DateFormat('MMM', locale).format(dt)}';
     final driverStr = ride.driverName ?? 'Unknown driver';
     final ratingStr = ride.rating != null ? '${ride.rating}★' : '';
     final subParts = [dateStr, driverStr, if (ratingStr.isNotEmpty) ratingStr];
@@ -580,7 +586,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
     // Status label color
     final isCompleted = ride.status == RideStatus.completed;
-    final statusLabel = isCompleted ? 'Completed' : 'Cancelled';
+    final statusLabel = isCompleted ? l10n.completed : l10n.cancelled;
     final statusColor = isCompleted
         ? (isDark
               ? AppColors.rideCompletedTextDark
@@ -651,9 +657,9 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
                       ride.rating == null) ...[
                     const SizedBox(height: 6),
                     GestureDetector(
-                      onTap: () => _showRateDialog(context, ride),
+                      onTap: () => _showRateDialog(context, ride, l10n),
                       child: Text(
-                        'Rate this ride',
+                        l10n.rateThisRide,
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
@@ -717,15 +723,19 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  String _formatPickupTime(DateTime dt) {
+  String _formatPickupTime(DateTime dt, AppLocalizations l10n) {
     final now = DateTime.now();
     final isToday =
         dt.year == now.year && dt.month == now.month && dt.day == now.day;
     final time = AppDateUtils.formatTime(dt);
-    return isToday ? 'Today $time' : AppDateUtils.formatDateTime(dt);
+    return isToday ? '${l10n.today} $time' : AppDateUtils.formatDateTime(dt);
   }
 
-  Future<void> _showRateDialog(BuildContext context, Ride ride) async {
+  Future<void> _showRateDialog(
+    BuildContext context,
+    Ride ride,
+    AppLocalizations l10n,
+  ) async {
     final apiClient = context.read<AuthBloc>().apiClient;
     final rideBloc = context.read<RideBloc>();
     final user = context.read<AuthBloc>().state.user;
@@ -744,8 +754,8 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
         });
         if (mounted) {
           messenger.showSnackBar(
-            const SnackBar(
-              content: Text('Thank you for your rating!'),
+            SnackBar(
+              content: Text(l10n.thankYouForRating),
               backgroundColor: AppColors.success,
             ),
           );
@@ -757,7 +767,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
         if (mounted) {
           messenger.showSnackBar(
             SnackBar(
-              content: Text('Failed to submit rating: $e'),
+              content: Text(l10n.failedToSubmitRating(e.toString())),
               backgroundColor: AppColors.error,
             ),
           );

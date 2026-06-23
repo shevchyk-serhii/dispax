@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/models/user_requests.dart';
 import '../../../modules/core/services/user_service.dart';
@@ -61,6 +62,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -92,7 +94,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
           if (user != null) rideBloc.add(RideLoadRequested(user: user));
         },
         icon: const Icon(Icons.add),
-        label: const Text('New Ride'),
+        label: Text(l10n.newRideButton),
       ),
       body: Column(
         children: [
@@ -105,6 +107,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 
   Widget _buildClientInfo() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingMedium),
       color: Theme.of(context).colorScheme.surface,
@@ -168,7 +171,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   Text(_client.phone!, style: AppStyles.bodySmall),
                 if (_client.preferredDriverId != null)
                   Text(
-                    'Preferred driver assigned',
+                    l10n.preferredDriverAssigned,
                     style: AppStyles.bodySmall.copyWith(
                       color: AppColors.success,
                     ),
@@ -185,7 +188,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     color: AppColors.secretaryColor,
                   ),
                 ),
-                Text('rides', style: AppStyles.labelSmall),
+                Text(l10n.ridesCountLabel, style: AppStyles.labelSmall),
               ],
             ),
         ],
@@ -194,6 +197,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 
   Widget _buildRideHistory() {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
@@ -207,7 +211,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             const SizedBox(height: 12),
             Text(_error!, style: AppStyles.bodyMedium),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _loadRides, child: const Text('Retry')),
+            ElevatedButton(onPressed: _loadRides, child: Text(l10n.retry)),
           ],
         ),
       );
@@ -225,7 +229,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No rides yet',
+              l10n.noRidesYet,
               style: AppStyles.bodyLarge.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -248,6 +252,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 
   Widget _buildRideCard(Ride ride) {
+    final l10n = AppLocalizations.of(context)!;
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
 
     return Card(
@@ -339,7 +344,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   children: [
                     if (ride.driverName != null)
                       Text(
-                        'Driver: ${ride.driverName}',
+                        l10n.driverLabel(ride.driverName!),
                         style: TextStyle(
                           fontSize: 11,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -347,7 +352,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       ),
                     if (ride.price != null)
                       Text(
-                        '\u20AC${ride.price!.toStringAsFixed(2)}',
+                        '€${ride.price!.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -385,6 +390,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   }
 
   void _showEditDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController(text: _client.name);
     final emailController = TextEditingController(text: _client.email);
     final phoneController = TextEditingController(text: _client.phone ?? '');
@@ -401,7 +407,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
             return AlertDialog(
-              title: const Text('Edit Client'),
+              title: Text(l10n.editClientTitle),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -410,45 +416,43 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     children: [
                       TextFormField(
                         controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Name',
-                          prefixIcon: Icon(Icons.person),
+                        decoration: InputDecoration(
+                          labelText: l10n.name,
+                          prefixIcon: const Icon(Icons.person),
                         ),
                         validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Name is required'
+                            ? l10n.nameRequired
                             : null,
                       ),
                       const SizedBox(height: AppDimensions.paddingMedium),
                       TextFormField(
                         controller: emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.email),
+                        decoration: InputDecoration(
+                          labelText: l10n.email,
+                          prefixIcon: const Icon(Icons.email),
                         ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Email is required';
+                            return l10n.emailRequired;
                           }
-                          if (!v.contains('@')) return 'Invalid email';
+                          if (!v.contains('@')) return l10n.invalidEmail;
                           return null;
                         },
                       ),
                       const SizedBox(height: AppDimensions.paddingMedium),
                       TextFormField(
                         controller: phoneController,
-                        decoration: const InputDecoration(
-                          labelText: 'Phone (optional)',
-                          prefixIcon: Icon(Icons.phone),
+                        decoration: InputDecoration(
+                          labelText: l10n.phoneOptional,
+                          prefixIcon: const Icon(Icons.phone),
                         ),
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: AppDimensions.paddingMedium),
                       SwitchListTile(
-                        title: const Text('VIP Client'),
-                        subtitle: const Text(
-                          'Priority service and preferred driver',
-                        ),
+                        title: Text(l10n.vipClientLabel),
+                        subtitle: Text(l10n.vipClientHelpText),
                         secondary: Icon(
                           Icons.star,
                           color: isVip
@@ -466,7 +470,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.cancel),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -493,7 +497,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       Navigator.of(dialogContext).pop();
                     }
                   },
-                  child: const Text('Save'),
+                  child: Text(l10n.save),
                 ),
               ],
             );

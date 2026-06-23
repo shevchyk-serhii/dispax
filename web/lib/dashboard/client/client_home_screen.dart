@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../modules/core/services/mapbox_service.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../modules/ride_management/widgets/address_picker_sheet.dart';
@@ -54,15 +55,16 @@ class _HomeHeader extends StatelessWidget {
 
   const _HomeHeader({required this.onSearchTap});
 
-  String _greeting() {
+  String _greeting(AppLocalizations l10n) {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning,';
-    if (hour < 17) return 'Good afternoon,';
-    return 'Good evening,';
+    if (hour < 12) return l10n.goodMorning;
+    if (hour < 17) return l10n.goodAfternoon;
+    return l10n.goodEvening;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final user = context.read<AuthBloc>().state.user;
     final name = user?.name ?? '';
     final initials = _initials(name);
@@ -80,7 +82,7 @@ class _HomeHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _greeting(),
+                      _greeting(l10n),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
@@ -138,9 +140,12 @@ class _HomeHeader extends StatelessWidget {
                     color: AppColors.accent,
                   ),
                   const SizedBox(width: 10),
-                  const Text(
-                    'Where to?',
-                    style: TextStyle(fontSize: 14, color: AppColors.textLight),
+                  Text(
+                    l10n.whereTo,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textLight,
+                    ),
                   ),
                 ],
               ),
@@ -196,8 +201,9 @@ class _LiveRideCard extends StatelessWidget {
   }
 
   Widget _buildCard(BuildContext context, Ride ride) {
+    final l10n = AppLocalizations.of(context)!;
     final eta = ride.etaMinutes;
-    final driverName = ride.driverName ?? 'Your driver';
+    final driverName = ride.driverName ?? l10n.yourDriver;
     // Driver's reputation (their average rating), now exposed on the RideDto.
     final driverRating = ride.driverRating;
 
@@ -243,10 +249,10 @@ class _LiveRideCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       ride.status == RideStatus.inProgress
-                          ? 'On trip'
+                          ? l10n.onTrip
                           : (ride.driverEnRoute
-                                ? 'Driver on the way'
-                                : 'Driver assigned'),
+                                ? l10n.driverOnTheWay
+                                : l10n.driverAssigned),
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -306,7 +312,7 @@ class _LiveRideCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _vehicleLine(ride),
+                      _vehicleLine(ride, l10n),
                       style: const TextStyle(
                         fontSize: 11.5,
                         color: AppColors.textLight,
@@ -334,10 +340,10 @@ class _LiveRideCard extends StatelessWidget {
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
 
-  String _vehicleLine(Ride ride) {
+  String _vehicleLine(Ride ride, AppLocalizations l10n) {
     // driverName is available on ride; vehicle plate isn't in the current RideDto.
     // Degrade gracefully — show whatever we have.
-    return ride.driverName ?? 'Driver assigned';
+    return ride.driverName ?? l10n.driverAssigned;
   }
 }
 
@@ -350,12 +356,13 @@ class _SavedPlacesRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'SAVED PLACES',
-          style: TextStyle(
+        Text(
+          l10n.savedPlaces,
+          style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.04 * 11,
@@ -374,8 +381,8 @@ class _SavedPlacesRow extends StatelessWidget {
                 Expanded(
                   child: _PlaceTile(
                     icon: Icons.home_outlined,
-                    title: home?.label ?? 'Home',
-                    subtitle: home?.address ?? 'Add address',
+                    title: home?.label ?? l10n.savedPlaceHome,
+                    subtitle: home?.address ?? l10n.addAddress,
                     onTap: home != null
                         ? onPlaceTap
                         : () => _addPlace(context, 'Home'),
@@ -385,8 +392,8 @@ class _SavedPlacesRow extends StatelessWidget {
                 Expanded(
                   child: _PlaceTile(
                     icon: Icons.business_outlined,
-                    title: office?.label ?? 'Office',
-                    subtitle: office?.address ?? 'Add address',
+                    title: office?.label ?? l10n.savedPlaceOffice,
+                    subtitle: office?.address ?? l10n.addAddress,
                     onTap: office != null
                         ? onPlaceTap
                         : () => _addPlace(context, 'Office'),
@@ -396,8 +403,8 @@ class _SavedPlacesRow extends StatelessWidget {
                 Expanded(
                   child: _PlaceTile(
                     icon: Icons.flight_outlined,
-                    title: airport?.label ?? 'Airport',
-                    subtitle: airport?.address ?? 'Add address',
+                    title: airport?.label ?? l10n.airport,
+                    subtitle: airport?.address ?? l10n.addAddress,
                     onTap: airport != null
                         ? onPlaceTap
                         : () => _addPlace(context, 'Airport'),
@@ -516,14 +523,15 @@ class _BookRideButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       height: 52,
       child: ElevatedButton.icon(
         onPressed: onTap,
         icon: const Icon(Icons.add, size: 20, color: Colors.white),
-        label: const Text(
-          'Book a ride',
-          style: TextStyle(
+        label: Text(
+          l10n.bookARide,
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: Colors.white,

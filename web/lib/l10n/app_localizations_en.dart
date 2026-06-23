@@ -1558,4 +1558,246 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusConfirmed => 'Confirmed';
+
+  @override
+  String get ridesTab => 'Rides';
+
+  @override
+  String get createTab => 'Create';
+
+  @override
+  String get frontDeskTitle => 'Front desk';
+
+  @override
+  String get quickBook => 'Quick book';
+
+  @override
+  String get bookedToday => 'Booked today';
+
+  @override
+  String get awaitingConfirm => 'Awaiting confirm';
+
+  @override
+  String get activeClientsLabel => 'Active clients';
+
+  @override
+  String get templatesLabel => 'Templates';
+
+  @override
+  String get todaysBookings => 'Today\'s bookings';
+
+  @override
+  String get noRidesToday => 'No rides today';
+
+  @override
+  String get loadRidesToSeeBookings => 'Load rides to see today\'s bookings';
+
+  @override
+  String get manageClientsTitle => 'Manage Clients';
+
+  @override
+  String get searchClientsHint => 'Search clients...';
+
+  @override
+  String get noClientsMatchSearch => 'No clients match your search';
+
+  @override
+  String get noClientsYet => 'No clients yet';
+
+  @override
+  String get addClientTitle => 'Add Client';
+
+  @override
+  String get phoneOptional => 'Phone (optional)';
+
+  @override
+  String get nameRequired => 'Name is required';
+
+  @override
+  String get emailRequired => 'Email is required';
+
+  @override
+  String get invalidEmail => 'Invalid email';
+
+  @override
+  String get addButton => 'Add';
+
+  @override
+  String get editAction => 'Edit';
+
+  @override
+  String get deactivateAction => 'Deactivate';
+
+  @override
+  String get editClientTitle => 'Edit Client';
+
+  @override
+  String get deactivateClientTitle => 'Deactivate Client';
+
+  @override
+  String deactivateClientConfirmMsg(String name) {
+    return 'Are you sure you want to deactivate $name?';
+  }
+
+  @override
+  String get newRideButton => 'New Ride';
+
+  @override
+  String get ridesCountLabel => 'rides';
+
+  @override
+  String get preferredDriverAssigned => 'Preferred driver assigned';
+
+  @override
+  String get noRidesYet => 'No rides yet';
+
+  @override
+  String get vipClientLabel => 'VIP Client';
+
+  @override
+  String get vipClientHelpText => 'Priority service and preferred driver';
+
+  @override
+  String driverLabel(String name) {
+    return 'Driver: $name';
+  }
+
+  @override
+  String get reportsTitle => 'Reports';
+
+  @override
+  String get totalRidesLabel => 'Total Rides';
+
+  @override
+  String get inProgressLabel => 'In Progress';
+
+  @override
+  String get requestedLabel => 'Requested';
+
+  @override
+  String get assignedLabel => 'Assigned';
+
+  @override
+  String get keyMetrics => 'Key Metrics';
+
+  @override
+  String get cancellationRateLabel => 'Cancellation Rate';
+
+  @override
+  String get statusBreakdown => 'Status Breakdown';
+
+  @override
+  String get noRideDataYet => 'No ride data yet';
+
+  @override
+  String get noActiveRides => 'You have no active rides';
+
+  @override
+  String get useBookTabHint => 'Use \"Book\" tab to create one';
+
+  @override
+  String get trackDriver => 'Track driver';
+
+  @override
+  String departureTimeReachedFlight(String flightInfo) {
+    return 'Departure time reached for flight $flightInfo';
+  }
+
+  @override
+  String failedToCancelRide(String error) {
+    return 'Failed to cancel ride: $error';
+  }
+
+  @override
+  String get failedToLoadRides => 'Failed to load rides';
+
+  @override
+  String get goodMorning => 'Good morning,';
+
+  @override
+  String get goodAfternoon => 'Good afternoon,';
+
+  @override
+  String get goodEvening => 'Good evening,';
+
+  @override
+  String get whereTo => 'Where to?';
+
+  @override
+  String get onTrip => 'On trip';
+
+  @override
+  String get driverOnTheWay => 'Driver on the way';
+
+  @override
+  String get driverAssigned => 'Driver assigned';
+
+  @override
+  String get yourDriver => 'Your driver';
+
+  @override
+  String get savedPlaces => 'SAVED PLACES';
+
+  @override
+  String get savedPlaceHome => 'Home';
+
+  @override
+  String get savedPlaceOffice => 'Office';
+
+  @override
+  String get addAddress => 'Add address';
+
+  @override
+  String get bookARide => 'Book a ride';
+
+  @override
+  String get scheduled => 'SCHEDULED';
+
+  @override
+  String get nowLabel => 'NOW';
+
+  @override
+  String get asap => 'ASAP';
+
+  @override
+  String get vehicleClass => 'VEHICLE CLASS';
+
+  @override
+  String get estimatedTotal => 'Estimated total';
+
+  @override
+  String get estimateUnavailableHint =>
+      'We couldn\'t estimate the price for this address. You can still book — the fare will be confirmed afterwards.';
+
+  @override
+  String get confirmBooking => 'Confirm booking';
+
+  @override
+  String get rideBookedSuccessfully => 'Ride booked successfully!';
+
+  @override
+  String get failedToCreateRide => 'Failed to create ride';
+
+  @override
+  String get failedToLoadRideHistory => 'Failed to load ride history';
+
+  @override
+  String get listView => 'List';
+
+  @override
+  String get pastLabel => 'PAST';
+
+  @override
+  String get confirmedStatus => 'Confirmed';
+
+  @override
+  String get rateThisRide => 'Rate this ride';
+
+  @override
+  String get thankYouForRating => 'Thank you for your rating!';
+
+  @override
+  String failedToSubmitRating(String error) {
+    return 'Failed to submit rating: $error';
+  }
 }

@@ -3003,6 +3003,468 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirmed'**
   String get statusConfirmed;
+
+  /// No description provided for @ridesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Rides'**
+  String get ridesTab;
+
+  /// No description provided for @createTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get createTab;
+
+  /// No description provided for @frontDeskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front desk'**
+  String get frontDeskTitle;
+
+  /// No description provided for @quickBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick book'**
+  String get quickBook;
+
+  /// No description provided for @bookedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked today'**
+  String get bookedToday;
+
+  /// No description provided for @awaitingConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting confirm'**
+  String get awaitingConfirm;
+
+  /// No description provided for @activeClientsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active clients'**
+  String get activeClientsLabel;
+
+  /// No description provided for @templatesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates'**
+  String get templatesLabel;
+
+  /// No description provided for @todaysBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s bookings'**
+  String get todaysBookings;
+
+  /// No description provided for @noRidesToday.
+  ///
+  /// In en, this message translates to:
+  /// **'No rides today'**
+  String get noRidesToday;
+
+  /// No description provided for @loadRidesToSeeBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'Load rides to see today\'s bookings'**
+  String get loadRidesToSeeBookings;
+
+  /// No description provided for @manageClientsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Clients'**
+  String get manageClientsTitle;
+
+  /// No description provided for @searchClientsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search clients...'**
+  String get searchClientsHint;
+
+  /// No description provided for @noClientsMatchSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'No clients match your search'**
+  String get noClientsMatchSearch;
+
+  /// No description provided for @noClientsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No clients yet'**
+  String get noClientsYet;
+
+  /// No description provided for @addClientTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Client'**
+  String get addClientTitle;
+
+  /// No description provided for @phoneOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone (optional)'**
+  String get phoneOptional;
+
+  /// No description provided for @nameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get nameRequired;
+
+  /// No description provided for @emailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Email is required'**
+  String get emailRequired;
+
+  /// No description provided for @invalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid email'**
+  String get invalidEmail;
+
+  /// No description provided for @addButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addButton;
+
+  /// No description provided for @editAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editAction;
+
+  /// No description provided for @deactivateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get deactivateAction;
+
+  /// No description provided for @editClientTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Client'**
+  String get editClientTitle;
+
+  /// No description provided for @deactivateClientTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate Client'**
+  String get deactivateClientTitle;
+
+  /// No description provided for @deactivateClientConfirmMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to deactivate {name}?'**
+  String deactivateClientConfirmMsg(String name);
+
+  /// No description provided for @newRideButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New Ride'**
+  String get newRideButton;
+
+  /// No description provided for @ridesCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'rides'**
+  String get ridesCountLabel;
+
+  /// No description provided for @preferredDriverAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred driver assigned'**
+  String get preferredDriverAssigned;
+
+  /// No description provided for @noRidesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No rides yet'**
+  String get noRidesYet;
+
+  /// No description provided for @vipClientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'VIP Client'**
+  String get vipClientLabel;
+
+  /// No description provided for @vipClientHelpText.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority service and preferred driver'**
+  String get vipClientHelpText;
+
+  /// No description provided for @driverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver: {name}'**
+  String driverLabel(String name);
+
+  /// No description provided for @reportsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get reportsTitle;
+
+  /// No description provided for @totalRidesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Rides'**
+  String get totalRidesLabel;
+
+  /// No description provided for @inProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get inProgressLabel;
+
+  /// No description provided for @requestedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get requestedLabel;
+
+  /// No description provided for @assignedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get assignedLabel;
+
+  /// No description provided for @keyMetrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Key Metrics'**
+  String get keyMetrics;
+
+  /// No description provided for @cancellationRateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation Rate'**
+  String get cancellationRateLabel;
+
+  /// No description provided for @statusBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Breakdown'**
+  String get statusBreakdown;
+
+  /// No description provided for @noRideDataYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No ride data yet'**
+  String get noRideDataYet;
+
+  /// No description provided for @noActiveRides.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no active rides'**
+  String get noActiveRides;
+
+  /// No description provided for @useBookTabHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use \"Book\" tab to create one'**
+  String get useBookTabHint;
+
+  /// No description provided for @trackDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Track driver'**
+  String get trackDriver;
+
+  /// No description provided for @departureTimeReachedFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Departure time reached for flight {flightInfo}'**
+  String departureTimeReachedFlight(String flightInfo);
+
+  /// No description provided for @failedToCancelRide.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel ride: {error}'**
+  String failedToCancelRide(String error);
+
+  /// No description provided for @failedToLoadRides.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load rides'**
+  String get failedToLoadRides;
+
+  /// No description provided for @goodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning,'**
+  String get goodMorning;
+
+  /// No description provided for @goodAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon,'**
+  String get goodAfternoon;
+
+  /// No description provided for @goodEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening,'**
+  String get goodEvening;
+
+  /// No description provided for @whereTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to?'**
+  String get whereTo;
+
+  /// No description provided for @onTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'On trip'**
+  String get onTrip;
+
+  /// No description provided for @driverOnTheWay.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver on the way'**
+  String get driverOnTheWay;
+
+  /// No description provided for @driverAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver assigned'**
+  String get driverAssigned;
+
+  /// No description provided for @yourDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Your driver'**
+  String get yourDriver;
+
+  /// No description provided for @savedPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'SAVED PLACES'**
+  String get savedPlaces;
+
+  /// No description provided for @savedPlaceHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get savedPlaceHome;
+
+  /// No description provided for @savedPlaceOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Office'**
+  String get savedPlaceOffice;
+
+  /// No description provided for @addAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Add address'**
+  String get addAddress;
+
+  /// No description provided for @bookARide.
+  ///
+  /// In en, this message translates to:
+  /// **'Book a ride'**
+  String get bookARide;
+
+  /// No description provided for @scheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'SCHEDULED'**
+  String get scheduled;
+
+  /// No description provided for @nowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'NOW'**
+  String get nowLabel;
+
+  /// No description provided for @asap.
+  ///
+  /// In en, this message translates to:
+  /// **'ASAP'**
+  String get asap;
+
+  /// No description provided for @vehicleClass.
+  ///
+  /// In en, this message translates to:
+  /// **'VEHICLE CLASS'**
+  String get vehicleClass;
+
+  /// No description provided for @estimatedTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated total'**
+  String get estimatedTotal;
+
+  /// No description provided for @estimateUnavailableHint.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t estimate the price for this address. You can still book — the fare will be confirmed afterwards.'**
+  String get estimateUnavailableHint;
+
+  /// No description provided for @confirmBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm booking'**
+  String get confirmBooking;
+
+  /// No description provided for @rideBookedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride booked successfully!'**
+  String get rideBookedSuccessfully;
+
+  /// No description provided for @failedToCreateRide.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create ride'**
+  String get failedToCreateRide;
+
+  /// No description provided for @failedToLoadRideHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load ride history'**
+  String get failedToLoadRideHistory;
+
+  /// No description provided for @listView.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get listView;
+
+  /// No description provided for @pastLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PAST'**
+  String get pastLabel;
+
+  /// No description provided for @confirmedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get confirmedStatus;
+
+  /// No description provided for @rateThisRide.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this ride'**
+  String get rateThisRide;
+
+  /// No description provided for @thankYouForRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for your rating!'**
+  String get thankYouForRating;
+
+  /// No description provided for @failedToSubmitRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to submit rating: {error}'**
+  String failedToSubmitRating(String error);
 }
 
 class _AppLocalizationsDelegate
