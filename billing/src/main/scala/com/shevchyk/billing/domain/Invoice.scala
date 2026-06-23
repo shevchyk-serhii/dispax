@@ -124,6 +124,8 @@ enum InvoiceError extends Throwable:
   case RideNotBillable(rideId: UUID)
   // The invoice's client company has no email address to send to.
   case NoRecipientEmail(id: InvoiceId)
+  // The supplied tax rate (percent) is outside the valid range [0, 100].
+  case InvalidTaxRate(taxRate: BigDecimal)
   case DatabaseError(cause: Throwable)
   case PdfGenerationError(cause: Throwable)
   case EmailDeliveryError(cause: Throwable)

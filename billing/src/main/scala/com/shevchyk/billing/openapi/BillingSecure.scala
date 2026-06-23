@@ -83,6 +83,8 @@ object BillingSecure:
       case InvoiceError.RideNotBillable(rideId)  =>
         (StatusCode.BadRequest, ApiError(s"Ride $rideId cannot be billed on this invoice"))
       case InvoiceError.NoRecipientEmail(_)      => (StatusCode.BadRequest, ApiError("Client company has no email address"))
+      case InvoiceError.InvalidTaxRate(rate)     =>
+        (StatusCode.BadRequest, ApiError(s"Invalid tax rate: $rate (must be between 0 and 100)"))
       case InvoiceError.DatabaseError(_)         => (StatusCode.InternalServerError, ApiError("Internal server error"))
       case InvoiceError.PdfGenerationError(_)    => (StatusCode.InternalServerError, ApiError("PDF generation failed"))
       case InvoiceError.EmailDeliveryError(_)    =>

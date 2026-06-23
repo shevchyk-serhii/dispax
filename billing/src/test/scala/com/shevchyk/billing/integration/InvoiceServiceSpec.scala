@@ -704,6 +704,64 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           case _                                      => false
         )
       },
+      // -- Tax-rate validation on the receipt path (audit 2026-06-23) -------------
+      // taxRate = -100 made PdfGenerator divide by zero (gross / (1 + -100/100)).
+      // The service must now reject it as InvalidTaxRate *before* generating the PDF.
+      // The ride is real and billable, so a regression (no validation) would instead
+      // surface as a PdfGenerationError (the division-by-zero), not RideNotBillable.
+      test("generateRideReceipt rejects taxRate = -100 (would divide by zero) with InvalidTaxRate") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("119.00"), LocalDate.of(2026, 3, 8))
+          svc     = makeService(xa)
+          result <- svc.generateRideReceipt(rideId, testCompanyId, BigDecimal("-100"), "Test GmbH").either
+        } yield assertTrue(result match
+          case Left(InvoiceError.InvalidTaxRate(rate)) => rate == BigDecimal("-100")
+          case _                                       => false
+        )
+      },
+      test("generateRideReceipt rejects a negative taxRate with InvalidTaxRate") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("80.00"), LocalDate.of(2026, 3, 9))
+          svc     = makeService(xa)
+          result <- svc.generateRideReceipt(rideId, testCompanyId, BigDecimal("-1"), "Test GmbH").either
+        } yield assertTrue(result match
+          case Left(InvoiceError.InvalidTaxRate(rate)) => rate == BigDecimal("-1")
+          case _                                       => false
+        )
+      },
+      test("generateRideReceipt rejects a taxRate above 100 with InvalidTaxRate") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("80.00"), LocalDate.of(2026, 3, 10))
+          svc     = makeService(xa)
+          result <- svc.generateRideReceipt(rideId, testCompanyId, BigDecimal("101"), "Test GmbH").either
+        } yield assertTrue(result match
+          case Left(InvoiceError.InvalidTaxRate(rate)) => rate == BigDecimal("101")
+          case _                                       => false
+        )
+      },
+      test("generateRideReceipt accepts taxRate = 0 (boundary)") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanData(xa)
+          _      <- linkClientToCompany(xa)
+          rideId <- insertCompletedRideReturningId(xa, BigDecimal("80.00"), LocalDate.of(2026, 3, 11))
+          svc     = makeService(xa)
+          bytes  <- svc.generateRideReceipt(rideId, testCompanyId, BigDecimal("0"), "Test GmbH")
+        } yield assertTrue(bytes.nonEmpty, bytes.take(4).sameElements("%PDF".getBytes("US-ASCII")))
+      },
       test("sendReminder fails with InvalidStatus for a Draft invoice") {
         for {
           xa     <- ZIO.service[Transactor[Task]]

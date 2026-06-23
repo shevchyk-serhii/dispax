@@ -21,6 +21,7 @@ object BillingSecureSpec extends ZIOSpecDefault:
     InvoiceError.NotDraft(invoiceId),
     InvoiceError.RideNotBillable(UUID.randomUUID()),
     InvoiceError.NoRecipientEmail(invoiceId),
+    InvoiceError.InvalidTaxRate(BigDecimal("-100")),
     InvoiceError.DatabaseError(new RuntimeException("boom")),
     InvoiceError.PdfGenerationError(new RuntimeException("boom"))
   )
@@ -36,6 +37,10 @@ object BillingSecureSpec extends ZIOSpecDefault:
       },
       test("NoRecipientEmail maps to 400") {
         val (code, _) = BillingSecure.fromInvoiceError(InvoiceError.NoRecipientEmail(invoiceId))
+        assertTrue(code == StatusCode.BadRequest)
+      },
+      test("InvalidTaxRate maps to 400") {
+        val (code, _) = BillingSecure.fromInvoiceError(InvoiceError.InvalidTaxRate(BigDecimal("-100")))
         assertTrue(code == StatusCode.BadRequest)
       }
     )

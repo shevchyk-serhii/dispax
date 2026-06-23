@@ -232,6 +232,12 @@ class InvoiceServiceImpl(
       companyName: String
   ): IO[InvoiceError, Array[Byte]] =
     for {
+      // Reject an out-of-range tax rate before touching the DB or PDF generator:
+      // a negative rate yields Netto > Brutto, and exactly -100 divides by zero
+      // in PdfGenerator (gross / (1 + taxRate/100)).
+      _            <- ZIO
+                        .fail(InvoiceError.InvalidTaxRate(taxRate))
+                        .when(taxRate < 0 || taxRate > 100)
       // Company isolation: a ride of another tenant returns empty → RideNotBillable,
       // never leaking that the ride exists.
       ride         <- invoiceRepo
