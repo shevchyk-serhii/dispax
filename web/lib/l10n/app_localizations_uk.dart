@@ -1545,6 +1545,24 @@ class AppLocalizationsUk extends AppLocalizations {
   String get rejectReasonPrompt => 'Причина відмови';
 
   @override
+  String get rejectButton => 'Відхилити';
+
+  @override
+  String get rejectReasonTooFar => 'Подача надто далеко';
+
+  @override
+  String get rejectReasonBusy => 'Зайнятий іншою поїздкою';
+
+  @override
+  String get rejectReasonBreak => 'Перерва / кінець зміни';
+
+  @override
+  String get rejectReasonVehicleIssue => 'Проблема з автомобілем';
+
+  @override
+  String get rejectReasonOther => 'Інше';
+
+  @override
   String get rideConfirmed => 'Поїздку підтверджено';
 
   @override

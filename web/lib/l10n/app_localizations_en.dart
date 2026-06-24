@@ -1547,6 +1547,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rejectReasonPrompt => 'Reason for rejection';
 
   @override
+  String get rejectButton => 'Reject';
+
+  @override
+  String get rejectReasonTooFar => 'Pickup too far';
+
+  @override
+  String get rejectReasonBusy => 'Busy with another ride';
+
+  @override
+  String get rejectReasonBreak => 'On break / end of shift';
+
+  @override
+  String get rejectReasonVehicleIssue => 'Vehicle issue';
+
+  @override
+  String get rejectReasonOther => 'Other';
+
+  @override
   String get rideConfirmed => 'Ride confirmed';
 
   @override

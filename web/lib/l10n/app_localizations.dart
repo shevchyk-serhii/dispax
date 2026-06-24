@@ -2980,6 +2980,42 @@ abstract class AppLocalizations {
   /// **'Reason for rejection'**
   String get rejectReasonPrompt;
 
+  /// No description provided for @rejectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get rejectButton;
+
+  /// No description provided for @rejectReasonTooFar.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup too far'**
+  String get rejectReasonTooFar;
+
+  /// No description provided for @rejectReasonBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy with another ride'**
+  String get rejectReasonBusy;
+
+  /// No description provided for @rejectReasonBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'On break / end of shift'**
+  String get rejectReasonBreak;
+
+  /// No description provided for @rejectReasonVehicleIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle issue'**
+  String get rejectReasonVehicleIssue;
+
+  /// No description provided for @rejectReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get rejectReasonOther;
+
   /// No description provided for @rideConfirmed.
   ///
   /// In en, this message translates to:

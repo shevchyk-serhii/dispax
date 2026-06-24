@@ -1551,6 +1551,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get rejectReasonPrompt => 'Grund für die Ablehnung';
 
   @override
+  String get rejectButton => 'Ablehnen';
+
+  @override
+  String get rejectReasonTooFar => 'Abholung zu weit entfernt';
+
+  @override
+  String get rejectReasonBusy => 'Mit einer anderen Fahrt beschäftigt';
+
+  @override
+  String get rejectReasonBreak => 'Pause / Schichtende';
+
+  @override
+  String get rejectReasonVehicleIssue => 'Fahrzeugproblem';
+
+  @override
+  String get rejectReasonOther => 'Sonstiges';
+
+  @override
   String get rideConfirmed => 'Fahrt bestätigt';
 
   @override

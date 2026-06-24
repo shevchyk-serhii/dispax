@@ -644,52 +644,16 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
   }
 
   void _handleRejectRide(BuildContext context, Ride ride) {
-    final reasonController = TextEditingController();
-    showAdaptiveDialog(
+    final l10n = AppLocalizations.of(context)!;
+    final bloc = context.read<RideBloc>();
+    showAdaptiveDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Reject Ride'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Reject ride from ${ride.from.address} to ${ride.to.address}?',
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Reason for rejection',
-                border: OutlineInputBorder(),
-                hintText: 'Enter reason...',
-              ),
-              maxLines: 2,
-              autofocus: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () {
-              final reason = reasonController.text.trim();
-              if (reason.isEmpty) return;
-              Navigator.pop(ctx);
-              context.read<RideBloc>().add(
-                RideRejectRequested(rideId: ride.id, reason: reason),
-              );
-              NavigationHelper.showSnackBar(context, 'Ride rejected');
-            },
-            child: const Text('Reject'),
-          ),
-        ],
-      ),
-    );
+      builder: (ctx) => RejectRideDialog(ride: ride),
+    ).then((reason) {
+      if (reason == null || reason.isEmpty || !context.mounted) return;
+      bloc.add(RideRejectRequested(rideId: ride.id, reason: reason));
+      NavigationHelper.showSnackBar(context, l10n.rideRejected);
+    });
   }
 
   List<Ride> getTodayRides(List<Ride> rides) {
@@ -1812,6 +1776,135 @@ class DriverRideActionsRow extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// A preset rejection reason: a localized chip [label] plus the stable English
+/// [backendReason] that is actually sent to the API (so the wire value does not
+/// change with the driver's UI language). [backendReason] is null for the
+/// "Other" chip, which reveals a free-text field instead.
+class _RejectReasonPreset {
+  final String label;
+  final String? backendReason;
+
+  const _RejectReasonPreset(this.label, this.backendReason);
+}
+
+/// Reject Ride dialog: lets the driver pick a typical rejection reason in one
+/// tap (preset chips) or enter a custom reason via the "Other" chip. Returns
+/// the chosen reason string through [Navigator.pop]; returns null on cancel.
+class RejectRideDialog extends StatefulWidget {
+  final Ride ride;
+
+  const RejectRideDialog({super.key, required this.ride});
+
+  @override
+  State<RejectRideDialog> createState() => _RejectRideDialogState();
+}
+
+class _RejectRideDialogState extends State<RejectRideDialog> {
+  final TextEditingController _customController = TextEditingController();
+
+  /// Index of the selected preset chip, or null when nothing is selected yet.
+  int? _selectedIndex;
+
+  /// True when the selected chip is the "Other" chip (last in the list), which
+  /// reveals the free-text field.
+  bool _isOther = false;
+
+  @override
+  void dispose() {
+    _customController.dispose();
+    super.dispose();
+  }
+
+  List<_RejectReasonPreset> _presets(AppLocalizations l10n) => [
+    _RejectReasonPreset(l10n.rejectReasonTooFar, 'Pickup too far'),
+    _RejectReasonPreset(l10n.rejectReasonBusy, 'Busy with another ride'),
+    _RejectReasonPreset(l10n.rejectReasonBreak, 'On break / end of shift'),
+    _RejectReasonPreset(l10n.rejectReasonVehicleIssue, 'Vehicle issue'),
+    _RejectReasonPreset(l10n.rejectReasonOther, null),
+  ];
+
+  String? _resolveReason(List<_RejectReasonPreset> presets) {
+    final index = _selectedIndex;
+    if (index == null) return null;
+    final preset = presets[index];
+    if (preset.backendReason != null) return preset.backendReason;
+    final custom = _customController.text.trim();
+    return custom.isEmpty ? null : custom;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final presets = _presets(l10n);
+    final reason = _resolveReason(presets);
+
+    return AlertDialog(
+      title: Text(l10n.rejectRide),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Reject ride from ${widget.ride.from.address} '
+            'to ${widget.ride.to.address}?',
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.rejectReasonPrompt,
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (var i = 0; i < presets.length; i++)
+                ChoiceChip(
+                  label: Text(presets[i].label),
+                  selected: _selectedIndex == i,
+                  selectedColor: colorScheme.primaryContainer,
+                  onSelected: (_) {
+                    setState(() {
+                      _selectedIndex = i;
+                      _isOther = presets[i].backendReason == null;
+                    });
+                  },
+                ),
+            ],
+          ),
+          if (_isOther) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _customController,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: l10n.rejectReasonPrompt,
+              ),
+              maxLines: 2,
+              autofocus: true,
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+          onPressed: reason == null
+              ? null
+              : () => Navigator.pop(context, reason),
+          child: Text(l10n.rejectButton),
+        ),
       ],
     );
   }
