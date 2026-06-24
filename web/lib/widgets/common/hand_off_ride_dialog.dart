@@ -29,6 +29,11 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
   List<ExternalDriver>? _drivers;
   String? _loadError;
 
+  /// Error from the most recent inline "Add new company/driver" attempt. Shown
+  /// under the form so a failed create is not silently swallowed (which left
+  /// the dispatcher staring at an unresponsive dialog).
+  String? _createError;
+
   PartnerCompany? _selectedCompany;
   ExternalDriver? _selectedDriver;
 
@@ -76,7 +81,10 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
   Future<void> _createCompany() async {
     final name = _companyNameCtrl.text.trim();
     if (name.isEmpty) return;
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _createError = null;
+    });
     try {
       final created = await widget.rideService.createPartnerCompany(
         name: name,
@@ -95,14 +103,22 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _submitting = false);
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _createError = 'Failed to add company: $e';
+        });
+      }
     }
   }
 
   Future<void> _createDriver() async {
     final name = _driverNameCtrl.text.trim();
     if (name.isEmpty) return;
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _createError = null;
+    });
     try {
       final created = await widget.rideService.createExternalDriver(
         name: name,
@@ -122,7 +138,12 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _submitting = false);
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _createError = 'Failed to add driver: $e';
+        });
+      }
     }
   }
 
@@ -192,6 +213,16 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_createError != null) ...[
+            Padding(
+              key: const Key('handOffCreateError'),
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                _createError!,
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
+              ),
+            ),
+          ],
           // ── Partner Company ──
           _sectionLabel('Partner Company'),
           if (!_addingCompany) ...[

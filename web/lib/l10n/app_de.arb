@@ -667,6 +667,8 @@
   "handOffDriverName": "Fahrername *",
   "handOffPhoneOptional": "Telefon (optional)",
   "handOffButton": "Übergeben",
+  "rideHandedOffInfo": "Fahrt an den externen Partner übergeben.",
+  "handOffFailed": "Übergabe fehlgeschlagen: {message}",
   "closeRide": "Schließen",
   "closeRideTitle": "Fahrt schließen?",
   "closeRideConfirmMessage": "Dadurch wird die nicht zugewiesene Fahrt storniert. Der Kunde wird benachrichtigt.",

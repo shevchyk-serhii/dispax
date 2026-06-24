@@ -1,4 +1,5 @@
 import 'package:dispax/constants/app_colors.dart';
+import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/ride_management/models/external_driver.dart';
 import 'package:dispax/modules/ride_management/models/partner_company.dart';
 import 'package:dispax/widgets/common/hand_off_ride_dialog.dart';
@@ -60,6 +61,35 @@ void main() {
 
       final decoration = inlineForm(tester).decoration as BoxDecoration;
       expect(decoration.color, AppColors.rideHandedOffBgDark);
+    });
+  });
+
+  group('HandOffRideDialog surfaces inline create failures', () {
+    testWidgets('a failed "Add new company" shows a visible error', (
+      tester,
+    ) async {
+      // The create call is rejected by the backend; previously this was
+      // swallowed, leaving the dispatcher with an unresponsive dialog.
+      when(
+        () => rideService.createPartnerCompany(
+          name: any(named: 'name'),
+          phone: any(named: 'phone'),
+        ),
+      ).thenThrow(ApiException('Company name taken', statusCode: 400));
+
+      await pumpAndOpenInlineForm(tester, brightness: Brightness.light);
+
+      // Type a name and submit the inline form.
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Company name *'),
+        'Acme Cabs',
+      );
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      // The error is surfaced, not silently swallowed.
+      expect(find.byKey(const Key('handOffCreateError')), findsOneWidget);
+      expect(find.textContaining('Failed to add company'), findsOneWidget);
     });
   });
 }

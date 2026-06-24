@@ -1533,6 +1533,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get handOffButton => 'Übergeben';
 
   @override
+  String get rideHandedOffInfo => 'Fahrt an den externen Partner übergeben.';
+
+  @override
+  String handOffFailed(String message) {
+    return 'Übergabe fehlgeschlagen: $message';
+  }
+
+  @override
   String get closeRide => 'Schließen';
 
   @override

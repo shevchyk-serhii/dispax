@@ -47,6 +47,12 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   int _tabIndex = 0; // 0 = Pending, 1 = Assigned
   Timer? _searchDebounce;
 
+  /// Tracks whether the bloc was mid hand-off when the *current* state arrived,
+  /// so the listener can tell a hand-off result (`handingOff -> loaded/error`)
+  /// from any other transition into the generic `loaded`/`error` statuses. Set
+  /// from `listenWhen`, which BlocListener calls for every state change.
+  bool _previousWasHandingOff = false;
+
   @override
   void initState() {
     super.initState();
@@ -72,12 +78,16 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     if (_tabIndex == 0) {
       filtered = rides.where((r) => r.status == RideStatus.requested).toList();
     } else {
-      // Assigned tab shows both assigned (unconfirmed) and confirmed rides.
+      // Assigned tab shows assigned (unconfirmed), confirmed, and handed-off
+      // rides. A handed-off ride left the dispatcher's hands to an external
+      // partner; it stays visible here (read-only, with the HandedOff badge)
+      // instead of silently vanishing from the dashboard.
       filtered = rides
           .where(
             (r) =>
                 r.status == RideStatus.assigned ||
-                r.status == RideStatus.confirmed,
+                r.status == RideStatus.confirmed ||
+                r.status == RideStatus.handedOff,
           )
           .toList();
     }
@@ -127,14 +137,28 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<RideBloc, RideState>(
-      listenWhen: (prev, curr) =>
-          (curr.status == RideStateStatus.reassignConflict &&
-              prev.status != RideStateStatus.reassignConflict) ||
-          (curr.status == RideStateStatus.assignConflict &&
-              prev.status != RideStateStatus.assignConflict) ||
-          (curr.status == RideStateStatus.alreadyAssigned &&
-              prev.status != RideStateStatus.alreadyAssigned),
+      listenWhen: (prev, curr) {
+        // A hand-off result is the transition out of `handingOff` into the
+        // generic `loaded` (success) or `error` (failure) status. Only the
+        // hand-off flow ever enters `handingOff`, so this captures it without
+        // hijacking unrelated `loaded`/`error` states. Record the flag here
+        // (BlocListener calls listenWhen for every state) so the listener can
+        // branch on it.
+        final handOffResult =
+            prev.status == RideStateStatus.handingOff &&
+            (curr.status == RideStateStatus.loaded ||
+                curr.status == RideStateStatus.error);
+        _previousWasHandingOff = prev.status == RideStateStatus.handingOff;
+        return (curr.status == RideStateStatus.reassignConflict &&
+                prev.status != RideStateStatus.reassignConflict) ||
+            (curr.status == RideStateStatus.assignConflict &&
+                prev.status != RideStateStatus.assignConflict) ||
+            (curr.status == RideStateStatus.alreadyAssigned &&
+                prev.status != RideStateStatus.alreadyAssigned) ||
+            handOffResult;
+      },
       listener: (context, state) {
+        final l10n = AppLocalizations.of(context)!;
         if (state.hasReassignConflict) {
           _showReassignConflictDialog(
             context,
@@ -153,16 +177,52 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           // Stale dispatcher view: the ride was already taken by someone else.
           // The bloc has reloaded the pending list (the ride now sits in the
           // Assigned tab), so just inform the dispatcher — no error, no Retry.
-          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
               SnackBar(content: Text(l10n.rideAlreadyAssignedInfo)),
             );
+        } else if (_previousWasHandingOff) {
+          // Result of a hand-off. The dialog has already closed; without this
+          // feedback the dispatcher sees nothing — the handed-off ride simply
+          // leaves the Pending tab — and assumes it failed.
+          if (state.hasError) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(l10n.handOffFailed(state.errorMessage ?? '')),
+                ),
+              );
+            // If the ride is no longer Requested (another dispatcher/auto-assign
+            // took it first — same family as `alreadyAssigned`), reload the
+            // pending list so the stale row disappears.
+            if (_isAlreadyTakenMessage(state.errorMessage)) {
+              context.read<RideBloc>().add(const RideLoadPendingRequested());
+            }
+          } else {
+            // Success: the ride is now HandedOff and stays visible in the
+            // Assigned tab (see _applyFiltersAndSort).
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(SnackBar(content: Text(l10n.rideHandedOffInfo)));
+          }
         }
       },
       child: _buildBody(),
     );
+  }
+
+  /// Whether a hand-off error message indicates the ride is no longer in the
+  /// `Requested` state — i.e. another dispatcher or auto-assignment took it
+  /// first (the backend rejects the transition with 409 "Cannot transition
+  /// from ... to HandedOff"). In that case the stale pending row should be
+  /// reloaded away, mirroring the `alreadyAssigned` flow.
+  bool _isAlreadyTakenMessage(String? message) {
+    if (message == null) return false;
+    final lower = message.toLowerCase();
+    return lower.contains('cannot transition') ||
+        lower.contains('already assigned');
   }
 
   /// Closes the dialog rooted at [dialogCtx], then dispatches [event] to the
@@ -342,16 +402,22 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                       (a) => a.rideId == ride.id,
                     );
                     if (_tabIndex == 1) {
+                      // A handed-off ride is read-only here: it has left to an
+                      // external partner, so there is no driver to reassign.
+                      // Render it with the HandedOff badge and no action button.
+                      final isHandedOff = ride.status == RideStatus.handedOff;
                       return _RideRow(
                         key: ValueKey(ride.id),
                         ride: ride,
                         isAtRisk: isAtRisk,
-                        onAction: () => _showDriverSelectionSheet(
-                          context,
-                          ride,
-                          isReassign: true,
-                        ),
-                        isReassign: true,
+                        onAction: isHandedOff
+                            ? null
+                            : () => _showDriverSelectionSheet(
+                                context,
+                                ride,
+                                isReassign: true,
+                              ),
+                        isReassign: !isHandedOff,
                       );
                     }
                     return Draggable<Ride>(
@@ -413,7 +479,8 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             .where(
               (r) =>
                   r.status == RideStatus.assigned ||
-                  r.status == RideStatus.confirmed,
+                  r.status == RideStatus.confirmed ||
+                  r.status == RideStatus.handedOff,
             )
             .length;
         final l10n = AppLocalizations.of(context)!;

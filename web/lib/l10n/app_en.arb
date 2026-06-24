@@ -738,6 +738,19 @@
   "handOffDriverName": "Driver name *",
   "handOffPhoneOptional": "Phone (optional)",
   "handOffButton": "Hand Off",
+  "rideHandedOffInfo": "Ride handed off to the external partner.",
+  "@rideHandedOffInfo": {
+    "description": "Confirmation snackbar shown to the dispatcher after a ride is successfully handed off to an external partner company/driver."
+  },
+  "handOffFailed": "Hand-off failed: {message}",
+  "@handOffFailed": {
+    "description": "Error snackbar shown when a hand-off request is rejected by the backend (e.g. the ride was already taken, or the partner/driver is invalid).",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "closeRide": "Close",
   "closeRideTitle": "Close ride?",
   "closeRideConfirmMessage": "This will cancel the unassigned ride. The client will be notified.",

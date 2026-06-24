@@ -667,6 +667,8 @@
   "handOffDriverName": "Ім'я водія *",
   "handOffPhoneOptional": "Телефон (необов'язково)",
   "handOffButton": "Передати",
+  "rideHandedOffInfo": "Поїздку передано зовнішньому партнеру.",
+  "handOffFailed": "Не вдалося передати: {message}",
   "closeRide": "Закрити",
   "closeRideTitle": "Закрити поїздку?",
   "closeRideConfirmMessage": "Це скасує непризначену поїздку. Клієнт отримає сповіщення.",

@@ -1527,6 +1527,14 @@ class AppLocalizationsUk extends AppLocalizations {
   String get handOffButton => 'Передати';
 
   @override
+  String get rideHandedOffInfo => 'Поїздку передано зовнішньому партнеру.';
+
+  @override
+  String handOffFailed(String message) {
+    return 'Не вдалося передати: $message';
+  }
+
+  @override
   String get closeRide => 'Закрити';
 
   @override
