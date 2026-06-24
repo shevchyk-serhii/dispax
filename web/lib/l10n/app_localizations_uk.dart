@@ -1795,6 +1795,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get myAddresses => 'МОЇ АДРЕСИ';
 
   @override
+  String get manageAddresses => 'Збережені адреси';
+
+  @override
   String get addCustomAddress => 'Додати нове місце';
 
   @override

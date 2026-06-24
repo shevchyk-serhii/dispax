@@ -1801,6 +1801,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get myAddresses => 'MEINE ADRESSEN';
 
   @override
+  String get manageAddresses => 'Gespeicherte Adressen';
+
+  @override
   String get addCustomAddress => 'Neuen Ort hinzufügen';
 
   @override

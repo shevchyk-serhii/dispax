@@ -151,4 +151,83 @@ Future<void> _removePlace(
   bloc.add(SavedPlacesDeleteRequested(clientId: clientId, addressId: place.id));
 }
 
+/// Prompts for a free-form, non-empty label and then the address, and saves a
+/// new custom saved place for [clientId]. Requires a [SavedPlacesBloc] above
+/// [context]. No-op if the user cancels either step.
+Future<void> showAddSavedPlaceFlow(
+  BuildContext context, {
+  required String clientId,
+}) async {
+  final bloc = context.read<SavedPlacesBloc>();
+  final label = await promptPlaceLabel(context);
+  if (label == null || label.isEmpty || !context.mounted) return;
+
+  final existing = bloc.state.places
+      .map((p) => p.address)
+      .where((a) => a.isNotEmpty)
+      .toList();
+
+  final address = await showAddressPickerSheet(
+    context,
+    isFrom: false,
+    current: '',
+    savedPlaces: existing,
+  );
+  if (address == null || address.isEmpty) return;
+
+  final coords = await MapboxService.geocodeAddress(address);
+
+  bloc.add(
+    SavedPlacesSaveRequested(
+      clientId: clientId,
+      label: label,
+      address: address,
+      latitude: coords != null && coords.length == 2 ? coords[0] : null,
+      longitude: coords != null && coords.length == 2 ? coords[1] : null,
+    ),
+  );
+}
+
+/// Dialog asking for a non-empty custom label. Returns the trimmed label or
+/// null if cancelled.
+Future<String?> promptPlaceLabel(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+  final controller = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+
+  return showAdaptiveDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(l10n.addCustomAddress),
+      content: Form(
+        key: formKey,
+        child: TextFormField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: l10n.addressLabel,
+            hintText: l10n.addressLabelHint,
+          ),
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? l10n.labelRequired : null,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: Text(l10n.cancel),
+        ),
+        TextButton(
+          onPressed: () {
+            if (formKey.currentState?.validate() ?? false) {
+              Navigator.of(ctx).pop(controller.text.trim());
+            }
+          },
+          child: Text(l10n.save),
+        ),
+      ],
+    ),
+  );
+}
+
 enum _PlaceAction { use, edit, remove }

@@ -860,6 +860,7 @@
   "removeAddress": "Remove",
   "removeAddressConfirm": "Remove this saved place?",
   "myAddresses": "MY ADDRESSES",
+  "manageAddresses": "Saved addresses",
   "addCustomAddress": "Add new place",
   "addressLabel": "Label",
   "addressLabelHint": "e.g. Gym, Parents",

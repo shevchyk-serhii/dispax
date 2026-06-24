@@ -3454,6 +3454,12 @@ abstract class AppLocalizations {
   /// **'MY ADDRESSES'**
   String get myAddresses;
 
+  /// No description provided for @manageAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved addresses'**
+  String get manageAddresses;
+
   /// No description provided for @addCustomAddress.
   ///
   /// In en, this message translates to:
