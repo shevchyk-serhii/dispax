@@ -173,13 +173,12 @@ Full requirements: `docs/requirements.md`
 ## Coding Conventions
 
 - **English everywhere** — the whole project is in English: all code comments, commit messages, documentation, and identifiers. Never write comments, docs, or commit messages in any other language.
-- Scala 3: prefer `given`/`using`, opaque types for IDs, extension methods
-- ZIO effect system everywhere — no Future, no `throw`
-- DTOs are separated from domain objects; mapping happens in the route handler or application layer
-- JSON: ZIO-JSON (`@jsonField`, `JsonDecoder`/`JsonEncoder`) is primary; Circe only where already used
-- IDs: UUID v7 (time-ordered) via UUID Creator
-- Logging: ZIO Logging (`ZIO.logInfo`, `ZIO.logError`)
-- For routes: group public and authenticated endpoints into separate methods within a single route class
+
+**Scala code rules live in `docs/scala-style.md` — read and follow them strictly.** That file is the
+single source of truth for backend conventions (Scala 3 idioms, IDs, refined types, error handling,
+ZIO layers, repositories, tenant isolation, DTOs, validation, Tapir routes, JSON/logging, tests).
+@docs/scala-style.md
+
 - Flutter: BLoC pattern for all state, a `Repository` abstraction for API calls
 
 ---
