@@ -3,17 +3,24 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../core/services/mapbox_service.dart';
+import '../models/client_address.dart';
 
 /// Opens the Mapbox-backed address picker bottom sheet and returns the
 /// selected address string (or null if dismissed).
 ///
 /// Reused both by the booking flow (pick-up / drop-off) and by the client
 /// home screen saved-places cards.
+///
+/// [savedAddresses] (optional) renders a labelled quick-pick section (Home /
+/// Office / Airport / custom) at the top for one-tap selection. The flat
+/// [savedPlaces] list is kept for backwards compatibility with call sites that
+/// only have plain address strings.
 Future<String?> showAddressPickerSheet(
   BuildContext context, {
   required bool isFrom,
   required String current,
   required List<String> savedPlaces,
+  List<ClientAddress> savedAddresses = const [],
 }) {
   return showModalBottomSheet<String>(
     context: context,
@@ -25,6 +32,7 @@ Future<String?> showAddressPickerSheet(
       isFrom: isFrom,
       current: current,
       savedPlaces: savedPlaces,
+      savedAddresses: savedAddresses,
     ),
   );
 }
@@ -35,12 +43,14 @@ class AddressPickerSheet extends StatefulWidget {
   final bool isFrom;
   final String current;
   final List<String> savedPlaces;
+  final List<ClientAddress> savedAddresses;
 
   const AddressPickerSheet({
     super.key,
     required this.isFrom,
     required this.current,
     required this.savedPlaces,
+    this.savedAddresses = const [],
   });
 
   @override
@@ -174,7 +184,24 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
                       ),
                     ),
                   ],
-                  if (widget.savedPlaces.isNotEmpty) ...[
+                  if (widget.savedAddresses.isNotEmpty) ...[
+                    _sectionLabel('Saved places'),
+                    ...widget.savedAddresses.map(
+                      (a) => ListTile(
+                        leading: Icon(
+                          _iconForLabel(a.label),
+                          color: AppColors.accent,
+                        ),
+                        title: Text(a.label),
+                        subtitle: Text(
+                          a.address,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => Navigator.of(context).pop(a.address),
+                      ),
+                    ),
+                  ] else if (widget.savedPlaces.isNotEmpty) ...[
                     _sectionLabel('Saved places'),
                     ...widget.savedPlaces.map(
                       (p) => ListTile(
@@ -222,6 +249,19 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
         ),
       ),
     );
+  }
+
+  IconData _iconForLabel(String label) {
+    switch (label.toLowerCase()) {
+      case 'home':
+        return Icons.home_outlined;
+      case 'office':
+        return Icons.business_outlined;
+      case 'airport':
+        return Icons.flight_outlined;
+      default:
+        return Icons.bookmark_outline;
+    }
   }
 
   Widget _sectionLabel(String text) => Padding(

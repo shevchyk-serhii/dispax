@@ -325,4 +325,74 @@ void main() {
       },
     );
   });
+
+  // One-tap saved places: the booking picker shows a labelled quick-pick
+  // section (Home/Office/...). Tapping "Home" selects that place's *address*
+  // for the field (the label is just the display title).
+  group('Saved places one-tap in the booking picker', () {
+    late _MockAuthBloc authBloc;
+    late _MockRideBloc rideBloc;
+    late _MockApiClient apiClient;
+    late _MockSavedPlacesBloc savedPlacesBloc;
+    late CreateRideFormBloc formBloc;
+
+    const homeAddress = 'Maximilianstraße 10, 80539 München';
+
+    setUp(() {
+      authBloc = _MockAuthBloc();
+      rideBloc = _MockRideBloc();
+      apiClient = _MockApiClient();
+      savedPlacesBloc = _MockSavedPlacesBloc();
+      formBloc = CreateRideFormBloc();
+
+      when(() => authBloc.apiClient).thenReturn(apiClient);
+      when(() => authBloc.state).thenReturn(AuthState.authenticated(_client()));
+      when(
+        () => apiClient.post(any(), any()),
+      ).thenAnswer((_) async => http.Response('{}', 200));
+      when(() => rideBloc.state).thenReturn(RideState.loaded(const []));
+      when(() => rideBloc.add(any())).thenAnswer((_) {});
+      when(() => savedPlacesBloc.state).thenReturn(
+        SavedPlacesState.loaded([
+          _savedPlace('Home', homeAddress),
+          _savedPlace('Office', 'Petuelring 130, 80788 München'),
+        ]),
+      );
+    });
+
+    tearDown(() => formBloc.close());
+
+    testWidgets('tapping "Home" sets the FROM field to the home address', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          locale: const Locale('en'),
+          home: Scaffold(
+            body: MultiBlocProvider(
+              providers: [
+                BlocProvider<AuthBloc>.value(value: authBloc),
+                BlocProvider<SavedPlacesBloc>.value(value: savedPlacesBloc),
+              ],
+              child: ClientBookScreen(formBloc: formBloc, rideBloc: rideBloc),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the picker via the FROM field.
+      await tester.tap(find.text('Pickup location'));
+      await tester.pumpAndSettle();
+
+      // The labelled tile shows the label as title — tap it.
+      expect(find.text('Home'), findsOneWidget);
+      await tester.tap(find.text('Home'));
+      await tester.pump();
+
+      // The address (not the label) landed in the FROM field.
+      expect(formBloc.state.fromAddress, homeAddress);
+    });
+  });
 }
