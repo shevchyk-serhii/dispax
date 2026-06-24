@@ -610,9 +610,16 @@ dev-roles: free-port
 
 # Start local backend + the app on THREE iPhone 17 Pro Max simulators, each
 # auto-logged-in as a DIFFERENT dispatcher of the SAME company (Dispax München):
-# Iryna Shevchyk, Yilmaz Oguz, Serhii Shevchyk. Mirrors `dev-roles` but every
-# simulator runs the dispatcher role under its own account — handy for testing
-# concurrent assignment and dispatcher-vs-dispatcher conflicts side by side.
+# Iryna Shevchyk, Yilmaz Oguz, Serhii Shevchyk. Handy for testing concurrent
+# assignment and dispatcher-vs-dispatcher conflicts side by side.
+#
+# Unlike `dev-roles` (one build per role, because the role is baked in via
+# --dart-define), this builds the app ONCE without a role and passes the role at
+# LAUNCH time via SIMCTL_CHILD_DEV_AUTOLOGIN — main.dart falls back to that env
+# var when the compile-time DEV_AUTOLOGIN define is empty. So the three
+# simulators are booted, installed and launched IN PARALLEL after a single build,
+# making the "spin-up" ~3x faster (one build instead of three).
+#
 # The accounts are seeded in V10__seed_bootstrap_accounts.sql; the DEV_AUTOLOGIN
 # keys dispatcher1/2/3 map to their emails in main.dart. Stop with `make stop-dev`.
 dev-dispatchers: free-port
@@ -621,7 +628,8 @@ dev-dispatchers: free-port
 	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
 	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
 	@sleep $(FLUTTER_STARTUP_DELAY)
-	@ensure_sim() { \
+	@APP="$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app"; \
+	ensure_sim() { \
 		local name="$$1"; local udid; \
 		udid=$$(xcrun simctl list devices --json 2>/dev/null | python3 -c "import sys,json; n=sys.argv[1]; t='$(SIM_DEVICE_TYPE)'; d=json.load(sys.stdin); print(next((x['udid'] for rt in d['devices'].values() for x in rt if x['name']==n and x.get('deviceTypeIdentifier')==t), ''))" "$$name"); \
 		if [ -z "$$udid" ]; then \
@@ -630,22 +638,26 @@ dev-dispatchers: free-port
 		fi; \
 		echo "$$udid"; \
 	}; \
-	APP="$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app"; \
-	for pair in "$(SIM_NAME_DISPATCHER_IRYNA):dispatcher1" "$(SIM_NAME_DISPATCHER_YILMAZ):dispatcher2" "$(SIM_NAME_DISPATCHER_SERHII):dispatcher3"; do \
-		name="$${pair%:*}"; autorole="$${pair##*:}"; \
+	launch_role() { \
+		local name="$$1"; local autorole="$$2"; local app="$$3"; local udid; \
 		udid=$$(ensure_sim "$$name"); \
-		echo "🔨 Building for $$name (autologin=$$autorole)..."; \
-		( cd $(FLUTTER_DIR) && $(FLUTTER) build ios --debug --simulator \
-			--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
-			--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) \
-			--dart-define=DEV_AUTOLOGIN=$$autorole ); \
-		echo "🚀 $$name → $$udid"; \
+		echo "🚀 $$name (autologin=$$autorole) → $$udid"; \
 		xcrun simctl boot "$$udid" 2>/dev/null || true; \
 		xcrun simctl bootstatus "$$udid" -b 2>/dev/null || true; \
 		open -a Simulator --args -CurrentDeviceUDID "$$udid"; \
-		xcrun simctl install "$$udid" "$$APP"; \
-		xcrun simctl launch --terminate-running-process "$$udid" de.dispax.app; \
-	done; \
+		xcrun simctl install "$$udid" "$$app"; \
+		SIMCTL_CHILD_DEV_AUTOLOGIN="$$autorole" \
+			xcrun simctl launch --terminate-running-process "$$udid" de.dispax.app; \
+	}; \
+	echo "🔨 Building the app once (role passed at launch, not baked in)..."; \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) build ios --debug --simulator \
+		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
+		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ); \
+	echo "📲 Booting + launching 3 simulators in parallel..."; \
+	launch_role "$(SIM_NAME_DISPATCHER_IRYNA)"  dispatcher1 "$$APP" & \
+	launch_role "$(SIM_NAME_DISPATCHER_YILMAZ)" dispatcher2 "$$APP" & \
+	launch_role "$(SIM_NAME_DISPATCHER_SERHII)" dispatcher3 "$$APP" & \
+	wait; \
 	open -a Simulator
 	@echo "✅ App running on 3 named simulators, each auto-logged-in as a different dispatcher (Iryna / Yilmaz / Serhii)."
 	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."

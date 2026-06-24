@@ -149,17 +149,33 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// Dev-only autologin: when the app is launched with
-/// `--dart-define=DEV_AUTOLOGIN=<role>` (client | driver | dispatcher |
-/// secretary | superadmin), it logs the matching test account in automatically
-/// so each simulator opens straight into that role. Used by `make dev-roles`.
+/// Dev-only autologin role (client | driver | dispatcher | dispatcher1/2/3 |
+/// secretary | superadmin). The app logs the matching test account in
+/// automatically so each simulator opens straight into that role.
+///
+/// Resolved from two sources, compile-time first:
+///  1. `--dart-define=DEV_AUTOLOGIN=<role>` — baked into the binary. Used by
+///     `make dev-roles` (one build per role).
+///  2. the `DEV_AUTOLOGIN` runtime environment variable — read only when the
+///     compile-time define is empty (and never on web, where `Platform` throws).
+///     This lets `make dev-dispatchers` build the app ONCE and launch the same
+///     binary on three simulators, each passed a different role via
+///     `SIMCTL_CHILD_DEV_AUTOLOGIN` — no per-role rebuild.
 ///
 /// The `dispatcher1/2/3` keys map to three DISTINCT dispatcher accounts in the
-/// same company (Dispax München) so `make dev-dispatchers` can open three
-/// simulators each logged in as a different dispatcher (Iryna / Yilmaz / Serhii)
-/// — useful for testing concurrent assignment and conflicts between dispatchers.
+/// same company (Dispax München) so three simulators can each log in as a
+/// different dispatcher (Iryna / Yilmaz / Serhii) — useful for testing
+/// concurrent assignment and conflicts between dispatchers.
 /// Empty in normal/release builds — a no-op.
-const String _devAutologinRole = String.fromEnvironment('DEV_AUTOLOGIN');
+const String _devAutologinDefine = String.fromEnvironment('DEV_AUTOLOGIN');
+
+String _resolveDevAutologinRole() {
+  if (_devAutologinDefine.isNotEmpty) return _devAutologinDefine;
+  if (kIsWeb) return '';
+  return Platform.environment['DEV_AUTOLOGIN'] ?? '';
+}
+
+final String _devAutologinRole = _resolveDevAutologinRole();
 
 const Map<String, String> _devAutologinEmails = {
   'client': 'client1@bmw.de',
