@@ -416,6 +416,16 @@ class Ride {
   bool get driverEnRoute => driverLocation != null;
   bool get isConfirmed => status == RideStatus.confirmed;
 
+  /// True when the ride is in a state worth showing on the live map: a driver
+  /// has been assigned (or confirmed / handed off to a partner) and the ride is
+  /// either upcoming or in progress. `requested` has no driver yet, and
+  /// `completed`/`cancelled` rides are done — none of those are trackable.
+  bool get isTrackable =>
+      status == RideStatus.assigned ||
+      status == RideStatus.confirmed ||
+      status == RideStatus.inProgress ||
+      status == RideStatus.handedOff;
+
   String get statusDisplayName {
     return status.displayName;
   }

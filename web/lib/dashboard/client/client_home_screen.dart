@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../modules/core/services/mapbox_service.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../modules/ride_management/widgets/address_picker_sheet.dart';
+import '../../screens/client_map_screen.dart';
 
 /// Client Home tab — graphite header, live ride card, saved places, book button.
 class ClientHomeScreen extends StatelessWidget {
@@ -189,15 +190,7 @@ class _LiveRideCard extends StatelessWidget {
   }
 
   Ride? _findActiveRide(List<Ride> rides) {
-    try {
-      return rides.firstWhere(
-        (r) =>
-            r.status == RideStatus.assigned ||
-            r.status == RideStatus.inProgress,
-      );
-    } catch (_) {
-      return null;
-    }
+    return rides.where((r) => r.isTrackable).firstOrNull;
   }
 
   Widget _buildCard(BuildContext context, Ride ride) {
@@ -207,128 +200,135 @@ class _LiveRideCard extends StatelessWidget {
     // Driver's reputation (their average rating), now exposed on the RideDto.
     final driverRating = ride.driverRating;
 
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowLg,
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Status pill + ETA
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: AppColors.accent,
-                        shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => ClientMapScreen(rideId: ride.id)),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowLg,
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status pill + ETA
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: AppColors.accent,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      ride.status == RideStatus.inProgress
-                          ? l10n.onTrip
-                          : (ride.driverEnRoute
-                                ? l10n.driverOnTheWay
-                                : l10n.driverAssigned),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.accentLight,
+                      const SizedBox(width: 6),
+                      Text(
+                        ride.status == RideStatus.inProgress
+                            ? l10n.onTrip
+                            : (ride.driverEnRoute
+                                  ? l10n.driverOnTheWay
+                                  : l10n.driverAssigned),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accentLight,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              if (eta != null)
-                Text(
-                  '$eta min',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.accent,
+                    ],
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 13),
-          // Driver row
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryLight,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  _initials(driverName),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                const Spacer(),
+                if (eta != null)
+                  Text(
+                    '$eta min',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 13),
+            // Driver row
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    _initials(driverName),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      driverRating != null
-                          ? '$driverName · ${driverRating.toStringAsFixed(1)}★'
-                          : driverName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        driverRating != null
+                            ? '$driverName · ${driverRating.toStringAsFixed(1)}★'
+                            : driverName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _vehicleLine(ride, l10n),
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.textLight,
+                      const SizedBox(height: 2),
+                      Text(
+                        _vehicleLine(ride, l10n),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.textLight,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.textLight,
-                size: 20,
-              ),
-            ],
-          ),
-        ],
+                const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textLight,
+                  size: 20,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

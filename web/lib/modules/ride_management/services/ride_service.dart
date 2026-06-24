@@ -246,11 +246,13 @@ class RideService {
     String newDriverId, {
     bool overrideScheduleConflict = false,
   }) async {
-    final response = await privateApiClient
-        .put('/rides/$rideId/reassign-driver', {
-          'driverId': newDriverId,
-          'overrideScheduleConflict': overrideScheduleConflict,
-        });
+    final response = await privateApiClient.put(
+      '/rides/$rideId/reassign-driver',
+      {
+        'driverId': newDriverId,
+        'overrideScheduleConflict': overrideScheduleConflict,
+      },
+    );
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> json = jsonDecode(response.body);

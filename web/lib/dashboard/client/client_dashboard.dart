@@ -146,7 +146,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
           ),
         );
       case 3:
-        return const ClientMapScreen();
+        return const MyRidesTab();
       case 4:
         return const SettingsScreen();
       default:
@@ -180,9 +180,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
 }
 
 class MyRidesTab extends StatelessWidget {
-  final VoidCallback onOpenMap;
-
-  const MyRidesTab({super.key, required this.onOpenMap});
+  const MyRidesTab({super.key});
 
   void loadRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
@@ -292,9 +290,7 @@ class MyRidesTab extends StatelessWidget {
 
               final rideIndex = index - 1;
               final ride = activeRides[rideIndex];
-              final isTracking =
-                  ride.status == RideStatus.inProgress ||
-                  ride.status == RideStatus.assigned;
+              final isTracking = ride.isTrackable;
               final canCancel =
                   ride.status == RideStatus.requested ||
                   ride.status == RideStatus.assigned;
@@ -337,7 +333,14 @@ class MyRidesTab extends StatelessWidget {
                             if (isTracking)
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: onOpenMap,
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            ClientMapScreen(rideId: ride.id),
+                                      ),
+                                    );
+                                  },
                                   icon: const Icon(Icons.location_on, size: 16),
                                   label: Text(l10n.trackDriver),
                                   style: OutlinedButton.styleFrom(

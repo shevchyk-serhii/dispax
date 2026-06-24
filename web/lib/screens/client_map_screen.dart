@@ -18,7 +18,11 @@ import '../constants/app_dimensions.dart';
 import '../utils/ride_status_styles.dart';
 
 class ClientMapScreen extends StatefulWidget {
-  const ClientMapScreen({super.key});
+  /// When set, the screen tracks exactly this ride (by id) instead of falling
+  /// back to the first trackable ride for the current user.
+  final String? rideId;
+
+  const ClientMapScreen({super.key, this.rideId});
 
   /// Client-facing wording for the ride status shown on the map pill.
   ///
@@ -46,6 +50,30 @@ class ClientMapScreen extends StatefulWidget {
       case RideStatus.handedOff:
         return 'Transferred to partner';
     }
+  }
+
+  /// Selects which ride to display on the map, given the current ride and auth
+  /// state and an optional [rideId] override.
+  ///
+  /// - When [rideId] is provided, returns the ride with that id only if it
+  ///   belongs to [userId] and is currently trackable; otherwise returns null.
+  /// - Without a [rideId] (or when [userId] is null), returns the first
+  ///   trackable ride owned by [userId], or null if none exists.
+  ///
+  /// Exposed as a static method so it can be unit-tested without instantiating
+  /// the full stateful widget (which requires Mapbox platform channels).
+  @visibleForTesting
+  static Ride? resolveRide(
+    List<Ride> rides, {
+    required String? userId,
+    required String? rideId,
+  }) {
+    if (userId == null) return null;
+    final mine = rides.where((r) => r.clientId == userId);
+    if (rideId != null) {
+      return mine.where((r) => r.id == rideId && r.isTrackable).firstOrNull;
+    }
+    return mine.where((r) => r.isTrackable).firstOrNull;
   }
 
   @override
@@ -104,27 +132,24 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     });
   }
 
+  /// Delegates to [ClientMapScreen.resolveRide] using the current widget's
+  /// [rideId] and the authenticated user from [authState].
+  Ride? _resolveRide(RideState rideState, AuthState authState) {
+    return ClientMapScreen.resolveRide(
+      rideState.rides,
+      userId: authState.user?.id,
+      rideId: widget.rideId,
+    );
+  }
+
   @override
   void didChangeDependencies() {
     _rideService ??= RideService(apiClient: context.read<AuthBloc>().apiClient);
     super.didChangeDependencies();
-    if (_activeRide == null) {
-      final authState = context.read<AuthBloc>().state;
-      final rideState = context.read<RideBloc>().state;
-      if (authState.user != null) {
-        final activeRide = rideState.rides
-            .where(
-              (ride) =>
-                  ride.clientId == authState.user!.id &&
-                  (ride.status == RideStatus.assigned ||
-                      ride.status == RideStatus.inProgress),
-            )
-            .firstOrNull;
-        if (activeRide != null) {
-          _activeRide = activeRide;
-        }
-      }
-    }
+    _activeRide ??= _resolveRide(
+      context.read<RideBloc>().state,
+      context.read<AuthBloc>().state,
+    );
   }
 
   @override
@@ -431,14 +456,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           listener: (context, state) {
             final authState = context.read<AuthBloc>().state;
             if (authState.isAuthenticated && authState.user != null) {
-              final activeRide = state.rides
-                  .where(
-                    (ride) =>
-                        ride.clientId == authState.user!.id &&
-                        (ride.status == RideStatus.assigned ||
-                            ride.status == RideStatus.inProgress),
-                  )
-                  .firstOrNull;
+              final activeRide = _resolveRide(state, authState);
 
               if (activeRide != _activeRide) {
                 setState(() {

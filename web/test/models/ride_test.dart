@@ -428,6 +428,93 @@ void main() {
     });
   });
 
+  // isTrackable — controls whether a ride should appear on the live map.
+  //
+  // Mutation check performed: temporarily changed `isTrackable` to always
+  // return `false`; the "true" assertions below turned red. Restored the
+  // correct implementation.
+  group('Ride.isTrackable', () {
+    test('assigned → true', () {
+      expect(
+        TestFixtures.ride(status: RideStatus.assigned).isTrackable,
+        isTrue,
+      );
+    });
+
+    test('confirmed → true', () {
+      expect(
+        TestFixtures.ride(status: RideStatus.confirmed).isTrackable,
+        isTrue,
+      );
+    });
+
+    test('inProgress → true', () {
+      expect(
+        TestFixtures.ride(status: RideStatus.inProgress).isTrackable,
+        isTrue,
+      );
+    });
+
+    test('handedOff → true', () {
+      expect(
+        TestFixtures.ride(status: RideStatus.handedOff).isTrackable,
+        isTrue,
+      );
+    });
+
+    test('requested → false (no driver yet)', () {
+      expect(
+        TestFixtures.ride(status: RideStatus.requested).isTrackable,
+        isFalse,
+      );
+    });
+
+    test('completed → false (ride is done)', () {
+      expect(
+        TestFixtures.ride(status: RideStatus.completed).isTrackable,
+        isFalse,
+      );
+    });
+
+    test('cancelled → false (ride is done)', () {
+      expect(
+        TestFixtures.ride(status: RideStatus.cancelled).isTrackable,
+        isFalse,
+      );
+    });
+
+    // Completeness guard: every RideStatus must be either trackable or not —
+    // if a new status is added without updating isTrackable this test will
+    // remind the author to make a conscious choice.
+    test(
+      'every RideStatus is covered by the trackable/non-trackable partition',
+      () {
+        const trackable = {
+          RideStatus.assigned,
+          RideStatus.confirmed,
+          RideStatus.inProgress,
+          RideStatus.handedOff,
+        };
+        const nonTrackable = {
+          RideStatus.requested,
+          RideStatus.completed,
+          RideStatus.cancelled,
+        };
+        for (final status in RideStatus.values) {
+          final covered =
+              trackable.contains(status) || nonTrackable.contains(status);
+          expect(
+            covered,
+            isTrue,
+            reason:
+                'RideStatus.$status is not listed in trackable or nonTrackable — '
+                'update the isTrackable getter and this test.',
+          );
+        }
+      },
+    );
+  });
+
   group('Ride equality', () {
     test('same fields are equal', () {
       final a = TestFixtures.ride();
