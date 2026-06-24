@@ -71,7 +71,7 @@ object ExternalDriverApi:
                 .attempt(UUID.fromString(s))
                 .mapError(_ => (sttp.model.StatusCode.BadRequest, ApiError("Invalid partnerCompanyId UUID")))
                 .map(id => Some(PartnerCompanyId(id)))
-            case None    => ZIO.succeed(None)
+            case None    => ZIO.none
         service          <- ZIO.service[RideService]
         created          <- service
                               .createExternalDriver(

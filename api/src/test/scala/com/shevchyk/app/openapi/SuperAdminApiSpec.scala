@@ -81,7 +81,7 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
   private val stubCompanyRepo: ZLayer[Any, Nothing, CompanyRepository] = ZLayer.succeed(
     new CompanyRepository:
       def findAll()                 = ZIO.succeed(Nil)
-      def findById(id: CompanyId)   = ZIO.succeed(None)
+      def findById(id: CompanyId)   = ZIO.none
       def create(c: Company)        = ZIO.succeed(c)
       def update(c: Company)        = ZIO.succeed(c)
       def countByStatus()           = ZIO.succeed(Map.empty)
@@ -90,7 +90,7 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
       def softDelete(id: CompanyId) =
         if id == CompanyId(testCompanyId)
         then ZIO.succeed(Some(knownCompany.copy(status = CompanyStatus.Inactive)))
-        else ZIO.succeed(None)
+        else ZIO.none
   )
 
   private val stubInvoiceRepo: ZLayer[Any, Nothing, InvoiceRepository] = ZLayer.succeed(
@@ -140,7 +140,7 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
       def findRideForReceipt(
           taxiCompanyId: CompanyId,
           rideId: UUID
-      ): Task[Option[com.shevchyk.billing.repository.UnbilledRide]] = ZIO.succeed(None)
+      ): Task[Option[com.shevchyk.billing.repository.UnbilledRide]] = ZIO.none
       def findAllPlatform(
           status: Option[InvoiceStatus],
           limit: Int,
@@ -156,7 +156,7 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
       import com.shevchyk.ride.domain.{Ride, RideStatus, DriverEarnings}
       import com.shevchyk.ride.repository.TimeBucket
       def create(ride: Ride): Task[Ride]                                                                           = ZIO.succeed(ride)
-      def findById(id: RideId): Task[Option[Ride]]                                                                 = ZIO.succeed(None)
+      def findById(id: RideId): Task[Option[Ride]]                                                                 = ZIO.none
       def findByStatus(status: RideStatus): Task[List[Ride]]                                                       = ZIO.succeed(Nil)
       def findByStatusAndCompany(status: RideStatus, companyId: CompanyId): Task[List[Ride]]                       = ZIO.succeed(Nil)
       def findAll(): Task[List[Ride]]                                                                              = ZIO.succeed(Nil)

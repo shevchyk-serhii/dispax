@@ -44,7 +44,7 @@ object EtaServiceSpec extends ZIOSpecDefault:
       def getLocation(driverId: PersonId): Task[Option[DriverLocation]]                       = ZIO.succeed(loc)
       def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO.unit
       def updateAvailability(driverId: PersonId, status: String): Task[Unit]                  = ZIO.unit
-      def getAvailability(driverId: PersonId): Task[Option[String]]                           = ZIO.succeed(None)
+      def getAvailability(driverId: PersonId): Task[Option[String]]                           = ZIO.none
       def getAvailableDrivers(
           companyId: CompanyId
       ): Task[List[com.shevchyk.driver.infrastructure.http.AvailableDriverDto]] = ZIO.succeed(Nil)

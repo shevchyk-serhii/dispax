@@ -53,17 +53,17 @@ class AirportCheckpointServiceImpl(
     //  - ride is in progress
     //  - no checkpoint has been reached yet (None = not even landed)
     if !ride.isArrivalAirportTransfer || ride.status != RideStatus.InProgress || ride.airportCheckpoint.isDefined
-    then ZIO.succeed(None)
+    then ZIO.none
     else
       // Resolve landing geofence from the configurable AirportConfigService.
       // Falls back gracefully to None when no config is found for the airport code.
       extractAirportCode(ride) match
-        case None       => ZIO.succeed(None)
+        case None       => ZIO.none
         case Some(code) =>
           airportConfigService
             .getLandingGeofence(code)
             .flatMap {
-              case None                                             => ZIO.succeed(None)
+              case None                                             => ZIO.none
               case Some((geofenceLat, geofenceLon, geofenceRadius)) =>
                 val distance = haversineDistance(lat, lon, geofenceLat, geofenceLon)
                 if distance <= geofenceRadius
@@ -71,7 +71,7 @@ class AirportCheckpointServiceImpl(
                   markCheckpoint(ride, AirportCheckpoint.Landed, ride.clientId)
                     .as(Some(AirportCheckpoint.Landed))
                     .catchAll(e => ZIO.logWarning(s"Auto-landed trigger failed: $e").as(None))
-                else ZIO.succeed(None)
+                else ZIO.none
             }
             .catchAll(e => ZIO.logWarning(s"Failed to load landing geofence for $code: $e").as(None))
 

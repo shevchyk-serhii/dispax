@@ -102,7 +102,7 @@ object RideServiceHandOffSpec extends ZIOSpecDefault {
     def updateLastLogin(id: PersonId): Task[Unit]                                                 = ZIO.unit
     def findByClientCompany(cid: ClientCompanyId): Task[List[Person]]                             = ZIO.succeed(Nil)
     def upsertDriverRow(personId: PersonId): Task[Unit]                                           = ZIO.unit
-    def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                              = ZIO.succeed(None)
+    def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                              = ZIO.none
     def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], ct: String): Task[Unit] = ZIO.unit
     def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                              = ZIO.unit
 
@@ -125,7 +125,7 @@ object RideServiceHandOffSpec extends ZIOSpecDefault {
 
   private val noopScheduleDayLookup: ZLayer[Any, Nothing, ScheduleDayLookup] = ZLayer.succeed(
     new ScheduleDayLookup:
-      def find(id: ScheduleDayId) = ZIO.succeed(None)
+      def find(id: ScheduleDayId) = ZIO.none
   )
 
   private val personRepoLayer: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed[PersonRepository](

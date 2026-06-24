@@ -226,9 +226,9 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
   private val stubPersonRepo: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
     new PersonRepository:
       def create(p: Person): Task[Person]                                                 = ZIO.succeed(p)
-      def findById(id: PersonId): Task[Option[Person]]                                    = ZIO.succeed(None)
-      def findByIdAndCompany(id: PersonId, cid: CompanyId): Task[Option[Person]]          = ZIO.succeed(None)
-      def findByEmail(email: String): Task[Option[Person]]                                = ZIO.succeed(None)
+      def findById(id: PersonId): Task[Option[Person]]                                    = ZIO.none
+      def findByIdAndCompany(id: PersonId, cid: CompanyId): Task[Option[Person]]          = ZIO.none
+      def findByEmail(email: String): Task[Option[Person]]                                = ZIO.none
       def findByRole(role: PersonRole): Task[List[Person]]                                = ZIO.succeed(Nil)
       def findByRoleAndCompany(role: PersonRole, cid: CompanyId): Task[List[Person]]      = ZIO.succeed(Nil)
       def findByCompanyId(cid: CompanyId): Task[List[Person]]                             = ZIO.succeed(Nil)
@@ -241,7 +241,7 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
       def updateLastLogin(id: PersonId): Task[Unit]                                       = ZIO.unit
       def findByClientCompany(ccid: ClientCompanyId): Task[List[Person]]                  = ZIO.succeed(Nil)
       def upsertDriverRow(id: PersonId): Task[Unit]                                       = ZIO.unit
-      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                    = ZIO.succeed(None)
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                    = ZIO.none
       def setAvatar(id: PersonId, cid: CompanyId, b: Array[Byte], ct: String): Task[Unit] = ZIO.unit
       def deleteAvatar(id: PersonId, cid: CompanyId): Task[Unit]                          = ZIO.unit
   )
@@ -258,7 +258,7 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
           id: com.shevchyk.ride.domain.ClientAddressId,
           clientId: PersonId,
           req: com.shevchyk.ride.domain.UpdateClientAddressRequest
-      ) = ZIO.succeed(None)
+      ) = ZIO.none
       def recordUsage(clientId: PersonId, address: String, label: String, lat: Option[Double], lng: Option[Double]) =
         ZIO.unit
       def deleteAddress(id: com.shevchyk.ride.domain.ClientAddressId, clientId: PersonId)                           = ZIO.succeed(false)
@@ -288,8 +288,8 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
       def getMessages(rideId: RideId): Task[List[ChatMessage]]                                = ZIO.succeed(Nil)
   )
 
-  private val stubRideRatingRepo: ZLayer[Any, Nothing, RideRatingRepository]     = RideRatingRepository.inMemory
-  private val stubTariffRepo: ZLayer[Any, Nothing, TariffRepository]             = ZLayer.succeed(new InMemoryTariffRepository())
+  private val stubRideRatingRepo: ZLayer[Any, Nothing, RideRatingRepository] = RideRatingRepository.inMemory
+  private val stubTariffRepo: ZLayer[Any, Nothing, TariffRepository]         = ZLayer.succeed(new InMemoryTariffRepository())
 
   private val stubRideEstimateService: ZLayer[Any, Nothing, RideEstimateService] =
     stubTariffRepo >>> RideEstimateService.live

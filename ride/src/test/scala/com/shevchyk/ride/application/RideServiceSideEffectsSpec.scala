@@ -74,7 +74,7 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
       override def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
       override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
       override def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
-      override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.succeed(None)
+      override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
       override def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] =
         ZIO.unit
       override def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
@@ -100,7 +100,7 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
       ): Task[List[UnavailabilitySlot]] = ZIO.succeed(Nil)
     }
 
-  private val noopScheduleDayLookup: ScheduleDayLookup = _ => ZIO.succeed(None)
+  private val noopScheduleDayLookup: ScheduleDayLookup = _ => ZIO.none
 
   // The same concrete instances back both the RideService dependency (AuditService /
   // EmailSmsService) and the test's read-back (InMemoryAuditService /
