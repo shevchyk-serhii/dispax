@@ -508,6 +508,7 @@ class _CompanyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       color: surfaceColor,
@@ -579,7 +580,7 @@ class _CompanyRow extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 17),
-                  tooltip: 'Edit',
+                  tooltip: l10n.editCompanyMenu,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () => showAdaptiveDialog<void>(
@@ -592,7 +593,7 @@ class _CompanyRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 PopupMenuButton<String>(
-                  tooltip: 'More actions',
+                  tooltip: l10n.moreActions,
                   icon: const Icon(Icons.more_vert, size: 17),
                   onSelected: (val) {
                     if (val == 'delete') {

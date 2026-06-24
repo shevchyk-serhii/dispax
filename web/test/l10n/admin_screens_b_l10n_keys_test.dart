@@ -66,7 +66,6 @@ void main() {
       expect(en.amountLabel('42.50'), isNotEmpty);
       expect(en.confirmPaymentButton, isNotEmpty);
       expect(en.paymentRecordedSuccess, isNotEmpty);
-      expect(en.failedToMarkPaid('err'), isNotEmpty);
       expect(en.failedToLoadUnpaidRides, isNotEmpty);
     });
 
@@ -226,7 +225,6 @@ void main() {
       expect(de.paymentMethodCard, isNotEmpty);
       expect(de.paymentMethodInvoice, isNotEmpty);
       expect(de.amountLabel('99.99'), isNotEmpty);
-      expect(de.failedToMarkPaid('err'), isNotEmpty);
     });
 
     test('ride_details_screen keys DE', () async {
@@ -289,7 +287,6 @@ void main() {
       expect(uk.paymentMethodCard, isNotEmpty);
       expect(uk.paymentMethodInvoice, isNotEmpty);
       expect(uk.amountLabel('99.99'), isNotEmpty);
-      expect(uk.failedToMarkPaid('err'), isNotEmpty);
     });
 
     test('ride_details_screen keys UK', () async {

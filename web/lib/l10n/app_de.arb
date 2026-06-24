@@ -300,6 +300,7 @@
   "noCompanies": "Keine Unternehmen",
   "noInvoices": "Keine Rechnungen",
   "editCompanyMenu": "Bearbeiten",
+  "moreActions": "Weitere Aktionen",
   "deleteCompanyMenu": "Löschen",
   "addCompanyTitle": "Unternehmen hinzufügen",
   "editCompanyTitle": "Unternehmen bearbeiten",
@@ -857,6 +858,9 @@
   "rideStatusCompletedLabel": "Erfolgreich abgeschlossen",
   "rideStatusCancelledLabel": "Fahrt storniert",
   "rideStatusHandedOffLabel": "An Partner übergeben",
+  "rideStatusConfirmedClientLabel": "Fahrer hat Ihre Fahrt bestätigt",
+  "rideStatusConfirmedDriverLabel": "Sie haben diese Fahrt bestätigt",
+  "rideStatusConfirmedDriverReadyLabel": "Sie haben diese Fahrt bestätigt — bereit zum Start",
 
   "authenticationRequiredError": "Authentifizierung erforderlich",
   "selectOrCreateClientError": "Bitte wählen oder erstellen Sie einen Kunden",
@@ -1399,12 +1403,6 @@
   },
   "confirmPaymentButton": "Zahlung bestätigen",
   "paymentRecordedSuccess": "Zahlung erfasst",
-  "failedToMarkPaid": "Fehler: {error}",
-  "@failedToMarkPaid": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
   "failedToLoadUnpaidRides": "Fehler beim Laden unbezahlter Fahrten",
 
   "myRideTitle": "Meine Fahrt #{id}",

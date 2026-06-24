@@ -762,6 +762,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editCompanyMenu => 'Edit';
 
   @override
+  String get moreActions => 'More actions';
+
+  @override
   String get deleteCompanyMenu => 'Delete';
 
   @override
@@ -1959,6 +1962,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rideStatusHandedOffLabel => 'Handed off to partner';
 
   @override
+  String get rideStatusConfirmedClientLabel => 'Driver confirmed your ride';
+
+  @override
+  String get rideStatusConfirmedDriverLabel => 'You confirmed this ride';
+
+  @override
+  String get rideStatusConfirmedDriverReadyLabel =>
+      'You confirmed this ride — ready to start';
+
+  @override
   String get authenticationRequiredError => 'Authentication required';
 
   @override
@@ -3037,11 +3050,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paymentRecordedSuccess => 'Payment recorded';
-
-  @override
-  String failedToMarkPaid(String error) {
-    return 'Failed: $error';
-  }
 
   @override
   String get failedToLoadUnpaidRides => 'Failed to load unpaid rides';

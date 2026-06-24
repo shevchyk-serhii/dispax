@@ -300,6 +300,7 @@
   "noCompanies": "Немає компаній",
   "noInvoices": "Немає рахунків",
   "editCompanyMenu": "Редагувати",
+  "moreActions": "Більше дій",
   "deleteCompanyMenu": "Видалити",
   "addCompanyTitle": "Додати компанію",
   "editCompanyTitle": "Редагувати компанію",
@@ -857,6 +858,9 @@
   "rideStatusCompletedLabel": "Успішно завершено",
   "rideStatusCancelledLabel": "Поїздку скасовано",
   "rideStatusHandedOffLabel": "Передано партнеру",
+  "rideStatusConfirmedClientLabel": "Водій підтвердив вашу поїздку",
+  "rideStatusConfirmedDriverLabel": "Ви підтвердили цю поїздку",
+  "rideStatusConfirmedDriverReadyLabel": "Ви підтвердили цю поїздку — готові розпочати",
 
   "authenticationRequiredError": "Необхідна автентифікація",
   "selectOrCreateClientError": "Будь ласка, виберіть або створіть клієнта",
@@ -1399,12 +1403,6 @@
   },
   "confirmPaymentButton": "Підтвердити оплату",
   "paymentRecordedSuccess": "Платіж зафіксовано",
-  "failedToMarkPaid": "Помилка: {error}",
-  "@failedToMarkPaid": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
   "failedToLoadUnpaidRides": "Помилка завантаження неоплачених поїздок",
 
   "myRideTitle": "Моя поїздка #{id}",

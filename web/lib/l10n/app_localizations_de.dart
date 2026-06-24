@@ -766,6 +766,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editCompanyMenu => 'Bearbeiten';
 
   @override
+  String get moreActions => 'Weitere Aktionen';
+
+  @override
   String get deleteCompanyMenu => 'Löschen';
 
   @override
@@ -1966,6 +1969,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get rideStatusHandedOffLabel => 'An Partner übergeben';
 
   @override
+  String get rideStatusConfirmedClientLabel =>
+      'Fahrer hat Ihre Fahrt bestätigt';
+
+  @override
+  String get rideStatusConfirmedDriverLabel =>
+      'Sie haben diese Fahrt bestätigt';
+
+  @override
+  String get rideStatusConfirmedDriverReadyLabel =>
+      'Sie haben diese Fahrt bestätigt — bereit zum Start';
+
+  @override
   String get authenticationRequiredError => 'Authentifizierung erforderlich';
 
   @override
@@ -3049,11 +3064,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get paymentRecordedSuccess => 'Zahlung erfasst';
-
-  @override
-  String failedToMarkPaid(String error) {
-    return 'Fehler: $error';
-  }
 
   @override
   String get failedToLoadUnpaidRides => 'Fehler beim Laden unbezahlter Fahrten';

@@ -761,6 +761,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get editCompanyMenu => 'Редагувати';
 
   @override
+  String get moreActions => 'Більше дій';
+
+  @override
   String get deleteCompanyMenu => 'Видалити';
 
   @override
@@ -1958,6 +1961,16 @@ class AppLocalizationsUk extends AppLocalizations {
   String get rideStatusHandedOffLabel => 'Передано партнеру';
 
   @override
+  String get rideStatusConfirmedClientLabel => 'Водій підтвердив вашу поїздку';
+
+  @override
+  String get rideStatusConfirmedDriverLabel => 'Ви підтвердили цю поїздку';
+
+  @override
+  String get rideStatusConfirmedDriverReadyLabel =>
+      'Ви підтвердили цю поїздку — готові розпочати';
+
+  @override
   String get authenticationRequiredError => 'Необхідна автентифікація';
 
   @override
@@ -3044,11 +3057,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get paymentRecordedSuccess => 'Платіж зафіксовано';
-
-  @override
-  String failedToMarkPaid(String error) {
-    return 'Помилка: $error';
-  }
 
   @override
   String get failedToLoadUnpaidRides =>
