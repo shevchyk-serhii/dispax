@@ -35,6 +35,45 @@ INSERT INTO drivers (id, status, company_id)
 VALUES ('11111111-1111-1111-1111-111111111111', 'Available', '10101010-1010-1010-1010-101010101010')
 ON CONFLICT (id) DO NOTHING;
 
+-- Extra dispatchers (same company, Dispax München) so several dispatchers can be
+-- driven side by side from one machine — see `make dev-dispatchers`. Each is also
+-- a driver (like Max Müller) so they can be assigned to rides. Same password123.
+-- Dispatcher: Iryna Shevchyk
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
+VALUES ('1d1d1d1d-1d1d-1d1d-1d1d-1d1d1d1d1d1d', 'Iryna Shevchyk', 'iryna@dispax.de', 'dispatcher',
+        '10101010-1010-1010-1010-101010101010',
+        '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
+        '+49 170 1010101', 'ACTIVE', ARRAY['dispatcher','driver']::person_role[])
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO drivers (id, status, company_id)
+VALUES ('1d1d1d1d-1d1d-1d1d-1d1d-1d1d1d1d1d1d', 'Available', '10101010-1010-1010-1010-101010101010')
+ON CONFLICT (id) DO NOTHING;
+
+-- Dispatcher: Yilmaz Oguz
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
+VALUES ('2d2d2d2d-2d2d-2d2d-2d2d-2d2d2d2d2d2d', 'Yilmaz Oguz', 'yilmaz@dispax.de', 'dispatcher',
+        '10101010-1010-1010-1010-101010101010',
+        '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
+        '+49 170 2020202', 'ACTIVE', ARRAY['dispatcher','driver']::person_role[])
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO drivers (id, status, company_id)
+VALUES ('2d2d2d2d-2d2d-2d2d-2d2d-2d2d2d2d2d2d', 'Available', '10101010-1010-1010-1010-101010101010')
+ON CONFLICT (id) DO NOTHING;
+
+-- Dispatcher: Serhii Shevchyk
+INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status, roles)
+VALUES ('3d3d3d3d-3d3d-3d3d-3d3d-3d3d3d3d3d3d', 'Serhii Shevchyk', 'serhii@dispax.de', 'dispatcher',
+        '10101010-1010-1010-1010-101010101010',
+        '$2a$12$Pj3Nulk3iu7yoD99dfpiZexNQnJoy9aU1FXO53pyGYyHyWALgkS9S',
+        '+49 170 3030303', 'ACTIVE', ARRAY['dispatcher','driver']::person_role[])
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO drivers (id, status, company_id)
+VALUES ('3d3d3d3d-3d3d-3d3d-3d3d-3d3d3d3d3d3d', 'Available', '10101010-1010-1010-1010-101010101010')
+ON CONFLICT (id) DO NOTHING;
+
 -- Secretary
 INSERT INTO persons (id, name, email, role, company_id, password_hash, phone, status)
 VALUES ('22222222-2222-2222-2222-222222222222', 'Anna Schmidt', 'secretary@dispax.de', 'secretary',

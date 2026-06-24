@@ -4,7 +4,7 @@
         patrol-test-android patrol-test-ios \
         emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
-        dev-all dev-sim dev-roles free-port stop-dev \
+        dev-all dev-sim dev-roles dev-dispatchers free-port stop-dev \
         deploy logs setup-hooks \
         load-test
 
@@ -56,6 +56,12 @@ SIM_RUNTIME     := com.apple.CoreSimulator.SimRuntime.iOS-26-1
 SIM_NAME_CLIENT     := Dispax Client
 SIM_NAME_DRIVER     := Dispax Driver
 SIM_NAME_DISPATCHER := Dispax Dispatcher
+# Three named simulators for `make dev-dispatchers` — one per dispatcher account
+# (Iryna / Yilmaz / Serhii), all in the same company, so concurrent assignment
+# and dispatcher-vs-dispatcher conflicts can be tested side by side.
+SIM_NAME_DISPATCHER_IRYNA  := Dispax Iryna
+SIM_NAME_DISPATCHER_YILMAZ := Dispax Yilmaz
+SIM_NAME_DISPATCHER_SERHII := Dispax Serhii
 PATROL         := $(HOME)/.pub-cache/bin/patrol
 ADB            := $(HOME)/Library/Android/sdk/platform-tools/adb
 # AVD launched by `emulator-up` if no device is connected. Override: ANDROID_AVD=Pixel_7 make e2e-fast
@@ -599,6 +605,49 @@ dev-roles: free-port
 	done; \
 	open -a Simulator
 	@echo "✅ App running on 3 named simulators, each auto-logged-in to its role."
+	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
+	@wait
+
+# Start local backend + the app on THREE iPhone 17 Pro Max simulators, each
+# auto-logged-in as a DIFFERENT dispatcher of the SAME company (Dispax München):
+# Iryna Shevchyk, Yilmaz Oguz, Serhii Shevchyk. Mirrors `dev-roles` but every
+# simulator runs the dispatcher role under its own account — handy for testing
+# concurrent assignment and dispatcher-vs-dispatcher conflicts side by side.
+# The accounts are seeded in V10__seed_bootstrap_accounts.sql; the DEV_AUTOLOGIN
+# keys dispatcher1/2/3 map to their emails in main.dart. Stop with `make stop-dev`.
+dev-dispatchers: free-port
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
+	@echo "⏳ Waiting for backend on :8080..."
+	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
+	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
+	@sleep $(FLUTTER_STARTUP_DELAY)
+	@ensure_sim() { \
+		local name="$$1"; local udid; \
+		udid=$$(xcrun simctl list devices --json 2>/dev/null | python3 -c "import sys,json; n=sys.argv[1]; t='$(SIM_DEVICE_TYPE)'; d=json.load(sys.stdin); print(next((x['udid'] for rt in d['devices'].values() for x in rt if x['name']==n and x.get('deviceTypeIdentifier')==t), ''))" "$$name"); \
+		if [ -z "$$udid" ]; then \
+			echo "📲 Creating simulator \"$$name\" (17 Pro Max)..." 1>&2; \
+			udid=$$(xcrun simctl create "$$name" "$(SIM_DEVICE_TYPE)" "$(SIM_RUNTIME)"); \
+		fi; \
+		echo "$$udid"; \
+	}; \
+	APP="$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app"; \
+	for pair in "$(SIM_NAME_DISPATCHER_IRYNA):dispatcher1" "$(SIM_NAME_DISPATCHER_YILMAZ):dispatcher2" "$(SIM_NAME_DISPATCHER_SERHII):dispatcher3"; do \
+		name="$${pair%:*}"; autorole="$${pair##*:}"; \
+		udid=$$(ensure_sim "$$name"); \
+		echo "🔨 Building for $$name (autologin=$$autorole)..."; \
+		( cd $(FLUTTER_DIR) && $(FLUTTER) build ios --debug --simulator \
+			--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
+			--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) \
+			--dart-define=DEV_AUTOLOGIN=$$autorole ); \
+		echo "🚀 $$name → $$udid"; \
+		xcrun simctl boot "$$udid" 2>/dev/null || true; \
+		xcrun simctl bootstatus "$$udid" -b 2>/dev/null || true; \
+		open -a Simulator --args -CurrentDeviceUDID "$$udid"; \
+		xcrun simctl install "$$udid" "$$APP"; \
+		xcrun simctl launch --terminate-running-process "$$udid" de.dispax.app; \
+	done; \
+	open -a Simulator
+	@echo "✅ App running on 3 named simulators, each auto-logged-in as a different dispatcher (Iryna / Yilmaz / Serhii)."
 	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
 	@wait
 
