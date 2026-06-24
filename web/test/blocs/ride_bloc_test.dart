@@ -403,6 +403,101 @@ void main() {
       },
     );
 
+    // ── RideConfirmRequested ─────────────────────────────────────────────────
+    blocTest<RideBloc, RideState>(
+      'RideConfirmRequested: calls confirmRide and replaces ride with confirmed status',
+      build: () {
+        final confirmed = testRide.copyWith(status: RideStatus.confirmed);
+        when(
+          () => mockRideService.confirmRide('ride-1'),
+        ).thenAnswer((_) async => confirmed);
+        return buildBloc();
+      },
+      seed: () => RideState.loaded([testRide]),
+      act: (bloc) => bloc.add(const RideConfirmRequested(rideId: 'ride-1')),
+      expect: () => [
+        isA<RideState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<RideState>()
+            .having((s) => s.isLoaded, 'isLoaded', true)
+            .having(
+              (s) => s.rides.first.status,
+              'ride status',
+              RideStatus.confirmed,
+            ),
+      ],
+      verify: (_) {
+        verify(() => mockRideService.confirmRide('ride-1')).called(1);
+      },
+    );
+
+    blocTest<RideBloc, RideState>(
+      'RideConfirmRequested emits error when service throws',
+      build: () {
+        when(
+          () => mockRideService.confirmRide(any()),
+        ).thenThrow(ApiException('confirm failed'));
+        return buildBloc();
+      },
+      seed: () => RideState.loaded([testRide]),
+      act: (bloc) => bloc.add(const RideConfirmRequested(rideId: 'ride-1')),
+      expect: () => [
+        isA<RideState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<RideState>().having((s) => s.hasError, 'hasError', true),
+      ],
+    );
+
+    // ── RideRejectRequested ──────────────────────────────────────────────────
+    blocTest<RideBloc, RideState>(
+      'RideRejectRequested: calls rejectRide with reason and replaces ride with requested status',
+      build: () {
+        final rejected = testRide.copyWith(
+          status: RideStatus.requested,
+          driverId: null,
+        );
+        when(
+          () => mockRideService.rejectRide('ride-1', 'car breakdown'),
+        ).thenAnswer((_) async => rejected);
+        return buildBloc();
+      },
+      seed: () => RideState.loaded([testRide]),
+      act: (bloc) => bloc.add(
+        const RideRejectRequested(rideId: 'ride-1', reason: 'car breakdown'),
+      ),
+      expect: () => [
+        isA<RideState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<RideState>()
+            .having((s) => s.isLoaded, 'isLoaded', true)
+            .having(
+              (s) => s.rides.first.status,
+              'ride status after reject',
+              RideStatus.requested,
+            ),
+      ],
+      verify: (_) {
+        verify(
+          () => mockRideService.rejectRide('ride-1', 'car breakdown'),
+        ).called(1);
+      },
+    );
+
+    blocTest<RideBloc, RideState>(
+      'RideRejectRequested emits error when service throws',
+      build: () {
+        when(
+          () => mockRideService.rejectRide(any(), any()),
+        ).thenThrow(ApiException('reject failed'));
+        return buildBloc();
+      },
+      seed: () => RideState.loaded([testRide]),
+      act: (bloc) => bloc.add(
+        const RideRejectRequested(rideId: 'ride-1', reason: 'breakdown'),
+      ),
+      expect: () => [
+        isA<RideState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<RideState>().having((s) => s.hasError, 'hasError', true),
+      ],
+    );
+
     group('RideStatusReceived (task 12: local WS status update)', () {
       blocTest<RideBloc, RideState>(
         'updates matching ride status without HTTP call',

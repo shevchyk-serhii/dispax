@@ -56,6 +56,57 @@ void main() {
       ),
     ];
 
+    // ── confirmed status specific checks ────────────────────────────────────
+    // Confirmed uses the success (green) palette, not the assigned palette.
+    test('confirmed: background is successBg in light mode', () {
+      expect(
+        RideStatusStyles.getStatusBackgroundColor(RideStatus.confirmed),
+        AppColors.successBg,
+      );
+    });
+
+    test('confirmed: border is successBorder in light mode', () {
+      expect(
+        RideStatusStyles.getStatusBorderColor(RideStatus.confirmed),
+        AppColors.successBorder,
+      );
+    });
+
+    test('confirmed: text color is successStrong in light mode', () {
+      expect(
+        RideStatusStyles.getStatusTextColor(RideStatus.confirmed),
+        AppColors.successStrong,
+      );
+    });
+
+    test('confirmed: icon is check_circle', () {
+      expect(
+        RideStatusStyles.getStatusIcon(RideStatus.confirmed),
+        Icons.check_circle,
+      );
+    });
+
+    test('confirmed: display name is "Confirmed"', () {
+      expect(
+        RideStatusStyles.getStatusDisplayName(RideStatus.confirmed),
+        'Confirmed',
+      );
+    });
+
+    // MUTATION TARGET: if the confirmed case reused the assigned palette this would fail.
+    test(
+      'confirmed background differs from assigned background (green != orange)',
+      () {
+        final confirmedBg = RideStatusStyles.getStatusBackgroundColor(
+          RideStatus.confirmed,
+        );
+        final assignedBg = RideStatusStyles.getStatusBackgroundColor(
+          RideStatus.assigned,
+        );
+        expect(confirmedBg, isNot(equals(assignedBg)));
+      },
+    );
+
     for (final c in cases) {
       final (status, lightBg, darkBg, lightText, darkText) = c;
 
