@@ -20,6 +20,21 @@ object WebSocketRoutes:
 
   private val TICKET_TTL_SECONDS = 30L
 
+  // Server-side heartbeat: without traffic the connection goes idle and Netty's
+  // default read timeout (~60s) tears it down, causing clients to flap-reconnect.
+  // A periodic Ping keeps the socket live; it must be shorter than the read timeout.
+  // Package-private so the heartbeat behaviour can be unit-tested with TestClock.
+  private[app] val HEARTBEAT_INTERVAL: Duration = 30.seconds
+
+  // Periodically emit a Ping frame via `send` to keep the connection non-idle.
+  // Extracted so it can be unit-tested independently of zio-http's WebSocketChannel.
+  // The first ping fires immediately, then once per interval; failures to send are
+  // ignored (the channel will surface a real close through receiveAll).
+  private[app] def heartbeatLoop[R](send: WebSocketFrame => ZIO[R, Throwable, Unit]): ZIO[R, Nothing, Long] = send(
+    WebSocketFrame.ping
+  ).ignore
+    .repeat(Schedule.spaced(HEARTBEAT_INTERVAL))
+
   // POST /api/ws/ticket — exchange a JWT for a short-lived WebSocket ticket
   private val ticketRoute: Routes[JwtService, Nothing] = Routes(
     Method.POST / "api" / "ws" / "ticket" -> handler { (req: Request) =>
@@ -114,15 +129,23 @@ object WebSocketRoutes:
                                 .forever
                                 .fork
 
+                            // Keep the socket non-idle so Netty's read timeout never fires.
+                            val heartbeat = heartbeatLoop(frame => channel.send(ChannelEvent.Read(frame))).fork
+
                             val receiveMessages = channel.receiveAll {
                               case Read(WebSocketFrame.Close(_, _)) => ZIO.unit
+                              // Reply to a client Ping with a Pong (RFC 6455); ignore the Pong it sends back.
+                              case Read(WebSocketFrame.Ping)        =>
+                                channel.send(ChannelEvent.Read(WebSocketFrame.pong)).ignore
                               case _                                => ZIO.unit
                             }
 
                             for {
-                              fiber <- sendEvents
-                              _     <- receiveMessages
-                              _     <- fiber.interrupt
+                              sender <- sendEvents
+                              pinger <- heartbeat
+                              _      <- receiveMessages
+                              _      <- sender.interrupt
+                              _      <- pinger.interrupt
                             } yield ()
                           }
                         }
