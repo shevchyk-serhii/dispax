@@ -181,6 +181,33 @@ void main() {
       );
       expect(ride.toJson()['flightTime'], '2026-03-15T09:30:00.000Z');
     });
+
+    // Regression: paidAt/confirmedAt were left in UTC while pickupDateTime was
+    // local, so day/month grouping (e.g. billing totals) drifted by the offset
+    // near day boundaries. Both must be local and round-trip back to UTC.
+    test('parses paidAt and confirmedAt to local, round-trips to UTC', () {
+      final ride = Ride.fromJson({
+        'id': 'r1',
+        'clientId': 'c1',
+        'creatorId': 'cr1',
+        'companyId': 'co1',
+        'pickupDateTime': '2026-03-15T10:00:00.000Z',
+        'from': {'address': 'A'},
+        'to': {'address': 'B'},
+        'clientName': 'Client',
+        'paidAt': '2026-01-01T23:30:00.000Z',
+        'confirmedAt': '2026-03-14T08:00:00.000Z',
+      });
+
+      expect(ride.paidAt!.isUtc, isFalse);
+      expect(ride.confirmedAt!.isUtc, isFalse);
+      expect(
+        ride.paidAt!.toUtc().toIso8601String(),
+        '2026-01-01T23:30:00.000Z',
+      );
+      expect(ride.toJson()['paidAt'], '2026-01-01T23:30:00.000Z');
+      expect(ride.toJson()['confirmedAt'], '2026-03-14T08:00:00.000Z');
+    });
   });
 
   group('RideStatus.fromString', () {

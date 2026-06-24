@@ -258,7 +258,9 @@ class MyRidesTab extends StatelessWidget {
                       (ride) =>
                           ride.isAirportTransfer &&
                           (ride.status == RideStatus.assigned ||
-                              ride.status == RideStatus.inProgress),
+                              ride.status == RideStatus.confirmed ||
+                              ride.status == RideStatus.inProgress ||
+                              ride.status == RideStatus.handedOff),
                     )
                     .toList();
 

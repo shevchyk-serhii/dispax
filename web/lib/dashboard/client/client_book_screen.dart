@@ -451,9 +451,12 @@ class _WhenToggle extends StatelessWidget {
               context.read<CreateRideFormBloc>().add(
                 const ScheduleModeToggled(scheduled: true),
               );
-              if (isScheduled) {
-                CreateRideFormHelper.selectDateTime(context, pickupDateTime);
-              }
+              // Always open the picker on tapping "Scheduled": switching from
+              // ASAP requires setting a time, and tapping again while already
+              // scheduled lets the user adjust it. The old `if (isScheduled)`
+              // read the pre-toggle state, so the picker never opened on the
+              // ASAP -> Scheduled switch.
+              CreateRideFormHelper.selectDateTime(context, pickupDateTime);
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
@@ -783,8 +786,12 @@ class _Footer extends StatelessWidget {
             child: Builder(
               builder: (context) {
                 final cs = Theme.of(context).colorScheme;
+                final isSubmitting =
+                    state.status == CreateRideFormStatus.submitting;
                 return ElevatedButton(
-                  onPressed: state.isValid
+                  // Disable while a submission is in flight to prevent a
+                  // double-tap from creating the ride twice.
+                  onPressed: state.isValid && !isSubmitting
                       ? () => context.read<CreateRideFormBloc>().add(
                           const FormSubmitted(),
                         )

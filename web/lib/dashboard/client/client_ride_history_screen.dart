@@ -84,14 +84,16 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
       case _ClientPeriodFilter.week:
         final weekStart = now.subtract(Duration(days: now.weekday - 1));
         final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
+        // Inclusive of the period start (midnight): a ride at exactly the
+        // week start must not drop out (isAfter excludes the boundary).
         filtered = filtered
-            .where((r) => r.pickupDateTime.isAfter(start))
+            .where((r) => !r.pickupDateTime.isBefore(start))
             .toList();
         break;
       case _ClientPeriodFilter.month:
         final start = DateTime(now.year, now.month, 1);
         filtered = filtered
-            .where((r) => r.pickupDateTime.isAfter(start))
+            .where((r) => !r.pickupDateTime.isBefore(start))
             .toList();
         break;
       case _ClientPeriodFilter.all:

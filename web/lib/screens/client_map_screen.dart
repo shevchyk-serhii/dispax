@@ -76,6 +76,26 @@ class ClientMapScreen extends StatefulWidget {
     return mine.where((r) => r.isTrackable).firstOrNull;
   }
 
+  /// Whether an incoming driver location update belongs to the ride currently
+  /// being tracked. A stray update (e.g. from a ride that just completed, after
+  /// [activeRide] is cleared) must be ignored — otherwise it paints a ghost
+  /// driver marker. Exposed static so it can be unit-tested without Mapbox.
+  @visibleForTesting
+  static bool shouldApplyDriverLocation(
+    Ride? activeRide, {
+    required String? eventDriverId,
+  }) {
+    if (activeRide == null) return false;
+    return eventDriverId == activeRide.driverId;
+  }
+
+  /// Whether the "driver approaching" banner latch must be reset. The banner
+  /// fires once per ride; when the tracked ride changes it has to re-arm,
+  /// otherwise the banner shown for ride A never appears again for ride B.
+  @visibleForTesting
+  static bool shouldResetApproaching(Ride? previousRide, Ride? newRide) =>
+      previousRide?.id != newRide?.id;
+
   @override
   State<ClientMapScreen> createState() => _ClientMapScreenState();
 }
@@ -167,7 +187,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
       if (event.isLocationUpdated &&
           event.locationType == 'driver' &&
-          (_activeRide == null || event.driverId == _activeRide!.driverId) &&
+          // Only react to the driver of the ride we are actually tracking.
+          // The old `_activeRide == null || ...` let stray location events
+          // (e.g. from a just-completed ride) paint a ghost driver marker.
+          ClientMapScreen.shouldApplyDriverLocation(
+            _activeRide,
+            eventDriverId: event.driverId,
+          ) &&
           event.latitude != null &&
           event.longitude != null) {
         if (_activeRide != null) {
@@ -459,8 +485,16 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
               final activeRide = _resolveRide(state, authState);
 
               if (activeRide != _activeRide) {
+                final resetApproaching = ClientMapScreen.shouldResetApproaching(
+                  _activeRide,
+                  activeRide,
+                );
                 setState(() {
                   _activeRide = activeRide;
+                  // Re-arm per-ride transient flags so the "driver approaching"
+                  // banner can fire again for a new ride (it latches true and
+                  // was never cleared when the tracked ride changed).
+                  if (resetApproaching) _driverApproachingShown = false;
                 });
                 _updateMapMarkers();
               }

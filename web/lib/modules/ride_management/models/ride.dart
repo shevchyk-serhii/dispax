@@ -206,9 +206,12 @@ class Ride {
       specialRequirements: json['specialRequirements'],
       paymentStatus: json['paymentStatus'],
       paymentMethod: json['paymentMethod'],
-      paidAt: JsonParse.optionalDateTime(json, 'paidAt'),
+      // Convert to local like pickupDateTime/flightTime: leaving these in UTC
+      // makes day/month comparisons (e.g. billing totals grouped by month)
+      // drift by the timezone offset near day boundaries.
+      paidAt: JsonParse.optionalDateTime(json, 'paidAt')?.toLocal(),
       confirmationSent: json['confirmationSent'] ?? false,
-      confirmedAt: JsonParse.optionalDateTime(json, 'confirmedAt'),
+      confirmedAt: JsonParse.optionalDateTime(json, 'confirmedAt')?.toLocal(),
       rejectionReason: json['rejectionReason'] as String?,
       cancellationReason: json['cancellationReason'],
       cancellationFee: json['cancellationFee']?.toDouble(),
@@ -257,9 +260,9 @@ class Ride {
       'specialRequirements': specialRequirements,
       'paymentStatus': paymentStatus,
       'paymentMethod': paymentMethod,
-      'paidAt': paidAt?.toIso8601String(),
+      'paidAt': paidAt?.toUtc().toIso8601String(),
       'confirmationSent': confirmationSent,
-      'confirmedAt': confirmedAt?.toIso8601String(),
+      'confirmedAt': confirmedAt?.toUtc().toIso8601String(),
       'rejectionReason': rejectionReason,
       'cancellationReason': cancellationReason,
       'cancellationFee': cancellationFee,
