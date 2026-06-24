@@ -23,7 +23,7 @@ final class HereTravelTimeAdapter(here: HereRoutingService) extends TravelTimeSe
     .getEtaMinutes(fromLat, fromLng, toLat, toLng)
     .catchAll(err =>
       ZIO.logWarning(s"HereTravelTimeAdapter: HERE routing error, falling back to Haversine: ${err.getMessage}") *>
-        ZIO.succeed(None)
+        ZIO.none
     )
 
 object HereTravelTimeAdapter:

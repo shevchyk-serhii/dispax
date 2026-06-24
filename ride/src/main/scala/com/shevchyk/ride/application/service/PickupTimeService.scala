@@ -132,7 +132,7 @@ object PickupTimeService:
         // to the same taxi company as the JWT. Foreign client companies are silently ignored.
         clientCompany        <-
           clientCompanyId match
-            case None     => ZIO.succeed(None)
+            case None     => ZIO.none
             case Some(id) =>
               clientCompanyRepo
                 .findById(id)

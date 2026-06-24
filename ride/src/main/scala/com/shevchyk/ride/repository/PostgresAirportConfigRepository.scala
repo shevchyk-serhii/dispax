@@ -139,7 +139,7 @@ final class PostgresAirportConfigRepository(xa: Transactor[Task]) extends Airpor
       WHERE code = $code
     """.update.run
       .transact(xa)
-      .flatMap(n => if n > 0 then findByCode(code) else ZIO.succeed(None))
+      .flatMap(n => if n > 0 then findByCode(code) else ZIO.none)
 
   override def delete(code: String): Task[Boolean] =
     sql"""

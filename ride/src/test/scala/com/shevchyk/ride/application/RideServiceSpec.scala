@@ -156,7 +156,7 @@ object RideServiceSpec extends ZIOSpecDefault {
 
     override def upsertDriverRow(personId: PersonId): Task[Unit] = ZIO.unit
 
-    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]] = ZIO.succeed(None)
+    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]] = ZIO.none
 
     override def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] =
       ZIO.unit

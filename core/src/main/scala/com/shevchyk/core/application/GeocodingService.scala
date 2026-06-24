@@ -27,7 +27,7 @@ object GeocodingService:
   final class HereGeocodingServiceImpl(config: HereConfig, client: Client) extends GeocodingService:
 
     override def geocode(address: String): Task[Option[(Double, Double)]] =
-      if config.apiKey.isEmpty then ZIO.succeed(None)
+      if config.apiKey.isEmpty then ZIO.none
       else
         val encoded = java.net.URLEncoder.encode(address, "UTF-8")
         val url     = s"https://geocode.search.hereapi.com/v1/geocode?q=$encoded&apikey=${config.apiKey}"
@@ -51,5 +51,5 @@ object GeocodingService:
 
   val noop: ZLayer[Any, Nothing, GeocodingService] = ZLayer.succeed(
     new GeocodingService:
-      def geocode(address: String): Task[Option[(Double, Double)]] = ZIO.succeed(None)
+      def geocode(address: String): Task[Option[(Double, Double)]] = ZIO.none
   )

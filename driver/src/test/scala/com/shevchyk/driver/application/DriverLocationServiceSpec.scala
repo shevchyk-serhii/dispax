@@ -27,8 +27,8 @@ private def personRepoReturning(person: Person): ZLayer[Any, Nothing, PersonRepo
   new PersonRepository:
     def create(p: Person): Task[Person]                                                                    = ZIO.succeed(p)
     def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.succeed(Some(person))
-    def findByIdAndCompany(id: PersonId, c: CompanyId): Task[Option[Person]]                               = ZIO.succeed(None)
-    def findByEmail(email: String): Task[Option[Person]]                                                   = ZIO.succeed(None)
+    def findByIdAndCompany(id: PersonId, c: CompanyId): Task[Option[Person]]                               = ZIO.none
+    def findByEmail(email: String): Task[Option[Person]]                                                   = ZIO.none
     def findByRole(role: PersonRole): Task[List[Person]]                                                   = ZIO.succeed(Nil)
     def findByRoleAndCompany(role: PersonRole, c: CompanyId): Task[List[Person]]                           = ZIO.succeed(Nil)
     def findByCompanyId(c: CompanyId): Task[List[Person]]                                                  = ZIO.succeed(Nil)
@@ -41,7 +41,7 @@ private def personRepoReturning(person: Person): ZLayer[Any, Nothing, PersonRepo
     def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
     def findByClientCompany(ccId: ClientCompanyId): Task[List[Person]]                                     = ZIO.succeed(Nil)
     def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
-    def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.succeed(None)
+    def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
     def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
     def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
 )
@@ -92,9 +92,9 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
   val noopPersonRepository: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
     new PersonRepository:
       def create(person: Person): Task[Person]                                                               = ZIO.succeed(person)
-      def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.succeed(None)
-      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]                       = ZIO.succeed(None)
-      def findByEmail(email: String): Task[Option[Person]]                                                   = ZIO.succeed(None)
+      def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.none
+      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]                       = ZIO.none
+      def findByEmail(email: String): Task[Option[Person]]                                                   = ZIO.none
       def findByRole(role: PersonRole): Task[List[Person]]                                                   = ZIO.succeed(Nil)
       def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]                   = ZIO.succeed(Nil)
       def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                          = ZIO.succeed(Nil)
@@ -107,7 +107,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
       def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
       def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
-      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.succeed(None)
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
       def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
       def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
   )
@@ -535,7 +535,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
         test("checkGeofences error is swallowed — updateLocation succeeds") {
           val failingRideRepo = ZLayer.succeed[RideRepository](new RideRepository:
             def create(ride: Ride): Task[Ride]                                                                  = ZIO.succeed(ride)
-            def findById(id: RideId): Task[Option[Ride]]                                                        = ZIO.succeed(None)
+            def findById(id: RideId): Task[Option[Ride]]                                                        = ZIO.none
             def update(ride: Ride): Task[Ride]                                                                  = ZIO.succeed(ride)
             def updateIfStatus(ride: Ride, expected: Set[RideStatus]): Task[Boolean]                            = ZIO.succeed(false)
             def markPaidIfCompleted(

@@ -90,7 +90,7 @@ class ClientLocationServiceImpl(
             driverLocationProvider
               .getDriverLocation(driverId)
               .mapError(ex => RideError.DatabaseError(ex))
-          case None           => ZIO.succeed(None)
+          case None           => ZIO.none
     } yield RideLocationsResponse(
       driverLocation = driverLoc.map { case (lat, lng, ts) => LocationWithTimestamp(lat, lng, ts) },
       clientLocation = clientLoc.map(cl => LocationWithTimestamp(cl.latitude, cl.longitude, cl.updatedAt))

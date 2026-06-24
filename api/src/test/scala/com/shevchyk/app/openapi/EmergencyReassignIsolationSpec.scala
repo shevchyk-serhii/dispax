@@ -223,9 +223,9 @@ object EmergencyReassignIsolationSpec extends ZIOSpecDefault:
   private val stubPersonRepo: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
     new PersonRepository:
       def create(person: Person): Task[Person]                                                               = ZIO.succeed(person)
-      def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.succeed(None)
-      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]                       = ZIO.succeed(None)
-      def findByEmail(email: String): Task[Option[Person]]                                                   = ZIO.succeed(None)
+      def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.none
+      def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]                       = ZIO.none
+      def findByEmail(email: String): Task[Option[Person]]                                                   = ZIO.none
       def findByRole(role: PersonRole): Task[List[Person]]                                                   = ZIO.succeed(Nil)
       def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]                   = ZIO.succeed(Nil)
       def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                          = ZIO.succeed(Nil)
@@ -238,7 +238,7 @@ object EmergencyReassignIsolationSpec extends ZIOSpecDefault:
       def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
       def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
-      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.succeed(None)
+      def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
       def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] = ZIO.unit
       def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
   )

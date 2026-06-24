@@ -93,7 +93,7 @@ class GeofenceServiceImpl(
                   )
                   .ignore
                   .as(Some(alert))
-            case _                          => ZIO.succeed(None)
+            case _                          => ZIO.none
         }
 
       exitAlerts <-
@@ -125,7 +125,7 @@ class GeofenceServiceImpl(
                   )
                   .ignore
                   .as(Some(alert))
-            case _                         => ZIO.succeed(None)
+            case _                         => ZIO.none
         }
 
       _ <- driverGeofenceState.update(_.updated(driverId.value, nowInsideIds))

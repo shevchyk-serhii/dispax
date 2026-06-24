@@ -259,7 +259,7 @@ object TestApplication extends ZIOAppDefault:
           def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
           def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
           def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
-          def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.succeed(None)
+          def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
           def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] =
             ZIO.unit
           def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
@@ -977,7 +977,7 @@ object TestApplication extends ZIOAppDefault:
       ): Task[List[UnbilledRide]] = ZIO.succeed(Nil)
       def findRidesByIds(taxiCompanyId: CompanyId, rideIds: List[UUID]): Task[List[UnbilledRide]]            = ZIO.succeed(Nil)
       def findOverdueUnpaid(now: java.time.Instant): Task[List[Invoice]]                                     = ZIO.succeed(Nil)
-      def findRideForReceipt(taxiCompanyId: CompanyId, rideId: UUID): Task[Option[UnbilledRide]]             = ZIO.succeed(None)
+      def findRideForReceipt(taxiCompanyId: CompanyId, rideId: UUID): Task[Option[UnbilledRide]]             = ZIO.none
       // Platform-level stubs (SuperAdmin only)
       def findAllPlatform(status: Option[InvoiceStatus], limit: Int, offset: Int): Task[List[Invoice]]       = ZIO.succeed(
         Nil
@@ -1699,11 +1699,11 @@ object TestApplication extends ZIOAppDefault:
         import com.shevchyk.core.domain.{Company, CompanyId, CompanyStatus, SubscriptionPlan}
         new CompanyRepository:
           def findAll(): Task[List[Company]]                   = ZIO.succeed(Nil)
-          def findById(id: CompanyId): Task[Option[Company]]   = ZIO.succeed(None)
+          def findById(id: CompanyId): Task[Option[Company]]   = ZIO.none
           def create(company: Company): Task[Company]          = ZIO.succeed(company)
           def update(company: Company): Task[Company]          = ZIO.succeed(company)
           def countByStatus(): Task[Map[CompanyStatus, Int]]   = ZIO.succeed(Map.empty)
-          def softDelete(id: CompanyId): Task[Option[Company]] = ZIO.succeed(None)
+          def softDelete(id: CompanyId): Task[Option[Company]] = ZIO.none
       },
       // Core ClientCompanyRepository (used by ClientCompanyRoutes in api/) — seeded with test data
       ZLayer.succeed[ClientCompanyRepository] {
@@ -1763,7 +1763,7 @@ object TestApplication extends ZIOAppDefault:
             def update(code: String, airport: Airport): Task[Option[Airport]]                          = stateRef.get.flatMap { m =>
               if m.contains(code) then
                 stateRef.update(_.updated(code, airport.copy(code = code))).as(Some(airport.copy(code = code)))
-              else ZIO.succeed(None)
+              else ZIO.none
             }
             def delete(code: String): Task[Boolean]                                                    = stateRef.get.flatMap { m =>
               m.get(code).filter(_.isActive) match
@@ -1780,7 +1780,7 @@ object TestApplication extends ZIOAppDefault:
             def updateZone(id: UUID, zone: AirportCheckpointZone): Task[Option[AirportCheckpointZone]] = stateRef.get
               .flatMap { m =>
                 m.values.find(_.zones.exists(_.id == id)) match
-                  case None    => ZIO.succeed(None)
+                  case None    => ZIO.none
                   case Some(a) =>
                     val updated = zone.copy(id = id, airportCode = a.code)
                     stateRef

@@ -115,7 +115,7 @@ object SessionApi:
         currentSess <-
           currentToken match
             case Some(t) => repo.findByToken(t).mapError(internal)
-            case None    => ZIO.succeed(None)
+            case None    => ZIO.none
         count       <-
           currentSess match
             case Some(s) => repo.deactivateAllExcept(PersonId(user.userId), s.id).mapError(internal)

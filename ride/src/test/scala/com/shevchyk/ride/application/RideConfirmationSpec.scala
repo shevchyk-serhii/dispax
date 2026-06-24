@@ -87,38 +87,38 @@ object RideConfirmationSpec extends ZIOSpecDefault {
 
   // ── Mock repos / services ──────────────────────────────────────────────────
   final case class TestPersonRepository(persons: Map[PersonId, Person]) extends PersonRepository {
-    override def create(person: Person): Task[Person]                                                               = ZIO.succeed(person)
-    override def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.succeed(persons.get(id))
+    override def create(person: Person): Task[Person]         = ZIO.succeed(person)
+    override def findById(id: PersonId): Task[Option[Person]] = ZIO.succeed(persons.get(id))
 
-    override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]                       = ZIO.succeed(
+    override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]] = ZIO.succeed(
       persons.get(id).filter(_.companyId.contains(companyId))
     )
-    override def findByEmail(email: String): Task[Option[Person]]                                                   = ZIO.succeed(persons.values.find(_.email == email))
+    override def findByEmail(email: String): Task[Option[Person]]                             = ZIO.succeed(persons.values.find(_.email == email))
 
-    override def findByRole(role: PersonRole): Task[List[Person]]                                                   = ZIO.succeed(
+    override def findByRole(role: PersonRole): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(_.role == role).toList
     )
 
-    override def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]]                   = ZIO.succeed(
+    override def findByRoleAndCompany(role: PersonRole, companyId: CompanyId): Task[List[Person]] = ZIO.succeed(
       persons.values.filter(p => p.hasRole(role) && p.companyId.contains(companyId)).toList
     )
 
-    override def findByCompanyId(companyId: CompanyId): Task[List[Person]]                                          = ZIO.succeed(
+    override def findByCompanyId(companyId: CompanyId): Task[List[Person]]       = ZIO.succeed(
       persons.values.filter(_.companyId.contains(companyId)).toList
     )
-    override def findAll(): Task[List[Person]]                                                                      = ZIO.succeed(persons.values.toList)
-    override def update(person: Person): Task[Person]                                                               = ZIO.succeed(person)
-    override def delete(id: PersonId): Task[Unit]                                                                   = ZIO.unit
-    override def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                                    = ZIO.unit
+    override def findAll(): Task[List[Person]]                                   = ZIO.succeed(persons.values.toList)
+    override def update(person: Person): Task[Person]                            = ZIO.succeed(person)
+    override def delete(id: PersonId): Task[Unit]                                = ZIO.unit
+    override def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit] = ZIO.unit
 
-    override def findByStatus(status: UserStatus): Task[List[Person]]                                               = ZIO.succeed(
+    override def findByStatus(status: UserStatus): Task[List[Person]]                      = ZIO.succeed(
       persons.values.filter(_.status == status).toList
     )
-    override def searchByQuery(query: String): Task[List[Person]]                                                   = ZIO.succeed(Nil)
-    override def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
-    override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
-    override def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
-    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.succeed(None)
+    override def searchByQuery(query: String): Task[List[Person]]                          = ZIO.succeed(Nil)
+    override def updateLastLogin(id: PersonId): Task[Unit]                                 = ZIO.unit
+    override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] = ZIO.succeed(Nil)
+    override def upsertDriverRow(personId: PersonId): Task[Unit]                           = ZIO.unit
+    override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]              = ZIO.none
 
     override def setAvatar(id: PersonId, companyId: CompanyId, bytes: Array[Byte], contentType: String): Task[Unit] =
       ZIO.unit
@@ -152,7 +152,7 @@ object RideConfirmationSpec extends ZIOSpecDefault {
 
   private val noopScheduleDayLookup: ZLayer[Any, Nothing, ScheduleDayLookup] = ZLayer.succeed(
     new ScheduleDayLookup:
-      def find(id: ScheduleDayId) = ZIO.succeed(None)
+      def find(id: ScheduleDayId) = ZIO.none
   )
 
   val standardLayers =

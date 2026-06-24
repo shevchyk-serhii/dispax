@@ -28,7 +28,7 @@ class InMemoryAirportConfigRepository extends AirportConfigRepository:
     if m.contains(code) then
       val updated = airport.copy(code = code)
       state.update(_.updated(code, updated)).as(Some(updated))
-    else ZIO.succeed(None)
+    else ZIO.none
   }
 
   override def delete(code: String): Task[Boolean] = state.get.flatMap { m =>
@@ -54,7 +54,7 @@ class InMemoryAirportConfigRepository extends AirportConfigRepository:
     .flatMap { m =>
       val airportOpt = m.values.find(_.zones.exists(_.id == id))
       airportOpt match
-        case None          => ZIO.succeed(None)
+        case None          => ZIO.none
         case Some(airport) =>
           val updatedZone    = zone.copy(id = id, airportCode = airport.code)
           val updatedZones   = airport.zones.map(z => if z.id == id then updatedZone else z)

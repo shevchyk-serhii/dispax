@@ -106,7 +106,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
     def updateLastLogin(id: PersonId): Task[Unit]                                             = ZIO.unit
     def findByClientCompany(ccId: ClientCompanyId): Task[List[Person]]                        = ZIO.succeed(Nil)
     def upsertDriverRow(id: PersonId): Task[Unit]                                             = ZIO.unit
-    def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                          = ZIO.succeed(None)
+    def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                          = ZIO.none
     def setAvatar(id: PersonId, companyId: CompanyId, b: Array[Byte], ct: String): Task[Unit] = ZIO.unit
     def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                          = ZIO.unit
   )
@@ -124,7 +124,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
       def geocode(address: String): Task[Option[(Double, Double)]] =
         if address.toLowerCase.contains("munich city") then ZIO.succeed(Some((pickupLat, pickupLng)))
         else if address.toLowerCase.contains("muc airport") then ZIO.succeed(Some((dropoffLat, dropoffLng)))
-        else ZIO.succeed(None) // addresses without coords: pickup-time uses Haversine fallback anyway
+        else ZIO.none // addresses without coords: pickup-time uses Haversine fallback anyway
   )
 
   // ── TravelTimeService stubs ──────────────────────────────────────────────
@@ -165,7 +165,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
 
   private val noopScheduleDayLookup: ZLayer[Any, Nothing, ScheduleDayLookup] = ZLayer.succeed(
     new ScheduleDayLookup:
-      def find(id: ScheduleDayId) = ZIO.succeed(None)
+      def find(id: ScheduleDayId) = ZIO.none
   )
 
   def rideLayers(

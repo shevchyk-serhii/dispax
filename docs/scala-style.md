@@ -16,6 +16,9 @@ a rule, then a real example, then the path to copy from.
 - **English everywhere** — comments, identifiers, commit messages, docs. Never another language.
 - **ZIO effect system everywhere** — no `Future`, no `throw`. Signal failure with `ZIO.fail`, never
   by throwing. Effects are `Task[A]` / `IO[E, A]` / `ZIO[R, E, A]`.
+- **Prefer ZIO's built-in constructors over `ZIO.succeed(<wrapped>)`** — use `ZIO.none` instead of
+  `ZIO.succeed(None)`, `ZIO.some(x)` instead of `ZIO.succeed(Some(x))`, and `ZIO.unit` instead of
+  `ZIO.succeed(())`. They read better and carry the right type.
 - **No business logic in route handlers** — handlers parse/authorize/map only; logic lives in the
   application/service layer.
 - **Tenant isolation is non-negotiable** — see §9. Breaking `CompanyId` isolation is a critical bug.
@@ -319,6 +322,7 @@ Canonical spec with stub layers: `api/src/test/.../AvatarApiSpec.scala`.
 ## 15. What NOT to do (Scala)
 
 - ❌ `throw` or `Future` anywhere — only ZIO effects, fail with `ZIO.fail`.
+- ❌ `ZIO.succeed(None)` / `ZIO.succeed(Some(x))` / `ZIO.succeed(())` — use `ZIO.none` / `ZIO.some(x)` / `ZIO.unit`.
 - ❌ Business logic in route handlers.
 - ❌ A new ID type or refined type without explicit JSON/Schema givens.
 - ❌ A repository method that touches company data without a `companyId` filter (tenant leak).

@@ -79,7 +79,7 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
           if m.contains(code) then
             val u = airport.copy(code = code)
             stateRef.update(_.updated(code, u)).as(Some(u))
-          else ZIO.succeed(None)
+          else ZIO.none
         }
         def delete(code: String): Task[Boolean]                                                    = stateRef.get.flatMap { m =>
           m.get(code).filter(_.isActive) match
@@ -96,7 +96,7 @@ object SuperAdminAirportApiSpec extends ZIOSpecDefault:
         def updateZone(id: UUID, zone: AirportCheckpointZone): Task[Option[AirportCheckpointZone]] = stateRef.get
           .flatMap { m =>
             m.values.find(_.zones.exists(_.id == id)) match
-              case None    => ZIO.succeed(None)
+              case None    => ZIO.none
               case Some(a) =>
                 val u = zone.copy(id = id, airportCode = a.code)
                 stateRef
