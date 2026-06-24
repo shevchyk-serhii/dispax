@@ -348,11 +348,19 @@ object RideApi:
               // we keep the pooled (unassigned) ride and return it. The client
               // detects "self-assign requested but the ride came back without a
               // driver" and offers to assign anyway via PUT /assign-driver
-              // (override). Other assign errors (company isolation, not found)
-              // still fail the request.
+              // (override).
+              //
+              // A cross-tenant driverId (company_isolation) is also swallowed
+              // here: surfacing it would leak the existence of another company's
+              // driver via the create response. Returning the pooled, unassigned
+              // ride hides that just like a schedule conflict does. Other assign
+              // errors (driver not found, blacklist) still fail the request.
               service
                 .assignDriver(ride0.id, driverPid)
-                .catchSome { case RideError.ScheduleConflict(_) => ZIO.succeed(ride0) }
+                .catchSome {
+                  case RideError.ScheduleConflict(_)                           => ZIO.succeed(ride0)
+                  case RideError.BusinessRuleViolation("company_isolation", _) => ZIO.succeed(ride0)
+                }
                 .mapError(fromRideError)
             }
           case None              => ZIO.succeed(ride0)

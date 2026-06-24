@@ -907,11 +907,17 @@ class RideServiceImpl(
       applied      <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Requested)).mapDatabaseError
       // The CAS lost: another assignment moved the ride out of Requested between our read and write.
       // Surface RideAlreadyAssigned (409 "Ride already assigned") so the loser reloads rather than
-      // retrying a doomed transition.
+      // retrying a doomed transition. Report the WINNER's driver — re-read the ride so the error
+      // carries the driver that actually holds the ride, not this losing attempt's driverId.
       _            <-
         ZIO
-          .fail(RideError.RideAlreadyAssigned(rideId, driverId))
-          .when(!applied)
+          .when(!applied) {
+            rideRepository
+              .findById(rideId)
+              .mapDatabaseError
+              .map(_.flatMap(_.driverId).getOrElse(driverId))
+              .flatMap(winner => ZIO.fail(RideError.RideAlreadyAssigned(rideId, winner)))
+          }
           .unit
       persistedRide = updatedRide
       _            <-

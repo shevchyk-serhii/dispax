@@ -428,6 +428,153 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       """"clientName":"ignored-by-server"}"""
   )
 
+  // Create-ride body that also requests an optional self-assign to `driverId`.
+  private def createBodyWithDriver(clientId: PersonId, driverId: PersonId): Body = Body.fromString(
+    s"""{"clientId":"${clientId.value}","creatorId":"${clientId.value}",""" +
+      s""""driverId":"${driverId.value}",""" +
+      """"pickupDateTime":"2090-01-01T10:00:00Z",""" +
+      """"from":{"address":"Munich Airport"},"to":{"address":"City Center"},""" +
+      """"clientName":"ignored-by-server"}"""
+  )
+
+  // RideService whose assignDriver always fails with company_isolation — models a
+  // self-assign to a driver of another company. createRide still returns the pooled
+  // (unassigned) ride. The create endpoint must SWALLOW that isolation error and
+  // return the pooled ride (201, driverId null), never leak the cross-tenant driver.
+  private def crossTenantAssignRideService(
+      assignedRef: Ref[Boolean]
+  ): ZLayer[Any, Nothing, RideService] = ZLayer.succeed(
+    new RideService:
+      private def notImplemented = ZIO.die(new NotImplementedError("crossTenantAssignRideService stub"))
+
+      def createRide(req: CreateRideRequest): IO[RideError, Ride] = ZIO.succeed(
+        Ride(
+          id = rideAId,
+          clientId = req.clientId,
+          creatorId = req.clientId,
+          companyId = req.companyId,
+          status = RideStatus.Requested,
+          pickupLocation = req.pickupLocation,
+          dropoffLocation = req.dropoffLocation,
+          pickupDateTime = req.pickupDateTime.getOrElse(Instant.now().plusSeconds(3600)),
+          requestTime = Instant.now()
+        )
+      )
+
+      def assignDriver(
+          rideId: RideId,
+          driverId: PersonId,
+          overrideScheduleConflict: Boolean = false
+      ): IO[RideError, Ride] =
+        assignedRef.set(true) *>
+          ZIO.fail(RideError.BusinessRuleViolation("company_isolation", "Driver belongs to a different company"))
+
+      def getRideById(rideId: RideId): IO[RideError, Ride]                                                            = notImplemented
+      def reassignDriver(
+          rideId: RideId,
+          newDriverId: PersonId,
+          overrideScheduleConflict: Boolean
+      ): IO[RideError, Ride] = notImplemented
+      def updateRideDetails(
+          rideId: RideId,
+          req: UpdateRideDetailsRequest,
+          userId: PersonId,
+          role: PersonRole,
+          cid: Option[CompanyId]
+      ): IO[RideError, Ride] = notImplemented
+      def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                                = notImplemented
+      def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                          = notImplemented
+      def completeRide(rideId: RideId): IO[RideError, Ride]                                                           = notImplemented
+      def confirmRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                        = notImplemented
+      def rejectRide(rideId: RideId, driverId: PersonId, reason: String): IO[RideError, Ride]                         = notImplemented
+      def cancelRide(rideId: RideId, userId: PersonId, role: PersonRole): IO[RideError, Ride]                         = notImplemented
+      def cancelRideWithReason(
+          rideId: RideId,
+          userId: PersonId,
+          role: PersonRole,
+          req: CancelRideRequest,
+          companyId: CompanyId
+      ): IO[RideError, Ride] = notImplemented
+      def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]                                 = notImplemented
+      def handOffToExternal(
+          rideId: RideId,
+          callerCompanyId: CompanyId,
+          callerId: PersonId,
+          req: HandOffRequest
+      ): IO[RideError, Ride] = notImplemented
+      def createPartnerCompany(companyId: CompanyId, req: CreatePartnerCompanyRequest): IO[RideError, PartnerCompany] =
+        notImplemented
+      def listPartnerCompanies(companyId: CompanyId): IO[RideError, List[PartnerCompany]]                             = notImplemented
+      def createExternalDriver(companyId: CompanyId, req: CreateExternalDriverRequest): IO[RideError, ExternalDriver] =
+        notImplemented
+      def listExternalDrivers(companyId: CompanyId): IO[RideError, List[ExternalDriver]]                              = notImplemented
+      def updateRideStatus(
+          rideId: RideId,
+          req: UpdateRideStatusRequest,
+          userId: PersonId,
+          role: PersonRole
+      ): IO[RideError, Ride] = notImplemented
+      def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]                                             = notImplemented
+      def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]]             =
+        notImplemented
+      def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                         = notImplemented
+      def getClientRides(clientId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                         = notImplemented
+      def getAllRides: IO[RideError, List[Ride]]                                                                      = notImplemented
+      def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]                                          = ZIO.succeed(Nil)
+      def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]]        =
+        notImplemented
+      def getDriverRidesPaginated(
+          driverId: PersonId,
+          companyId: CompanyId,
+          offset: Int,
+          limit: Int
+      ): IO[RideError, List[Ride]] = notImplemented
+      def markPayment(rideId: RideId, ps: PaymentStatus, pm: Option[PaymentMethod]): IO[RideError, Ride]              =
+        notImplemented
+      def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                                    = notImplemented
+      def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                                = ZIO.succeed(Map.empty)
+      def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                            = ZIO.succeed(BigDecimal(0))
+      def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                            = ZIO.succeed(BigDecimal(0))
+      def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                        = ZIO.succeed(0.0)
+      def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]]                = ZIO.succeed(
+        Nil
+      )
+      def getDriverEarnings(
+          driverId: PersonId,
+          companyId: CompanyId,
+          period: EarningsPeriod,
+          anchorDate: java.time.LocalDate
+      ): IO[RideError, DriverEarningsReport] = notImplemented
+      def setRidePrice(
+          rideId: RideId,
+          price: Double,
+          userId: PersonId,
+          userRole: PersonRole,
+          companyId: CompanyId
+      ): IO[RideError, Ride] = notImplemented
+      def getRidesByDrivers(
+          driverIds: List[PersonId],
+          from: Option[String],
+          to: Option[String],
+          companyId: CompanyId
+      ): IO[RideError, List[Ride]] = notImplemented
+  )
+
+  private def buildCrossTenantLayers(
+      assignedRef: Ref[Boolean]
+  ): ZLayer[Any, Throwable, RideApi.RideEnv] =
+    testJwtService ++
+      crossTenantAssignRideService(assignedRef) ++
+      stubClientAddressService ++
+      stubClientLocationService ++
+      stubAirportCheckpointService ++
+      stubChatService ++
+      stubRideRatingRepo ++
+      clientPersonRepo ++
+      stubTariffRepo ++
+      stubRideEstimateService ++
+      GeocodingService.noop
+
   private val updateBody: Body = Body.fromString("""{"notes":"updated"}""")
 
   // ---------------------------------------------------------------------------
@@ -665,6 +812,35 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           body.contains("\"clientName\":\"Anna Schmidt\""),
           !body.contains("Unknown Client"),
           !body.contains("ignored-by-server")
+        )
+      },
+
+      // ── CRITICAL: create-ride self-assign to a cross-tenant driver must not leak ──
+      // A self-assign to a driver of another company makes assignDriver fail with
+      // company_isolation. The create endpoint must SWALLOW that (like a schedule
+      // conflict) and return the pooled, unassigned ride — 201 with driverId null —
+      // so the response never reveals that the cross-tenant driver exists.
+      test("[CRITICAL] create-ride self-assign to a cross-tenant driver → 201 unassigned, no leak") {
+        for {
+          assignedRef <- Ref.make(false)
+          layers       = buildCrossTenantLayers(assignedRef)
+          token       <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req          = Request
+                           .post(URL.decode("/api/rides").toOption.get, createBodyWithDriver(clientAId, driverAId))
+                           .addHeader(Header.Authorization.Bearer(token))
+                           .addHeader(Header.ContentType(zio.http.MediaType.application.json))
+          resp        <- run(req, layers)
+          body        <- resp.body.asString
+          wasCalled   <- assignedRef.get
+        } yield assertTrue(
+          // assignDriver WAS attempted (the self-assign path ran)...
+          wasCalled,
+          // ...but the isolation failure was swallowed: the ride is created and pooled.
+          resp.status == Status.Created,
+          // The ride came back without a driver (pool), and no isolation error leaked.
+          body.contains("\"driverId\":null") || !body.contains(s"\"driverId\":\"${driverAId.value}\""),
+          !body.contains("company_isolation"),
+          !body.contains("different company")
         )
       },
 
