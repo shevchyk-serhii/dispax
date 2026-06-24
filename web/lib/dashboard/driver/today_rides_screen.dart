@@ -1191,7 +1191,7 @@ class _LiveRideCard extends StatelessWidget {
                     height: 40,
                     child: FilledButton.icon(
                       onPressed: onStartRide,
-                      icon: const Icon(Icons.play_arrow_rounded, size: 16),
+                      icon: const Icon(Icons.play_circle_rounded, size: 16),
                       label: Text(
                         AppLocalizations.of(context)!.start,
                         style: const TextStyle(
@@ -1200,7 +1200,7 @@ class _LiveRideCard extends StatelessWidget {
                         ),
                       ),
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.success,
+                        backgroundColor: AppColors.accent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
