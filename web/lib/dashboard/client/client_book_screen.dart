@@ -400,6 +400,10 @@ class _RouteCard extends StatelessWidget {
           .map((p) => p.address)
           .where((a) => a.isNotEmpty)
           .toList(),
+      // Labelled quick-pick (Home/Office/...) for one-tap selection.
+      savedAddresses: savedState.places
+          .where((p) => p.address.isNotEmpty)
+          .toList(),
     );
 
     if (result != null && context.mounted) {
