@@ -171,6 +171,87 @@ void main() {
       ],
     );
 
+    // ── 409 "already assigned" → alreadyAssigned + reload (stale-state race) ──
+
+    blocTest<RideBloc, RideState>(
+      'RideAssignRequested surfaces a 409 "Ride already assigned" as '
+      'alreadyAssigned (not assignConflict, not error) and reloads the pending '
+      'list so the now-assigned ride drops out',
+      build: () {
+        when(
+          () => mockRideService.assignDriver(
+            'ride-1',
+            'driver-1',
+            overrideScheduleConflict: false,
+          ),
+        ).thenThrow(
+          // Matches the backend body for RideError.RideAlreadyAssigned.
+          ApiException('Ride already assigned', statusCode: 409),
+        );
+        // The ride was taken by someone else, so the refreshed pending list no
+        // longer contains it.
+        when(
+          () => mockRideService.getPendingRides(),
+        ).thenAnswer((_) async => <Ride>[]);
+        return buildBloc();
+      },
+      seed: () => RideState.loaded([testRide]),
+      act: (bloc) => bloc.add(
+        const RideAssignRequested(
+          rideId: 'ride-1',
+          driverId: 'driver-1',
+          overrideScheduleConflict: false,
+        ),
+      ),
+      expect: () => [
+        isA<RideState>().having((s) => s.isAssigning, 'isAssigning', true),
+        isA<RideState>()
+            .having((s) => s.isAlreadyAssigned, 'isAlreadyAssigned', true)
+            .having((s) => s.hasError, 'hasError', false)
+            .having((s) => s.hasAssignConflict, 'hasAssignConflict', false)
+            .having((s) => s.rides, 'rides reloaded (empty)', isEmpty),
+      ],
+      verify: (_) {
+        verify(() => mockRideService.getPendingRides()).called(1);
+      },
+    );
+
+    // ── 409 "already assigned" WITH override → still alreadyAssigned ──────────
+    // Overriding a schedule conflict cannot un-take a ride; the stale-state
+    // branch must win regardless of the override flag.
+
+    blocTest<RideBloc, RideState>(
+      'RideAssignRequested with override=true still maps a 409 "already '
+      'assigned" to alreadyAssigned (override does not apply to a taken ride)',
+      build: () {
+        when(
+          () => mockRideService.assignDriver(
+            'ride-1',
+            'driver-1',
+            overrideScheduleConflict: true,
+          ),
+        ).thenThrow(ApiException('Ride already assigned', statusCode: 409));
+        when(
+          () => mockRideService.getPendingRides(),
+        ).thenAnswer((_) async => <Ride>[]);
+        return buildBloc();
+      },
+      seed: () => RideState.loaded([testRide]),
+      act: (bloc) => bloc.add(
+        const RideAssignRequested(
+          rideId: 'ride-1',
+          driverId: 'driver-1',
+          overrideScheduleConflict: true,
+        ),
+      ),
+      expect: () => [
+        isA<RideState>().having((s) => s.isAssigning, 'isAssigning', true),
+        isA<RideState>()
+            .having((s) => s.isAlreadyAssigned, 'isAlreadyAssigned', true)
+            .having((s) => s.hasError, 'hasError', false),
+      ],
+    );
+
     // ── overrideScheduleConflict flag is passed to the service ───────────────
 
     blocTest<RideBloc, RideState>(

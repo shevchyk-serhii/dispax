@@ -246,6 +246,72 @@ void main() {
       expect(find.textContaining('Assign Ride'), findsNothing);
     },
   );
+
+  testWidgets(
+    'assigning a ride that was already taken (409 "Ride already assigned") '
+    'shows an info snackbar and reloads the pending list — no "Driver Busy" '
+    'conflict dialog, no red error/Retry',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // Override the default conflict stub: this time the backend reports the
+      // ride was already assigned (stale dispatcher view). The first
+      // getPendingRides() (initState) returns the pending ride; after the failed
+      // assign the bloc reloads and the ride is gone.
+      var pendingReloaded = false;
+      when(() => mockRideService.getPendingRides()).thenAnswer((_) async {
+        if (pendingReloaded) return <Ride>[];
+        return [pendingRide];
+      });
+      when(
+        () => mockRideService.assignDriver(
+          any(),
+          any(),
+          overrideScheduleConflict: any(named: 'overrideScheduleConflict'),
+        ),
+      ).thenAnswer((_) async {
+        pendingReloaded = true;
+        throw ApiException('Ride already assigned', statusCode: 409);
+      });
+
+      await tester.pumpWidget(buildPanel());
+      await _pumpUntilFound(tester, find.text('Assign'));
+
+      await tester.tap(find.text('Assign').first);
+      await _pumpUntilFound(tester, find.text('Select Driver'));
+
+      await _pumpUntilFound(tester, find.text('Driver Hans'));
+      await tester.ensureVisible(find.text('Driver Hans'));
+      await tester.pumpAndSettle(
+        const Duration(milliseconds: 100),
+        EnginePhase.sendSemanticsUpdate,
+        const Duration(seconds: 30),
+      );
+      await tester.tap(find.text('Driver Hans'));
+      await _pumpUntilFound(tester, find.textContaining('Assign Ride'));
+
+      expect(find.text('Assign driver'), findsOneWidget);
+      await tester.tap(find.text('Assign driver'));
+
+      // The info snackbar surfaces instead of the conflict dialog.
+      await _pumpUntilFound(
+        tester,
+        find.text(
+          'This ride was already assigned. The list has been refreshed.',
+        ),
+      );
+
+      // No "Driver Busy" conflict dialog and no doomed Retry / red error.
+      expect(find.text('Driver Busy'), findsNothing);
+      expect(find.textContaining('Assign Ride'), findsNothing);
+
+      // The pending list was reloaded after the rejection.
+      verify(() => mockRideService.getPendingRides()).called(greaterThan(1));
+    },
+  );
 }
 
 /// Pumps repeatedly until [finder] matches at least one widget, or the attempt

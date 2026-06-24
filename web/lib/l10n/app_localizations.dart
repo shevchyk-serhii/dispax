@@ -262,6 +262,12 @@ abstract class AppLocalizations {
   /// **'No pending rides'**
   String get noPendingRides;
 
+  /// Info snackbar shown when a dispatcher tries to assign a ride that another dispatcher (or auto-assignment) already took; the pending list is reloaded instead of showing an error.
+  ///
+  /// In en, this message translates to:
+  /// **'This ride was already assigned. The list has been refreshed.'**
+  String get rideAlreadyAssignedInfo;
+
   /// No description provided for @allRidesAssigned.
   ///
   /// In en, this message translates to:

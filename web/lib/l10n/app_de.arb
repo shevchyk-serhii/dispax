@@ -32,6 +32,7 @@
   "selectDriverToViewSchedule": "Wählen Sie einen Fahrer, um seinen Zeitplan anzuzeigen",
   "noScheduleForDriver": "Keine Zeitplaneinträge für diesen Fahrer",
   "noPendingRides": "Keine ausstehenden Fahrten",
+  "rideAlreadyAssignedInfo": "Diese Fahrt wurde bereits zugewiesen. Die Liste wurde aktualisiert.",
   "allRidesAssigned": "Alle Fahrten wurden zugewiesen",
   "selectDriver": "Fahrer auswählen",
   "reassignRide": "Fahrt neu zuweisen",

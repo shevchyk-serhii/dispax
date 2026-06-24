@@ -93,6 +93,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noPendingRides => 'Keine ausstehenden Fahrten';
 
   @override
+  String get rideAlreadyAssignedInfo =>
+      'Diese Fahrt wurde bereits zugewiesen. Die Liste wurde aktualisiert.';
+
+  @override
   String get allRidesAssigned => 'Alle Fahrten wurden zugewiesen';
 
   @override

@@ -37,6 +37,10 @@
   "selectDriverToViewSchedule": "Select a driver to view their schedule",
   "noScheduleForDriver": "No schedule entries for this driver",
   "noPendingRides": "No pending rides",
+  "rideAlreadyAssignedInfo": "This ride was already assigned. The list has been refreshed.",
+  "@rideAlreadyAssignedInfo": {
+    "description": "Info snackbar shown when a dispatcher tries to assign a ride that another dispatcher (or auto-assignment) already took; the pending list is reloaded instead of showing an error."
+  },
   "allRidesAssigned": "All rides have been assigned",
   "selectDriver": "Select Driver",
   "reassignRide": "Reassign Ride",

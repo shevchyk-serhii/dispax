@@ -856,7 +856,14 @@ class RideServiceImpl(
   ): IO[RideError, Ride] =
     for {
       ride <- getRideById(rideId)
-      _    <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Assigned)).when(!ride.canBeAssigned).unit
+      // A non-Requested ride was already taken (typically by another dispatcher) since the caller's
+      // view was loaded. Report it as RideAlreadyAssigned (409 "Ride already assigned") instead of a
+      // misleading InvalidStatusTransition(Assigned, Assigned) — the client should reload, not retry.
+      _    <-
+        ZIO
+          .fail(RideError.RideAlreadyAssigned(rideId, ride.driverId.getOrElse(driverId)))
+          .when(!ride.canBeAssigned)
+          .unit
 
       driverOpt <- personRepository.findById(driverId).mapDatabaseError
       driver    <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(driverId))
@@ -898,9 +905,12 @@ class RideServiceImpl(
       // two dispatchers assigning different drivers to the same ride concurrently — the loser
       // gets an InvalidStatusTransition instead of silently overwriting the winner.
       applied      <- rideRepository.updateIfStatus(updatedRide, Set(RideStatus.Requested)).mapDatabaseError
+      // The CAS lost: another assignment moved the ride out of Requested between our read and write.
+      // Surface RideAlreadyAssigned (409 "Ride already assigned") so the loser reloads rather than
+      // retrying a doomed transition.
       _            <-
         ZIO
-          .fail(RideError.InvalidStatusTransition(RideStatus.Assigned, RideStatus.Assigned))
+          .fail(RideError.RideAlreadyAssigned(rideId, driverId))
           .when(!applied)
           .unit
       persistedRide = updatedRide

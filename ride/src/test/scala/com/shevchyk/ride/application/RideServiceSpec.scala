@@ -482,7 +482,8 @@ object RideServiceSpec extends ZIOSpecDefault {
         test("concurrent assignment: exactly one of two racing assigns wins") {
           // Two dispatchers assign different drivers to the same Requested ride at the
           // same time. The atomic compare-and-set (updateIfStatus) must let exactly one
-          // win; the loser gets InvalidStatusTransition, never a silent overwrite.
+          // win; the loser gets RideAlreadyAssigned (so the UI can reload, not retry),
+          // never a silent overwrite.
           for {
             service   <- ZIO.service[RideService]
             ride      <- service.createRide(
@@ -505,13 +506,17 @@ object RideServiceSpec extends ZIOSpecDefault {
             assertTrue(
               results.count(_.isSuccess) == 1,
               failures.size == 1,
-              failures.head.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition]),
+              failures.head.failureOption.exists(_.isInstanceOf[RideError.RideAlreadyAssigned]),
               finalRide.status == RideStatus.Assigned,
               finalRide.driverId.contains(testDriverId) || finalRide.driverId.contains(testDriver2Id)
             )
           }
         }.provide(standardLayers),
-        test("should fail when ride is not in Requested status") {
+        test("should fail with RideAlreadyAssigned when ride is no longer Requested") {
+          // Reproduces the dispatcher's stale-state bug: the UI still showed the ride as pending and
+          // fired assign-driver after it had already been assigned. The service must report
+          // RideAlreadyAssigned (mapped to 409 "Ride already assigned"), NOT a confusing
+          // InvalidStatusTransition(Assigned, Assigned) — so the client reloads instead of retrying.
           for {
             service  <- ZIO.service[RideService]
             ride     <- service.createRide(
@@ -523,9 +528,9 @@ object RideServiceSpec extends ZIOSpecDefault {
                           )
                         )
             assigned <- service.assignDriver(ride.id, testDriverId)
-            result   <- service.assignDriver(assigned.id, testDriverId).exit
+            result   <- service.assignDriver(assigned.id, testDriver2Id).exit
           } yield assertTrue(result match {
-            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition])
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.RideAlreadyAssigned])
             case _                   => false
           })
         }.provide(standardLayers),

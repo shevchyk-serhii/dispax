@@ -18,6 +18,11 @@ enum RideStateStatus {
   // conflicts (ride overlap or unavailability); the dispatcher may retry with
   // override.
   assignConflict,
+  // The backend rejected a primary assignment because the ride was already
+  // assigned to a driver (stale dispatcher view: another dispatcher or
+  // auto-assignment took it first). Not retryable — the UI should reload the
+  // pending list and inform the dispatcher.
+  alreadyAssigned,
 }
 
 class RideState extends Equatable {
@@ -104,6 +109,8 @@ class RideState extends Equatable {
       status == RideStateStatus.assignConflict &&
       conflictRideId != null &&
       conflictDriverId != null;
+
+  bool get isAlreadyAssigned => status == RideStateStatus.alreadyAssigned;
 
   @override
   List<Object?> get props => [

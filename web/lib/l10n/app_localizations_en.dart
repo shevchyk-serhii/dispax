@@ -93,6 +93,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noPendingRides => 'No pending rides';
 
   @override
+  String get rideAlreadyAssignedInfo =>
+      'This ride was already assigned. The list has been refreshed.';
+
+  @override
   String get allRidesAssigned => 'All rides have been assigned';
 
   @override

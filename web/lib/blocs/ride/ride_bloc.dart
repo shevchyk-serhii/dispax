@@ -184,9 +184,26 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       }).toList();
       emit(RideState.loaded(updatedRides));
     } on ApiException catch (e) {
-      // A 409 means the driver has a schedule conflict. Unless the dispatcher
-      // already chose to override, surface a distinct state so the UI can
-      // offer to assign anyway.
+      // A 409 covers two distinct cases. "Ride already assigned" means the ride
+      // was taken (another dispatcher or auto-assignment) since this view was
+      // loaded — a stale-state race, NOT a schedule conflict. Overriding cannot
+      // help, so reload the pending list (the ride moves to the Assigned tab)
+      // and surface a non-error state so the UI shows an info message, not a red
+      // failure with a doomed Retry.
+      if (e.statusCode == 409 && _isAlreadyAssigned(e.message)) {
+        final rides = await _reloadPendingSilently();
+        emit(
+          RideState(
+            status: RideStateStatus.alreadyAssigned,
+            rides: rides,
+            errorMessage: e.message,
+          ),
+        );
+        return;
+      }
+      // Any other 409 means the driver has a schedule conflict. Unless the
+      // dispatcher already chose to override, surface a distinct state so the UI
+      // can offer to assign anyway.
       if (e.statusCode == 409 && !event.overrideScheduleConflict) {
         emit(
           state.copyWith(
@@ -211,6 +228,23 @@ class RideBloc extends Bloc<RideEvent, RideState> {
           errorMessage: 'Failed to assign driver: $e',
         ),
       );
+    }
+  }
+
+  /// Matches the backend's `RideAlreadyAssigned` error body ("Ride already
+  /// assigned", see RideSecure.fromRideError) so we can distinguish the
+  /// stale-state race from a schedule conflict — both arrive as HTTP 409.
+  bool _isAlreadyAssigned(String message) =>
+      message.toLowerCase().contains('already assigned');
+
+  /// Refreshes the pending list after a stale-state rejection, keeping the
+  /// current rides if the reload itself fails (best effort — the goal is to drop
+  /// the now-assigned ride from the pending tab, not to surface a load error).
+  Future<List<Ride>> _reloadPendingSilently() async {
+    try {
+      return await privateRideService.getPendingRides();
+    } catch (_) {
+      return state.rides;
     }
   }
 

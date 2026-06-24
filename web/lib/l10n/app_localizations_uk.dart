@@ -93,6 +93,10 @@ class AppLocalizationsUk extends AppLocalizations {
   String get noPendingRides => 'Немає очікуючих поїздок';
 
   @override
+  String get rideAlreadyAssignedInfo =>
+      'Цю поїздку вже призначено. Список оновлено.';
+
+  @override
   String get allRidesAssigned => 'Всі поїздки призначено';
 
   @override

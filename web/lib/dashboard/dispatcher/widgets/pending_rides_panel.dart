@@ -131,7 +131,9 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           (curr.status == RideStateStatus.reassignConflict &&
               prev.status != RideStateStatus.reassignConflict) ||
           (curr.status == RideStateStatus.assignConflict &&
-              prev.status != RideStateStatus.assignConflict),
+              prev.status != RideStateStatus.assignConflict) ||
+          (curr.status == RideStateStatus.alreadyAssigned &&
+              prev.status != RideStateStatus.alreadyAssigned),
       listener: (context, state) {
         if (state.hasReassignConflict) {
           _showReassignConflictDialog(
@@ -147,6 +149,16 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             driverId: state.conflictDriverId!,
             message: state.errorMessage,
           );
+        } else if (state.isAlreadyAssigned) {
+          // Stale dispatcher view: the ride was already taken by someone else.
+          // The bloc has reloaded the pending list (the ride now sits in the
+          // Assigned tab), so just inform the dispatcher — no error, no Retry.
+          final l10n = AppLocalizations.of(context)!;
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(content: Text(l10n.rideAlreadyAssignedInfo)),
+            );
         }
       },
       child: _buildBody(),

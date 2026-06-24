@@ -32,6 +32,7 @@
   "selectDriverToViewSchedule": "Оберіть водія, щоб переглянути його графік",
   "noScheduleForDriver": "Немає записів графіку для цього водія",
   "noPendingRides": "Немає очікуючих поїздок",
+  "rideAlreadyAssignedInfo": "Цю поїздку вже призначено. Список оновлено.",
   "allRidesAssigned": "Всі поїздки призначено",
   "selectDriver": "Обрати водія",
   "reassignRide": "Перепризначити поїздку",
