@@ -28,7 +28,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _loadUnpaidRides() async {
-    final l10n = AppLocalizations.of(context)!;
+    // Don't read AppLocalizations.of(context) here: this runs synchronously from
+    // initState (before the first frame), where inherited widgets aren't bound
+    // yet. Read it lazily in the branch that needs it, after the await.
     setState(() {
       _isLoading = true;
       _error = null;
@@ -44,10 +46,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
           _unpaidRides = data.map((e) => Ride.fromJson(e)).toList();
           _isLoading = false;
         });
-      } else {
+      } else if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = l10n.failedToLoadUnpaidRides;
+          _error = AppLocalizations.of(context)!.failedToLoadUnpaidRides;
         });
       }
     } catch (e) {
