@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../core/navigation_utils.dart';
@@ -11,6 +12,7 @@ class RideRouteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       elevation: 4,
       child: Padding(
@@ -19,7 +21,7 @@ class RideRouteCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Route Information',
+              l10n.routeInformationLabel,
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -29,7 +31,7 @@ class RideRouteCard extends StatelessWidget {
             _buildLocationRow(
               context,
               icon: Icons.trip_origin,
-              label: 'From',
+              label: l10n.fromLabel,
               location: ride.pickupLocation,
               color: AppColors.success,
             ),
@@ -39,7 +41,7 @@ class RideRouteCard extends StatelessWidget {
             _buildLocationRow(
               context,
               icon: Icons.location_on,
-              label: 'To',
+              label: l10n.toLabel,
               location: ride.dropoffLocation,
               color: AppColors.error,
             ),
@@ -61,7 +63,7 @@ class RideRouteCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Pickup Time',
+                        l10n.pickupTimeLabel,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
@@ -96,7 +98,7 @@ class RideRouteCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Distance',
+                        l10n.distanceLabel,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
@@ -128,7 +130,7 @@ class RideRouteCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Duration',
+                        l10n.durationLabel,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
@@ -156,7 +158,7 @@ class RideRouteCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ETA to client',
+                        l10n.etaToClientLabel,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
@@ -185,7 +187,7 @@ class RideRouteCard extends StatelessWidget {
                 onPressed: () =>
                     NavigationUtils.openGoogleMapsRoute(ride.from, ride.to),
                 icon: const Icon(Icons.map_outlined, size: 18),
-                label: const Text('Open in Google Maps'),
+                label: Text(l10n.openInGoogleMapsButton),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.primary,
                   side: BorderSide(

@@ -786,5 +786,784 @@
     "placeholders": {
       "error": {"type": "String"}
     }
-  }
+  },
+
+  "rideCardTimeLabel": "Час: {time}",
+  "@rideCardTimeLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "deleteConfirmationTitle": "Підтвердження",
+  "deleteRideConfirmMessage": "Видалити поїздку {from} → {to}?",
+  "@deleteRideConfirmMessage": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  },
+
+  "cancelRideDialogTitle": "Скасувати поїздку",
+  "selectCancellationReason": "Будь ласка, виберіть причину скасування:",
+  "cancellationReasonLabel": "Причина",
+  "cancellationReasonClientRequest": "За проханням клієнта",
+  "cancellationReasonWeather": "Погодні умови",
+  "cancellationReasonOther": "Інше",
+  "cancellationReasonClientNoShow": "Клієнт не з'явився",
+  "cancellationReasonDriverUnavailable": "Водій недоступний",
+  "cancellationReasonVehicleIssue": "Проблема з автомобілем",
+  "cancellationFeeLabel": "Штраф за скасування (необов'язково)",
+
+  "rateRideExperienceQuestion": "Як пройшла ваша поїздка?",
+  "rateRideCommentLabel": "Коментар (необов'язково)",
+  "rateRideCommentHint": "Розкажіть про свій досвід...",
+
+  "airportTransferLabel": "Трансфер до аеропорту",
+  "airportTransferHint": "Увімкніть, якщо це поїздка до/з аеропорту",
+  "airportDepartureLabel": "Відправлення",
+  "airportDepartureHint": "До аеропорту",
+  "airportArrivalLabel": "Прибуття",
+  "airportArrivalHint": "З аеропорту",
+  "flightNumberLabel": "Номер рейсу",
+  "flightNumberHint": "напр. LH123, BA456",
+  "flightNumberRequired": "Номер рейсу обов'язковий для трансферів до аеропорту",
+  "gateLabel": "Гейт",
+  "terminalLabel": "Термінал",
+
+  "creatingRideLabel": "Створення поїздки...",
+  "createRideButton": "Створити поїздку",
+  "clearFormButton": "Очистити форму",
+
+  "vehicleInformationLabel": "Інформація про транспортний засіб",
+  "messageButton": "Повідомлення",
+
+  "routeInformationLabel": "Інформація про маршрут",
+  "pickupTimeLabel": "Час подачі",
+  "distanceLabel": "Відстань",
+  "durationLabel": "Тривалість",
+  "etaToClientLabel": "Очікуваний час до клієнта",
+  "openInGoogleMapsButton": "Відкрити в Google Maps",
+
+  "rideStatusLabel": "Статус поїздки",
+  "rideHasBeenCancelledLabel": "Цю поїздку скасовано",
+  "rideStatusRequestedClientLabel": "Очікування призначення водія",
+  "rideStatusRequestedStaffLabel": "Очікує призначення",
+  "rideStatusAssignedEnRouteLabel": "Водій у дорозі",
+  "rideStatusAssignedLabel": "Водія призначено",
+  "rideStatusAssignedDriverLabel": "Вас призначено на цю поїздку",
+  "rideStatusInProgressClientLabel": "Поїздка триває",
+  "rideStatusInProgressDriverLabel": "Щасливої дороги",
+  "rideStatusCompletedLabel": "Успішно завершено",
+  "rideStatusCancelledLabel": "Поїздку скасовано",
+  "rideStatusHandedOffLabel": "Передано партнеру",
+
+  "authenticationRequiredError": "Необхідна автентифікація",
+  "selectOrCreateClientError": "Будь ласка, виберіть або створіть клієнта",
+  "enterClientNameError": "Будь ласка, введіть ім'я клієнта",
+
+  "editRideDialogTitle": "Редагувати поїздку",
+  "pickupDateTimeLabel": "Дата/час подачі (yyyy-MM-ddTHH:mm)",
+  "flightNumberOptionalLabel": "Номер рейсу (необов'язково)",
+  "notesOptionalLabel": "Примітки (необов'язково)",
+  "invalidDateFormatError": "Неправильний формат дати. Використовуйте: yyyy-MM-ddTHH:mm",
+  "serverErrorMessage": "Помилка сервера: {statusCode}",
+  "@serverErrorMessage": {
+    "placeholders": {
+      "statusCode": {"type": "String"}
+    }
+  },
+  "useDispatcherDashboardInfo": "Використовуйте панель диспетчера для призначення водіїв",
+
+  "updateLocationTitle": "Оновити місцезнаходження",
+  "tellDriverWhereYouAreLabel": "Повідомте водія, де ви зараз знаходитесь:",
+  "quickSelectLabel": "Швидкий вибір:",
+  "locationQuickMainEntrance": "Біля головного входу",
+  "locationQuickBaggageClaim": "На видачі багажу",
+  "locationQuickCafe": "У кафе",
+  "locationQuickParking": "На парковці",
+  "locationQuickInformationDesk": "Біля інформаційної стійки",
+  "locationQuickSecondFloor": "На другому поверсі",
+  "locationQuickExit1": "Біля виходу №1",
+  "locationQuickExit2": "Біля виходу №2",
+  "locationQuickOther": "Інше місце",
+  "orSpecifyExactlyLabel": "Або вкажіть точно:",
+  "locationExampleHint": "Приклад: «Біля входу в термінал A»",
+  "additionalInstructionsLabel": "Додаткові інструкції (необов'язково):",
+  "additionalInstructionsExampleHint": "Приклад: «Стою біля кав'ярні»",
+  "specifyLocationError": "Будь ласка, вкажіть ваше місцезнаходження",
+  "failedToUpdateLocationError": "Не вдалося оновити місцезнаходження. Будь ласка, спробуйте ще раз.",
+
+  "callClientTooltip": "Зателефонувати клієнту",
+  "navigateTooltip": "Навігація",
+
+  "delayByHowLongTitle": "На скільки затримати?",
+  "minutesLabel": "{minutes} хвилин",
+  "@minutesLabel": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+
+  "appSubtitle": "Розумні рішення для мобільності",
+
+  "orLabel": "або",
+  "touchIdLabel": "Touch ID",
+  "biometricsLabel": "Біометрія",
+  "biometricSetupTitle": "Налаштування біометрії",
+  "biometricSetupMessage": "Хочете увімкнути швидкий вхід за допомогою біометрії?\n\nЦе дозволить вам входити за допомогою Face ID, Touch ID або відбитка пальця.",
+  "laterButton": "Пізніше",
+  "enableButton": "Увімкнути",
+
+  "createButton": "Створити",
+  "allLabel": "Усі",
+  "statusLabel": "Статус",
+  "operationFailed": "Помилка: {error}",
+  "@operationFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "roleLabel": "Роль",
+  "addGeofenceTooltip": "Додати геозону",
+
+  "savedTemplatesTitle": "Збережені шаблони",
+  "createTemplateDialogTitle": "Створити шаблон",
+  "templateNameLabel": "Назва шаблону",
+  "fromAddressLabel": "Адреса відправлення",
+  "toAddressLabel": "Адреса призначення",
+  "templatePickupTimeLabel": "Час подачі (ГГ:хх)",
+  "recurrenceLabel": "Повторення",
+  "recurrenceDaily": "Щодня",
+  "recurrenceWeekdays": "Будні дні",
+  "recurrenceWeeklyMonday": "Щотижня понеділок",
+  "recurrenceWeeklyTuesday": "Щотижня вівторок",
+  "recurrenceWeeklyWednesday": "Щотижня середа",
+  "recurrenceWeeklyThursday": "Щотижня четвер",
+  "recurrenceWeeklyFriday": "Щотижня п'ятниця",
+  "recurrenceSaturdayLabel": "Щотижня субота",
+  "recurrenceSundayLabel": "Щотижня неділя",
+  "priceOptionalLabel": "Ціна (необов'язково)",
+  "generateRidesMenuLabel": "Генерувати поїздки",
+  "deactivateTemplateMenuLabel": "Деактивувати",
+  "noTemplatesYet": "Ще немає шаблонів",
+  "noTemplatesSubtitle": "Створіть шаблон для регулярних поїздок",
+  "addTemplateButton": "Додати шаблон",
+  "ridesGeneratedSuccess": "Поїздки успішно створені",
+  "failedToGenerateRides": "Помилка генерації: {error}",
+  "@failedToGenerateRides": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToDeactivateTemplate": "Помилка деактивації: {error}",
+  "@failedToDeactivateTemplate": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "templateBadgeActive": "Активний",
+  "templateBadgePaused": "Призупинено",
+
+  "geofenceScreenTitle": "Геозони",
+  "zonesTabLabel": "Зони",
+  "recentAlertsTabLabel": "Нещодавні сповіщення",
+  "createGeofenceDialogTitle": "Створити геозону",
+  "zoneNameLabel": "Назва зони",
+  "geofenceTypeLabel": "Тип",
+  "geofenceTypeServiceArea": "Зона обслуговування",
+  "geofenceTypeClientPickup": "Точка посадки клієнта",
+  "geofenceTypeCustomZone": "Власна зона",
+  "latitudeLabel": "Широта",
+  "longitudeLabel": "Довгота",
+  "radiusLabel": "Радіус",
+  "notifyOnEntryLabel": "Сповіщати при вході",
+  "notifyOnExitLabel": "Сповіщати при виході",
+  "noGeofenceZonesYet": "Геозон ще немає",
+  "createZonesToMonitorSubtitle": "Створіть зони для моніторингу в'їздів та виїздів водіїв",
+  "createZoneButton": "Створити зону",
+  "deleteZoneConfirmTitle": "Видалити зону",
+  "deleteZoneConfirmMsg": "Видалити \"{name}\"?",
+  "@deleteZoneConfirmMsg": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "geofenceDeletedSuccess": "Геозону видалено",
+  "failedToDeleteGeofence": "Помилка видалення: {error}",
+  "@failedToDeleteGeofence": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToToggleGeofence": "Помилка перемикання ({code})",
+  "@failedToToggleGeofence": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "failedToCreateGeofence": "Помилка створення ({code})",
+  "@failedToCreateGeofence": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "geofenceCreatedSuccess": "Геозону створено",
+  "fillRequiredFieldsError": "Будь ласка, заповніть усі обов'язкові поля",
+  "noAlertsFound": "Сповіщень не знайдено",
+  "driverEnteredGeofence": "Водій в'їхав у {geofenceName}",
+  "@driverEnteredGeofence": {
+    "placeholders": {
+      "geofenceName": {"type": "String"}
+    }
+  },
+  "driverLeftGeofence": "Водій виїхав із {geofenceName}",
+  "@driverLeftGeofence": {
+    "placeholders": {
+      "geofenceName": {"type": "String"}
+    }
+  },
+  "alertFilterAll": "Усі",
+  "alertFilterEntry": "В'їзд",
+  "alertFilterExit": "Виїзд",
+  "alertFilterLabel": "Фільтр:",
+  "geofenceSubtitleAirport": "Зона аеропорту · радіус {radius}м",
+  "@geofenceSubtitleAirport": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "geofenceSubtitleServiceArea": "Зона обслуговування · радіус {radius}м",
+  "@geofenceSubtitleServiceArea": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "geofenceSubtitleClientPickup": "Точка посадки · радіус {radius}м",
+  "@geofenceSubtitleClientPickup": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "geofenceSubtitleCustomZone": "Власна зона · радіус {radius}м",
+  "@geofenceSubtitleCustomZone": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "failedToLoadGeofences": "Помилка завантаження ({code})",
+  "@failedToLoadGeofences": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "failedToLoadAlerts": "Помилка завантаження сповіщень ({code})",
+  "@failedToLoadAlerts": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+
+  "notifTabNotifications": "Сповіщення",
+  "notifTabSettings": "Налаштування",
+  "markAllReadButton": "Усі прочитані",
+  "clearAllNotificationsMenuLabel": "Видалити всі",
+  "clearAllConfirmTitle": "Видалити всі сповіщення",
+  "clearAllConfirmContent": "Ви впевнені, що хочете видалити всі сповіщення?",
+  "deleteAllNotificationsButton": "Видалити всі",
+  "noNotificationsYet": "Немає сповіщень",
+  "notifFilterAll": "Усі",
+  "notifFilterRides": "Поїздки",
+  "notifFilterChat": "Чат",
+  "notifFilterGeofence": "Геозона",
+  "notifFilterPools": "Пули",
+  "notifFilterCheckpoints": "Контрольні точки",
+  "notifJustNow": "Щойно",
+  "notifMinutesAgo": "{count} хв тому",
+  "@notifMinutesAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notifHoursAgo": "{count} год тому",
+  "@notifHoursAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notifDaysAgo": "{count} дн тому",
+  "@notifDaysAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notifPrefSectionPush": "Push-сповіщення",
+  "notifPrefSectionAdditional": "Додаткові канали",
+  "notifPrefRideUpdatesSubtitle": "Зміни статусу, призначення",
+  "notifPrefChatMessagesSubtitle": "Нові повідомлення від водія/клієнта",
+  "notifPrefDriverApproachingLabel": "Водій наближається",
+  "notifPrefDriverApproachingSubtitle": "Коли водій поблизу",
+  "notifPrefGeofenceAlertsLabel": "Сповіщення геозони",
+  "notifPrefGeofenceAlertsSubtitle": "Сповіщення про в'їзд/виїзд",
+  "notifPrefPoolUpdatesLabel": "Оновлення пулу",
+  "notifPrefPoolUpdatesSubtitle": "Сповіщення пулу поїздок",
+  "notifPrefEmailLabel": "Сповіщення електронною поштою",
+  "notifPrefEmailSubtitle": "Отримувати сповіщення електронною поштою",
+  "notifPrefSmsLabel": "SMS-сповіщення",
+  "notifPrefSmsSubtitle": "Отримувати сповіщення по SMS",
+  "notifPrefQuietHours": "Тихий час",
+  "notifPrefQuietHoursFrom": "З",
+  "notifPrefQuietHoursTo": "До",
+  "notifPrefNotSet": "Не задано",
+  "savePreferencesButton": "Зберегти налаштування",
+  "preferencesSaved": "Налаштування збережено",
+
+  "revokeSessionDialogTitle": "Відкликати сесію",
+  "revokeSessionDialogContent": "Це призведе до виходу пристрою з цієї сесії.",
+  "revokeSessionButton": "Відкликати",
+  "revokeAllOtherSessionsDialogTitle": "Відкликати всі інші сесії",
+  "revokeAllOtherSessionsDialogContent": "Це призведе до виходу з усіх інших пристроїв. Лише поточна сесія залишиться активною.",
+  "revokeAllButton": "Відкликати всі",
+  "sessionRevoked": "Сесію відкликано",
+  "allOtherSessionsRevoked": "Всі інші сесії відкликані",
+  "noActiveSessions": "Немає активних сесій",
+  "sessionCurrentLabel": "Поточна",
+  "sessionIpLabel": "IP: {ip}",
+  "@sessionIpLabel": {
+    "placeholders": {
+      "ip": {"type": "String"}
+    }
+  },
+  "sessionCreatedLabel": "Створено: {date}",
+  "@sessionCreatedLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "sessionLastActiveLabel": "Остання активність: {date}",
+  "@sessionLastActiveLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "revokeSessionAction": "Відкликати",
+
+  "userManagementTitle": "Управління користувачами",
+  "createUserDialogTitle": "Створити користувача",
+  "searchUsersHint": "Пошук користувачів...",
+  "changeRoleMenuHeader": "Змінити роль",
+  "changeStatusMenuHeader": "Змінити статус",
+  "activateUserAction": "Активувати",
+  "suspendUserAction": "Призупинити",
+  "deactivateUserAction": "Деактивувати",
+  "noUsersFound": "Користувачів не знайдено",
+  "totalUsersLabel": "Всього",
+  "driversStatLabel": "Водії",
+  "clientsStatLabel": "Клієнти",
+  "staffStatLabel": "Персонал",
+  "roleChangedSuccess": "Роль змінено на {role}",
+  "@roleChangedSuccess": {
+    "placeholders": {
+      "role": {"type": "String"}
+    }
+  },
+  "statusChangedSuccess": "Статус змінено на {status}",
+  "@statusChangedSuccess": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "failedToChangeRole": "Помилка: {error}",
+  "@failedToChangeRole": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToChangeStatus": "Помилка: {error}",
+  "@failedToChangeStatus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToCreateUser": "Помилка: {error}",
+  "@failedToCreateUser": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "blacklistTitle": "Чорний список",
+  "addBlacklistEntryDialogTitle": "Додати до чорного списку",
+  "clientIdLabel": "ID клієнта",
+  "driverIdLabel": "ID водія",
+  "reasonOptionalLabel": "Причина (необов'язково)",
+  "clientDriverIdRequired": "ID клієнта та ID водія обов'язкові",
+  "removeBlacklistEntryDialogTitle": "Видалити запис",
+  "removeBlacklistEntryContent": "Ви впевнені, що хочете видалити цей запис?",
+  "removeBlacklistEntryButton": "Видалити",
+  "noBlacklistEntries": "Записів у чорному списку немає",
+
+  "tenantsTitle": "Тенанти",
+  "tenantsWithCount": "Тенанти · {count} компаній",
+  "@tenantsWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "onboardButton": "+ Додати",
+  "noTenantsFound": "Тенантів не знайдено",
+  "onboardCompanyDialogTitle": "Зареєструвати компанію",
+  "editCompanyDialogTitle": "Редагувати компанію",
+  "subscriptionPlanLabel": "Тарифний план",
+  "colHeaderCompany": "КОМПАНІЯ",
+  "colHeaderPlan": "ПЛАН",
+  "colHeaderDrivers": "ВОДІЇ",
+  "colHeaderRidesPerMonth": "ПОЇЗДКИ / МІС",
+  "colHeaderStatus": "СТАТУС",
+  "deactivateCompanyDialogTitle": "Деактивувати компанію?",
+  "deactivateCompanyDialogContent": "Ви впевнені, що хочете деактивувати \"{name}\"?\n\nКомпанія буде позначена як неактивна, але всі дані (поїздки, рахунки, користувачі) будуть збережені.",
+  "@deactivateCompanyDialogContent": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "setActiveAction": "Зробити активною",
+  "setTrialAction": "Пробний режим",
+  "suspendAction": "Призупинити",
+
+  "emergencyReassignmentTitle": "Екстрені перепризначення",
+  "emergencyReassignmentDialogTitle": "Екстрене перепризначення",
+  "rideIdLabel": "ID поїздки",
+  "emergencyReasonLabel": "Причина",
+  "availableDriversLabel": "Доступні водії:",
+  "newDriverIdLabel": "Нова ID водія (необов'язково)",
+  "newDriverIdHelper": "Залиште порожнім для скасування призначення",
+  "reassignButton": "Перепризначити",
+  "rideIdRequired": "ID поїздки обов'язковий",
+  "emergencyReassignmentCreated": "Екстрене перепризначення створено",
+  "noEmergencyReassignments": "Екстрених перепризначень немає",
+  "emergencyReasonDriverIllness": "Хвороба водія",
+  "emergencyReasonVehicleBreakdown": "Поломка транспорту",
+  "emergencyReasonDriverNoShow": "Водій не з'явився",
+  "emergencyReasonAccident": "Аварія",
+  "emergencyReasonPersonalEmergency": "Особиста надзвичайна ситуація",
+  "emergencyReasonOther": "Інше",
+  "preferredDriverLabel": "Пріоритетний",
+  "emergencyRideLabel": "Поїздка: {id}",
+  "@emergencyRideLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "emergencyOriginalDriverLabel": "Оригінальний водій: {id}",
+  "@emergencyOriginalDriverLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "emergencyNewDriverLabel": "Новий водій: {id}",
+  "@emergencyNewDriverLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+
+  "ridePoolsTitle": "Пули поїздок",
+  "createRidePoolDialogTitle": "Створити пул поїздок",
+  "poolNameOptionalLabel": "Назва пулу (необов'язково)",
+  "poolNameHint": "напр., Ранковий шатл до аеропорту",
+  "routeDirectionOptionalLabel": "Напрямок маршруту (необов'язково)",
+  "routeDirectionHint": "напр., Центр міста → Аеропорт",
+  "maxPassengersLabel": "Макс. пасажирів:",
+  "ridePoolCreated": "Пул поїздок створено",
+  "noRidePools": "Пулів поїздок немає",
+  "createPoolToCombineRides": "Створіть пул для об'єднання поїздок",
+  "errorLoadingPoolDetails": "Помилка завантаження деталей пулу: {error}",
+  "@errorLoadingPoolDetails": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "poolDetailStatusLabel": "Статус",
+  "poolDetailPassengersLabel": "Пасажири",
+  "poolDetailRouteLabel": "Маршрут",
+  "poolDetailDriverLabel": "Водій",
+  "poolMembersLabel": "Учасники:",
+  "noRidesInPool": "Поїздок у цьому пулі ще немає",
+
+  "companySettingsTitle": "Налаштування компанії",
+  "navItemCompany": "Компанія",
+  "navItemUsersRoles": "Користувачі та ролі",
+  "navItemCompliance": "Відповідність",
+  "navItemBillingDatev": "Білінг та DATEV",
+  "navItemGeofences": "Геозони",
+  "companyProfileSectionTitle": "Профіль компанії",
+  "companyProfileSubtitle": "Юридична інформація, що відображається на рахунках та звітах.",
+  "complianceSectionTitle": "Відповідність та безпека",
+  "complianceSubtitle": "Захист даних, управління доступом та аудит.",
+  "billingDatevSectionTitle": "Білінг та DATEV",
+  "billingDatevSubtitle": "Конфігурація тарифів та налаштування експорту DATEV.",
+  "tariffSettingsSectionTitle": "Налаштування тарифу",
+  "datevIntegrationSectionTitle": "Інтеграція DATEV",
+  "datevIntegrationSubtitle": "Beraternummer та Mandantennummer використовуються в заголовку EXTF-Buchungsstapel.",
+  "legalNameLabel": "Юридична назва",
+  "vatIdLabel": "ІПН / ПДВ",
+  "defaultCurrencyLabel": "Валюта за замовчуванням",
+  "timezoneLabel": "Часовий пояс",
+  "commissionRateLabel": "Комісія (%)",
+  "cancellationFeeSettingsLabel": "Плата за скасування (€)",
+  "noShowFeeLabel": "Плата за неявку (€)",
+  "basePriceLabel": "Базова ціна (€)",
+  "pricePerKmLabel": "Ціна за км (€)",
+  "airportSurchargeLabel": "Надбавка за аеропорт (€)",
+  "nightSurchargeLabel": "Нічна надбавка (€)",
+  "workStartLabel": "Початок роботи",
+  "workEndLabel": "Кінець роботи",
+  "settingsSavedSuccess": "Налаштування успішно збережено",
+  "failedToSaveSettings": "Помилка збереження: {error}",
+  "@failedToSaveSettings": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "gdprExportTitle": "Експорт GDPR",
+  "gdprExportSubtitle": "Завантажити всі персональні дані",
+  "auditLogTitle": "Журнал аудиту",
+  "auditLogSubtitle": "Перегляд активності системи",
+  "activeSessionsCardTitle": "Активні сесії",
+  "activeSessionsCardSubtitle": "Управління підключеними пристроями",
+  "blacklistCardTitle": "Чорний список",
+  "blacklistCardSubtitle": "Управління заблокованими акаунтами",
+  "comingSoonLabel": "{label} — незабаром",
+  "@comingSoonLabel": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "settingsCompanyProfile": "Профіль компанії",
+  "generalSettingsSectionTitle": "Загальні налаштування",
+
+  "gdprScreenTitle": "Конфіденційність та дані (GDPR)",
+  "consentManagementSectionTitle": "Управління згодами",
+  "consentDataProcessingLabel": "Обробка даних",
+  "consentDataProcessingSubtitle": "Дозволити обробку даних поїздок та акаунту",
+  "consentMarketingLabel": "Маркетинг",
+  "consentMarketingSubtitle": "Отримувати рекламні листи та пропозиції",
+  "consentAnalyticsLabel": "Аналітика",
+  "consentAnalyticsSubtitle": "Допомогти покращити застосунок за допомогою аналітики",
+  "consentThirdPartySharingLabel": "Передача третім сторонам",
+  "consentThirdPartySharingSubtitle": "Ділитися даними з партнерськими сервісами",
+  "yourDataSectionTitle": "Ваші дані",
+  "exportMyDataLabel": "Експортувати мої дані",
+  "exportMyDataSubtitle": "Завантажити всі особисті дані, що ми зберігаємо про вас",
+  "dataDeletionSectionTitle": "Видалення даних",
+  "requestDataDeletionLabel": "Запросити видалення даних",
+  "requestDataDeletionSubtitle": "Назавжди видалити всі ваші дані та акаунт",
+  "pendingDeletionSubtitle": "Запит на видалення вже очікує розгляду",
+  "pendingChipLabel": "Очікує",
+  "requestHistoryTitle": "Історія запитів",
+  "requestDeletionDialogTitle": "Запросити видалення даних",
+  "requestDeletionDialogContent": "Це надішле запит на видалення всіх ваших особистих даних. Цю дію не можна скасувати. Ваш акаунт буде деактивований після обробки запиту.\n\nВи впевнені, що хочете продовжити?",
+  "requestDeletionButton": "Запросити видалення",
+  "dataExportCopied": "Дані скопійовано в буфер обміну",
+  "exportFailed": "Помилка експорту: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "deletionRequestSubmitted": "Запит на видалення надіслано",
+  "failedToLoadGdprData": "Помилка завантаження даних GDPR ({consentsCode}/{requestsCode})",
+  "@failedToLoadGdprData": {
+    "placeholders": {
+      "consentsCode": {"type": "String"},
+      "requestsCode": {"type": "String"}
+    }
+  },
+  "dataDeletionRequestType": "Видалення даних",
+  "dataExportRequestType": "Експорт даних",
+
+  "paymentsTitle": "Платежі",
+  "unpaidBadgeLabel": "Не оплачено",
+  "allRidesPaidLabel": "Усі поїздки оплачені",
+  "markAsPaidDialogTitle": "Позначити як оплачено",
+  "paymentMethodLabel": "Спосіб оплати:",
+  "paymentMethodCash": "Готівка",
+  "paymentMethodCard": "Картка",
+  "paymentMethodInvoice": "Рахунок",
+  "amountLabel": "Сума: {amount} EUR",
+  "@amountLabel": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "confirmPaymentButton": "Підтвердити оплату",
+  "paymentRecordedSuccess": "Платіж зафіксовано",
+  "failedToMarkPaid": "Помилка: {error}",
+  "@failedToMarkPaid": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToLoadUnpaidRides": "Помилка завантаження неоплачених поїздок",
+
+  "myRideTitle": "Моя поїздка #{id}",
+  "@myRideTitle": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "rideTitle": "Поїздка #{id}",
+  "@rideTitle": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "confirmationSentLabel": "Підтвердження надіслано",
+  "cancellationDetailsTitle": "Деталі скасування",
+  "cancellationReasonDetail": "Причина: {reason}",
+  "@cancellationReasonDetail": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  },
+  "cancelledByLabel": "Скасовано: {name}",
+  "@cancelledByLabel": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "cancellationFeeDisplay": "Штраф: €{fee}",
+  "@cancellationFeeDisplay": {
+    "placeholders": {
+      "fee": {"type": "String"}
+    }
+  },
+  "ratingTitle": "Оцінка",
+  "notesTitle": "Примітки",
+  "openChatButton": "Відкрити чат",
+  "rideStatusUpdatedSuccess": "Статус поїздки успішно оновлено",
+  "failedToUpdateRideStatus": "Помилка оновлення статусу поїздки: {error}",
+  "@failedToUpdateRideStatus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "driverAssignedSuccess": "Водія успішно призначено",
+  "failedToAssignDriver": "Помилка призначення водія: {error}",
+  "@failedToAssignDriver": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "rideCancelledSuccess": "Поїздку скасовано",
+  "failedToCancelRide": "Помилка скасування поїздки: {error}",
+  "@failedToCancelRide": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToSubmitRating": "Помилка надсилання оцінки: {error}",
+  "@failedToSubmitRating": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "completeRideDialogTitle": "Завершити поїздку",
+  "completeRideDialogContent": "Позначити цю поїздку як завершену?",
+
+  "createNewRideTitle": "Створити нову поїздку",
+  "rideCreatedSuccess": "Поїздку успішно створено!",
+  "failedToCreateRide": "Помилка створення поїздки",
+  "conflictDialogTitle": "Конфлікт розкладу",
+  "conflictDialogContent": "{message}\n\nПоїздку створено та додано до пулу диспетчера. Все одно призначити собі?",
+  "@conflictDialogContent": {
+    "placeholders": {
+      "message": {"type": "String"}
+    }
+  },
+  "conflictDialogContentDefault": "У вас вже є поїздка в цей час. Поїздку створено та додано до пулу. Все одно призначити собі?",
+  "keepInPoolButton": "Залишити в пулі",
+  "assignAnywayButton": "Призначити все одно",
+
+  "exportRidesTitle": "Експорт поїздок",
+  "copyCsvButton": "Копіювати CSV",
+  "dateRangeButton": "Діапазон дат",
+  "noRidesMatchFilters": "Жодна поїздка не відповідає фільтрам",
+  "exportSummaryTotal": "Всього",
+  "exportSummaryCompleted": "Завершено",
+  "exportSummaryRevenue": "Виручка",
+  "csvCopiedSnackbar": "Дані CSV скопійовано ({count} поїздок)",
+  "@csvCopiedSnackbar": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "okButton": "OK",
+
+  "flightsMunichAirportTitle": "Рейси · Аеропорт Мюнхен",
+  "autoSyncedLabel": "авто-синхронізація",
+  "arrivalsTabLabel": "Прильоти",
+  "departuresTabLabel": "Відльоти",
+  "noArrivalsFound": "Прильотів не знайдено",
+  "noDeparturesFound": "Відльотів не знайдено",
+  "errorLoadingFlights": "Помилка завантаження рейсів: {error}",
+  "@errorLoadingFlights": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "flightColumnFlight": "Рейс",
+  "flightColumnOriginDest": "Звідки / Куди",
+  "flightColumnSched": "Розклад",
+  "flightColumnStatus": "Статус",
+  "flightColumnLinkedRide": "Пов'язана поїздка",
+  "flightStatusOnTime": "Вчасно",
+  "flightStatusDelayed": "Затримано",
+  "flightStatusBoarding": "Посадка",
+  "flightStatusCancelled": "Скасовано",
+  "flightStatusUnknown": "Невідомо",
+  "flightNotLinked": "— не пов'язано",
+
+  "whoCanSeeWhomTitle": "Хто може бачити кого",
+  "visibleToAllDispatchers": "Видимий для всіх диспетчерів",
+  "scheduleHiddenFromOthers": "Розклад прихований від інших",
+  "noDriversInCompany": "У вашій компанії немає водіїв.",
+  "failedToUpdateVisibilityError": "Помилка оновлення видимості: {error}",
+  "@failedToUpdateVisibilityError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "auditLogScreenTitle": "Журнал аудиту",
+  "searchByEntityIdHint": "Пошук за ID сутності...",
+  "noAuditEntriesFound": "Записів аудиту не знайдено",
+
+  "onlineOnRideLabel": "Онлайн · поїздка #{id}",
+  "@onlineOnRideLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "startConversationSubtitle": "Почніть розмову з водієм",
+  "failedToSendMessage": "Помилка надсилання: {error}",
+  "@failedToSendMessage": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "totalRidesStatLabel": "Всього поїздок",
+  "onTimeStatLabel": "Вчасно",
+  "avgSlackStatLabel": "Сер. запас",
+  "gmvStatLabel": "GMV",
+  "ridesByTenantTitle": "Поїздки за тенантом",
+  "rideStatusBreakdownTitle": "Розбивка за статусом поїздок",
+  "platformActiveSessionsLabel": "Активні сесії платформи",
+
+  "clientPaymentTitle": "Оплата",
+  "paymentMethodsSectionLabel": "СПОСОБИ ОПЛАТИ",
+  "corporateInvoiceLabel": "Корпоративний рахунок",
+  "addPaymentMethodButton": "Додати спосіб оплати"
 }

@@ -9,6 +9,7 @@ import '../blocs/auth/auth_bloc.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/services/api_client.dart';
+import '../l10n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // Domain models / DTOs
@@ -223,6 +224,7 @@ class _AnalyticsView extends StatelessWidget {
                 return Center(child: CircularProgressIndicator.adaptive());
               }
               if (state is AnalyticsError) {
+                final l10n = AppLocalizations.of(context)!;
                 return Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -244,7 +246,7 @@ class _AnalyticsView extends StatelessWidget {
                             ),
                           );
                         },
-                        child: const Text('Retry'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
@@ -272,6 +274,7 @@ class _GraphiteHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -288,10 +291,10 @@ class _GraphiteHeader extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Platform Analytics',
-                  style: TextStyle(
+                  l10n.platformAnalytics,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -302,7 +305,7 @@ class _GraphiteHeader extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
                 onPressed: onRefresh,
-                tooltip: 'Refresh',
+                tooltip: l10n.refresh,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -324,6 +327,7 @@ class _AnalyticsDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final totalRides = data.rides.ridesByCompany.values.fold(
       0,
       (a, b) => a + b,
@@ -351,21 +355,21 @@ class _AnalyticsDashboard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _StatTile.dark(
-                        label: 'Total Rides',
+                        label: l10n.totalRidesStatLabel,
                         value: '$totalRides',
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _StatTile.light(
-                        label: 'On-time',
+                        label: l10n.onTimeStatLabel,
                         value: totalRides > 0 ? '$onTimePct %' : '—',
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _StatTile.light(
-                        label: 'Avg Slack',
+                        label: l10n.avgSlackStatLabel,
                         // TODO: avg slack not in PlatformRideStats; add when backend supports it
                         value: '—',
                       ),
@@ -373,7 +377,7 @@ class _AnalyticsDashboard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _StatTile.light(
-                        label: 'GMV',
+                        label: l10n.gmvStatLabel,
                         value: eurFmt.format(data.rides.totalRevenue),
                       ),
                     ),
@@ -386,14 +390,14 @@ class _AnalyticsDashboard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _StatTile.dark(
-                          label: 'Total Rides',
+                          label: l10n.totalRidesStatLabel,
                           value: '$totalRides',
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _StatTile.light(
-                          label: 'On-time',
+                          label: l10n.onTimeStatLabel,
                           value: totalRides > 0 ? '$onTimePct %' : '—',
                         ),
                       ),
@@ -403,12 +407,15 @@ class _AnalyticsDashboard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _StatTile.light(label: 'Avg Slack', value: '—'),
+                        child: _StatTile.light(
+                          label: l10n.avgSlackStatLabel,
+                          value: '—',
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _StatTile.light(
-                          label: 'GMV',
+                          label: l10n.gmvStatLabel,
                           value: eurFmt.format(data.rides.totalRevenue),
                         ),
                       ),
@@ -424,7 +431,7 @@ class _AnalyticsDashboard extends StatelessWidget {
           // ── Bar chart: Rides by company ────────────────────────────────
           if (data.rides.ridesByCompany.isNotEmpty) ...[
             Text(
-              'Rides by Tenant',
+              l10n.ridesByTenantTitle,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -439,7 +446,7 @@ class _AnalyticsDashboard extends StatelessWidget {
           // ── Status breakdown ───────────────────────────────────────────
           if (data.rides.byStatus.isNotEmpty) ...[
             Text(
-              'Ride Status Breakdown',
+              l10n.rideStatusBreakdownTitle,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -453,7 +460,7 @@ class _AnalyticsDashboard extends StatelessWidget {
 
           // ── Active sessions ───────────────────────────────────────────
           Text(
-            'Active Connections',
+            l10n.platformActiveSessionsLabel,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,

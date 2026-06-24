@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 
 class _Notification {
   final String id;
@@ -117,13 +118,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
   String _selectedFilter = 'all';
   int _unreadCount = 0;
 
-  final _filterOptions = const {
-    'all': 'All',
-    'ride': 'Rides',
-    'chat': 'Chat',
-    'geofence': 'Geofence',
-    'pool': 'Pools',
-    'airport_checkpoint': 'Checkpoints',
+  Map<String, String> _filterOptions(AppLocalizations l10n) => {
+    'all': l10n.notifFilterAll,
+    'ride': l10n.notifFilterRides,
+    'chat': l10n.notifFilterChat,
+    'geofence': l10n.notifFilterGeofence,
+    'pool': l10n.notifFilterPools,
+    'airport_checkpoint': l10n.notifFilterCheckpoints,
   };
 
   @override
@@ -203,9 +204,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.operationFailed(e.toString()),
+          ),
+        ),
+      );
     }
   }
 
@@ -222,9 +227,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.operationFailed(e.toString()),
+          ),
+        ),
+      );
     }
   }
 
@@ -241,29 +250,32 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.operationFailed(e.toString()),
+          ),
+        ),
+      );
     }
   }
 
   Future<void> _deleteAll() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear All Notifications'),
-        content: const Text(
-          'Are you sure you want to delete all notifications?',
-        ),
+        title: Text(l10n.clearAllConfirmTitle),
+        content: Text(l10n.clearAllConfirmContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete All'),
+            child: Text(l10n.deleteAllNotificationsButton),
           ),
         ],
       ),
@@ -277,17 +289,22 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       _loadNotifications();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.operationFailed(e.toString()),
+          ),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        _buildGraphiteHeader(),
+        _buildGraphiteHeader(l10n),
         TabBar(
           controller: _tabController,
           labelColor: Theme.of(context).colorScheme.primary,
@@ -297,7 +314,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Notifications'),
+                  Text(l10n.notifTabNotifications),
                   if (_unreadCount > 0) ...[
                     const SizedBox(width: 6),
                     Container(
@@ -322,13 +339,16 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                 ],
               ),
             ),
-            const Tab(text: 'Settings'),
+            Tab(text: l10n.notifTabSettings),
           ],
         ),
         Expanded(
           child: TabBarView(
             controller: _tabController,
-            children: [_buildNotificationsTab(), _NotificationSettingsTab()],
+            children: [
+              _buildNotificationsTab(l10n),
+              _NotificationSettingsTab(),
+            ],
           ),
         ),
       ],
@@ -337,7 +357,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
 
   // ─── Graphite header with "Mark all read" accent link ─────────────────────
 
-  Widget _buildGraphiteHeader() {
+  Widget _buildGraphiteHeader(AppLocalizations l10n) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -348,10 +368,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
             padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Notifications',
-                    style: TextStyle(
+                    l10n.notifications,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
@@ -362,9 +382,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                 if (_unreadCount > 0)
                   TextButton(
                     onPressed: _markAllAsRead,
-                    child: const Text(
-                      'Mark all read',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.markAllReadButton,
+                      style: const TextStyle(
                         color: AppColors.accent,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -381,17 +401,17 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                     if (value == 'delete_all') _deleteAll();
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete_all',
                       child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.delete_sweep,
                             size: 18,
                             color: AppColors.error,
                           ),
-                          SizedBox(width: 8),
-                          Text('Clear All'),
+                          const SizedBox(width: 8),
+                          Text(l10n.clearAllNotificationsMenuLabel),
                         ],
                       ),
                     ),
@@ -405,7 +425,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     );
   }
 
-  Widget _buildNotificationsTab() {
+  Widget _buildNotificationsTab(AppLocalizations l10n) {
+    final filterOpts = _filterOptions(l10n);
     return Column(
       children: [
         // Filter chips
@@ -414,7 +435,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            children: _filterOptions.entries.map((entry) {
+            children: filterOpts.entries.map((entry) {
               final selected = _selectedFilter == entry.key;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -452,7 +473,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                       Text(_error!),
                       ElevatedButton(
                         onPressed: _loadNotifications,
-                        child: const Text('Retry'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
@@ -469,7 +490,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No notifications',
+                        l10n.noNotificationsYet,
                         style: TextStyle(
                           fontSize: 16,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -481,7 +502,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                 )
               : RefreshIndicator(
                   onRefresh: _loadNotifications,
-                  child: _buildGroupedList(),
+                  child: _buildGroupedList(l10n),
                 ),
         ),
       ],
@@ -523,7 +544,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     return _groupedEntries;
   }
 
-  Widget _buildGroupedList() {
+  Widget _buildGroupedList(AppLocalizations l10n) {
     final entries = _computeGroupedEntries();
 
     return ListView.builder(
@@ -546,7 +567,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                 ),
               ),
             ),
-            ...entry.value.map(_buildNotificationCard),
+            ...entry.value.map((n) => _buildNotificationCard(n, l10n)),
           ],
         );
       },
@@ -555,7 +576,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
 
   // ─── Notification card — new design ───────────────────────────────────────
 
-  Widget _buildNotificationCard(_Notification n) {
+  Widget _buildNotificationCard(_Notification n, AppLocalizations l10n) {
     final cardStyle = _cardStyle(n.notificationType);
 
     return Dismissible(
@@ -657,7 +678,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _timeAgo(n.createdAt),
+                        _timeAgo(l10n, n.createdAt),
                         style: TextStyle(
                           fontSize: 10.5,
                           color: Theme.of(context).colorScheme.outline,
@@ -737,12 +758,12 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
     }
   }
 
-  String _timeAgo(DateTime dt) {
+  String _timeAgo(AppLocalizations l10n, DateTime dt) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inMinutes < 1) return l10n.notifJustNow;
+    if (diff.inMinutes < 60) return l10n.notifMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.notifHoursAgo(diff.inHours);
+    if (diff.inDays < 7) return l10n.notifDaysAgo(diff.inDays);
     return DateFormat('MMM d').format(dt);
   }
 }
@@ -827,15 +848,21 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
           'quietHoursEnd': _prefs!.quietHoursEnd,
       });
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Preferences saved')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.preferencesSaved),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.genericError(e.toString()),
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -844,6 +871,8 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
@@ -854,7 +883,7 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          'Push Notifications',
+          l10n.notifPrefSectionPush,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -863,38 +892,43 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
         ),
         const SizedBox(height: 8),
         _buildSwitch(
-          'Ride Updates',
-          'Status changes, assignments',
+          context,
+          l10n.rideUpdates,
+          l10n.notifPrefRideUpdatesSubtitle,
           prefs.rideUpdates,
           (v) => setState(() => prefs.rideUpdates = v),
         ),
         _buildSwitch(
-          'Chat Messages',
-          'New messages from driver/client',
+          context,
+          l10n.chatMessages,
+          l10n.notifPrefChatMessagesSubtitle,
           prefs.chatMessages,
           (v) => setState(() => prefs.chatMessages = v),
         ),
         _buildSwitch(
-          'Driver Approaching',
-          'When driver is near pickup',
+          context,
+          l10n.notifPrefDriverApproachingLabel,
+          l10n.notifPrefDriverApproachingSubtitle,
           prefs.driverApproaching,
           (v) => setState(() => prefs.driverApproaching = v),
         ),
         _buildSwitch(
-          'Geofence Alerts',
-          'Entry/exit zone alerts',
+          context,
+          l10n.notifPrefGeofenceAlertsLabel,
+          l10n.notifPrefGeofenceAlertsSubtitle,
           prefs.geofenceAlerts,
           (v) => setState(() => prefs.geofenceAlerts = v),
         ),
         _buildSwitch(
-          'Pool Updates',
-          'Ride pooling notifications',
+          context,
+          l10n.notifPrefPoolUpdatesLabel,
+          l10n.notifPrefPoolUpdatesSubtitle,
           prefs.poolUpdates,
           (v) => setState(() => prefs.poolUpdates = v),
         ),
         const Divider(height: 32),
         Text(
-          'Additional Channels',
+          l10n.notifPrefSectionAdditional,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -903,20 +937,22 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
         ),
         const SizedBox(height: 8),
         _buildSwitch(
-          'Email Notifications',
-          'Receive notifications via email',
+          context,
+          l10n.notifPrefEmailLabel,
+          l10n.notifPrefEmailSubtitle,
           prefs.emailNotifications,
           (v) => setState(() => prefs.emailNotifications = v),
         ),
         _buildSwitch(
-          'SMS Notifications',
-          'Receive notifications via SMS',
+          context,
+          l10n.notifPrefSmsLabel,
+          l10n.notifPrefSmsSubtitle,
           prefs.smsNotifications,
           (v) => setState(() => prefs.smsNotifications = v),
         ),
         const Divider(height: 32),
         Text(
-          'Quiet Hours',
+          l10n.notifPrefQuietHours,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -928,9 +964,12 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
           children: [
             Expanded(
               child: ListTile(
-                title: const Text('From', style: TextStyle(fontSize: 13)),
+                title: Text(
+                  l10n.notifPrefQuietHoursFrom,
+                  style: const TextStyle(fontSize: 13),
+                ),
                 subtitle: Text(
-                  prefs.quietHoursStart ?? 'Not set',
+                  prefs.quietHoursStart ?? l10n.notifPrefNotSet,
                   style: const TextStyle(fontSize: 12),
                 ),
                 onTap: () async {
@@ -949,9 +988,12 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
             ),
             Expanded(
               child: ListTile(
-                title: const Text('To', style: TextStyle(fontSize: 13)),
+                title: Text(
+                  l10n.notifPrefQuietHoursTo,
+                  style: const TextStyle(fontSize: 13),
+                ),
                 subtitle: Text(
-                  prefs.quietHoursEnd ?? 'Not set',
+                  prefs.quietHoursEnd ?? l10n.notifPrefNotSet,
                   style: const TextStyle(fontSize: 12),
                 ),
                 onTap: () async {
@@ -984,7 +1026,7 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
                       color: Colors.white,
                     ),
                   )
-                : const Text('Save Preferences'),
+                : Text(l10n.savePreferencesButton),
           ),
         ),
       ],
@@ -992,6 +1034,7 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
   }
 
   Widget _buildSwitch(
+    BuildContext context,
     String title,
     String subtitle,
     bool value,

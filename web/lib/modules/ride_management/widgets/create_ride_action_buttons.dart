@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
@@ -16,6 +17,7 @@ class CreateRideActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
       builder: (context, state) {
         final isSubmitting = state.status == CreateRideFormStatus.submitting;
@@ -36,7 +38,9 @@ class CreateRideActionButtons extends StatelessWidget {
                         ),
                       )
                     : const Icon(Icons.add_circle_outline),
-                label: Text(isSubmitting ? 'Creating Ride...' : 'Create Ride'),
+                label: Text(
+                  isSubmitting ? l10n.creatingRideLabel : l10n.createRideButton,
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.secretaryColor,
                   foregroundColor: AppColors.textOnPrimary,
@@ -55,7 +59,7 @@ class CreateRideActionButtons extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: isSubmitting ? null : onClearForm,
                 icon: const Icon(Icons.clear_all),
-                label: const Text('Clear Form'),
+                label: Text(l10n.clearFormButton),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.secretaryColor,
                   shape: RoundedRectangleBorder(

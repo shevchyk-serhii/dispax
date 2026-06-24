@@ -8,12 +8,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 
 class ClientPaymentScreen extends StatelessWidget {
   const ClientPaymentScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
@@ -29,7 +31,10 @@ class ClientPaymentScreen extends StatelessWidget {
                   children: [
                     const _FeaturedCardWidget(),
                     const SizedBox(height: 24),
-                    _buildSectionLabel(context, 'PAYMENT METHODS'),
+                    _buildSectionLabel(
+                      context,
+                      l10n.paymentMethodsSectionLabel,
+                    ),
                     const SizedBox(height: 10),
                     _PaymentMethodsList(),
                     const SizedBox(height: 16),
@@ -62,6 +67,7 @@ class ClientPaymentScreen extends StatelessWidget {
 class _GraphiteHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       color: AppColors.primary,
       child: SafeArea(
@@ -74,9 +80,9 @@ class _GraphiteHeader extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () => Navigator.of(context).maybePop(),
               ),
-              const Text(
-                'Payment',
-                style: TextStyle(
+              Text(
+                l10n.clientPaymentTitle,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -330,7 +336,7 @@ class _PaymentMethodsList extends StatelessWidget {
           const SizedBox(width: 12),
 
           Text(
-            'Corporate invoice',
+            AppLocalizations.of(context)!.corporateInvoiceLabel,
             style: TextStyle(
               fontSize: 13.5,
               fontWeight: FontWeight.w600,
@@ -356,9 +362,9 @@ class _AddPaymentMethodButton extends StatelessWidget {
           // TODO: implement add-payment-method flow
         },
         icon: const Icon(Icons.add, size: 18),
-        label: const Text(
-          'Add payment method',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        label: Text(
+          AppLocalizations.of(context)!.addPaymentMethodButton,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: Theme.of(context).colorScheme.onSurface,

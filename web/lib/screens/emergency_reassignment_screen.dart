@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 
 class EmergencyReassignmentScreen extends StatefulWidget {
   const EmergencyReassignmentScreen({super.key});
@@ -47,7 +48,26 @@ class _EmergencyReassignmentScreenState
     }
   }
 
+  String _reasonLabel(BuildContext context, String reason) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (reason) {
+      case 'DriverIllness':
+        return l10n.emergencyReasonDriverIllness;
+      case 'VehicleBreakdown':
+        return l10n.emergencyReasonVehicleBreakdown;
+      case 'DriverNoShow':
+        return l10n.emergencyReasonDriverNoShow;
+      case 'Accident':
+        return l10n.emergencyReasonAccident;
+      case 'PersonalEmergency':
+        return l10n.emergencyReasonPersonalEmergency;
+      default:
+        return l10n.emergencyReasonOther;
+    }
+  }
+
   Future<void> _showCreateDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final rideIdCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
     final newDriverIdCtrl = TextEditingController();
@@ -64,12 +84,12 @@ class _EmergencyReassignmentScreenState
     ];
 
     final reasonLabels = {
-      'DriverIllness': 'Driver Illness',
-      'VehicleBreakdown': 'Vehicle Breakdown',
-      'DriverNoShow': 'Driver No-Show',
-      'Accident': 'Accident',
-      'PersonalEmergency': 'Personal Emergency',
-      'Other': 'Other',
+      'DriverIllness': l10n.emergencyReasonDriverIllness,
+      'VehicleBreakdown': l10n.emergencyReasonVehicleBreakdown,
+      'DriverNoShow': l10n.emergencyReasonDriverNoShow,
+      'Accident': l10n.emergencyReasonAccident,
+      'PersonalEmergency': l10n.emergencyReasonPersonalEmergency,
+      'Other': l10n.emergencyReasonOther,
     };
 
     final reasonIcons = {
@@ -85,7 +105,7 @@ class _EmergencyReassignmentScreenState
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Emergency Reassignment'),
+          title: Text(l10n.emergencyReassignmentDialogTitle),
           content: SingleChildScrollView(
             child: SizedBox(
               width: 400,
@@ -95,7 +115,7 @@ class _EmergencyReassignmentScreenState
                   TextField(
                     controller: rideIdCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Ride ID',
+                      labelText: l10n.rideIdLabel,
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.search, size: 20),
@@ -115,7 +135,13 @@ class _EmergencyReassignmentScreenState
                           } catch (e) {
                             if (dialogContext.mounted) {
                               ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
+                                SnackBar(
+                                  content: Text(
+                                    AppLocalizations.of(
+                                      dialogContext,
+                                    )!.genericError(e.toString()),
+                                  ),
+                                ),
                               );
                             }
                           }
@@ -126,9 +152,9 @@ class _EmergencyReassignmentScreenState
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: selectedReason,
-                    decoration: const InputDecoration(
-                      labelText: 'Reason',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.emergencyReasonLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     items: reasons
                         .map(
@@ -150,11 +176,11 @@ class _EmergencyReassignmentScreenState
                   ),
                   const SizedBox(height: 12),
                   if (suggestedDrivers.isNotEmpty) ...[
-                    const Align(
+                    Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Available Drivers:',
-                        style: TextStyle(
+                        l10n.availableDriversLabel,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -216,20 +242,19 @@ class _EmergencyReassignmentScreenState
                   ],
                   TextField(
                     controller: newDriverIdCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'New Driver ID (optional)',
-                      border: OutlineInputBorder(),
-                      helperText:
-                          'Leave empty to unassign and return to pending',
+                    decoration: InputDecoration(
+                      labelText: l10n.newDriverIdLabel,
+                      border: const OutlineInputBorder(),
+                      helperText: l10n.newDriverIdHelper,
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: notesCtrl,
                     maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes (optional)',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.notesOptionalLabel,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ],
@@ -239,13 +264,17 @@ class _EmergencyReassignmentScreenState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             FilledButton.icon(
               onPressed: () async {
                 if (rideIdCtrl.text.isEmpty) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('Ride ID is required')),
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(dialogContext)!.rideIdRequired,
+                      ),
+                    ),
                   );
                   return;
                 }
@@ -261,14 +290,20 @@ class _EmergencyReassignmentScreenState
                   if (dialogContext.mounted) Navigator.pop(dialogContext, true);
                 } catch (e) {
                   if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(
-                      dialogContext,
-                    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(
+                            dialogContext,
+                          )!.genericError(e.toString()),
+                        ),
+                      ),
+                    );
                   }
                 }
               },
               icon: const Icon(Icons.emergency, size: 18),
-              label: const Text('Reassign'),
+              label: Text(l10n.reassignButton),
               style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             ),
           ],
@@ -280,7 +315,11 @@ class _EmergencyReassignmentScreenState
       _loadReassignments();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Emergency reassignment created')),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.emergencyReassignmentCreated,
+            ),
+          ),
         );
       }
     }
@@ -288,9 +327,10 @@ class _EmergencyReassignmentScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        _buildHeader(),
+        _buildHeader(l10n),
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
@@ -308,7 +348,7 @@ class _EmergencyReassignmentScreenState
                       Text(_error!),
                       ElevatedButton(
                         onPressed: _loadReassignments,
-                        child: const Text('Retry'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
@@ -325,7 +365,7 @@ class _EmergencyReassignmentScreenState
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No emergency reassignments',
+                        l10n.noEmergencyReassignments,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -347,7 +387,7 @@ class _EmergencyReassignmentScreenState
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -364,10 +404,10 @@ class _EmergencyReassignmentScreenState
             children: [
               const Icon(Icons.emergency, color: Colors.white, size: 24),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Emergency Reassignments',
-                  style: TextStyle(
+                  l10n.emergencyReassignmentTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -394,6 +434,7 @@ class _EmergencyReassignmentScreenState
   }
 
   Widget _buildReassignmentCard(Map<String, dynamic> r) {
+    final l10n = AppLocalizations.of(context)!;
     final reason = r['reason'] as String? ?? 'Unknown';
     final status = r['status'] as String? ?? 'PENDING';
     final notes = r['notes'] as String?;
@@ -420,7 +461,7 @@ class _EmergencyReassignmentScreenState
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _reasonLabel(reason),
+                    _reasonLabel(context, reason),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -449,11 +490,13 @@ class _EmergencyReassignmentScreenState
             ),
             const SizedBox(height: 8),
             Text(
-              'Ride: ${_shortId(rideId.toString())}',
+              l10n.emergencyRideLabel(_shortId(rideId.toString())),
               style: const TextStyle(fontSize: 12),
             ),
             Text(
-              'Original driver: ${_shortId(originalDriverId.toString())}',
+              l10n.emergencyOriginalDriverLabel(
+                _shortId(originalDriverId.toString()),
+              ),
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -461,7 +504,7 @@ class _EmergencyReassignmentScreenState
             ),
             if (newDriverId != null)
               Text(
-                'New driver: ${_shortId(newDriverId.toString())}',
+                l10n.emergencyNewDriverLabel(_shortId(newDriverId.toString())),
                 style: const TextStyle(fontSize: 12, color: AppColors.success),
               ),
             if (notes != null && notes.isNotEmpty)
@@ -504,23 +547,6 @@ class _EmergencyReassignmentScreenState
         return Icons.emergency;
       default:
         return Icons.more_horiz;
-    }
-  }
-
-  String _reasonLabel(String reason) {
-    switch (reason) {
-      case 'DriverIllness':
-        return 'Driver Illness';
-      case 'VehicleBreakdown':
-        return 'Vehicle Breakdown';
-      case 'DriverNoShow':
-        return 'Driver No-Show';
-      case 'Accident':
-        return 'Accident';
-      case 'PersonalEmergency':
-        return 'Personal Emergency';
-      default:
-        return reason;
     }
   }
 

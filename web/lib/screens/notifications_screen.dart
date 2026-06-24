@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
+import '../l10n/app_localizations.dart';
 
 class _AppNotification {
   final String id;
@@ -97,6 +98,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _markAsRead(String id) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.put('/notifications/$id/read', {});
@@ -105,7 +107,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed: $e'),
+            content: Text(l10n.operationFailed(e.toString())),
             backgroundColor: AppColors.error,
           ),
         );
@@ -114,6 +116,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _markAllAsRead() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.put('/notifications/read-all', {});
@@ -122,7 +125,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed: $e'),
+            content: Text(l10n.operationFailed(e.toString())),
             backgroundColor: AppColors.error,
           ),
         );
@@ -132,9 +135,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(l10n.notifications),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.light,
@@ -142,18 +146,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           TextButton(
             onPressed: _markAllAsRead,
-            child: const Text(
-              'Mark all read',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              l10n.markAllReadButton,
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
       ),
-      body: _buildBody(),
+      body: _buildBody(l10n),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(AppLocalizations l10n) {
     if (_isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
@@ -169,7 +173,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loadNotifications,
-              child: const Text('Retry'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -188,7 +192,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'No notifications',
+              l10n.noNotificationsYet,
               style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,

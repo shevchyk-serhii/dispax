@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../../blocs/auth/auth_bloc.dart';
 import '../../../blocs/auth/auth_event.dart';
 import '../../../blocs/auth/auth_state.dart';
@@ -65,18 +66,19 @@ class _BiometricButtonState extends State<BiometricButton>
     }
   }
 
-  String _getBiometricText() {
+  String _getBiometricText(AppLocalizations l10n) {
     if (_availableBiometrics.contains(BiometricType.face)) {
-      return 'Face ID';
+      return l10n.faceId;
     } else if (_availableBiometrics.contains(BiometricType.fingerprint)) {
-      return 'Touch ID';
+      return l10n.touchIdLabel;
     } else {
-      return 'Biometrics';
+      return l10n.biometricsLabel;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (!state.biometricAvailable || !state.biometricEnabled) {
@@ -96,7 +98,7 @@ class _BiometricButtonState extends State<BiometricButton>
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    'or',
+                    l10n.orLabel,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 14,
@@ -156,7 +158,7 @@ class _BiometricButtonState extends State<BiometricButton>
             ),
             const SizedBox(height: 8),
             Text(
-              _getBiometricText(),
+              _getBiometricText(l10n),
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 12,
@@ -177,16 +179,14 @@ class BiometricSetupDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Biometric Setup'),
-      content: const Text(
-        'Would you like to enable quick login using biometrics?\n\n'
-        'This will allow you to sign in using Face ID, Touch ID, or fingerprint.',
-      ),
+      title: Text(l10n.biometricSetupTitle),
+      content: Text(l10n.biometricSetupMessage),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Later'),
+          child: Text(l10n.laterButton),
         ),
         ElevatedButton(
           onPressed: () {
@@ -195,7 +195,7 @@ class BiometricSetupDialog extends StatelessWidget {
             );
             Navigator.of(context).pop();
           },
-          child: const Text('Enable'),
+          child: Text(l10n.enableButton),
         ),
       ],
     );

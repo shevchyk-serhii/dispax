@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:dispax/modules/ride_management/widgets/ride_lifecycle_stepper.dart';
 import 'package:dispax/modules/core/models/location.dart';
@@ -24,6 +25,8 @@ Ride _ride(RideStatus status) => Ride(
 
 Widget _wrap(Widget child, {Brightness brightness = Brightness.light}) {
   return MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    locale: const Locale('en'),
     theme: ThemeData(brightness: brightness, useMaterial3: true),
     home: Scaffold(
       body: SingleChildScrollView(
@@ -249,6 +252,8 @@ void main() {
     // Cancelled → 2 total ABs (2 framework, 0 stepper pulse).
 
     Widget baseline() => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: const Locale('en'),
       theme: ThemeData(useMaterial3: true),
       home: Scaffold(
         body: SingleChildScrollView(

@@ -1710,7 +1710,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String failedToCancelRide(String error) {
-    return 'Fahrt konnte nicht storniert werden: $error';
+    return 'Fehler beim Stornieren: $error';
   }
 
   @override
@@ -1781,7 +1781,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get rideBookedSuccessfully => 'Fahrt erfolgreich gebucht!';
 
   @override
-  String get failedToCreateRide => 'Fahrt konnte nicht erstellt werden';
+  String get failedToCreateRide => 'Fehler beim Erstellen der Fahrt';
 
   @override
   String get failedToLoadRideHistory =>
@@ -1804,6 +1804,1506 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String failedToSubmitRating(String error) {
-    return 'Bewertung konnte nicht übermittelt werden: $error';
+    return 'Fehler beim Absenden der Bewertung: $error';
   }
+
+  @override
+  String rideCardTimeLabel(String time) {
+    return 'Zeit: $time';
+  }
+
+  @override
+  String get deleteConfirmationTitle => 'Bestätigung';
+
+  @override
+  String deleteRideConfirmMessage(String from, String to) {
+    return 'Fahrt $from → $to löschen?';
+  }
+
+  @override
+  String get cancelRideDialogTitle => 'Fahrt stornieren';
+
+  @override
+  String get selectCancellationReason =>
+      'Bitte wählen Sie einen Stornierungsgrund:';
+
+  @override
+  String get cancellationReasonLabel => 'Grund';
+
+  @override
+  String get cancellationReasonClientRequest => 'Kundenwunsch';
+
+  @override
+  String get cancellationReasonWeather => 'Wetter';
+
+  @override
+  String get cancellationReasonOther => 'Sonstiges';
+
+  @override
+  String get cancellationReasonClientNoShow => 'Kunde nicht erschienen';
+
+  @override
+  String get cancellationReasonDriverUnavailable => 'Fahrer nicht verfügbar';
+
+  @override
+  String get cancellationReasonVehicleIssue => 'Fahrzeugproblem';
+
+  @override
+  String get cancellationFeeLabel => 'Stornogebühr (optional)';
+
+  @override
+  String get rateRideExperienceQuestion => 'Wie war Ihre Erfahrung?';
+
+  @override
+  String get rateRideCommentLabel => 'Kommentar (optional)';
+
+  @override
+  String get rateRideCommentHint => 'Erzählen Sie uns von Ihrer Erfahrung...';
+
+  @override
+  String get airportTransferLabel => 'Flughafentransfer';
+
+  @override
+  String get airportTransferHint =>
+      'Aktivieren, wenn es sich um eine Flughafenabholung/-abgabe handelt';
+
+  @override
+  String get airportDepartureLabel => 'Abflug';
+
+  @override
+  String get airportDepartureHint => 'Zum Flughafen';
+
+  @override
+  String get airportArrivalLabel => 'Ankunft';
+
+  @override
+  String get airportArrivalHint => 'Vom Flughafen';
+
+  @override
+  String get flightNumberLabel => 'Flugnummer';
+
+  @override
+  String get flightNumberHint => 'z.B. LH123, BA456';
+
+  @override
+  String get flightNumberRequired =>
+      'Flugnummer ist für Flughafentransfers erforderlich';
+
+  @override
+  String get gateLabel => 'Gate';
+
+  @override
+  String get terminalLabel => 'Terminal';
+
+  @override
+  String get creatingRideLabel => 'Fahrt wird erstellt...';
+
+  @override
+  String get createRideButton => 'Fahrt erstellen';
+
+  @override
+  String get clearFormButton => 'Formular leeren';
+
+  @override
+  String get vehicleInformationLabel => 'Fahrzeuginformationen';
+
+  @override
+  String get messageButton => 'Nachricht';
+
+  @override
+  String get routeInformationLabel => 'Routeninformationen';
+
+  @override
+  String get pickupTimeLabel => 'Abholzeit';
+
+  @override
+  String get distanceLabel => 'Entfernung';
+
+  @override
+  String get durationLabel => 'Dauer';
+
+  @override
+  String get etaToClientLabel => 'ETA zum Kunden';
+
+  @override
+  String get openInGoogleMapsButton => 'In Google Maps öffnen';
+
+  @override
+  String get rideStatusLabel => 'Fahrtsstatus';
+
+  @override
+  String get rideHasBeenCancelledLabel => 'Diese Fahrt wurde storniert';
+
+  @override
+  String get rideStatusRequestedClientLabel => 'Warte auf Fahrerzuweisung';
+
+  @override
+  String get rideStatusRequestedStaffLabel => 'Warte auf Zuweisung';
+
+  @override
+  String get rideStatusAssignedEnRouteLabel => 'Fahrer ist unterwegs';
+
+  @override
+  String get rideStatusAssignedLabel => 'Fahrer zugewiesen';
+
+  @override
+  String get rideStatusAssignedDriverLabel =>
+      'Sie sind dieser Fahrt zugewiesen';
+
+  @override
+  String get rideStatusInProgressClientLabel => 'Fahrt in Gange';
+
+  @override
+  String get rideStatusInProgressDriverLabel => 'Gute Fahrt';
+
+  @override
+  String get rideStatusCompletedLabel => 'Erfolgreich abgeschlossen';
+
+  @override
+  String get rideStatusCancelledLabel => 'Fahrt storniert';
+
+  @override
+  String get rideStatusHandedOffLabel => 'An Partner übergeben';
+
+  @override
+  String get authenticationRequiredError => 'Authentifizierung erforderlich';
+
+  @override
+  String get selectOrCreateClientError =>
+      'Bitte wählen oder erstellen Sie einen Kunden';
+
+  @override
+  String get enterClientNameError => 'Bitte geben Sie den Kundennamen ein';
+
+  @override
+  String get editRideDialogTitle => 'Fahrt bearbeiten';
+
+  @override
+  String get pickupDateTimeLabel => 'Abholdatum/-uhrzeit (yyyy-MM-ddTHH:mm)';
+
+  @override
+  String get flightNumberOptionalLabel => 'Flugnummer (optional)';
+
+  @override
+  String get notesOptionalLabel => 'Notizen (optional)';
+
+  @override
+  String get invalidDateFormatError =>
+      'Ungültiges Datumsformat. Verwenden Sie: yyyy-MM-ddTHH:mm';
+
+  @override
+  String serverErrorMessage(String statusCode) {
+    return 'Serverfehler: $statusCode';
+  }
+
+  @override
+  String get useDispatcherDashboardInfo =>
+      'Verwenden Sie das Dispatcher-Dashboard, um Fahrer zuzuweisen';
+
+  @override
+  String get updateLocationTitle => 'Standort aktualisieren';
+
+  @override
+  String get tellDriverWhereYouAreLabel =>
+      'Sagen Sie dem Fahrer, wo Sie sich befinden:';
+
+  @override
+  String get quickSelectLabel => 'Schnellauswahl:';
+
+  @override
+  String get locationQuickMainEntrance => 'Am Haupteingang';
+
+  @override
+  String get locationQuickBaggageClaim => 'Am Gepäckband';
+
+  @override
+  String get locationQuickCafe => 'Am Café';
+
+  @override
+  String get locationQuickParking => 'Am Parkplatz';
+
+  @override
+  String get locationQuickInformationDesk => 'Am Informationsschalter';
+
+  @override
+  String get locationQuickSecondFloor => 'Im zweiten Stockwerk';
+
+  @override
+  String get locationQuickExit1 => 'Am Ausgang Nr. 1';
+
+  @override
+  String get locationQuickExit2 => 'Am Ausgang Nr. 2';
+
+  @override
+  String get locationQuickOther => 'Anderer Standort';
+
+  @override
+  String get orSpecifyExactlyLabel => 'Oder genau angeben:';
+
+  @override
+  String get locationExampleHint => 'Beispiel: „Am Terminal-A-Eingang“';
+
+  @override
+  String get additionalInstructionsLabel =>
+      'Zusätzliche Anweisungen (optional):';
+
+  @override
+  String get additionalInstructionsExampleHint => 'Beispiel: „Stehe beim Café“';
+
+  @override
+  String get specifyLocationError => 'Bitte geben Sie Ihren Standort an';
+
+  @override
+  String get failedToUpdateLocationError =>
+      'Standort konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get callClientTooltip => 'Kunden anrufen';
+
+  @override
+  String get navigateTooltip => 'Navigieren';
+
+  @override
+  String get delayByHowLongTitle => 'Wie lange verzögern?';
+
+  @override
+  String minutesLabel(int minutes) {
+    return '$minutes Minuten';
+  }
+
+  @override
+  String get appSubtitle => 'Intelligente Mobilitätslösungen';
+
+  @override
+  String get orLabel => 'oder';
+
+  @override
+  String get touchIdLabel => 'Touch ID';
+
+  @override
+  String get biometricsLabel => 'Biometrie';
+
+  @override
+  String get biometricSetupTitle => 'Biometrische Einrichtung';
+
+  @override
+  String get biometricSetupMessage =>
+      'Möchten Sie die schnelle Anmeldung per Biometrie aktivieren?\n\nDamit können Sie sich per Face ID, Touch ID oder Fingerabdruck anmelden.';
+
+  @override
+  String get laterButton => 'Später';
+
+  @override
+  String get enableButton => 'Aktivieren';
+
+  @override
+  String get createButton => 'Erstellen';
+
+  @override
+  String get allLabel => 'Alle';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String operationFailed(String error) {
+    return 'Fehler: $error';
+  }
+
+  @override
+  String get roleLabel => 'Rolle';
+
+  @override
+  String get addGeofenceTooltip => 'Geofence hinzufügen';
+
+  @override
+  String get savedTemplatesTitle => 'Gespeicherte Vorlagen';
+
+  @override
+  String get createTemplateDialogTitle => 'Vorlage erstellen';
+
+  @override
+  String get templateNameLabel => 'Vorlagenname';
+
+  @override
+  String get fromAddressLabel => 'Abfahrtsadresse';
+
+  @override
+  String get toAddressLabel => 'Zieladresse';
+
+  @override
+  String get templatePickupTimeLabel => 'Abholzeit (HH:mm)';
+
+  @override
+  String get recurrenceLabel => 'Wiederholung';
+
+  @override
+  String get recurrenceDaily => 'Täglich';
+
+  @override
+  String get recurrenceWeekdays => 'Wochentags';
+
+  @override
+  String get recurrenceWeeklyMonday => 'Wöchentlich Montag';
+
+  @override
+  String get recurrenceWeeklyTuesday => 'Wöchentlich Dienstag';
+
+  @override
+  String get recurrenceWeeklyWednesday => 'Wöchentlich Mittwoch';
+
+  @override
+  String get recurrenceWeeklyThursday => 'Wöchentlich Donnerstag';
+
+  @override
+  String get recurrenceWeeklyFriday => 'Wöchentlich Freitag';
+
+  @override
+  String get recurrenceSaturdayLabel => 'Wöchentlich Samstag';
+
+  @override
+  String get recurrenceSundayLabel => 'Wöchentlich Sonntag';
+
+  @override
+  String get priceOptionalLabel => 'Preis (optional)';
+
+  @override
+  String get generateRidesMenuLabel => 'Fahrten generieren';
+
+  @override
+  String get deactivateTemplateMenuLabel => 'Deaktivieren';
+
+  @override
+  String get noTemplatesYet => 'Noch keine Vorlagen';
+
+  @override
+  String get noTemplatesSubtitle =>
+      'Erstellen Sie eine Vorlage für wiederkehrende Fahrten';
+
+  @override
+  String get addTemplateButton => 'Vorlage hinzufügen';
+
+  @override
+  String get ridesGeneratedSuccess => 'Fahrten erfolgreich generiert';
+
+  @override
+  String failedToGenerateRides(String error) {
+    return 'Fehler beim Generieren: $error';
+  }
+
+  @override
+  String failedToDeactivateTemplate(String error) {
+    return 'Fehler beim Deaktivieren: $error';
+  }
+
+  @override
+  String get templateBadgeActive => 'Aktiv';
+
+  @override
+  String get templateBadgePaused => 'Pausiert';
+
+  @override
+  String get geofenceScreenTitle => 'Geofences';
+
+  @override
+  String get zonesTabLabel => 'Zonen';
+
+  @override
+  String get recentAlertsTabLabel => 'Aktuelle Alarme';
+
+  @override
+  String get createGeofenceDialogTitle => 'Geofence erstellen';
+
+  @override
+  String get zoneNameLabel => 'Zonenname';
+
+  @override
+  String get geofenceTypeLabel => 'Typ';
+
+  @override
+  String get geofenceTypeServiceArea => 'Servicegebiet';
+
+  @override
+  String get geofenceTypeClientPickup => 'Kundenabholung';
+
+  @override
+  String get geofenceTypeCustomZone => 'Benutzerdefinierte Zone';
+
+  @override
+  String get latitudeLabel => 'Breitengrad';
+
+  @override
+  String get longitudeLabel => 'Längengrad';
+
+  @override
+  String get radiusLabel => 'Radius';
+
+  @override
+  String get notifyOnEntryLabel => 'Benachrichtigung bei Einfahrt';
+
+  @override
+  String get notifyOnExitLabel => 'Benachrichtigung bei Ausfahrt';
+
+  @override
+  String get noGeofenceZonesYet => 'Noch keine Geofence-Zonen';
+
+  @override
+  String get createZonesToMonitorSubtitle =>
+      'Erstellen Sie Zonen zur Überwachung von Ein- und Ausfahrten';
+
+  @override
+  String get createZoneButton => 'Zone erstellen';
+
+  @override
+  String get deleteZoneConfirmTitle => 'Zone löschen';
+
+  @override
+  String deleteZoneConfirmMsg(String name) {
+    return '\"$name\" löschen?';
+  }
+
+  @override
+  String get geofenceDeletedSuccess => 'Geofence gelöscht';
+
+  @override
+  String failedToDeleteGeofence(String error) {
+    return 'Fehler beim Löschen: $error';
+  }
+
+  @override
+  String failedToToggleGeofence(String code) {
+    return 'Fehler beim Umschalten ($code)';
+  }
+
+  @override
+  String failedToCreateGeofence(String code) {
+    return 'Fehler beim Erstellen ($code)';
+  }
+
+  @override
+  String get geofenceCreatedSuccess => 'Geofence erstellt';
+
+  @override
+  String get fillRequiredFieldsError => 'Bitte alle Pflichtfelder ausfüllen';
+
+  @override
+  String get noAlertsFound => 'Keine Alarme gefunden';
+
+  @override
+  String driverEnteredGeofence(String geofenceName) {
+    return 'Fahrer in $geofenceName eingefahren';
+  }
+
+  @override
+  String driverLeftGeofence(String geofenceName) {
+    return 'Fahrer aus $geofenceName ausgefahren';
+  }
+
+  @override
+  String get alertFilterAll => 'Alle';
+
+  @override
+  String get alertFilterEntry => 'Einfahrt';
+
+  @override
+  String get alertFilterExit => 'Ausfahrt';
+
+  @override
+  String get alertFilterLabel => 'Filter:';
+
+  @override
+  String geofenceSubtitleAirport(int radius) {
+    return 'Flughafen-Zone · ${radius}m Radius';
+  }
+
+  @override
+  String geofenceSubtitleServiceArea(int radius) {
+    return 'Servicegebiet · ${radius}m Radius';
+  }
+
+  @override
+  String geofenceSubtitleClientPickup(int radius) {
+    return 'Kundenabholpunkt · ${radius}m Radius';
+  }
+
+  @override
+  String geofenceSubtitleCustomZone(int radius) {
+    return 'Benutzerdefinierte Zone · ${radius}m Radius';
+  }
+
+  @override
+  String failedToLoadGeofences(String code) {
+    return 'Fehler beim Laden ($code)';
+  }
+
+  @override
+  String failedToLoadAlerts(String code) {
+    return 'Fehler beim Laden der Alarme ($code)';
+  }
+
+  @override
+  String get notifTabNotifications => 'Benachrichtigungen';
+
+  @override
+  String get notifTabSettings => 'Einstellungen';
+
+  @override
+  String get markAllReadButton => 'Alle gelesen';
+
+  @override
+  String get clearAllNotificationsMenuLabel => 'Alle löschen';
+
+  @override
+  String get clearAllConfirmTitle => 'Alle Benachrichtigungen löschen';
+
+  @override
+  String get clearAllConfirmContent =>
+      'Möchten Sie wirklich alle Benachrichtigungen löschen?';
+
+  @override
+  String get deleteAllNotificationsButton => 'Alle löschen';
+
+  @override
+  String get noNotificationsYet => 'Keine Benachrichtigungen';
+
+  @override
+  String get notifFilterAll => 'Alle';
+
+  @override
+  String get notifFilterRides => 'Fahrten';
+
+  @override
+  String get notifFilterChat => 'Chat';
+
+  @override
+  String get notifFilterGeofence => 'Geofence';
+
+  @override
+  String get notifFilterPools => 'Pools';
+
+  @override
+  String get notifFilterCheckpoints => 'Checkpoints';
+
+  @override
+  String get notifJustNow => 'Gerade eben';
+
+  @override
+  String notifMinutesAgo(int count) {
+    return 'vor $count Min.';
+  }
+
+  @override
+  String notifHoursAgo(int count) {
+    return 'vor $count Std.';
+  }
+
+  @override
+  String notifDaysAgo(int count) {
+    return 'vor $count Tagen';
+  }
+
+  @override
+  String get notifPrefSectionPush => 'Push-Benachrichtigungen';
+
+  @override
+  String get notifPrefSectionAdditional => 'Weitere Kanäle';
+
+  @override
+  String get notifPrefRideUpdatesSubtitle => 'Statusänderungen, Zuweisungen';
+
+  @override
+  String get notifPrefChatMessagesSubtitle =>
+      'Neue Nachrichten von Fahrer/Kunde';
+
+  @override
+  String get notifPrefDriverApproachingLabel => 'Fahrer nähert sich';
+
+  @override
+  String get notifPrefDriverApproachingSubtitle =>
+      'Wenn Fahrer in der Nähe ist';
+
+  @override
+  String get notifPrefGeofenceAlertsLabel => 'Geofence-Alarme';
+
+  @override
+  String get notifPrefGeofenceAlertsSubtitle => 'Ein-/Ausfahrtalarme';
+
+  @override
+  String get notifPrefPoolUpdatesLabel => 'Pool-Updates';
+
+  @override
+  String get notifPrefPoolUpdatesSubtitle =>
+      'Fahrgemeinschafts-Benachrichtigungen';
+
+  @override
+  String get notifPrefEmailLabel => 'E-Mail-Benachrichtigungen';
+
+  @override
+  String get notifPrefEmailSubtitle => 'Benachrichtigungen per E-Mail erhalten';
+
+  @override
+  String get notifPrefSmsLabel => 'SMS-Benachrichtigungen';
+
+  @override
+  String get notifPrefSmsSubtitle => 'Benachrichtigungen per SMS erhalten';
+
+  @override
+  String get notifPrefQuietHours => 'Ruhezeiten';
+
+  @override
+  String get notifPrefQuietHoursFrom => 'Von';
+
+  @override
+  String get notifPrefQuietHoursTo => 'Bis';
+
+  @override
+  String get notifPrefNotSet => 'Nicht gesetzt';
+
+  @override
+  String get savePreferencesButton => 'Einstellungen speichern';
+
+  @override
+  String get preferencesSaved => 'Einstellungen gespeichert';
+
+  @override
+  String get revokeSessionDialogTitle => 'Sitzung widerrufen';
+
+  @override
+  String get revokeSessionDialogContent =>
+      'Das mit dieser Sitzung verbundene Gerät wird abgemeldet.';
+
+  @override
+  String get revokeSessionButton => 'Widerrufen';
+
+  @override
+  String get revokeAllOtherSessionsDialogTitle =>
+      'Alle anderen Sitzungen widerrufen';
+
+  @override
+  String get revokeAllOtherSessionsDialogContent =>
+      'Alle anderen Geräte werden abgemeldet. Nur Ihre aktuelle Sitzung bleibt aktiv.';
+
+  @override
+  String get revokeAllButton => 'Alle widerrufen';
+
+  @override
+  String get sessionRevoked => 'Sitzung widerrufen';
+
+  @override
+  String get allOtherSessionsRevoked => 'Alle anderen Sitzungen widerrufen';
+
+  @override
+  String get noActiveSessions => 'Keine aktiven Sitzungen';
+
+  @override
+  String get sessionCurrentLabel => 'Aktuell';
+
+  @override
+  String sessionIpLabel(String ip) {
+    return 'IP: $ip';
+  }
+
+  @override
+  String sessionCreatedLabel(String date) {
+    return 'Erstellt: $date';
+  }
+
+  @override
+  String sessionLastActiveLabel(String date) {
+    return 'Zuletzt aktiv: $date';
+  }
+
+  @override
+  String get revokeSessionAction => 'Widerrufen';
+
+  @override
+  String get userManagementTitle => 'Benutzerverwaltung';
+
+  @override
+  String get createUserDialogTitle => 'Benutzer erstellen';
+
+  @override
+  String get searchUsersHint => 'Benutzer suchen...';
+
+  @override
+  String get changeRoleMenuHeader => 'Rolle ändern';
+
+  @override
+  String get changeStatusMenuHeader => 'Status ändern';
+
+  @override
+  String get activateUserAction => 'Aktivieren';
+
+  @override
+  String get suspendUserAction => 'Sperren';
+
+  @override
+  String get deactivateUserAction => 'Deaktivieren';
+
+  @override
+  String get noUsersFound => 'Keine Benutzer gefunden';
+
+  @override
+  String get totalUsersLabel => 'Gesamt';
+
+  @override
+  String get driversStatLabel => 'Fahrer';
+
+  @override
+  String get clientsStatLabel => 'Kunden';
+
+  @override
+  String get staffStatLabel => 'Personal';
+
+  @override
+  String roleChangedSuccess(String role) {
+    return 'Rolle geändert zu $role';
+  }
+
+  @override
+  String statusChangedSuccess(String status) {
+    return 'Status geändert zu $status';
+  }
+
+  @override
+  String failedToChangeRole(String error) {
+    return 'Fehler: $error';
+  }
+
+  @override
+  String failedToChangeStatus(String error) {
+    return 'Fehler: $error';
+  }
+
+  @override
+  String failedToCreateUser(String error) {
+    return 'Fehler: $error';
+  }
+
+  @override
+  String get blacklistTitle => 'Sperrliste';
+
+  @override
+  String get addBlacklistEntryDialogTitle => 'Eintrag hinzufügen';
+
+  @override
+  String get clientIdLabel => 'Kunden-ID';
+
+  @override
+  String get driverIdLabel => 'Fahrer-ID';
+
+  @override
+  String get reasonOptionalLabel => 'Grund (optional)';
+
+  @override
+  String get clientDriverIdRequired =>
+      'Kunden-ID und Fahrer-ID sind erforderlich';
+
+  @override
+  String get removeBlacklistEntryDialogTitle => 'Eintrag entfernen';
+
+  @override
+  String get removeBlacklistEntryContent =>
+      'Möchten Sie diesen Eintrag wirklich entfernen?';
+
+  @override
+  String get removeBlacklistEntryButton => 'Entfernen';
+
+  @override
+  String get noBlacklistEntries => 'Keine Einträge in der Sperrliste';
+
+  @override
+  String get tenantsTitle => 'Mandanten';
+
+  @override
+  String tenantsWithCount(int count) {
+    return 'Mandanten · $count Unternehmen';
+  }
+
+  @override
+  String get onboardButton => '+ Onboarding';
+
+  @override
+  String get noTenantsFound => 'Keine Mandanten gefunden';
+
+  @override
+  String get onboardCompanyDialogTitle => 'Unternehmen aufnehmen';
+
+  @override
+  String get editCompanyDialogTitle => 'Unternehmen bearbeiten';
+
+  @override
+  String get subscriptionPlanLabel => 'Abonnementplan';
+
+  @override
+  String get colHeaderCompany => 'UNTERNEHMEN';
+
+  @override
+  String get colHeaderPlan => 'PLAN';
+
+  @override
+  String get colHeaderDrivers => 'FAHRER';
+
+  @override
+  String get colHeaderRidesPerMonth => 'FAHRTEN / MO';
+
+  @override
+  String get colHeaderStatus => 'STATUS';
+
+  @override
+  String get deactivateCompanyDialogTitle => 'Unternehmen deaktivieren?';
+
+  @override
+  String deactivateCompanyDialogContent(String name) {
+    return 'Möchten Sie \"$name\" wirklich deaktivieren?\n\nDas Unternehmen wird als Inaktiv markiert, alle Daten (Fahrten, Rechnungen, Benutzer) bleiben erhalten.';
+  }
+
+  @override
+  String get setActiveAction => 'Aktiv setzen';
+
+  @override
+  String get setTrialAction => 'Testphase setzen';
+
+  @override
+  String get suspendAction => 'Sperren';
+
+  @override
+  String get emergencyReassignmentTitle => 'Notfall-Umbesetzungen';
+
+  @override
+  String get emergencyReassignmentDialogTitle => 'Notfall-Umbesetzung';
+
+  @override
+  String get rideIdLabel => 'Fahrt-ID';
+
+  @override
+  String get emergencyReasonLabel => 'Grund';
+
+  @override
+  String get availableDriversLabel => 'Verfügbare Fahrer:';
+
+  @override
+  String get newDriverIdLabel => 'Neue Fahrer-ID (optional)';
+
+  @override
+  String get newDriverIdHelper => 'Leer lassen, um Zuweisung aufzuheben';
+
+  @override
+  String get reassignButton => 'Neu zuweisen';
+
+  @override
+  String get rideIdRequired => 'Fahrt-ID ist erforderlich';
+
+  @override
+  String get emergencyReassignmentCreated => 'Notfall-Umbesetzung erstellt';
+
+  @override
+  String get noEmergencyReassignments => 'Keine Notfall-Umbesetzungen';
+
+  @override
+  String get emergencyReasonDriverIllness => 'Fahrerkrankheit';
+
+  @override
+  String get emergencyReasonVehicleBreakdown => 'Fahrzeugpanne';
+
+  @override
+  String get emergencyReasonDriverNoShow => 'Fahrer erschienen nicht';
+
+  @override
+  String get emergencyReasonAccident => 'Unfall';
+
+  @override
+  String get emergencyReasonPersonalEmergency => 'Persönlicher Notfall';
+
+  @override
+  String get emergencyReasonOther => 'Sonstiges';
+
+  @override
+  String get preferredDriverLabel => 'Bevorzugt';
+
+  @override
+  String emergencyRideLabel(String id) {
+    return 'Fahrt: $id';
+  }
+
+  @override
+  String emergencyOriginalDriverLabel(String id) {
+    return 'Ursprünglicher Fahrer: $id';
+  }
+
+  @override
+  String emergencyNewDriverLabel(String id) {
+    return 'Neuer Fahrer: $id';
+  }
+
+  @override
+  String get ridePoolsTitle => 'Fahrgemeinschaften';
+
+  @override
+  String get createRidePoolDialogTitle => 'Fahrgemeinschaft erstellen';
+
+  @override
+  String get poolNameOptionalLabel => 'Pool-Name (optional)';
+
+  @override
+  String get poolNameHint => 'z.B. Flughafen-Morgenbus';
+
+  @override
+  String get routeDirectionOptionalLabel => 'Routenrichtung (optional)';
+
+  @override
+  String get routeDirectionHint => 'z.B. Innenstadt → Flughafen';
+
+  @override
+  String get maxPassengersLabel => 'Max. Passagiere:';
+
+  @override
+  String get ridePoolCreated => 'Fahrgemeinschaft erstellt';
+
+  @override
+  String get noRidePools => 'Keine Fahrgemeinschaften';
+
+  @override
+  String get createPoolToCombineRides =>
+      'Erstellen Sie einen Pool, um Fahrten zu kombinieren';
+
+  @override
+  String errorLoadingPoolDetails(String error) {
+    return 'Fehler beim Laden der Pool-Details: $error';
+  }
+
+  @override
+  String get poolDetailStatusLabel => 'Status';
+
+  @override
+  String get poolDetailPassengersLabel => 'Passagiere';
+
+  @override
+  String get poolDetailRouteLabel => 'Route';
+
+  @override
+  String get poolDetailDriverLabel => 'Fahrer';
+
+  @override
+  String get poolMembersLabel => 'Mitglieder:';
+
+  @override
+  String get noRidesInPool => 'Noch keine Fahrten in diesem Pool';
+
+  @override
+  String get companySettingsTitle => 'Unternehmenseinstellungen';
+
+  @override
+  String get navItemCompany => 'Unternehmen';
+
+  @override
+  String get navItemUsersRoles => 'Benutzer & Rollen';
+
+  @override
+  String get navItemCompliance => 'Compliance';
+
+  @override
+  String get navItemBillingDatev => 'Abrechnung & DATEV';
+
+  @override
+  String get navItemGeofences => 'Geofences';
+
+  @override
+  String get companyProfileSectionTitle => 'Unternehmensprofil';
+
+  @override
+  String get companyProfileSubtitle =>
+      'Rechtliche Informationen auf Rechnungen und Berichten.';
+
+  @override
+  String get complianceSectionTitle => 'Compliance & Sicherheit';
+
+  @override
+  String get complianceSubtitle =>
+      'Datenschutz, Zugriffsverwaltung und Audit-Kontrollen.';
+
+  @override
+  String get billingDatevSectionTitle => 'Abrechnung & DATEV';
+
+  @override
+  String get billingDatevSubtitle =>
+      'Tarifkonfiguration und DATEV-Exporteinstellungen.';
+
+  @override
+  String get tariffSettingsSectionTitle => 'Tarifeinstellungen';
+
+  @override
+  String get datevIntegrationSectionTitle => 'DATEV-Integration';
+
+  @override
+  String get datevIntegrationSubtitle =>
+      'Beraternummer und Mandantennummer werden im EXTF-Buchungsstapel-Header verwendet.';
+
+  @override
+  String get legalNameLabel => 'Firmenname (rechtlich)';
+
+  @override
+  String get vatIdLabel => 'USt-IdNr.';
+
+  @override
+  String get defaultCurrencyLabel => 'Standardwährung';
+
+  @override
+  String get timezoneLabel => 'Zeitzone';
+
+  @override
+  String get commissionRateLabel => 'Provisionsrate (%)';
+
+  @override
+  String get cancellationFeeSettingsLabel => 'Stornierungsgebühr (€)';
+
+  @override
+  String get noShowFeeLabel => 'Nichterscheinen-Gebühr (€)';
+
+  @override
+  String get basePriceLabel => 'Grundpreis (€)';
+
+  @override
+  String get pricePerKmLabel => 'Preis pro km (€)';
+
+  @override
+  String get airportSurchargeLabel => 'Flughafenzuschlag (€)';
+
+  @override
+  String get nightSurchargeLabel => 'Nachtzuschlag (€)';
+
+  @override
+  String get workStartLabel => 'Arbeitsbeginn';
+
+  @override
+  String get workEndLabel => 'Arbeitsende';
+
+  @override
+  String get settingsSavedSuccess => 'Einstellungen erfolgreich gespeichert';
+
+  @override
+  String failedToSaveSettings(String error) {
+    return 'Fehler beim Speichern: $error';
+  }
+
+  @override
+  String get gdprExportTitle => 'DSGVO-Export';
+
+  @override
+  String get gdprExportSubtitle => 'Alle persönlichen Daten herunterladen';
+
+  @override
+  String get auditLogTitle => 'Audit-Protokoll';
+
+  @override
+  String get auditLogSubtitle => 'Systemaktivität überprüfen';
+
+  @override
+  String get activeSessionsCardTitle => 'Aktive Sitzungen';
+
+  @override
+  String get activeSessionsCardSubtitle => 'Angemeldete Geräte verwalten';
+
+  @override
+  String get blacklistCardTitle => 'Sperrliste';
+
+  @override
+  String get blacklistCardSubtitle => 'Gesperrte Konten verwalten';
+
+  @override
+  String comingSoonLabel(String label) {
+    return '$label demnächst verfügbar';
+  }
+
+  @override
+  String get settingsCompanyProfile => 'Unternehmensprofil';
+
+  @override
+  String get generalSettingsSectionTitle => 'Allgemeine Einstellungen';
+
+  @override
+  String get gdprScreenTitle => 'Datenschutz & Daten (DSGVO)';
+
+  @override
+  String get consentManagementSectionTitle => 'Einwilligungsverwaltung';
+
+  @override
+  String get consentDataProcessingLabel => 'Datenverarbeitung';
+
+  @override
+  String get consentDataProcessingSubtitle =>
+      'Verarbeitung von Fahrt- und Kontodaten zulassen';
+
+  @override
+  String get consentMarketingLabel => 'Marketing';
+
+  @override
+  String get consentMarketingSubtitle => 'Werbe-E-Mails und Angebote erhalten';
+
+  @override
+  String get consentAnalyticsLabel => 'Analyse';
+
+  @override
+  String get consentAnalyticsSubtitle => 'Helfen Sie uns mit Nutzungsanalysen';
+
+  @override
+  String get consentThirdPartySharingLabel => 'Weitergabe an Dritte';
+
+  @override
+  String get consentThirdPartySharingSubtitle =>
+      'Daten mit Partnerdiensten teilen';
+
+  @override
+  String get yourDataSectionTitle => 'Ihre Daten';
+
+  @override
+  String get exportMyDataLabel => 'Meine Daten exportieren';
+
+  @override
+  String get exportMyDataSubtitle =>
+      'Alle gespeicherten persönlichen Daten herunterladen';
+
+  @override
+  String get dataDeletionSectionTitle => 'Datenlöschung';
+
+  @override
+  String get requestDataDeletionLabel => 'Datenlöschung beantragen';
+
+  @override
+  String get requestDataDeletionSubtitle =>
+      'Alle Daten und Ihr Konto dauerhaft löschen';
+
+  @override
+  String get pendingDeletionSubtitle =>
+      'Eine Löschanfrage ist bereits ausstehend';
+
+  @override
+  String get pendingChipLabel => 'Ausstehend';
+
+  @override
+  String get requestHistoryTitle => 'Anfrageverlauf';
+
+  @override
+  String get requestDeletionDialogTitle => 'Datenlöschung beantragen';
+
+  @override
+  String get requestDeletionDialogContent =>
+      'Dies sendet eine Anfrage zur Löschung aller Ihrer persönlichen Daten. Diese Aktion kann nicht rückgängig gemacht werden. Ihr Konto wird nach Bearbeitung der Anfrage deaktiviert.\n\nMöchten Sie wirklich fortfahren?';
+
+  @override
+  String get requestDeletionButton => 'Löschung beantragen';
+
+  @override
+  String get dataExportCopied => 'Datenexport in Zwischenablage kopiert';
+
+  @override
+  String exportFailed(String error) {
+    return 'Export fehlgeschlagen: $error';
+  }
+
+  @override
+  String get deletionRequestSubmitted => 'Löschanfrage eingereicht';
+
+  @override
+  String failedToLoadGdprData(String consentsCode, String requestsCode) {
+    return 'Fehler beim Laden der DSGVO-Daten ($consentsCode/$requestsCode)';
+  }
+
+  @override
+  String get dataDeletionRequestType => 'Datenlöschung';
+
+  @override
+  String get dataExportRequestType => 'Datenexport';
+
+  @override
+  String get paymentsTitle => 'Zahlungen';
+
+  @override
+  String get unpaidBadgeLabel => 'Unbezahlt';
+
+  @override
+  String get allRidesPaidLabel => 'Alle Fahrten sind bezahlt';
+
+  @override
+  String get markAsPaidDialogTitle => 'Als bezahlt markieren';
+
+  @override
+  String get paymentMethodLabel => 'Zahlungsart:';
+
+  @override
+  String get paymentMethodCash => 'Bar';
+
+  @override
+  String get paymentMethodCard => 'Karte';
+
+  @override
+  String get paymentMethodInvoice => 'Rechnung';
+
+  @override
+  String amountLabel(String amount) {
+    return 'Betrag: $amount EUR';
+  }
+
+  @override
+  String get confirmPaymentButton => 'Zahlung bestätigen';
+
+  @override
+  String get paymentRecordedSuccess => 'Zahlung erfasst';
+
+  @override
+  String failedToMarkPaid(String error) {
+    return 'Fehler: $error';
+  }
+
+  @override
+  String get failedToLoadUnpaidRides => 'Fehler beim Laden unbezahlter Fahrten';
+
+  @override
+  String myRideTitle(String id) {
+    return 'Meine Fahrt #$id';
+  }
+
+  @override
+  String rideTitle(String id) {
+    return 'Fahrt #$id';
+  }
+
+  @override
+  String get confirmationSentLabel => 'Bestätigung gesendet';
+
+  @override
+  String get cancellationDetailsTitle => 'Stornierungsdetails';
+
+  @override
+  String cancellationReasonDetail(String reason) {
+    return 'Grund: $reason';
+  }
+
+  @override
+  String cancelledByLabel(String name) {
+    return 'Storniert von: $name';
+  }
+
+  @override
+  String cancellationFeeDisplay(String fee) {
+    return 'Gebühr: €$fee';
+  }
+
+  @override
+  String get ratingTitle => 'Bewertung';
+
+  @override
+  String get notesTitle => 'Notizen';
+
+  @override
+  String get openChatButton => 'Chat öffnen';
+
+  @override
+  String get rideStatusUpdatedSuccess =>
+      'Fahrtsstatus erfolgreich aktualisiert';
+
+  @override
+  String failedToUpdateRideStatus(String error) {
+    return 'Fehler beim Aktualisieren des Fahrtstatus: $error';
+  }
+
+  @override
+  String get driverAssignedSuccess => 'Fahrer erfolgreich zugewiesen';
+
+  @override
+  String failedToAssignDriver(String error) {
+    return 'Fehler bei der Fahrerzuweisung: $error';
+  }
+
+  @override
+  String get rideCancelledSuccess => 'Fahrt storniert';
+
+  @override
+  String get completeRideDialogTitle => 'Fahrt abschließen';
+
+  @override
+  String get completeRideDialogContent =>
+      'Diese Fahrt als abgeschlossen markieren?';
+
+  @override
+  String get createNewRideTitle => 'Neue Fahrt erstellen';
+
+  @override
+  String get rideCreatedSuccess => 'Fahrt erfolgreich erstellt!';
+
+  @override
+  String get conflictDialogTitle => 'Terminkonflikt';
+
+  @override
+  String conflictDialogContent(String message) {
+    return '$message\n\nDie Fahrt wurde erstellt und befindet sich im Dispatcher-Pool. Trotzdem zuweisen?';
+  }
+
+  @override
+  String get conflictDialogContentDefault =>
+      'Sie haben bereits eine Fahrt zu dieser Zeit. Die Fahrt wurde erstellt und befindet sich im Pool. Trotzdem zuweisen?';
+
+  @override
+  String get keepInPoolButton => 'Im Pool belassen';
+
+  @override
+  String get assignAnywayButton => 'Trotzdem zuweisen';
+
+  @override
+  String get exportRidesTitle => 'Fahrten exportieren';
+
+  @override
+  String get copyCsvButton => 'CSV kopieren';
+
+  @override
+  String get dateRangeButton => 'Zeitraum';
+
+  @override
+  String get noRidesMatchFilters => 'Keine Fahrten entsprechen den Filtern';
+
+  @override
+  String get exportSummaryTotal => 'Gesamt';
+
+  @override
+  String get exportSummaryCompleted => 'Abgeschlossen';
+
+  @override
+  String get exportSummaryRevenue => 'Umsatz';
+
+  @override
+  String csvCopiedSnackbar(int count) {
+    return 'CSV-Daten in Zwischenablage ($count Fahrten)';
+  }
+
+  @override
+  String get okButton => 'OK';
+
+  @override
+  String get flightsMunichAirportTitle => 'Flüge · Flughafen München';
+
+  @override
+  String get autoSyncedLabel => 'automatisch synchronisiert';
+
+  @override
+  String get arrivalsTabLabel => 'Ankünfte';
+
+  @override
+  String get departuresTabLabel => 'Abflüge';
+
+  @override
+  String get noArrivalsFound => 'Keine Ankünfte gefunden';
+
+  @override
+  String get noDeparturesFound => 'Keine Abflüge gefunden';
+
+  @override
+  String errorLoadingFlights(String error) {
+    return 'Fehler beim Laden der Flüge: $error';
+  }
+
+  @override
+  String get flightColumnFlight => 'Flug';
+
+  @override
+  String get flightColumnOriginDest => 'Herkunft / Ziel';
+
+  @override
+  String get flightColumnSched => 'Plan';
+
+  @override
+  String get flightColumnStatus => 'Status';
+
+  @override
+  String get flightColumnLinkedRide => 'Verknüpfte Fahrt';
+
+  @override
+  String get flightStatusOnTime => 'Pünktlich';
+
+  @override
+  String get flightStatusDelayed => 'Verspätet';
+
+  @override
+  String get flightStatusBoarding => 'Boarding';
+
+  @override
+  String get flightStatusCancelled => 'Gestrichen';
+
+  @override
+  String get flightStatusUnknown => 'Unbekannt';
+
+  @override
+  String get flightNotLinked => '— nicht verknüpft';
+
+  @override
+  String get whoCanSeeWhomTitle => 'Wer sieht wen';
+
+  @override
+  String get visibleToAllDispatchers => 'Für alle Disponenten sichtbar';
+
+  @override
+  String get scheduleHiddenFromOthers => 'Zeitplan für andere verborgen';
+
+  @override
+  String get noDriversInCompany => 'Keine Fahrer in Ihrem Unternehmen.';
+
+  @override
+  String failedToUpdateVisibilityError(String error) {
+    return 'Fehler beim Aktualisieren der Sichtbarkeit: $error';
+  }
+
+  @override
+  String get auditLogScreenTitle => 'Audit-Protokoll';
+
+  @override
+  String get searchByEntityIdHint => 'Nach Entitäts-ID suchen...';
+
+  @override
+  String get noAuditEntriesFound => 'Keine Audit-Einträge gefunden';
+
+  @override
+  String onlineOnRideLabel(String id) {
+    return 'Online · Fahrt #$id';
+  }
+
+  @override
+  String get startConversationSubtitle =>
+      'Beginnen Sie die Unterhaltung mit dem Fahrer';
+
+  @override
+  String failedToSendMessage(String error) {
+    return 'Fehler beim Senden: $error';
+  }
+
+  @override
+  String get totalRidesStatLabel => 'Fahrten gesamt';
+
+  @override
+  String get onTimeStatLabel => 'Pünktlich';
+
+  @override
+  String get avgSlackStatLabel => 'Ø Puffer';
+
+  @override
+  String get gmvStatLabel => 'GMV';
+
+  @override
+  String get ridesByTenantTitle => 'Fahrten nach Mandant';
+
+  @override
+  String get rideStatusBreakdownTitle => 'Fahrtsstatus-Übersicht';
+
+  @override
+  String get platformActiveSessionsLabel => 'Aktive Plattformsitzungen';
+
+  @override
+  String get clientPaymentTitle => 'Zahlung';
+
+  @override
+  String get paymentMethodsSectionLabel => 'ZAHLUNGSARTEN';
+
+  @override
+  String get corporateInvoiceLabel => 'Firmenrechnung';
+
+  @override
+  String get addPaymentMethodButton => 'Zahlungsart hinzufügen';
 }

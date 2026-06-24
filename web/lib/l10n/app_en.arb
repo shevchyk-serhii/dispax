@@ -854,5 +854,784 @@
     "placeholders": {
       "error": {"type": "String"}
     }
-  }
+  },
+
+  "rideCardTimeLabel": "Time: {time}",
+  "@rideCardTimeLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "deleteConfirmationTitle": "Confirmation",
+  "deleteRideConfirmMessage": "Delete ride {from} → {to}?",
+  "@deleteRideConfirmMessage": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  },
+
+  "cancelRideDialogTitle": "Cancel Ride",
+  "selectCancellationReason": "Please select a reason for cancellation:",
+  "cancellationReasonLabel": "Reason",
+  "cancellationReasonClientRequest": "Client Request",
+  "cancellationReasonWeather": "Weather",
+  "cancellationReasonOther": "Other",
+  "cancellationReasonClientNoShow": "Client No-Show",
+  "cancellationReasonDriverUnavailable": "Driver Unavailable",
+  "cancellationReasonVehicleIssue": "Vehicle Issue",
+  "cancellationFeeLabel": "Cancellation Fee (optional)",
+
+  "rateRideExperienceQuestion": "How was your experience?",
+  "rateRideCommentLabel": "Comment (optional)",
+  "rateRideCommentHint": "Tell us about your experience...",
+
+  "airportTransferLabel": "Airport Transfer",
+  "airportTransferHint": "Enable if this is an airport pickup/drop-off",
+  "airportDepartureLabel": "Departure",
+  "airportDepartureHint": "To airport",
+  "airportArrivalLabel": "Arrival",
+  "airportArrivalHint": "From airport",
+  "flightNumberLabel": "Flight Number",
+  "flightNumberHint": "e.g. LH123, BA456",
+  "flightNumberRequired": "Flight number is required for airport transfers",
+  "gateLabel": "Gate",
+  "terminalLabel": "Terminal",
+
+  "creatingRideLabel": "Creating Ride...",
+  "createRideButton": "Create Ride",
+  "clearFormButton": "Clear Form",
+
+  "vehicleInformationLabel": "Vehicle Information",
+  "messageButton": "Message",
+
+  "routeInformationLabel": "Route Information",
+  "pickupTimeLabel": "Pickup Time",
+  "distanceLabel": "Distance",
+  "durationLabel": "Duration",
+  "etaToClientLabel": "ETA to client",
+  "openInGoogleMapsButton": "Open in Google Maps",
+
+  "rideStatusLabel": "Ride Status",
+  "rideHasBeenCancelledLabel": "This ride has been cancelled",
+  "rideStatusRequestedClientLabel": "Waiting for driver assignment",
+  "rideStatusRequestedStaffLabel": "Awaiting assignment",
+  "rideStatusAssignedEnRouteLabel": "Driver is on the way",
+  "rideStatusAssignedLabel": "Driver assigned",
+  "rideStatusAssignedDriverLabel": "You are assigned to this ride",
+  "rideStatusInProgressClientLabel": "Ride in progress",
+  "rideStatusInProgressDriverLabel": "Drive safely",
+  "rideStatusCompletedLabel": "Completed successfully",
+  "rideStatusCancelledLabel": "Ride cancelled",
+  "rideStatusHandedOffLabel": "Handed off to partner",
+
+  "authenticationRequiredError": "Authentication required",
+  "selectOrCreateClientError": "Please select or create a client",
+  "enterClientNameError": "Please enter client name",
+
+  "editRideDialogTitle": "Edit Ride",
+  "pickupDateTimeLabel": "Pickup date/time (yyyy-MM-ddTHH:mm)",
+  "flightNumberOptionalLabel": "Flight number (optional)",
+  "notesOptionalLabel": "Notes (optional)",
+  "invalidDateFormatError": "Invalid date format. Use: yyyy-MM-ddTHH:mm",
+  "serverErrorMessage": "Server error: {statusCode}",
+  "@serverErrorMessage": {
+    "placeholders": {
+      "statusCode": {"type": "String"}
+    }
+  },
+  "useDispatcherDashboardInfo": "Use the Dispatcher Dashboard to assign drivers",
+
+  "updateLocationTitle": "Update Location",
+  "tellDriverWhereYouAreLabel": "Tell the driver where you are now:",
+  "quickSelectLabel": "Quick select:",
+  "locationQuickMainEntrance": "At main entrance",
+  "locationQuickBaggageClaim": "At baggage claim",
+  "locationQuickCafe": "At cafe",
+  "locationQuickParking": "At parking",
+  "locationQuickInformationDesk": "At information desk",
+  "locationQuickSecondFloor": "On second floor",
+  "locationQuickExit1": "At exit #1",
+  "locationQuickExit2": "At exit #2",
+  "locationQuickOther": "Other location",
+  "orSpecifyExactlyLabel": "Or specify exactly:",
+  "locationExampleHint": "Example: \"At Terminal A entrance\"",
+  "additionalInstructionsLabel": "Additional instructions (optional):",
+  "additionalInstructionsExampleHint": "Example: \"Standing near the coffee shop\"",
+  "specifyLocationError": "Please specify your location",
+  "failedToUpdateLocationError": "Failed to update location. Please try again.",
+
+  "callClientTooltip": "Call Client",
+  "navigateTooltip": "Navigate",
+
+  "delayByHowLongTitle": "Delay by how long?",
+  "minutesLabel": "{minutes} minutes",
+  "@minutesLabel": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+
+  "appSubtitle": "Smart Mobility Solutions",
+
+  "orLabel": "or",
+  "touchIdLabel": "Touch ID",
+  "biometricsLabel": "Biometrics",
+  "biometricSetupTitle": "Biometric Setup",
+  "biometricSetupMessage": "Would you like to enable quick login using biometrics?\n\nThis will allow you to sign in using Face ID, Touch ID, or fingerprint.",
+  "laterButton": "Later",
+  "enableButton": "Enable",
+
+  "createButton": "Create",
+  "allLabel": "All",
+  "statusLabel": "Status",
+  "operationFailed": "Failed: {error}",
+  "@operationFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "roleLabel": "Role",
+  "addGeofenceTooltip": "Add geofence",
+
+  "savedTemplatesTitle": "Saved templates",
+  "createTemplateDialogTitle": "Create Template",
+  "templateNameLabel": "Template Name",
+  "fromAddressLabel": "From Address",
+  "toAddressLabel": "To Address",
+  "templatePickupTimeLabel": "Pickup Time (HH:mm)",
+  "recurrenceLabel": "Recurrence",
+  "recurrenceDaily": "Daily",
+  "recurrenceWeekdays": "Weekdays",
+  "recurrenceWeeklyMonday": "Weekly Monday",
+  "recurrenceWeeklyTuesday": "Weekly Tuesday",
+  "recurrenceWeeklyWednesday": "Weekly Wednesday",
+  "recurrenceWeeklyThursday": "Weekly Thursday",
+  "recurrenceWeeklyFriday": "Weekly Friday",
+  "recurrenceSaturdayLabel": "Weekly Saturday",
+  "recurrenceSundayLabel": "Weekly Sunday",
+  "priceOptionalLabel": "Price (optional)",
+  "generateRidesMenuLabel": "Generate rides",
+  "deactivateTemplateMenuLabel": "Deactivate",
+  "noTemplatesYet": "No templates yet",
+  "noTemplatesSubtitle": "Create a template to schedule recurring rides",
+  "addTemplateButton": "Add template",
+  "ridesGeneratedSuccess": "Rides generated successfully",
+  "failedToGenerateRides": "Failed to generate rides: {error}",
+  "@failedToGenerateRides": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToDeactivateTemplate": "Failed to deactivate: {error}",
+  "@failedToDeactivateTemplate": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "templateBadgeActive": "Active",
+  "templateBadgePaused": "Paused",
+
+  "geofenceScreenTitle": "Geofences",
+  "zonesTabLabel": "Zones",
+  "recentAlertsTabLabel": "Recent Alerts",
+  "createGeofenceDialogTitle": "Create Geofence",
+  "zoneNameLabel": "Zone name",
+  "geofenceTypeLabel": "Type",
+  "geofenceTypeServiceArea": "Service Area",
+  "geofenceTypeClientPickup": "Client Pickup",
+  "geofenceTypeCustomZone": "Custom Zone",
+  "latitudeLabel": "Latitude",
+  "longitudeLabel": "Longitude",
+  "radiusLabel": "Radius",
+  "notifyOnEntryLabel": "Notify on entry",
+  "notifyOnExitLabel": "Notify on exit",
+  "noGeofenceZonesYet": "No geofence zones yet",
+  "createZonesToMonitorSubtitle": "Create zones to monitor driver entry and exit events",
+  "createZoneButton": "Create zone",
+  "deleteZoneConfirmTitle": "Delete zone",
+  "deleteZoneConfirmMsg": "Delete \"{name}\"?",
+  "@deleteZoneConfirmMsg": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "geofenceDeletedSuccess": "Geofence deleted",
+  "failedToDeleteGeofence": "Failed to delete: {error}",
+  "@failedToDeleteGeofence": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToToggleGeofence": "Failed to toggle geofence ({code})",
+  "@failedToToggleGeofence": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "failedToCreateGeofence": "Failed to create geofence ({code})",
+  "@failedToCreateGeofence": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "geofenceCreatedSuccess": "Geofence created",
+  "fillRequiredFieldsError": "Please fill in all required fields",
+  "noAlertsFound": "No alerts found",
+  "driverEnteredGeofence": "Driver entered {geofenceName}",
+  "@driverEnteredGeofence": {
+    "placeholders": {
+      "geofenceName": {"type": "String"}
+    }
+  },
+  "driverLeftGeofence": "Driver left {geofenceName}",
+  "@driverLeftGeofence": {
+    "placeholders": {
+      "geofenceName": {"type": "String"}
+    }
+  },
+  "alertFilterAll": "All",
+  "alertFilterEntry": "Entry",
+  "alertFilterExit": "Exit",
+  "alertFilterLabel": "Filter:",
+  "geofenceSubtitleAirport": "Airport zone · {radius}m radius",
+  "@geofenceSubtitleAirport": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "geofenceSubtitleServiceArea": "Service area · {radius}m radius",
+  "@geofenceSubtitleServiceArea": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "geofenceSubtitleClientPickup": "Client pickup point · {radius}m radius",
+  "@geofenceSubtitleClientPickup": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "geofenceSubtitleCustomZone": "Custom zone · {radius}m radius",
+  "@geofenceSubtitleCustomZone": {
+    "placeholders": {
+      "radius": {"type": "int"}
+    }
+  },
+  "failedToLoadGeofences": "Failed to load geofences ({code})",
+  "@failedToLoadGeofences": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "failedToLoadAlerts": "Failed to load alerts ({code})",
+  "@failedToLoadAlerts": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+
+  "notifTabNotifications": "Notifications",
+  "notifTabSettings": "Settings",
+  "markAllReadButton": "Mark all read",
+  "clearAllNotificationsMenuLabel": "Clear All",
+  "clearAllConfirmTitle": "Clear All Notifications",
+  "clearAllConfirmContent": "Are you sure you want to delete all notifications?",
+  "deleteAllNotificationsButton": "Delete All",
+  "noNotificationsYet": "No notifications",
+  "notifFilterAll": "All",
+  "notifFilterRides": "Rides",
+  "notifFilterChat": "Chat",
+  "notifFilterGeofence": "Geofence",
+  "notifFilterPools": "Pools",
+  "notifFilterCheckpoints": "Checkpoints",
+  "notifJustNow": "Just now",
+  "notifMinutesAgo": "{count}m ago",
+  "@notifMinutesAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notifHoursAgo": "{count}h ago",
+  "@notifHoursAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notifDaysAgo": "{count}d ago",
+  "@notifDaysAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notifPrefSectionPush": "Push Notifications",
+  "notifPrefSectionAdditional": "Additional Channels",
+  "notifPrefRideUpdatesSubtitle": "Status changes, assignments",
+  "notifPrefChatMessagesSubtitle": "New messages from driver/client",
+  "notifPrefDriverApproachingLabel": "Driver Approaching",
+  "notifPrefDriverApproachingSubtitle": "When driver is near pickup",
+  "notifPrefGeofenceAlertsLabel": "Geofence Alerts",
+  "notifPrefGeofenceAlertsSubtitle": "Entry/exit zone alerts",
+  "notifPrefPoolUpdatesLabel": "Pool Updates",
+  "notifPrefPoolUpdatesSubtitle": "Ride pooling notifications",
+  "notifPrefEmailLabel": "Email Notifications",
+  "notifPrefEmailSubtitle": "Receive notifications via email",
+  "notifPrefSmsLabel": "SMS Notifications",
+  "notifPrefSmsSubtitle": "Receive notifications via SMS",
+  "notifPrefQuietHours": "Quiet Hours",
+  "notifPrefQuietHoursFrom": "From",
+  "notifPrefQuietHoursTo": "To",
+  "notifPrefNotSet": "Not set",
+  "savePreferencesButton": "Save Preferences",
+  "preferencesSaved": "Preferences saved",
+
+  "revokeSessionDialogTitle": "Revoke Session",
+  "revokeSessionDialogContent": "This will log out the device associated with this session.",
+  "revokeSessionButton": "Revoke",
+  "revokeAllOtherSessionsDialogTitle": "Revoke All Other Sessions",
+  "revokeAllOtherSessionsDialogContent": "This will log out all other devices. Only your current session will remain active.",
+  "revokeAllButton": "Revoke All",
+  "sessionRevoked": "Session revoked",
+  "allOtherSessionsRevoked": "All other sessions revoked",
+  "noActiveSessions": "No active sessions",
+  "sessionCurrentLabel": "Current",
+  "sessionIpLabel": "IP: {ip}",
+  "@sessionIpLabel": {
+    "placeholders": {
+      "ip": {"type": "String"}
+    }
+  },
+  "sessionCreatedLabel": "Created: {date}",
+  "@sessionCreatedLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "sessionLastActiveLabel": "Last active: {date}",
+  "@sessionLastActiveLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "revokeSessionAction": "Revoke",
+
+  "userManagementTitle": "User Management",
+  "createUserDialogTitle": "Create User",
+  "searchUsersHint": "Search users...",
+  "changeRoleMenuHeader": "Change Role",
+  "changeStatusMenuHeader": "Change Status",
+  "activateUserAction": "Activate",
+  "suspendUserAction": "Suspend",
+  "deactivateUserAction": "Deactivate",
+  "noUsersFound": "No users found",
+  "totalUsersLabel": "Total",
+  "driversStatLabel": "Drivers",
+  "clientsStatLabel": "Clients",
+  "staffStatLabel": "Staff",
+  "roleChangedSuccess": "Role updated to {role}",
+  "@roleChangedSuccess": {
+    "placeholders": {
+      "role": {"type": "String"}
+    }
+  },
+  "statusChangedSuccess": "Status updated to {status}",
+  "@statusChangedSuccess": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "failedToChangeRole": "Failed: {error}",
+  "@failedToChangeRole": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToChangeStatus": "Failed: {error}",
+  "@failedToChangeStatus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToCreateUser": "Failed: {error}",
+  "@failedToCreateUser": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "blacklistTitle": "Blacklist",
+  "addBlacklistEntryDialogTitle": "Add Blacklist Entry",
+  "clientIdLabel": "Client ID",
+  "driverIdLabel": "Driver ID",
+  "reasonOptionalLabel": "Reason (optional)",
+  "clientDriverIdRequired": "Client ID and Driver ID are required",
+  "removeBlacklistEntryDialogTitle": "Remove Blacklist Entry",
+  "removeBlacklistEntryContent": "Are you sure you want to remove this blacklist entry?",
+  "removeBlacklistEntryButton": "Remove",
+  "noBlacklistEntries": "No blacklist entries",
+
+  "tenantsTitle": "Tenants",
+  "tenantsWithCount": "Tenants · {count} companies",
+  "@tenantsWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "onboardButton": "+ Onboard",
+  "noTenantsFound": "No tenants found",
+  "onboardCompanyDialogTitle": "Onboard Company",
+  "editCompanyDialogTitle": "Edit Company",
+  "subscriptionPlanLabel": "Subscription Plan",
+  "colHeaderCompany": "COMPANY",
+  "colHeaderPlan": "PLAN",
+  "colHeaderDrivers": "DRIVERS",
+  "colHeaderRidesPerMonth": "RIDES / MO",
+  "colHeaderStatus": "STATUS",
+  "deactivateCompanyDialogTitle": "Deactivate Company?",
+  "deactivateCompanyDialogContent": "Are you sure you want to deactivate \"{name}\"?\n\nThe company will be marked as Inactive but all data (rides, invoices, users) will be preserved.",
+  "@deactivateCompanyDialogContent": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "setActiveAction": "Set Active",
+  "setTrialAction": "Set Trial",
+  "suspendAction": "Suspend",
+
+  "emergencyReassignmentTitle": "Emergency Reassignments",
+  "emergencyReassignmentDialogTitle": "Emergency Reassignment",
+  "rideIdLabel": "Ride ID",
+  "emergencyReasonLabel": "Reason",
+  "availableDriversLabel": "Available Drivers:",
+  "newDriverIdLabel": "New Driver ID (optional)",
+  "newDriverIdHelper": "Leave empty to unassign and return to pending",
+  "reassignButton": "Reassign",
+  "rideIdRequired": "Ride ID is required",
+  "emergencyReassignmentCreated": "Emergency reassignment created",
+  "noEmergencyReassignments": "No emergency reassignments",
+  "emergencyReasonDriverIllness": "Driver Illness",
+  "emergencyReasonVehicleBreakdown": "Vehicle Breakdown",
+  "emergencyReasonDriverNoShow": "Driver No-Show",
+  "emergencyReasonAccident": "Accident",
+  "emergencyReasonPersonalEmergency": "Personal Emergency",
+  "emergencyReasonOther": "Other",
+  "preferredDriverLabel": "Preferred",
+  "emergencyRideLabel": "Ride: {id}",
+  "@emergencyRideLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "emergencyOriginalDriverLabel": "Original driver: {id}",
+  "@emergencyOriginalDriverLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "emergencyNewDriverLabel": "New driver: {id}",
+  "@emergencyNewDriverLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+
+  "ridePoolsTitle": "Ride Pools",
+  "createRidePoolDialogTitle": "Create Ride Pool",
+  "poolNameOptionalLabel": "Pool Name (optional)",
+  "poolNameHint": "e.g., Airport Morning Shuttle",
+  "routeDirectionOptionalLabel": "Route Direction (optional)",
+  "routeDirectionHint": "e.g., City Center → Airport",
+  "maxPassengersLabel": "Max Passengers:",
+  "ridePoolCreated": "Ride pool created",
+  "noRidePools": "No ride pools",
+  "createPoolToCombineRides": "Create a pool to combine rides",
+  "errorLoadingPoolDetails": "Error loading pool details: {error}",
+  "@errorLoadingPoolDetails": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "poolDetailStatusLabel": "Status",
+  "poolDetailPassengersLabel": "Passengers",
+  "poolDetailRouteLabel": "Route",
+  "poolDetailDriverLabel": "Driver",
+  "poolMembersLabel": "Members:",
+  "noRidesInPool": "No rides in this pool yet",
+
+  "companySettingsTitle": "Company Settings",
+  "navItemCompany": "Company",
+  "navItemUsersRoles": "Users & Roles",
+  "navItemCompliance": "Compliance",
+  "navItemBillingDatev": "Billing & DATEV",
+  "navItemGeofences": "Geofences",
+  "companyProfileSectionTitle": "Company profile",
+  "companyProfileSubtitle": "Legal entity information displayed on invoices and reports.",
+  "complianceSectionTitle": "Compliance & Security",
+  "complianceSubtitle": "Data privacy, access management, and audit controls.",
+  "billingDatevSectionTitle": "Billing & DATEV",
+  "billingDatevSubtitle": "Tariff configuration and DATEV export settings.",
+  "tariffSettingsSectionTitle": "Tariff Settings",
+  "datevIntegrationSectionTitle": "DATEV Integration",
+  "datevIntegrationSubtitle": "Beraternummer und Mandantennummer werden im EXTF-Buchungsstapel-Header verwendet.",
+  "legalNameLabel": "Legal name",
+  "vatIdLabel": "VAT ID",
+  "defaultCurrencyLabel": "Default currency",
+  "timezoneLabel": "Timezone",
+  "commissionRateLabel": "Commission Rate (%)",
+  "cancellationFeeSettingsLabel": "Cancellation Fee (€)",
+  "noShowFeeLabel": "No-Show Fee (€)",
+  "basePriceLabel": "Base Price (€)",
+  "pricePerKmLabel": "Price per Km (€)",
+  "airportSurchargeLabel": "Airport Surcharge (€)",
+  "nightSurchargeLabel": "Night Surcharge (€)",
+  "workStartLabel": "Work Start",
+  "workEndLabel": "Work End",
+  "settingsSavedSuccess": "Settings saved successfully",
+  "failedToSaveSettings": "Failed to save: {error}",
+  "@failedToSaveSettings": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "gdprExportTitle": "GDPR export",
+  "gdprExportSubtitle": "Download all personal data",
+  "auditLogTitle": "Audit log",
+  "auditLogSubtitle": "Review system activity",
+  "activeSessionsCardTitle": "Active sessions",
+  "activeSessionsCardSubtitle": "Manage logged-in devices",
+  "blacklistCardTitle": "Blacklist",
+  "blacklistCardSubtitle": "Manage blocked accounts",
+  "comingSoonLabel": "{label} coming soon",
+  "@comingSoonLabel": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "settingsCompanyProfile": "Company Profile",
+  "generalSettingsSectionTitle": "General Settings",
+
+  "gdprScreenTitle": "Privacy & Data (GDPR)",
+  "consentManagementSectionTitle": "Consent Management",
+  "consentDataProcessingLabel": "Data Processing",
+  "consentDataProcessingSubtitle": "Allow processing of ride and account data",
+  "consentMarketingLabel": "Marketing",
+  "consentMarketingSubtitle": "Receive promotional emails and offers",
+  "consentAnalyticsLabel": "Analytics",
+  "consentAnalyticsSubtitle": "Help improve the app with usage analytics",
+  "consentThirdPartySharingLabel": "Third-Party Sharing",
+  "consentThirdPartySharingSubtitle": "Share data with partner services",
+  "yourDataSectionTitle": "Your Data",
+  "exportMyDataLabel": "Export My Data",
+  "exportMyDataSubtitle": "Download all personal data we have stored about you",
+  "dataDeletionSectionTitle": "Data Deletion",
+  "requestDataDeletionLabel": "Request Data Deletion",
+  "requestDataDeletionSubtitle": "Permanently delete all your data and account",
+  "pendingDeletionSubtitle": "A deletion request is already pending",
+  "pendingChipLabel": "Pending",
+  "requestHistoryTitle": "Request History",
+  "requestDeletionDialogTitle": "Request Data Deletion",
+  "requestDeletionDialogContent": "This will submit a request to delete all your personal data. This action cannot be undone. Your account will be deactivated once the request is processed.\n\nAre you sure you want to proceed?",
+  "requestDeletionButton": "Request Deletion",
+  "dataExportCopied": "Data export copied to clipboard",
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "deletionRequestSubmitted": "Deletion request submitted",
+  "failedToLoadGdprData": "Failed to load GDPR data ({consentsCode}/{requestsCode})",
+  "@failedToLoadGdprData": {
+    "placeholders": {
+      "consentsCode": {"type": "String"},
+      "requestsCode": {"type": "String"}
+    }
+  },
+  "dataDeletionRequestType": "Data Deletion",
+  "dataExportRequestType": "Data Export",
+
+  "paymentsTitle": "Payments",
+  "unpaidBadgeLabel": "Unpaid",
+  "allRidesPaidLabel": "All rides are paid",
+  "markAsPaidDialogTitle": "Mark as Paid",
+  "paymentMethodLabel": "Payment Method:",
+  "paymentMethodCash": "Cash",
+  "paymentMethodCard": "Card",
+  "paymentMethodInvoice": "Invoice",
+  "amountLabel": "Amount: {amount} EUR",
+  "@amountLabel": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "confirmPaymentButton": "Confirm Payment",
+  "paymentRecordedSuccess": "Payment recorded",
+  "failedToMarkPaid": "Failed: {error}",
+  "@failedToMarkPaid": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToLoadUnpaidRides": "Failed to load unpaid rides",
+
+  "myRideTitle": "My Ride #{id}",
+  "@myRideTitle": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "rideTitle": "Ride #{id}",
+  "@rideTitle": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "confirmationSentLabel": "Confirmation sent",
+  "cancellationDetailsTitle": "Cancellation Details",
+  "cancellationReasonDetail": "Reason: {reason}",
+  "@cancellationReasonDetail": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  },
+  "cancelledByLabel": "Cancelled by: {name}",
+  "@cancelledByLabel": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "cancellationFeeDisplay": "Fee: €{fee}",
+  "@cancellationFeeDisplay": {
+    "placeholders": {
+      "fee": {"type": "String"}
+    }
+  },
+  "ratingTitle": "Rating",
+  "notesTitle": "Notes",
+  "openChatButton": "Open Chat",
+  "rideStatusUpdatedSuccess": "Ride status updated successfully",
+  "failedToUpdateRideStatus": "Failed to update ride status: {error}",
+  "@failedToUpdateRideStatus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "driverAssignedSuccess": "Driver assigned successfully",
+  "failedToAssignDriver": "Failed to assign driver: {error}",
+  "@failedToAssignDriver": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "rideCancelledSuccess": "Ride cancelled",
+  "failedToCancelRide": "Failed to cancel ride: {error}",
+  "@failedToCancelRide": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToSubmitRating": "Failed to submit rating: {error}",
+  "@failedToSubmitRating": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "completeRideDialogTitle": "Complete Ride",
+  "completeRideDialogContent": "Mark this ride as completed?",
+
+  "createNewRideTitle": "Create New Ride",
+  "rideCreatedSuccess": "Ride created successfully!",
+  "failedToCreateRide": "Failed to create ride",
+  "conflictDialogTitle": "Schedule conflict",
+  "conflictDialogContent": "{message}\n\nThe ride was created and is in the dispatcher pool. Assign it to yourself anyway?",
+  "@conflictDialogContent": {
+    "placeholders": {
+      "message": {"type": "String"}
+    }
+  },
+  "conflictDialogContentDefault": "You already have a ride around this time. The ride was created and is in the dispatcher pool. Assign it to yourself anyway?",
+  "keepInPoolButton": "Keep in pool",
+  "assignAnywayButton": "Assign anyway",
+
+  "exportRidesTitle": "Export Rides",
+  "copyCsvButton": "Copy CSV",
+  "dateRangeButton": "Date Range",
+  "noRidesMatchFilters": "No rides match the filters",
+  "exportSummaryTotal": "Total",
+  "exportSummaryCompleted": "Completed",
+  "exportSummaryRevenue": "Revenue",
+  "csvCopiedSnackbar": "CSV data copied to clipboard ({count} rides)",
+  "@csvCopiedSnackbar": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "okButton": "OK",
+
+  "flightsMunichAirportTitle": "Flights · Munich Airport",
+  "autoSyncedLabel": "auto-synced",
+  "arrivalsTabLabel": "Arrivals",
+  "departuresTabLabel": "Departures",
+  "noArrivalsFound": "No arrivals found",
+  "noDeparturesFound": "No departures found",
+  "errorLoadingFlights": "Error loading flights: {error}",
+  "@errorLoadingFlights": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "flightColumnFlight": "Flight",
+  "flightColumnOriginDest": "Origin / Dest.",
+  "flightColumnSched": "Sched.",
+  "flightColumnStatus": "Status",
+  "flightColumnLinkedRide": "Linked ride",
+  "flightStatusOnTime": "On time",
+  "flightStatusDelayed": "Delayed",
+  "flightStatusBoarding": "Boarding",
+  "flightStatusCancelled": "Cancelled",
+  "flightStatusUnknown": "Unknown",
+  "flightNotLinked": "— not linked",
+
+  "whoCanSeeWhomTitle": "Who can see whom",
+  "visibleToAllDispatchers": "Visible to all dispatchers",
+  "scheduleHiddenFromOthers": "Schedule hidden from others",
+  "noDriversInCompany": "No drivers in your company.",
+  "failedToUpdateVisibilityError": "Failed to update visibility: {error}",
+  "@failedToUpdateVisibilityError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "auditLogScreenTitle": "Audit Log",
+  "searchByEntityIdHint": "Search by entity ID...",
+  "noAuditEntriesFound": "No audit entries found",
+
+  "onlineOnRideLabel": "Online · on ride #{id}",
+  "@onlineOnRideLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "startConversationSubtitle": "Start the conversation with the driver",
+  "failedToSendMessage": "Failed to send: {error}",
+  "@failedToSendMessage": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "totalRidesStatLabel": "Total Rides",
+  "onTimeStatLabel": "On-time",
+  "avgSlackStatLabel": "Avg Slack",
+  "gmvStatLabel": "GMV",
+  "ridesByTenantTitle": "Rides by Tenant",
+  "rideStatusBreakdownTitle": "Ride Status Breakdown",
+  "platformActiveSessionsLabel": "Platform Active Sessions",
+
+  "clientPaymentTitle": "Payment",
+  "paymentMethodsSectionLabel": "PAYMENT METHODS",
+  "corporateInvoiceLabel": "Corporate invoice",
+  "addPaymentMethodButton": "Add payment method"
 }

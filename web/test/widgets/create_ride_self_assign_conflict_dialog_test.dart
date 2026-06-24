@@ -8,6 +8,7 @@ import 'package:dispax/blocs/ride/ride_event.dart';
 import 'package:dispax/blocs/ride/ride_state.dart';
 import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/screens/create_ride_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,6 +61,9 @@ void main() {
   Future<void> pumpScreen(WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
         home: MultiBlocProvider(
           providers: [
             BlocProvider<AuthBloc>.value(value: authBloc),

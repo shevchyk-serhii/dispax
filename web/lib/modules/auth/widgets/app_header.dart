@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
@@ -8,6 +9,7 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         Container(
@@ -36,9 +38,9 @@ class AppHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppDimensions.paddingLarge),
-        Text('Dispax', style: AppStyles.onDarkHeadlineLarge),
+        Text(l10n.appTitle, style: AppStyles.onDarkHeadlineLarge),
         const SizedBox(height: AppDimensions.paddingSmall),
-        Text('Smart Mobility Solutions', style: AppStyles.onDarkBodyLarge),
+        Text(l10n.appSubtitle, style: AppStyles.onDarkBodyLarge),
       ],
     );
   }

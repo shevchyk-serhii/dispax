@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../ride_management/models/ride.dart';
 import '../../core/navigation_helper.dart';
 import '../../core/navigation_utils.dart';
@@ -28,7 +29,8 @@ class RideQuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusButton = _buildStatusButton(context);
+    final l10n = AppLocalizations.of(context)!;
+    final statusButton = _buildStatusButton(context, l10n);
 
     return Row(
       children: [
@@ -36,22 +38,22 @@ class RideQuickActions extends StatelessWidget {
         _buildIconAction(
           icon: Icons.phone_rounded,
           color: AppColors.success,
-          tooltip: 'Call Client',
+          tooltip: l10n.callClientTooltip,
           onPressed: onCallClient ?? () {},
         ),
         const SizedBox(width: 8),
         _buildIconAction(
           icon: Icons.navigation_rounded,
           color: AppColors.accent,
-          tooltip: 'Navigate',
-          onPressed: () => _handleNavigation(context, ride),
+          tooltip: l10n.navigateTooltip,
+          onPressed: () => _handleNavigation(context, ride, l10n),
         ),
         const SizedBox(width: 8),
         // Details ghost button
         _buildGhostButton(
           context,
           icon: Icons.info_outline_rounded,
-          label: 'Details',
+          label: l10n.viewDetailsMenu,
           onPressed: onViewDetails ?? () {},
         ),
         const Spacer(),
@@ -110,7 +112,7 @@ class RideQuickActions extends StatelessWidget {
     );
   }
 
-  Widget? _buildStatusButton(BuildContext context) {
+  Widget? _buildStatusButton(BuildContext context, AppLocalizations l10n) {
     if (ride.status == RideStatus.assigned) {
       // Assigned but not confirmed: show Confirm and Reject buttons.
       return Row(
@@ -136,7 +138,7 @@ class RideQuickActions extends StatelessWidget {
       // Confirmed: driver can now start the ride.
       return _buildActionButton(
         icon: Icons.play_circle_rounded,
-        label: 'Start',
+        label: l10n.start,
         color: AppColors.accent,
         onPressed: onStartRide ?? () {},
       );
@@ -144,7 +146,7 @@ class RideQuickActions extends StatelessWidget {
     if (ride.status == RideStatus.inProgress) {
       return _buildActionButton(
         icon: Icons.check_circle_rounded,
-        label: 'Complete',
+        label: l10n.completeRideButton,
         color: AppColors.success,
         onPressed: onCompleteRide ?? () {},
       );
@@ -175,13 +177,18 @@ class RideQuickActions extends StatelessWidget {
     );
   }
 
-  static void _handleNavigation(BuildContext context, Ride ride) async {
+  static void _handleNavigation(
+    BuildContext context,
+    Ride ride,
+    AppLocalizations l10n,
+  ) async {
     try {
       final choice = await showAdaptiveDialog<String>(
         context: context,
         builder: (BuildContext context) {
+          final innerL10n = AppLocalizations.of(context)!;
           return SimpleDialog(
-            title: const Text('Navigate to'),
+            title: Text(innerL10n.navigateTo),
             children: [
               SimpleDialogOption(
                 onPressed: () => Navigator.of(context).pop('pickup'),
@@ -191,7 +198,7 @@ class RideQuickActions extends StatelessWidget {
                     color: AppColors.success,
                   ),
                   title: Text(ride.from.address),
-                  subtitle: const Text('Google Maps — Pickup'),
+                  subtitle: Text(innerL10n.googleMapsPickup),
                 ),
               ),
               SimpleDialogOption(
@@ -199,7 +206,7 @@ class RideQuickActions extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.flag, color: AppColors.error),
                   title: Text(ride.to.address),
-                  subtitle: const Text('Google Maps — Drop-off'),
+                  subtitle: Text(innerL10n.googleMapsDropoff),
                 ),
               ),
             ],
@@ -219,7 +226,7 @@ class RideQuickActions extends StatelessWidget {
       if (context.mounted) {
         NavigationHelper.showSnackBar(
           context,
-          'Opening navigation in Google Maps...',
+          l10n.openingNavigation,
           isError: false,
         );
       }
@@ -227,7 +234,7 @@ class RideQuickActions extends StatelessWidget {
       if (context.mounted) {
         NavigationHelper.showSnackBar(
           context,
-          'Could not open navigation: $e',
+          l10n.couldNotOpenNavigation(e.toString()),
           isError: true,
         );
       }

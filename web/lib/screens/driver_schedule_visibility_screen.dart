@@ -8,6 +8,7 @@ import '../modules/core/services/api_client.dart';
 import '../modules/schedule_management/services/schedule_service.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
+import '../l10n/app_localizations.dart';
 
 /// Dispatcher/Admin screen: manage which drivers may view other drivers' full
 /// schedules. Each driver gets a toggle switch; changes are saved immediately
@@ -87,6 +88,7 @@ class _DriverScheduleVisibilityScreenState
   }
 
   Future<void> _setVisibility(String driverId, bool canView) async {
+    final l10n = AppLocalizations.of(context)!;
     final previous = _visibilityMap[driverId] ?? false;
     // Optimistic update
     setState(() => _visibilityMap[driverId] = canView);
@@ -98,7 +100,7 @@ class _DriverScheduleVisibilityScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update visibility: $e'),
+            content: Text(l10n.failedToUpdateVisibilityError(e.toString())),
             backgroundColor: AppColors.error,
           ),
         );
@@ -119,6 +121,7 @@ class _DriverScheduleVisibilityScreenState
   }
 
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -133,9 +136,9 @@ class _DriverScheduleVisibilityScreenState
           child: Row(
             children: [
               Expanded(
-                child: const Text(
-                  'Who can see whom',
-                  style: TextStyle(
+                child: Text(
+                  l10n.whoCanSeeWhomTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -146,7 +149,7 @@ class _DriverScheduleVisibilityScreenState
               IconButton(
                 icon: const Icon(Icons.refresh, color: Colors.white, size: 22),
                 onPressed: _loadData,
-                tooltip: 'Refresh',
+                tooltip: l10n.refresh,
               ),
             ],
           ),
@@ -156,6 +159,7 @@ class _DriverScheduleVisibilityScreenState
   }
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context)!;
     if (_loading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
@@ -168,7 +172,7 @@ class _DriverScheduleVisibilityScreenState
             const SizedBox(height: 16),
             Text(_error!, style: TextStyle(color: AppColors.error)),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
+            ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
           ],
         ),
       );
@@ -176,7 +180,7 @@ class _DriverScheduleVisibilityScreenState
     if (_drivers.isEmpty) {
       return Center(
         child: Text(
-          'No drivers in your company.',
+          l10n.noDriversInCompany,
           style: TextStyle(
             fontSize: 14,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -265,6 +269,7 @@ class _VisibilityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final initials = driver.name.isNotEmpty
         ? driver.name
@@ -330,8 +335,8 @@ class _VisibilityRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       canView
-                          ? 'Visible to all dispatchers'
-                          : 'Schedule hidden from others',
+                          ? l10n.visibleToAllDispatchers
+                          : l10n.scheduleHiddenFromOthers,
                       style: TextStyle(
                         fontSize: 11.5,
                         color: isDark

@@ -1704,7 +1704,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String failedToCancelRide(String error) {
-    return 'Не вдалося скасувати поїздку: $error';
+    return 'Помилка скасування поїздки: $error';
   }
 
   @override
@@ -1775,7 +1775,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get rideBookedSuccessfully => 'Поїздку успішно заброньовано!';
 
   @override
-  String get failedToCreateRide => 'Не вдалося створити поїздку';
+  String get failedToCreateRide => 'Помилка створення поїздки';
 
   @override
   String get failedToLoadRideHistory =>
@@ -1798,6 +1798,1505 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String failedToSubmitRating(String error) {
-    return 'Не вдалося надіслати оцінку: $error';
+    return 'Помилка надсилання оцінки: $error';
   }
+
+  @override
+  String rideCardTimeLabel(String time) {
+    return 'Час: $time';
+  }
+
+  @override
+  String get deleteConfirmationTitle => 'Підтвердження';
+
+  @override
+  String deleteRideConfirmMessage(String from, String to) {
+    return 'Видалити поїздку $from → $to?';
+  }
+
+  @override
+  String get cancelRideDialogTitle => 'Скасувати поїздку';
+
+  @override
+  String get selectCancellationReason =>
+      'Будь ласка, виберіть причину скасування:';
+
+  @override
+  String get cancellationReasonLabel => 'Причина';
+
+  @override
+  String get cancellationReasonClientRequest => 'За проханням клієнта';
+
+  @override
+  String get cancellationReasonWeather => 'Погодні умови';
+
+  @override
+  String get cancellationReasonOther => 'Інше';
+
+  @override
+  String get cancellationReasonClientNoShow => 'Клієнт не з\'явився';
+
+  @override
+  String get cancellationReasonDriverUnavailable => 'Водій недоступний';
+
+  @override
+  String get cancellationReasonVehicleIssue => 'Проблема з автомобілем';
+
+  @override
+  String get cancellationFeeLabel => 'Штраф за скасування (необов\'язково)';
+
+  @override
+  String get rateRideExperienceQuestion => 'Як пройшла ваша поїздка?';
+
+  @override
+  String get rateRideCommentLabel => 'Коментар (необов\'язково)';
+
+  @override
+  String get rateRideCommentHint => 'Розкажіть про свій досвід...';
+
+  @override
+  String get airportTransferLabel => 'Трансфер до аеропорту';
+
+  @override
+  String get airportTransferHint => 'Увімкніть, якщо це поїздка до/з аеропорту';
+
+  @override
+  String get airportDepartureLabel => 'Відправлення';
+
+  @override
+  String get airportDepartureHint => 'До аеропорту';
+
+  @override
+  String get airportArrivalLabel => 'Прибуття';
+
+  @override
+  String get airportArrivalHint => 'З аеропорту';
+
+  @override
+  String get flightNumberLabel => 'Номер рейсу';
+
+  @override
+  String get flightNumberHint => 'напр. LH123, BA456';
+
+  @override
+  String get flightNumberRequired =>
+      'Номер рейсу обов\'язковий для трансферів до аеропорту';
+
+  @override
+  String get gateLabel => 'Гейт';
+
+  @override
+  String get terminalLabel => 'Термінал';
+
+  @override
+  String get creatingRideLabel => 'Створення поїздки...';
+
+  @override
+  String get createRideButton => 'Створити поїздку';
+
+  @override
+  String get clearFormButton => 'Очистити форму';
+
+  @override
+  String get vehicleInformationLabel => 'Інформація про транспортний засіб';
+
+  @override
+  String get messageButton => 'Повідомлення';
+
+  @override
+  String get routeInformationLabel => 'Інформація про маршрут';
+
+  @override
+  String get pickupTimeLabel => 'Час подачі';
+
+  @override
+  String get distanceLabel => 'Відстань';
+
+  @override
+  String get durationLabel => 'Тривалість';
+
+  @override
+  String get etaToClientLabel => 'Очікуваний час до клієнта';
+
+  @override
+  String get openInGoogleMapsButton => 'Відкрити в Google Maps';
+
+  @override
+  String get rideStatusLabel => 'Статус поїздки';
+
+  @override
+  String get rideHasBeenCancelledLabel => 'Цю поїздку скасовано';
+
+  @override
+  String get rideStatusRequestedClientLabel => 'Очікування призначення водія';
+
+  @override
+  String get rideStatusRequestedStaffLabel => 'Очікує призначення';
+
+  @override
+  String get rideStatusAssignedEnRouteLabel => 'Водій у дорозі';
+
+  @override
+  String get rideStatusAssignedLabel => 'Водія призначено';
+
+  @override
+  String get rideStatusAssignedDriverLabel => 'Вас призначено на цю поїздку';
+
+  @override
+  String get rideStatusInProgressClientLabel => 'Поїздка триває';
+
+  @override
+  String get rideStatusInProgressDriverLabel => 'Щасливої дороги';
+
+  @override
+  String get rideStatusCompletedLabel => 'Успішно завершено';
+
+  @override
+  String get rideStatusCancelledLabel => 'Поїздку скасовано';
+
+  @override
+  String get rideStatusHandedOffLabel => 'Передано партнеру';
+
+  @override
+  String get authenticationRequiredError => 'Необхідна автентифікація';
+
+  @override
+  String get selectOrCreateClientError =>
+      'Будь ласка, виберіть або створіть клієнта';
+
+  @override
+  String get enterClientNameError => 'Будь ласка, введіть ім\'я клієнта';
+
+  @override
+  String get editRideDialogTitle => 'Редагувати поїздку';
+
+  @override
+  String get pickupDateTimeLabel => 'Дата/час подачі (yyyy-MM-ddTHH:mm)';
+
+  @override
+  String get flightNumberOptionalLabel => 'Номер рейсу (необов\'язково)';
+
+  @override
+  String get notesOptionalLabel => 'Примітки (необов\'язково)';
+
+  @override
+  String get invalidDateFormatError =>
+      'Неправильний формат дати. Використовуйте: yyyy-MM-ddTHH:mm';
+
+  @override
+  String serverErrorMessage(String statusCode) {
+    return 'Помилка сервера: $statusCode';
+  }
+
+  @override
+  String get useDispatcherDashboardInfo =>
+      'Використовуйте панель диспетчера для призначення водіїв';
+
+  @override
+  String get updateLocationTitle => 'Оновити місцезнаходження';
+
+  @override
+  String get tellDriverWhereYouAreLabel =>
+      'Повідомте водія, де ви зараз знаходитесь:';
+
+  @override
+  String get quickSelectLabel => 'Швидкий вибір:';
+
+  @override
+  String get locationQuickMainEntrance => 'Біля головного входу';
+
+  @override
+  String get locationQuickBaggageClaim => 'На видачі багажу';
+
+  @override
+  String get locationQuickCafe => 'У кафе';
+
+  @override
+  String get locationQuickParking => 'На парковці';
+
+  @override
+  String get locationQuickInformationDesk => 'Біля інформаційної стійки';
+
+  @override
+  String get locationQuickSecondFloor => 'На другому поверсі';
+
+  @override
+  String get locationQuickExit1 => 'Біля виходу №1';
+
+  @override
+  String get locationQuickExit2 => 'Біля виходу №2';
+
+  @override
+  String get locationQuickOther => 'Інше місце';
+
+  @override
+  String get orSpecifyExactlyLabel => 'Або вкажіть точно:';
+
+  @override
+  String get locationExampleHint => 'Приклад: «Біля входу в термінал A»';
+
+  @override
+  String get additionalInstructionsLabel =>
+      'Додаткові інструкції (необов\'язково):';
+
+  @override
+  String get additionalInstructionsExampleHint =>
+      'Приклад: «Стою біля кав\'ярні»';
+
+  @override
+  String get specifyLocationError =>
+      'Будь ласка, вкажіть ваше місцезнаходження';
+
+  @override
+  String get failedToUpdateLocationError =>
+      'Не вдалося оновити місцезнаходження. Будь ласка, спробуйте ще раз.';
+
+  @override
+  String get callClientTooltip => 'Зателефонувати клієнту';
+
+  @override
+  String get navigateTooltip => 'Навігація';
+
+  @override
+  String get delayByHowLongTitle => 'На скільки затримати?';
+
+  @override
+  String minutesLabel(int minutes) {
+    return '$minutes хвилин';
+  }
+
+  @override
+  String get appSubtitle => 'Розумні рішення для мобільності';
+
+  @override
+  String get orLabel => 'або';
+
+  @override
+  String get touchIdLabel => 'Touch ID';
+
+  @override
+  String get biometricsLabel => 'Біометрія';
+
+  @override
+  String get biometricSetupTitle => 'Налаштування біометрії';
+
+  @override
+  String get biometricSetupMessage =>
+      'Хочете увімкнути швидкий вхід за допомогою біометрії?\n\nЦе дозволить вам входити за допомогою Face ID, Touch ID або відбитка пальця.';
+
+  @override
+  String get laterButton => 'Пізніше';
+
+  @override
+  String get enableButton => 'Увімкнути';
+
+  @override
+  String get createButton => 'Створити';
+
+  @override
+  String get allLabel => 'Усі';
+
+  @override
+  String get statusLabel => 'Статус';
+
+  @override
+  String operationFailed(String error) {
+    return 'Помилка: $error';
+  }
+
+  @override
+  String get roleLabel => 'Роль';
+
+  @override
+  String get addGeofenceTooltip => 'Додати геозону';
+
+  @override
+  String get savedTemplatesTitle => 'Збережені шаблони';
+
+  @override
+  String get createTemplateDialogTitle => 'Створити шаблон';
+
+  @override
+  String get templateNameLabel => 'Назва шаблону';
+
+  @override
+  String get fromAddressLabel => 'Адреса відправлення';
+
+  @override
+  String get toAddressLabel => 'Адреса призначення';
+
+  @override
+  String get templatePickupTimeLabel => 'Час подачі (ГГ:хх)';
+
+  @override
+  String get recurrenceLabel => 'Повторення';
+
+  @override
+  String get recurrenceDaily => 'Щодня';
+
+  @override
+  String get recurrenceWeekdays => 'Будні дні';
+
+  @override
+  String get recurrenceWeeklyMonday => 'Щотижня понеділок';
+
+  @override
+  String get recurrenceWeeklyTuesday => 'Щотижня вівторок';
+
+  @override
+  String get recurrenceWeeklyWednesday => 'Щотижня середа';
+
+  @override
+  String get recurrenceWeeklyThursday => 'Щотижня четвер';
+
+  @override
+  String get recurrenceWeeklyFriday => 'Щотижня п\'ятниця';
+
+  @override
+  String get recurrenceSaturdayLabel => 'Щотижня субота';
+
+  @override
+  String get recurrenceSundayLabel => 'Щотижня неділя';
+
+  @override
+  String get priceOptionalLabel => 'Ціна (необов\'язково)';
+
+  @override
+  String get generateRidesMenuLabel => 'Генерувати поїздки';
+
+  @override
+  String get deactivateTemplateMenuLabel => 'Деактивувати';
+
+  @override
+  String get noTemplatesYet => 'Ще немає шаблонів';
+
+  @override
+  String get noTemplatesSubtitle => 'Створіть шаблон для регулярних поїздок';
+
+  @override
+  String get addTemplateButton => 'Додати шаблон';
+
+  @override
+  String get ridesGeneratedSuccess => 'Поїздки успішно створені';
+
+  @override
+  String failedToGenerateRides(String error) {
+    return 'Помилка генерації: $error';
+  }
+
+  @override
+  String failedToDeactivateTemplate(String error) {
+    return 'Помилка деактивації: $error';
+  }
+
+  @override
+  String get templateBadgeActive => 'Активний';
+
+  @override
+  String get templateBadgePaused => 'Призупинено';
+
+  @override
+  String get geofenceScreenTitle => 'Геозони';
+
+  @override
+  String get zonesTabLabel => 'Зони';
+
+  @override
+  String get recentAlertsTabLabel => 'Нещодавні сповіщення';
+
+  @override
+  String get createGeofenceDialogTitle => 'Створити геозону';
+
+  @override
+  String get zoneNameLabel => 'Назва зони';
+
+  @override
+  String get geofenceTypeLabel => 'Тип';
+
+  @override
+  String get geofenceTypeServiceArea => 'Зона обслуговування';
+
+  @override
+  String get geofenceTypeClientPickup => 'Точка посадки клієнта';
+
+  @override
+  String get geofenceTypeCustomZone => 'Власна зона';
+
+  @override
+  String get latitudeLabel => 'Широта';
+
+  @override
+  String get longitudeLabel => 'Довгота';
+
+  @override
+  String get radiusLabel => 'Радіус';
+
+  @override
+  String get notifyOnEntryLabel => 'Сповіщати при вході';
+
+  @override
+  String get notifyOnExitLabel => 'Сповіщати при виході';
+
+  @override
+  String get noGeofenceZonesYet => 'Геозон ще немає';
+
+  @override
+  String get createZonesToMonitorSubtitle =>
+      'Створіть зони для моніторингу в\'їздів та виїздів водіїв';
+
+  @override
+  String get createZoneButton => 'Створити зону';
+
+  @override
+  String get deleteZoneConfirmTitle => 'Видалити зону';
+
+  @override
+  String deleteZoneConfirmMsg(String name) {
+    return 'Видалити \"$name\"?';
+  }
+
+  @override
+  String get geofenceDeletedSuccess => 'Геозону видалено';
+
+  @override
+  String failedToDeleteGeofence(String error) {
+    return 'Помилка видалення: $error';
+  }
+
+  @override
+  String failedToToggleGeofence(String code) {
+    return 'Помилка перемикання ($code)';
+  }
+
+  @override
+  String failedToCreateGeofence(String code) {
+    return 'Помилка створення ($code)';
+  }
+
+  @override
+  String get geofenceCreatedSuccess => 'Геозону створено';
+
+  @override
+  String get fillRequiredFieldsError =>
+      'Будь ласка, заповніть усі обов\'язкові поля';
+
+  @override
+  String get noAlertsFound => 'Сповіщень не знайдено';
+
+  @override
+  String driverEnteredGeofence(String geofenceName) {
+    return 'Водій в\'їхав у $geofenceName';
+  }
+
+  @override
+  String driverLeftGeofence(String geofenceName) {
+    return 'Водій виїхав із $geofenceName';
+  }
+
+  @override
+  String get alertFilterAll => 'Усі';
+
+  @override
+  String get alertFilterEntry => 'В\'їзд';
+
+  @override
+  String get alertFilterExit => 'Виїзд';
+
+  @override
+  String get alertFilterLabel => 'Фільтр:';
+
+  @override
+  String geofenceSubtitleAirport(int radius) {
+    return 'Зона аеропорту · радіус $radiusм';
+  }
+
+  @override
+  String geofenceSubtitleServiceArea(int radius) {
+    return 'Зона обслуговування · радіус $radiusм';
+  }
+
+  @override
+  String geofenceSubtitleClientPickup(int radius) {
+    return 'Точка посадки · радіус $radiusм';
+  }
+
+  @override
+  String geofenceSubtitleCustomZone(int radius) {
+    return 'Власна зона · радіус $radiusм';
+  }
+
+  @override
+  String failedToLoadGeofences(String code) {
+    return 'Помилка завантаження ($code)';
+  }
+
+  @override
+  String failedToLoadAlerts(String code) {
+    return 'Помилка завантаження сповіщень ($code)';
+  }
+
+  @override
+  String get notifTabNotifications => 'Сповіщення';
+
+  @override
+  String get notifTabSettings => 'Налаштування';
+
+  @override
+  String get markAllReadButton => 'Усі прочитані';
+
+  @override
+  String get clearAllNotificationsMenuLabel => 'Видалити всі';
+
+  @override
+  String get clearAllConfirmTitle => 'Видалити всі сповіщення';
+
+  @override
+  String get clearAllConfirmContent =>
+      'Ви впевнені, що хочете видалити всі сповіщення?';
+
+  @override
+  String get deleteAllNotificationsButton => 'Видалити всі';
+
+  @override
+  String get noNotificationsYet => 'Немає сповіщень';
+
+  @override
+  String get notifFilterAll => 'Усі';
+
+  @override
+  String get notifFilterRides => 'Поїздки';
+
+  @override
+  String get notifFilterChat => 'Чат';
+
+  @override
+  String get notifFilterGeofence => 'Геозона';
+
+  @override
+  String get notifFilterPools => 'Пули';
+
+  @override
+  String get notifFilterCheckpoints => 'Контрольні точки';
+
+  @override
+  String get notifJustNow => 'Щойно';
+
+  @override
+  String notifMinutesAgo(int count) {
+    return '$count хв тому';
+  }
+
+  @override
+  String notifHoursAgo(int count) {
+    return '$count год тому';
+  }
+
+  @override
+  String notifDaysAgo(int count) {
+    return '$count дн тому';
+  }
+
+  @override
+  String get notifPrefSectionPush => 'Push-сповіщення';
+
+  @override
+  String get notifPrefSectionAdditional => 'Додаткові канали';
+
+  @override
+  String get notifPrefRideUpdatesSubtitle => 'Зміни статусу, призначення';
+
+  @override
+  String get notifPrefChatMessagesSubtitle =>
+      'Нові повідомлення від водія/клієнта';
+
+  @override
+  String get notifPrefDriverApproachingLabel => 'Водій наближається';
+
+  @override
+  String get notifPrefDriverApproachingSubtitle => 'Коли водій поблизу';
+
+  @override
+  String get notifPrefGeofenceAlertsLabel => 'Сповіщення геозони';
+
+  @override
+  String get notifPrefGeofenceAlertsSubtitle => 'Сповіщення про в\'їзд/виїзд';
+
+  @override
+  String get notifPrefPoolUpdatesLabel => 'Оновлення пулу';
+
+  @override
+  String get notifPrefPoolUpdatesSubtitle => 'Сповіщення пулу поїздок';
+
+  @override
+  String get notifPrefEmailLabel => 'Сповіщення електронною поштою';
+
+  @override
+  String get notifPrefEmailSubtitle =>
+      'Отримувати сповіщення електронною поштою';
+
+  @override
+  String get notifPrefSmsLabel => 'SMS-сповіщення';
+
+  @override
+  String get notifPrefSmsSubtitle => 'Отримувати сповіщення по SMS';
+
+  @override
+  String get notifPrefQuietHours => 'Тихий час';
+
+  @override
+  String get notifPrefQuietHoursFrom => 'З';
+
+  @override
+  String get notifPrefQuietHoursTo => 'До';
+
+  @override
+  String get notifPrefNotSet => 'Не задано';
+
+  @override
+  String get savePreferencesButton => 'Зберегти налаштування';
+
+  @override
+  String get preferencesSaved => 'Налаштування збережено';
+
+  @override
+  String get revokeSessionDialogTitle => 'Відкликати сесію';
+
+  @override
+  String get revokeSessionDialogContent =>
+      'Це призведе до виходу пристрою з цієї сесії.';
+
+  @override
+  String get revokeSessionButton => 'Відкликати';
+
+  @override
+  String get revokeAllOtherSessionsDialogTitle => 'Відкликати всі інші сесії';
+
+  @override
+  String get revokeAllOtherSessionsDialogContent =>
+      'Це призведе до виходу з усіх інших пристроїв. Лише поточна сесія залишиться активною.';
+
+  @override
+  String get revokeAllButton => 'Відкликати всі';
+
+  @override
+  String get sessionRevoked => 'Сесію відкликано';
+
+  @override
+  String get allOtherSessionsRevoked => 'Всі інші сесії відкликані';
+
+  @override
+  String get noActiveSessions => 'Немає активних сесій';
+
+  @override
+  String get sessionCurrentLabel => 'Поточна';
+
+  @override
+  String sessionIpLabel(String ip) {
+    return 'IP: $ip';
+  }
+
+  @override
+  String sessionCreatedLabel(String date) {
+    return 'Створено: $date';
+  }
+
+  @override
+  String sessionLastActiveLabel(String date) {
+    return 'Остання активність: $date';
+  }
+
+  @override
+  String get revokeSessionAction => 'Відкликати';
+
+  @override
+  String get userManagementTitle => 'Управління користувачами';
+
+  @override
+  String get createUserDialogTitle => 'Створити користувача';
+
+  @override
+  String get searchUsersHint => 'Пошук користувачів...';
+
+  @override
+  String get changeRoleMenuHeader => 'Змінити роль';
+
+  @override
+  String get changeStatusMenuHeader => 'Змінити статус';
+
+  @override
+  String get activateUserAction => 'Активувати';
+
+  @override
+  String get suspendUserAction => 'Призупинити';
+
+  @override
+  String get deactivateUserAction => 'Деактивувати';
+
+  @override
+  String get noUsersFound => 'Користувачів не знайдено';
+
+  @override
+  String get totalUsersLabel => 'Всього';
+
+  @override
+  String get driversStatLabel => 'Водії';
+
+  @override
+  String get clientsStatLabel => 'Клієнти';
+
+  @override
+  String get staffStatLabel => 'Персонал';
+
+  @override
+  String roleChangedSuccess(String role) {
+    return 'Роль змінено на $role';
+  }
+
+  @override
+  String statusChangedSuccess(String status) {
+    return 'Статус змінено на $status';
+  }
+
+  @override
+  String failedToChangeRole(String error) {
+    return 'Помилка: $error';
+  }
+
+  @override
+  String failedToChangeStatus(String error) {
+    return 'Помилка: $error';
+  }
+
+  @override
+  String failedToCreateUser(String error) {
+    return 'Помилка: $error';
+  }
+
+  @override
+  String get blacklistTitle => 'Чорний список';
+
+  @override
+  String get addBlacklistEntryDialogTitle => 'Додати до чорного списку';
+
+  @override
+  String get clientIdLabel => 'ID клієнта';
+
+  @override
+  String get driverIdLabel => 'ID водія';
+
+  @override
+  String get reasonOptionalLabel => 'Причина (необов\'язково)';
+
+  @override
+  String get clientDriverIdRequired => 'ID клієнта та ID водія обов\'язкові';
+
+  @override
+  String get removeBlacklistEntryDialogTitle => 'Видалити запис';
+
+  @override
+  String get removeBlacklistEntryContent =>
+      'Ви впевнені, що хочете видалити цей запис?';
+
+  @override
+  String get removeBlacklistEntryButton => 'Видалити';
+
+  @override
+  String get noBlacklistEntries => 'Записів у чорному списку немає';
+
+  @override
+  String get tenantsTitle => 'Тенанти';
+
+  @override
+  String tenantsWithCount(int count) {
+    return 'Тенанти · $count компаній';
+  }
+
+  @override
+  String get onboardButton => '+ Додати';
+
+  @override
+  String get noTenantsFound => 'Тенантів не знайдено';
+
+  @override
+  String get onboardCompanyDialogTitle => 'Зареєструвати компанію';
+
+  @override
+  String get editCompanyDialogTitle => 'Редагувати компанію';
+
+  @override
+  String get subscriptionPlanLabel => 'Тарифний план';
+
+  @override
+  String get colHeaderCompany => 'КОМПАНІЯ';
+
+  @override
+  String get colHeaderPlan => 'ПЛАН';
+
+  @override
+  String get colHeaderDrivers => 'ВОДІЇ';
+
+  @override
+  String get colHeaderRidesPerMonth => 'ПОЇЗДКИ / МІС';
+
+  @override
+  String get colHeaderStatus => 'СТАТУС';
+
+  @override
+  String get deactivateCompanyDialogTitle => 'Деактивувати компанію?';
+
+  @override
+  String deactivateCompanyDialogContent(String name) {
+    return 'Ви впевнені, що хочете деактивувати \"$name\"?\n\nКомпанія буде позначена як неактивна, але всі дані (поїздки, рахунки, користувачі) будуть збережені.';
+  }
+
+  @override
+  String get setActiveAction => 'Зробити активною';
+
+  @override
+  String get setTrialAction => 'Пробний режим';
+
+  @override
+  String get suspendAction => 'Призупинити';
+
+  @override
+  String get emergencyReassignmentTitle => 'Екстрені перепризначення';
+
+  @override
+  String get emergencyReassignmentDialogTitle => 'Екстрене перепризначення';
+
+  @override
+  String get rideIdLabel => 'ID поїздки';
+
+  @override
+  String get emergencyReasonLabel => 'Причина';
+
+  @override
+  String get availableDriversLabel => 'Доступні водії:';
+
+  @override
+  String get newDriverIdLabel => 'Нова ID водія (необов\'язково)';
+
+  @override
+  String get newDriverIdHelper => 'Залиште порожнім для скасування призначення';
+
+  @override
+  String get reassignButton => 'Перепризначити';
+
+  @override
+  String get rideIdRequired => 'ID поїздки обов\'язковий';
+
+  @override
+  String get emergencyReassignmentCreated =>
+      'Екстрене перепризначення створено';
+
+  @override
+  String get noEmergencyReassignments => 'Екстрених перепризначень немає';
+
+  @override
+  String get emergencyReasonDriverIllness => 'Хвороба водія';
+
+  @override
+  String get emergencyReasonVehicleBreakdown => 'Поломка транспорту';
+
+  @override
+  String get emergencyReasonDriverNoShow => 'Водій не з\'явився';
+
+  @override
+  String get emergencyReasonAccident => 'Аварія';
+
+  @override
+  String get emergencyReasonPersonalEmergency =>
+      'Особиста надзвичайна ситуація';
+
+  @override
+  String get emergencyReasonOther => 'Інше';
+
+  @override
+  String get preferredDriverLabel => 'Пріоритетний';
+
+  @override
+  String emergencyRideLabel(String id) {
+    return 'Поїздка: $id';
+  }
+
+  @override
+  String emergencyOriginalDriverLabel(String id) {
+    return 'Оригінальний водій: $id';
+  }
+
+  @override
+  String emergencyNewDriverLabel(String id) {
+    return 'Новий водій: $id';
+  }
+
+  @override
+  String get ridePoolsTitle => 'Пули поїздок';
+
+  @override
+  String get createRidePoolDialogTitle => 'Створити пул поїздок';
+
+  @override
+  String get poolNameOptionalLabel => 'Назва пулу (необов\'язково)';
+
+  @override
+  String get poolNameHint => 'напр., Ранковий шатл до аеропорту';
+
+  @override
+  String get routeDirectionOptionalLabel =>
+      'Напрямок маршруту (необов\'язково)';
+
+  @override
+  String get routeDirectionHint => 'напр., Центр міста → Аеропорт';
+
+  @override
+  String get maxPassengersLabel => 'Макс. пасажирів:';
+
+  @override
+  String get ridePoolCreated => 'Пул поїздок створено';
+
+  @override
+  String get noRidePools => 'Пулів поїздок немає';
+
+  @override
+  String get createPoolToCombineRides => 'Створіть пул для об\'єднання поїздок';
+
+  @override
+  String errorLoadingPoolDetails(String error) {
+    return 'Помилка завантаження деталей пулу: $error';
+  }
+
+  @override
+  String get poolDetailStatusLabel => 'Статус';
+
+  @override
+  String get poolDetailPassengersLabel => 'Пасажири';
+
+  @override
+  String get poolDetailRouteLabel => 'Маршрут';
+
+  @override
+  String get poolDetailDriverLabel => 'Водій';
+
+  @override
+  String get poolMembersLabel => 'Учасники:';
+
+  @override
+  String get noRidesInPool => 'Поїздок у цьому пулі ще немає';
+
+  @override
+  String get companySettingsTitle => 'Налаштування компанії';
+
+  @override
+  String get navItemCompany => 'Компанія';
+
+  @override
+  String get navItemUsersRoles => 'Користувачі та ролі';
+
+  @override
+  String get navItemCompliance => 'Відповідність';
+
+  @override
+  String get navItemBillingDatev => 'Білінг та DATEV';
+
+  @override
+  String get navItemGeofences => 'Геозони';
+
+  @override
+  String get companyProfileSectionTitle => 'Профіль компанії';
+
+  @override
+  String get companyProfileSubtitle =>
+      'Юридична інформація, що відображається на рахунках та звітах.';
+
+  @override
+  String get complianceSectionTitle => 'Відповідність та безпека';
+
+  @override
+  String get complianceSubtitle =>
+      'Захист даних, управління доступом та аудит.';
+
+  @override
+  String get billingDatevSectionTitle => 'Білінг та DATEV';
+
+  @override
+  String get billingDatevSubtitle =>
+      'Конфігурація тарифів та налаштування експорту DATEV.';
+
+  @override
+  String get tariffSettingsSectionTitle => 'Налаштування тарифу';
+
+  @override
+  String get datevIntegrationSectionTitle => 'Інтеграція DATEV';
+
+  @override
+  String get datevIntegrationSubtitle =>
+      'Beraternummer та Mandantennummer використовуються в заголовку EXTF-Buchungsstapel.';
+
+  @override
+  String get legalNameLabel => 'Юридична назва';
+
+  @override
+  String get vatIdLabel => 'ІПН / ПДВ';
+
+  @override
+  String get defaultCurrencyLabel => 'Валюта за замовчуванням';
+
+  @override
+  String get timezoneLabel => 'Часовий пояс';
+
+  @override
+  String get commissionRateLabel => 'Комісія (%)';
+
+  @override
+  String get cancellationFeeSettingsLabel => 'Плата за скасування (€)';
+
+  @override
+  String get noShowFeeLabel => 'Плата за неявку (€)';
+
+  @override
+  String get basePriceLabel => 'Базова ціна (€)';
+
+  @override
+  String get pricePerKmLabel => 'Ціна за км (€)';
+
+  @override
+  String get airportSurchargeLabel => 'Надбавка за аеропорт (€)';
+
+  @override
+  String get nightSurchargeLabel => 'Нічна надбавка (€)';
+
+  @override
+  String get workStartLabel => 'Початок роботи';
+
+  @override
+  String get workEndLabel => 'Кінець роботи';
+
+  @override
+  String get settingsSavedSuccess => 'Налаштування успішно збережено';
+
+  @override
+  String failedToSaveSettings(String error) {
+    return 'Помилка збереження: $error';
+  }
+
+  @override
+  String get gdprExportTitle => 'Експорт GDPR';
+
+  @override
+  String get gdprExportSubtitle => 'Завантажити всі персональні дані';
+
+  @override
+  String get auditLogTitle => 'Журнал аудиту';
+
+  @override
+  String get auditLogSubtitle => 'Перегляд активності системи';
+
+  @override
+  String get activeSessionsCardTitle => 'Активні сесії';
+
+  @override
+  String get activeSessionsCardSubtitle => 'Управління підключеними пристроями';
+
+  @override
+  String get blacklistCardTitle => 'Чорний список';
+
+  @override
+  String get blacklistCardSubtitle => 'Управління заблокованими акаунтами';
+
+  @override
+  String comingSoonLabel(String label) {
+    return '$label — незабаром';
+  }
+
+  @override
+  String get settingsCompanyProfile => 'Профіль компанії';
+
+  @override
+  String get generalSettingsSectionTitle => 'Загальні налаштування';
+
+  @override
+  String get gdprScreenTitle => 'Конфіденційність та дані (GDPR)';
+
+  @override
+  String get consentManagementSectionTitle => 'Управління згодами';
+
+  @override
+  String get consentDataProcessingLabel => 'Обробка даних';
+
+  @override
+  String get consentDataProcessingSubtitle =>
+      'Дозволити обробку даних поїздок та акаунту';
+
+  @override
+  String get consentMarketingLabel => 'Маркетинг';
+
+  @override
+  String get consentMarketingSubtitle =>
+      'Отримувати рекламні листи та пропозиції';
+
+  @override
+  String get consentAnalyticsLabel => 'Аналітика';
+
+  @override
+  String get consentAnalyticsSubtitle =>
+      'Допомогти покращити застосунок за допомогою аналітики';
+
+  @override
+  String get consentThirdPartySharingLabel => 'Передача третім сторонам';
+
+  @override
+  String get consentThirdPartySharingSubtitle =>
+      'Ділитися даними з партнерськими сервісами';
+
+  @override
+  String get yourDataSectionTitle => 'Ваші дані';
+
+  @override
+  String get exportMyDataLabel => 'Експортувати мої дані';
+
+  @override
+  String get exportMyDataSubtitle =>
+      'Завантажити всі особисті дані, що ми зберігаємо про вас';
+
+  @override
+  String get dataDeletionSectionTitle => 'Видалення даних';
+
+  @override
+  String get requestDataDeletionLabel => 'Запросити видалення даних';
+
+  @override
+  String get requestDataDeletionSubtitle =>
+      'Назавжди видалити всі ваші дані та акаунт';
+
+  @override
+  String get pendingDeletionSubtitle =>
+      'Запит на видалення вже очікує розгляду';
+
+  @override
+  String get pendingChipLabel => 'Очікує';
+
+  @override
+  String get requestHistoryTitle => 'Історія запитів';
+
+  @override
+  String get requestDeletionDialogTitle => 'Запросити видалення даних';
+
+  @override
+  String get requestDeletionDialogContent =>
+      'Це надішле запит на видалення всіх ваших особистих даних. Цю дію не можна скасувати. Ваш акаунт буде деактивований після обробки запиту.\n\nВи впевнені, що хочете продовжити?';
+
+  @override
+  String get requestDeletionButton => 'Запросити видалення';
+
+  @override
+  String get dataExportCopied => 'Дані скопійовано в буфер обміну';
+
+  @override
+  String exportFailed(String error) {
+    return 'Помилка експорту: $error';
+  }
+
+  @override
+  String get deletionRequestSubmitted => 'Запит на видалення надіслано';
+
+  @override
+  String failedToLoadGdprData(String consentsCode, String requestsCode) {
+    return 'Помилка завантаження даних GDPR ($consentsCode/$requestsCode)';
+  }
+
+  @override
+  String get dataDeletionRequestType => 'Видалення даних';
+
+  @override
+  String get dataExportRequestType => 'Експорт даних';
+
+  @override
+  String get paymentsTitle => 'Платежі';
+
+  @override
+  String get unpaidBadgeLabel => 'Не оплачено';
+
+  @override
+  String get allRidesPaidLabel => 'Усі поїздки оплачені';
+
+  @override
+  String get markAsPaidDialogTitle => 'Позначити як оплачено';
+
+  @override
+  String get paymentMethodLabel => 'Спосіб оплати:';
+
+  @override
+  String get paymentMethodCash => 'Готівка';
+
+  @override
+  String get paymentMethodCard => 'Картка';
+
+  @override
+  String get paymentMethodInvoice => 'Рахунок';
+
+  @override
+  String amountLabel(String amount) {
+    return 'Сума: $amount EUR';
+  }
+
+  @override
+  String get confirmPaymentButton => 'Підтвердити оплату';
+
+  @override
+  String get paymentRecordedSuccess => 'Платіж зафіксовано';
+
+  @override
+  String failedToMarkPaid(String error) {
+    return 'Помилка: $error';
+  }
+
+  @override
+  String get failedToLoadUnpaidRides =>
+      'Помилка завантаження неоплачених поїздок';
+
+  @override
+  String myRideTitle(String id) {
+    return 'Моя поїздка #$id';
+  }
+
+  @override
+  String rideTitle(String id) {
+    return 'Поїздка #$id';
+  }
+
+  @override
+  String get confirmationSentLabel => 'Підтвердження надіслано';
+
+  @override
+  String get cancellationDetailsTitle => 'Деталі скасування';
+
+  @override
+  String cancellationReasonDetail(String reason) {
+    return 'Причина: $reason';
+  }
+
+  @override
+  String cancelledByLabel(String name) {
+    return 'Скасовано: $name';
+  }
+
+  @override
+  String cancellationFeeDisplay(String fee) {
+    return 'Штраф: €$fee';
+  }
+
+  @override
+  String get ratingTitle => 'Оцінка';
+
+  @override
+  String get notesTitle => 'Примітки';
+
+  @override
+  String get openChatButton => 'Відкрити чат';
+
+  @override
+  String get rideStatusUpdatedSuccess => 'Статус поїздки успішно оновлено';
+
+  @override
+  String failedToUpdateRideStatus(String error) {
+    return 'Помилка оновлення статусу поїздки: $error';
+  }
+
+  @override
+  String get driverAssignedSuccess => 'Водія успішно призначено';
+
+  @override
+  String failedToAssignDriver(String error) {
+    return 'Помилка призначення водія: $error';
+  }
+
+  @override
+  String get rideCancelledSuccess => 'Поїздку скасовано';
+
+  @override
+  String get completeRideDialogTitle => 'Завершити поїздку';
+
+  @override
+  String get completeRideDialogContent => 'Позначити цю поїздку як завершену?';
+
+  @override
+  String get createNewRideTitle => 'Створити нову поїздку';
+
+  @override
+  String get rideCreatedSuccess => 'Поїздку успішно створено!';
+
+  @override
+  String get conflictDialogTitle => 'Конфлікт розкладу';
+
+  @override
+  String conflictDialogContent(String message) {
+    return '$message\n\nПоїздку створено та додано до пулу диспетчера. Все одно призначити собі?';
+  }
+
+  @override
+  String get conflictDialogContentDefault =>
+      'У вас вже є поїздка в цей час. Поїздку створено та додано до пулу. Все одно призначити собі?';
+
+  @override
+  String get keepInPoolButton => 'Залишити в пулі';
+
+  @override
+  String get assignAnywayButton => 'Призначити все одно';
+
+  @override
+  String get exportRidesTitle => 'Експорт поїздок';
+
+  @override
+  String get copyCsvButton => 'Копіювати CSV';
+
+  @override
+  String get dateRangeButton => 'Діапазон дат';
+
+  @override
+  String get noRidesMatchFilters => 'Жодна поїздка не відповідає фільтрам';
+
+  @override
+  String get exportSummaryTotal => 'Всього';
+
+  @override
+  String get exportSummaryCompleted => 'Завершено';
+
+  @override
+  String get exportSummaryRevenue => 'Виручка';
+
+  @override
+  String csvCopiedSnackbar(int count) {
+    return 'Дані CSV скопійовано ($count поїздок)';
+  }
+
+  @override
+  String get okButton => 'OK';
+
+  @override
+  String get flightsMunichAirportTitle => 'Рейси · Аеропорт Мюнхен';
+
+  @override
+  String get autoSyncedLabel => 'авто-синхронізація';
+
+  @override
+  String get arrivalsTabLabel => 'Прильоти';
+
+  @override
+  String get departuresTabLabel => 'Відльоти';
+
+  @override
+  String get noArrivalsFound => 'Прильотів не знайдено';
+
+  @override
+  String get noDeparturesFound => 'Відльотів не знайдено';
+
+  @override
+  String errorLoadingFlights(String error) {
+    return 'Помилка завантаження рейсів: $error';
+  }
+
+  @override
+  String get flightColumnFlight => 'Рейс';
+
+  @override
+  String get flightColumnOriginDest => 'Звідки / Куди';
+
+  @override
+  String get flightColumnSched => 'Розклад';
+
+  @override
+  String get flightColumnStatus => 'Статус';
+
+  @override
+  String get flightColumnLinkedRide => 'Пов\'язана поїздка';
+
+  @override
+  String get flightStatusOnTime => 'Вчасно';
+
+  @override
+  String get flightStatusDelayed => 'Затримано';
+
+  @override
+  String get flightStatusBoarding => 'Посадка';
+
+  @override
+  String get flightStatusCancelled => 'Скасовано';
+
+  @override
+  String get flightStatusUnknown => 'Невідомо';
+
+  @override
+  String get flightNotLinked => '— не пов\'язано';
+
+  @override
+  String get whoCanSeeWhomTitle => 'Хто може бачити кого';
+
+  @override
+  String get visibleToAllDispatchers => 'Видимий для всіх диспетчерів';
+
+  @override
+  String get scheduleHiddenFromOthers => 'Розклад прихований від інших';
+
+  @override
+  String get noDriversInCompany => 'У вашій компанії немає водіїв.';
+
+  @override
+  String failedToUpdateVisibilityError(String error) {
+    return 'Помилка оновлення видимості: $error';
+  }
+
+  @override
+  String get auditLogScreenTitle => 'Журнал аудиту';
+
+  @override
+  String get searchByEntityIdHint => 'Пошук за ID сутності...';
+
+  @override
+  String get noAuditEntriesFound => 'Записів аудиту не знайдено';
+
+  @override
+  String onlineOnRideLabel(String id) {
+    return 'Онлайн · поїздка #$id';
+  }
+
+  @override
+  String get startConversationSubtitle => 'Почніть розмову з водієм';
+
+  @override
+  String failedToSendMessage(String error) {
+    return 'Помилка надсилання: $error';
+  }
+
+  @override
+  String get totalRidesStatLabel => 'Всього поїздок';
+
+  @override
+  String get onTimeStatLabel => 'Вчасно';
+
+  @override
+  String get avgSlackStatLabel => 'Сер. запас';
+
+  @override
+  String get gmvStatLabel => 'GMV';
+
+  @override
+  String get ridesByTenantTitle => 'Поїздки за тенантом';
+
+  @override
+  String get rideStatusBreakdownTitle => 'Розбивка за статусом поїздок';
+
+  @override
+  String get platformActiveSessionsLabel => 'Активні сесії платформи';
+
+  @override
+  String get clientPaymentTitle => 'Оплата';
+
+  @override
+  String get paymentMethodsSectionLabel => 'СПОСОБИ ОПЛАТИ';
+
+  @override
+  String get corporateInvoiceLabel => 'Корпоративний рахунок';
+
+  @override
+  String get addPaymentMethodButton => 'Додати спосіб оплати';
 }

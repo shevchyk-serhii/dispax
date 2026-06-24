@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../core/models/person.dart';
 import '../../../constants/app_colors.dart';
 
@@ -18,6 +19,7 @@ class RidePersonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       elevation: 4,
       child: Padding(
@@ -46,7 +48,7 @@ class RidePersonCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isDriver ? 'Driver' : 'Client',
+                        isDriver ? l10n.roleDriver : l10n.roleClient,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
@@ -89,7 +91,7 @@ class RidePersonCard extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: onCall,
                         icon: const Icon(Icons.phone, size: 18),
-                        label: const Text('Call'),
+                        label: Text(l10n.call),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success,
                           foregroundColor: Colors.white,
@@ -104,7 +106,7 @@ class RidePersonCard extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: onMessage,
                         icon: const Icon(Icons.message, size: 18),
-                        label: const Text('Message'),
+                        label: Text(l10n.messageButton),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(
                             context,
@@ -126,13 +128,14 @@ class RidePersonCard extends StatelessWidget {
   }
 
   Widget _buildVehicleInfo(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final vehicle = person.vehicleInfo!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Vehicle Information',
+          l10n.vehicleInformationLabel,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
             color: Theme.of(context).colorScheme.primary,

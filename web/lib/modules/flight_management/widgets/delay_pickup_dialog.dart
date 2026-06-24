@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import '../../../constants/app_styles.dart';
 
 class DelayPickupDialog extends StatefulWidget {
@@ -14,10 +15,11 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
       backgroundColor: Theme.of(context).colorScheme.surface,
       title: Text(
-        'Delay by how long?',
+        l10n.delayByHowLongTitle,
         style: AppStyles.titleMedium.copyWith(
           color: Theme.of(context).colorScheme.onSurface,
         ),
@@ -33,7 +35,7 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
               .map(
                 (delay) => RadioListTile<int>(
                   title: Text(
-                    '$delay minutes',
+                    l10n.minutesLabel(delay),
                     style: AppStyles.bodyMedium.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -48,7 +50,7 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
-            'Cancel',
+            l10n.cancel,
             style: AppStyles.labelMedium.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -60,7 +62,7 @@ class _DelayPickupDialogState extends State<DelayPickupDialog> {
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Theme.of(context).colorScheme.onPrimary,
           ),
-          child: const Text('Confirm'),
+          child: Text(l10n.confirm),
         ),
       ],
     );

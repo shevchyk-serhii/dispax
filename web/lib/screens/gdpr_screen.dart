@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 
 class GdprScreen extends StatefulWidget {
   const GdprScreen({super.key});
@@ -25,6 +26,7 @@ class _GdprScreenState extends State<GdprScreen> {
   }
 
   Future<void> _loadData() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -61,8 +63,10 @@ class _GdprScreenState extends State<GdprScreen> {
         final requestsStatus = requestsResp?.statusCode ?? '-';
         setState(() {
           _isLoading = false;
-          _error =
-              'Failed to load GDPR data (${consentsResp.statusCode}/$requestsStatus)';
+          _error = l10n.failedToLoadGdprData(
+            consentsResp.statusCode.toString(),
+            requestsStatus.toString(),
+          );
         });
       }
     } catch (e) {
@@ -81,6 +85,7 @@ class _GdprScreenState extends State<GdprScreen> {
   }
 
   Future<void> _toggleConsent(String consentType, bool granted) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.put('/gdpr/consents', {
@@ -92,11 +97,12 @@ class _GdprScreenState extends State<GdprScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ).showSnackBar(SnackBar(content: Text(l10n.genericError(e.toString()))));
     }
   }
 
   Future<void> _exportData() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       final resp = await apiClient.get('/gdpr/export');
@@ -104,38 +110,34 @@ class _GdprScreenState extends State<GdprScreen> {
       if (resp.statusCode == 200) {
         await Clipboard.setData(ClipboardData(text: resp.body));
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data export copied to clipboard')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.dataExportCopied)));
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+      ).showSnackBar(SnackBar(content: Text(l10n.exportFailed(e.toString()))));
     }
   }
 
   Future<void> _requestDeletion() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Request Data Deletion'),
-        content: const Text(
-          'This will submit a request to delete all your personal data. '
-          'This action cannot be undone. Your account will be deactivated '
-          'once the request is processed.\n\n'
-          'Are you sure you want to proceed?',
-        ),
+        title: Text(l10n.requestDeletionDialogTitle),
+        content: Text(l10n.requestDeletionDialogContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Request Deletion'),
+            child: Text(l10n.requestDeletionButton),
           ),
         ],
       ),
@@ -149,24 +151,25 @@ class _GdprScreenState extends State<GdprScreen> {
       if (!mounted) return;
 
       if (resp.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Deletion request submitted')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.deletionRequestSubmitted)));
         _loadData();
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ).showSnackBar(SnackBar(content: Text(l10n.genericError(e.toString()))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Privacy & Data (GDPR)'),
+        title: Text(l10n.gdprScreenTitle),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.light,
@@ -182,19 +185,16 @@ class _GdprScreenState extends State<GdprScreen> {
                   Icon(Icons.error_outline, size: 48, color: AppColors.error),
                   const SizedBox(height: 12),
                   Text(_error!),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    child: const Text('Retry'),
-                  ),
+                  ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
                 ],
               ),
             )
           : ListView(
               children: [
-                _buildConsentSection(),
-                _buildDataExportSection(),
-                _buildDeletionSection(),
-                if (_requests.isNotEmpty) _buildRequestsSection(),
+                _buildConsentSection(l10n),
+                _buildDataExportSection(l10n),
+                _buildDeletionSection(l10n),
+                if (_requests.isNotEmpty) _buildRequestsSection(l10n),
                 const SizedBox(height: 24),
               ],
             ),
@@ -216,30 +216,30 @@ class _GdprScreenState extends State<GdprScreen> {
     );
   }
 
-  Widget _buildConsentSection() {
+  Widget _buildConsentSection(AppLocalizations l10n) {
     final consentTypes = [
       (
         'DataProcessing',
-        'Data Processing',
-        'Allow processing of ride and account data',
+        l10n.consentDataProcessingLabel,
+        l10n.consentDataProcessingSubtitle,
         Icons.storage,
       ),
       (
         'Marketing',
-        'Marketing',
-        'Receive promotional emails and offers',
+        l10n.consentMarketingLabel,
+        l10n.consentMarketingSubtitle,
         Icons.mail_outline,
       ),
       (
         'Analytics',
-        'Analytics',
-        'Help improve the app with usage analytics',
+        l10n.consentAnalyticsLabel,
+        l10n.consentAnalyticsSubtitle,
         Icons.analytics,
       ),
       (
         'ThirdPartySharing',
-        'Third-Party Sharing',
-        'Share data with partner services',
+        l10n.consentThirdPartySharingLabel,
+        l10n.consentThirdPartySharingSubtitle,
         Icons.share,
       ),
     ];
@@ -247,7 +247,7 @@ class _GdprScreenState extends State<GdprScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Consent Management'),
+        _buildSectionHeader(l10n.consentManagementSectionTitle),
         ...consentTypes.map((ct) {
           final granted = _isConsentGranted(ct.$1);
           return SwitchListTile(
@@ -267,17 +267,17 @@ class _GdprScreenState extends State<GdprScreen> {
     );
   }
 
-  Widget _buildDataExportSection() {
+  Widget _buildDataExportSection(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Your Data'),
+        _buildSectionHeader(l10n.yourDataSectionTitle),
         ListTile(
           leading: const Icon(Icons.download, color: AppColors.info),
-          title: const Text('Export My Data'),
-          subtitle: const Text(
-            'Download all personal data we have stored about you',
-            style: TextStyle(fontSize: 12),
+          title: Text(l10n.exportMyDataLabel),
+          subtitle: Text(
+            l10n.exportMyDataSubtitle,
+            style: const TextStyle(fontSize: 12),
           ),
           trailing: const Icon(Icons.chevron_right),
           onTap: _exportData,
@@ -286,7 +286,7 @@ class _GdprScreenState extends State<GdprScreen> {
     );
   }
 
-  Widget _buildDeletionSection() {
+  Widget _buildDeletionSection(AppLocalizations l10n) {
     final hasPendingDeletion = _requests.any(
       (r) => r['requestType'] == 'DELETION' && r['status'] == 'PENDING',
     );
@@ -294,7 +294,7 @@ class _GdprScreenState extends State<GdprScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Data Deletion'),
+        _buildSectionHeader(l10n.dataDeletionSectionTitle),
         ListTile(
           leading: Icon(
             Icons.delete_forever,
@@ -302,16 +302,19 @@ class _GdprScreenState extends State<GdprScreen> {
                 ? Theme.of(context).colorScheme.onSurfaceVariant
                 : AppColors.error,
           ),
-          title: const Text('Request Data Deletion'),
+          title: Text(l10n.requestDeletionDialogTitle),
           subtitle: Text(
             hasPendingDeletion
-                ? 'A deletion request is already pending'
-                : 'Permanently delete all your data and account',
+                ? l10n.pendingDeletionSubtitle
+                : l10n.requestDataDeletionSubtitle,
             style: const TextStyle(fontSize: 12),
           ),
           trailing: hasPendingDeletion
               ? Chip(
-                  label: const Text('Pending', style: TextStyle(fontSize: 11)),
+                  label: Text(
+                    l10n.pendingChipLabel,
+                    style: const TextStyle(fontSize: 11),
+                  ),
                   backgroundColor: AppColors.warning.withAlpha(30),
                 )
               : const Icon(Icons.chevron_right),
@@ -321,11 +324,11 @@ class _GdprScreenState extends State<GdprScreen> {
     );
   }
 
-  Widget _buildRequestsSection() {
+  Widget _buildRequestsSection(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Request History'),
+        _buildSectionHeader(l10n.requestHistoryTitle),
         ..._requests.map((r) {
           final type = r['requestType'] as String;
           final status = r['status'] as String;
@@ -341,9 +344,13 @@ class _GdprScreenState extends State<GdprScreen> {
                 color: _statusColor(status),
               ),
             ),
-            title: Text(type == 'DELETION' ? 'Data Deletion' : 'Data Export'),
+            title: Text(
+              type == 'DELETION'
+                  ? l10n.dataDeletionRequestType
+                  : l10n.dataExportRequestType,
+            ),
             subtitle: Text(
-              '${_formatDate(date)} \u2022 $status',
+              '${_formatDate(date)} • $status',
               style: const TextStyle(fontSize: 12),
             ),
             trailing: Container(

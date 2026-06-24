@@ -7,6 +7,7 @@ import '../modules/ride_management/helpers/create_ride_form_helper.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
+import '../l10n/app_localizations.dart';
 
 class CreateRideScreen extends StatelessWidget {
   final RideBloc rideBloc;
@@ -57,23 +58,22 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
     required String driverId,
     String? message,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final rideBloc = context.read<RideBloc>();
     showAdaptiveDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-        title: const Text('Schedule conflict'),
+        title: Text(l10n.conflictDialogTitle),
         content: Text(
           message != null
-              ? '$message\n\nThe ride was created and is in the dispatcher pool. '
-                    'Assign it to yourself anyway?'
-              : 'You already have a ride around this time. The ride was created '
-                    'and is in the dispatcher pool. Assign it to yourself anyway?',
+              ? l10n.conflictDialogContent(message)
+              : l10n.conflictDialogContentDefault,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Keep in pool'),
+            child: Text(l10n.keepInPoolButton),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
@@ -87,7 +87,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
                 ),
               );
             },
-            child: const Text('Assign anyway'),
+            child: Text(l10n.assignAnywayButton),
           ),
         ],
       ),
@@ -96,6 +96,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return MultiBlocListener(
       listeners: [
         BlocListener<CreateRideFormBloc, CreateRideFormState>(
@@ -109,10 +110,11 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
         BlocListener<RideBloc, RideState>(
           listenWhen: (previous, current) => previous.status != current.status,
           listener: (context, state) {
+            final listenerL10n = AppLocalizations.of(context)!;
             if (state.status == RideStateStatus.created) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Ride created successfully!'),
+                SnackBar(
+                  content: Text(listenerL10n.rideCreatedSuccess),
                   backgroundColor: AppColors.success,
                 ),
               );
@@ -151,11 +153,13 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
               context.read<CreateRideFormBloc>().add(const SubmissionFailed());
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.errorMessage ?? 'Failed to create ride'),
+                  content: Text(
+                    state.errorMessage ?? listenerL10n.failedToCreateRide,
+                  ),
                   backgroundColor: AppColors.error,
                   duration: const Duration(seconds: 8),
                   action: SnackBarAction(
-                    label: 'Retry',
+                    label: listenerL10n.retry,
                     textColor: Colors.white,
                     onPressed: () =>
                         context.read<CreateRideFormBloc>().add(FormSubmitted()),
@@ -169,7 +173,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'Create New Ride',
+            l10n.createNewRideTitle,
             style: AppStyles.titleLarge.copyWith(
               color: AppColors.textOnPrimary,
             ),
