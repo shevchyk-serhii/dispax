@@ -771,6 +771,10 @@
   "savedPlaceHome": "Zuhause",
   "savedPlaceOffice": "Büro",
   "addAddress": "Adresse hinzufügen",
+  "useThisAddress": "Diese Adresse verwenden",
+  "editAddress": "Adresse bearbeiten",
+  "removeAddress": "Entfernen",
+  "removeAddressConfirm": "Diesen gespeicherten Ort entfernen?",
   "bookARide": "Fahrt buchen",
 
   "scheduled": "GEPLANT",

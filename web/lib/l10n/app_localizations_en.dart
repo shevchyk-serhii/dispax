@@ -1773,6 +1773,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addAddress => 'Add address';
 
   @override
+  String get useThisAddress => 'Use this address';
+
+  @override
+  String get editAddress => 'Edit address';
+
+  @override
+  String get removeAddress => 'Remove';
+
+  @override
+  String get removeAddressConfirm => 'Remove this saved place?';
+
+  @override
   String get bookARide => 'Book a ride';
 
   @override

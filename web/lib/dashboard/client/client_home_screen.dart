@@ -5,8 +5,10 @@ import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../modules/core/services/mapbox_service.dart';
+import '../../modules/ride_management/models/client_address.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../modules/ride_management/widgets/address_picker_sheet.dart';
+import '../../modules/ride_management/widgets/saved_place_actions.dart';
 import '../../screens/client_map_screen.dart';
 
 /// Client Home tab — graphite header, live ride card, saved places, book button.
@@ -384,7 +386,7 @@ class _SavedPlacesRow extends StatelessWidget {
                     title: home?.label ?? l10n.savedPlaceHome,
                     subtitle: home?.address ?? l10n.addAddress,
                     onTap: home != null
-                        ? onPlaceTap
+                        ? () => _openPlace(context, home)
                         : () => _addPlace(context, 'Home'),
                   ),
                 ),
@@ -395,7 +397,7 @@ class _SavedPlacesRow extends StatelessWidget {
                     title: office?.label ?? l10n.savedPlaceOffice,
                     subtitle: office?.address ?? l10n.addAddress,
                     onTap: office != null
-                        ? onPlaceTap
+                        ? () => _openPlace(context, office)
                         : () => _addPlace(context, 'Office'),
                   ),
                 ),
@@ -406,7 +408,7 @@ class _SavedPlacesRow extends StatelessWidget {
                     title: airport?.label ?? l10n.airport,
                     subtitle: airport?.address ?? l10n.addAddress,
                     onTap: airport != null
-                        ? onPlaceTap
+                        ? () => _openPlace(context, airport)
                         : () => _addPlace(context, 'Airport'),
                   ),
                 ),
@@ -415,6 +417,18 @@ class _SavedPlacesRow extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+
+  /// Opens the action menu (Use / Edit / Remove) for a filled saved-place slot.
+  Future<void> _openPlace(BuildContext context, ClientAddress place) async {
+    final user = context.read<AuthBloc>().state.user;
+    if (user == null) return;
+    await showSavedPlaceActions(
+      context,
+      place: place,
+      clientId: user.id,
+      onUse: onPlaceTap,
     );
   }
 

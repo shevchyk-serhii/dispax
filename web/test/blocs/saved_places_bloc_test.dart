@@ -173,6 +173,128 @@ void main() {
     );
 
     blocTest<SavedPlacesBloc, SavedPlacesState>(
+      'SavedPlacesUpdateRequested updates then reloads and emits loaded',
+      build: () {
+        final renamed = _makeAddress(
+          id: '1',
+          label: 'Weekend home',
+          address: 'Leopoldstr. 21',
+        );
+        when(
+          () => mockService.updateAddress(
+            clientId: 'client-1',
+            addressId: '1',
+            label: 'Weekend home',
+            aliases: null,
+          ),
+        ).thenAnswer((_) async => renamed);
+        when(
+          () => mockService.getAddresses('client-1'),
+        ).thenAnswer((_) async => [renamed]);
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const SavedPlacesUpdateRequested(
+          clientId: 'client-1',
+          addressId: '1',
+          label: 'Weekend home',
+        ),
+      ),
+      expect: () => [
+        isA<SavedPlacesState>()
+            .having((s) => s.status, 'status', SavedPlacesStatus.loaded)
+            .having((s) => s.places.single.label, 'label', 'Weekend home'),
+      ],
+      verify: (_) {
+        verify(
+          () => mockService.updateAddress(
+            clientId: 'client-1',
+            addressId: '1',
+            label: 'Weekend home',
+            aliases: null,
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<SavedPlacesBloc, SavedPlacesState>(
+      'SavedPlacesUpdateRequested emits error when update fails',
+      build: () {
+        when(
+          () => mockService.updateAddress(
+            clientId: 'client-1',
+            addressId: '1',
+            label: 'Weekend home',
+            aliases: null,
+          ),
+        ).thenThrow(Exception('Network error'));
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const SavedPlacesUpdateRequested(
+          clientId: 'client-1',
+          addressId: '1',
+          label: 'Weekend home',
+        ),
+      ),
+      expect: () => [
+        isA<SavedPlacesState>()
+            .having((s) => s.status, 'status', SavedPlacesStatus.error)
+            .having(
+              (s) => s.errorMessage,
+              'errorMessage',
+              contains('Failed to update place'),
+            ),
+      ],
+    );
+
+    blocTest<SavedPlacesBloc, SavedPlacesState>(
+      'SavedPlacesDeleteRequested deletes then reloads and emits loaded',
+      build: () {
+        when(
+          () => mockService.deleteAddress('client-1', '1'),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockService.getAddresses('client-1'),
+        ).thenAnswer((_) async => []);
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const SavedPlacesDeleteRequested(clientId: 'client-1', addressId: '1'),
+      ),
+      expect: () => [
+        isA<SavedPlacesState>()
+            .having((s) => s.status, 'status', SavedPlacesStatus.loaded)
+            .having((s) => s.places, 'places', isEmpty),
+      ],
+      verify: (_) {
+        verify(() => mockService.deleteAddress('client-1', '1')).called(1);
+      },
+    );
+
+    blocTest<SavedPlacesBloc, SavedPlacesState>(
+      'SavedPlacesDeleteRequested emits error when delete fails',
+      build: () {
+        when(
+          () => mockService.deleteAddress('client-1', '1'),
+        ).thenThrow(Exception('Network error'));
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const SavedPlacesDeleteRequested(clientId: 'client-1', addressId: '1'),
+      ),
+      expect: () => [
+        isA<SavedPlacesState>()
+            .having((s) => s.status, 'status', SavedPlacesStatus.error)
+            .having(
+              (s) => s.errorMessage,
+              'errorMessage',
+              contains('Failed to delete place'),
+            ),
+      ],
+    );
+
+    blocTest<SavedPlacesBloc, SavedPlacesState>(
       'empty addresses list emits loaded with empty list',
       build: () {
         when(

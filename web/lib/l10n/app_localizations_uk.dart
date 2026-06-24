@@ -1772,6 +1772,18 @@ class AppLocalizationsUk extends AppLocalizations {
   String get addAddress => 'Додати адресу';
 
   @override
+  String get useThisAddress => 'Використати цю адресу';
+
+  @override
+  String get editAddress => 'Редагувати адресу';
+
+  @override
+  String get removeAddress => 'Видалити';
+
+  @override
+  String get removeAddressConfirm => 'Видалити це збережене місце?';
+
+  @override
   String get bookARide => 'Замовити поїздку';
 
   @override

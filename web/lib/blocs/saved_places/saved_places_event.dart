@@ -37,3 +37,39 @@ class SavedPlacesSaveRequested extends SavedPlacesEvent {
   @override
   List<Object?> get props => [clientId, label, address, latitude, longitude];
 }
+
+/// Update an existing saved place's [label] and/or [aliases] for [clientId],
+/// then reload the list. The backend PATCH only changes the label/aliases —
+/// it cannot change the street address (see [SavedPlacesDeleteRequested] +
+/// [SavedPlacesSaveRequested] for an address change).
+class SavedPlacesUpdateRequested extends SavedPlacesEvent {
+  final String clientId;
+  final String addressId;
+  final String? label;
+  final List<String>? aliases;
+
+  const SavedPlacesUpdateRequested({
+    required this.clientId,
+    required this.addressId,
+    this.label,
+    this.aliases,
+  });
+
+  @override
+  List<Object?> get props => [clientId, addressId, label, aliases];
+}
+
+/// Delete the saved place [addressId] belonging to [clientId], then reload the
+/// list so the UI drops it.
+class SavedPlacesDeleteRequested extends SavedPlacesEvent {
+  final String clientId;
+  final String addressId;
+
+  const SavedPlacesDeleteRequested({
+    required this.clientId,
+    required this.addressId,
+  });
+
+  @override
+  List<Object?> get props => [clientId, addressId];
+}

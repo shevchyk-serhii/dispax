@@ -771,6 +771,10 @@
   "savedPlaceHome": "Дім",
   "savedPlaceOffice": "Офіс",
   "addAddress": "Додати адресу",
+  "useThisAddress": "Використати цю адресу",
+  "editAddress": "Редагувати адресу",
+  "removeAddress": "Видалити",
+  "removeAddressConfirm": "Видалити це збережене місце?",
   "bookARide": "Замовити поїздку",
 
   "scheduled": "ЗА РОЗКЛАДОМ",

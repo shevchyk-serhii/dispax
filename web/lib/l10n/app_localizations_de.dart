@@ -1778,6 +1778,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addAddress => 'Adresse hinzufügen';
 
   @override
+  String get useThisAddress => 'Diese Adresse verwenden';
+
+  @override
+  String get editAddress => 'Adresse bearbeiten';
+
+  @override
+  String get removeAddress => 'Entfernen';
+
+  @override
+  String get removeAddressConfirm => 'Diesen gespeicherten Ort entfernen?';
+
+  @override
   String get bookARide => 'Fahrt buchen';
 
   @override

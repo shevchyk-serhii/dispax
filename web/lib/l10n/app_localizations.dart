@@ -3412,6 +3412,30 @@ abstract class AppLocalizations {
   /// **'Add address'**
   String get addAddress;
 
+  /// No description provided for @useThisAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this address'**
+  String get useThisAddress;
+
+  /// No description provided for @editAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit address'**
+  String get editAddress;
+
+  /// No description provided for @removeAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeAddress;
+
+  /// No description provided for @removeAddressConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this saved place?'**
+  String get removeAddressConfirm;
+
   /// No description provided for @bookARide.
   ///
   /// In en, this message translates to:

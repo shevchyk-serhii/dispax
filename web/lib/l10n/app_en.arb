@@ -842,6 +842,10 @@
   "savedPlaceHome": "Home",
   "savedPlaceOffice": "Office",
   "addAddress": "Add address",
+  "useThisAddress": "Use this address",
+  "editAddress": "Edit address",
+  "removeAddress": "Remove",
+  "removeAddressConfirm": "Remove this saved place?",
   "bookARide": "Book a ride",
 
   "scheduled": "SCHEDULED",
