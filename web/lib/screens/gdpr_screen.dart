@@ -26,7 +26,9 @@ class _GdprScreenState extends State<GdprScreen> {
   }
 
   Future<void> _loadData() async {
-    final l10n = AppLocalizations.of(context)!;
+    // Don't read AppLocalizations.of(context) here: this runs synchronously from
+    // initState (before the first frame), where inherited widgets aren't bound
+    // yet. Read it lazily in the branch that needs it, after the await.
     setState(() {
       _isLoading = true;
       _error = null;
@@ -63,7 +65,7 @@ class _GdprScreenState extends State<GdprScreen> {
         final requestsStatus = requestsResp?.statusCode ?? '-';
         setState(() {
           _isLoading = false;
-          _error = l10n.failedToLoadGdprData(
+          _error = AppLocalizations.of(context)!.failedToLoadGdprData(
             consentsResp.statusCode.toString(),
             requestsStatus.toString(),
           );

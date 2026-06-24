@@ -37,6 +37,7 @@ import 'package:dispax/blocs/auth/auth_bloc.dart';
 import 'package:dispax/blocs/ride/ride_bloc.dart';
 import 'package:dispax/blocs/schedule/schedule_bloc.dart';
 import 'package:dispax/dashboard/dispatcher/widgets/pending_rides_panel.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 
@@ -124,6 +125,11 @@ void main() {
 
   Widget buildPanel() {
     return MaterialApp(
+      // The panel and its dialogs read AppLocalizations.of(context); without
+      // these delegates that returns null and the conflict dialog never builds,
+      // hanging pumpAndSettle for the full test timeout.
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: MultiBlocProvider(
           providers: [
@@ -170,7 +176,13 @@ void main() {
       // the hit-testable viewport before tapping.
       await _pumpUntilFound(tester, find.text('Driver Hans'));
       await tester.ensureVisible(find.text('Driver Hans'));
-      await tester.pumpAndSettle();
+      // Bounded timeout so a future regression fails fast instead of hanging on
+      // the default 10-minute pumpAndSettle budget.
+      await tester.pumpAndSettle(
+        const Duration(milliseconds: 100),
+        EnginePhase.sendSemanticsUpdate,
+        const Duration(seconds: 30),
+      );
       await tester.tap(find.text('Driver Hans'));
       await _pumpUntilFound(tester, find.textContaining('Assign Ride'));
 
@@ -181,8 +193,12 @@ void main() {
       await tester.tap(find.text('Assign driver'));
       // Pump until the assignment has been dispatched and the resulting
       // conflict dialog appears (the bloc delivers across real async hops).
-      await _pumpUntilFound(tester, find.text('Driver is busy'));
-      await tester.pumpAndSettle();
+      await _pumpUntilFound(tester, find.text('Driver Busy'));
+      await tester.pumpAndSettle(
+        const Duration(milliseconds: 100),
+        EnginePhase.sendSemanticsUpdate,
+        const Duration(seconds: 30),
+      );
 
       FlutterError.onError = previousOnError;
 
@@ -226,7 +242,7 @@ void main() {
 
       // The follow-up conflict dialog opened cleanly; the AssignmentDialog is
       // gone.
-      expect(find.text('Driver is busy'), findsOneWidget);
+      expect(find.text('Driver Busy'), findsOneWidget);
       expect(find.textContaining('Assign Ride'), findsNothing);
     },
   );
@@ -236,6 +252,10 @@ void main() {
 /// budget runs out. RideBloc / UserService deliver results across real async
 /// stream/future hops, so a fixed pumpAndSettle() can race ahead of the widget
 /// being pushed; this drains the real event loop between pumps.
+///
+/// Fails fast (throws) when the budget is exhausted instead of returning
+/// silently: a silent return let a wrong-text finder slip through and hang the
+/// subsequent pumpAndSettle() for the full 10-minute test timeout.
 Future<void> _pumpUntilFound(
   WidgetTester tester,
   Finder finder, {
@@ -246,4 +266,8 @@ Future<void> _pumpUntilFound(
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pump();
   }
+  fail(
+    'Timed out after $maxTries pumps waiting for: '
+    '${finder.describeMatch(Plurality.zero)}',
+  );
 }
