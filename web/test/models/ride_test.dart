@@ -184,6 +184,56 @@ void main() {
     });
   });
 
+  // Regression tests for RideStatus.fromStringOrNull (bug #2 fix):
+  // an unknown status must return null, NOT silently fall back to [requested].
+  group('RideStatus.fromStringOrNull', () {
+    test('returns null for an unknown status string', () {
+      // This is the critical regression: the old fromString returned requested
+      // for any unrecognised value, masking cancelled/completed rides in the UI.
+      expect(RideStatus.fromStringOrNull('Unknown'), isNull);
+      expect(RideStatus.fromStringOrNull('garbage'), isNull);
+      expect(RideStatus.fromStringOrNull(''), isNull);
+      expect(RideStatus.fromStringOrNull('UNKNOWN_STATUS'), isNull);
+    });
+
+    test('correctly parses all known status strings (exact case)', () {
+      expect(RideStatus.fromStringOrNull('Requested'), RideStatus.requested);
+      expect(RideStatus.fromStringOrNull('Assigned'), RideStatus.assigned);
+      expect(RideStatus.fromStringOrNull('InProgress'), RideStatus.inProgress);
+      expect(RideStatus.fromStringOrNull('Completed'), RideStatus.completed);
+      expect(RideStatus.fromStringOrNull('Cancelled'), RideStatus.cancelled);
+    });
+
+    test('correctly parses known statuses in lowercase', () {
+      expect(RideStatus.fromStringOrNull('requested'), RideStatus.requested);
+      expect(RideStatus.fromStringOrNull('assigned'), RideStatus.assigned);
+      expect(RideStatus.fromStringOrNull('inprogress'), RideStatus.inProgress);
+      expect(RideStatus.fromStringOrNull('completed'), RideStatus.completed);
+      expect(RideStatus.fromStringOrNull('cancelled'), RideStatus.cancelled);
+    });
+
+    test('correctly parses known statuses in uppercase', () {
+      expect(RideStatus.fromStringOrNull('REQUESTED'), RideStatus.requested);
+      expect(RideStatus.fromStringOrNull('ASSIGNED'), RideStatus.assigned);
+      expect(RideStatus.fromStringOrNull('CANCELLED'), RideStatus.cancelled);
+    });
+
+    // Mutation probe: if fromStringOrNull returned RideStatus.requested instead of null
+    // for an unknown value, the first assertion below would fail because the result
+    // would equal RideStatus.requested rather than null.
+    test(
+      'unknown status is NOT silently mapped to requested (regression guard)',
+      () {
+        final result = RideStatus.fromStringOrNull(
+          'cancelled_by_driver_custom',
+        );
+        // Must be null, never requested or any other status
+        expect(result, isNull);
+        expect(result, isNot(equals(RideStatus.requested)));
+      },
+    );
+  });
+
   group('Ride.copyWith', () {
     test('preserves unchanged fields', () {
       final original = TestFixtures.ride(price: 30.0);

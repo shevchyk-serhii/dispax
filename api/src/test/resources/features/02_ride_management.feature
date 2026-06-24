@@ -75,3 +75,26 @@ Feature: Ride Management
       """
     Then the response status should be 201
     And the response should contain "Requested"
+
+  Scenario: A client updates their own ride
+    # Ride cccccccc-… is seeded in TestApplication with creatorId = testPersonId1 (the client).
+    # After plan-D the checkRole gate accepts CLIENT; the service-level ownership check passes
+    # because ride.creatorId == userId (both are testPersonId1 / 11111111-…).
+    Given I am authenticated as a client
+    When I send a PUT request to "/api/rides/cccccccc-cccc-cccc-cccc-cccccccccccc" with body:
+      """
+      {"notes":"window seat please"}
+      """
+    Then the response status should be 200
+    And the response should contain ride details
+
+  Scenario: A client cannot update another client's ride
+    # Ride 22222222-… has creatorId = dispatcher (testPersonId33), not the client (testPersonId1).
+    # The client role passes the checkRole gate (plan-D) but the service-level ownership check
+    # (ride.creatorId != userId && userRole != Dispatcher) rejects it with 403/Unauthorized.
+    Given I am authenticated as a client
+    When I send a PUT request to "/api/rides/22222222-2222-2222-2222-222222222222" with body:
+      """
+      {"notes":"should be forbidden"}
+      """
+    Then the response status should be 403

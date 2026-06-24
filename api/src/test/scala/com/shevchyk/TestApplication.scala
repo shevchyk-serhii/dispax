@@ -539,6 +539,21 @@ object TestApplication extends ZIOAppDefault:
     scheduledTime = Some(Instant.now().plusSeconds(432000))
   )
 
+  // Dedicated ride for 02_ride_management client-edit BDD scenario.
+  // creatorId == testPersonId1 (the client) so that the service-level ownership
+  // check passes when the client calls PUT /api/rides/:id.
+  private val testRideClientCreated = Ride(
+    id = RideId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc")),
+    clientId = testPersonId1,
+    creatorId = testPersonId1, // client is the creator
+    companyId = testCompanyId1,
+    status = RideStatus.Requested,
+    pickupLocation = Location("Stachus München"),
+    dropoffLocation = Location("Schwabing München"),
+    pickupDateTime = Instant.now().plusSeconds(86400),
+    scheduledTime = Some(Instant.now().plusSeconds(86400))
+  )
+
   // Dedicated ride for 34_airport_checkpoints — InProgress + ArrivalAirportTransfer
   // isArrival is encoded in AirportTransfer.isArrival, not the flightIsArrival column.
   private val testRideAirportCheckpoint = Ride(
@@ -567,7 +582,8 @@ object TestApplication extends ZIOAppDefault:
     testRideRequested4.id        -> testRideRequested4,
     testRideAirportCheckpoint.id -> testRideAirportCheckpoint,
     testRideForDispDrvAssign.id  -> testRideForDispDrvAssign,
-    testRideForPureDispAssign.id -> testRideForPureDispAssign
+    testRideForPureDispAssign.id -> testRideForPureDispAssign,
+    testRideClientCreated.id     -> testRideClientCreated
   )
 
   private val inMemoryRideRepositoryLayer: ZLayer[Any, Nothing, RideRepository] = ZLayer.fromZIO(

@@ -11,6 +11,7 @@ import com.shevchyk.core.application.{
   ScheduleDayLookup,
   UnavailabilitySlot
 }
+import com.shevchyk.core.domain.WebSocketEvent
 import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
@@ -787,6 +788,175 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
         )
       ),
 
+      // ────────────────────────────────────────────────────────────────────
+      // 7. Event publication — cancelRideWithReason / updateRideDetails
+      // ────────────────────────────────────────────────────────────────────
+      suite("event publication")(
+        test("cancelRideWithReason publishes RideStatusChanged with cancellationReason set") {
+          ZIO.scoped {
+            for {
+              hub     <- ZIO.service[EventHub]
+              dequeue <- hub.subscribe
+              service <- ZIO.service[RideService]
+              ride    <- service.createRide(mkRide())
+              _       <- service.cancelRideWithReason(
+                           ride.id,
+                           testClientId,
+                           PersonRole.Client,
+                           CancelRideRequest("client_request"),
+                           testCompanyId
+                         )
+              event   <- dequeue.take // RideCreated (from createRide)
+              event2  <- dequeue.take // RideStatusChanged (from cancelRideWithReason)
+            } yield {
+              val changed = event2.asInstanceOf[WebSocketEvent.RideStatusChanged]
+              assertTrue(
+                changed.newStatus == "Cancelled" &&
+                  changed.cancellationReason.contains("client_request") &&
+                  changed.clientId == testClientId.value &&
+                  changed.companyId == testCompanyId.value
+              )
+            }
+          }
+        }.provide(standardLayers),
+        // Negative: if we remove the cancellationReason from the publish call the assertion below
+        // would fail (it checks `contains`). That is exactly the mutation that makes this test
+        // meaningful — the production code must pass the reason through.
+        test("cancelRideWithReason reason in event is NOT None and matches the request") {
+          ZIO.scoped {
+            for {
+              hub     <- ZIO.service[EventHub]
+              dequeue <- hub.subscribe
+              service <- ZIO.service[RideService]
+              ride    <- service.createRide(mkRide())
+              _       <- service.cancelRideWithReason(
+                           ride.id,
+                           testClientId,
+                           PersonRole.Client,
+                           CancelRideRequest("other"),
+                           testCompanyId
+                         )
+              _       <- dequeue.take // RideCreated
+              event   <- dequeue.take // RideStatusChanged
+            } yield {
+              val changed = event.asInstanceOf[WebSocketEvent.RideStatusChanged]
+              assertTrue(
+                changed.cancellationReason.isDefined &&
+                  changed.cancellationReason.contains("other")
+              )
+            }
+          }
+        }.provide(standardLayers),
+        test("updateRideDetails publishes RideDetailsUpdated on success") {
+          ZIO.scoped {
+            for {
+              hub     <- ZIO.service[EventHub]
+              dequeue <- hub.subscribe
+              service <- ZIO.service[RideService]
+              ride    <- service.createRide(mkRide())
+              _       <- service.updateRideDetails(
+                           ride.id,
+                           UpdateRideDetailsRequest(notes = Some("priority pickup")),
+                           testClientId,
+                           PersonRole.Client,
+                           Some(testCompanyId)
+                         )
+              _       <- dequeue.take // RideCreated
+              event   <- dequeue.take // RideDetailsUpdated
+            } yield {
+              val updated = event.asInstanceOf[WebSocketEvent.RideDetailsUpdated]
+              assertTrue(
+                updated.rideId == ride.id.value &&
+                  updated.clientId == testClientId.value &&
+                  updated.companyId == testCompanyId.value
+              )
+            }
+          }
+        }.provide(standardLayers),
+        // Mutation probe: if updateRideDetails does NOT publish an event the dequeue.take above
+        // would hang / timeout — the test catches the missing publish.
+        test("updateRideDetails does NOT publish when update fails (completed ride)") {
+          ZIO.scoped {
+            for {
+              hub       <- ZIO.service[EventHub]
+              dequeue   <- hub.subscribe
+              service   <- ZIO.service[RideService]
+              completed <- createCompletedRide(service)
+              _         <-
+                service
+                  .updateRideDetails(
+                    completed.id,
+                    UpdateRideDetailsRequest(notes = Some("too late")),
+                    testClientId,
+                    PersonRole.Client,
+                    Some(testCompanyId)
+                  )
+                  .ignore // expected to fail
+              // Drain all events published so far (createCompletedRide fires several)
+              events    <- dequeue.takeAll
+            } yield assertTrue(
+              // No RideDetailsUpdated should be in the queue — the failed update must not publish
+              !events.exists(_.isInstanceOf[WebSocketEvent.RideDetailsUpdated])
+            )
+          }
+        }.provide(standardLayers)
+      ),
+      // ────────────────────────────────────────────────────────────────────
+      // 8. updateRideDetails — client ownership (new in this change)
+      // ────────────────────────────────────────────────────────────────────
+      suite("updateRideDetails ownership")(
+        test("client-creator can update own ride in Requested status") {
+          for {
+            service <- ZIO.service[RideService]
+            // createRide sets creatorId = clientId when called directly
+            ride    <- service.createRide(mkRide(clientId = testClientId))
+            updated <- service.updateRideDetails(
+                         ride.id,
+                         UpdateRideDetailsRequest(notes = Some("window seat please")),
+                         testClientId,
+                         PersonRole.Client,
+                         Some(testCompanyId)
+                       )
+          } yield assertTrue(updated.notes.contains("window seat please"))
+        }.provide(standardLayers),
+        test("client-creator can update own ride in Assigned status") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(mkRide(clientId = testClientId))
+            assigned <- service.assignDriver(ride.id, testDriverId)
+            updated  <- service.updateRideDetails(
+                          assigned.id,
+                          UpdateRideDetailsRequest(notes = Some("extra luggage")),
+                          testClientId,
+                          PersonRole.Client,
+                          Some(testCompanyId)
+                        )
+          } yield assertTrue(updated.notes.contains("extra luggage"))
+        }.provide(standardLayers),
+        // Negative: a client who did NOT create the ride cannot update it.
+        // The RideService checks `ride.creatorId != userId` for non-dispatchers.
+        // vipClientId is a valid client in the same company but is NOT the creator
+        // (testClientId is). If the ownership check were removed this test would fail.
+        test("client who is NOT the ride creator cannot update the ride") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide(clientId = testClientId)) // creator = testClientId
+            result  <-
+              service
+                .updateRideDetails(
+                  ride.id,
+                  UpdateRideDetailsRequest(notes = Some("should be denied")),
+                  vipClientId, // different client, same company
+                  PersonRole.Client,
+                  Some(testCompanyId)
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+            case _                   => false
+          })
+        }.provide(standardLayers)
+      ),
       // ────────────────────────────────────────────────────────────────────
       // getDriverEarnings — period window boundaries (service-level)
       // ────────────────────────────────────────────────────────────────────

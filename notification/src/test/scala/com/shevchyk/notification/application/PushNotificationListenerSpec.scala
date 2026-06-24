@@ -18,11 +18,13 @@ import java.util.UUID
 
 object PushNotificationListenerSpec extends ZIOSpecDefault {
 
-  private val companyId    = UUID.fromString("00000001-0000-0000-0000-000000000001")
-  private val driverId     = UUID.fromString("00000002-0000-0000-0000-000000000002")
-  private val rideId       = UUID.fromString("00000003-0000-0000-0000-000000000003")
-  private val clientId     = UUID.fromString("00000004-0000-0000-0000-000000000004")
-  private val dispatcherId = UUID.fromString("00000005-0000-0000-0000-000000000005")
+  private val companyId         = UUID.fromString("00000001-0000-0000-0000-000000000001")
+  private val driverId          = UUID.fromString("00000002-0000-0000-0000-000000000002")
+  private val rideId            = UUID.fromString("00000003-0000-0000-0000-000000000003")
+  private val clientId          = UUID.fromString("00000004-0000-0000-0000-000000000004")
+  private val dispatcherId      = UUID.fromString("00000005-0000-0000-0000-000000000005")
+  private val otherCompanyId    = UUID.fromString("00000009-0000-0000-0000-000000000009")
+  private val otherDispatcherId = UUID.fromString("00000010-0000-0000-0000-000000000010")
 
   private val testFcmLayer: ZLayer[Any, Nothing, FcmService] =
     InMemoryFcmTokenRepository.layer >>> FcmServiceSpec.testFcmServiceLayer
@@ -37,10 +39,20 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
     companyId = Some(CompanyId(companyId))
   )
 
+  private val otherDispatcher = Person(
+    id = PersonId(otherDispatcherId),
+    name = "Other Dispatcher",
+    email = "other-dispatcher@example.com",
+    role = PersonRole.Dispatcher,
+    companyId = Some(CompanyId(otherCompanyId))
+  )
+
   private val personRepoStub: PersonRepository =
     new PersonRepository:
       def findByRoleAndCompany(role: PersonRole, company: CompanyId): Task[List[Person]]                     = ZIO.succeed(
-        if role == PersonRole.Dispatcher && company == CompanyId(companyId) then List(dispatcher) else Nil
+        if role == PersonRole.Dispatcher && company == CompanyId(companyId) then List(dispatcher)
+        else if role == PersonRole.Dispatcher && company == CompanyId(otherCompanyId) then List(otherDispatcher)
+        else Nil
       )
       private def nope(m: String): Nothing                                                                   = throw new NotImplementedError(s"unexpected PersonRepository.$m")
       def create(person: Person): Task[Person]                                                               = nope("create")
@@ -497,6 +509,199 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
                                                 .provide(flakyLayers)
         } yield result
       },
+      // ── Dispatcher push on Cancelled / Completed (Plan item B) ──────────
+
+      test("RideStatusChanged Cancelled notifies the company dispatcher") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideStatusChanged(
+              rideId,
+              "Cancelled",
+              Some(driverId),
+              clientId,
+              companyId,
+              Some("client_request")
+            ),
+            PersonId(dispatcherId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.notificationType == "ride_status_changed") &&
+                notifs.exists(_.title == "Ride Cancelled")
+            )
+          }
+        }
+      }.provide(baseLayers),
+      test("RideStatusChanged Cancelled dispatcher notification body contains cancellation reason") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideStatusChanged(
+              rideId,
+              "Cancelled",
+              Some(driverId),
+              clientId,
+              companyId,
+              Some("weather_conditions")
+            ),
+            PersonId(dispatcherId)
+          ).map { notifs =>
+            val body = notifs.find(_.notificationType == "ride_status_changed").map(_.body).getOrElse("")
+            assertTrue(body.contains("weather_conditions"))
+          }
+        }
+      }.provide(baseLayers),
+      test("RideStatusChanged Completed notifies the company dispatcher") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideStatusChanged(rideId, "Completed", Some(driverId), clientId, companyId),
+            PersonId(dispatcherId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.notificationType == "ride_status_changed") &&
+                notifs.exists(_.title == "Ride Completed")
+            )
+          }
+        }
+      }.provide(baseLayers),
+      test("[DEDUP] dispatcher who is also the driver does not receive double push on Cancelled") {
+        // Publish a Cancelled event where driverId == dispatcherId.
+        // The listener must skip the dispatcher entry to avoid two pushes to the same person.
+        ZIO.scoped {
+          for {
+            _         <- PushNotificationListener.start
+            eventHub  <- ZIO.service[EventHub]
+            notifRepo <- ZIO.service[NotificationRepository]
+            _         <- eventHub.publish(
+                           // driverId set to dispatcherId so they are the same person
+                           WebSocketEvent.RideStatusChanged(
+                             rideId,
+                             "Cancelled",
+                             Some(dispatcherId),
+                             clientId,
+                             companyId,
+                             Some("test")
+                           )
+                         )
+            _         <- TestClock.adjust(200.millis)
+            notifs    <- notifRepo.findByPersonId(PersonId(dispatcherId), limit = 10, offset = 0)
+          } yield assertTrue(
+            // Exactly one notification: from the driver branch (not doubled by the dispatcher branch)
+            notifs.count(_.notificationType == "ride_status_changed") == 1
+          )
+        }
+      }.provide(baseLayers),
+      test("[DEDUP] dispatcher who is also the client does not receive double push on Cancelled") {
+        // The client's push and the dispatcher's push would be to the same person — must be suppressed.
+        ZIO.scoped {
+          for {
+            _         <- PushNotificationListener.start
+            eventHub  <- ZIO.service[EventHub]
+            notifRepo <- ZIO.service[NotificationRepository]
+            _         <- eventHub.publish(
+                           // clientId set to dispatcherId so they are the same person
+                           WebSocketEvent.RideStatusChanged(
+                             rideId,
+                             "Cancelled",
+                             Some(driverId),
+                             dispatcherId,
+                             companyId,
+                             Some("test")
+                           )
+                         )
+            _         <- TestClock.adjust(200.millis)
+            notifs    <- notifRepo.findByPersonId(PersonId(dispatcherId), limit = 10, offset = 0)
+          } yield assertTrue(
+            // Exactly one notification: from the client branch (not doubled by the dispatcher branch)
+            notifs.count(_.notificationType == "ride_status_changed") == 1
+          )
+        }
+      }.provide(baseLayers),
+      test("[TENANT ISOLATION] dispatcher of a different company is NOT notified on Cancelled") {
+        // personRepoStub returns otherDispatcher for otherCompanyId, and dispatcher for companyId.
+        // The event targets companyId — so only dispatcher is resolved, not otherDispatcher.
+        ZIO.scoped {
+          for {
+            _           <- PushNotificationListener.start
+            eventHub    <- ZIO.service[EventHub]
+            notifRepo   <- ZIO.service[NotificationRepository]
+            _           <- eventHub.publish(
+                             WebSocketEvent.RideStatusChanged(
+                               rideId,
+                               "Cancelled",
+                               Some(driverId),
+                               clientId,
+                               companyId,
+                               Some("tenant_test")
+                             )
+                           )
+            _           <- TestClock.adjust(200.millis)
+            // The other company's dispatcher must receive nothing
+            otherNotifs <- notifRepo.findByPersonId(PersonId(otherDispatcherId), limit = 10, offset = 0)
+          } yield assertTrue(otherNotifs.isEmpty)
+        }
+      }.provide(baseLayers),
+
+      // ── RideDetailsUpdated push (Plan item C) ────────────────────────────
+
+      test("RideDetailsUpdated notifies the assigned driver") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideDetailsUpdated(rideId, Some(driverId), clientId, companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.notificationType == "ride_updated") &&
+                notifs.exists(_.title == "Ride Updated")
+            )
+          }
+        }
+      }.provide(baseLayers),
+      test("RideDetailsUpdated notifies the company dispatcher") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideDetailsUpdated(rideId, Some(driverId), clientId, companyId),
+            PersonId(dispatcherId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.notificationType == "ride_updated") &&
+                notifs.exists(_.title == "Ride Updated")
+            )
+          }
+        }
+      }.provide(baseLayers),
+      test("[DEDUP] dispatcher who is also the driver is not notified twice on RideDetailsUpdated") {
+        ZIO.scoped {
+          for {
+            _         <- PushNotificationListener.start
+            eventHub  <- ZIO.service[EventHub]
+            notifRepo <- ZIO.service[NotificationRepository]
+            _         <- eventHub.publish(
+                           // driver is the dispatcher — same UUID
+                           WebSocketEvent.RideDetailsUpdated(rideId, Some(dispatcherId), clientId, companyId)
+                         )
+            _         <- TestClock.adjust(200.millis)
+            notifs    <- notifRepo.findByPersonId(PersonId(dispatcherId), limit = 10, offset = 0)
+          } yield assertTrue(
+            notifs.count(_.notificationType == "ride_updated") == 1
+          )
+        }
+      }.provide(baseLayers),
+      test("[TENANT ISOLATION] dispatcher of different company not notified on RideDetailsUpdated") {
+        ZIO.scoped {
+          for {
+            _           <- PushNotificationListener.start
+            eventHub    <- ZIO.service[EventHub]
+            notifRepo   <- ZIO.service[NotificationRepository]
+            _           <- eventHub.publish(
+                             WebSocketEvent.RideDetailsUpdated(rideId, Some(driverId), clientId, companyId)
+                           )
+            _           <- TestClock.adjust(200.millis)
+            otherNotifs <- notifRepo.findByPersonId(PersonId(otherDispatcherId), limit = 10, offset = 0)
+          } yield assertTrue(otherNotifs.isEmpty)
+        }
+      }.provide(baseLayers),
+
+      // ── lifecycle: existing test ─────────────────────────────────────────
+
       test("lifecycle: event published before start is not delivered; event after start is delivered") {
         // The Hub subscription is opened inside start; events published before start is called
         // are not buffered for late subscribers (Hub semantics: only current subscribers receive).
