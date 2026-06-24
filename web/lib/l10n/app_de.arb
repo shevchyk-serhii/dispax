@@ -713,6 +713,8 @@
   "editAction": "Bearbeiten",
   "deactivateAction": "Deaktivieren",
   "editClientTitle": "Kunde bearbeiten",
+  "clientUpdatedSuccess": "Kunde erfolgreich aktualisiert",
+  "clientUpdateFailed": "Kunde konnte nicht aktualisiert werden. Bitte erneut versuchen.",
   "deactivateClientTitle": "Kunde deaktivieren",
   "deactivateClientConfirmMsg": "Möchten Sie {name} wirklich deaktivieren?",
   "@deactivateClientConfirmMsg": {
@@ -1573,6 +1575,7 @@
 
   "totalRidesStatLabel": "Fahrten gesamt",
   "onTimeStatLabel": "Pünktlich",
+  "completionRateStatLabel": "Abschlussquote",
   "avgSlackStatLabel": "Ø Puffer",
   "gmvStatLabel": "GMV",
   "ridesByTenantTitle": "Fahrten nach Mandant",

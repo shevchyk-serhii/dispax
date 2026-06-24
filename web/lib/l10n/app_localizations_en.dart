@@ -1665,6 +1665,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editClientTitle => 'Edit Client';
 
   @override
+  String get clientUpdatedSuccess => 'Client updated successfully';
+
+  @override
+  String get clientUpdateFailed => 'Failed to update client. Please try again.';
+
+  @override
   String get deactivateClientTitle => 'Deactivate Client';
 
   @override
@@ -3333,6 +3339,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onTimeStatLabel => 'On-time';
+
+  @override
+  String get completionRateStatLabel => 'Completion rate';
 
   @override
   String get avgSlackStatLabel => 'Avg Slack';

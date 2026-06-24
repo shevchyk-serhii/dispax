@@ -795,6 +795,8 @@
   "editAction": "Edit",
   "deactivateAction": "Deactivate",
   "editClientTitle": "Edit Client",
+  "clientUpdatedSuccess": "Client updated successfully",
+  "clientUpdateFailed": "Failed to update client. Please try again.",
   "deactivateClientTitle": "Deactivate Client",
   "deactivateClientConfirmMsg": "Are you sure you want to deactivate {name}?",
   "@deactivateClientConfirmMsg": {
@@ -1655,6 +1657,7 @@
 
   "totalRidesStatLabel": "Total Rides",
   "onTimeStatLabel": "On-time",
+  "completionRateStatLabel": "Completion rate",
   "avgSlackStatLabel": "Avg Slack",
   "gmvStatLabel": "GMV",
   "ridesByTenantTitle": "Rides by Tenant",

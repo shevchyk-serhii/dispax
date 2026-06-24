@@ -85,11 +85,19 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         onPressed: () async {
           final rideBloc = context.read<RideBloc>();
           final authBloc = context.read<AuthBloc>();
+          // Preselect this client so the secretary doesn't have to search for
+          // and re-pick the very client whose detail screen they came from.
+          final formBloc = CreateRideFormBloc()
+            ..add(
+              ClientPreselected(clientId: _client.id, clientName: _client.name),
+            );
           await Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => CreateRideScreen(rideBloc: rideBloc),
+              builder: (_) =>
+                  CreateRideScreen(rideBloc: rideBloc, formBloc: formBloc),
             ),
           );
+          await formBloc.close();
           final user = authBloc.state.user;
           if (user != null) rideBloc.add(RideLoadRequested(user: user));
         },
@@ -397,9 +405,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     bool isVip = _client.isVip;
     final formKey = GlobalKey<FormState>();
 
-    // Get available drivers for preferred driver selection
     final apiClient = context.read<AuthBloc>().apiClient;
     final userService = UserService(apiClient: apiClient);
+    final messenger = ScaffoldMessenger.of(context);
 
     showAdaptiveDialog(
       context: context,
@@ -477,24 +485,38 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     backgroundColor: AppColors.secretaryColor,
                     foregroundColor: AppColors.textOnPrimary,
                   ),
-                  onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      userService
-                          .updateClient(
-                            _client.id,
-                            UpdateUserRequest(
-                              name: nameController.text.trim(),
-                              email: emailController.text.trim(),
-                              phone: phoneController.text.trim().isNotEmpty
-                                  ? phoneController.text.trim()
-                                  : null,
-                              isVip: isVip,
-                            ),
-                          )
-                          .then((updated) {
-                            setState(() => _client = updated);
-                          });
-                      Navigator.of(dialogContext).pop();
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    try {
+                      final updated = await userService.updateClient(
+                        _client.id,
+                        UpdateUserRequest(
+                          name: nameController.text.trim(),
+                          email: emailController.text.trim(),
+                          phone: phoneController.text.trim().isNotEmpty
+                              ? phoneController.text.trim()
+                              : null,
+                          isVip: isVip,
+                        ),
+                      );
+                      // Guard against the screen being disposed while the
+                      // request was in flight (setState-after-dispose crash).
+                      if (mounted) setState(() => _client = updated);
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(l10n.clientUpdatedSuccess)),
+                      );
+                    } catch (e) {
+                      // Keep the dialog open and surface the failure instead of
+                      // silently dropping it (the user must know it failed).
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.clientUpdateFailed),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
                     }
                   },
                   child: Text(l10n.save),

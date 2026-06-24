@@ -713,6 +713,8 @@
   "editAction": "Редагувати",
   "deactivateAction": "Деактивувати",
   "editClientTitle": "Редагувати клієнта",
+  "clientUpdatedSuccess": "Клієнта успішно оновлено",
+  "clientUpdateFailed": "Не вдалося оновити клієнта. Спробуйте ще раз.",
   "deactivateClientTitle": "Деактивувати клієнта",
   "deactivateClientConfirmMsg": "Ви впевнені, що хочете деактивувати {name}?",
   "@deactivateClientConfirmMsg": {
@@ -1573,6 +1575,7 @@
 
   "totalRidesStatLabel": "Всього поїздок",
   "onTimeStatLabel": "Вчасно",
+  "completionRateStatLabel": "Частка завершених",
   "avgSlackStatLabel": "Сер. запас",
   "gmvStatLabel": "GMV",
   "ridesByTenantTitle": "Поїздки за тенантом",

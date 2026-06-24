@@ -356,87 +356,109 @@ class _ClientListPanelState extends State<ClientListPanel> {
     final emailController = TextEditingController(text: client.email);
     final phoneController = TextEditingController(text: client.phone ?? '');
     final formKey = GlobalKey<FormState>();
+    bool isVip = client.isVip;
 
     showAdaptiveDialog(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(l10n.editClientTitle),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: l10n.name,
-                      prefixIcon: const Icon(Icons.person),
-                    ),
-                    validator: (v) => v == null || v.trim().isEmpty
-                        ? l10n.nameRequired
-                        : null,
-                  ),
-                  const SizedBox(height: AppDimensions.paddingMedium),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: InputDecoration(
-                      labelText: l10n.email,
-                      prefixIcon: const Icon(Icons.email),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return l10n.emailRequired;
-                      }
-                      if (!v.contains('@')) return l10n.invalidEmail;
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppDimensions.paddingMedium),
-                  TextFormField(
-                    controller: phoneController,
-                    decoration: InputDecoration(
-                      labelText: l10n.phoneOptional,
-                      prefixIcon: const Icon(Icons.phone),
-                    ),
-                    keyboardType: TextInputType.phone,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(l10n.cancel),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secretaryColor,
-                foregroundColor: AppColors.textOnPrimary,
-              ),
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  context.read<ClientBloc>().add(
-                    ClientUpdateRequested(
-                      clientId: client.id,
-                      request: UpdateUserRequest(
-                        name: nameController.text.trim(),
-                        email: emailController.text.trim(),
-                        phone: phoneController.text.trim().isNotEmpty
-                            ? phoneController.text.trim()
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: Text(l10n.editClientTitle),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          labelText: l10n.name,
+                          prefixIcon: const Icon(Icons.person),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? l10n.nameRequired
                             : null,
                       ),
-                    ),
-                  );
-                  Navigator.of(dialogContext).pop();
-                }
-              },
-              child: Text(l10n.save),
-            ),
-          ],
+                      const SizedBox(height: AppDimensions.paddingMedium),
+                      TextFormField(
+                        controller: emailController,
+                        decoration: InputDecoration(
+                          labelText: l10n.email,
+                          prefixIcon: const Icon(Icons.email),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return l10n.emailRequired;
+                          }
+                          if (!v.contains('@')) return l10n.invalidEmail;
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppDimensions.paddingMedium),
+                      TextFormField(
+                        controller: phoneController,
+                        decoration: InputDecoration(
+                          labelText: l10n.phoneOptional,
+                          prefixIcon: const Icon(Icons.phone),
+                        ),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: AppDimensions.paddingMedium),
+                      // VIP toggle — kept in parity with the client-detail edit
+                      // dialog so VIP status is editable from the list too.
+                      SwitchListTile(
+                        title: Text(l10n.vipClientLabel),
+                        subtitle: Text(l10n.vipClientHelpText),
+                        secondary: Icon(
+                          Icons.star,
+                          color: isVip
+                              ? AppColors.warning
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        value: isVip,
+                        onChanged: (v) => setDialogState(() => isVip = v),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(l10n.cancel),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secretaryColor,
+                    foregroundColor: AppColors.textOnPrimary,
+                  ),
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      context.read<ClientBloc>().add(
+                        ClientUpdateRequested(
+                          clientId: client.id,
+                          request: UpdateUserRequest(
+                            name: nameController.text.trim(),
+                            email: emailController.text.trim(),
+                            phone: phoneController.text.trim().isNotEmpty
+                                ? phoneController.text.trim()
+                                : null,
+                            isVip: isVip,
+                          ),
+                        ),
+                      );
+                      Navigator.of(dialogContext).pop();
+                    }
+                  },
+                  child: Text(l10n.save),
+                ),
+              ],
+            );
+          },
         );
       },
     );

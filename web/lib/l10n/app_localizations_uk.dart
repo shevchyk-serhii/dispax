@@ -1664,6 +1664,13 @@ class AppLocalizationsUk extends AppLocalizations {
   String get editClientTitle => 'Редагувати клієнта';
 
   @override
+  String get clientUpdatedSuccess => 'Клієнта успішно оновлено';
+
+  @override
+  String get clientUpdateFailed =>
+      'Не вдалося оновити клієнта. Спробуйте ще раз.';
+
+  @override
   String get deactivateClientTitle => 'Деактивувати клієнта';
 
   @override
@@ -3340,6 +3347,9 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get onTimeStatLabel => 'Вчасно';
+
+  @override
+  String get completionRateStatLabel => 'Частка завершених';
 
   @override
   String get avgSlackStatLabel => 'Сер. запас';

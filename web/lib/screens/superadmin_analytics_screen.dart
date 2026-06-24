@@ -333,7 +333,9 @@ class _AnalyticsDashboard extends StatelessWidget {
       (a, b) => a + b,
     );
     final completedRides = data.rides.byStatus['Completed'] ?? 0;
-    final onTimePct = totalRides > 0
+    // This is the completion rate (completed / total), not an on-time/
+    // punctuality metric — the backend does not expose at-risk data here.
+    final completionPct = totalRides > 0
         ? (completedRides / totalRides * 100).toStringAsFixed(1)
         : '—';
 
@@ -362,8 +364,8 @@ class _AnalyticsDashboard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _StatTile.light(
-                        label: l10n.onTimeStatLabel,
-                        value: totalRides > 0 ? '$onTimePct %' : '—',
+                        label: l10n.completionRateStatLabel,
+                        value: totalRides > 0 ? '$completionPct %' : '—',
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -397,8 +399,8 @@ class _AnalyticsDashboard extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _StatTile.light(
-                          label: l10n.onTimeStatLabel,
-                          value: totalRides > 0 ? '$onTimePct %' : '—',
+                          label: l10n.completionRateStatLabel,
+                          value: totalRides > 0 ? '$completionPct %' : '—',
                         ),
                       ),
                     ],

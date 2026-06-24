@@ -3208,6 +3208,18 @@ abstract class AppLocalizations {
   /// **'Edit Client'**
   String get editClientTitle;
 
+  /// No description provided for @clientUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Client updated successfully'**
+  String get clientUpdatedSuccess;
+
+  /// No description provided for @clientUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update client. Please try again.'**
+  String get clientUpdateFailed;
+
   /// No description provided for @deactivateClientTitle.
   ///
   /// In en, this message translates to:
@@ -6249,6 +6261,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On-time'**
   String get onTimeStatLabel;
+
+  /// No description provided for @completionRateStatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion rate'**
+  String get completionRateStatLabel;
 
   /// No description provided for @avgSlackStatLabel.
   ///
