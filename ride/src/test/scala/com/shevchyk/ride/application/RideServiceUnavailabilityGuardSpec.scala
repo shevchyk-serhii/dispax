@@ -298,10 +298,12 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
               ride    <- service.createRide(mkRide())
               // First assign (succeeds)
               _       <- service.assignDriver(ride.id, testDriverId, overrideScheduleConflict = true)
-              // Second assign on the now-Assigned ride (must fail)
+              // Second assign on the now-Assigned ride (must fail). assignDriver
+              // reports a stale assign as RideAlreadyAssigned (mapped to 409) so
+              // the loser reloads rather than retrying a doomed transition.
               result  <- service.assignDriver(ride.id, testDriver2Id, overrideScheduleConflict = true).exit
             } yield assertTrue(result match {
-              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition])
+              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.RideAlreadyAssigned])
               case _                   => false
             })).provideEnvironment(env)
           }
