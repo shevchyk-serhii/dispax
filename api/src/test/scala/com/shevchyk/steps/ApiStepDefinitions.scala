@@ -17,6 +17,13 @@ object ApiStepDefinitions {
   @volatile private var serverFiber: Option[Fiber[Throwable, Any]] = None
   @volatile private var serverStarted                              = false
 
+  // The Cucumber test server binds to the `PORT` env var (via
+  // ServerConfig.envPortLayer in TestApplication), defaulting to 8080. Read the
+  // same var here so the HTTP client targets the same port — set PORT to run the
+  // BDD suite alongside a dev server already holding 8080 (e.g. `PORT=8090 sbt cucumber`).
+  private val port: Int       = sys.env.get("PORT").flatMap(_.toIntOption).getOrElse(8080)
+  private val baseUrl: String = s"http://localhost:$port"
+
   def startServerIfNeeded(): Unit = synchronized {
     if (!serverStarted) {
       // Fail fast if port 8080 is already held by a *foreign* server (a stale
@@ -28,10 +35,11 @@ object ApiStepDefinitions {
       // → mass flaky failures. Detect this and abort with a clear message.
       if (foreignServerOnPort()) {
         throw new RuntimeException(
-          "Port 8080 is already in use by a server that does NOT expose /test/reset. " +
+          s"Port $port is already in use by a server that does NOT expose /test/reset. " +
             "This is almost certainly a stale TestApplication (from another worktree/branch) or a `make dev` " +
-            "instance. The Cucumber suite needs to own port 8080 so it can reset in-memory state between " +
-            "scenarios. Free the port (e.g. `lsof -nP -iTCP:8080 -sTCP:LISTEN` then kill it) and re-run."
+            s"instance. The Cucumber suite needs to own port $port so it can reset in-memory state between " +
+            s"scenarios. Free the port (e.g. `lsof -nP -iTCP:$port -sTCP:LISTEN` then kill it), or set PORT to " +
+            "a free port (e.g. `PORT=8090 sbt cucumber`) to run alongside a dev server, then re-run."
         )
       }
 
@@ -89,7 +97,7 @@ object ApiStepDefinitions {
   private def healthOk(): Boolean = {
     import java.net.{HttpURLConnection, URL}
     try {
-      val url        = new URL("http://localhost:8080/health")
+      val url        = new URL(s"$baseUrl/health")
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("GET")
       connection.setConnectTimeout(1000)
@@ -109,7 +117,7 @@ object ApiStepDefinitions {
   private def resetStatus(): Int = {
     import java.net.{HttpURLConnection, URL}
     try {
-      val url        = new URL("http://localhost:8080/test/reset")
+      val url        = new URL(s"$baseUrl/test/reset")
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("POST")
       connection.setConnectTimeout(2000)
@@ -146,7 +154,7 @@ object ApiStepDefinitions {
     if (code != 204)
       throw new RuntimeException(
         s"/test/reset returned $code (expected 204) after $maxAttempts attempts. " +
-          "The test server is not the resettable TestApplication (stale/foreign server on port 8080?) -- " +
+          s"The test server is not the resettable TestApplication (stale/foreign server on port $port?) -- " +
           "aborting so state does not leak between scenarios."
       )
   }
@@ -331,7 +339,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         }
       val request    = Request(
         method = httpMethod,
-        url = URL.decode(s"http://localhost:8080$endpoint").toOption.get
+        url = URL.decode(s"$baseUrl$endpoint").toOption.get
       )
       executeRequest(request)
   }
@@ -349,7 +357,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
         }
       val request    = Request(
         method = httpMethod,
-        url = URL.decode(s"http://localhost:8080$endpoint").toOption.get,
+        url = URL.decode(s"$baseUrl$endpoint").toOption.get,
         headers = Headers(Header.Authorization.Bearer("invalid-token"))
       )
       executeRequest(request)
@@ -594,7 +602,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
 
     val baseRequest = Request(
       method = httpMethod,
-      url = URL.decode(s"http://localhost:8080$endpoint").toOption.get
+      url = URL.decode(s"$baseUrl$endpoint").toOption.get
     )
 
     val requestWithAuth =
@@ -2411,7 +2419,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     authToken = None
     val request    = Request(
       method = Method.PATCH,
-      url = URL.decode(s"http://localhost:8080$endpoint").toOption.get
+      url = URL.decode(s"$baseUrl$endpoint").toOption.get
     )
     executeRequest(request)
     authToken = savedToken
@@ -2505,7 +2513,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     val footerBytes = footer.getBytes("UTF-8")
     val combined    = headerBytes ++ jpegBytes ++ footerBytes
 
-    val url = URL.decode(s"http://localhost:8080$endpoint").toOption.get
+    val url = URL.decode(s"$baseUrl$endpoint").toOption.get
 
     // Build and execute the real HTTP multipart request against the running TestApplication.
     val request = Request(

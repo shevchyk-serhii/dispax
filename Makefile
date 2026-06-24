@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-integration test-bdd test-all clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-integration test-bdd test-bdd-port test-all clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android flutter-prod-ios \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -89,9 +89,14 @@ dev:
 run-test:
 	@export $$(cat .env.test | grep -v '^#' | xargs) && sbt run
 
-# Run BDD Cucumber scenarios
+# Run BDD Cucumber scenarios (test server binds to 8080)
 test-bdd:
 	sbt cucumber
+
+# Run BDD Cucumber scenarios on an alternate port so they can run alongside a
+# dev server already holding 8080. Override with `make test-bdd-port PORT=8095`.
+test-bdd-port:
+	PORT=$(or $(PORT),8090) sbt cucumber
 
 # Run all unit + integration tests (excludes Cucumber)
 test:
