@@ -153,6 +153,34 @@ void main() {
 
       expect(ride.flightTime, isNull);
     });
+
+    // Regression: flightTime used to be parsed without .toLocal() while
+    // pickupDateTime was converted, so airport flight times rendered in UTC
+    // while every other time on the ride was local. Both must be local, and
+    // both must round-trip back to the same UTC instant on toJson.
+    test('parses flightTime to local and round-trips to UTC like pickup', () {
+      final ride = Ride.fromJson({
+        'id': 'r1',
+        'clientId': 'c1',
+        'creatorId': 'cr1',
+        'companyId': 'co1',
+        'pickupDateTime': '2026-03-15T10:00:00.000Z',
+        'from': {'address': 'A'},
+        'to': {'address': 'B'},
+        'clientName': 'Client',
+        'isAirportTransfer': true,
+        'flightTime': '2026-03-15T09:30:00.000Z',
+      });
+
+      expect(ride.flightTime!.isUtc, isFalse);
+      // Same wall-clock offset handling as pickupDateTime (also local).
+      expect(ride.pickupDateTime.isUtc, isFalse);
+      expect(
+        ride.flightTime!.toUtc().toIso8601String(),
+        '2026-03-15T09:30:00.000Z',
+      );
+      expect(ride.toJson()['flightTime'], '2026-03-15T09:30:00.000Z');
+    });
   });
 
   group('RideStatus.fromString', () {
@@ -379,6 +407,15 @@ void main() {
 
     test('flightInfo returns null for non-airport ride', () {
       expect(TestFixtures.ride().flightInfo, isNull);
+    });
+
+    // Regression: flightInfo used to substitute DateTime.now() when flightTime
+    // was null, fabricating a wrong time and hiding the missing data. An
+    // airport transfer with no flight time must yield no FlightInfo at all.
+    test('flightInfo returns null when airport transfer has no flightTime', () {
+      final ride = TestFixtures.ride(isAirportTransfer: true);
+      expect(ride.flightTime, isNull);
+      expect(ride.flightInfo, isNull);
     });
 
     test('driver returns Person when driverId and driverName set', () {

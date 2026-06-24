@@ -681,6 +681,12 @@ void showReassignSheet(
                                     RideReassignRequested(
                                       rideId: ride.id,
                                       newDriverId: schedule.driverId,
+                                      // Conflicts were detected and shown to the
+                                      // dispatcher; confirming means "do it
+                                      // anyway", so override the backend guard
+                                      // instead of bouncing off a 409.
+                                      overrideScheduleConflict:
+                                          conflicts.isNotEmpty,
                                     ),
                                   );
                                 },
@@ -760,6 +766,10 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                     RideAssignRequested(
                       rideId: ride.id,
                       driverId: scheduleDay.driverId,
+                      // Conflicts were detected and shown in the dialog;
+                      // "Assign anyway" must override the backend guard instead
+                      // of bouncing off a 409 and re-prompting.
+                      overrideScheduleConflict: conflicts.isNotEmpty,
                     ),
                   );
                 },
@@ -1032,6 +1042,10 @@ class _DriverScheduleColumn extends StatelessWidget {
                     RideAssignRequested(
                       rideId: ride.id,
                       driverId: scheduleDay.driverId,
+                      // Conflicts were detected and shown in the dialog;
+                      // "Assign anyway" must override the backend guard instead
+                      // of bouncing off a 409 and re-prompting.
+                      overrideScheduleConflict: conflicts.isNotEmpty,
                     ),
                   );
                 },

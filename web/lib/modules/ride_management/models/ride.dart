@@ -181,7 +181,9 @@ class Ride {
       status: RideStatus.fromString(json['status'] ?? 'Requested'),
       clientName: json['clientName'] ?? 'Unknown Client',
       flightNumber: json['flightNumber'],
-      flightTime: JsonParse.optionalDateTime(json, 'flightTime'),
+      // Convert to local like pickupDateTime, so airport flight times are not
+      // shown in UTC while every other time on the ride is local.
+      flightTime: JsonParse.optionalDateTime(json, 'flightTime')?.toLocal(),
       isAirportTransfer: json['isAirportTransfer'] ?? false,
       isArrival: json['isArrival'] ?? false,
       gate: json['gate'],
@@ -236,7 +238,7 @@ class Ride {
       'status': status.value,
       'clientName': clientName,
       'flightNumber': flightNumber,
-      'flightTime': flightTime?.toIso8601String(),
+      'flightTime': flightTime?.toUtc().toIso8601String(),
       'isAirportTransfer': isAirportTransfer,
       'isArrival': isArrival,
       'gate': gate,
@@ -489,9 +491,14 @@ class Ride {
 
   FlightInfo? get flightInfo {
     if (!isAirportTransfer) return null;
+    // Without a flight time there is nothing meaningful to show — never
+    // fabricate DateTime.now(), which would render a wrong time and hide a
+    // missing-data contract violation (see JsonParse's no-default policy).
+    final time = flightTime;
+    if (time == null) return null;
     return FlightInfo(
       flightNumber: flightNumber ?? '',
-      flightTime: flightTime ?? DateTime.now(),
+      flightTime: time,
       gate: gate,
       terminal: terminal,
       status: flightStatus ?? 'Unknown',

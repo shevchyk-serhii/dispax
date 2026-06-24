@@ -1,3 +1,5 @@
+import '../../core/json_parse.dart';
+
 enum DriverUnavailabilityReason {
   lunch('Lunch'),
   vacation('Vacation'),
@@ -42,13 +44,16 @@ class DriverUnavailability {
       id: json['id'] ?? '',
       driverId: json['driverId'] ?? '',
       companyId: json['companyId'] ?? '',
-      fromTime: DateTime.parse(json['fromTime']),
-      toTime: DateTime.parse(json['toTime']),
+      // Safe parsing: a single malformed/null datetime must surface as a named
+      // FormatException, not an opaque crash that takes down the whole driver
+      // schedule load. Mirrors Ride.fromJson (see JsonParse).
+      fromTime: JsonParse.requiredDateTime(json, 'fromTime').toLocal(),
+      toTime: JsonParse.requiredDateTime(json, 'toTime').toLocal(),
       reason: DriverUnavailabilityReason.fromString(
         json['reason'] ?? 'Personal',
       ),
       note: json['note'] as String?,
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: JsonParse.requiredDateTime(json, 'createdAt').toLocal(),
     );
   }
 
