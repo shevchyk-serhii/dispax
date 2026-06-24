@@ -41,6 +41,78 @@ void main() {
       expect(copied.errorMessage, 'err');
     });
 
+    // Regression: copyWith must KEEP the existing errorMessage when the caller
+    // does not pass one. Before the fix, `errorMessage: errorMessage` (no
+    // `?? this.errorMessage`) silently nulled it out, producing a state with
+    // `status == error` but `errorMessage == null` — which crashed
+    // TodayRidesScreen at `rideState.errorMessage!` (the "Null check operator
+    // used on a null value" red screen on the empty "Today" tab).
+    test('copyWith preserves errorMessage when not overridden', () {
+      final original = RideState.error('Failed to load rides');
+      final copied = original.copyWith(rides: const []);
+
+      expect(copied.status, RideStateStatus.error);
+      expect(
+        copied.errorMessage,
+        'Failed to load rides',
+        reason:
+            'copyWith must not drop the existing errorMessage — an error '
+            'state with a null message crashes TodayRidesScreen (errorMessage!)',
+      );
+    });
+
+    // The exact end-to-end shape of the crash: an error state whose rides
+    // belong to OTHER drivers gets scoped down to the current driver's rides
+    // (here: none) via copyWith inside `_scopeToMyRides`. The scoped state must
+    // still carry its error message so the error UI can render it safely.
+    test(
+      'scoping an error state to a driver with no rides keeps the message',
+      () {
+        final otherDriversRides = [
+          TestFixtures.ride(id: 'r-1', driverId: 'someone-else'),
+        ];
+        final errorState = RideState.error('Failed to load rides').copyWith(
+          rides: otherDriversRides,
+        );
+
+        // Mirror _scopeToMyRides: narrow rides to the current driver ("me").
+        final scoped = errorState.copyWith(
+          rides: errorState.rides.where((r) => r.driverId == 'me').toList(),
+        );
+
+        expect(scoped.hasError, isTrue);
+        expect(scoped.rides, isEmpty);
+        expect(
+          scoped.errorMessage,
+          isNotNull,
+          reason:
+              'After scoping out other drivers, the error message must survive '
+              'so `rideState.errorMessage!` in buildBody does not throw',
+        );
+      },
+    );
+
+    // The flip side of the fix: callers that DO want to clear the message
+    // (e.g. `copyWith(status: loading, errorMessage: null)` when a new load
+    // starts) must still be able to. The sentinel must treat an explicit null
+    // as "clear", not "leave as is".
+    test('copyWith clears errorMessage when null is passed explicitly', () {
+      final original = RideState.error('stale error');
+      final copied = original.copyWith(
+        status: RideStateStatus.loading,
+        errorMessage: null,
+      );
+
+      expect(copied.status, RideStateStatus.loading);
+      expect(
+        copied.errorMessage,
+        isNull,
+        reason:
+            'An explicit errorMessage: null must clear the message so a fresh '
+            'load does not carry a stale error',
+      );
+    });
+
     test('copyWith overrides specified fields', () {
       final state = RideState.initial();
       final copied = state.copyWith(

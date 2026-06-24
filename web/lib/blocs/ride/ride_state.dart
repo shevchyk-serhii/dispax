@@ -60,7 +60,12 @@ class RideState extends Equatable {
   RideState copyWith({
     RideStateStatus? status,
     List<Ride>? rides,
-    String? errorMessage,
+    // [errorMessage] uses a sentinel so callers can distinguish "leave as is"
+    // (omit the argument) from "explicitly clear it" (pass null). A plain
+    // nullable parameter cannot tell those apart, so an omitted argument used
+    // to silently null the message — producing a `status == error` state with
+    // a null message that crashed TodayRidesScreen at `errorMessage!`.
+    Object? errorMessage = _unset,
     String? deletingRideId,
     String? conflictRideId,
     String? conflictDriverId,
@@ -68,12 +73,18 @@ class RideState extends Equatable {
     return RideState(
       status: status ?? this.status,
       rides: rides ?? this.rides,
-      errorMessage: errorMessage,
+      errorMessage: identical(errorMessage, _unset)
+          ? this.errorMessage
+          : errorMessage as String?,
       deletingRideId: deletingRideId,
       conflictRideId: conflictRideId,
       conflictDriverId: conflictDriverId,
     );
   }
+
+  /// Sentinel for [copyWith]: marks an argument the caller did not supply, so
+  /// an omitted [errorMessage] keeps the current value instead of nulling it.
+  static const Object _unset = Object();
 
   bool get isLoading => status == RideStateStatus.loading;
   bool get isLoaded =>
