@@ -776,6 +776,7 @@
   "removeAddress": "Видалити",
   "removeAddressConfirm": "Видалити це збережене місце?",
   "myAddresses": "МОЇ АДРЕСИ",
+  "manageAddresses": "Збережені адреси",
   "addCustomAddress": "Додати нове місце",
   "addressLabel": "Назва",
   "addressLabelHint": "напр. Спортзал, Батьки",

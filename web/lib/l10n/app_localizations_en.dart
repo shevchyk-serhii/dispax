@@ -1788,6 +1788,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myAddresses => 'MY ADDRESSES';
 
   @override
+  String get manageAddresses => 'Saved addresses';
+
+  @override
   String get addCustomAddress => 'Add new place';
 
   @override

@@ -16,6 +16,7 @@ import '../l10n/app_localizations.dart';
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
 import '../dashboard/driver/earnings_screen.dart';
+import '../dashboard/client/client_addresses_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -106,6 +107,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (user?.role == PersonRole.driver) ...[
                   const SizedBox(height: 8),
                   _buildEarningsSection(),
+                ],
+                if (user?.role == PersonRole.client) ...[
+                  const SizedBox(height: 8),
+                  _buildSavedAddressesSection(),
                 ],
                 const SizedBox(height: 8),
                 _buildPrivacySection(),
@@ -447,6 +452,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const EarningsScreen()),
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+
+  // ─── Saved addresses section (client only) ────────────────────────────────
+
+  Widget _buildSavedAddressesSection() {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel(l10n.manageAddresses),
+        _buildSettingsCard([
+          _buildNavRow(
+            icon: Icons.bookmark_outline,
+            label: l10n.manageAddresses,
+            trailing: Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ClientAddressesScreen()),
             ),
           ),
         ]),

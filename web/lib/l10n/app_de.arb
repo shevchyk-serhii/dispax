@@ -776,6 +776,7 @@
   "removeAddress": "Entfernen",
   "removeAddressConfirm": "Diesen gespeicherten Ort entfernen?",
   "myAddresses": "MEINE ADRESSEN",
+  "manageAddresses": "Gespeicherte Adressen",
   "addCustomAddress": "Neuen Ort hinzufügen",
   "addressLabel": "Bezeichnung",
   "addressLabelHint": "z. B. Fitnessstudio, Eltern",
