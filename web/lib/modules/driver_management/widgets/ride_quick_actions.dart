@@ -171,7 +171,7 @@ class RideQuickActions extends StatelessWidget {
         shadowColor: Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
         ),
       ),
     );
