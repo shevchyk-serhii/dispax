@@ -502,13 +502,22 @@ object RideServiceSpec extends ZIOSpecDefault {
                          )
             finalRide <- service.getRideById(ride.id)
           } yield {
-            val failures = results.collect { case Exit.Failure(c) => c }
+            val failures           = results.collect { case Exit.Failure(c) => c }
+            // The loser's RideAlreadyAssigned must name the WINNER's driver (whoever
+            // the ride ended up assigned to), not the loser's own attempted driver —
+            // the CAS-lost branch re-reads the ride to report the real assignee.
+            val winnerDriver       = finalRide.driverId
+            val loserReportsWinner = failures.head.failureOption.exists {
+              case RideError.RideAlreadyAssigned(_, driverId) => winnerDriver.contains(driverId)
+              case _                                          => false
+            }
             assertTrue(
               results.count(_.isSuccess) == 1,
               failures.size == 1,
               failures.head.failureOption.exists(_.isInstanceOf[RideError.RideAlreadyAssigned]),
               finalRide.status == RideStatus.Assigned,
-              finalRide.driverId.contains(testDriverId) || finalRide.driverId.contains(testDriver2Id)
+              finalRide.driverId.contains(testDriverId) || finalRide.driverId.contains(testDriver2Id),
+              loserReportsWinner
             )
           }
         }.provide(standardLayers),
@@ -530,7 +539,13 @@ object RideServiceSpec extends ZIOSpecDefault {
             assigned <- service.assignDriver(ride.id, testDriverId)
             result   <- service.assignDriver(assigned.id, testDriver2Id).exit
           } yield assertTrue(result match {
-            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.RideAlreadyAssigned])
+            // The error must name the driver who actually holds the ride
+            // (testDriverId), not this stale attempt's driver (testDriver2Id).
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.RideAlreadyAssigned(_, driverId) => driverId == testDriverId
+                case _                                          => false
+              }
             case _                   => false
           })
         }.provide(standardLayers),

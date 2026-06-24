@@ -65,15 +65,20 @@ class RideState extends Equatable {
   RideState copyWith({
     RideStateStatus? status,
     List<Ride>? rides,
-    // [errorMessage] uses a sentinel so callers can distinguish "leave as is"
-    // (omit the argument) from "explicitly clear it" (pass null). A plain
-    // nullable parameter cannot tell those apart, so an omitted argument used
-    // to silently null the message — producing a `status == error` state with
-    // a null message that crashed TodayRidesScreen at `errorMessage!`.
+    // All nullable fields below use the same sentinel so callers can
+    // distinguish "leave as is" (omit the argument) from "explicitly clear it"
+    // (pass null). A plain nullable parameter cannot tell those apart, so an
+    // omitted argument used to silently null the field. For [errorMessage] that
+    // produced a `status == error` state with a null message that crashed
+    // TodayRidesScreen at `errorMessage!`. For the conflict fields it was worse:
+    // a WebSocket status update (`onStatusReceived` → `copyWith(rides: ...)`)
+    // arriving while a conflict dialog was open would null out
+    // [conflictRideId]/[conflictDriverId], flipping `hasAssignConflict` to false
+    // and breaking the "assign anyway" override dialog mid-flow.
     Object? errorMessage = _unset,
-    String? deletingRideId,
-    String? conflictRideId,
-    String? conflictDriverId,
+    Object? deletingRideId = _unset,
+    Object? conflictRideId = _unset,
+    Object? conflictDriverId = _unset,
   }) {
     return RideState(
       status: status ?? this.status,
@@ -81,14 +86,20 @@ class RideState extends Equatable {
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage
           : errorMessage as String?,
-      deletingRideId: deletingRideId,
-      conflictRideId: conflictRideId,
-      conflictDriverId: conflictDriverId,
+      deletingRideId: identical(deletingRideId, _unset)
+          ? this.deletingRideId
+          : deletingRideId as String?,
+      conflictRideId: identical(conflictRideId, _unset)
+          ? this.conflictRideId
+          : conflictRideId as String?,
+      conflictDriverId: identical(conflictDriverId, _unset)
+          ? this.conflictDriverId
+          : conflictDriverId as String?,
     );
   }
 
-  /// Sentinel for [copyWith]: marks an argument the caller did not supply, so
-  /// an omitted [errorMessage] keeps the current value instead of nulling it.
+  /// Sentinel for [copyWith]: marks an argument the caller did not supply, so an
+  /// omitted nullable field keeps its current value instead of being nulled.
   static const Object _unset = Object();
 
   bool get isLoading => status == RideStateStatus.loading;

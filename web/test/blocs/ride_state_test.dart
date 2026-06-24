@@ -71,9 +71,9 @@ void main() {
         final otherDriversRides = [
           TestFixtures.ride(id: 'r-1', driverId: 'someone-else'),
         ];
-        final errorState = RideState.error('Failed to load rides').copyWith(
-          rides: otherDriversRides,
-        );
+        final errorState = RideState.error(
+          'Failed to load rides',
+        ).copyWith(rides: otherDriversRides);
 
         // Mirror _scopeToMyRides: narrow rides to the current driver ("me").
         final scoped = errorState.copyWith(
@@ -122,6 +122,69 @@ void main() {
 
       expect(copied.status, RideStateStatus.loading);
       expect(copied.deletingRideId, 'ride-1');
+    });
+
+    // Regression: a conflict state carries conflictRideId/conflictDriverId so the
+    // UI can offer "assign anyway". A WebSocket status update arriving while the
+    // conflict dialog is open calls `copyWith(rides: ...)` WITHOUT the conflict
+    // fields. Before the sentinel fix, those omitted fields were nulled out,
+    // flipping `hasAssignConflict` to false and breaking the override dialog
+    // mid-flow. copyWith must KEEP the conflict fields when not overridden.
+    test('copyWith preserves conflict fields when not overridden', () {
+      const original = RideState(
+        status: RideStateStatus.assignConflict,
+        conflictRideId: 'ride-A',
+        conflictDriverId: 'driver-X',
+      );
+
+      // Mirror onStatusReceived: a WebSocket update refreshes only `rides`.
+      final copied = original.copyWith(rides: [TestFixtures.ride()]);
+
+      expect(copied.conflictRideId, 'ride-A');
+      expect(copied.conflictDriverId, 'driver-X');
+      expect(
+        copied.hasAssignConflict,
+        isTrue,
+        reason:
+            'A WebSocket status update must not drop the conflict fields, or '
+            'the open "assign anyway" dialog loses its target ride/driver.',
+      );
+    });
+
+    // The flip side: callers that DO want to clear the conflict fields (e.g.
+    // returning to a clean loaded state) must still be able to via explicit null.
+    test('copyWith clears conflict fields when null is passed explicitly', () {
+      const original = RideState(
+        status: RideStateStatus.assignConflict,
+        conflictRideId: 'ride-A',
+        conflictDriverId: 'driver-X',
+      );
+
+      final copied = original.copyWith(
+        status: RideStateStatus.loaded,
+        conflictRideId: null,
+        conflictDriverId: null,
+      );
+
+      expect(copied.conflictRideId, isNull);
+      expect(copied.conflictDriverId, isNull);
+      expect(copied.hasAssignConflict, isFalse);
+    });
+
+    // deletingRideId is nullable too and must survive an unrelated copyWith.
+    test('copyWith preserves deletingRideId when not overridden', () {
+      const original = RideState(
+        status: RideStateStatus.deleting,
+        deletingRideId: 'ride-9',
+      );
+
+      final copied = original.copyWith(rides: [TestFixtures.ride()]);
+
+      expect(
+        copied.deletingRideId,
+        'ride-9',
+        reason: 'An unrelated copyWith must not drop deletingRideId',
+      );
     });
 
     test('isLoading getter', () {
