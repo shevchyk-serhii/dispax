@@ -18,6 +18,7 @@ import 'package:dispax/blocs/auth/auth_state.dart';
 import 'package:dispax/blocs/ride/ride_bloc.dart';
 import 'package:dispax/blocs/ride/ride_event.dart';
 import 'package:dispax/blocs/ride/ride_state.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:dispax/screens/ride_details_screen.dart';
@@ -87,6 +88,10 @@ void main() {
   }
 
   Widget buildSubject(Ride ride) => MaterialApp(
+    // RideDetailsScreen reads AppLocalizations.of(context); without these
+    // delegates that returns null and the screen throws on build.
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: BlocProvider<AuthBloc>.value(
       value: authBloc,
       child: BlocProvider<RideBloc>.value(
@@ -197,8 +202,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // The dialog's "Back" button returns null without cancelling.
-    await tester.tap(find.widgetWithText(TextButton, 'Back'));
+    // The dialog's dismiss button (l10n.cancel -> "Cancel") returns null
+    // without cancelling the ride.
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
