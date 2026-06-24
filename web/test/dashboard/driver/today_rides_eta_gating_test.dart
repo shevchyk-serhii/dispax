@@ -1,3 +1,4 @@
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/driver_management/widgets/today_ride_card.dart';
 import 'package:dispax/modules/core/models/location.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
@@ -33,6 +34,10 @@ Ride _ride({required RideStatus status, int? etaMinutes}) {
 Future<void> _pump(WidgetTester tester, Ride ride, {int? etaMinutes}) {
   return tester.pumpWidget(
     MaterialApp(
+      // TodayRideCard reads AppLocalizations.of(context); without these
+      // delegates that returns null and the card throws on build.
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(useMaterial3: true),
       home: Scaffold(
         body: TodayRideCard(
