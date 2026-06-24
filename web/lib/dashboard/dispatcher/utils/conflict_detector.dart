@@ -12,8 +12,18 @@ class ConflictDetector {
     final newEnd = newStart.add(const Duration(minutes: _overlapWindowMinutes));
 
     return driverRides.where((existing) {
-      if (existing.status == RideStatus.cancelled ||
-          existing.status == RideStatus.completed) {
+      // Never report the ride being assigned as a conflict with itself.
+      // Mirrors the backend check in RideService.checkScheduleConflict
+      // (`r.id != candidateRide.id`).
+      if (existing.id == newRide.id) {
+        return false;
+      }
+
+      // Only active rides count as conflicts, matching the backend set
+      // (Assigned | Confirmed | InProgress).
+      if (existing.status != RideStatus.assigned &&
+          existing.status != RideStatus.confirmed &&
+          existing.status != RideStatus.inProgress) {
         return false;
       }
 
