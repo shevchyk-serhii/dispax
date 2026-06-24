@@ -133,9 +133,17 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                 const SizedBox(height: AppDimensions.paddingSmall),
                 Center(
                   child: IconButton(
-                    onPressed: () => context.read<CreateRideFormBloc>().add(
-                      const AddressesSwapped(),
-                    ),
+                    onPressed: () {
+                      // Drop focus first so both address fields re-sync their
+                      // text from the swapped state. AddressAutocompleteField
+                      // skips the controller sync while focused, so without
+                      // this the focused field would keep its stale text and
+                      // the swap would look like it did nothing.
+                      FocusScope.of(context).unfocus();
+                      context.read<CreateRideFormBloc>().add(
+                        const AddressesSwapped(),
+                      );
+                    },
                     icon: const Icon(Icons.swap_vert),
                     tooltip: 'Swap From / To',
                     style: IconButton.styleFrom(
