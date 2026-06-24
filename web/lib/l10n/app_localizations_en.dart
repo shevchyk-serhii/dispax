@@ -1529,6 +1529,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get handOffButton => 'Hand Off';
 
   @override
+  String get rideHandedOffInfo => 'Ride handed off to the external partner.';
+
+  @override
+  String handOffFailed(String message) {
+    return 'Hand-off failed: $message';
+  }
+
+  @override
   String get closeRide => 'Close';
 
   @override

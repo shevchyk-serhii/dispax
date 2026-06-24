@@ -2944,6 +2944,18 @@ abstract class AppLocalizations {
   /// **'Hand Off'**
   String get handOffButton;
 
+  /// Confirmation snackbar shown to the dispatcher after a ride is successfully handed off to an external partner company/driver.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride handed off to the external partner.'**
+  String get rideHandedOffInfo;
+
+  /// Error snackbar shown when a hand-off request is rejected by the backend (e.g. the ride was already taken, or the partner/driver is invalid).
+  ///
+  /// In en, this message translates to:
+  /// **'Hand-off failed: {message}'**
+  String handOffFailed(String message);
+
   /// No description provided for @closeRide.
   ///
   /// In en, this message translates to:
