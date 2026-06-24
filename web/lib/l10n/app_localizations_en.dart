@@ -1785,6 +1785,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeAddressConfirm => 'Remove this saved place?';
 
   @override
+  String get myAddresses => 'MY ADDRESSES';
+
+  @override
+  String get addCustomAddress => 'Add new place';
+
+  @override
+  String get addressLabel => 'Label';
+
+  @override
+  String get addressLabelHint => 'e.g. Gym, Parents';
+
+  @override
+  String get labelRequired => 'Please enter a label';
+
+  @override
   String get bookARide => 'Book a ride';
 
   @override

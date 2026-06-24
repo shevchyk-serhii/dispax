@@ -37,6 +37,7 @@ class ClientHomeScreen extends StatelessWidget {
                     _LiveRideCard(),
                     const SizedBox(height: 20),
                     _SavedPlacesRow(onPlaceTap: onBookTap),
+                    _MyAddressesList(onPlaceTap: onBookTap),
                     const SizedBox(height: 18),
                     _BookRideButton(onTap: onBookTap),
                     const SizedBox(height: 32),
@@ -520,6 +521,239 @@ class _PlaceTile extends StatelessWidget {
               style: const TextStyle(fontSize: 11, color: AppColors.textLight),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── My Addresses (custom places) ────────────────────────────────────────────
+
+/// Lists the client's custom saved places (everything beyond the three fixed
+/// Home/Office/Airport slots) and an "Add address" button to create a new one
+/// under a free-form label. Each row opens the shared Use/Edit/Remove menu.
+class _MyAddressesList extends StatelessWidget {
+  final VoidCallback onPlaceTap;
+
+  const _MyAddressesList({required this.onPlaceTap});
+
+  static const _fixedLabels = {'home', 'office', 'airport'};
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return BlocBuilder<SavedPlacesBloc, SavedPlacesState>(
+      builder: (context, state) {
+        final custom = state.places
+            .where((p) => !_fixedLabels.contains(p.label.toLowerCase()))
+            .toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 18),
+            Text(
+              l10n.myAddresses,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.04 * 11,
+                color: AppColors.textLight,
+              ),
+            ),
+            const SizedBox(height: 10),
+            for (final place in custom)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _CustomAddressRow(
+                  place: place,
+                  onTap: () => _openPlace(context, place),
+                ),
+              ),
+            _AddAddressButton(onTap: () => _addCustom(context)),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openPlace(BuildContext context, ClientAddress place) async {
+    final user = context.read<AuthBloc>().state.user;
+    if (user == null) return;
+    await showSavedPlaceActions(
+      context,
+      place: place,
+      clientId: user.id,
+      onUse: onPlaceTap,
+    );
+  }
+
+  /// Prompts for a free-form label, then the address, and saves the new place.
+  Future<void> _addCustom(BuildContext context) async {
+    final user = context.read<AuthBloc>().state.user;
+    if (user == null) return;
+
+    final savedBloc = context.read<SavedPlacesBloc>();
+    final label = await _promptLabel(context);
+    if (label == null || label.isEmpty || !context.mounted) return;
+
+    final existing = savedBloc.state.places
+        .map((p) => p.address)
+        .where((a) => a.isNotEmpty)
+        .toList();
+
+    final address = await showAddressPickerSheet(
+      context,
+      isFrom: false,
+      current: '',
+      savedPlaces: existing,
+    );
+    if (address == null || address.isEmpty) return;
+
+    final coords = await MapboxService.geocodeAddress(address);
+
+    savedBloc.add(
+      SavedPlacesSaveRequested(
+        clientId: user.id,
+        label: label,
+        address: address,
+        latitude: coords != null && coords.length == 2 ? coords[0] : null,
+        longitude: coords != null && coords.length == 2 ? coords[1] : null,
+      ),
+    );
+  }
+}
+
+/// Dialog asking for a non-empty custom label. Returns the trimmed label or
+/// null if cancelled.
+Future<String?> _promptLabel(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+  final controller = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+
+  return showAdaptiveDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(l10n.addCustomAddress),
+      content: Form(
+        key: formKey,
+        child: TextFormField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: l10n.addressLabel,
+            hintText: l10n.addressLabelHint,
+          ),
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? l10n.labelRequired : null,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: Text(l10n.cancel),
+        ),
+        TextButton(
+          onPressed: () {
+            if (formKey.currentState?.validate() ?? false) {
+              Navigator.of(ctx).pop(controller.text.trim());
+            }
+          },
+          child: Text(l10n.save),
+        ),
+      ],
+    ),
+  );
+}
+
+class _CustomAddressRow extends StatelessWidget {
+  final ClientAddress place;
+  final VoidCallback onTap;
+
+  const _CustomAddressRow({required this.place, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          border: Border.all(color: cs.outline),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.bookmark_outline, size: 20, color: cs.onSurface),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    place.label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    place.address,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textLight,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.more_horiz, size: 20, color: AppColors.textLight),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddAddressButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddAddressButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          border: Border.all(color: cs.outline),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.add, size: 20, color: AppColors.accent),
+            const SizedBox(width: 12),
+            Text(
+              l10n.addCustomAddress,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.accent,
+              ),
             ),
           ],
         ),

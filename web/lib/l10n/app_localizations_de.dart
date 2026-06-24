@@ -1790,6 +1790,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get removeAddressConfirm => 'Diesen gespeicherten Ort entfernen?';
 
   @override
+  String get myAddresses => 'MEINE ADRESSEN';
+
+  @override
+  String get addCustomAddress => 'Neuen Ort hinzufügen';
+
+  @override
+  String get addressLabel => 'Bezeichnung';
+
+  @override
+  String get addressLabelHint => 'z. B. Fitnessstudio, Eltern';
+
+  @override
+  String get labelRequired => 'Bitte eine Bezeichnung eingeben';
+
+  @override
   String get bookARide => 'Fahrt buchen';
 
   @override

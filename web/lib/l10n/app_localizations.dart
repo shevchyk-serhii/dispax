@@ -3436,6 +3436,36 @@ abstract class AppLocalizations {
   /// **'Remove this saved place?'**
   String get removeAddressConfirm;
 
+  /// No description provided for @myAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'MY ADDRESSES'**
+  String get myAddresses;
+
+  /// No description provided for @addCustomAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Add new place'**
+  String get addCustomAddress;
+
+  /// No description provided for @addressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get addressLabel;
+
+  /// No description provided for @addressLabelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Gym, Parents'**
+  String get addressLabelHint;
+
+  /// No description provided for @labelRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a label'**
+  String get labelRequired;
+
   /// No description provided for @bookARide.
   ///
   /// In en, this message translates to:
