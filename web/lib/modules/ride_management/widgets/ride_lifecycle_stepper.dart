@@ -254,8 +254,8 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
             : l10n.rideStatusAssignedDriverLabel;
       case RideStatus.confirmed:
         return widget.isClientView
-            ? 'Driver confirmed your ride'
-            : 'You confirmed this ride';
+            ? l10n.rideStatusConfirmedClientLabel
+            : l10n.rideStatusConfirmedDriverLabel;
       case RideStatus.inProgress:
         return widget.isClientView
             ? l10n.rideStatusInProgressClientLabel

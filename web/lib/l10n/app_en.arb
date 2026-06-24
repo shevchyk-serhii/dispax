@@ -318,6 +318,7 @@
   "noCompanies": "No Companies",
   "noInvoices": "No Invoices",
   "editCompanyMenu": "Edit",
+  "moreActions": "More actions",
   "deleteCompanyMenu": "Delete",
   "addCompanyTitle": "Add Company",
   "editCompanyTitle": "Edit Company",
@@ -925,6 +926,9 @@
   "rideStatusCompletedLabel": "Completed successfully",
   "rideStatusCancelledLabel": "Ride cancelled",
   "rideStatusHandedOffLabel": "Handed off to partner",
+  "rideStatusConfirmedClientLabel": "Driver confirmed your ride",
+  "rideStatusConfirmedDriverLabel": "You confirmed this ride",
+  "rideStatusConfirmedDriverReadyLabel": "You confirmed this ride — ready to start",
 
   "authenticationRequiredError": "Authentication required",
   "selectOrCreateClientError": "Please select or create a client",
@@ -1467,12 +1471,6 @@
   },
   "confirmPaymentButton": "Confirm Payment",
   "paymentRecordedSuccess": "Payment recorded",
-  "failedToMarkPaid": "Failed: {error}",
-  "@failedToMarkPaid": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
   "failedToLoadUnpaidRides": "Failed to load unpaid rides",
 
   "myRideTitle": "My Ride #{id}",

@@ -1558,6 +1558,12 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get editCompanyMenu;
 
+  /// No description provided for @moreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get moreActions;
+
   /// No description provided for @deleteCompanyMenu.
   ///
   /// In en, this message translates to:
@@ -3766,6 +3772,24 @@ abstract class AppLocalizations {
   /// **'Handed off to partner'**
   String get rideStatusHandedOffLabel;
 
+  /// No description provided for @rideStatusConfirmedClientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver confirmed your ride'**
+  String get rideStatusConfirmedClientLabel;
+
+  /// No description provided for @rideStatusConfirmedDriverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'You confirmed this ride'**
+  String get rideStatusConfirmedDriverLabel;
+
+  /// No description provided for @rideStatusConfirmedDriverReadyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'You confirmed this ride — ready to start'**
+  String get rideStatusConfirmedDriverReadyLabel;
+
   /// No description provided for @authenticationRequiredError.
   ///
   /// In en, this message translates to:
@@ -5721,12 +5745,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Payment recorded'**
   String get paymentRecordedSuccess;
-
-  /// No description provided for @failedToMarkPaid.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed: {error}'**
-  String failedToMarkPaid(String error);
 
   /// No description provided for @failedToLoadUnpaidRides.
   ///

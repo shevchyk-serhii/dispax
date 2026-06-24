@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../ride_management/models/ride.dart';
 import '../../../utils/ride_status_styles.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RideStatusCard extends StatelessWidget {
   final Ride ride;
@@ -14,6 +15,7 @@ class RideStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       elevation: 4,
       child: Padding(
@@ -40,7 +42,7 @@ class RideStatusCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              _getStatusDescription(),
+              _getStatusDescription(l10n),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -73,7 +75,7 @@ class RideStatusCard extends StatelessWidget {
     );
   }
 
-  String _getStatusDescription() {
+  String _getStatusDescription(AppLocalizations l10n) {
     switch (ride.status) {
       case RideStatus.requested:
         return 'Waiting for driver assignment';
@@ -83,8 +85,8 @@ class RideStatusCard extends StatelessWidget {
             : 'You have been assigned to this ride';
       case RideStatus.confirmed:
         return isClientView
-            ? 'Driver confirmed your ride'
-            : 'You confirmed this ride — ready to start';
+            ? l10n.rideStatusConfirmedClientLabel
+            : l10n.rideStatusConfirmedDriverReadyLabel;
       case RideStatus.inProgress:
         return isClientView
             ? 'Your ride is currently in progress'

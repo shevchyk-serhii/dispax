@@ -514,7 +514,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
   List<_Notification>? _groupedSource;
   List<MapEntry<String, List<_Notification>>> _groupedEntries = const [];
 
-  List<MapEntry<String, List<_Notification>>> _computeGroupedEntries() {
+  List<MapEntry<String, List<_Notification>>> _computeGroupedEntries(
+    AppLocalizations l10n,
+  ) {
     if (identical(_groupedSource, _notifications)) return _groupedEntries;
 
     final grouped = <String, List<_Notification>>{};
@@ -530,9 +532,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
       );
       String label;
       if (nDate == today) {
-        label = 'Today';
+        label = l10n.today;
       } else if (nDate == yesterday) {
-        label = 'Yesterday';
+        label = l10n.yesterday;
       } else {
         label = DateFormat('MMM d, yyyy').format(n.createdAt);
       }
@@ -545,7 +547,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
   }
 
   Widget _buildGroupedList(AppLocalizations l10n) {
-    final entries = _computeGroupedEntries();
+    final entries = _computeGroupedEntries(l10n);
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 12),
