@@ -30,9 +30,11 @@ Ride _makeRide(RideStatus status, {String? flightNumber, double? price}) {
 
 /// Mimics the screen's _upcomingRides categorisation.
 bool _isUpcoming(Ride ride) =>
+    ride.status == RideStatus.requested ||
     ride.status == RideStatus.assigned ||
+    ride.status == RideStatus.confirmed ||
     ride.status == RideStatus.inProgress ||
-    ride.status == RideStatus.requested;
+    ride.status == RideStatus.handedOff;
 
 /// Mimics the screen's _pastRides categorisation.
 bool _isPast(Ride ride) =>
@@ -94,12 +96,14 @@ void main() {
       }
     });
 
-    test('upcoming set contains exactly requested, assigned, inProgress', () {
+    test('upcoming set contains every active/future status', () {
       final upcoming = all.where(_isUpcoming).map((r) => r.status).toSet();
       expect(upcoming, {
         RideStatus.requested,
         RideStatus.assigned,
+        RideStatus.confirmed,
         RideStatus.inProgress,
+        RideStatus.handedOff,
       });
     });
 

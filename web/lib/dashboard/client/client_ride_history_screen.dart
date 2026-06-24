@@ -38,14 +38,21 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
   }
 
   /// Rides that are in progress or upcoming (not completed/cancelled).
+  ///
+  /// `confirmed` (driver acknowledged the upcoming ride) and `handedOff`
+  /// (reassigned to another driver but still pending) are active future rides,
+  /// so they belong here — otherwise a client's confirmed ride would vanish
+  /// from history entirely (neither upcoming nor past).
   List<Ride> _upcomingRides(List<Ride> rides, String? clientId) {
     return rides
         .where(
           (ride) =>
               ride.clientId.toString() == clientId &&
-              (ride.status == RideStatus.assigned ||
+              (ride.status == RideStatus.requested ||
+                  ride.status == RideStatus.assigned ||
+                  ride.status == RideStatus.confirmed ||
                   ride.status == RideStatus.inProgress ||
-                  ride.status == RideStatus.requested),
+                  ride.status == RideStatus.handedOff),
         )
         .toList()
       ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
