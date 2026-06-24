@@ -277,7 +277,7 @@ final case class Ride(
   def canBeCancelled: Boolean  = status != RideStatus.Completed && status != RideStatus.Cancelled
   def canBeHandedOff: Boolean  = status == RideStatus.Requested
 
-  def canBeEdited: Boolean     =
+  def canBeEdited: Boolean =
     status == RideStatus.Requested || status == RideStatus.Assigned || status == RideStatus.Confirmed
 
   def isAirportTransfer: Boolean = specifics.exists(_.isInstanceOf[RideSpecifics.AirportTransfer])
