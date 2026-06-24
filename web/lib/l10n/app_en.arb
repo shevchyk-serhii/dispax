@@ -846,6 +846,11 @@
   "editAddress": "Edit address",
   "removeAddress": "Remove",
   "removeAddressConfirm": "Remove this saved place?",
+  "myAddresses": "MY ADDRESSES",
+  "addCustomAddress": "Add new place",
+  "addressLabel": "Label",
+  "addressLabelHint": "e.g. Gym, Parents",
+  "labelRequired": "Please enter a label",
   "bookARide": "Book a ride",
 
   "scheduled": "SCHEDULED",

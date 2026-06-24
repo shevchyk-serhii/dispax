@@ -1784,6 +1784,21 @@ class AppLocalizationsUk extends AppLocalizations {
   String get removeAddressConfirm => 'Видалити це збережене місце?';
 
   @override
+  String get myAddresses => 'МОЇ АДРЕСИ';
+
+  @override
+  String get addCustomAddress => 'Додати нове місце';
+
+  @override
+  String get addressLabel => 'Назва';
+
+  @override
+  String get addressLabelHint => 'напр. Спортзал, Батьки';
+
+  @override
+  String get labelRequired => 'Будь ласка, введіть назву';
+
+  @override
   String get bookARide => 'Замовити поїздку';
 
   @override

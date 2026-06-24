@@ -775,6 +775,11 @@
   "editAddress": "Редагувати адресу",
   "removeAddress": "Видалити",
   "removeAddressConfirm": "Видалити це збережене місце?",
+  "myAddresses": "МОЇ АДРЕСИ",
+  "addCustomAddress": "Додати нове місце",
+  "addressLabel": "Назва",
+  "addressLabelHint": "напр. Спортзал, Батьки",
+  "labelRequired": "Будь ласка, введіть назву",
   "bookARide": "Замовити поїздку",
 
   "scheduled": "ЗА РОЗКЛАДОМ",

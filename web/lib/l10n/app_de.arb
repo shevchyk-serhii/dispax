@@ -775,6 +775,11 @@
   "editAddress": "Adresse bearbeiten",
   "removeAddress": "Entfernen",
   "removeAddressConfirm": "Diesen gespeicherten Ort entfernen?",
+  "myAddresses": "MEINE ADRESSEN",
+  "addCustomAddress": "Neuen Ort hinzufügen",
+  "addressLabel": "Bezeichnung",
+  "addressLabelHint": "z. B. Fitnessstudio, Eltern",
+  "labelRequired": "Bitte eine Bezeichnung eingeben",
   "bookARide": "Fahrt buchen",
 
   "scheduled": "GEPLANT",
