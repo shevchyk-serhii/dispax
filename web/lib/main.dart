@@ -153,6 +153,11 @@ class MyApp extends StatelessWidget {
 /// `--dart-define=DEV_AUTOLOGIN=<role>` (client | driver | dispatcher |
 /// secretary | superadmin), it logs the matching test account in automatically
 /// so each simulator opens straight into that role. Used by `make dev-roles`.
+///
+/// The `dispatcher1/2/3` keys map to three DISTINCT dispatcher accounts in the
+/// same company (Dispax München) so `make dev-dispatchers` can open three
+/// simulators each logged in as a different dispatcher (Iryna / Yilmaz / Serhii)
+/// — useful for testing concurrent assignment and conflicts between dispatchers.
 /// Empty in normal/release builds — a no-op.
 const String _devAutologinRole = String.fromEnvironment('DEV_AUTOLOGIN');
 
@@ -160,6 +165,9 @@ const Map<String, String> _devAutologinEmails = {
   'client': 'client1@bmw.de',
   'driver': 'driver1@dispax.de',
   'dispatcher': 'dispatcher@dispax.de',
+  'dispatcher1': 'iryna@dispax.de',
+  'dispatcher2': 'yilmaz@dispax.de',
+  'dispatcher3': 'serhii@dispax.de',
   'secretary': 'secretary@dispax.de',
   'superadmin': 'superadmin@dispax.de',
 };
