@@ -317,9 +317,18 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
 
               return RefreshIndicator(
                 onRefresh: () async {
-                  context.read<RideBloc>().add(
-                    const RideLoadPendingRequested(),
-                  );
+                  final bloc = context.read<RideBloc>();
+                  bloc.add(const RideLoadPendingRequested());
+                  // Keep the spinner up until the load actually finishes
+                  // (state leaves `loading`), instead of dismissing it
+                  // immediately and showing stale data. Bounded so a stuck
+                  // load can't pin the indicator forever.
+                  await bloc.stream
+                      .firstWhere((s) => s.status != RideStateStatus.loading)
+                      .timeout(
+                        const Duration(seconds: 15),
+                        onTimeout: () => bloc.state,
+                      );
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(

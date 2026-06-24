@@ -288,7 +288,7 @@ class Ride {
     RideStatus? status,
     String? clientName,
     String? flightNumber,
-    DateTime? flightTime,
+    Object? flightTime = _sentinel,
     bool? isAirportTransfer,
     bool? isArrival,
     String? gate,
@@ -336,7 +336,9 @@ class Ride {
       status: status ?? this.status,
       clientName: clientName ?? this.clientName,
       flightNumber: flightNumber ?? this.flightNumber,
-      flightTime: flightTime ?? this.flightTime,
+      flightTime: flightTime == _sentinel
+          ? this.flightTime
+          : flightTime as DateTime?,
       isAirportTransfer: isAirportTransfer ?? this.isAirportTransfer,
       isArrival: isArrival ?? this.isArrival,
       gate: gate ?? this.gate,

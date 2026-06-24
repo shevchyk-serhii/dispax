@@ -63,7 +63,16 @@ class RideBloc extends Bloc<RideEvent, RideState> {
   // The entire delete handler has been removed. See git history for original code.
 
   void onRideAdded(RideAdded event, Emitter<RideState> emit) {
-    final updatedRides = List<Ride>.from(state.rides)..add(event.ride);
+    // Deduplicate by id: a WebSocket RideCreated can race a getRides() reload,
+    // so the same ride may already be present. Replace it instead of appending
+    // a duplicate that would then show twice in the list.
+    final existing = state.rides.indexWhere((r) => r.id == event.ride.id);
+    final updatedRides = List<Ride>.from(state.rides);
+    if (existing == -1) {
+      updatedRides.add(event.ride);
+    } else {
+      updatedRides[existing] = event.ride;
+    }
     emit(RideState.loaded(updatedRides));
   }
 
@@ -348,7 +357,10 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     if (idx == -1) return;
     final updatedRides = List<Ride>.from(state.rides);
     updatedRides[idx] = updatedRides[idx].copyWith(status: event.newStatus);
-    emit(state.copyWith(rides: updatedRides));
+    // A live WebSocket update proves the system is responsive, so settle back
+    // to a clean loaded state instead of preserving a stale error status (and
+    // its message) left over from an earlier failed operation.
+    emit(RideState.loaded(updatedRides));
   }
 
   Future<void> onCancelRequested(

@@ -282,6 +282,25 @@ void main() {
       expect(copied.clientName, 'New Name');
       expect(copied.price, 99.99);
     });
+
+    // Regression: flightTime used a plain `?? this.flightTime`, so passing null
+    // could not clear it. It now uses the sentinel pattern: omitted keeps the
+    // value, explicit null clears it.
+    test('keeps flightTime when the argument is omitted', () {
+      final original = TestFixtures.airportRide();
+      expect(original.flightTime, isNotNull);
+
+      final copied = original.copyWith(clientName: 'X');
+      expect(copied.flightTime, original.flightTime);
+    });
+
+    test('clears flightTime when null is passed explicitly', () {
+      final original = TestFixtures.airportRide();
+      expect(original.flightTime, isNotNull);
+
+      final copied = original.copyWith(flightTime: null);
+      expect(copied.flightTime, isNull);
+    });
   });
 
   group('Ride computed getters', () {

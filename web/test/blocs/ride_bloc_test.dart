@@ -575,6 +575,73 @@ void main() {
         ),
         expect: () => [],
       );
+
+      // Regression: onStatusReceived used state.copyWith, which preserved a
+      // stale error status (and message) from an earlier failed operation. A
+      // live WS update proves the system is healthy, so it must settle to a
+      // clean loaded state with the error cleared.
+      blocTest<RideBloc, RideState>(
+        'clears a stale error status when a WS status update arrives',
+        build: buildBloc,
+        seed: () =>
+            const RideState(
+              status: RideStateStatus.error,
+              errorMessage: 'Network error',
+              rides: [],
+            ).copyWith(
+              rides: [
+                TestFixtures.ride(id: 'ride-1', status: RideStatus.requested),
+              ],
+            ),
+        act: (bloc) => bloc.add(
+          const RideStatusReceived(
+            rideId: 'ride-1',
+            newStatus: RideStatus.assigned,
+          ),
+        ),
+        expect: () => [
+          isA<RideState>()
+              .having((s) => s.status, 'status', RideStateStatus.loaded)
+              .having((s) => s.hasError, 'hasError', false)
+              .having((s) => s.errorMessage, 'errorMessage', isNull)
+              .having(
+                (s) => s.rides.first.status,
+                'ride-1 status',
+                RideStatus.assigned,
+              ),
+        ],
+      );
+    });
+
+    group('RideAdded deduplication', () {
+      // Regression: onRideAdded blindly appended, so a WS RideCreated that
+      // raced a getRides() reload produced the same ride twice in the list.
+      // (Ride equality is by id, so we assert on the final state's length and
+      // contents rather than the emitted-state stream — replacing a same-id
+      // ride yields an == list and may not re-emit.)
+      blocTest<RideBloc, RideState>(
+        'does not duplicate a ride that is already present',
+        build: buildBloc,
+        seed: () => RideState.loaded([TestFixtures.ride(id: 'ride-1')]),
+        act: (bloc) =>
+            bloc.add(RideAdded(ride: TestFixtures.ride(id: 'ride-1'))),
+        verify: (bloc) {
+          expect(bloc.state.rides.length, 1);
+          expect(bloc.state.rides.single.id, 'ride-1');
+        },
+      );
+
+      blocTest<RideBloc, RideState>(
+        'still appends a genuinely new ride',
+        build: buildBloc,
+        seed: () => RideState.loaded([TestFixtures.ride(id: 'ride-1')]),
+        act: (bloc) =>
+            bloc.add(RideAdded(ride: TestFixtures.ride(id: 'ride-2'))),
+        verify: (bloc) {
+          expect(bloc.state.rides.length, 2);
+          expect(bloc.state.rides.map((r) => r.id), ['ride-1', 'ride-2']);
+        },
+      );
     });
   });
 }
