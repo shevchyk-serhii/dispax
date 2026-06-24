@@ -29,6 +29,16 @@ import 'upcoming_rides_screen.dart';
 List<Ride> ridesDrivenBy(List<Ride> rides, String driverId) =>
     rides.where((r) => r.driverId == driverId).toList();
 
+/// Returns a non-null, user-facing message for an error [RideState].
+///
+/// An error state can reach the UI with a null [RideState.errorMessage] (e.g.
+/// after [RideState.copyWith] scoping), so the error widgets must never `!` it.
+/// Falls back to the localized "Failed to load rides", then to a plain English
+/// literal when no [AppLocalizations] is available.
+String rideErrorMessageOrFallback(String? errorMessage, BuildContext context) =>
+    errorMessage ??
+    (AppLocalizations.of(context)?.failedToLoadRides ?? 'Failed to load rides');
+
 // ─── Tab index for the segmented control ─────────────────────────────────────
 enum _TodayTab { today, upcoming, history }
 
@@ -250,7 +260,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
                 if (state.hasError) {
                   NavigationHelper.showSnackBar(
                     context,
-                    state.errorMessage!,
+                    rideErrorMessageOrFallback(state.errorMessage, context),
                     isError: true,
                   );
                 }
@@ -438,7 +448,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     if (rideState.hasError && rideState.rides.isEmpty) {
       return ErrorDisplayWidget(
         title: "Failed to load today's rides",
-        message: rideState.errorMessage!,
+        message: rideErrorMessageOrFallback(rideState.errorMessage, context),
         onRetry: () => refreshRides(context),
       );
     }
