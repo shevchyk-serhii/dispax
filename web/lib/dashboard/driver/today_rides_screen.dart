@@ -1079,166 +1079,15 @@ class _LiveRideCard extends StatelessWidget {
               const SizedBox(height: 14),
 
             // Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 40,
-                    child: FilledButton.icon(
-                      onPressed: () => _handleNavigate(context, ride),
-                      icon: const Icon(Icons.map_outlined, size: 16),
-                      label: Text(
-                        AppLocalizations.of(context)!.navigate,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusButton,
-                          ),
-                        ),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: OutlinedButton(
-                    onPressed: onCallClient,
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(
-                        color: AppColors.borderSecondary,
-                        width: 1,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusButton,
-                        ),
-                      ),
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: Icon(
-                      Icons.phone_outlined,
-                      size: 18,
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                if (ride.status == RideStatus.assigned) ...[
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    height: 40,
-                    child: FilledButton.icon(
-                      onPressed: onConfirmRide,
-                      icon: const Icon(Icons.check_rounded, size: 16),
-                      label: const Text(
-                        'Confirm',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusButton,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    height: 40,
-                    child: OutlinedButton.icon(
-                      onPressed: onRejectRide,
-                      icon: const Icon(Icons.close_rounded, size: 16),
-                      label: const Text(
-                        'Reject',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.error,
-                        side: const BorderSide(color: AppColors.errorBorder),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusButton,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-                if (ride.status == RideStatus.confirmed &&
-                    onStartRide != null) ...[
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    height: 40,
-                    child: FilledButton.icon(
-                      onPressed: onStartRide,
-                      icon: const Icon(Icons.play_circle_rounded, size: 16),
-                      label: Text(
-                        AppLocalizations.of(context)!.start,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusButton,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-                if (ride.status == RideStatus.inProgress &&
-                    onCompleteRide != null) ...[
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    height: 40,
-                    child: FilledButton.icon(
-                      onPressed: onCompleteRide,
-                      icon: const Icon(Icons.check_rounded, size: 16),
-                      label: Text(
-                        AppLocalizations.of(context)!.completeRideButton,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusButton,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+            DriverRideActionsRow(
+              ride: ride,
+              isDark: isDark,
+              onNavigate: () => _handleNavigate(context, ride),
+              onCallClient: onCallClient,
+              onConfirmRide: onConfirmRide,
+              onRejectRide: onRejectRide,
+              onStartRide: onStartRide,
+              onCompleteRide: onCompleteRide,
             ),
           ],
         ),
@@ -1757,6 +1606,213 @@ class _EmbeddedHistoryTab extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Action button row shown at the bottom of a live ride card.
+///
+/// Navigate plus the status-specific primary actions (Confirm/Reject, Start,
+/// Complete) each take an equal share of the available width via [Expanded] so
+/// the row always fits the card — even on narrow screens — instead of letting
+/// the trailing button overflow off the right edge. The phone button keeps a
+/// fixed 40x40 footprint.
+class DriverRideActionsRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+  final VoidCallback onNavigate;
+  final VoidCallback? onCallClient;
+  final VoidCallback? onConfirmRide;
+  final VoidCallback? onRejectRide;
+  final VoidCallback? onStartRide;
+  final VoidCallback? onCompleteRide;
+
+  const DriverRideActionsRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+    required this.onNavigate,
+    this.onCallClient,
+    this.onConfirmRide,
+    this.onRejectRide,
+    this.onStartRide,
+    this.onCompleteRide,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 40,
+            child: FilledButton.icon(
+              onPressed: onNavigate,
+              icon: const Icon(Icons.map_outlined, size: 16),
+              label: Text(
+                AppLocalizations.of(context)!.navigate,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusButton,
+                  ),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 40,
+          height: 40,
+          child: OutlinedButton(
+            onPressed: onCallClient,
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(
+                color: AppColors.borderSecondary,
+                width: 1,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
+              ),
+              padding: EdgeInsets.zero,
+            ),
+            child: Icon(
+              Icons.phone_outlined,
+              size: 18,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondary,
+            ),
+          ),
+        ),
+        if (ride.status == RideStatus.assigned) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              height: 40,
+              child: FilledButton.icon(
+                onPressed: onConfirmRide,
+                icon: const Icon(Icons.check_rounded, size: 16),
+                label: const Text(
+                  'Confirm',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              height: 40,
+              child: OutlinedButton.icon(
+                onPressed: onRejectRide,
+                icon: const Icon(Icons.close_rounded, size: 16),
+                label: const Text(
+                  'Reject',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.errorBorder),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+        if (ride.status == RideStatus.confirmed && onStartRide != null) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              height: 40,
+              child: FilledButton.icon(
+                onPressed: onStartRide,
+                icon: const Icon(Icons.play_circle_rounded, size: 16),
+                label: Text(
+                  AppLocalizations.of(context)!.start,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+        if (ride.status == RideStatus.inProgress && onCompleteRide != null) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              height: 40,
+              child: FilledButton.icon(
+                onPressed: onCompleteRide,
+                icon: const Icon(Icons.check_rounded, size: 16),
+                label: Text(
+                  AppLocalizations.of(context)!.completeRideButton,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
