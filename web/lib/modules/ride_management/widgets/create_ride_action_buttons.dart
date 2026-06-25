@@ -18,10 +18,11 @@ class CreateRideActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     // Drive button colors from the theme, NOT a hardcoded AppColors.primary
-    // (graphite). In dark mode colorScheme.primary is the light foreground, so
-    // the outlined "Clear Form" button's icon/label/border stay visible. The
-    // old hardcoded graphite rendered the outlined button as a blank border on
-    // the dark background (its content was the same near-black as the surface).
+    // (graphite). These buttons sit inside a colorScheme.surface card (see
+    // CreateRideActionsSection) so colorScheme.primary contrasts in both themes:
+    // graphite-on-white in light, light-on-dark in dark. Placed bare on the
+    // form's always-dark graphite gradient, the graphite primary would match the
+    // background and the outlined "Clear Form" button would vanish.
     final colorScheme = Theme.of(context).colorScheme;
     return BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
       builder: (context, state) {
