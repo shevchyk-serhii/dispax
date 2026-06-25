@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-integration test-bdd test-bdd-port test-bdd-parallel test-bdd-parallel-clean test-all test-everything clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-watch test-integration test-bdd test-bdd-port test-bdd-parallel test-bdd-parallel-clean test-all test-everything clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android flutter-prod-ios \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -186,6 +186,24 @@ test-unit:
 	     schedule/testOnly * -- -ignore-tags integration; \
 	     billing/testOnly * -- -ignore-tags integration; \
 	     root/testOnly *Spec -- -ignore-tags integration"
+
+# ── INNER-LOOP WATCH ─────────────────────────────────────────────────────────
+# Keep ONE live sbt session open and re-run the fast unit tests on every file
+# save — no per-run JVM boot + compile-check (~7s each `make test-unit`), so an
+# incremental edit→test cycle is seconds. `~` is sbt continuous mode (watches
+# sources, recompiles incrementally), `testQuick` runs only tests affected by the
+# change (or previously failing), and `-ignore-tags integration` keeps it to the
+# in-memory unit tier (no Docker/Postgres). Ctrl-C stops watching; pressing Enter
+# returns to the sbt prompt. Use this while developing; run `make test` (unit +
+# integration) before merging. Scope to one module: `make test-watch MOD=ride`.
+MOD ?=
+test-watch:
+	@echo "👀 Watching sources — fast unit tests re-run on save (Ctrl-C to stop)..."
+ifeq ($(strip $(MOD)),)
+	sbt "~ Test/testQuick * -- -ignore-tags integration"
+else
+	sbt "~ $(MOD)/Test/testQuick * -- -ignore-tags integration"
+endif
 
 # Scala unit tests + Flutter (web) unit/widget tests. The Flutter suite lives in
 # web/test (no IntegrationTestWidgetsFlutterBinding, no network) — distinct from
