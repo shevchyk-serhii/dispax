@@ -164,5 +164,42 @@
     },
     "copyright": "© 2026 Dispax. Alle Rechte vorbehalten.",
     "langs": "Deutsch · English"
+  },
+  "legal": {
+    "back": "Zurück zur Startseite",
+    "imprint": {
+      "title": "Impressum",
+      "intro": "Angaben gemäß § 5 TMG",
+      "providerLabel": "Diensteanbieter",
+      "provider": "Vitaliia Shevchyk",
+      "legalForm": "Einzelunternehmen",
+      "addressLabel": "Anschrift",
+      "address": "Paula-Hahn-Weinheimer-Weg 11\n80997 München\nDeutschland",
+      "contactLabel": "Kontakt",
+      "phone": "Telefon: +49 176 48733359",
+      "email": "E-Mail: hallo@dispax.de",
+      "responsibleLabel": "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV",
+      "responsible": "Vitaliia Shevchyk, Anschrift wie oben",
+      "disputeLabel": "Streitschlichtung",
+      "dispute": "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr. Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
+      "liabilityLabel": "Haftung für Inhalte",
+      "liability": "Die Inhalte dieser Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen."
+    },
+    "privacy": {
+      "title": "Datenschutzerklärung",
+      "intro": "Wir nehmen den Schutz Ihrer personenbezogenen Daten ernst. Diese Erklärung informiert Sie über Art, Umfang und Zweck der Verarbeitung personenbezogener Daten auf dieser Website gemäß der Datenschutz-Grundverordnung (DSGVO).",
+      "controllerLabel": "Verantwortlicher",
+      "controller": "Vitaliia Shevchyk\nPaula-Hahn-Weinheimer-Weg 11\n80997 München\nDeutschland\nE-Mail: hallo@dispax.de",
+      "collectLabel": "Welche Daten wir erheben",
+      "collect": "Wenn Sie über das Formular auf dieser Website eine Demo anfragen oder sich für die Warteliste eintragen, verarbeiten wir die von Ihnen angegebene E-Mail-Adresse ausschließlich, um Ihre Anfrage zu beantworten und Sie über die Verfügbarkeit von Dispax zu informieren.",
+      "purposeLabel": "Zweck und Rechtsgrundlage",
+      "purpose": "Rechtsgrundlage der Verarbeitung ist Art. 6 Abs. 1 lit. a (Einwilligung) sowie lit. b DSGVO (Anbahnung eines Vertragsverhältnisses). Eine Weitergabe Ihrer Daten an Dritte erfolgt nicht.",
+      "retentionLabel": "Speicherdauer",
+      "retention": "Wir speichern Ihre Daten nur so lange, wie es für die genannten Zwecke erforderlich ist oder bis Sie Ihre Einwilligung widerrufen.",
+      "rightsLabel": "Ihre Rechte",
+      "rights": "Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Außerdem haben Sie das Recht, eine Einwilligung jederzeit zu widerrufen und sich bei einer Aufsichtsbehörde zu beschweren. Wenden Sie sich dazu an hallo@dispax.de.",
+      "hostingLabel": "Hosting und Server-Logs",
+      "hosting": "Diese Website wird bei einem Dienstleister gehostet, der zur Bereitstellung technisch notwendige Daten (z. B. IP-Adresse, Zeitpunkt des Zugriffs) in Server-Logfiles verarbeitet. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am sicheren Betrieb der Website)."
+    }
   }
 }

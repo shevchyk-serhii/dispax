@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { Container } from "../ui/Container";
 import { Logo } from "../ui/Logo";
+import { Link } from "@/i18n/navigation";
 
 export function Footer() {
   const t = useTranslations("footer");
@@ -12,8 +13,8 @@ export function Footer() {
   ];
   const companyLinks = [
     { href: "#contact", label: t("links.contact") },
-    { href: "#", label: t("links.imprint") },
-    { href: "#", label: t("links.privacy") },
+    { href: "/impressum", label: t("links.imprint"), internal: true },
+    { href: "/datenschutz", label: t("links.privacy"), internal: true },
   ];
 
   return (
@@ -59,22 +60,26 @@ function FooterCol({
   links,
 }: {
   title: string;
-  links: { href: string; label: string }[];
+  links: { href: string; label: string; internal?: boolean }[];
 }) {
+  const linkClass =
+    "text-sm text-faint transition-colors hover:text-white";
   return (
     <div className="flex flex-col gap-3">
       <p className="text-[13px] font-semibold tracking-wide text-faint">
         {title}
       </p>
-      {links.map((l, i) => (
-        <a
-          key={i}
-          href={l.href}
-          className="text-sm text-faint transition-colors hover:text-white"
-        >
-          {l.label}
-        </a>
-      ))}
+      {links.map((l, i) =>
+        l.internal ? (
+          <Link key={i} href={l.href} className={linkClass}>
+            {l.label}
+          </Link>
+        ) : (
+          <a key={i} href={l.href} className={linkClass}>
+            {l.label}
+          </a>
+        ),
+      )}
     </div>
   );
 }

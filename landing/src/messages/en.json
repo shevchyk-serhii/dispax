@@ -164,5 +164,42 @@
     },
     "copyright": "© 2026 Dispax. All rights reserved.",
     "langs": "Deutsch · English"
+  },
+  "legal": {
+    "back": "Back to home",
+    "imprint": {
+      "title": "Legal Notice (Impressum)",
+      "intro": "Information pursuant to § 5 TMG",
+      "providerLabel": "Service provider",
+      "provider": "Vitaliia Shevchyk",
+      "legalForm": "Sole proprietorship",
+      "addressLabel": "Address",
+      "address": "Paula-Hahn-Weinheimer-Weg 11\n80997 Munich\nGermany",
+      "contactLabel": "Contact",
+      "phone": "Phone: +49 176 48733359",
+      "email": "Email: hallo@dispax.de",
+      "responsibleLabel": "Responsible for content pursuant to § 18 (2) MStV",
+      "responsible": "Vitaliia Shevchyk, address as above",
+      "disputeLabel": "Dispute resolution",
+      "dispute": "The European Commission provides a platform for online dispute resolution (ODR): https://ec.europa.eu/consumers/odr. We are neither willing nor obliged to participate in dispute resolution proceedings before a consumer arbitration board.",
+      "liabilityLabel": "Liability for content",
+      "liability": "The contents of these pages were created with the greatest care. However, we cannot guarantee the accuracy, completeness, or timeliness of the content."
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "intro": "We take the protection of your personal data seriously. This policy informs you about the nature, scope, and purpose of the processing of personal data on this website in accordance with the General Data Protection Regulation (GDPR).",
+      "controllerLabel": "Controller",
+      "controller": "Vitaliia Shevchyk\nPaula-Hahn-Weinheimer-Weg 11\n80997 Munich\nGermany\nEmail: hallo@dispax.de",
+      "collectLabel": "What data we collect",
+      "collect": "When you request a demo or join the waitlist through the form on this website, we process the email address you provide solely to respond to your request and to inform you about the availability of Dispax.",
+      "purposeLabel": "Purpose and legal basis",
+      "purpose": "The legal basis for processing is Art. 6 (1) (a) GDPR (consent) and (b) GDPR (steps prior to entering into a contract). Your data is not shared with third parties.",
+      "retentionLabel": "Retention period",
+      "retention": "We retain your data only for as long as necessary for the stated purposes or until you withdraw your consent.",
+      "rightsLabel": "Your rights",
+      "rights": "You have the right to access, rectification, erasure, restriction of processing, data portability, and objection. You also have the right to withdraw consent at any time and to lodge a complaint with a supervisory authority. To do so, contact hallo@dispax.de.",
+      "hostingLabel": "Hosting and server logs",
+      "hosting": "This website is hosted by a service provider that processes technically necessary data (e.g. IP address, time of access) in server log files to deliver the site. The legal basis is Art. 6 (1) (f) GDPR (legitimate interest in the secure operation of the website)."
+    }
   }
 }
