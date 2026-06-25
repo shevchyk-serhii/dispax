@@ -465,105 +465,75 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   Widget _buildMoreScreen(bool canDrive) {
     final l10n = AppLocalizations.of(context)!;
+    final color = Theme.of(context).colorScheme.primary;
+    // Tiles are grouped by category for discoverability: Analytics → Operations
+    // → Finance → Admin → Governance. Unified corporate graphite; only genuinely
+    // destructive items stay red. canDrive-gated tiles sit inside their category.
     final items = [
-      // Unified corporate graphite; only genuinely destructive items stay red.
+      // ── Analytics ──
+      _MoreMenuItem(Icons.euro, l10n.earningsMenuItem, 5, color),
+      _MoreMenuItem(Icons.access_time_filled, l10n.peakHoursMenuItem, 6, color),
+      _MoreMenuItem(Icons.diamond, l10n.clientValueMenuItem, 7, color),
+      _MoreMenuItem(Icons.leaderboard, l10n.driversMenuItem, 8, color),
+      _MoreMenuItem(Icons.star, l10n.ratingsMenuItem, 9, color),
+      // Analytics is removed from nav pos 2 when canDrive, so surface it here.
+      if (canDrive)
+        _MoreMenuItem(Icons.bar_chart, l10n.analyticsMenuItem, 2, color),
+
+      // ── Operations ──
+      _MoreMenuItem(Icons.groups, l10n.ridePoolsMenuItem, 24, color),
+      _MoreMenuItem(Icons.repeat, l10n.templatesMenuItem, 16, color),
+      _MoreMenuItem(Icons.visibility, l10n.schedVisibilityMenuItem, 28, color),
       _MoreMenuItem(
-        Icons.euro,
-        l10n.earningsMenuItem,
-        5,
-        Theme.of(context).colorScheme.primary,
+        Icons.event_note,
+        l10n.driverSchedules,
+        _driverSchedulesScreenIndex,
+        color,
       ),
-      _MoreMenuItem(
-        Icons.access_time_filled,
-        l10n.peakHoursMenuItem,
-        6,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.diamond,
-        l10n.clientValueMenuItem,
-        7,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.leaderboard,
-        l10n.driversMenuItem,
-        8,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.star,
-        l10n.ratingsMenuItem,
-        9,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.history,
-        l10n.auditLogMenuItem,
-        10,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.admin_panel_settings,
-        l10n.adminMenuItem,
-        11,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.business,
-        l10n.companyMenuItem,
-        12,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.receipt_long,
-        l10n.expensesMenuItem,
-        13,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.download,
-        l10n.exportMenuItem,
-        14,
-        Theme.of(context).colorScheme.primary,
-      ),
+      // DriverSchedulePanel — removed from nav when canDrive, accessible here.
+      if (canDrive)
+        _MoreMenuItem(
+          Icons.calendar_view_week,
+          l10n.driverBoardMenuItem,
+          1,
+          color,
+        ),
+      if (canDrive)
+        _MoreMenuItem(
+          Icons.map,
+          l10n.driverMapMenuItem,
+          _driverMapScreenIndex,
+          color,
+        ),
+
+      // ── Finance ──
       _MoreMenuItem(
         Icons.request_quote_outlined,
         l10n.billingTab,
         _billingTabIndex,
-        Theme.of(context).colorScheme.primary,
+        color,
       ),
-      _MoreMenuItem(
-        Icons.repeat,
-        l10n.templatesMenuItem,
-        16,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.payment,
-        l10n.paymentsMenuItem,
-        17,
-        Theme.of(context).colorScheme.primary,
-      ),
+      _MoreMenuItem(Icons.payment, l10n.paymentsMenuItem, 17, color),
       _MoreMenuItem(
         Icons.account_balance_wallet,
         l10n.payrollMenuItem,
         18,
-        Theme.of(context).colorScheme.primary,
+        color,
       ),
-      // Settings (screen 19) is the last bottom-nav tab, so it is omitted here.
-      _MoreMenuItem(
-        Icons.share_location,
-        l10n.geofencesMenuItem,
-        20,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.account_balance,
-        l10n.datevMenuItem,
-        21,
-        Theme.of(context).colorScheme.primary,
-      ),
+      _MoreMenuItem(Icons.receipt_long, l10n.expensesMenuItem, 13, color),
+      _MoreMenuItem(Icons.download, l10n.exportMenuItem, 14, color),
+      _MoreMenuItem(Icons.account_balance, l10n.datevMenuItem, 21, color),
+
+      // ── Admin ──
+      _MoreMenuItem(Icons.admin_panel_settings, l10n.adminMenuItem, 11, color),
+      _MoreMenuItem(Icons.business, l10n.companyMenuItem, 12, color),
+      _MoreMenuItem(Icons.history, l10n.auditLogMenuItem, 10, color),
+      _MoreMenuItem(Icons.share_location, l10n.geofencesMenuItem, 20, color),
+      _MoreMenuItem(Icons.devices, l10n.sessionsMenuItem, 27, color),
+      _MoreMenuItem(Icons.notifications, l10n.notificationsMenuItem, 25, color),
+
+      // ── Governance ──
+      _MoreMenuItem(Icons.privacy_tip, l10n.gdprMenuItem, 26, color),
       _MoreMenuItem(Icons.block, l10n.blacklistMenuItem, 22, AppColors.error),
       _MoreMenuItem(
         Icons.emergency,
@@ -571,65 +541,8 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         23,
         AppColors.error,
       ),
-      _MoreMenuItem(
-        Icons.groups,
-        l10n.ridePoolsMenuItem,
-        24,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.notifications,
-        l10n.notificationsMenuItem,
-        25,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.privacy_tip,
-        l10n.gdprMenuItem,
-        26,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.devices,
-        l10n.sessionsMenuItem,
-        27,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.visibility,
-        l10n.schedVisibilityMenuItem,
-        28,
-        Theme.of(context).colorScheme.primary,
-      ),
-      _MoreMenuItem(
-        Icons.event_note,
-        'Schedules',
-        _driverSchedulesScreenIndex,
-        Theme.of(context).colorScheme.primary,
-      ),
-      // Driver screens — only visible when this dispatcher also has the Driver role.
-      // Analytics is removed from nav pos 2 when canDrive, so surface it here.
-      if (canDrive)
-        _MoreMenuItem(
-          Icons.bar_chart,
-          l10n.analyticsMenuItem,
-          2,
-          Theme.of(context).colorScheme.primary,
-        ),
-      if (canDrive)
-        _MoreMenuItem(
-          Icons.calendar_view_week,
-          l10n.driverBoardMenuItem,
-          1, // DriverSchedulePanel — removed from nav but still accessible via More
-          Theme.of(context).colorScheme.primary,
-        ),
-      if (canDrive)
-        _MoreMenuItem(
-          Icons.map,
-          l10n.driverMapMenuItem,
-          _driverMapScreenIndex,
-          Theme.of(context).colorScheme.primary,
-        ),
+
+      // Settings (screen 19) is the last bottom-nav tab, so it is omitted here.
       // My Rides (screen 31) is already the third bottom-nav tab when canDrive,
       // so it is not duplicated in the More grid.
     ];
