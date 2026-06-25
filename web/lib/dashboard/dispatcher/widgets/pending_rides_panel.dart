@@ -737,7 +737,10 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                     ],
                   ),
                 ),
-                const NotificationBell(),
+                // The Pending header sits on a light surface, so the bell must
+                // not use its default white icon (which is invisible here) —
+                // match the adjacent refresh button's colour.
+                NotificationBell(iconColor: colorScheme.onSurfaceVariant),
                 IconButton(
                   icon: Icon(
                     Icons.refresh,
