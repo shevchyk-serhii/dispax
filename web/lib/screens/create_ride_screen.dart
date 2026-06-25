@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../modules/ride_management/widgets/widgets.dart';
 import '../modules/ride_management/helpers/create_ride_form_helper.dart';
+import '../modules/ride_management/helpers/conflict_dialog_text.dart';
+import '../modules/core/services/api_client.dart' show ScheduleConflictInfo;
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
@@ -57,6 +59,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
     required String rideId,
     required String driverId,
     String? message,
+    ScheduleConflictInfo? conflict,
   }) {
     final l10n = AppLocalizations.of(context)!;
     final rideBloc = context.read<RideBloc>();
@@ -66,9 +69,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
         icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
         title: Text(l10n.conflictDialogTitle),
         content: Text(
-          message != null
-              ? l10n.conflictDialogContent(message)
-              : l10n.conflictDialogContentDefault,
+          scheduleConflictDialogBody(l10n, info: conflict, message: message),
         ),
         actions: [
           TextButton(
@@ -141,6 +142,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
                 rideId: state.conflictRideId!,
                 driverId: state.conflictDriverId!,
                 message: state.errorMessage,
+                conflict: state.conflictInfo,
               );
               if (widget.onCreated != null) {
                 widget.onCreated!();

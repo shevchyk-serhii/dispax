@@ -1502,6 +1502,14 @@
     }
   },
   "conflictDialogContentDefault": "У вас вже є поїздка в цей час. Поїздку створено та додано до пулу. Все одно призначити собі?",
+  "conflictDialogContentRich": "Водій уже зайнятий: {from} → {to} о {time}.\n\nПоїздку створено та додано до пулу диспетчера. Все одно призначити?",
+  "@conflictDialogContentRich": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "keepInPoolButton": "Залишити в пулі",
   "assignAnywayButton": "Призначити все одно",
 

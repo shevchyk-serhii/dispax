@@ -6,6 +6,9 @@ import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/services/user_service.dart';
+import '../../../modules/core/services/api_client.dart'
+    show ScheduleConflictInfo;
+import '../../../modules/ride_management/helpers/conflict_dialog_text.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
@@ -165,6 +168,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             rideId: state.conflictRideId!,
             driverId: state.conflictDriverId!,
             message: state.errorMessage,
+            conflict: state.conflictInfo,
           );
         } else if (state.hasAssignConflict) {
           _showAssignConflictDialog(
@@ -172,6 +176,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             rideId: state.conflictRideId!,
             driverId: state.conflictDriverId!,
             message: state.errorMessage,
+            conflict: state.conflictInfo,
           );
         } else if (state.isAlreadyAssigned) {
           // Stale dispatcher view: the ride was already taken by someone else.
@@ -260,6 +265,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     required String rideId,
     required String driverId,
     String? message,
+    ScheduleConflictInfo? conflict,
   }) {
     final l10n = AppLocalizations.of(context)!;
     showAdaptiveDialog(
@@ -268,9 +274,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
         title: Text(l10n.assignAnywayTitle),
         content: Text(
-          message ??
-              'The selected driver already has a ride at this time. '
-                  'Assign anyway?',
+          scheduleConflictDialogBody(l10n, info: conflict, message: message),
         ),
         actions: [
           TextButton(
@@ -301,6 +305,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     required String rideId,
     required String driverId,
     String? message,
+    ScheduleConflictInfo? conflict,
   }) {
     final l10n = AppLocalizations.of(context)!;
     showAdaptiveDialog(
@@ -309,9 +314,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
         title: Text(l10n.assignAnywayTitle),
         content: Text(
-          message ??
-              'The selected driver already has a ride at this time. '
-                  'Reassign anyway?',
+          scheduleConflictDialogBody(l10n, info: conflict, message: message),
         ),
         actions: [
           TextButton(

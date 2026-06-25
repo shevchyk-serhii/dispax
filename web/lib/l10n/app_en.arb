@@ -1584,6 +1584,14 @@
     }
   },
   "conflictDialogContentDefault": "You already have a ride around this time. The ride was created and is in the dispatcher pool. Assign it to yourself anyway?",
+  "conflictDialogContentRich": "The driver is already booked: {from} → {to} at {time}.\n\nThe ride was created and is in the dispatcher pool. Assign it anyway?",
+  "@conflictDialogContentRich": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "keepInPoolButton": "Keep in pool",
   "assignAnywayButton": "Assign anyway",
 

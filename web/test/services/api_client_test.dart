@@ -219,6 +219,45 @@ void main() {
         expect(ex.message, 'Failed to create ride: status 400');
         expect(ex.statusCode, 400);
       });
+
+      test('parses structured scheduleConflict details', () {
+        final body = jsonEncode({
+          'error': 'Driver already has a ride ... overlap',
+          'scheduleConflict': {
+            'rideId': 'ride-1',
+            'clientId': 'client-1',
+            'from': 'Maximilianstrasse 10',
+            'to': 'Munich Airport T2',
+            'pickupAt': '2026-06-27T07:18:00Z',
+          },
+        });
+
+        final ex = ApiException.fromResponse(
+          http.Response(body, 409),
+          'Failed to assign driver',
+        );
+
+        expect(ex.statusCode, 409);
+        expect(ex.message, contains('overlap'));
+        expect(ex.scheduleConflict, isNotNull);
+        expect(ex.scheduleConflict!.rideId, 'ride-1');
+        expect(ex.scheduleConflict!.clientId, 'client-1');
+        expect(ex.scheduleConflict!.from, 'Maximilianstrasse 10');
+        expect(ex.scheduleConflict!.to, 'Munich Airport T2');
+        expect(ex.scheduleConflict!.pickupAt, '2026-06-27T07:18:00Z');
+      });
+
+      test('no scheduleConflict field → details are null', () {
+        final body = jsonEncode({'error': 'Validation error: bad'});
+
+        final ex = ApiException.fromResponse(
+          http.Response(body, 400),
+          'Failed to create ride',
+        );
+
+        expect(ex.scheduleConflict, isNull);
+        expect(ex.message, contains('Validation error: bad'));
+      });
     });
 
     group('401 unauthorized handling', () {

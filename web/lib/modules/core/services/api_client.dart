@@ -315,7 +315,15 @@ class ApiClient {
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
-  ApiException(this.message, {this.statusCode});
+
+  /// Structured schedule-conflict details from the backend (see ApiError
+  /// .scheduleConflict on the server): the conflicting ride's id, client, route
+  /// and pickup time. Present only on an assign/reassign schedule conflict, so
+  /// the UI can render a localized, human-readable dialog instead of the raw
+  /// fallback [message]. Null for every other error.
+  final ScheduleConflictInfo? scheduleConflict;
+
+  ApiException(this.message, {this.statusCode, this.scheduleConflict});
 
   /// Builds an exception from a failed [http.Response], surfacing the server's
   /// own error message instead of a bare status code. The backend returns
@@ -325,12 +333,17 @@ class ApiException implements Exception {
   /// body, then to the status code, when the body isn't the expected shape.
   factory ApiException.fromResponse(http.Response response, String action) {
     String detail = 'status ${response.statusCode}';
+    ScheduleConflictInfo? conflict;
     final body = response.body.trim();
     if (body.isNotEmpty) {
       try {
         final decoded = jsonDecode(body);
         if (decoded is Map<String, dynamic> && decoded['error'] is String) {
           detail = decoded['error'] as String;
+          final sc = decoded['scheduleConflict'];
+          if (sc is Map<String, dynamic>) {
+            conflict = ScheduleConflictInfo.fromJson(sc);
+          }
         } else {
           detail = body;
         }
@@ -338,9 +351,44 @@ class ApiException implements Exception {
         detail = body;
       }
     }
-    return ApiException('$action: $detail', statusCode: response.statusCode);
+    return ApiException(
+      '$action: $detail',
+      statusCode: response.statusCode,
+      scheduleConflict: conflict,
+    );
   }
 
   @override
   String toString() => 'ApiException: $message';
+}
+
+/// Structured details of a schedule conflict, mirroring the server's
+/// ScheduleConflictDetails. All fields optional — the manual-unavailability
+/// conflict carries none of them.
+class ScheduleConflictInfo {
+  final String? rideId;
+  final String? clientId;
+  final String? from;
+  final String? to;
+
+  /// ISO-8601 UTC instant of the conflicting ride's pickup time (parse + format
+  /// to the viewer's local time for display).
+  final String? pickupAt;
+
+  const ScheduleConflictInfo({
+    this.rideId,
+    this.clientId,
+    this.from,
+    this.to,
+    this.pickupAt,
+  });
+
+  factory ScheduleConflictInfo.fromJson(Map<String, dynamic> json) =>
+      ScheduleConflictInfo(
+        rideId: json['rideId'] as String?,
+        clientId: json['clientId'] as String?,
+        from: json['from'] as String?,
+        to: json['to'] as String?,
+        pickupAt: json['pickupAt'] as String?,
+      );
 }
