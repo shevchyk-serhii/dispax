@@ -330,6 +330,7 @@
   "companyEmailLabel": "E-Mail",
   "companyPhoneLabel": "Phone",
   "companyAddressLabel": "Address",
+  "companyVatIdLabel": "VAT ID (USt-IdNr.)",
   "invoiceLanguageLabel": "Invoice Language",
   "languageStandard": "Default",
   "languageGerman": "German",

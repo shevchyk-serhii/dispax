@@ -37,40 +37,57 @@ final class PostgresClientCompanyRepository(xa: Transactor[Task]) extends Client
       email: Option[String],
       phone: Option[String],
       address: Option[String],
-      preferredLanguage: Option[String]
+      preferredLanguage: Option[String],
+      vatId: Option[String]
   ): ClientCompany = ClientCompany(
-    ClientCompanyId(id),
-    name,
-    CompanyId(taxiId),
-    email,
-    phone,
-    address,
-    preferredLanguage
+    id = ClientCompanyId(id),
+    name = name,
+    taxiCompanyId = CompanyId(taxiId),
+    email = email,
+    phone = phone,
+    address = address,
+    preferredLanguage = preferredLanguage,
+    vatId = vatId
   )
 
   override def findById(id: ClientCompanyId): Task[Option[ClientCompany]] =
-    sql"""SELECT id, name, taxi_company_id, email, phone, address, preferred_language
+    sql"""SELECT id, name, taxi_company_id, email, phone, address, preferred_language, vat_id
           FROM client_companies WHERE id = ${id.value}"""
-      .query[(UUID, String, UUID, Option[String], Option[String], Option[String], Option[String])]
+      .query[
+        (UUID, String, UUID, Option[String], Option[String], Option[String], Option[String], Option[String])
+      ]
       .option
       .transact(xa)
       .map(_.map(row2cc.tupled))
 
   override def findByTaxiCompany(taxiCompanyId: CompanyId): Task[List[ClientCompany]] =
-    sql"""SELECT id, name, taxi_company_id, email, phone, address, preferred_language
+    sql"""SELECT id, name, taxi_company_id, email, phone, address, preferred_language, vat_id
           FROM client_companies WHERE taxi_company_id = ${taxiCompanyId.value}
           ORDER BY name"""
-      .query[(UUID, String, UUID, Option[String], Option[String], Option[String], Option[String])]
+      .query[
+        (UUID, String, UUID, Option[String], Option[String], Option[String], Option[String], Option[String])
+      ]
       .to[List]
       .transact(xa)
       .map(_.map(row2cc.tupled))
 
   override def create(req: CreateClientCompanyRequest, taxiCompanyId: CompanyId): Task[ClientCompany] =
     val id = ClientCompanyId.generate()
-    sql"""INSERT INTO client_companies (id, name, taxi_company_id, email, phone, address, preferred_language)
-          VALUES (${id.value}, ${req.name}, ${taxiCompanyId.value}, ${req.email}, ${req.phone}, ${req.address}, ${req.preferredLanguage})""".update.run
+    sql"""INSERT INTO client_companies (id, name, taxi_company_id, email, phone, address, preferred_language, vat_id)
+          VALUES (${id.value}, ${req.name}, ${taxiCompanyId.value}, ${req.email}, ${req.phone}, ${req.address}, ${req.preferredLanguage}, ${req.vatId})""".update.run
       .transact(xa)
-      .as(ClientCompany(id, req.name, taxiCompanyId, req.email, req.phone, req.address, req.preferredLanguage))
+      .as(
+        ClientCompany(
+          id = id,
+          name = req.name,
+          taxiCompanyId = taxiCompanyId,
+          email = req.email,
+          phone = req.phone,
+          address = req.address,
+          preferredLanguage = req.preferredLanguage,
+          vatId = req.vatId
+        )
+      )
 
   override def update(
       id: ClientCompanyId,
@@ -79,7 +96,7 @@ final class PostgresClientCompanyRepository(xa: Transactor[Task]) extends Client
   ): Task[Option[ClientCompany]] =
     sql"""UPDATE client_companies
           SET name = ${req.name}, email = ${req.email}, phone = ${req.phone}, address = ${req.address},
-              preferred_language = ${req.preferredLanguage}, updated_at = NOW()
+              preferred_language = ${req.preferredLanguage}, vat_id = ${req.vatId}, updated_at = NOW()
           WHERE id = ${id.value} AND taxi_company_id = ${taxiCompanyId.value}""".update.run
       .transact(xa)
       .flatMap {

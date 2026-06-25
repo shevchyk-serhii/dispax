@@ -265,6 +265,8 @@ final case class ClientCompany(
     phone: Option[String] = None,
     address: Option[String] = None,
     preferredLanguage: Option[String] = None,
+    // VAT ID (USt-IdNr.) of the billed company — printed on the invoice (German B2B requirement).
+    vatId: Option[String] = None,
     // Airport departure pickup timing overrides (NULL = inherit from company or global default).
     airportBufferMinutes: Option[Int] = None,
     airportCheckInCloseMinutes: Option[Int] = None
@@ -276,6 +278,7 @@ final case class CreateClientCompanyRequest(
     phone: Option[String] = None,
     address: Option[String] = None,
     preferredLanguage: Option[String] = None,
+    vatId: Option[String] = None,
     // Airport departure pickup timing overrides (absent = no override; uses company or global default).
     airportBufferMinutes: Option[Int] = None,
     airportCheckInCloseMinutes: Option[Int] = None
@@ -290,6 +293,7 @@ final case class UpdateClientCompanyRequest(
     phone: Option[String] = None,
     address: Option[String] = None,
     preferredLanguage: Option[String] = None,
+    vatId: Option[String] = None,
     // Airport departure pickup timing overrides (absent = leave unchanged).
     airportBufferMinutes: Option[Int] = None,
     airportCheckInCloseMinutes: Option[Int] = None
@@ -304,6 +308,7 @@ final case class UpdateClientCompanyRequest(
     phone = phone.orElse(current.phone),
     address = address.orElse(current.address),
     preferredLanguage = preferredLanguage.orElse(current.preferredLanguage),
+    vatId = vatId.orElse(current.vatId),
     airportBufferMinutes = airportBufferMinutes.orElse(current.airportBufferMinutes),
     airportCheckInCloseMinutes = airportCheckInCloseMinutes.orElse(current.airportCheckInCloseMinutes)
   )

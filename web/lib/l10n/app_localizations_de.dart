@@ -794,6 +794,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get companyAddressLabel => 'Adresse';
 
   @override
+  String get companyVatIdLabel => 'USt-IdNr.';
+
+  @override
   String get invoiceLanguageLabel => 'Rechnungssprache';
 
   @override

@@ -208,6 +208,7 @@ object PdfGenerator:
     toCell.addElement(new Phrase("Name, Anschrift des Rechnungsempfängers", fontSmall))
     toCell.addElement(new Phrase(recipient.name, fontHeading))
     recipient.address.foreach(a => toCell.addElement(new Phrase(a, fontNormal)))
+    recipient.vatId.foreach(v => toCell.addElement(new Phrase(s"USt-IdNr.: $v", fontNormal)))
     table.addCell(toCell)
 
     val nrCell = new PdfPCell()
@@ -318,6 +319,7 @@ object PdfGenerator:
     toCell.setBorder(Rectangle.NO_BORDER)
     toCell.addElement(new Phrase(clientCompany.name, fontHeading))
     clientCompany.address.foreach(a => toCell.addElement(new Phrase(a, fontNormal)))
+    clientCompany.vatId.foreach(v => toCell.addElement(new Phrase(s"USt-IdNr.: $v", fontNormal)))
     table.addCell(toCell)
 
     val nrCell = new PdfPCell()

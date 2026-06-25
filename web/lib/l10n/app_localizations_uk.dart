@@ -789,6 +789,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get companyAddressLabel => 'Адреса';
 
   @override
+  String get companyVatIdLabel => 'Податковий номер (USt-IdNr.)';
+
+  @override
   String get invoiceLanguageLabel => 'Мова рахунку';
 
   @override

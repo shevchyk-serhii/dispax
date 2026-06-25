@@ -790,6 +790,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companyAddressLabel => 'Address';
 
   @override
+  String get companyVatIdLabel => 'VAT ID (USt-IdNr.)';
+
+  @override
   String get invoiceLanguageLabel => 'Invoice Language';
 
   @override

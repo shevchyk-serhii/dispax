@@ -168,6 +168,17 @@ object PdfGeneratorSpec extends ZIOSpecDefault {
               text.contains("Zahlbar innerhalb von 7 Tagen")
             )
           }
+        },
+        test("renders the recipient (client company) VAT ID into the PDF text") {
+          val invoice   = makeInvoice(items = List(makeItem("Ride A", BigDecimal(1), BigDecimal(50.00))))
+          val recipient = testClientCompany.copy(vatId = Some("DE999888777"))
+          PdfGenerator.generateBytes(invoice, recipient, "TestTaxi GmbH").map { bytes =>
+            val reader    = new com.lowagie.text.pdf.PdfReader(bytes)
+            val extractor = new com.lowagie.text.pdf.parser.PdfTextExtractor(reader)
+            val text      = extractor.getTextFromPage(1)
+            reader.close()
+            assertTrue(text.contains("DE999888777"))
+          }
         }
       ),
       suite("generateReceiptBytes")(

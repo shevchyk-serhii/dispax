@@ -9,6 +9,7 @@ import '../../../modules/core/services/user_service.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
+import '../../../screens/ride_details_screen.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
@@ -418,6 +419,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                                 isReassign: true,
                               ),
                         isReassign: !isHandedOff,
+                        onViewDetails: () => _openRideDetails(context, ride),
                       );
                     }
                     return Draggable<Ride>(
@@ -456,6 +458,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                           isReassign: false,
                           onClose: () => _showCloseRideDialog(context, ride),
                           onHandOff: () => _showHandOffDialog(context, ride),
+                          onViewDetails: () => _openRideDetails(context, ride),
                         ),
                       ),
                     );
@@ -763,6 +766,22 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
 
   /// Shows the [CancelRideDialog] (reason picker) and, on confirmation,
   /// dispatches [RideCancelRequested] with the valid wire reason value.
+  /// Opens the ride details screen, from which the dispatcher can edit the ride
+  /// (change time/address/flight details) while it is still Requested/Assigned.
+  /// On return, reload the pending list so any edits are reflected.
+  void _openRideDetails(BuildContext context, Ride ride) {
+    final rideBloc = context.read<RideBloc>();
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute<void>(
+            builder: (_) => RideDetailsScreen(ride: ride),
+          ),
+        )
+        .then((_) {
+          if (mounted) rideBloc.add(const RideLoadPendingRequested());
+        });
+  }
+
   void _showCloseRideDialog(BuildContext context, Ride ride) {
     showAdaptiveDialog<Map<String, dynamic>>(
       context: context,
@@ -907,6 +926,10 @@ class _RideRow extends StatelessWidget {
   /// Called when the dispatcher taps "Hand off" on a pending (Requested) row.
   final VoidCallback? onHandOff;
 
+  /// Called when the dispatcher taps the details (info) affordance — opens the
+  /// ride details screen, from which the ride can be edited.
+  final VoidCallback? onViewDetails;
+
   const _RideRow({
     super.key,
     required this.ride,
@@ -916,6 +939,7 @@ class _RideRow extends StatelessWidget {
     this.isDragging = false,
     this.onClose,
     this.onHandOff,
+    this.onViewDetails,
   });
 
   @override
@@ -986,6 +1010,17 @@ class _RideRow extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: colorScheme.onSurface,
                     ),
+                  ),
+                if (onViewDetails != null)
+                  IconButton(
+                    onPressed: onViewDetails,
+                    icon: const Icon(Icons.info_outline),
+                    iconSize: 20,
+                    color: colorScheme.onSurfaceVariant,
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.only(left: 8),
+                    constraints: const BoxConstraints(),
+                    tooltip: AppLocalizations.of(context)!.viewDetailsMenu,
                   ),
               ],
             ),

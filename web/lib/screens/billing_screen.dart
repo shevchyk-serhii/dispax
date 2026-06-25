@@ -864,6 +864,7 @@ class _BillingScreenState extends State<BillingScreen>
     final emailCtrl = TextEditingController(text: existing?.email ?? '');
     final phoneCtrl = TextEditingController(text: existing?.phone ?? '');
     final addressCtrl = TextEditingController(text: existing?.address ?? '');
+    final vatIdCtrl = TextEditingController(text: existing?.vatId ?? '');
     String? selectedLanguage = existing?.preferredLanguage;
     final messenger = ScaffoldMessenger.of(context);
 
@@ -898,6 +899,12 @@ class _BillingScreenState extends State<BillingScreen>
                   controller: addressCtrl,
                   decoration: InputDecoration(
                     labelText: l10n.companyAddressLabel,
+                  ),
+                ),
+                TextField(
+                  controller: vatIdCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.companyVatIdLabel,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -951,6 +958,9 @@ class _BillingScreenState extends State<BillingScreen>
                       ? null
                       : addressCtrl.text.trim(),
                   preferredLanguage: selectedLanguage,
+                  vatId: vatIdCtrl.text.trim().isEmpty
+                      ? null
+                      : vatIdCtrl.text.trim(),
                 );
                 try {
                   if (existing == null) {
@@ -975,6 +985,7 @@ class _BillingScreenState extends State<BillingScreen>
       emailCtrl.dispose();
       phoneCtrl.dispose();
       addressCtrl.dispose();
+      vatIdCtrl.dispose();
     });
   }
 

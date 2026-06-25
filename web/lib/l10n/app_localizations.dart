@@ -1612,6 +1612,12 @@ abstract class AppLocalizations {
   /// **'Address'**
   String get companyAddressLabel;
 
+  /// No description provided for @companyVatIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT ID (USt-IdNr.)'**
+  String get companyVatIdLabel;
+
   /// No description provided for @invoiceLanguageLabel.
   ///
   /// In en, this message translates to:

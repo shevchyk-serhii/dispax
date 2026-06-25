@@ -8,6 +8,7 @@ class ClientCompany {
   final String? phone;
   final String? address;
   final String? preferredLanguage;
+  final String? vatId;
 
   const ClientCompany({
     required this.id,
@@ -17,6 +18,7 @@ class ClientCompany {
     this.phone,
     this.address,
     this.preferredLanguage,
+    this.vatId,
   });
 
   factory ClientCompany.fromJson(Map<String, dynamic> json) => ClientCompany(
@@ -27,6 +29,7 @@ class ClientCompany {
     phone: json['phone'] as String?,
     address: json['address'] as String?,
     preferredLanguage: json['preferredLanguage'] as String?,
+    vatId: json['vatId'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -37,6 +40,7 @@ class ClientCompany {
     if (phone != null) 'phone': phone,
     if (address != null) 'address': address,
     if (preferredLanguage != null) 'preferredLanguage': preferredLanguage,
+    if (vatId != null) 'vatId': vatId,
   };
 }
 
@@ -46,6 +50,7 @@ class CreateClientCompanyRequest {
   final String? phone;
   final String? address;
   final String? preferredLanguage;
+  final String? vatId;
 
   const CreateClientCompanyRequest({
     required this.name,
@@ -53,6 +58,7 @@ class CreateClientCompanyRequest {
     this.phone,
     this.address,
     this.preferredLanguage,
+    this.vatId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -61,5 +67,6 @@ class CreateClientCompanyRequest {
     if (phone != null) 'phone': phone,
     if (address != null) 'address': address,
     if (preferredLanguage != null) 'preferredLanguage': preferredLanguage,
+    if (vatId != null) 'vatId': vatId,
   };
 }

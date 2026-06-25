@@ -66,6 +66,25 @@ void main() {
       final cc = ClientCompany.fromJson(json0(preferredLanguage: 'uk'));
       expect(cc.preferredLanguage, 'uk');
     });
+
+    // Regression: vatId (USt-IdNr.) must round-trip so invoices to companies
+    // carry the recipient's VAT number.
+    test('parses and re-serializes vatId', () {
+      final cc = ClientCompany.fromJson({
+        'id': 'cc-1',
+        'name': 'Acme GmbH',
+        'taxiCompanyId': 'tc-1',
+        'vatId': 'DE123456789',
+      });
+      expect(cc.vatId, 'DE123456789');
+      expect(cc.toJson()['vatId'], 'DE123456789');
+    });
+
+    test('vatId is null when absent', () {
+      final cc = ClientCompany.fromJson(json0());
+      expect(cc.vatId, isNull);
+      expect(cc.toJson().containsKey('vatId'), isFalse);
+    });
   });
 
   group('CreateClientCompanyRequest.toJson', () {
@@ -122,6 +141,22 @@ void main() {
       );
       final json = req.toJson();
       expect(json['preferredLanguage'], 'de');
+    });
+
+    test('vatId is included when set and omitted when null', () {
+      expect(
+        CreateClientCompanyRequest(
+          name: 'Test GmbH',
+          vatId: 'DE999',
+        ).toJson()['vatId'],
+        'DE999',
+      );
+      expect(
+        CreateClientCompanyRequest(
+          name: 'Test GmbH',
+        ).toJson().containsKey('vatId'),
+        isFalse,
+      );
     });
   });
 }

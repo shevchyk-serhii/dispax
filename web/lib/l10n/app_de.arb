@@ -309,6 +309,7 @@
   "companyEmailLabel": "E-Mail",
   "companyPhoneLabel": "Telefon",
   "companyAddressLabel": "Adresse",
+  "companyVatIdLabel": "USt-IdNr.",
   "invoiceLanguageLabel": "Rechnungssprache",
   "languageStandard": "Standard",
   "languageGerman": "Deutsch",

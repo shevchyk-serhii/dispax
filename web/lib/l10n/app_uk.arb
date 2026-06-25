@@ -309,6 +309,7 @@
   "companyEmailLabel": "Електронна пошта",
   "companyPhoneLabel": "Телефон",
   "companyAddressLabel": "Адреса",
+  "companyVatIdLabel": "Податковий номер (USt-IdNr.)",
   "invoiceLanguageLabel": "Мова рахунку",
   "languageStandard": "За замовчуванням",
   "languageGerman": "Німецька",
