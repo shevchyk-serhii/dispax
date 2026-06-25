@@ -70,8 +70,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   // Screen index of the "New Ride" screen — used to detect unsaved form changes
   // when the user navigates away. This is a screen index, not a nav position.
   static const int _createRideTabIndex = 3;
-  // Billing lives at screen index 15 in the extended list.
+  // Billing lives at screen index 15 in the extended list. It is reached from
+  // the More grid (no longer a bottom-nav tab).
   static const int _billingTabIndex = 15;
+  // Settings lives at screen index 19 and is the last bottom-nav tab (mirrors
+  // the driver dashboard, where Settings is the final destination).
+  static const int _settingsTabIndex = 19;
   // Screen index for driver's own schedule (only when canDrive).
   // DispatcherDriverSchedulesScreen sits at 29, so the driver screens shift to 30..32.
   static const int _myScheduleScreenIndex = 32;
@@ -402,8 +406,8 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   /// Returns the ordered list of screen indices for each bottom-nav position.
   ///
-  /// canDrive=true  → 6 tabs: Home | Calendar | My Rides | New Ride | More | Billing
-  /// canDrive=false → 6 tabs: Home | Schedule | Analytics | New Ride | More | Billing
+  /// canDrive=true  → 6 tabs: Home | Calendar | My Rides | New Ride | More | Settings
+  /// canDrive=false → 6 tabs: Home | Schedule | Analytics | New Ride | More | Settings
   List<int> _navOrder(bool canDrive) => canDrive
       ? [
           0, // pos 0: Home (PendingRidesPanel)
@@ -411,7 +415,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           _driverMyRidesScreenIndex, // pos 2: My Rides (TodayRidesScreen)
           3, // pos 3: New Ride (CreateRideScreen)
           4, // pos 4: More
-          _billingTabIndex, // pos 5: Billing
+          _settingsTabIndex, // pos 5: Settings (SettingsScreen)
         ]
       : [
           0, // pos 0: Home
@@ -419,7 +423,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           2, // pos 2: Analytics
           3, // pos 3: New Ride
           4, // pos 4: More
-          _billingTabIndex, // pos 5: Billing
+          _settingsTabIndex, // pos 5: Settings (SettingsScreen)
         ];
 
   /// Builds the [NavigationDestination] list matching the nav order.
@@ -437,7 +441,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         dest(Icons.directions_car_outlined, l10n.myRides),
         dest(Icons.add_circle_outline, l10n.newRideTab),
         dest(Icons.grid_view_outlined, l10n.moreTab),
-        dest(Icons.request_quote_outlined, l10n.billingTab),
+        dest(LucideCompat.settings, l10n.settings),
       ];
     }
     return [
@@ -446,7 +450,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
       dest(Icons.bar_chart_outlined, l10n.analytics),
       dest(Icons.add_circle_outline, l10n.newRideTab),
       dest(Icons.grid_view_outlined, l10n.moreTab),
-      dest(Icons.request_quote_outlined, l10n.billingTab),
+      dest(LucideCompat.settings, l10n.settings),
     ];
   }
 
@@ -523,7 +527,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         14,
         Theme.of(context).colorScheme.primary,
       ),
-      // Billing (screen 15) now has a dedicated bottom-nav tab, so it's omitted here.
+      _MoreMenuItem(
+        Icons.request_quote_outlined,
+        l10n.billingTab,
+        _billingTabIndex,
+        Theme.of(context).colorScheme.primary,
+      ),
       _MoreMenuItem(
         Icons.repeat,
         l10n.templatesMenuItem,
@@ -542,12 +551,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         18,
         Theme.of(context).colorScheme.primary,
       ),
-      _MoreMenuItem(
-        Icons.settings,
-        l10n.settingsMenuItem,
-        19,
-        Theme.of(context).colorScheme.primary,
-      ),
+      // Settings (screen 19) is the last bottom-nav tab, so it is omitted here.
       _MoreMenuItem(
         Icons.share_location,
         l10n.geofencesMenuItem,
@@ -626,13 +630,8 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           _driverMapScreenIndex,
           Theme.of(context).colorScheme.primary,
         ),
-      if (canDrive)
-        _MoreMenuItem(
-          Icons.directions_car,
-          l10n.myRides,
-          _driverMyRidesScreenIndex,
-          Theme.of(context).colorScheme.primary,
-        ),
+      // My Rides (screen 31) is already the third bottom-nav tab when canDrive,
+      // so it is not duplicated in the More grid.
     ];
 
     return Column(

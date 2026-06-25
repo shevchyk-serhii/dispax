@@ -190,10 +190,14 @@ void main() {
 
   // ---------------------------------------------------------------------------
   // Mobile — canDrive=true: exact nav order
-  //   0=Home | 1=Calendar | 2=My Rides | 3=New Ride | 4=More | 5=Billing
+  //   0=Home | 1=Calendar | 2=My Rides | 3=New Ride | 4=More | 5=Settings
+  // Settings replaced Billing as the last bottom-nav tab (Billing moved to More,
+  // mirroring the driver dashboard's Settings-last layout).
   // ---------------------------------------------------------------------------
   testWidgets('mobile nav (canDrive=true): nav positions are '
-      '0=Home 1=Calendar 2=MyRides 3=NewRide 4=More 5=Billing', (tester) async {
+      '0=Home 1=Calendar 2=MyRides 3=NewRide 4=More 5=Settings', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(420, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -213,7 +217,9 @@ void main() {
     expect(labels[2], equals('My Rides'));
     expect(labels[3], equals('New Ride'));
     expect(labels[4], equals('More'));
-    expect(labels[5], equals('Billing'));
+    expect(labels[5], equals('Settings'));
+    // Billing is no longer a bottom-nav tab.
+    expect(labels, isNot(contains('Billing')));
   });
 
   // ---------------------------------------------------------------------------
@@ -317,10 +323,10 @@ void main() {
 
   // ---------------------------------------------------------------------------
   // Mobile — canDrive=false: exact nav order
-  //   0=Home | 1=Schedule | 2=Analytics | 3=New Ride | 4=More | 5=Billing
+  //   0=Home | 1=Schedule | 2=Analytics | 3=New Ride | 4=More | 5=Settings
   // ---------------------------------------------------------------------------
   testWidgets('mobile nav (canDrive=false): nav positions are '
-      '0=Home 1=Schedule 2=Analytics 3=NewRide 4=More 5=Billing', (
+      '0=Home 1=Schedule 2=Analytics 3=NewRide 4=More 5=Settings', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(420, 900);
@@ -342,7 +348,8 @@ void main() {
     expect(labels[2], equals('Analytics'));
     expect(labels[3], equals('New Ride'));
     expect(labels[4], equals('More'));
-    expect(labels[5], equals('Billing'));
+    expect(labels[5], equals('Settings'));
+    expect(labels, isNot(contains('Billing')));
   });
 
   // ---------------------------------------------------------------------------
@@ -393,11 +400,11 @@ void main() {
   );
 
   // ---------------------------------------------------------------------------
-  // Mobile — nav index consistency: More at pos 5 (canDrive=true) / pos 4 (canDrive=false),
-  // Billing at pos 6 (canDrive=true) / pos 5 (canDrive=false).
+  // Mobile — nav index consistency: More at pos 4, Settings (the new last tab)
+  // at pos 5, for both canDrive values.
   // ---------------------------------------------------------------------------
   testWidgets(
-    'mobile nav (canDrive=false): "More" is at pos 4 and "Billing" is at pos 5',
+    'mobile nav (canDrive=false): "More" is at pos 4 and "Settings" is at pos 5',
     (tester) async {
       tester.view.physicalSize = const Size(420, 900);
       tester.view.devicePixelRatio = 1.0;
@@ -419,14 +426,14 @@ void main() {
       );
       expect(
         labels[5],
-        equals('Billing'),
-        reason: '"Billing" must be at nav position 5 (canDrive=false)',
+        equals('Settings'),
+        reason: '"Settings" must be at nav position 5 (canDrive=false)',
       );
     },
   );
 
   testWidgets(
-    'mobile nav (canDrive=true): "More" is at pos 4 and "Billing" is at pos 5',
+    'mobile nav (canDrive=true): "More" is at pos 4 and "Settings" is at pos 5',
     (tester) async {
       tester.view.physicalSize = const Size(420, 900);
       tester.view.devicePixelRatio = 1.0;
@@ -448,8 +455,96 @@ void main() {
       );
       expect(
         labels[5],
-        equals('Billing'),
-        reason: '"Billing" must be at nav position 5 (canDrive=true)',
+        equals('Settings'),
+        reason: '"Settings" must be at nav position 5 (canDrive=true)',
+      );
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // Mobile — More-menu grid contents after the refactor:
+  //   * "Billing" now lives in the More grid (it left the bottom nav);
+  //   * "Settings" is gone from the More grid (it moved to the bottom nav);
+  //   * "My Rides" is NOT duplicated in the More grid (it is a bottom-nav tab
+  //     when canDrive).
+  // ---------------------------------------------------------------------------
+  testWidgets(
+    'mobile More-menu (canDrive=true): contains "Billing", omits "Settings", '
+    'and does not duplicate "My Rides"',
+    (tester) async {
+      tester.view.physicalSize = const Size(420, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(buildApp(_dispatcherWithDrive()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Open the More menu.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('More'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final grid = find.byType(Scrollable).last;
+
+      // Billing now appears as a More-grid tile.
+      await tester.scrollUntilVisible(
+        find.text('Billing'),
+        200.0,
+        scrollable: grid,
+      );
+      expect(
+        find.text('Billing'),
+        findsOneWidget,
+        reason: 'Billing must now be a More-grid tile',
+      );
+
+      // The grid is a lazy GridView.builder, so off-screen tiles are not built.
+      // To prove "My Rides" and "Settings" are NOT in the grid, scroll the grid
+      // all the way to the bottom (forcing every tile to build at least once as
+      // it passes through the viewport) and assert they were never found.
+      // scrollUntilVisible throws StateError when the target never appears, so a
+      // *successful* scroll-to-find would mean the tile IS present (a failure).
+      Future<bool> gridContains(String label) async {
+        // Reset to the top so each search scans the full grid deterministically.
+        await tester.drag(grid, const Offset(0, 2000));
+        await tester.pump();
+        try {
+          await tester.scrollUntilVisible(
+            find.descendant(of: grid, matching: find.text(label)),
+            200.0,
+            scrollable: grid,
+            maxScrolls: 60,
+          );
+          return true;
+        } on StateError {
+          return false;
+        }
+      }
+
+      expect(
+        await gridContains('My Rides'),
+        isFalse,
+        reason: 'My Rides must not be duplicated in the More grid',
+      );
+      expect(
+        await gridContains('Settings'),
+        isFalse,
+        reason: 'Settings must not be in the More grid anymore',
+      );
+
+      // Sanity: a tile that IS in the grid is found by the same helper, proving
+      // the helper can actually detect presence (guards against a false-negative
+      // where everything "passes" because the scan never works).
+      expect(
+        await gridContains('GDPR'),
+        isTrue,
+        reason: 'control: a real More-grid tile must be detected',
       );
     },
   );
