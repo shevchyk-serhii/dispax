@@ -6,10 +6,13 @@ import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/auth/services/biometric_service.dart';
 import 'package:dispax/modules/core/services/websocket_service.dart';
 import 'package:dispax/blocs/auth/auth_bloc.dart';
+import 'package:dispax/blocs/ride/ride_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class MockRideService extends Mock implements RideService {}
+
+class MockRideBloc extends Mock implements RideBloc {}
 
 class MockScheduleService extends Mock implements ScheduleService {}
 

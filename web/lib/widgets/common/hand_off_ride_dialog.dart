@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
 import '../../modules/ride_management/models/external_driver.dart';
 import '../../modules/ride_management/models/partner_company.dart';
 import '../../modules/ride_management/services/ride_service.dart';
+
+/// The dispatcher's confirmed hand-off choice, returned via [Navigator.pop] so
+/// the caller — which owns the [RideBloc] — can dispatch the request. Keeping
+/// the bloc out of the dialog avoids a `ProviderNotFoundException` from the
+/// overlay context (see [HandOffRideDialog._confirm]).
+class HandOffSelection {
+  final String externalDriverId;
+  final String partnerCompanyId;
+
+  const HandOffSelection({
+    required this.externalDriverId,
+    required this.partnerCompanyId,
+  });
+}
 
 /// Dialog that lets a dispatcher hand off a [Requested] ride to an external
 /// driver + partner company.  Shows dropdowns backed by the tenant's
@@ -147,22 +159,25 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
     }
   }
 
+  /// Closes the dialog, returning the dispatcher's selection to the caller.
+  ///
+  /// The dialog deliberately does NOT read [RideBloc] from its own context:
+  /// it is mounted in the navigator overlay, which does not inherit the
+  /// dashboard's [BlocProvider], so `context.read<RideBloc>()` here would throw
+  /// `ProviderNotFoundException` and the button would appear dead. Instead the
+  /// caller (which has the bloc in scope) dispatches the hand-off — mirroring
+  /// how [CancelRideDialog] hands its result back via the navigator pop value.
   void _confirm(BuildContext dialogCtx) {
     final driver = _selectedDriver;
     final company = _selectedCompany;
     if (driver == null || company == null) return;
 
-    final rideBloc = context.read<RideBloc>();
-    Navigator.of(dialogCtx).pop();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      rideBloc.add(
-        RideHandOffRequested(
-          rideId: widget.rideId,
-          externalDriverId: driver.id,
-          partnerCompanyId: company.id,
-        ),
-      );
-    });
+    Navigator.of(dialogCtx).pop(
+      HandOffSelection(
+        externalDriverId: driver.id,
+        partnerCompanyId: company.id,
+      ),
+    );
   }
 
   @override

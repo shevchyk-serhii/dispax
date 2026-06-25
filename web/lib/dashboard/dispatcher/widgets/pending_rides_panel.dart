@@ -772,16 +772,28 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     });
   }
 
-  /// Shows the [HandOffRideDialog] for the given ride.
+  /// Shows the [HandOffRideDialog] and, on confirmation, dispatches
+  /// [RideHandOffRequested]. The dialog returns the dispatcher's selection via
+  /// the navigator pop value; the event is dispatched here (where [RideBloc] is
+  /// in scope) rather than from the dialog's overlay context.
   void _showHandOffDialog(BuildContext context, Ride ride) {
     final authBloc = context.read<AuthBloc>();
-    showAdaptiveDialog(
+    showAdaptiveDialog<HandOffSelection>(
       context: context,
       builder: (_) => HandOffRideDialog(
         rideId: ride.id,
         rideService: RideService(apiClient: authBloc.apiClient),
       ),
-    );
+    ).then((selection) {
+      if (selection == null) return; // dispatcher cancelled
+      _dispatchAfterFrame(
+        RideHandOffRequested(
+          rideId: ride.id,
+          externalDriverId: selection.externalDriverId,
+          partnerCompanyId: selection.partnerCompanyId,
+        ),
+      );
+    });
   }
 
   void _showDriverSelectionSheet(
