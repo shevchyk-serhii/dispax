@@ -16,6 +16,7 @@ import '../../utils/ride_status_styles.dart';
 import '../../widgets/common/notification_bell.dart';
 import '../../widgets/common/responsive_scaffold.dart';
 import 'widgets/secretary_reports_panel.dart';
+import 'widgets/client_list_panel.dart';
 
 class SecretaryDashboard extends StatefulWidget {
   const SecretaryDashboard({super.key});
@@ -107,6 +108,25 @@ class _FrontDeskTab extends StatelessWidget {
 
   const _FrontDeskTab({required this.onQuickBook});
 
+  /// Opens the client management screen. Wraps [ClientListPanel] in its own
+  /// [ClientBloc] so it is self-contained on the pushed route (the dashboard's
+  /// provider lives in a separate IndexedStack subtree).
+  void _openManageClients(BuildContext context) {
+    final authBloc = context.read<AuthBloc>();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        // ClientListPanel provides its own Scaffold/AppBar (titled "Manage
+        // Clients"), so we don't wrap it in another one.
+        builder: (_) => BlocProvider<ClientBloc>(
+          create: (_) => ClientBloc(
+            userService: UserService(apiClient: authBloc.apiClient),
+          )..add(const ClientLoadRequested()),
+          child: const ClientListPanel(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -185,6 +205,7 @@ class _FrontDeskTab extends StatelessWidget {
                         return _StatTilesRow(
                           rideState: rideState,
                           clientState: clientState,
+                          onManageClients: () => _openManageClients(context),
                         );
                       },
                     );
@@ -211,8 +232,13 @@ class _FrontDeskTab extends StatelessWidget {
 class _StatTilesRow extends StatelessWidget {
   final RideState rideState;
   final ClientState clientState;
+  final VoidCallback onManageClients;
 
-  const _StatTilesRow({required this.rideState, required this.clientState});
+  const _StatTilesRow({
+    required this.rideState,
+    required this.clientState,
+    required this.onManageClients,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +278,7 @@ class _StatTilesRow extends StatelessWidget {
             label: l10n.activeClientsLabel,
             value: activeClients != null ? '$activeClients' : '—',
             valueColor: null,
+            onTap: onManageClients,
           ),
         ),
         const SizedBox(width: 10),
@@ -266,10 +293,15 @@ class _StatTile extends StatelessWidget {
   final String value;
   final Color? valueColor;
 
+  /// Optional tap handler. When set, the tile becomes interactive (e.g. the
+  /// "Active clients" tile opens the client management screen).
+  final VoidCallback? onTap;
+
   const _StatTile({
     required this.label,
     required this.value,
     required this.valueColor,
+    this.onTap,
   });
 
   @override
@@ -279,7 +311,7 @@ class _StatTile extends StatelessWidget {
         valueColor ??
         (isDark ? AppColors.textPrimaryDark : AppColors.textPrimary);
 
-    return Container(
+    final tile = Container(
       padding: const EdgeInsets.all(AppDimensions.paddingMedium),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surface,
@@ -295,14 +327,28 @@ class _StatTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-              height: 1.1,
-            ),
+          Row(
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                  height: 1.1,
+                ),
+              ),
+              if (onTap != null) ...[
+                const Spacer(),
+                Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondary,
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 4),
           Text(
@@ -315,6 +361,17 @@ class _StatTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+
+    if (onTap == null) return tile;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: tile,
       ),
     );
   }

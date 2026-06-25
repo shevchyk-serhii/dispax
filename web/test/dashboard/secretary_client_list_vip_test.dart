@@ -96,4 +96,61 @@ void main() {
       reason: 'the VIP toggle change must reach the update request',
     );
   });
+
+  // The panel uses automaticallyImplyLeading: true so that, when pushed as its
+  // own route (e.g. from the secretary front desk / dispatcher More menu), the
+  // AppBar gets a back button. When it is the root content of a route there is
+  // nothing to pop, so no back button is shown.
+  testWidgets('AppBar shows a back button when pushed as its own route', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 2200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // A home screen with a button that pushes the panel onto the navigator.
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        locale: const Locale('en'),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => BlocProvider<ClientBloc>.value(
+                    value: clientBloc,
+                    child: const ClientListPanel(),
+                  ),
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // A back button (BackButton or the close icon) must be present on the route.
+    expect(find.byType(BackButton), findsOneWidget);
+  });
+
+  testWidgets('AppBar shows no back button when it is the root content', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 2200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // host() places the panel as the root route, so there is nothing to pop.
+    expect(find.byType(BackButton), findsNothing);
+  });
 }
