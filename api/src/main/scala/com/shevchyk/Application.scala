@@ -14,12 +14,9 @@ import com.shevchyk.core.config.AirportPickupConfig
 import com.shevchyk.app.HereTravelTimeAdapter
 import com.shevchyk.ride.repository.{
   RideRepository,
-  PostgresRideRepository,
   AirportConfigRepository,
   ClientLocationRepository,
-  PostgresClientLocationRepository,
   ClientAddressRepository,
-  PostgresClientAddressRepository,
   ChatMessageRepository,
   ExpenseRepository,
   ExternalDriverRepository,
@@ -28,10 +25,7 @@ import com.shevchyk.ride.repository.{
   PostgresPartnerCompanyRepository,
   RideTemplateRepository,
   RideRatingRepository,
-  TariffRepository,
-  PostgresExpenseRepository,
-  PostgresRideRatingRepository,
-  PostgresRideTemplateRepository
+  TariffRepository
 }
 import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.core.config.HereConfig
@@ -59,16 +53,14 @@ import com.shevchyk.core.repository.{
   PersonRepository,
   CompanyRepository,
   CompanySettingsRepository,
-  PostgresCompanySettingsRepository,
-  ClientCompanyRepository,
-  PostgresClientCompanyRepository
+  ClientCompanyRepository
 }
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.middleware.RateLimiter
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.application.{AvatarService, EventHub, AuditService, PostgresAuditService, GeofenceService}
+import com.shevchyk.core.application.{AvatarService, EventHub, AuditService, GeofenceService}
 import com.shevchyk.core.repository.{
   GeofenceRepository,
   GdprRepository,
@@ -76,14 +68,7 @@ import com.shevchyk.core.repository.{
   BlacklistRepository,
   EmergencyReassignmentRepository,
   RidePoolRepository,
-  NotificationPreferenceRepository,
-  PostgresGeofenceRepository,
-  PostgresGdprRepository,
-  PostgresSessionRepository,
-  PostgresBlacklistRepository,
-  PostgresEmergencyReassignmentRepository,
-  PostgresRidePoolRepository,
-  PostgresNotificationPreferenceRepository
+  NotificationPreferenceRepository
 }
 import com.shevchyk.notification.application.{
   EmailTemplateService,
@@ -102,12 +87,8 @@ import com.shevchyk.app.{
 }
 import com.shevchyk.notification.repository.{
   CheckpointNotificationRepository,
-  InMemoryFcmTokenRepository,
-  InMemoryNotificationRepository,
   NotificationRepository,
   FcmTokenRepository,
-  PostgresFcmTokenRepository,
-  PostgresNotificationRepository,
   SentReminderRepository,
   PostgresSentConfirmationRequestRepository,
   EtaAlertRepository

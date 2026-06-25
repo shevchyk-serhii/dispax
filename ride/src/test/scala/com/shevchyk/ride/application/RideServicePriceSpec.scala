@@ -19,7 +19,6 @@ import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import zio.test.*
 import zio.*
-import java.time.Instant
 import java.util.UUID
 
 /**
@@ -354,7 +353,6 @@ object RideServicePriceSpec extends ZIOSpecDefault {
           })
         }.provide(standardLayers),
         test("date range filter excludes rides outside the window") {
-          import java.time.LocalDate
           for {
             service <- ZIO.service[RideService]
             ride    <- service.createRide(mkRide())
@@ -411,10 +409,10 @@ object RideServicePriceSpec extends ZIOSpecDefault {
         }.provide(standardLayers),
         test("driver from testCompany is invisible when queried under otherCompanyId") {
           for {
-            service  <- ZIO.service[RideService]
-            ride     <- service.createRide(mkRide())
-            assigned <- service.assignDriver(ride.id, testDriverId)
-            result   <- service.getDriverRides(testDriverId, otherCompanyId)
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            _       <- service.assignDriver(ride.id, testDriverId)
+            result  <- service.getDriverRides(testDriverId, otherCompanyId)
           } yield assertTrue(result.isEmpty)
         }.provide(standardLayers),
         test("two rides for different drivers — each driver sees only their own rides") {

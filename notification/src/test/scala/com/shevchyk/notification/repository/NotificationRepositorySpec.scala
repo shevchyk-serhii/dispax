@@ -31,7 +31,7 @@ object NotificationRepositorySpec extends ZIOSpecDefault {
           for {
             repo  <- ZIO.service[NotificationRepository]
             n      = makeNotification(personId1, "Test 1")
-            saved <- repo.save(n)
+            _     <- repo.save(n)
             found <- repo.findByPersonId(personId1, 10, 0)
           } yield assertTrue(
             found.size == 1 &&

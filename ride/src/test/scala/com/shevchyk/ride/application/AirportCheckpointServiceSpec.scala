@@ -2,11 +2,7 @@ package com.shevchyk.ride.application
 
 import com.shevchyk.core.application.EventHub
 import com.shevchyk.core.domain.{CompanyId, Location, PersonId, RideId, WebSocketEvent}
-import com.shevchyk.ride.application.service.{
-  AirportCheckpointService,
-  AirportCheckpointServiceImpl,
-  AirportConfigService
-}
+import com.shevchyk.ride.application.service.{AirportCheckpointService, AirportConfigService}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.repository.{InMemoryAirportConfigRepository, InMemoryRideRepository, RideRepository}
 import zio.*

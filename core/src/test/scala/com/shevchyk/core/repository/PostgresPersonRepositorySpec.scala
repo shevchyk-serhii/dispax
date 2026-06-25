@@ -30,7 +30,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
   private def makePerson(
       role: PersonRole = PersonRole.Client,
       name: String = "Test Person",
-      email: String = s"test-${UUID.randomUUID()}@example.com",
+      email: String,
       isVip: Boolean = false
   ): Person = Person(
     id = PersonId(UUID.randomUUID()),
@@ -480,7 +480,6 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
       // Tenant-isolation integration guard: update is company-scoped (IS NOT DISTINCT FROM).
       // A person in another company must not have their language changed even when the ID is guessed.
       test("update is company-scoped — preferredLanguage update does not touch different-company row") {
-        val companyA = CompanyId(UUID.randomUUID())
         val companyB = CompanyId(UUID.randomUUID())
         for {
           xa      <- ZIO.service[Transactor[Task]]

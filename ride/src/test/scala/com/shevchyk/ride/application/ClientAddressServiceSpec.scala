@@ -50,9 +50,9 @@ object ClientAddressServiceSpec extends ZIOSpecDefault {
         },
         test("increments useCount for duplicate address instead of creating new") {
           for {
-            svc   <- ZIO.service[ClientAddressService]
-            first <- svc.saveAddress(clientId, req("Repeated Street"))
-            _     <- svc.saveAddress(clientId, req("Repeated Street"))
+            svc  <- ZIO.service[ClientAddressService]
+            _    <- svc.saveAddress(clientId, req("Repeated Street"))
+            _    <- svc.saveAddress(clientId, req("Repeated Street"))
             list  <- svc.getAddresses(clientId)
           } yield assertTrue(
             list.length == 1,
@@ -142,5 +142,5 @@ object ClientAddressServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(!result, list.length == 1)
         }
       )
-    ).provide(testLayer, InMemoryClientAddressRepository.layer) @@ TestAspect.sequential
+    ).provide(testLayer) @@ TestAspect.sequential
 }

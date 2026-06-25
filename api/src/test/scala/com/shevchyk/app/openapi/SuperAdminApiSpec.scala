@@ -6,12 +6,10 @@ import com.shevchyk.billing.repository.InvoiceRepository
 import com.shevchyk.billing.domain.InvoiceStatus
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.{CompanyRepository, SessionRepository}
-import com.shevchyk.ride.domain.{Ride, RideStatus, DriverEarnings}
-import com.shevchyk.ride.repository.{RideRepository, TimeBucket}
+import com.shevchyk.ride.repository.RideRepository
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
 import zio.*
 import zio.http.*
-import zio.json.*
 import zio.test.*
 
 import java.util.UUID

@@ -2,7 +2,7 @@ package com.shevchyk.driver.infrastructure.http
 
 import com.shevchyk.auth.middleware.{AuthMiddleware, UuidParser}
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.domain.{PersonId, PersonRole, RideId}
+import com.shevchyk.core.domain.{PersonId, PersonRole}
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.driver.application.{DriverLocationService, EtaService}
 import com.shevchyk.core.application.GeocodingService

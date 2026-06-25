@@ -3,7 +3,6 @@ package com.shevchyk.core.repository
 import com.shevchyk.core.domain.*
 import zio.*
 import java.time.Instant
-import java.util.UUID
 
 trait SessionRepository:
   def create(session: Session): Task[Session]

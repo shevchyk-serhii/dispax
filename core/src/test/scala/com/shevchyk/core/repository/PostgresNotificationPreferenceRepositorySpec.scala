@@ -50,7 +50,7 @@ object PostgresNotificationPreferenceRepositorySpec extends ZIOSpecDefault {
       xa: Transactor[Task],
       id: NotificationPreferenceId,
       person: PersonId,
-      rideUpdates: Boolean = true,
+      rideUpdates: Boolean,
       quietStart: Option[String] = None,
       quietEnd: Option[String] = None
   ): Task[Unit] =

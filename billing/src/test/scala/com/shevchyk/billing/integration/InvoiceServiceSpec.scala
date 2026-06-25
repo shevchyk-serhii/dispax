@@ -125,7 +125,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           _      <- cleanData(xa)
           svc     = makeService(xa)
           req     = makeRequest()
-          inv1   <- svc.createInvoice(testCompanyId, req)
+          _      <- svc.createInvoice(testCompanyId, req)
           inv2   <- svc.createInvoice(testCompanyId, req)
           repo    = PostgresInvoiceRepository(xa)
           _      <- repo.update(inv2.copy(status = InvoiceStatus.Sent))

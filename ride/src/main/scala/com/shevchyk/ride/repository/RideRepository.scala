@@ -1,7 +1,7 @@
 package com.shevchyk.ride.repository
 
 import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, PaymentMethod, Ride, RideStatus}
-import com.shevchyk.core.domain.{Location, RideId, PersonId, CompanyId}
+import com.shevchyk.core.domain.{RideId, PersonId, CompanyId}
 import zio.*
 import java.time.Instant
 

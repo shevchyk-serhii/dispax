@@ -12,7 +12,7 @@ import zio.*
 import zio.http.*
 import zio.json.*
 
-import java.time.{Instant, LocalDate, YearMonth, ZoneOffset}
+import java.time.{YearMonth, ZoneOffset}
 
 // --- JSON response models ---
 
@@ -51,7 +51,7 @@ object ExportRoutes:
   /**
    * DATEV date format: DDMM (4 digits, no year)
    */
-  private def datevDate(instant: Instant): String =
+  private def datevDate(instant: java.time.Instant): String =
     val ld = instant.atZone(ZoneOffset.UTC).toLocalDate
     f"${ld.getDayOfMonth}%02d${ld.getMonthValue}%02d"
 

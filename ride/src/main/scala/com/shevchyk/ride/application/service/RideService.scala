@@ -24,6 +24,7 @@ import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.*
 import java.time.{Duration, Instant, LocalDate, ZoneOffset}
 import monocle.syntax.all.*
+import scala.annotation.nowarn
 
 trait RideService:
   def getRideById(rideId: RideId): IO[RideError, Ride]
@@ -1256,6 +1257,9 @@ class RideServiceImpl(
 
   // -- Cancel permission --------------------------------------------------
 
+  // The defensive `case _` below is currently unreachable (the match is exhaustive over PersonRole),
+  // but it is kept on purpose so a newly added role fails closed instead of throwing MatchError.
+  @nowarn("msg=Unreachable case")
   private def validateCancelPermission(ride: Ride, userId: PersonId, userRole: PersonRole): IO[RideError, Unit] =
     userRole match
       case PersonRole.Dispatcher | PersonRole.Secretary | PersonRole.Admin | PersonRole.ClientSecretary |

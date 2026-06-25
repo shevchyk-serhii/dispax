@@ -13,7 +13,7 @@ import java.util.UUID
 object CompanyRepositorySpec extends ZIOSpecDefault:
 
   private def makeCompany(
-      name: String = "Test GmbH",
+      name: String,
       email: String = "info@test.de",
       status: CompanyStatus = CompanyStatus.Active,
       plan: SubscriptionPlan = SubscriptionPlan.Free

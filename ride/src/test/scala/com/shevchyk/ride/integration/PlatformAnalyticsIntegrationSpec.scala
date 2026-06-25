@@ -2,7 +2,7 @@ package com.shevchyk.ride.integration
 
 import com.shevchyk.core.database.PostgresTestContainer
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.repository.{PostgresCompanyRepository, PostgresPersonRepository}
+import com.shevchyk.core.repository.PostgresCompanyRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.repository.PostgresRideRepository
 import doobie.*

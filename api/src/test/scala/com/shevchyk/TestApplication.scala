@@ -982,7 +982,7 @@ object TestApplication extends ZIOAppDefault:
       def addItems(items: List[InvoiceItem]): Task[Unit]                                                     = ZIO.succeed(
         items.groupBy(_.invoiceId).foreach((k, v) => itemsStore.put(k, v))
       )
-      def deleteItems(invoiceId: InvoiceId): Task[Unit]                                                      = ZIO.succeed(itemsStore.remove(invoiceId))
+      def deleteItems(invoiceId: InvoiceId): Task[Unit]                                                      = ZIO.succeed(itemsStore.remove(invoiceId): Unit)
       def replaceItems(invoiceId: InvoiceId, taxiCompanyId: CompanyId, items: List[InvoiceItem]): Task[Unit] = ZIO
         .succeed {
           if items.isEmpty then itemsStore.remove(invoiceId) else itemsStore.put(invoiceId, items)
@@ -1051,11 +1051,11 @@ object TestApplication extends ZIOAppDefault:
       private val availability                                                                = new ConcurrentHashMap[PersonId, String]()
       registerReset(ZIO.succeed { locations.clear(); availability.clear() })
       def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO.succeed(
-        locations.put(driverId, DriverLocation(driverId, latitude, longitude))
+        locations.put(driverId, DriverLocation(driverId, latitude, longitude)): Unit
       )
       def getLocation(driverId: PersonId): Task[Option[DriverLocation]]                       = ZIO.succeed(Option(locations.get(driverId)))
       def updateAvailability(driverId: PersonId, status: String): Task[Unit]                  = ZIO.succeed(
-        availability.put(driverId, status)
+        availability.put(driverId, status): Unit
       )
       def getAvailability(driverId: PersonId): Task[Option[String]]                           = ZIO.succeed(Option(availability.get(driverId)))
       def findAvailableByCompanyId(
@@ -1090,7 +1090,7 @@ object TestApplication extends ZIOAppDefault:
       private val store                                                                                       = new ConcurrentHashMap[RideId, ClientLocation]()
       registerReset(ZIO.succeed(store.clear()))
       def updateLocation(rideId: RideId, clientId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO
-        .succeed(store.put(rideId, ClientLocation(rideId, clientId, latitude, longitude)))
+        .succeed(store.put(rideId, ClientLocation(rideId, clientId, latitude, longitude)): Unit)
       def getLocation(rideId: RideId): Task[Option[ClientLocation]]                                           = ZIO.succeed(Option(store.get(rideId)))
   }
 
@@ -1724,7 +1724,7 @@ object TestApplication extends ZIOAppDefault:
       stubGeocodingServiceLayer,
       // SuperAdmin CompanyRepository stub (platform-level; not exercised in BDD tests)
       ZLayer.succeed[CompanyRepository] {
-        import com.shevchyk.core.domain.{Company, CompanyId, CompanyStatus, SubscriptionPlan}
+        import com.shevchyk.core.domain.{Company, CompanyId, CompanyStatus}
         new CompanyRepository:
           def findAll(): Task[List[Company]]                   = ZIO.succeed(Nil)
           def findById(id: CompanyId): Task[Option[Company]]   = ZIO.none

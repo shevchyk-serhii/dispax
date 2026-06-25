@@ -37,7 +37,7 @@ object InvoiceReminderSchedulerSpec extends ZIOSpecDefault:
   // loudly if the scheduler ever calls them (it shouldn't).
   private def serviceStub(
       ref: Ref[Calls],
-      failReminderFor: Set[InvoiceId] = Set.empty
+      failReminderFor: Set[InvoiceId]
   ): InvoiceService =
     new InvoiceService:
       private def nope(m: String): Nothing = throw new NotImplementedError(s"unexpected InvoiceService.$m")

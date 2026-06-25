@@ -1,12 +1,9 @@
 package com.shevchyk.ride.openapi
 
 import com.shevchyk.core.domain.{CompanyId, Location, PersonId, RideId}
-import com.shevchyk.core.repository.{CompanySettingsRepository, InMemoryCompanySettingsRepository}
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryExpenseRepository, InMemoryRideRepository}
 import zio.*
 import zio.test.*
-import zio.test.Assertion.*
 
 import java.nio.charset.Charset
 import java.time.{Instant, YearMonth}
@@ -47,7 +44,7 @@ object ExportApiSpec extends ZIOSpecDefault {
       companyId: CompanyId = companyA,
       clientId: PersonId = clientA1,
       endTime: Instant = Instant.parse("2025-05-10T12:00:00Z"),
-      estimatedPrice: Option[BigDecimal] = Some(BigDecimal("50.00")),
+      estimatedPrice: Option[BigDecimal],
       finalPrice: Option[BigDecimal] = None,
       paymentMethod: Option[PaymentMethod] = Some(PaymentMethod.Cash)
   ): Ride = Ride(
@@ -64,22 +61,6 @@ object ExportApiSpec extends ZIOSpecDefault {
     estimatedPrice = estimatedPrice,
     finalPrice = finalPrice,
     paymentMethod = paymentMethod
-  )
-
-  private def makeExpense(
-      id: ExpenseId = ExpenseId.generate(),
-      companyId: CompanyId = companyA,
-      driverId: PersonId = driverA,
-      amount: BigDecimal = BigDecimal("12.50"),
-      category: ExpenseCategory = ExpenseCategory.Fuel
-  ): Expense = Expense(
-    id = id,
-    driverId = driverId,
-    companyId = companyId,
-    category = category,
-    amount = amount,
-    currency = "EUR",
-    description = Some("test")
   )
 
   // ── Spec ─────────────────────────────────────────────────────────────────

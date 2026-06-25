@@ -4,7 +4,7 @@ import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.domain.*
 import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole, UserStatus}
 import com.shevchyk.core.repository.{InMemorySessionRepository, PersonRepository, SessionRepository}
-import com.shevchyk.auth.repository.{InMemoryPersonRepositoryWithUsers, InMemoryTokenRepository, TestLayers, TestUUIDs}
+import com.shevchyk.auth.repository.{InMemoryPersonRepositoryWithUsers, InMemoryTokenRepository}
 import com.shevchyk.auth.service.JwtService
 import zio.*
 import zio.test.*
@@ -12,7 +12,7 @@ import java.util.UUID
 
 object AuthServiceSpec extends ZIOSpecDefault {
 
-  import TestUUIDs.*
+  import com.shevchyk.auth.repository.TestUUIDs.*
 
   /**
    * Fresh layers per test — InMemoryPersonRepository/TokenRepository hold mutable Refs, so sharing a single instance

@@ -54,7 +54,7 @@ object PostgresChatMessageRepositorySpec extends ZIOSpecDefault {
   private def makeMessage(
       ride: RideId,
       sender: PersonId = clientId,
-      text: String = "hello",
+      text: String,
       sentAt: Instant = Instant.now().truncatedTo(ChronoUnit.MICROS)
   ): ChatMessage = ChatMessage(
     id = ChatMessageId(UUID.randomUUID()),

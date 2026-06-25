@@ -3,7 +3,6 @@ package com.shevchyk.ride.repository
 import com.shevchyk.ride.domain.{Airport, AirportCheckpointZone}
 import doobie.*
 import doobie.implicits.*
-import doobie.implicits.javasql.*
 import doobie.postgres.implicits.*
 import zio.*
 import zio.interop.catz.*

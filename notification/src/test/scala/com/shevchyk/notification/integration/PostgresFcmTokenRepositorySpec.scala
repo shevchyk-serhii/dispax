@@ -50,7 +50,7 @@ object PostgresFcmTokenRepositorySpec extends ZIOSpecDefault {
   private def makeToken(
       person: PersonId = personId,
       company: CompanyId = companyId,
-      token: String = "fcm-token-1",
+      token: String,
       platform: String = "android"
   ): FcmToken = FcmToken(
     personId = person,

@@ -11,7 +11,7 @@ import com.shevchyk.schedule.repository.{
 }
 import zio.test.*
 import zio.*
-import java.time.{Instant, LocalDate, LocalTime}
+import java.time.{LocalDate, LocalTime}
 import java.util.UUID
 
 /**

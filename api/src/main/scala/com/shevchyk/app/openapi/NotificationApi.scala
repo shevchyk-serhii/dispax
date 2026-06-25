@@ -2,7 +2,6 @@ package com.shevchyk.app.openapi
 
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.PersonId
-import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId, UnreadCountResponse}
 import com.shevchyk.notification.repository.NotificationRepository
 import sttp.model.StatusCode

@@ -18,7 +18,7 @@ import zio.json.*
 import java.time.Instant
 
 given JsonCodec[RideStatus] = JsonCodec.string.transformOrFail(
-  str => scala.util.Try(RideStatus.valueOf(str)).toEither.left.map(e => s"Unknown RideStatus: $str"),
+  str => scala.util.Try(RideStatus.valueOf(str)).toEither.left.map(_ => s"Unknown RideStatus: $str"),
   status => status.toString
 )
 

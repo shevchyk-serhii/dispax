@@ -100,7 +100,6 @@ object DriverEarningsSpec extends ZIOSpecDefault {
   )
 
   // Anchor: a fixed week (Mon 2026-06-01 .. Sun 2026-06-07)
-  private val anchor   = LocalDate.of(2026, 6, 3) // Wednesday
   private val weekFrom = LocalDate.of(2026, 6, 1).atStartOfDay(ZoneOffset.UTC).toInstant
   private val weekTo   = LocalDate.of(2026, 6, 8).atStartOfDay(ZoneOffset.UTC).toInstant
   private val midWeek  = LocalDate.of(2026, 6, 3).atTime(12, 0).toInstant(ZoneOffset.UTC)

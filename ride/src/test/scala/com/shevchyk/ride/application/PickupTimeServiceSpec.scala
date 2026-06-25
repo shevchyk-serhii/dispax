@@ -11,7 +11,6 @@ import com.shevchyk.core.repository.{
 import com.shevchyk.ride.application.service.{PickupTimeService, PickupTimeResult}
 import zio.*
 import zio.test.*
-import zio.test.Assertion.*
 
 import java.time.Instant
 import java.util.UUID
@@ -229,9 +228,7 @@ object PickupTimeServiceSpec extends ZIOSpecDefault {
         ),
         test("client override applied: client buffer=10, client checkIn=30, travel=30 → exact Instant") {
           // expected: 12:00 - (10+30+30)*60s = 12:00 - 70min = 10:50:00Z
-          val settings  = makeSettings(bufferMinutes = Some(20), checkInCloseMinutes = Some(45))
-          val ccCompany = makeClientCompany(bufferMinutes = Some(10), checkInCloseMinutes = Some(30))
-          val expected  = Instant.parse("2030-06-15T10:50:00Z")
+          val expected = Instant.parse("2030-06-15T10:50:00Z")
           for {
             svc    <- ZIO.service[PickupTimeService]
             result <- svc.computePickupTime(
@@ -253,8 +250,7 @@ object PickupTimeServiceSpec extends ZIOSpecDefault {
         ),
         test("client partial override: client buffer=10, checkIn inherited from company=45") {
           // expected: 12:00 - (10+30+45)*60s = 12:00 - 85min = 10:35:00Z
-          val ccCompany = makeClientCompany(bufferMinutes = Some(10), checkInCloseMinutes = None)
-          val expected  = Instant.parse("2030-06-15T10:35:00Z")
+          val expected = Instant.parse("2030-06-15T10:35:00Z")
           for {
             svc    <- ZIO.service[PickupTimeService]
             result <- svc.computePickupTime(
@@ -277,13 +273,7 @@ object PickupTimeServiceSpec extends ZIOSpecDefault {
         test("foreign client company (different taxiCompanyId) is silently ignored → company settings used") {
           // clientCcId belongs to otherCompanyId, but request is for companyId → client overrides must NOT apply
           // Expected: company buffer=20, company checkIn=45, travel=30 → 12:00-95min=10:25:00Z
-          val foreignCc = makeClientCompany(
-            ccId = clientCcId,
-            taxiCompanyId = otherCompanyId, // ← different company: tenant isolation
-            bufferMinutes = Some(5),
-            checkInCloseMinutes = Some(10)
-          )
-          val expected  = Instant.parse("2030-06-15T10:25:00Z")
+          val expected = Instant.parse("2030-06-15T10:25:00Z")
           for {
             svc    <- ZIO.service[PickupTimeService]
             result <- svc.computePickupTime(

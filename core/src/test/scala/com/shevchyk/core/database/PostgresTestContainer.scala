@@ -85,7 +85,7 @@ object PostgresTestContainer {
       minIdle = 0
     )
     Unsafe.unsafe { implicit u =>
-      zio.Runtime.default.unsafe
+      val _ = zio.Runtime.default.unsafe
         .run(FlywayServiceImpl(dbConfig, "production").migrate())
         .getOrThrowFiberFailure()
       ()

@@ -3,7 +3,7 @@ package com.shevchyk.auth.integration
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.domain.*
-import com.shevchyk.auth.repository.{InMemoryPersonRepositoryWithUsers, InMemoryTokenRepository, TestLayers}
+import com.shevchyk.auth.repository.{InMemoryPersonRepositoryWithUsers, InMemoryTokenRepository}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{CompanyId, PersonId}
 import com.shevchyk.core.repository.{InMemorySessionRepository, PersonRepository, SessionRepository}
@@ -38,7 +38,7 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
       test("createUser → login → validateToken full cycle") {
         for {
           service   <- ZIO.service[AuthService]
-          user      <- service.createUser(
+          _         <- service.createUser(
                          CreateUserRequest(
                            email = "flow1@example.com",
                            name = "Flow User",

@@ -3,7 +3,7 @@ package com.shevchyk.ride.integration
 import com.shevchyk.core.database.PostgresTestContainer
 import com.shevchyk.core.domain.*
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.repository.{PostgresRideRepository, RideRepository}
+import com.shevchyk.ride.repository.PostgresRideRepository
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
@@ -54,7 +54,7 @@ object PostgresRideConfirmationIntegrationSpec extends ZIOSpecDefault {
 
   private def baseRide(
       id: RideId = RideId(UUID.randomUUID()),
-      status: RideStatus = RideStatus.Requested,
+      status: RideStatus,
       driver: Option[PersonId] = None,
       pickupAt: Instant = Instant.now().plusSeconds(3600)
   ): Ride = Ride(

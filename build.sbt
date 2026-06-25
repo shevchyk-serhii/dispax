@@ -14,16 +14,19 @@ ThisBuild / coverageExcludedPackages := Seq(
 
 // Strict compiler flags. In a ZIO codebase the most valuable are -Wvalue-discard
 // and -Wnonunit-statement: they catch effects that are constructed but never
-// chained into the program (a silently-dropped ZIO that never runs). We keep
-// warnings non-fatal for now so the build still succeeds while the existing
-// findings are cleaned up incrementally.
+// chained into the program (a silently-dropped ZIO that never runs).
+// -Werror makes every warning fatal, so the build fails on any of them — in
+// particular an unused import (flagged by -Wunused:all) will not compile. Fix
+// the warning at its source; suppress only a justified false positive with a
+// narrow @nowarn("cat=...") + comment. See docs/scala-style.md §15.
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
   "-unchecked",
   "-Wunused:all",
   "-Wvalue-discard",
-  "-Wnonunit-statement"
+  "-Wnonunit-statement",
+  "-Werror"
 )
 
 // Integration specs share a single reusable Postgres container

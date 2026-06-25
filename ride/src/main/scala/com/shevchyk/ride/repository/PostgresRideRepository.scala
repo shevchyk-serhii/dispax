@@ -4,8 +4,6 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.ride.domain.{
   AirportCheckpoint,
   DriverEarnings,
-  ExternalDriver,
-  PartnerCompany,
   Ride,
   RideError,
   RideSpecifics,
@@ -20,7 +18,6 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
-import doobie.postgres.circe.jsonb.implicits.*
 import zio.*
 import zio.interop.catz.*
 

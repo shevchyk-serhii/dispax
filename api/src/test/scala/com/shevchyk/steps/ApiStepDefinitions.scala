@@ -63,7 +63,7 @@ object ApiStepDefinitions {
       )
       serverStarted = true
 
-      sys.addShutdownHook {
+      val _ = sys.addShutdownHook {
         stopServer()
       }
 
@@ -102,9 +102,9 @@ object ApiStepDefinitions {
   }
 
   private def healthOk(): Boolean = {
-    import java.net.{HttpURLConnection, URL}
+    import java.net.{HttpURLConnection, URI}
     try {
-      val url        = new URL(s"$baseUrl/health")
+      val url        = URI.create(s"$baseUrl/health").toURL
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("GET")
       connection.setConnectTimeout(1000)
@@ -122,9 +122,9 @@ object ApiStepDefinitions {
    * POSTs to `/test/reset` and returns the HTTP status, or -1 if the server is unreachable.
    */
   private def resetStatus(): Int = {
-    import java.net.{HttpURLConnection, URL}
+    import java.net.{HttpURLConnection, URI}
     try {
-      val url        = new URL(s"$baseUrl/test/reset")
+      val url        = URI.create(s"$baseUrl/test/reset").toURL
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("POST")
       connection.setConnectTimeout(2000)
@@ -659,7 +659,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       val response = Unsafe.unsafe { implicit u =>
         Runtime.default.unsafe
           .run(
-            Client.batched(request).provide(Client.default, zio.Scope.default)
+            Client.batched(request).provide(Client.default)
           )
           .getOrThrow()
       }
@@ -2536,7 +2536,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     try {
       val response = Unsafe.unsafe { implicit u =>
         Runtime.default.unsafe
-          .run(Client.batched(request).provide(Client.default, zio.Scope.default))
+          .run(Client.batched(request).provide(Client.default))
           .getOrThrow()
       }
       lastResponse = response

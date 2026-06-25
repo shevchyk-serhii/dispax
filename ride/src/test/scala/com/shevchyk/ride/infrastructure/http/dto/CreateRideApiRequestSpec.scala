@@ -13,7 +13,7 @@ object CreateRideApiRequestSpec extends ZIOSpecDefault {
   private val validClientId  = UUID.randomUUID().toString
   private val futureDateTime = Instant.now().plusSeconds(3600).toString
 
-  private def makeRequest(paymentMethod: Option[String] = None) = CreateRideApiRequest(
+  private def makeRequest(paymentMethod: Option[String]) = CreateRideApiRequest(
     clientId = validClientId,
     creatorId = validClientId,
     pickupDateTime = Some(futureDateTime),

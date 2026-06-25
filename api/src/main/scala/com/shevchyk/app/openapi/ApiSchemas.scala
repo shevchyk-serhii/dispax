@@ -14,7 +14,6 @@ import com.shevchyk.app.openapi.UserApi.{
 import com.shevchyk.core.domain.*
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId, UnreadCountResponse}
 import sttp.tapir.Schema
-import sttp.tapir.json.zio.*
 
 /**
  * Tapir [[Schema]] instances for the api-module endpoint bodies, collected in one place. The domain types already

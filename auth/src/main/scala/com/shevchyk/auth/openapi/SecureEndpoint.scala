@@ -48,7 +48,6 @@ object SecureEndpoint:
       {
         case _: InvalidTokenError | _: ExpiredTokenError => ApiError("Invalid or expired token")
         case _: JwtError                                 => ApiError("Authentication failed")
-        case _                                           => ApiError("Internal server error")
       },
       payload =>
         AuthenticatedUser(

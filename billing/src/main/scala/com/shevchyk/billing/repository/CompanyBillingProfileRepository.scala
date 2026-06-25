@@ -5,7 +5,6 @@ import com.shevchyk.core.database.DatabaseConfig
 import com.shevchyk.core.domain.CompanyId
 import doobie.*
 import doobie.implicits.*
-import doobie.implicits.javasql.*
 import doobie.postgres.implicits.*
 import zio.*
 import zio.interop.catz.*

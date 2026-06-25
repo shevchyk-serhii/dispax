@@ -14,7 +14,6 @@ import zio.ZIO
 import zio.json.*
 
 import java.time.Instant
-import java.util.UUID
 
 /**
  * Tapir descriptions and server logic for the SuperAdmin platform-management endpoints.

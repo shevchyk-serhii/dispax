@@ -304,7 +304,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
           for {
             service <- ZIO.service[DriverLocationService]
             _       <- service.updateAvailability(testDriverId, "Available")
-            drivers <- service.getAvailableDrivers(testCompanyId)
+            _       <- service.getAvailableDrivers(testCompanyId)
           } yield assertTrue(true) // availability stored successfully
         }.provide(standardLayers),
         test("sets driver as Offline") {
@@ -317,7 +317,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
           for {
             service <- ZIO.service[DriverLocationService]
             _       <- service.updateAvailability(testDriverId, "Available")
-            before  <- service.getAvailableDrivers(testCompanyId)
+            _       <- service.getAvailableDrivers(testCompanyId)
             _       <- service.updateAvailability(testDriverId, "Offline")
             after   <- service.getAvailableDrivers(testCompanyId)
           } yield assertTrue(after.isEmpty)

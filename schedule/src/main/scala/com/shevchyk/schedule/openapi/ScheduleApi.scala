@@ -7,7 +7,7 @@ import com.shevchyk.core.domain.{CompanyId, DriverUnavailabilityId, PersonId, Pe
 import com.shevchyk.core.openapi.{ApiError, ErrorMapper}
 import com.shevchyk.schedule.application.ScheduleService
 import com.shevchyk.schedule.domain.*
-import com.shevchyk.schedule.infrastructure.http.dto.{*, given}
+import com.shevchyk.schedule.infrastructure.http.dto.*
 import com.shevchyk.schedule.validation.given
 import com.shevchyk.schedule.validation.Validator.validate
 import sttp.model.StatusCode
