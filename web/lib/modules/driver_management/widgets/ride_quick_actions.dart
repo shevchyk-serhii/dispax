@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import '../../ride_management/models/ride.dart';
-import '../../core/navigation_helper.dart';
 import '../../core/navigation_utils.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
@@ -46,7 +45,7 @@ class RideQuickActions extends StatelessWidget {
           icon: Icons.navigation_rounded,
           color: AppColors.accent,
           tooltip: l10n.navigateTooltip,
-          onPressed: () => _handleNavigation(context, ride, l10n),
+          onPressed: () => NavigationUtils.showNavigateToDialog(context, ride),
         ),
         const SizedBox(width: 8),
         // Details ghost button
@@ -175,69 +174,5 @@ class RideQuickActions extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static void _handleNavigation(
-    BuildContext context,
-    Ride ride,
-    AppLocalizations l10n,
-  ) async {
-    try {
-      final choice = await showAdaptiveDialog<String>(
-        context: context,
-        builder: (BuildContext context) {
-          final innerL10n = AppLocalizations.of(context)!;
-          return SimpleDialog(
-            title: Text(innerL10n.navigateTo),
-            children: [
-              SimpleDialogOption(
-                onPressed: () => Navigator.of(context).pop('pickup'),
-                child: ListTile(
-                  leading: const Icon(
-                    Icons.location_on,
-                    color: AppColors.success,
-                  ),
-                  title: Text(ride.from.address),
-                  subtitle: Text(innerL10n.googleMapsPickup),
-                ),
-              ),
-              SimpleDialogOption(
-                onPressed: () => Navigator.of(context).pop('destination'),
-                child: ListTile(
-                  leading: const Icon(Icons.flag, color: AppColors.error),
-                  title: Text(ride.to.address),
-                  subtitle: Text(innerL10n.googleMapsDropoff),
-                ),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (choice == null) return;
-
-      switch (choice) {
-        case 'pickup':
-          await NavigationUtils.openGoogleMapsNavigation(ride.from);
-        case 'destination':
-          await NavigationUtils.openGoogleMapsNavigation(ride.to);
-      }
-
-      if (context.mounted) {
-        NavigationHelper.showSnackBar(
-          context,
-          l10n.openingNavigation,
-          isError: false,
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        NavigationHelper.showSnackBar(
-          context,
-          l10n.couldNotOpenNavigation(e.toString()),
-          isError: true,
-        );
-      }
-    }
   }
 }

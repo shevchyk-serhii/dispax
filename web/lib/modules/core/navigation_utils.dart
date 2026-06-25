@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dispax/l10n/app_localizations.dart';
+import 'navigation_helper.dart';
 import 'models/location.dart';
 import 'models/person.dart';
 import '../ride_management/models/ride.dart';
@@ -11,6 +12,74 @@ import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
 
 class NavigationUtils {
+  /// Shows the "Navigate to" picker (pickup / drop-off) and opens Google Maps
+  /// for the chosen leg.
+  ///
+  /// On iOS [showAdaptiveDialog] renders a Cupertino-style dialog whose barrier
+  /// is NOT dismissible by tapping outside, so the dialog must offer an explicit
+  /// exit. The third "Cancel" option provides that exit on every platform;
+  /// without it the driver would be trapped in the dialog on iOS.
+  static Future<void> showNavigateToDialog(
+    BuildContext context,
+    Ride ride,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final choice = await showAdaptiveDialog<String>(
+        context: context,
+        barrierDismissible: true, // helps on Android/web; ignored by Cupertino
+        builder: (BuildContext ctx) => SimpleDialog(
+          title: Text(l10n.navigateTo),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop('pickup'),
+              child: ListTile(
+                leading: const Icon(
+                  Icons.location_on,
+                  color: AppColors.success,
+                ),
+                title: Text(ride.from.address),
+                subtitle: Text(l10n.googleMapsPickup),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop('destination'),
+              child: ListTile(
+                leading: const Icon(Icons.flag, color: AppColors.error),
+                title: Text(ride.to.address),
+                subtitle: Text(l10n.googleMapsDropoff),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: ListTile(
+                leading: const Icon(Icons.close),
+                title: Text(l10n.cancel),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (choice == null || !context.mounted) return;
+
+      final destination = choice == 'pickup' ? ride.from : ride.to;
+      await openGoogleMapsNavigation(destination);
+
+      if (context.mounted) {
+        NavigationHelper.showSnackBar(context, l10n.openingNavigation);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        NavigationHelper.showSnackBar(
+          context,
+          l10n.couldNotOpenNavigation(e.toString()),
+          isError: true,
+        );
+      }
+    }
+  }
+
   static Future<void> openGoogleMapsNavigation(Location destination) async {
     final destinationAddress = Uri.encodeComponent(destination.address);
 
