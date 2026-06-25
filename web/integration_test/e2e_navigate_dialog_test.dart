@@ -34,11 +34,18 @@ void main() {
     if (skipIfBackendDown($)) return;
 
     // The assigned ride renders a live card with a "Navigate" action.
+    //
+    // NB: the driver Today screen runs a never-ending pulse animation (the live
+    // green dot), so pumpAndSettle never returns here — use fixed pumps and
+    // waitUntilVisible/waitUntilExists instead.
     await $('Navigate').waitUntilVisible(timeout: const Duration(seconds: 20));
     await $('Navigate').scrollTo().tap();
-    await $.pumpAndSettle();
+    await $.pump(const Duration(milliseconds: 500));
 
     // The "Navigate to" picker is open.
+    await $('Navigate to').waitUntilVisible(
+      timeout: const Duration(seconds: 10),
+    );
     expect($('Navigate to'), findsWidgets);
 
     // Tap the Cancel option inside the dialog (scoped to the SimpleDialog so we
@@ -49,7 +56,7 @@ void main() {
     );
     expect(cancelInDialog, findsOneWidget);
     await $.tester.tap(cancelInDialog, warnIfMissed: false);
-    await $.pumpAndSettle();
+    await $.pump(const Duration(milliseconds: 500));
 
     // Dialog is gone and we are still on the driver dashboard.
     expect($('Navigate to'), findsNothing);
