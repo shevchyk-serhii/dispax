@@ -16,6 +16,25 @@ Feature: Ride Management
     Then the response status should be 201
     And the response should contain ride details
 
+  Scenario: Create a ride with a payment method returns it in the response
+    Given I am authenticated as a dispatcher
+    When I send a POST request to "/api/rides" with body:
+      """
+      {"clientId":"11111111-1111-1111-1111-111111111111","creatorId":"33333333-3333-3333-3333-333333333333","clientName":"Test User","from":{"address":"Hauptbahnhof München"},"to":{"address":"Flughafen München"},"pickupDateTime":"2026-12-10T15:30:00Z","paymentMethod":"Payment"}
+      """
+    Then the response status should be 201
+    And the response should contain "paymentMethod"
+    And the response should contain "Payment"
+
+  Scenario: Create a ride without a payment method omits it from the response
+    Given I am authenticated as a dispatcher
+    When I send a POST request to "/api/rides" with body:
+      """
+      {"clientId":"11111111-1111-1111-1111-111111111111","creatorId":"33333333-3333-3333-3333-333333333333","clientName":"Test User","from":{"address":"Hauptbahnhof München"},"to":{"address":"Flughafen München"},"pickupDateTime":"2026-12-10T15:30:00Z"}
+      """
+    Then the response status should be 201
+    And the response should not contain "paymentMethod"
+
   Scenario: Get ride by ID
     Given I am authenticated as a dispatcher
     When I send a GET request to "/api/rides/11111111-1111-1111-1111-111111111111"

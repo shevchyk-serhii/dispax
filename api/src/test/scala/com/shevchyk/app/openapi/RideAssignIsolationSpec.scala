@@ -164,6 +164,7 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
 
       // createRide echoes a fresh Requested ride for the request's client/company, so the
       // create endpoint reaches RideDto.fromDomain and the clientName-enrichment path is exercised.
+      // It also echoes paymentMethod so the end-to-end wire→domain→DTO path can be asserted.
       def createRide(req: CreateRideRequest): IO[RideError, Ride] = ZIO.succeed(
         Ride(
           id = rideAId,
@@ -174,7 +175,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           pickupLocation = req.pickupLocation,
           dropoffLocation = req.dropoffLocation,
           pickupDateTime = req.pickupDateTime.getOrElse(Instant.now().plusSeconds(3600)),
-          requestTime = Instant.now()
+          requestTime = Instant.now(),
+          paymentMethod = req.paymentMethod
         )
       )
 
@@ -423,6 +425,15 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
   // "pickup time cannot be in the past" rule).
   private def createBody(clientId: PersonId): Body = Body.fromString(
     s"""{"clientId":"${clientId.value}","creatorId":"${clientId.value}",""" +
+      """"pickupDateTime":"2090-01-01T10:00:00Z",""" +
+      """"from":{"address":"Munich Airport"},"to":{"address":"City Center"},""" +
+      """"clientName":"ignored-by-server"}"""
+  )
+
+  // Create-ride body carrying a payment method wire value (e.g. "Payment").
+  private def createBodyWithPayment(clientId: PersonId, paymentMethod: String): Body = Body.fromString(
+    s"""{"clientId":"${clientId.value}","creatorId":"${clientId.value}",""" +
+      s""""paymentMethod":"$paymentMethod",""" +
       """"pickupDateTime":"2090-01-01T10:00:00Z",""" +
       """"from":{"address":"Munich Airport"},"to":{"address":"City Center"},""" +
       """"clientName":"ignored-by-server"}"""
@@ -812,6 +823,48 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           body.contains("\"clientName\":\"Anna Schmidt\""),
           !body.contains("Unknown Client"),
           !body.contains("ignored-by-server")
+        )
+      },
+
+      // ── End-to-end: create-ride carries the payment method wire→domain→DTO ──
+      // POST /api/rides with paymentMethod="Payment" must parse the wire value in
+      // CreateRideApiRequest.toDomain, thread it through createRide, and surface it
+      // back in the RideDto response. Proves the full HTTP create path for the new
+      // Payment value (not just the per-layer unit tests).
+      test("[E2E] create-ride with paymentMethod='Payment' returns it in the response") {
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map.empty, assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .post(URL.decode("/api/rides").toOption.get, createBodyWithPayment(clientAId, "Payment"))
+                             .addHeader(Header.Authorization.Bearer(token))
+                             .addHeader(Header.ContentType(zio.http.MediaType.application.json))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Created,
+          body.contains("\"paymentMethod\":\"Payment\"")
+        )
+      },
+
+      // ── End-to-end: omitting paymentMethod leaves it absent in the response ──
+      test("[E2E] create-ride without a paymentMethod does not surface one") {
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map.empty, assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .post(URL.decode("/api/rides").toOption.get, createBody(clientAId))
+                             .addHeader(Header.Authorization.Bearer(token))
+                             .addHeader(Header.ContentType(zio.http.MediaType.application.json))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Created,
+          !body.contains("\"paymentMethod\":\"Payment\"")
         )
       },
 
