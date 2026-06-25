@@ -548,4 +548,68 @@ void main() {
       );
     },
   );
+
+  // ---------------------------------------------------------------------------
+  // Mobile — the driver-schedules tile is localized as "Driver Schedules"
+  // (l10n.driverSchedules), not the bare hardcoded "Schedules" it used to be.
+  // ---------------------------------------------------------------------------
+  testWidgets(
+    'mobile More-menu: driver-schedules tile is "Driver Schedules" (localized), '
+    'not the bare "Schedules"',
+    (tester) async {
+      tester.view.physicalSize = const Size(420, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(buildApp(_dispatcherWithDrive()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('More'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final grid = find.byType(Scrollable).last;
+
+      // The localized label is present...
+      await tester.scrollUntilVisible(
+        find.text('Driver Schedules'),
+        200.0,
+        scrollable: grid,
+      );
+      expect(
+        find.text('Driver Schedules'),
+        findsOneWidget,
+        reason: 'driver-schedules tile must use l10n.driverSchedules',
+      );
+
+      // ...and the old bare "Schedules" label is gone. (Reset to top first so
+      // the search scans the whole grid; the lazy grid only builds in-viewport
+      // tiles, so a fully-scrolled scan that never finds it proves absence.)
+      await tester.drag(grid, const Offset(0, 2000));
+      await tester.pump();
+      var foundBare = false;
+      try {
+        await tester.scrollUntilVisible(
+          find.descendant(of: grid, matching: find.text('Schedules')),
+          200.0,
+          scrollable: grid,
+          maxScrolls: 60,
+        );
+        foundBare = true;
+      } on StateError {
+        foundBare = false;
+      }
+      expect(
+        foundBare,
+        isFalse,
+        reason: 'the bare hardcoded "Schedules" label must no longer appear',
+      );
+    },
+  );
 }
