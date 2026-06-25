@@ -49,7 +49,7 @@ class BasicInfoCard extends StatelessWidget {
                 hintText: 'Enter client name',
                 prefixIcon: Icon(
                   Icons.person_outline,
-                  color: AppColors.secretaryColor,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(

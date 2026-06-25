@@ -43,7 +43,11 @@ class CreateRideNotesSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.note_alt, color: AppColors.secretaryColor, size: 20),
+              Icon(
+                Icons.note_alt,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               const Text(
                 'Notes & Special Requirements',
@@ -81,8 +85,10 @@ class CreateRideNotesSection extends StatelessWidget {
                     SpecialRequirementToggled(req),
                   );
                 },
-                selectedColor: AppColors.secretaryColor.withAlpha(40),
-                checkmarkColor: AppColors.secretaryColor,
+                selectedColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withAlpha(40),
+                checkmarkColor: Theme.of(context).colorScheme.primary,
               );
             }).toList(),
           ),

@@ -288,7 +288,7 @@ class AssignmentDialog extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    style: AppStyles.textButtonStyle,
+                    style: AppStyles.textButtonStyleOf(context),
                     onPressed: () => Navigator.of(context).pop(),
                     child: Text(l10n.cancel),
                   ),

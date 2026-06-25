@@ -101,7 +101,7 @@ class _DriverClientSection extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.person,
-                        color: AppColors.driverColor,
+                        color: Theme.of(context).colorScheme.primary,
                         size: 22,
                       ),
                       const SizedBox(width: AppDimensions.paddingSmall),
@@ -128,7 +128,7 @@ class _DriverClientSection extends StatelessWidget {
                       state.isNewClient ? 'Find existing' : 'New client',
                     ),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.driverColor,
+                      foregroundColor: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ],
