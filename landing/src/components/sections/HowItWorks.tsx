@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import { Container } from "../ui/Container";
+import { Reveal } from "../ui/Reveal";
 
 type Step = { num: string; title: string; desc: string };
 
@@ -21,7 +22,11 @@ export function HowItWorks() {
 
         <div className="mt-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, i) => (
-            <div key={i} className="flex flex-col gap-4">
+            <Reveal
+              key={i}
+              delay={(Math.min(i, 3) as 0 | 1 | 2 | 3)}
+              className="flex flex-col gap-4"
+            >
               <div className="flex items-center gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-graphite-900 text-base font-bold text-accent-light">
                   {step.num}
@@ -38,7 +43,7 @@ export function HowItWorks() {
                   {step.desc}
                 </p>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </Container>
