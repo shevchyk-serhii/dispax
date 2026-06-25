@@ -652,16 +652,17 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _shareRide(BuildContext context) async {
-    final rideDetails =
-        '''
-Ride Details:
-From: ${_currentRide.pickupLocation}
-To: ${_currentRide.dropoffLocation}
-Time: ${_currentRide.pickupTime}
-Status: ${_currentRide.status.name}
-''';
-
-    Navigator.of(context).pop(rideDetails);
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final url = await _rideService.createShareLink(_currentRide.id);
+      await Clipboard.setData(ClipboardData(text: url));
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(l10n.trackingLinkCopied)));
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    }
   }
 
   Future<void> _updateRideStatus(RideStatus newStatus) async {

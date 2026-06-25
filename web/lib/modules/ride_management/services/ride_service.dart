@@ -148,6 +148,27 @@ class RideService {
     }
   }
 
+  /// Create (or reuse) a public guest tracking link for a ride. Returns the absolute URL to share. The backend
+  /// returns a relative `path` (`/track/<token>`); we prefix the current web origin so the link is shareable as-is.
+  Future<String> createShareLink(String rideId) async {
+    final response = await privateApiClient.post(
+      '/rides/$rideId/share-link',
+      const {},
+    );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      final path = json['path'] as String? ?? '/track/${json['token']}';
+      // Prefix the web origin so the link is shareable as-is. `Uri.base.origin` only works for http/https (on web);
+      // off-web (or in tests) it throws, so fall back to the relative path.
+      final base = Uri.base;
+      if (base.scheme == 'http' || base.scheme == 'https') {
+        return '${base.origin}$path';
+      }
+      return path;
+    }
+    throw ApiException.fromResponse(response, 'Failed to create tracking link');
+  }
+
   Future<Ride?> updateRide(String id, Ride ride) async {
     try {
       final response = await privateApiClient.put('/rides/$id', ride.toJson());
@@ -271,13 +292,11 @@ class RideService {
     String newDriverId, {
     bool overrideScheduleConflict = false,
   }) async {
-    final response = await privateApiClient.put(
-      '/rides/$rideId/reassign-driver',
-      {
-        'driverId': newDriverId,
-        'overrideScheduleConflict': overrideScheduleConflict,
-      },
-    );
+    final response = await privateApiClient
+        .put('/rides/$rideId/reassign-driver', {
+          'driverId': newDriverId,
+          'overrideScheduleConflict': overrideScheduleConflict,
+        });
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> json = jsonDecode(response.body);

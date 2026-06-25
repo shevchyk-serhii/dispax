@@ -368,4 +368,10 @@ enum RideError extends Throwable:
   case RideAlreadyConfirmed(rideId: RideId)
   case RejectionReasonRequired(rideId: RideId)
 
+  // A guest share token was not found, has expired, or the ride is outside its
+  // tracking window. Deliberately information-free (no fields) so the API maps it
+  // to 404 — a guest must not be able to tell "wrong token" from "expired" from
+  // "ride gone", which would leak the existence of rides.
+  case ShareTokenInvalid
+
 object RideError

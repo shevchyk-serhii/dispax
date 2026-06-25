@@ -6387,6 +6387,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add payment method'**
   String get addPaymentMethodButton;
+
+  /// No description provided for @guestTrackingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track your ride'**
+  String get guestTrackingTitle;
+
+  /// No description provided for @guestFindingDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding a driver'**
+  String get guestFindingDriver;
+
+  /// No description provided for @guestDriverOnTheWay.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver on the way'**
+  String get guestDriverOnTheWay;
+
+  /// No description provided for @guestOnTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'On trip'**
+  String get guestOnTrip;
+
+  /// No description provided for @guestTripCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip completed'**
+  String get guestTripCompleted;
+
+  /// No description provided for @guestTripCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip cancelled'**
+  String get guestTripCancelled;
+
+  /// No description provided for @guestDriverApproaching.
+  ///
+  /// In en, this message translates to:
+  /// **'Your driver is arriving'**
+  String get guestDriverApproaching;
+
+  /// No description provided for @guestPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup'**
+  String get guestPickup;
+
+  /// No description provided for @guestDropoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination'**
+  String get guestDropoff;
+
+  /// No description provided for @guestLinkExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This tracking link is no longer available.'**
+  String get guestLinkExpired;
+
+  /// No description provided for @guestEtaMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String guestEtaMinutes(int minutes);
+
+  /// No description provided for @shareRideLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Share tracking link'**
+  String get shareRideLink;
+
+  /// No description provided for @trackingLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracking link copied to clipboard'**
+  String get trackingLinkCopied;
 }
 
 class _AppLocalizationsDelegate

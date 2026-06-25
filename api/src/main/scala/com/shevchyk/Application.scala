@@ -233,6 +233,8 @@ object Application extends ZIOAppDefault:
       TokenRepository.layer,
       RideRepository.layer,
       RideService.layer,
+      com.shevchyk.ride.repository.RideShareTokenRepository.layer,
+      com.shevchyk.ride.application.service.RideShareTokenService.layer,
       DriverLocationRepository.layer,
       DriverLocationService.layer,
       DriverLocationService.providerLayer,
