@@ -53,6 +53,9 @@ IOS_SIM        := 09021E1A-BC6A-4D86-A2EA-06A5894E4AEC
 # model or iOS runtime if needed.
 SIM_DEVICE_TYPE := com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max
 SIM_RUNTIME     := com.apple.CoreSimulator.SimRuntime.iOS-26-1
+# App bundle id installed on the simulators — used to launch and to terminate
+# the app (see `stop-dev`).
+APP_BUNDLE_ID  := de.dispax.app
 SIM_NAME_CLIENT     := Dispax Client
 SIM_NAME_DRIVER     := Dispax Driver
 SIM_NAME_DISPATCHER := Dispax Dispatcher
@@ -601,7 +604,7 @@ dev-roles: free-port
 		xcrun simctl bootstatus "$$udid" -b 2>/dev/null || true; \
 		open -a Simulator --args -CurrentDeviceUDID "$$udid"; \
 		xcrun simctl install "$$udid" "$$APP"; \
-		xcrun simctl launch --terminate-running-process "$$udid" de.dispax.app; \
+		xcrun simctl launch --terminate-running-process "$$udid" $(APP_BUNDLE_ID); \
 	done; \
 	open -a Simulator
 	@echo "✅ App running on 3 named simulators, each auto-logged-in to its role."
@@ -647,7 +650,7 @@ dev-dispatchers: free-port
 		open -a Simulator --args -CurrentDeviceUDID "$$udid"; \
 		xcrun simctl install "$$udid" "$$app"; \
 		SIMCTL_CHILD_DEV_AUTOLOGIN="$$autorole" \
-			xcrun simctl launch --terminate-running-process "$$udid" de.dispax.app; \
+			xcrun simctl launch --terminate-running-process "$$udid" $(APP_BUNDLE_ID); \
 	}; \
 	echo "🔨 Building the app once (role passed at launch, not baked in)..."; \
 	( cd $(FLUTTER_DIR) && $(FLUTTER) build ios --debug --simulator \
@@ -663,8 +666,21 @@ dev-dispatchers: free-port
 	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
 	@wait
 
-# Kill all dev processes (backend + flutter)
+# Kill all dev processes started by the dev-* targets.
+#  - `pkill "sbt run"` kills the sbt launcher, but the backend itself is a FORKED
+#    JVM whose command line is `java … com.shevchyk.…` (no "sbt run" substring),
+#    so it survives — kill whatever holds :8080 directly (same as `free-port`).
+#  - `dev-roles`/`dev-all` use `flutter run`; `dev-dispatchers` instead launches
+#    the app via `simctl`, so also terminate the app on every booted simulator.
 stop-dev:
 	@pkill -f "sbt run" 2>/dev/null || true
 	@pkill -f "flutter run" 2>/dev/null || true
+	@pids=$$(lsof -ti tcp:8080 2>/dev/null); \
+	if [ -n "$$pids" ]; then \
+		echo "🧹 Killing backend on :8080 ($$pids)"; \
+		echo "$$pids" | xargs kill -9 2>/dev/null || true; \
+	fi
+	@for udid in $$(xcrun simctl list devices booted -j 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join(x['udid'] for rt in d['devices'].values() for x in rt))" 2>/dev/null); do \
+		xcrun simctl terminate "$$udid" $(APP_BUNDLE_ID) 2>/dev/null || true; \
+	done
 	@echo "✅ Stopped"
