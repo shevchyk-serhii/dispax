@@ -53,7 +53,14 @@ object ApiStepDefinitions {
         runtime.unsafe.fork(serverApp)
       })
 
-      waitForServer(maxWaitMs = 15000, intervalMs = 500)
+      // 15s is plenty for a server start on an idle machine. Under heavy parallel
+      // load (e.g. `make test-everything-parallel` runs unit + integration + BDD +
+      // Flutter at once, starving CPU) the in-memory server can take longer to bind,
+      // so allow overriding the budget via BDD_SERVER_STARTUP_MS. Default unchanged.
+      waitForServer(
+        maxWaitMs = sys.env.get("BDD_SERVER_STARTUP_MS").flatMap(_.toIntOption).getOrElse(15000),
+        intervalMs = 500
+      )
       serverStarted = true
 
       sys.addShutdownHook {

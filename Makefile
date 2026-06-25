@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-watch test-integration test-bdd test-bdd-port test-bdd-parallel test-bdd-parallel-clean test-all test-everything clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-watch test-integration test-bdd test-bdd-port test-bdd-parallel test-bdd-parallel-clean test-all test-everything test-everything-parallel test-all-parallel-clean clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android flutter-prod-ios \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -495,6 +495,57 @@ test-everything:
 	  echo "❌ test-everything: one or more tiers FAILED (see output above)." ; \
 	fi ; \
 	exit $$STATUS
+
+# PARALLEL variant of test-everything: runs the unit, integration and BDD tiers
+# in THREE separate git worktrees plus the Flutter suite, all at once, instead of
+# the four sequential phases above. Wall time ~200s (warm) vs the sequential run.
+#
+# Why worktrees: unit, integration and BDD all live in the same sbt project, and
+# two sbt processes in one directory race on the boot/server lock — so each tier
+# needs its own project dir. Integration uses the shared reusable Postgres
+# container, serialised by the in-DB advisory lock, so it's safe alongside the
+# others. BDD owns port 8090 (not 8080) so it never collides with `make dev`.
+#
+# IMPORTANT — worktrees are PERSISTENT and reused (incremental compile). The FIRST
+# run compiles the whole project in each worktree (~3x slower than sequential);
+# the speedup is on subsequent runs. Run `make test-all-parallel-clean` to remove
+# them. Under heavy parallel load the in-memory BDD server takes longer to start,
+# so BDD_SERVER_STARTUP_MS lifts the readiness budget (default 15s, here 90s).
+#
+# Exit code is the OR of all four tiers. This is an OPTIONAL fast path; the
+# sequential `make test-everything` remains the canonical gate.
+TAP_BASE := ../dispax-tap
+test-everything-parallel:
+	@echo "🧪 ALL tiers in parallel: unit | integration | BDD | Flutter (worktree-isolated)..."
+	@HEAD=$$(git rev-parse HEAD) ; STATUS=0 ; \
+	for t in unit int bdd; do \
+	  wt=$(TAP_BASE)-$$t ; \
+	  if [ -d "$$wt" ] && git -C "$$wt" rev-parse --git-dir >/dev/null 2>&1 ; then \
+	    git -C "$$wt" reset --hard $$HEAD >/dev/null 2>&1 || { echo "❌ reset failed for $$t"; exit 1; } ; \
+	  else \
+	    rm -rf "$$wt" ; git worktree prune ; \
+	    git worktree add --detach "$$wt" $$HEAD >/dev/null 2>&1 || { echo "❌ worktree add failed for $$t"; exit 1; } ; \
+	  fi ; \
+	done ; \
+	( cd $(TAP_BASE)-unit && sbt "core/testOnly * -- -ignore-tags integration; auth/testOnly * -- -ignore-tags integration; ride/testOnly * -- -ignore-tags integration; driver/testOnly * -- -ignore-tags integration; notification/testOnly * -- -ignore-tags integration; schedule/testOnly * -- -ignore-tags integration; billing/testOnly * -- -ignore-tags integration; root/testOnly *Spec -- -ignore-tags integration" > $(TAP_BASE)-unit/tier.log 2>&1 ) & P_UNIT=$$! ; \
+	( cd $(TAP_BASE)-int && sbt "core/testOnly * -- -tags integration; auth/testOnly * -- -tags integration; ride/testOnly * -- -tags integration; driver/testOnly * -- -tags integration; notification/testOnly * -- -tags integration; schedule/testOnly * -- -tags integration; billing/testOnly * -- -tags integration" > $(TAP_BASE)-int/tier.log 2>&1 ) & P_INT=$$! ; \
+	( cd $(TAP_BASE)-bdd && BDD_SERVER_STARTUP_MS=90000 PORT=8090 sbt cucumber > $(TAP_BASE)-bdd/tier.log 2>&1 ) & P_BDD=$$! ; \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) test test/ > /tmp/dispax-tap-flutter.log 2>&1 ) & P_FLU=$$! ; \
+	wait $$P_UNIT || STATUS=1 ; echo "  ✓ unit tier finished" ; \
+	wait $$P_INT  || STATUS=1 ; echo "  ✓ integration tier finished" ; \
+	wait $$P_BDD  || STATUS=1 ; echo "  ✓ BDD tier finished" ; \
+	wait $$P_FLU  || STATUS=1 ; echo "  ✓ Flutter tier finished" ; \
+	echo "── unit ──" ;        grep -E 'tests failed' $(TAP_BASE)-unit/tier.log | grep -vE '0 tests failed' | head -3 || true ; grep -cE '0 tests failed' $(TAP_BASE)-unit/tier.log | sed 's/^/   modules green: /' ; \
+	echo "── integration ──" ; grep -E 'tests failed' $(TAP_BASE)-int/tier.log | grep -vE '0 tests failed' | head -3 || true ; grep -cE '0 tests failed' $(TAP_BASE)-int/tier.log | sed 's/^/   modules green: /' ; \
+	echo "── BDD ──" ;         grep -E 'Passed: Total [0-9]+, Failed [0-9]' $(TAP_BASE)-bdd/tier.log | tail -1 || true ; \
+	echo "── Flutter ──" ;     grep -E 'All tests passed|[0-9]+ failed' /tmp/dispax-tap-flutter.log | tail -1 || true ; \
+	if [ $$STATUS -eq 0 ]; then echo "✅ test-everything-parallel: ALL tiers passed." ; else echo "❌ test-everything-parallel: a tier FAILED (see tier.log in each ../dispax-tap-* worktree)." ; fi ; \
+	exit $$STATUS
+
+# Delete the persistent worktrees created by `test-everything-parallel`.
+test-all-parallel-clean:
+	@for t in unit int bdd; do git worktree remove --force $(TAP_BASE)-$$t 2>/dev/null || true ; rm -rf $(TAP_BASE)-$$t ; done ; \
+	git worktree prune ; echo "🧹 test-all-parallel worktrees removed."
 
 # Format all Scala + Dart code. Dart is rewritten first via $(DART) (FVM-pinned
 # to web/.fvmrc 3.44.2 when FVM is installed, matching CI), then `sbt fmtAll`
