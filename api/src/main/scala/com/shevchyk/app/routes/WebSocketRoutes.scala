@@ -1,7 +1,9 @@
 package com.shevchyk.app.routes
 
 import com.shevchyk.core.application.EventHub
+import com.shevchyk.core.domain.WebSocketEvent
 import com.shevchyk.auth.service.JwtService
+import com.shevchyk.ride.application.service.RideShareTokenService
 import zio.*
 import zio.http.*
 import zio.http.ChannelEvent.*
@@ -10,6 +12,47 @@ import zio.json.*
 import java.util.UUID
 
 object WebSocketRoutes:
+
+  // -- Guest tracking socket helpers ---------------------------------------
+
+  /**
+   * The per-event ride id, used to scope a guest socket to exactly one ride. `LocationUpdated` already carries an
+   * `Option[UUID]`; the other guest-relevant events carry a required `rideId`.
+   */
+  private[app] def eventRideId(event: WebSocketEvent): Option[UUID] =
+    event match
+      case e: WebSocketEvent.LocationUpdated          => e.rideId
+      case e: WebSocketEvent.RideStatusChanged        => Some(e.rideId)
+      case e: WebSocketEvent.DriverApproaching        => Some(e.rideId)
+      case e: WebSocketEvent.AirportCheckpointReached => Some(e.rideId)
+      case _                                          => None
+
+  /**
+   * Build the reduced, PII-free JSON a guest socket forwards. Mirrors ZIO-JSON's sealed-trait wrapper (`{"TypeName":
+   * {payload}}`) so the Flutter `WebSocketEvent.fromJson` parses it unchanged, but strips every field a guest must not
+   * see: driver/client ids, companyId, the driver's userId on a location update. Returns None for any event that is not
+   * on the guest allowlist (it must not be forwarded at all).
+   */
+  private[app] def guestPayload(event: WebSocketEvent): Option[String] =
+    event match
+      // Only the driver's live position — never the client's.
+      case e: WebSocketEvent.LocationUpdated if e.locationType == "driver" =>
+        Some(
+          s"""{"LocationUpdated":{"rideId":${e.rideId
+              .map(id => s"\"$id\"")
+              .getOrElse("null")},"latitude":${e.latitude},"longitude":${e.longitude},"locationType":"driver"}}"""
+        )
+      case e: WebSocketEvent.RideStatusChanged                             =>
+        Some(s"""{"RideStatusChanged":{"rideId":"${e.rideId}","newStatus":"${e.newStatus}"}}""")
+      case e: WebSocketEvent.DriverApproaching                             =>
+        Some(
+          s"""{"DriverApproaching":{"rideId":"${e.rideId}","distanceMeters":${e.distanceMeters},"threshold":"${e.threshold}"}}"""
+        )
+      case e: WebSocketEvent.AirportCheckpointReached                      =>
+        Some(
+          s"""{"AirportCheckpointReached":{"rideId":"${e.rideId}","checkpointType":"${e.checkpointType}","checkpointName":${e.checkpointName.toJson}}}"""
+        )
+      case _                                                               => None
 
   // Short-lived connection tickets: ticket -> (JWT payload claims needed, expiry)
   private case class WsTicket(token: String, createdAt: Long)
@@ -71,8 +114,66 @@ object WebSocketRoutes:
     val now = java.lang.System.currentTimeMillis() / 1000
     tickets.update(_.filter { case (_, t) => (now - t.createdAt) < TICKET_TTL_SECONDS })
 
-  val wsRoutes: Routes[EventHub & JwtService, Nothing] =
-    ticketRoute ++ Routes(
+  // GET /api/ws/track?token=<shareToken> — public guest tracking socket.
+  // No JWT: a high-entropy share token (validated against the ride's tracking window) authorizes a read-only stream
+  // for exactly ONE ride. The stream filters by rideId (NOT companyId — filtering by company would leak the whole
+  // company's event stream to a guest) and forwards only the PII-free guest payloads from `guestPayload`.
+  private val guestTrackRoute: Routes[EventHub & RideShareTokenService, Nothing] = Routes(
+    Method.GET / "api" / "ws" / "track" -> handler { (req: Request) =>
+      req.url.queryParams.queryParam("token") match
+        case None        => ZIO.succeed(Response(Status.BadRequest, body = Body.fromString("Missing token query parameter")))
+        case Some(token) =>
+          ZIO.serviceWithZIO[RideShareTokenService] { shareTokenService =>
+            shareTokenService
+              .resolve(token)
+              .foldZIO(
+                _ => ZIO.succeed(Response(Status.NotFound, body = Body.fromString("Invalid or expired tracking link"))),
+                resolved =>
+                  val rideId = resolved.rideId.value
+                  ZIO.serviceWithZIO[EventHub] { eventHub =>
+                    val socketApp = Handler.webSocket { channel =>
+                      ZIO.scoped {
+                        eventHub.subscribe.flatMap { dequeue =>
+                          val sendEvents =
+                            dequeue.take
+                              .flatMap { event =>
+                                if eventRideId(event).contains(rideId) then
+                                  guestPayload(event) match
+                                    case Some(json) => channel.send(ChannelEvent.Read(WebSocketFrame.text(json))).ignore
+                                    case None       => ZIO.unit
+                                else ZIO.unit
+                              }
+                              .forever
+                              .fork
+
+                          val heartbeat = heartbeatLoop(frame => channel.send(ChannelEvent.Read(frame))).fork
+
+                          val receiveMessages = channel.receiveAll {
+                            case Read(WebSocketFrame.Close(_, _)) => ZIO.unit
+                            case Read(WebSocketFrame.Ping)        =>
+                              channel.send(ChannelEvent.Read(WebSocketFrame.pong)).ignore
+                            case _                                => ZIO.unit
+                          }
+
+                          for {
+                            sender <- sendEvents
+                            pinger <- heartbeat
+                            _      <- receiveMessages
+                            _      <- sender.interrupt
+                            _      <- pinger.interrupt
+                          } yield ()
+                        }
+                      }
+                    }
+                    socketApp.toResponse
+                  }
+              )
+          }
+    }
+  )
+
+  val wsRoutes: Routes[EventHub & JwtService & RideShareTokenService, Nothing] =
+    ticketRoute ++ guestTrackRoute ++ Routes(
       Method.GET / "api" / "ws" -> handler { (req: Request) =>
         // Accept auth via header (preferred) or via short-lived ticket query param
         val tokenFromHeader = req.header(Header.Authorization).collect { case Header.Authorization.Bearer(token) =>

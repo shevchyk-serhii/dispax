@@ -51,7 +51,7 @@ import com.shevchyk.core.repository.{
 import com.shevchyk.notification.application.{FcmService, LoggingEmailSmsService}
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId, FcmToken}
 import com.shevchyk.notification.repository.{FcmTokenRepository, NotificationRepository}
-import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.application.service.{
@@ -62,7 +62,8 @@ import com.shevchyk.ride.application.service.{
   ClientLocationService,
   PickupTimeService,
   RideEstimateService,
-  RideService
+  RideService,
+  RideShareTokenService
 }
 import com.shevchyk.ride.domain.{
   AirportCheckpoint,
@@ -96,6 +97,7 @@ import com.shevchyk.ride.repository.{
   PartnerCompanyRepository,
   RideRatingRepository,
   RideRepository,
+  RideShareTokenRepository,
   RideTemplateRepository,
   TariffRepository,
   TimeBucket
@@ -779,6 +781,29 @@ object TestApplication extends ZIOAppDefault:
                 else (false, m)
           }
           private def periodTime(r: Ride): Instant                                                              = r.endTime.getOrElse(r.pickupDateTime)
+      }
+  )
+
+  // In-memory guest share tokens. Starts empty and accumulates; reset between scenarios.
+  private val inMemoryRideShareTokenRepositoryLayer: ZLayer[Any, Nothing, RideShareTokenRepository] = ZLayer.fromZIO(
+    Ref.Synchronized
+      .make(Map.empty[com.shevchyk.core.domain.RideShareTokenId, com.shevchyk.ride.domain.RideShareToken])
+      .map {
+        tokensRef =>
+          registerReset(tokensRef.set(Map.empty))
+          new RideShareTokenRepository:
+            def create(t: com.shevchyk.ride.domain.RideShareToken): Task[com.shevchyk.ride.domain.RideShareToken] =
+              tokensRef.update(_.updated(t.id, t)).as(t)
+            def findByToken(token: String): Task[Option[com.shevchyk.ride.domain.RideShareToken]]                 = tokensRef.get
+              .map(_.values.find(_.token == token))
+            def findActiveByRideId(rideId: RideId): Task[Option[com.shevchyk.ride.domain.RideShareToken]]         =
+              tokensRef.get.map(
+                _.values
+                  .filter(t => t.rideId == rideId && t.expiresAt.isAfter(Instant.now()))
+                  .toList
+                  .sortBy(_.createdAt)
+                  .lastOption
+              )
       }
   )
 
@@ -1546,6 +1571,9 @@ object TestApplication extends ZIOAppDefault:
       ZLayer.fromZIO(RateLimiter.make(maxRequests = 1000, windowSeconds = 60)),
       // Ride
       inMemoryRideRepositoryLayer,
+      inMemoryRideShareTokenRepositoryLayer,
+      RideShareTokenService.layer,
+      EtaService.layer,
       inMemoryExpenseRepositoryLayer,
       RideEstimateService.live,
       ZLayer.succeed[RideRatingRepository] {

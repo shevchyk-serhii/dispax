@@ -1683,5 +1683,22 @@
   "clientPaymentTitle": "Payment",
   "paymentMethodsSectionLabel": "PAYMENT METHODS",
   "corporateInvoiceLabel": "Corporate invoice",
-  "addPaymentMethodButton": "Add payment method"
+  "addPaymentMethodButton": "Add payment method",
+
+  "guestTrackingTitle": "Track your ride",
+  "guestFindingDriver": "Finding a driver",
+  "guestDriverOnTheWay": "Driver on the way",
+  "guestOnTrip": "On trip",
+  "guestTripCompleted": "Trip completed",
+  "guestTripCancelled": "Trip cancelled",
+  "guestDriverApproaching": "Your driver is arriving",
+  "guestPickup": "Pickup",
+  "guestDropoff": "Destination",
+  "guestLinkExpired": "This tracking link is no longer available.",
+  "guestEtaMinutes": "{minutes} min",
+  "@guestEtaMinutes": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "shareRideLink": "Share tracking link",
+  "trackingLinkCopied": "Tracking link copied to clipboard"
 }

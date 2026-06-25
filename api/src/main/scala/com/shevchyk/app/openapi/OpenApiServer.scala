@@ -26,7 +26,7 @@ import com.shevchyk.core.repository.{
   RidePoolRepository,
   SessionRepository
 }
-import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.driver.openapi.DriverApi
 import com.shevchyk.notification.application.FcmService
 import com.shevchyk.notification.repository.NotificationRepository
@@ -37,7 +37,8 @@ import com.shevchyk.ride.application.service.{
   ClientAddressService,
   ClientLocationService,
   RideEstimateService,
-  RideService
+  RideService,
+  RideShareTokenService
 }
 import com.shevchyk.ride.openapi.{
   ClientAddressApi,
@@ -90,7 +91,7 @@ object OpenApiServer:
       EmergencyReassignmentRepository & RideRatingRepository & ClientAddressService & ClientLocationService &
       AirportCheckpointService & AirportConfigService & ChatService & RideTemplateRepository & DriverLocationService &
       HereRoutingService & GeocodingService & ClientLocationRepository & CompanyRepository & TariffRepository &
-      RideEstimateService
+      RideEstimateService & RideShareTokenService & EtaService
 
   // `ZServerEndpoint`'s environment is invariant, so module lists cannot be merged
   // into one typed list. But `zio.http.Routes` is contravariant in its environment, so
@@ -129,7 +130,8 @@ object OpenApiServer:
       SuperAdminApi.serverEndpoints.map(_.endpoint) :::
       SuperAdminAirportApi.serverEndpoints.map(_.endpoint) :::
       PartnerCompanyApi.serverEndpoints.map(_.endpoint) :::
-      ExternalDriverApi.serverEndpoints.map(_.endpoint)
+      ExternalDriverApi.serverEndpoints.map(_.endpoint) :::
+      TrackApi.serverEndpoints.map(_.endpoint)
 
   /**
    * Swagger UI + the generated OpenAPI document, served under `/docs`.
@@ -169,4 +171,5 @@ object OpenApiServer:
       http(SuperAdminAirportApi.serverEndpoints) ++
       http(PartnerCompanyApi.serverEndpoints) ++
       http(ExternalDriverApi.serverEndpoints) ++
+      http(TrackApi.serverEndpoints) ++
       http(swaggerEndpoints)

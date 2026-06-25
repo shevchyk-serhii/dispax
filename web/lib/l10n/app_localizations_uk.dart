@@ -3406,4 +3406,46 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get addPaymentMethodButton => 'Додати спосіб оплати';
+
+  @override
+  String get guestTrackingTitle => 'Відстеження поїздки';
+
+  @override
+  String get guestFindingDriver => 'Шукаємо водія';
+
+  @override
+  String get guestDriverOnTheWay => 'Водій у дорозі';
+
+  @override
+  String get guestOnTrip => 'У дорозі';
+
+  @override
+  String get guestTripCompleted => 'Поїздку завершено';
+
+  @override
+  String get guestTripCancelled => 'Поїздку скасовано';
+
+  @override
+  String get guestDriverApproaching => 'Ваш водій під\'їжджає';
+
+  @override
+  String get guestPickup => 'Подача';
+
+  @override
+  String get guestDropoff => 'Призначення';
+
+  @override
+  String get guestLinkExpired =>
+      'Це посилання для відстеження більше недоступне.';
+
+  @override
+  String guestEtaMinutes(int minutes) {
+    return '$minutes хв';
+  }
+
+  @override
+  String get shareRideLink => 'Поділитися посиланням';
+
+  @override
+  String get trackingLinkCopied => 'Посилання скопійовано в буфер обміну';
 }

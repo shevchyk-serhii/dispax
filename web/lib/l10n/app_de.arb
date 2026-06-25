@@ -1601,5 +1601,22 @@
   "clientPaymentTitle": "Zahlung",
   "paymentMethodsSectionLabel": "ZAHLUNGSARTEN",
   "corporateInvoiceLabel": "Firmenrechnung",
-  "addPaymentMethodButton": "Zahlungsart hinzufügen"
+  "addPaymentMethodButton": "Zahlungsart hinzufügen",
+
+  "guestTrackingTitle": "Fahrt verfolgen",
+  "guestFindingDriver": "Fahrer wird gesucht",
+  "guestDriverOnTheWay": "Fahrer ist unterwegs",
+  "guestOnTrip": "Unterwegs",
+  "guestTripCompleted": "Fahrt abgeschlossen",
+  "guestTripCancelled": "Fahrt storniert",
+  "guestDriverApproaching": "Ihr Fahrer trifft gleich ein",
+  "guestPickup": "Abholung",
+  "guestDropoff": "Ziel",
+  "guestLinkExpired": "Dieser Tracking-Link ist nicht mehr verfügbar.",
+  "guestEtaMinutes": "{minutes} Min.",
+  "@guestEtaMinutes": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "shareRideLink": "Tracking-Link teilen",
+  "trackingLinkCopied": "Tracking-Link in die Zwischenablage kopiert"
 }

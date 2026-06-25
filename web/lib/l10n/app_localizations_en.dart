@@ -3398,4 +3398,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addPaymentMethodButton => 'Add payment method';
+
+  @override
+  String get guestTrackingTitle => 'Track your ride';
+
+  @override
+  String get guestFindingDriver => 'Finding a driver';
+
+  @override
+  String get guestDriverOnTheWay => 'Driver on the way';
+
+  @override
+  String get guestOnTrip => 'On trip';
+
+  @override
+  String get guestTripCompleted => 'Trip completed';
+
+  @override
+  String get guestTripCancelled => 'Trip cancelled';
+
+  @override
+  String get guestDriverApproaching => 'Your driver is arriving';
+
+  @override
+  String get guestPickup => 'Pickup';
+
+  @override
+  String get guestDropoff => 'Destination';
+
+  @override
+  String get guestLinkExpired => 'This tracking link is no longer available.';
+
+  @override
+  String guestEtaMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get shareRideLink => 'Share tracking link';
+
+  @override
+  String get trackingLinkCopied => 'Tracking link copied to clipboard';
 }
