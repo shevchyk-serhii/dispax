@@ -47,7 +47,10 @@ class _ClientListPanelState extends State<ClientListPanel> {
         foregroundColor: AppColors.textOnPrimary,
         systemOverlayStyle: SystemUiOverlayStyle.light,
         elevation: AppDimensions.appBarElevation,
-        automaticallyImplyLeading: false,
+        // Show a back button only when this panel is pushed as its own route
+        // (e.g. from the secretary front desk). Inside an IndexedStack tab
+        // (dispatcher More menu) there is nothing to pop, so none is shown.
+        automaticallyImplyLeading: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
