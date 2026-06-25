@@ -514,6 +514,21 @@ flutter-dev-sergii:
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) & \
 	wait
 
+# Shell snippet: free :8080 (forked-JVM-proof, by port) + terminate the app on
+# every booted simulator. Reused by the dev-* targets' Ctrl-C trap. Mirrors stop-dev.
+# The backend started by the dev-* targets is a FORKED JVM (java … com.shevchyk…),
+# so it must be killed by PORT via lsof, not by the "sbt run" command line.
+define DEV_CLEANUP_BODY
+echo ""; \
+echo "🧹 Ctrl-C — stopping backend on :8080 and app on simulators..."; \
+pids=$$(lsof -ti tcp:8080 2>/dev/null); \
+if [ -n "$$pids" ]; then echo "$$pids" | xargs kill -9 2>/dev/null || true; fi; \
+for udid in $$(xcrun simctl list devices booted -j 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join(x['udid'] for rt in d['devices'].values() for x in rt))" 2>/dev/null); do \
+	xcrun simctl terminate "$$udid" $(APP_BUNDLE_ID) 2>/dev/null || true; \
+done; \
+echo "✅ Stopped"
+endef
+
 # Kill whatever is listening on :8080 so a stale backend never causes
 # "bind(..) failed: Address already in use". Used as a prerequisite by dev-all/dev-sim.
 free-port:
@@ -528,18 +543,25 @@ free-port:
 # Hot reload Flutter: press 'r' in each flutter process terminal
 # To restart backend after Scala changes: make stop-dev && make dev-all
 dev-all: free-port
-	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
-	@echo "⏳ Waiting for backend on :8080..."
-	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
-	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
-	@sleep $(FLUTTER_STARTUP_DELAY)
-	@echo "🚀 Starting Flutter on both devices"
-	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && \
+	cleanup() { $(DEV_CLEANUP_BODY); }; \
+	trap 'cleanup; exit 130' INT TERM; \
+	sbt run & \
+	SBT_PID=$$!; \
+	echo "⏳ Waiting for backend on :8080..."; \
+	until curl -sf http://localhost:8080/health > /dev/null; do \
+		if ! kill -0 $$SBT_PID 2>/dev/null; then echo "❌ Backend exited before becoming healthy"; cleanup; exit 1; fi; \
+		sleep 1; \
+	done; \
+	echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."; \
+	sleep $(FLUTTER_STARTUP_DELAY); \
+	echo "🚀 Starting Flutter on both devices"; \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api \
-		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) & \
-	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
+		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ) & \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api \
-		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) & \
+		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ) & \
 	wait
 
 # Start local backend + Flutter on the booted iOS simulator in one command.
@@ -547,15 +569,22 @@ dev-all: free-port
 # 127.0.0.1 (most reliable — no LAN/WiFi dependency). Override the simulator
 # with `make dev-sim IOS_SIM=<udid>`. Stop everything with `make stop-dev`.
 dev-sim: free-port
-	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
-	@echo "⏳ Waiting for backend on :8080..."
-	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
-	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
-	@sleep $(FLUTTER_STARTUP_DELAY)
-	@echo "🚀 Starting Flutter on iOS simulator $(IOS_SIM)"
-	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(IOS_SIM) \
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && \
+	cleanup() { $(DEV_CLEANUP_BODY); }; \
+	trap 'cleanup; exit 130' INT TERM; \
+	sbt run & \
+	SBT_PID=$$!; \
+	echo "⏳ Waiting for backend on :8080..."; \
+	until curl -sf http://localhost:8080/health > /dev/null; do \
+		if ! kill -0 $$SBT_PID 2>/dev/null; then echo "❌ Backend exited before becoming healthy"; cleanup; exit 1; fi; \
+		sleep 1; \
+	done; \
+	echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."; \
+	sleep $(FLUTTER_STARTUP_DELAY); \
+	echo "🚀 Starting Flutter on iOS simulator $(IOS_SIM)"; \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(IOS_SIM) \
 		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
-		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
+		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) )
 
 # Start local backend + the app on THREE dedicated iPhone 17 Pro Max simulators
 # at once (client / driver / dispatcher) so all roles can be tested side by side
@@ -576,12 +605,19 @@ dev-sim: free-port
 # Builds are sequential (Flutter shares one build dir); the simulators stay
 # booted between runs so re-running is faster. Stop with `make stop-dev`.
 dev-roles: free-port
-	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
-	@echo "⏳ Waiting for backend on :8080..."
-	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
-	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
-	@sleep $(FLUTTER_STARTUP_DELAY)
-	@ensure_sim() { \
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && \
+	cleanup() { $(DEV_CLEANUP_BODY); }; \
+	trap 'cleanup; exit 130' INT TERM; \
+	sbt run & \
+	SBT_PID=$$!; \
+	echo "⏳ Waiting for backend on :8080..."; \
+	until curl -sf http://localhost:8080/health > /dev/null; do \
+		if ! kill -0 $$SBT_PID 2>/dev/null; then echo "❌ Backend exited before becoming healthy"; cleanup; exit 1; fi; \
+		sleep 1; \
+	done; \
+	echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."; \
+	sleep $(FLUTTER_STARTUP_DELAY); \
+	ensure_sim() { \
 		local name="$$1"; local udid; \
 		udid=$$(xcrun simctl list devices --json 2>/dev/null | python3 -c "import sys,json; n=sys.argv[1]; t='$(SIM_DEVICE_TYPE)'; d=json.load(sys.stdin); print(next((x['udid'] for rt in d['devices'].values() for x in rt if x['name']==n and x.get('deviceTypeIdentifier')==t), ''))" "$$name"); \
 		if [ -z "$$udid" ]; then \
@@ -606,10 +642,10 @@ dev-roles: free-port
 		xcrun simctl install "$$udid" "$$APP"; \
 		xcrun simctl launch --terminate-running-process "$$udid" $(APP_BUNDLE_ID); \
 	done; \
-	open -a Simulator
-	@echo "✅ App running on 3 named simulators, each auto-logged-in to its role."
-	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
-	@wait
+	open -a Simulator; \
+	echo "✅ App running on 3 named simulators, each auto-logged-in to its role."; \
+	echo "   Ctrl-C here stops the backend AND the apps; or run 'make stop-dev'."; \
+	wait $$SBT_PID
 
 # Start local backend + the app on THREE iPhone 17 Pro Max simulators, each
 # auto-logged-in as a DIFFERENT dispatcher of the SAME company (Dispax München):
@@ -626,12 +662,19 @@ dev-roles: free-port
 # The accounts are seeded in V10__seed_bootstrap_accounts.sql; the DEV_AUTOLOGIN
 # keys dispatcher1/2/3 map to their emails in main.dart. Stop with `make stop-dev`.
 dev-dispatchers: free-port
-	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
-	@echo "⏳ Waiting for backend on :8080..."
-	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
-	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
-	@sleep $(FLUTTER_STARTUP_DELAY)
-	@APP="$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app"; \
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && \
+	cleanup() { $(DEV_CLEANUP_BODY); }; \
+	trap 'cleanup; exit 130' INT TERM; \
+	sbt run & \
+	SBT_PID=$$!; \
+	echo "⏳ Waiting for backend on :8080..."; \
+	until curl -sf http://localhost:8080/health > /dev/null; do \
+		if ! kill -0 $$SBT_PID 2>/dev/null; then echo "❌ Backend exited before becoming healthy"; cleanup; exit 1; fi; \
+		sleep 1; \
+	done; \
+	echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."; \
+	sleep $(FLUTTER_STARTUP_DELAY); \
+	APP="$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app"; \
 	ensure_sim() { \
 		local name="$$1"; local udid; \
 		udid=$$(xcrun simctl list devices --json 2>/dev/null | python3 -c "import sys,json; n=sys.argv[1]; t='$(SIM_DEVICE_TYPE)'; d=json.load(sys.stdin); print(next((x['udid'] for rt in d['devices'].values() for x in rt if x['name']==n and x.get('deviceTypeIdentifier')==t), ''))" "$$name"); \
@@ -657,14 +700,14 @@ dev-dispatchers: free-port
 		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ); \
 	echo "📲 Booting + launching 3 simulators in parallel..."; \
-	launch_role "$(SIM_NAME_DISPATCHER_IRYNA)"  dispatcher1 "$$APP" & \
-	launch_role "$(SIM_NAME_DISPATCHER_YILMAZ)" dispatcher2 "$$APP" & \
-	launch_role "$(SIM_NAME_DISPATCHER_SERHII)" dispatcher3 "$$APP" & \
-	wait; \
-	open -a Simulator
-	@echo "✅ App running on 3 named simulators, each auto-logged-in as a different dispatcher (Iryna / Yilmaz / Serhii)."
-	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
-	@wait
+	launch_role "$(SIM_NAME_DISPATCHER_IRYNA)"  dispatcher1 "$$APP" & L1=$$!; \
+	launch_role "$(SIM_NAME_DISPATCHER_YILMAZ)" dispatcher2 "$$APP" & L2=$$!; \
+	launch_role "$(SIM_NAME_DISPATCHER_SERHII)" dispatcher3 "$$APP" & L3=$$!; \
+	wait $$L1 $$L2 $$L3; \
+	open -a Simulator; \
+	echo "✅ App running on 3 named simulators, each auto-logged-in as a different dispatcher (Iryna / Yilmaz / Serhii)."; \
+	echo "   Ctrl-C here stops the backend AND the apps; or run 'make stop-dev'."; \
+	wait $$SBT_PID
 
 # Kill all dev processes started by the dev-* targets.
 #  - `pkill "sbt run"` kills the sbt launcher, but the backend itself is a FORKED
