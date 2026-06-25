@@ -6,13 +6,19 @@ import { Link } from "@/i18n/navigation";
 export function Footer() {
   const t = useTranslations("footer");
 
+  const solutionLinks = [
+    { href: "/for-dispatchers", label: t("links.forDispatchers"), internal: true },
+    { href: "/for-drivers", label: t("links.forDrivers"), internal: true },
+    { href: "/for-clients", label: t("links.forClients"), internal: true },
+  ];
   const productLinks = [
-    { href: "#features", label: t("links.features") },
-    { href: "#how", label: t("links.how") },
-    { href: "#benefits", label: t("links.benefits") },
+    { href: "/features", label: t("links.features"), internal: true },
+    { href: "/#how", label: t("links.how"), internal: true },
+    { href: "/#benefits", label: t("links.benefits"), internal: true },
   ];
   const companyLinks = [
-    { href: "#contact", label: t("links.contact") },
+    { href: "/about", label: t("links.about"), internal: true },
+    { href: "/kontakt", label: t("links.contact"), internal: true },
     { href: "/impressum", label: t("links.imprint"), internal: true },
     { href: "/datenschutz", label: t("links.privacy"), internal: true },
   ];
@@ -29,6 +35,7 @@ export function Footer() {
           </div>
 
           <div className="flex flex-wrap gap-12">
+            <FooterCol title={t("solutions")} links={solutionLinks} />
             <FooterCol title={t("product")} links={productLinks} />
             <FooterCol title={t("company")} links={companyLinks} />
             <div className="flex flex-col gap-3">

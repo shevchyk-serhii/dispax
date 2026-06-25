@@ -4,6 +4,11 @@
     "how": "How it works",
     "benefits": "Benefits",
     "contact": "Contact",
+    "about": "About",
+    "solutions": "Solutions",
+    "forDispatchers": "For dispatchers",
+    "forDrivers": "For drivers",
+    "forClients": "For clients",
     "cta": "Request a demo"
   },
   "hero": {
@@ -150,6 +155,7 @@
   },
   "footer": {
     "tagline": "Ride dispatch for taxi and transfer businesses. Munich & surroundings.",
+    "solutions": "Solutions",
     "product": "Product",
     "company": "Company",
     "contact": "Contact",
@@ -159,6 +165,10 @@
       "how": "How it works",
       "benefits": "Benefits",
       "contact": "Contact",
+      "about": "About",
+      "forDispatchers": "For dispatchers",
+      "forDrivers": "For drivers",
+      "forClients": "For clients",
       "imprint": "Imprint",
       "privacy": "Privacy"
     },

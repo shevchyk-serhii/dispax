@@ -136,6 +136,39 @@ export const Icons = {
       <path d="M18 13.5 15 15v2.2c0 1.5 1.2 2.7 3 3.3 1.8-.6 3-1.8 3-3.3V15Z" />
     </Base>
   ),
+  chevronDown: (p: IconProps) => (
+    <Base {...p}>
+      <path d="m6 9 6 6 6-6" />
+    </Base>
+  ),
+  arrowRight: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M5 12h14" />
+      <path d="m13 6 6 6-6 6" />
+    </Base>
+  ),
+  users: (p: IconProps) => (
+    <Base {...p}>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 20a6 6 0 0 1 12 0" />
+      <path d="M16 5.5a3 3 0 0 1 0 5.8" />
+      <path d="M21 20a6 6 0 0 0-4-5.6" />
+    </Base>
+  ),
+  steering: (p: IconProps) => (
+    <Base {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 9V3.2M14.6 14.6 19 19M9.4 14.6 5 19" />
+    </Base>
+  ),
+  route: (p: IconProps) => (
+    <Base {...p}>
+      <circle cx="6" cy="19" r="2.5" />
+      <circle cx="18" cy="5" r="2.5" />
+      <path d="M8.5 19H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5" />
+    </Base>
+  ),
 };
 
 export type IconName = keyof typeof Icons;
