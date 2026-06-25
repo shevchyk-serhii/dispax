@@ -39,6 +39,48 @@ String rideErrorMessageOrFallback(String? errorMessage, BuildContext context) =>
     errorMessage ??
     (AppLocalizations.of(context)?.failedToLoadRides ?? 'Failed to load rides');
 
+/// Rides whose pickup falls on the calendar day of [now] — the driver's "Today"
+/// tab. Completed/cancelled rides are dropped. The window is `[todayStart,
+/// todayEnd)` (today 00:00 inclusive .. tomorrow 00:00 exclusive).
+///
+/// Pure and `now`-parameterised so it can be unit-tested deterministically, and
+/// so it shares an exact day boundary with [upcomingRidesFilter] — a ride is
+/// either Today or Upcoming, never both. (Previously the Upcoming list used a
+/// bare `isAfter(now)` with no upper-to-Today handoff, so a ride later *today*
+/// showed in both tabs.)
+List<Ride> todayRidesFilter(List<Ride> rides, DateTime now) {
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final todayEnd = todayStart.add(const Duration(days: 1));
+
+  return rides.where((ride) {
+    return !ride.pickupDateTime.isBefore(todayStart) &&
+        ride.pickupDateTime.isBefore(todayEnd) &&
+        ride.status != RideStatus.completed &&
+        ride.status != RideStatus.cancelled;
+  }).toList()..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+}
+
+/// Rides scheduled from tomorrow onward — the driver's "Upcoming" tab. Only
+/// still-active statuses (requested/assigned/confirmed) are kept.
+///
+/// The lower bound is tomorrow 00:00 (`todayEnd`), NOT `now`: anything later
+/// today belongs to [todayRidesFilter], so excluding it here removes the
+/// duplicate render across the two tabs.
+List<Ride> upcomingRidesFilter(List<Ride> rides, DateTime now) {
+  final todayEnd = DateTime(
+    now.year,
+    now.month,
+    now.day,
+  ).add(const Duration(days: 1));
+
+  return rides.where((ride) {
+    return !ride.pickupDateTime.isBefore(todayEnd) &&
+        (ride.status == RideStatus.assigned ||
+            ride.status == RideStatus.confirmed ||
+            ride.status == RideStatus.requested);
+  }).toList()..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+}
+
 // ─── Tab index for the segmented control ─────────────────────────────────────
 enum _TodayTab { today, upcoming, history }
 
@@ -666,18 +708,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     });
   }
 
-  List<Ride> getTodayRides(List<Ride> rides) {
-    final today = DateTime.now();
-    final todayStart = DateTime(today.year, today.month, today.day);
-    final todayEnd = todayStart.add(const Duration(days: 1));
-
-    return rides.where((ride) {
-      return ride.pickupDateTime.isAfter(todayStart) &&
-          ride.pickupDateTime.isBefore(todayEnd) &&
-          ride.status != RideStatus.completed &&
-          ride.status != RideStatus.cancelled;
-    }).toList()..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
-  }
+  List<Ride> getTodayRides(List<Ride> rides) =>
+      todayRidesFilter(rides, DateTime.now());
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -10,6 +10,8 @@ import '../../utils/ride_status_styles.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
+import 'today_rides_screen.dart'
+    show rideErrorMessageOrFallback, upcomingRidesFilter;
 
 class UpcomingRidesScreen extends StatelessWidget {
   const UpcomingRidesScreen({super.key});
@@ -40,7 +42,7 @@ class UpcomingRidesScreen extends StatelessWidget {
                 if (state.hasError) {
                   NavigationHelper.showSnackBar(
                     context,
-                    state.errorMessage!,
+                    rideErrorMessageOrFallback(state.errorMessage, context),
                     isError: true,
                   );
                 }
@@ -129,7 +131,7 @@ class UpcomingRidesScreen extends StatelessWidget {
     if (rideState.hasError && rideState.rides.isEmpty) {
       return ErrorDisplayWidget(
         title: 'Failed to load upcoming rides',
-        message: rideState.errorMessage!,
+        message: rideErrorMessageOrFallback(rideState.errorMessage, context),
         onRetry: () => refreshRides(context),
       );
     }
@@ -347,15 +349,8 @@ class UpcomingRidesScreen extends StatelessWidget {
 
   // ─── Data helpers ──────────────────────────────────────────────────────────
 
-  List<Ride> getUpcomingRides(List<Ride> rides) {
-    final now = DateTime.now();
-    return rides.where((ride) {
-      return ride.pickupDateTime.isAfter(now) &&
-          (ride.status == RideStatus.assigned ||
-              ride.status == RideStatus.confirmed ||
-              ride.status == RideStatus.requested);
-    }).toList()..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
-  }
+  List<Ride> getUpcomingRides(List<Ride> rides) =>
+      upcomingRidesFilter(rides, DateTime.now());
 
   Map<String, List<Ride>> groupRidesByDate(List<Ride> rides) {
     final grouped = <String, List<Ride>>{};

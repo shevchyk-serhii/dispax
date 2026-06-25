@@ -135,8 +135,8 @@ class CreateRideFormBloc
     FromAddressChanged event,
     Emitter<CreateRideFormState> emit,
   ) {
-    final newState = _clearSubmitting(
-      state.copyWith(fromAddress: event.fromAddress),
+    final newState = _clearStaleEstimates(
+      _clearSubmitting(state.copyWith(fromAddress: event.fromAddress)),
     );
     emit(_checkAirportTransfer(newState));
   }
@@ -145,10 +145,26 @@ class CreateRideFormBloc
     ToAddressChanged event,
     Emitter<CreateRideFormState> emit,
   ) {
-    final newState = _clearSubmitting(
-      state.copyWith(toAddress: event.toAddress),
+    final newState = _clearStaleEstimates(
+      _clearSubmitting(state.copyWith(toAddress: event.toAddress)),
     );
     emit(_checkAirportTransfer(newState));
+  }
+
+  /// Drops any previously fetched price estimates when the route is incomplete
+  /// (either endpoint empty). The estimate UI reads [estimateBusiness] /
+  /// [estimateVan] directly, so leaving them set after an address is cleared
+  /// would show a stale price for a route that no longer exists. When both
+  /// endpoints are present the estimates are kept — the screen re-fetches for
+  /// the new route and replaces them.
+  CreateRideFormState _clearStaleEstimates(CreateRideFormState s) {
+    final complete = s.fromAddress.isNotEmpty && s.toAddress.isNotEmpty;
+    if (complete) return s;
+    return s.copyWith(
+      clearEstimateBusiness: true,
+      clearEstimateVan: true,
+      estimateUnavailable: false,
+    );
   }
 
   void _onFlightNumberChanged(
