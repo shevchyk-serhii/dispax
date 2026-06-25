@@ -45,7 +45,15 @@ void main() {
         expect(await svc.setAvailable('d1', true), isTrue);
       });
 
-      test('returns false on non-200', () async {
+      test('returns true on 204 (the status the backend actually returns)',
+          () async {
+        // The backend PUT /drivers/{id}/availability responds 204 No Content
+        // on success. The toggle must treat that as a successful update.
+        final svc = DriverAvailabilityService(apiClientReturning('', 204));
+        expect(await svc.setAvailable('d1', true), isTrue);
+      });
+
+      test('returns false on a real failure status', () async {
         final svc = DriverAvailabilityService(apiClientReturning('{}', 409));
         expect(await svc.setAvailable('d1', false), isFalse);
       });
