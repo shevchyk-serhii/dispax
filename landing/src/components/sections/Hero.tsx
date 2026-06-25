@@ -1,7 +1,8 @@
 import { useTranslations } from "next-intl";
 import { Container } from "../ui/Container";
 import { NavBar } from "../ui/NavBar";
-import { DashboardMock } from "./DashboardMock";
+import { HeroScreenshot } from "./HeroScreenshot";
+import { Icons } from "../ui/icons";
 
 export function Hero() {
   const t = useTranslations("hero");
@@ -38,9 +39,10 @@ export function Hero() {
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
             <a
               href="#contact"
-              className="rounded-md bg-accent px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-accent-dark"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-accent-dark"
             >
               {t("ctaPrimary")}
+              <Icons.arrowRight className="h-4 w-4" />
             </a>
             <a
               href="#how"
@@ -50,8 +52,8 @@ export function Hero() {
             </a>
           </div>
 
-          <div className="mt-16 w-full max-w-5xl">
-            <DashboardMock />
+          <div className="mt-16 w-full max-w-6xl">
+            <HeroScreenshot />
           </div>
         </Container>
       </div>

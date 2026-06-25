@@ -1,19 +1,26 @@
 import { useTranslations } from "next-intl";
 import { Container } from "../ui/Container";
 import { Logo } from "../ui/Logo";
+import { Link } from "@/i18n/navigation";
 
 export function Footer() {
   const t = useTranslations("footer");
 
+  const solutionLinks = [
+    { href: "/for-dispatchers", label: t("links.forDispatchers"), internal: true },
+    { href: "/for-drivers", label: t("links.forDrivers"), internal: true },
+    { href: "/for-clients", label: t("links.forClients"), internal: true },
+  ];
   const productLinks = [
-    { href: "#features", label: t("links.features") },
-    { href: "#how", label: t("links.how") },
-    { href: "#benefits", label: t("links.benefits") },
+    { href: "/features", label: t("links.features"), internal: true },
+    { href: "/#how", label: t("links.how"), internal: true },
+    { href: "/#benefits", label: t("links.benefits"), internal: true },
   ];
   const companyLinks = [
-    { href: "#contact", label: t("links.contact") },
-    { href: "#", label: t("links.imprint") },
-    { href: "#", label: t("links.privacy") },
+    { href: "/about", label: t("links.about"), internal: true },
+    { href: "/kontakt", label: t("links.contact"), internal: true },
+    { href: "/impressum", label: t("links.imprint"), internal: true },
+    { href: "/datenschutz", label: t("links.privacy"), internal: true },
   ];
 
   return (
@@ -28,6 +35,7 @@ export function Footer() {
           </div>
 
           <div className="flex flex-wrap gap-12">
+            <FooterCol title={t("solutions")} links={solutionLinks} />
             <FooterCol title={t("product")} links={productLinks} />
             <FooterCol title={t("company")} links={companyLinks} />
             <div className="flex flex-col gap-3">
@@ -59,22 +67,26 @@ function FooterCol({
   links,
 }: {
   title: string;
-  links: { href: string; label: string }[];
+  links: { href: string; label: string; internal?: boolean }[];
 }) {
+  const linkClass =
+    "text-sm text-faint transition-colors hover:text-white";
   return (
     <div className="flex flex-col gap-3">
       <p className="text-[13px] font-semibold tracking-wide text-faint">
         {title}
       </p>
-      {links.map((l, i) => (
-        <a
-          key={i}
-          href={l.href}
-          className="text-sm text-faint transition-colors hover:text-white"
-        >
-          {l.label}
-        </a>
-      ))}
+      {links.map((l, i) =>
+        l.internal ? (
+          <Link key={i} href={l.href} className={linkClass}>
+            {l.label}
+          </Link>
+        ) : (
+          <a key={i} href={l.href} className={linkClass}>
+            {l.label}
+          </a>
+        ),
+      )}
     </div>
   );
 }
