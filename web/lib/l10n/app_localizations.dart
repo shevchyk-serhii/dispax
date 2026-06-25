@@ -5884,6 +5884,18 @@ abstract class AppLocalizations {
   /// **'Payment Method:'**
   String get paymentMethodLabel;
 
+  /// No description provided for @paymentMethodSelectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method'**
+  String get paymentMethodSelectLabel;
+
+  /// No description provided for @paymentMethodPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get paymentMethodPayment;
+
   /// No description provided for @paymentMethodCash.
   ///
   /// In en, this message translates to:
@@ -5893,7 +5905,7 @@ abstract class AppLocalizations {
   /// No description provided for @paymentMethodCard.
   ///
   /// In en, this message translates to:
-  /// **'Card'**
+  /// **'Credit Card'**
   String get paymentMethodCard;
 
   /// No description provided for @paymentMethodInvoice.

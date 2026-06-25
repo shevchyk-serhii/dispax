@@ -5,6 +5,7 @@ import '../blocs/blocs.dart';
 import '../modules/core/models/person.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../constants/app_colors.dart';
+import '../modules/ride_management/models/payment_method.dart';
 import '../modules/ride_management/widgets/widgets.dart';
 import '../modules/ride_management/widgets/ride_lifecycle_stepper.dart';
 import '../modules/ride_management/services/ride_service.dart';
@@ -170,7 +171,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                '${_currentRide.paymentStatus}${_currentRide.paymentMethod != null ? ' (${_currentRide.paymentMethod})' : ''}',
+                                () {
+                                  final method = PaymentMethod.labelForWire(
+                                    _currentRide.paymentMethod,
+                                    l10n,
+                                  );
+                                  return '${_currentRide.paymentStatus}${method != null ? ' ($method)' : ''}';
+                                }(),
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,

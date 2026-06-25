@@ -9,6 +9,7 @@ import '../../../modules/core/services/user_service.dart';
 import '../../../modules/core/services/api_client.dart'
     show ScheduleConflictInfo;
 import '../../../modules/ride_management/helpers/conflict_dialog_text.dart';
+import '../../../modules/ride_management/models/payment_method.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
@@ -1093,6 +1094,36 @@ class _RideRow extends StatelessWidget {
                 ],
               ),
             ],
+            // Payment method
+            Builder(
+              builder: (context) {
+                final paymentLabel = PaymentMethod.labelForWire(
+                  ride.paymentMethod,
+                  AppLocalizations.of(context)!,
+                );
+                if (paymentLabel == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.payments_outlined,
+                        size: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        paymentLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
             // Action buttons
             if (onAction != null || onClose != null || onHandOff != null) ...[
               const SizedBox(height: 14),

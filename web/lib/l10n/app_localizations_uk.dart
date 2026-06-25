@@ -3130,10 +3130,16 @@ class AppLocalizationsUk extends AppLocalizations {
   String get paymentMethodLabel => 'Спосіб оплати:';
 
   @override
+  String get paymentMethodSelectLabel => 'Спосіб оплати';
+
+  @override
+  String get paymentMethodPayment => 'Оплата';
+
+  @override
   String get paymentMethodCash => 'Готівка';
 
   @override
-  String get paymentMethodCard => 'Картка';
+  String get paymentMethodCard => 'Кредитна картка';
 
   @override
   String get paymentMethodInvoice => 'Рахунок';

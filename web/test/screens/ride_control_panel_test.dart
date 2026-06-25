@@ -4,6 +4,7 @@ import 'package:dispax/constants/app_colors.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:dispax/screens/widgets/ride_control_panel.dart';
 import 'package:dispax/theme/app_theme.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 
 import '../helpers/test_fixtures.dart';
 
@@ -29,6 +30,8 @@ void main() {
     return tester.pumpWidget(
       MaterialApp(
         theme: theme,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: RideControlPanel(
             ride: ride,

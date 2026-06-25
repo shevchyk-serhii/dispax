@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dispax/blocs/blocs.dart';
+import 'package:dispax/modules/ride_management/models/payment_method.dart';
 
 // Tests for task #9 (close confirmation) and task #10 (retry on error).
 //
@@ -163,6 +164,27 @@ void main() {
         expect(s.flightNumber, '');
         expect(s.isModified, isFalse);
       },
+    );
+  });
+
+  group('Payment method selection', () {
+    test('initial state defaults to Invoice (Rechnung)', () {
+      final bloc = CreateRideFormBloc();
+      expect(bloc.state.selectedPaymentMethod, PaymentMethod.invoice);
+      bloc.close();
+    });
+
+    blocTest<CreateRideFormBloc, CreateRideFormState>(
+      'PaymentMethodSelected updates selectedPaymentMethod',
+      build: CreateRideFormBloc.new,
+      act: (bloc) => bloc.add(const PaymentMethodSelected(PaymentMethod.cash)),
+      expect: () => [
+        isA<CreateRideFormState>().having(
+          (s) => s.selectedPaymentMethod,
+          'selectedPaymentMethod',
+          PaymentMethod.cash,
+        ),
+      ],
     );
   });
 }

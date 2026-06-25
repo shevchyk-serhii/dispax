@@ -306,6 +306,15 @@ lazy val root = (project in file("."))
     assembly / assemblyJarName  := "dispax-server.jar",
     fork                        := true,
     Compile / run / javaOptions ++= Seq(
+      // Cap the forked dev backend's heap so it stays a small, predictable RSS.
+      // Without an explicit -Xmx the JVM defaults to ~25% of physical RAM (~12 GB
+      // on a 48 GB machine), so under macOS memory pressure the idle backend
+      // becomes a large jetsam target and gets SIGKILL'd (exit 137) while the
+      // dev tooling (simulators, emulators, IDE) competes for RAM. 1 GB is ample
+      // for local development; production sizing is driven by Dockerfile's
+      // -XX:MaxRAMPercentage and is unaffected by this run-scoped option.
+      "-Xmx1g",
+      "-XX:+UseG1GC",
       "-Djava.util.logging.config.file=logging.properties",
       "-Dcom.sun.management.jmxremote=false",
       "-Djava.rmi.server.randomIDs=true",

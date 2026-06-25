@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/models/vehicle_class.dart';
 import '../../modules/ride_management/models/ride_estimate.dart';
 
@@ -44,6 +45,10 @@ class CreateRideFormState extends Equatable {
   /// estimate ([estimateBusiness]/[estimateVan]): the operator types it manually.
   final double? price;
 
+  /// Operator-selected payment method. Defaults to [PaymentMethod.invoice]
+  /// (Rechnung) and is always submitted with the ride.
+  final PaymentMethod selectedPaymentMethod;
+
   // ─── Client booking extensions ───
   /// Selected vehicle class for the client booking flow.
   final VehicleClass selectedVehicleClass;
@@ -86,6 +91,7 @@ class CreateRideFormState extends Equatable {
     this.baselineClientName = '',
     this.baselineDriverId,
     this.price,
+    this.selectedPaymentMethod = PaymentMethod.invoice,
     this.selectedVehicleClass = VehicleClass.business,
     this.isScheduled = true,
     this.estimateBusiness,
@@ -112,6 +118,7 @@ class CreateRideFormState extends Equatable {
       specialRequirements: const [],
       isNewClient: false,
       newClientPhone: '',
+      selectedPaymentMethod: PaymentMethod.invoice,
       selectedVehicleClass: VehicleClass.business,
       isScheduled: true,
       estimateBusiness: null,
@@ -151,6 +158,7 @@ class CreateRideFormState extends Equatable {
     bool clearBaselineDriverId = false,
     double? price,
     bool clearPrice = false,
+    PaymentMethod? selectedPaymentMethod,
     VehicleClass? selectedVehicleClass,
     bool? isScheduled,
     RideEstimate? estimateBusiness,
@@ -195,6 +203,8 @@ class CreateRideFormState extends Equatable {
           ? null
           : (baselineDriverId ?? this.baselineDriverId),
       price: clearPrice ? null : (price ?? this.price),
+      selectedPaymentMethod:
+          selectedPaymentMethod ?? this.selectedPaymentMethod,
       selectedVehicleClass: selectedVehicleClass ?? this.selectedVehicleClass,
       isScheduled: isScheduled ?? this.isScheduled,
       estimateBusiness: clearEstimateBusiness
@@ -268,6 +278,7 @@ class CreateRideFormState extends Equatable {
     baselineClientName,
     baselineDriverId,
     price,
+    selectedPaymentMethod,
     selectedVehicleClass,
     isScheduled,
     estimateBusiness,

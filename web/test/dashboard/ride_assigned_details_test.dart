@@ -1,4 +1,5 @@
 import 'package:dispax/dashboard/driver/ride_assigned_details.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,6 +19,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: RideAssignedDetails(ride: ride)),
           ),
         );
@@ -38,6 +41,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: RideAssignedDetails(ride: ride)),
         ),
       );
@@ -52,8 +57,10 @@ void main() {
 
     testWidgets('shows fallback text when ride is null', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: RideAssignedDetails(ride: null)),
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: RideAssignedDetails(ride: null)),
         ),
       );
 

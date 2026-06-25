@@ -1421,8 +1421,10 @@
   "allRidesPaidLabel": "Усі поїздки оплачені",
   "markAsPaidDialogTitle": "Позначити як оплачено",
   "paymentMethodLabel": "Спосіб оплати:",
+  "paymentMethodSelectLabel": "Спосіб оплати",
+  "paymentMethodPayment": "Оплата",
   "paymentMethodCash": "Готівка",
-  "paymentMethodCard": "Картка",
+  "paymentMethodCard": "Кредитна картка",
   "paymentMethodInvoice": "Рахунок",
   "amountLabel": "Сума: {amount} EUR",
   "@amountLabel": {

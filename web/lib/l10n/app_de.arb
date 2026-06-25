@@ -1421,8 +1421,10 @@
   "allRidesPaidLabel": "Alle Fahrten sind bezahlt",
   "markAsPaidDialogTitle": "Als bezahlt markieren",
   "paymentMethodLabel": "Zahlungsart:",
+  "paymentMethodSelectLabel": "Zahlungsart",
+  "paymentMethodPayment": "Payment",
   "paymentMethodCash": "Bar",
-  "paymentMethodCard": "Karte",
+  "paymentMethodCard": "Kreditkarte",
   "paymentMethodInvoice": "Rechnung",
   "amountLabel": "Betrag: {amount} EUR",
   "@amountLabel": {

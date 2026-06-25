@@ -24,12 +24,14 @@ class DriverAvailabilityService {
     return false;
   }
 
-  /// Sets availability. Returns true on a successful (200) update; throws on
-  /// transport errors so the caller can surface a message.
+  /// Sets availability. Returns true on a successful update; throws on
+  /// transport errors so the caller can surface a message. The backend returns
+  /// 204 No Content on success, so accept both 200 and 204 (other services in
+  /// this app — expenses, client companies — treat 204 as success too).
   Future<bool> setAvailable(String driverId, bool available) async {
     final response = await _apiClient.put('/drivers/$driverId/availability', {
       'status': available ? 'Available' : 'Offline',
     });
-    return response.statusCode == 200;
+    return response.statusCode == 200 || response.statusCode == 204;
   }
 }

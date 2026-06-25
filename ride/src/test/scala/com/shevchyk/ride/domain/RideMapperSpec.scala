@@ -15,7 +15,8 @@ object RideMapperSpec extends ZIOSpecDefault {
 
   private def makeRequest(
       scheduledTime: Option[Instant] = None,
-      vehicleClass: VehicleClass = VehicleClass.Default
+      vehicleClass: VehicleClass = VehicleClass.Default,
+      paymentMethod: Option[PaymentMethod] = None
   ) = CreateRideRequest(
     clientId = clientId,
     companyId = companyId,
@@ -25,7 +26,8 @@ object RideMapperSpec extends ZIOSpecDefault {
     notes = Some("Test note"),
     specifics = None,
     specialRequirements = Some("Wheelchair"),
-    vehicleClass = vehicleClass
+    vehicleClass = vehicleClass,
+    paymentMethod = paymentMethod
   )
 
   def spec =
@@ -78,6 +80,16 @@ object RideMapperSpec extends ZIOSpecDefault {
       test("preserves non-default vehicleClass from request") {
         val ride = RideMapper.fromRequest(makeRequest(vehicleClass = VehicleClass.Van))
         assertTrue(ride.vehicleClass == VehicleClass.Van)
+      },
+      // paymentMethod = request.paymentMethod — mutation to None survives if the request leaves it None,
+      // so this test passes a concrete method and asserts it is carried through to the ride.
+      test("carries paymentMethod from request to ride") {
+        val ride = RideMapper.fromRequest(makeRequest(paymentMethod = Some(PaymentMethod.Payment)))
+        assertTrue(ride.paymentMethod.contains(PaymentMethod.Payment))
+      },
+      test("leaves paymentMethod None when request omits it") {
+        val ride = RideMapper.fromRequest(makeRequest(paymentMethod = None))
+        assertTrue(ride.paymentMethod.isEmpty)
       },
       // [MEDIUM] requestTime = Instant.now() — mutation to Instant.EPOCH survives existing tests.
       // We verify that requestTime is not the epoch and is within a 10-second window around now().

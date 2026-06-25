@@ -30,6 +30,19 @@ void main() {
       expect(json['to'], isA<Map>());
     });
 
+    test('fromJson reads the paymentMethod wire value', () {
+      final json = TestFixtures.rideJson()..['paymentMethod'] = 'Card';
+      final ride = Ride.fromJson(json);
+
+      expect(ride.paymentMethod, 'Card');
+    });
+
+    test('fromJson leaves paymentMethod null when absent', () {
+      final ride = Ride.fromJson(TestFixtures.rideJson());
+
+      expect(ride.paymentMethod, isNull);
+    });
+
     test('toJson serializes local DateTime as UTC (ends with Z)', () {
       final localTime = DateTime(2026, 3, 15, 10, 0); // local, not UTC
       final ride = TestFixtures.ride(pickupDateTime: localTime);

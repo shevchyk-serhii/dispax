@@ -3,6 +3,7 @@ import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:dispax/modules/schedule_management/models/schedule_day.dart';
 import 'package:dispax/modules/ride_management/models/create_ride_request.dart';
+import 'package:dispax/modules/ride_management/models/payment_method.dart';
 
 class TestFixtures {
   static Location location({
@@ -92,6 +93,7 @@ class TestFixtures {
     String? flightStatus,
     String? driverName,
     double? price,
+    String? paymentMethod,
   }) {
     return Ride(
       id: id,
@@ -113,6 +115,7 @@ class TestFixtures {
       flightStatus: flightStatus,
       driverName: driverName,
       price: price,
+      paymentMethod: paymentMethod,
     );
   }
 
@@ -174,6 +177,7 @@ class TestFixtures {
     bool isAirportTransfer = false,
     String? driverId,
     double? price,
+    PaymentMethod paymentMethod = PaymentMethod.invoice,
   }) {
     return CreateRideRequest(
       clientId: clientId,
@@ -187,6 +191,7 @@ class TestFixtures {
       isAirportTransfer: isAirportTransfer,
       driverId: driverId,
       price: price,
+      paymentMethod: paymentMethod,
     );
   }
 

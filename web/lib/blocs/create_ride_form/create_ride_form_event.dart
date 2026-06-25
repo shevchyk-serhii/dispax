@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/models/vehicle_class.dart';
 import '../../modules/ride_management/models/ride_estimate.dart';
 
@@ -237,6 +238,16 @@ class VehicleClassSelected extends CreateRideFormEvent {
 
   @override
   List<Object?> get props => [vehicleClass];
+}
+
+/// Emitted when the operator selects a payment method in the create-ride form.
+class PaymentMethodSelected extends CreateRideFormEvent {
+  final PaymentMethod paymentMethod;
+
+  const PaymentMethodSelected(this.paymentMethod);
+
+  @override
+  List<Object?> get props => [paymentMethod];
 }
 
 /// Emitted when the user toggles the scheduled/now toggle on the client booking flow.
