@@ -3224,6 +3224,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Sie haben bereits eine Fahrt zu dieser Zeit. Die Fahrt wurde erstellt und befindet sich im Pool. Trotzdem zuweisen?';
 
   @override
+  String conflictDialogContentRich(String from, String to, String time) {
+    return 'Der Fahrer ist bereits gebucht: $from → $to um $time.\n\nDie Fahrt wurde erstellt und befindet sich im Dispatcher-Pool. Trotzdem zuweisen?';
+  }
+
+  @override
   String get keepInPoolButton => 'Im Pool belassen';
 
   @override

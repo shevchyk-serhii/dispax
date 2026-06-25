@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../modules/core/services/api_client.dart' show ScheduleConflictInfo;
 import '../../modules/ride_management/models/ride.dart';
 
 enum RideStateStatus {
@@ -37,6 +38,13 @@ class RideState extends Equatable {
   final String? conflictRideId;
   final String? conflictDriverId;
 
+  /// Structured details of the ride the driver is already booked for (route,
+  /// client, pickup time), from the backend's schedule-conflict error. Lets the
+  /// conflict dialog show a human-readable description instead of a raw id.
+  /// Null when the backend sent no structured details (e.g. an unavailability
+  /// conflict).
+  final ScheduleConflictInfo? conflictInfo;
+
   const RideState({
     this.status = RideStateStatus.initial,
     this.rides = const [],
@@ -44,6 +52,7 @@ class RideState extends Equatable {
     this.deletingRideId,
     this.conflictRideId,
     this.conflictDriverId,
+    this.conflictInfo,
   });
 
   factory RideState.initial() {
@@ -79,6 +88,7 @@ class RideState extends Equatable {
     Object? deletingRideId = _unset,
     Object? conflictRideId = _unset,
     Object? conflictDriverId = _unset,
+    Object? conflictInfo = _unset,
   }) {
     return RideState(
       status: status ?? this.status,
@@ -95,6 +105,9 @@ class RideState extends Equatable {
       conflictDriverId: identical(conflictDriverId, _unset)
           ? this.conflictDriverId
           : conflictDriverId as String?,
+      conflictInfo: identical(conflictInfo, _unset)
+          ? this.conflictInfo
+          : conflictInfo as ScheduleConflictInfo?,
     );
   }
 
@@ -131,5 +144,12 @@ class RideState extends Equatable {
     deletingRideId,
     conflictRideId,
     conflictDriverId,
+    // ScheduleConflictInfo has no value equality; compare by its fields so two
+    // states with the same conflict details are equal.
+    conflictInfo?.rideId,
+    conflictInfo?.clientId,
+    conflictInfo?.from,
+    conflictInfo?.to,
+    conflictInfo?.pickupAt,
   ];
 }

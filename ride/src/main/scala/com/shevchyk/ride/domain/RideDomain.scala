@@ -343,7 +343,19 @@ enum RideError extends Throwable:
   case UnauthorizedAccess(userId: PersonId, rideId: RideId)
   case InvalidStatusTransition(from: RideStatus, to: RideStatus)
   case RideAlreadyAssigned(rideId: RideId, driverId: PersonId)
-  case ScheduleConflict(message: String)
+
+  // Structured details of the conflicting ride so the client can render a
+  // human-readable, localized dialog (route + client + the dispatcher's local
+  // time) instead of showing a raw id. All optional: the manual-unavailability
+  // branch raises ScheduleConflict with just a message.
+  case ScheduleConflict(
+      message: String,
+      conflictingRideId: Option[RideId] = None,
+      conflictingClientId: Option[PersonId] = None,
+      conflictingFrom: Option[String] = None,
+      conflictingTo: Option[String] = None,
+      conflictingPickupAt: Option[Instant] = None
+  )
   case DatabaseError(cause: Throwable)
   case ExternalServiceError(service: String, cause: Throwable)
   case BusinessRuleViolation(rule: String, message: String)

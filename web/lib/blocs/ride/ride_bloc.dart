@@ -220,6 +220,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
             errorMessage: e.message,
             conflictRideId: event.rideId,
             conflictDriverId: event.driverId,
+            conflictInfo: e.scheduleConflict,
           ),
         );
       } else {
@@ -284,6 +285,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
             errorMessage: e.message,
             conflictRideId: event.rideId,
             conflictDriverId: event.newDriverId,
+            conflictInfo: e.scheduleConflict,
           ),
         );
       } else {

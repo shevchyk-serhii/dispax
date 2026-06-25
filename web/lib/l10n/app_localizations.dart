@@ -6016,6 +6016,12 @@ abstract class AppLocalizations {
   /// **'You already have a ride around this time. The ride was created and is in the dispatcher pool. Assign it to yourself anyway?'**
   String get conflictDialogContentDefault;
 
+  /// No description provided for @conflictDialogContentRich.
+  ///
+  /// In en, this message translates to:
+  /// **'The driver is already booked: {from} → {to} at {time}.\n\nThe ride was created and is in the dispatcher pool. Assign it anyway?'**
+  String conflictDialogContentRich(String from, String to, String time);
+
   /// No description provided for @keepInPoolButton.
   ///
   /// In en, this message translates to:
