@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-integration test-bdd test-bdd-port test-all test-everything clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-integration test-bdd test-bdd-port test-bdd-parallel test-all test-everything clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android flutter-prod-ios \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -106,6 +106,44 @@ test-bdd:
 # dev server already holding 8080. Override with `make test-bdd-port PORT=8095`.
 test-bdd-port:
 	PORT=$(or $(PORT),8090) sbt cucumber
+
+# Run the BDD suite as 3 PARALLEL shards (CucumberShard1/2/3Runner), ~3x faster
+# than the sequential `sbt cucumber`. Each shard runs the full @CucumberOptions
+# suite over its third of the feature files (balanced ~114 scenarios each).
+#
+# Why git worktrees: each shard needs its OWN sbt process (boot lock) AND its OWN
+# TestApplication on its OWN port (the shared in-memory server is a singleton, so
+# two shards in one JVM would collide). Two sbt processes in the SAME directory
+# also race on the project server socket. A throwaway worktree per shard gives
+# each its own project dir + sbt + server on ports 8101/8102/8103 — full state
+# isolation, no races. The worktrees are checked out at HEAD, so COMMIT the shard
+# runners (and any feature changes) before running this. `CucumberShardCoverageSpec`
+# guards that the shards together cover every .feature file.
+#
+# Exit code is the OR of the three shards: any shard failure fails the target.
+BDD_SHARD_BASE := /tmp/dispax-bdd-shard
+test-bdd-parallel:
+	@echo "🧪 Running BDD as 3 parallel shards (worktree-isolated)..."
+	@HEAD=$$(git rev-parse HEAD) ; ROOT=$$(git rev-parse --show-toplevel) ; STATUS=0 ; \
+	for n in 1 2 3; do \
+	  wt=$(BDD_SHARD_BASE)-$$n ; \
+	  git worktree remove --force $$wt 2>/dev/null || true ; rm -rf $$wt ; \
+	  git worktree add --detach $$wt $$HEAD >/dev/null 2>&1 || { echo "❌ worktree add failed for shard $$n"; exit 1; } ; \
+	done ; \
+	pids="" ; \
+	for n in 1 2 3; do \
+	  wt=$(BDD_SHARD_BASE)-$$n ; port=$$((8100 + n)) ; \
+	  ( cd $$wt && PORT=$$port sbt "root/testOnly *CucumberShard$${n}Runner" > $$wt/shard.log 2>&1 ) & \
+	  pids="$$pids $$!" ; \
+	done ; \
+	i=1 ; for pid in $$pids; do wait $$pid || STATUS=1 ; i=$$((i+1)) ; done ; \
+	for n in 1 2 3; do \
+	  wt=$(BDD_SHARD_BASE)-$$n ; \
+	  echo "── shard $$n ──" ; grep -E 'Passed: Total|FAILED|Error' $$wt/shard.log | tail -2 || true ; \
+	done ; \
+	for n in 1 2 3; do git worktree remove --force $(BDD_SHARD_BASE)-$$n 2>/dev/null || true ; rm -rf $(BDD_SHARD_BASE)-$$n ; done ; \
+	if [ $$STATUS -eq 0 ]; then echo "✅ test-bdd-parallel: all shards passed." ; else echo "❌ test-bdd-parallel: a shard FAILED (see logs above)." ; fi ; \
+	exit $$STATUS
 
 # Run all unit + integration tests (excludes Cucumber)
 test:
