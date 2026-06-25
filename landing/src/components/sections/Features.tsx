@@ -3,6 +3,7 @@ import { Container } from "../ui/Container";
 import { SectionHeader } from "../ui/SectionHeader";
 import { Icons, IconName } from "../ui/icons";
 import { StatusBadge, FeatureStatus } from "../ui/StatusBadge";
+import { Reveal } from "../ui/Reveal";
 
 const primaryIcons: IconName[] = ["dashboard", "planeLand", "pin"];
 const secondaryIcons: IconName[] = [
@@ -23,23 +24,26 @@ export function Features() {
   return (
     <section id="features" className="scroll-mt-20 bg-surface py-28">
       <Container>
-        <SectionHeader
-          eyebrow={t("eyebrow")}
-          title={t("title")}
-          subtitle={t("subtitle")}
-        />
+        <Reveal>
+          <SectionHeader
+            eyebrow={t("eyebrow")}
+            title={t("title")}
+            subtitle={t("subtitle")}
+          />
+        </Reveal>
 
         <div className="mt-14 grid gap-6 md:grid-cols-3">
           {primary.map((item, i) => {
             const Icon = Icons[primaryIcons[i]];
             const dark = i === 1;
             return (
-              <div
+              <Reveal
                 key={i}
-                className={`flex flex-col gap-4 overflow-hidden rounded-2xl border p-8 ${
+                delay={(Math.min(i, 2) as 0 | 1 | 2)}
+                className={`flex flex-col gap-4 overflow-hidden rounded-2xl border p-8 transition-all hover:-translate-y-1 ${
                   dark
-                    ? "border-line-dark bg-graphite-900"
-                    : "border-line bg-surface"
+                    ? "border-line-dark bg-graphite-900 hover:shadow-glow"
+                    : "border-line bg-surface hover:border-accent/30 hover:shadow-glow-sm"
                 }`}
               >
                 <span
@@ -68,7 +72,7 @@ export function Features() {
                     {t("flagBadge")}
                   </span>
                 )}
-              </div>
+              </Reveal>
             );
           })}
         </div>
@@ -77,9 +81,10 @@ export function Features() {
           {secondary.map((item, i) => {
             const Icon = Icons[secondaryIcons[i]];
             return (
-              <div
+              <Reveal
                 key={i}
-                className="flex items-start gap-4 rounded-2xl border border-line bg-surface p-7"
+                delay={(Math.min(i, 3) as 0 | 1 | 2 | 3)}
+                className="flex items-start gap-4 rounded-2xl border border-line bg-surface p-7 transition-all hover:-translate-y-1 hover:border-accent/30 hover:shadow-glow-sm"
               >
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent-dark">
                   <Icon className="h-6 w-6" />
@@ -95,7 +100,7 @@ export function Features() {
                     {item.desc}
                   </p>
                 </div>
-              </div>
+              </Reveal>
             );
           })}
         </div>
