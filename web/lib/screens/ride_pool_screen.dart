@@ -554,17 +554,17 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.drive_eta,
                         size: 14,
-                        color: AppColors.driverColor,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Driver: ${_shortId(driverId.toString())}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.driverColor,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],

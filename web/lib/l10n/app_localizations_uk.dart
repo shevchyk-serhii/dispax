@@ -3237,6 +3237,11 @@ class AppLocalizationsUk extends AppLocalizations {
       'У вас вже є поїздка в цей час. Поїздку створено та додано до пулу. Все одно призначити собі?';
 
   @override
+  String conflictDialogContentRich(String from, String to, String time) {
+    return 'Водій уже зайнятий: $from → $to о $time.\n\nПоїздку створено та додано до пулу диспетчера. Все одно призначити?';
+  }
+
+  @override
   String get keepInPoolButton => 'Залишити в пулі';
 
   @override

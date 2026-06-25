@@ -87,14 +87,14 @@ class _NotesSectionToggle extends StatelessWidget {
                 context.read<CreateRideFormBloc>().add(const NotesToggled()),
             secondary: Icon(
               Icons.note_alt,
-              color: AppColors.secretaryColor,
+              color: Theme.of(context).colorScheme.primary,
               size: 20,
             ),
             title: const Text(
               'Notes & Special Requirements',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-            activeThumbColor: AppColors.secretaryColor,
+            activeThumbColor: Theme.of(context).colorScheme.primary,
           ),
         ),
         AnimatedSize(

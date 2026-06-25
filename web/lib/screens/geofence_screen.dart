@@ -318,14 +318,16 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                       children: [
                         TextField(
                           controller: nameController,
-                          decoration: AppStyles.textFieldDecoration(
+                          decoration: AppStyles.textFieldDecorationOf(
+                            context,
                             labelText: l10n.zoneNameLabel,
                           ),
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
                           initialValue: selectedType,
-                          decoration: AppStyles.textFieldDecoration(
+                          decoration: AppStyles.textFieldDecorationOf(
+                            context,
                             labelText: l10n.geofenceTypeLabel,
                           ),
                           items: [
@@ -363,7 +365,8 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                                       decimal: true,
                                       signed: true,
                                     ),
-                                decoration: AppStyles.textFieldDecoration(
+                                decoration: AppStyles.textFieldDecorationOf(
+                                  context,
                                   labelText: l10n.latitudeLabel,
                                 ),
                               ),
@@ -377,7 +380,8 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                                       decimal: true,
                                       signed: true,
                                     ),
-                                decoration: AppStyles.textFieldDecoration(
+                                decoration: AppStyles.textFieldDecorationOf(
+                                  context,
                                   labelText: l10n.longitudeLabel,
                                 ),
                               ),
@@ -442,7 +446,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        style: AppStyles.textButtonStyle,
+                        style: AppStyles.textButtonStyleOf(context),
                         onPressed: () => Navigator.pop(ctx),
                         child: Text(l10n.cancel),
                       ),

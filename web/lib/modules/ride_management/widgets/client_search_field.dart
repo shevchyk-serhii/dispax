@@ -166,7 +166,9 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                               hintText: 'Search by name, email or phone',
                               prefixIcon: Icon(
                                 Icons.search,
-                                color: AppColors.secretaryColor,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(
