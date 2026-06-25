@@ -17,108 +17,126 @@ class MonthViewWidget extends StatelessWidget {
   /// calendar markers follow the currently selected driver.
   final String? driverIdFilter;
 
+  /// When non-null, the calendar renders exactly this list instead of the
+  /// shared RideBloc's rides. The dispatcher calendar uses it to show the
+  /// selected driver's rides (loaded on demand) without touching the shared
+  /// RideBloc that feeds the other dashboard tabs. The list is assumed to be
+  /// already scoped to the chosen driver, so [driverIdFilter] is a no-op for it.
+  final List<Ride>? ridesOverride;
+
   const MonthViewWidget({
     super.key,
     required this.selectedDay,
     required this.onDaySelected,
     required this.onMonthChanged,
     this.driverIdFilter,
+    this.ridesOverride,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    if (ridesOverride != null) {
+      return _buildBody(context, colorScheme, ridesOverride!);
+    }
     return BlocBuilder<RideBloc, RideState>(
       buildWhen: (prev, curr) => prev.rides != curr.rides,
-      builder: (context, rideState) {
-        return Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(15),
-                spreadRadius: 1,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          margin: const EdgeInsets.all(16),
-          child: TableCalendar<Ride>(
-            firstDay: DateTime.utc(2020, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: selectedDay,
-            selectedDayPredicate: (day) => isSameDay(selectedDay, day),
-            calendarFormat: CalendarFormat.month,
-            eventLoader: (day) => getRidesForDay(rideState.rides, day),
-            startingDayOfWeek: StartingDayOfWeek.monday,
-            onDaySelected: (selectedDay, focusedDay) {
-              onDaySelected(selectedDay);
-            },
-            onPageChanged: (focusedDay) {
-              onMonthChanged(focusedDay);
-            },
-            // The month/year title and navigation arrows are already provided
-            // by the outer CalendarControls, so hide TableCalendar's built-in
-            // header to avoid showing "June 2026" and chevrons twice.
-            headerVisible: false,
-            calendarStyle: CalendarStyle(
-              outsideDaysVisible: false,
-              weekendTextStyle: const TextStyle(color: AppColors.error),
-              holidayTextStyle: const TextStyle(color: AppColors.error),
-              selectedDecoration: BoxDecoration(
-                color: AppColors.infoStrong,
-                shape: BoxShape.circle,
-              ),
-              todayDecoration: BoxDecoration(
-                color: AppColors.warning,
-                shape: BoxShape.circle,
-              ),
-              markerDecoration: const BoxDecoration(
-                color: AppColors.info,
-                shape: BoxShape.circle,
-              ),
-              markersMaxCount: 1,
-              markerSize: 8,
-            ),
-            calendarBuilders: CalendarBuilders<Ride>(
-              markerBuilder: (context, day, rides) {
-                if (rides.isEmpty) return null;
+      builder: (context, rideState) =>
+          _buildBody(context, colorScheme, rideState.rides),
+    );
+  }
 
-                return Stack(
-                  children: [
-                    Positioned(
-                      left: 1,
-                      bottom: 2,
-                      child: RideBadges.dayMarkers(context, rides, size: 10),
-                    ),
-                    Positioned(
-                      right: 1,
-                      bottom: 1,
-                      child: buildRideCountIndicator(rides.length),
-                    ),
-                  ],
-                );
-              },
-              dowBuilder: (context, day) {
-                final text = DateFormat.E().format(day);
-                return Center(
-                  child: Text(
-                    text,
-                    style: TextStyle(
-                      color: day.weekday >= 6
-                          ? AppColors.errorStrong
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                );
-              },
-            ),
+  Widget _buildBody(
+    BuildContext context,
+    ColorScheme colorScheme,
+    List<Ride> rides,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        );
-      },
+        ],
+      ),
+      margin: const EdgeInsets.all(16),
+      child: TableCalendar<Ride>(
+        firstDay: DateTime.utc(2020, 1, 1),
+        lastDay: DateTime.utc(2030, 12, 31),
+        focusedDay: selectedDay,
+        selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+        calendarFormat: CalendarFormat.month,
+        eventLoader: (day) => getRidesForDay(rides, day),
+        startingDayOfWeek: StartingDayOfWeek.monday,
+        onDaySelected: (selectedDay, focusedDay) {
+          onDaySelected(selectedDay);
+        },
+        onPageChanged: (focusedDay) {
+          onMonthChanged(focusedDay);
+        },
+        // The month/year title and navigation arrows are already provided
+        // by the outer CalendarControls, so hide TableCalendar's built-in
+        // header to avoid showing "June 2026" and chevrons twice.
+        headerVisible: false,
+        calendarStyle: CalendarStyle(
+          outsideDaysVisible: false,
+          weekendTextStyle: const TextStyle(color: AppColors.error),
+          holidayTextStyle: const TextStyle(color: AppColors.error),
+          selectedDecoration: BoxDecoration(
+            color: AppColors.infoStrong,
+            shape: BoxShape.circle,
+          ),
+          todayDecoration: BoxDecoration(
+            color: AppColors.warning,
+            shape: BoxShape.circle,
+          ),
+          markerDecoration: const BoxDecoration(
+            color: AppColors.info,
+            shape: BoxShape.circle,
+          ),
+          markersMaxCount: 1,
+          markerSize: 8,
+        ),
+        calendarBuilders: CalendarBuilders<Ride>(
+          markerBuilder: (context, day, rides) {
+            if (rides.isEmpty) return null;
+
+            return Stack(
+              children: [
+                Positioned(
+                  left: 1,
+                  bottom: 2,
+                  child: RideBadges.dayMarkers(context, rides, size: 10),
+                ),
+                Positioned(
+                  right: 1,
+                  bottom: 1,
+                  child: buildRideCountIndicator(rides.length),
+                ),
+              ],
+            );
+          },
+          dowBuilder: (context, day) {
+            final text = DateFormat.E().format(day);
+            return Center(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: day.weekday >= 6
+                      ? AppColors.errorStrong
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 

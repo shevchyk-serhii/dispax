@@ -8,6 +8,7 @@ import '../../../modules/core/navigation_helper.dart';
 import '../../../modules/core/services/api_client.dart';
 import '../../../modules/core/widgets/calendar_controls.dart';
 import '../../../modules/schedule_management/services/schedule_service.dart';
+import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../screens/ride_details_screen.dart';
@@ -28,6 +29,12 @@ class CalendarScheduleScreen extends StatefulWidget {
   static ValueNotifier<CalendarViewType> get viewTypeNotifierForTest =>
       _CalendarScheduleScreenState.viewTypeNotifier;
 
+  /// Exposes the shared selected-day notifier for tests so they can pin the
+  /// calendar to a fixed date without driving the navigation controls.
+  @visibleForTesting
+  static ValueNotifier<DateTime> get selectedDayNotifierForTest =>
+      _CalendarScheduleScreenState.selectedDayNotifier;
+
   @override
   State<CalendarScheduleScreen> createState() => _CalendarScheduleScreenState();
 }
@@ -44,14 +51,28 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
   String? _selectedDriverId; // null = own schedule
   String? _selectedDriverName;
 
+  // Rides for the currently selected colleague. Null while "My Schedule" is
+  // selected — in that case the calendar reads the shared RideBloc (which is
+  // loaded for the logged-in user and kept live across the dashboard tabs).
+  // When a colleague is picked we load THEIR rides on demand and feed them to
+  // the calendar via `ridesOverride`, so the shared RideBloc (and the other
+  // tabs) is never disturbed.
+  List<Ride>? _driverRides;
+  bool _loadingDriverRides = false;
+  String? _driverRidesError;
+  // Guards against a stale response overwriting a newer selection.
+  int _driverRidesRequestSeq = 0;
+
   late final ApiClient _apiClient;
   late final ScheduleService _scheduleService;
+  late final RideService _rideService;
 
   @override
   void initState() {
     super.initState();
     _apiClient = context.read<AuthBloc>().apiClient;
     _scheduleService = ScheduleService(apiClient: _apiClient);
+    _rideService = RideService(apiClient: _apiClient);
     _initVisibility();
   }
 
@@ -115,6 +136,11 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       setState(() {
         _selectedDriverId = null;
         _selectedDriverName = null;
+        // Back to own schedule: drop the colleague override so the calendar
+        // reads the shared RideBloc again.
+        _driverRides = null;
+        _loadingDriverRides = false;
+        _driverRidesError = null;
       });
       if (myId != null) _loadScheduleFor(myId);
     } else {
@@ -132,6 +158,34 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         _selectedDriverName = driver.name;
       });
       _loadScheduleFor(driverId);
+      _loadDriverRides(driverId);
+    }
+  }
+
+  /// Loads the selected colleague's rides into [_driverRides] so the calendar
+  /// can render them via `ridesOverride`. A monotonically increasing sequence
+  /// guards against an earlier request resolving after a newer selection and
+  /// clobbering it.
+  Future<void> _loadDriverRides(String driverId) async {
+    final seq = ++_driverRidesRequestSeq;
+    setState(() {
+      _loadingDriverRides = true;
+      _driverRidesError = null;
+    });
+    try {
+      final rides = await _rideService.getDriverRides(driverId);
+      if (!mounted || seq != _driverRidesRequestSeq) return;
+      setState(() {
+        _driverRides = rides;
+        _loadingDriverRides = false;
+      });
+    } catch (e) {
+      if (!mounted || seq != _driverRidesRequestSeq) return;
+      setState(() {
+        _driverRides = const [];
+        _loadingDriverRides = false;
+        _driverRidesError = 'Failed to load driver rides: $e';
+      });
     }
   }
 
@@ -339,11 +393,29 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
     // own id, so the calendar only ever shows the selected driver's rides.
     final myId = context.read<AuthBloc>().state.user?.id;
     final filterDriverId = _selectedDriverId ?? myId;
+
+    // When a colleague is selected, feed the calendar their rides explicitly
+    // (loaded on demand) instead of the shared RideBloc — which only holds the
+    // logged-in user's rides and feeds the other dashboard tabs. While that
+    // load is in flight or has failed, show a spinner / error so the empty grid
+    // is never mistaken for "no rides".
+    final colleagueSelected = _selectedDriverId != null;
+    if (colleagueSelected && _loadingDriverRides && _driverRides == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (colleagueSelected && _driverRidesError != null) {
+      return _buildDriverRidesError();
+    }
+    final List<Ride>? ridesOverride = colleagueSelected
+        ? (_driverRides ?? const <Ride>[])
+        : null;
+
     switch (viewType) {
       case CalendarViewType.month:
         return MonthViewWidget(
           selectedDay: selectedDay,
           driverIdFilter: filterDriverId,
+          ridesOverride: ridesOverride,
           onDaySelected: (day) {
             selectedDayNotifier.value = day;
             viewTypeNotifier.value = CalendarViewType.day;
@@ -356,6 +428,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         return WeekViewWidget(
           selectedDay: selectedDay,
           driverIdFilter: filterDriverId,
+          ridesOverride: ridesOverride,
           onDaySelected: (day) {
             selectedDayNotifier.value = day;
             viewTypeNotifier.value = CalendarViewType.day;
@@ -368,6 +441,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         return DayViewWidget(
           selectedDay: selectedDay,
           driverIdFilter: filterDriverId,
+          ridesOverride: ridesOverride,
           onRideSelected: _openRideDetails,
         );
       case CalendarViewType.multiColumn:
@@ -451,9 +525,42 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
     });
   }
 
+  /// Error placeholder shown when loading the selected colleague's rides fails,
+  /// with a retry that re-issues the load for the current selection.
+  Widget _buildDriverRidesError() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: colorScheme.error),
+            const SizedBox(height: 12),
+            Text(
+              _driverRidesError ?? 'Failed to load driver rides',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () {
+                final id = _selectedDriverId;
+                if (id != null) _loadDriverRides(id);
+              },
+              icon: const Icon(Icons.refresh),
+              label: Text(AppLocalizations.of(context)!.retry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _scheduleService.dispose();
+    _rideService.dispose();
     super.dispose();
   }
 }

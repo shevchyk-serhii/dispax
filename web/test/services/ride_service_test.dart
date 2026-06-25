@@ -78,6 +78,33 @@ void main() {
       });
     });
 
+    group('getDriverRides', () {
+      test('200 hits /rides/driver/{id} and returns parsed list', () async {
+        when(() => mockApiClient.get('/rides/driver/drv-9')).thenAnswer(
+          (_) async => jsonResponse([
+            TestFixtures.rideJson(id: 'r1'),
+            TestFixtures.rideJson(id: 'r2'),
+          ]),
+        );
+
+        final rides = await rideService.getDriverRides('drv-9');
+
+        expect(rides.map((r) => r.id), ['r1', 'r2']);
+        verify(() => mockApiClient.get('/rides/driver/drv-9')).called(1);
+      });
+
+      test('non-200 throws ApiException', () async {
+        when(() => mockApiClient.get('/rides/driver/drv-9')).thenAnswer(
+          (_) async => jsonResponse({'error': 'fail'}, statusCode: 500),
+        );
+
+        expect(
+          () => rideService.getDriverRides('drv-9'),
+          throwsA(isA<ApiException>()),
+        );
+      });
+    });
+
     group('getRideById', () {
       test('200 returns Ride', () async {
         when(

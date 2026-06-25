@@ -19,49 +19,65 @@ class DayViewWidget extends StatelessWidget {
   /// rides (back-compat). Follows the schedule screen's driver dropdown.
   final String? driverIdFilter;
 
+  /// When non-null, the calendar renders exactly this list instead of the
+  /// shared RideBloc's rides. The dispatcher calendar uses it to show the
+  /// selected driver's rides (loaded on demand) without touching the shared
+  /// RideBloc that feeds the other dashboard tabs. The list is assumed to be
+  /// already scoped to the chosen driver, so [driverIdFilter] is a no-op for it.
+  final List<Ride>? ridesOverride;
+
   const DayViewWidget({
     super.key,
     required this.selectedDay,
     required this.onRideSelected,
     this.driverIdFilter,
+    this.ridesOverride,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
+    if (ridesOverride != null) {
+      return _buildBody(context, colorScheme, ridesOverride!);
+    }
     return BlocBuilder<RideBloc, RideState>(
-      builder: (context, rideState) {
-        final dayRides = getRidesForDay(rideState.rides, selectedDay);
-        dayRides.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+      builder: (context, rideState) =>
+          _buildBody(context, colorScheme, rideState.rides),
+    );
+  }
 
-        return Container(
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(25),
-                spreadRadius: 1,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+  Widget _buildBody(
+    BuildContext context,
+    ColorScheme colorScheme,
+    List<Ride> rides,
+  ) {
+    final dayRides = getRidesForDay(rides, selectedDay);
+    dayRides.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(25),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              buildDayHeader(context),
-              Expanded(
-                child: dayRides.isEmpty
-                    ? buildEmptyState(context)
-                    : buildRidesList(context, dayRides),
-              ),
-            ],
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          buildDayHeader(context),
+          Expanded(
+            child: dayRides.isEmpty
+                ? buildEmptyState(context)
+                : buildRidesList(context, dayRides),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
