@@ -1573,6 +1573,7 @@ object TestApplication extends ZIOAppDefault:
       inMemoryRideRepositoryLayer,
       inMemoryRideShareTokenRepositoryLayer,
       RideShareTokenService.layer,
+      com.shevchyk.core.config.PublicLinkConfig.liveLayer,
       EtaService.layer,
       inMemoryExpenseRepositoryLayer,
       RideEstimateService.live,
