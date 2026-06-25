@@ -90,6 +90,27 @@ object PushNotificationListener:
         notification.data
       )
 
+  /**
+   * Formats a fare as "€45" / "€45.50" (no trailing ".0" for whole euros).
+   */
+  private def formatPrice(price: BigDecimal): String =
+    val normalized = price.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    val rendered   =
+      if normalized.isWhole then normalized.toBigInt.toString
+      else normalized.bigDecimal.stripTrailingZeros.toPlainString
+    s"€$rendered"
+
+  /**
+   * The fare for the notification body, e.g. " — €45". Empty when unpriced.
+   */
+  private def priceSuffix(price: Option[BigDecimal]): String = price.fold("")(p => s" — ${formatPrice(p)}")
+
+  /**
+   * The fare entry for the notification data map. Empty when unpriced.
+   */
+  private def priceField(price: Option[BigDecimal]): Map[String, String] =
+    price.fold(Map.empty[String, String])(p => Map("price" -> formatPrice(p)))
+
   private def handleEvent(
       fcmService: FcmService,
       notifRepo: NotificationRepository,
@@ -98,18 +119,21 @@ object PushNotificationListener:
       event: WebSocketEvent
   ): Task[Unit] =
     event match
-      case WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId) =>
+      case WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId, price) =>
+        // Carry the fare in the data map and append it to the body so the apps can
+        // show the amount; both are omitted when the ride has no price.
+        val priceData   = priceField(price)
         // Notify the assigned driver…
         val driverNotif = PushNotification(
           title = "New Ride Assigned",
-          body = "A new ride has been assigned to you.",
-          data = Map("type" -> "ride_assigned", "rideId" -> rideId.toString)
+          body = "A new ride has been assigned to you." + priceSuffix(price),
+          data = Map("type" -> "ride_assigned", "rideId" -> rideId.toString) ++ priceData
         )
         // …and the client whose ride it is.
         val clientNotif = PushNotification(
           title = "Driver Assigned",
-          body = "A driver has been assigned to your ride.",
-          data = Map("type" -> "ride_assigned", "rideId" -> rideId.toString)
+          body = "A driver has been assigned to your ride." + priceSuffix(price),
+          data = Map("type" -> "ride_assigned", "rideId" -> rideId.toString) ++ priceData
         )
         notifyUser(fcmService, notifRepo, PersonId(driverId), CompanyId(companyId), driverNotif, "ride_assigned") *>
           notifyUser(fcmService, notifRepo, PersonId(clientId), CompanyId(companyId), clientNotif, "ride_assigned")
@@ -250,13 +274,13 @@ object PushNotificationListener:
         }
         notifyDriver *> notifyDispatchers
 
-      case WebSocketEvent.RideCreated(rideId, clientId, companyId) =>
+      case WebSocketEvent.RideCreated(rideId, clientId, companyId, price) =>
         // Dispatchers are notified via WebSocket. Send the client a booking
-        // confirmation for their own inbox.
+        // confirmation for their own inbox, with the fare when one is set.
         val clientNotif = PushNotification(
           title = "Ride Booked",
-          body = "Your ride request has been received.",
-          data = Map("type" -> "ride_created", "rideId" -> rideId.toString)
+          body = "Your ride request has been received." + priceSuffix(price),
+          data = Map("type" -> "ride_created", "rideId" -> rideId.toString) ++ priceField(price)
         )
         notifyUser(fcmService, notifRepo, PersonId(clientId), CompanyId(companyId), clientNotif, "ride_created")
 

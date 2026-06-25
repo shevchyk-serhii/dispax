@@ -89,6 +89,32 @@ void main() {
           .copyWith(selectedDriverId: 'other-2');
       expect(s.isModified, isTrue);
     });
+
+    test('price set marks modified', () {
+      final s = CreateRideFormState.initial().copyWith(price: 45.5);
+      expect(s.isModified, isTrue);
+    });
+  });
+
+  group('CreateRideFormState.copyWith price', () {
+    test('copyWith sets the price', () {
+      final s = CreateRideFormState.initial().copyWith(price: 45.5);
+      expect(s.price, 45.5);
+    });
+
+    test('copyWith without price preserves the existing value', () {
+      final s = CreateRideFormState.initial()
+          .copyWith(price: 45.5)
+          .copyWith(notes: 'unrelated change');
+      expect(s.price, 45.5);
+    });
+
+    test('clearPrice sentinel resets the price to null', () {
+      final s = CreateRideFormState.initial()
+          .copyWith(price: 45.5)
+          .copyWith(clearPrice: true);
+      expect(s.price, isNull);
+    });
   });
 
   group('CreateRideFormState.isValid', () {

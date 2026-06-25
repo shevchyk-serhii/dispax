@@ -24,6 +24,7 @@ class CreateRideFormBloc
     on<TerminalSelected>(_onTerminalSelected);
     on<NotesToggled>(_onNotesToggled);
     on<NotesChanged>(_onNotesChanged);
+    on<RidePriceChanged>(_onRidePriceChanged);
     on<SpecialRequirementToggled>(_onSpecialRequirementToggled);
     on<FormCleared>(_onFormCleared);
     on<FormSubmitted>(_onFormSubmitted);
@@ -42,6 +43,19 @@ class CreateRideFormBloc
 
   void _onNotesChanged(NotesChanged event, Emitter<CreateRideFormState> emit) {
     emit(state.copyWith(notes: event.notes));
+  }
+
+  void _onRidePriceChanged(
+    RidePriceChanged event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    // A null price (empty/invalid input) clears it via the sentinel so the ride
+    // is created without a price.
+    if (event.price == null) {
+      emit(state.copyWith(clearPrice: true));
+    } else {
+      emit(state.copyWith(price: event.price));
+    }
   }
 
   void _onSpecialRequirementToggled(

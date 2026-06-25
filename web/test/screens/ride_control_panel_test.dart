@@ -124,6 +124,36 @@ void main() {
     });
   });
 
+  group('RideControlPanel price', () {
+    testWidgets('shows the fare with a euro symbol when priced', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(status: RideStatus.assigned, price: 45.5);
+      await pumpPanel(tester, theme: AppTheme.theme, ride: ride);
+
+      expect(find.text('€45.5'), findsOneWidget);
+    });
+
+    testWidgets('whole-euro fare drops the trailing decimal', (tester) async {
+      final ride = TestFixtures.ride(status: RideStatus.assigned, price: 60);
+      await pumpPanel(tester, theme: AppTheme.theme, ride: ride);
+
+      expect(find.text('€60'), findsOneWidget);
+    });
+
+    testWidgets('shows no fare row when the ride has no price', (tester) async {
+      final ride = TestFixtures.ride(status: RideStatus.assigned);
+      await pumpPanel(tester, theme: AppTheme.theme, ride: ride);
+
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Text && (w.data?.startsWith('€') ?? false),
+        ),
+        findsNothing,
+      );
+    });
+  });
+
   group('RideControlPanel actions', () {
     testWidgets('assigned ride shows Start Ride and fires callback', (
       tester,

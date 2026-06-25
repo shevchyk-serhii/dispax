@@ -31,6 +31,25 @@ void main() {
     );
   });
 
+  group('RidePriceChanged', () {
+    blocTest<CreateRideFormBloc, CreateRideFormState>(
+      'sets the price on the state',
+      build: CreateRideFormBloc.new,
+      act: (bloc) => bloc.add(const RidePriceChanged(45.5)),
+      verify: (bloc) => expect(bloc.state.price, 45.5),
+    );
+
+    blocTest<CreateRideFormBloc, CreateRideFormState>(
+      'a null price clears a previously set price (sentinel path)',
+      build: CreateRideFormBloc.new,
+      act: (bloc) {
+        bloc.add(const RidePriceChanged(45.5));
+        bloc.add(const RidePriceChanged(null));
+      },
+      verify: (bloc) => expect(bloc.state.price, isNull),
+    );
+  });
+
   group('NewClientModeToggled', () {
     blocTest<CreateRideFormBloc, CreateRideFormState>(
       'entering new-client mode drops the previously selected client',

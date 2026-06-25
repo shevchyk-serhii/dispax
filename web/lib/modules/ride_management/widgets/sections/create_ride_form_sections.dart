@@ -9,6 +9,7 @@ import 'create_ride_location_section.dart';
 import 'create_ride_schedule_section.dart';
 import 'create_ride_airport_section.dart';
 import 'create_ride_notes_section.dart';
+import 'create_ride_price_section.dart';
 import 'create_ride_actions_section.dart';
 import 'create_ride_driver_section.dart';
 
@@ -55,6 +56,8 @@ class CreateRideFormSections extends StatelessWidget {
               flightDepartureTime: state.flightDepartureTime,
               manualPickupDateTime: state.manualPickupDateTime,
             ),
+            const SizedBox(height: AppDimensions.paddingMedium),
+            CreateRidePriceSection(price: state.price),
             const SizedBox(height: AppDimensions.paddingMedium),
             _NotesSectionToggle(state: state),
             const SizedBox(height: AppDimensions.paddingLarge),

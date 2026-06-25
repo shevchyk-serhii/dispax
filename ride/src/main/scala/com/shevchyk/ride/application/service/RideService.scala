@@ -269,7 +269,8 @@ class RideServiceImpl(
             WebSocketEvent.RideCreated(
               rideId = persistedRide.id.value,
               clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
+              companyId = persistedRide.companyId.value,
+              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
             )
           )
           .ignore
@@ -927,7 +928,8 @@ class RideServiceImpl(
               rideId = persistedRide.id.value,
               driverId = driverId.value,
               clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
+              companyId = persistedRide.companyId.value,
+              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
             )
           )
           .ignore
@@ -1025,7 +1027,8 @@ class RideServiceImpl(
               rideId = persistedRide.id.value,
               driverId = newDriverId.value,
               clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
+              companyId = persistedRide.companyId.value,
+              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
             )
           )
           .ignore

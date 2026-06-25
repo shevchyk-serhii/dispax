@@ -173,6 +173,7 @@ class TestFixtures {
     String? flightNumber,
     bool isAirportTransfer = false,
     String? driverId,
+    double? price,
   }) {
     return CreateRideRequest(
       clientId: clientId,
@@ -185,6 +186,7 @@ class TestFixtures {
       flightNumber: flightNumber,
       isAirportTransfer: isAirportTransfer,
       driverId: driverId,
+      price: price,
     );
   }
 

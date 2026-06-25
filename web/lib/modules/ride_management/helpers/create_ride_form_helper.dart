@@ -144,6 +144,7 @@ class CreateRideFormHelper {
           : null,
       driverId: formState.selectedDriverId,
       vehicleClass: formState.selectedVehicleClass,
+      price: formState.price,
     );
 
     context.read<RideBloc>().add(RideCreateRequested(request: createRequest));

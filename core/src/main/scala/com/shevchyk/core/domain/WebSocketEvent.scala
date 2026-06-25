@@ -28,13 +28,19 @@ object WebSocketEvent:
       rideId: UUID,
       driverId: UUID,
       clientId: UUID,
-      companyId: UUID
+      companyId: UUID,
+      // The ride fare (€) carried so notifications can show the amount without a
+      // repository lookup. None when the ride has no price set.
+      price: Option[BigDecimal] = None
   ) extends WebSocketEvent
 
   final case class RideCreated(
       rideId: UUID,
       clientId: UUID,
-      companyId: UUID
+      companyId: UUID,
+      // The ride fare (€) carried so notifications can show the amount. None when
+      // the ride has no price set.
+      price: Option[BigDecimal] = None
   ) extends WebSocketEvent
 
   final case class LocationUpdated(

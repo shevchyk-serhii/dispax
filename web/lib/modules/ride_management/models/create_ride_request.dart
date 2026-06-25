@@ -36,6 +36,10 @@ class CreateRideRequest {
   final String? newClientPhone;
   final VehicleClass vehicleClass;
 
+  /// Operator-supplied ride price (€). Optional — omitted from the payload when
+  /// null, in which case the backend creates the ride without a price.
+  final double? price;
+
   const CreateRideRequest({
     required this.clientId,
     required this.creatorId,
@@ -53,6 +57,7 @@ class CreateRideRequest {
     this.driverId,
     this.newClientPhone,
     this.vehicleClass = VehicleClass.business,
+    this.price,
   });
 
   Map<String, dynamic> toJson() {
@@ -82,6 +87,7 @@ class CreateRideRequest {
       if (newClientPhone != null && newClientPhone!.isNotEmpty)
         'clientPhone': newClientPhone,
       'vehicleClass': vehicleClass.wire,
+      if (price != null) 'price': price,
     };
   }
 

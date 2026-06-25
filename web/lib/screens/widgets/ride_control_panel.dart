@@ -110,6 +110,29 @@ class RideControlPanel extends StatelessWidget {
             ],
           ),
 
+          if (ride.price != null) ...[
+            const SizedBox(height: AppDimensions.paddingSmall),
+            Row(
+              children: [
+                Icon(
+                  Icons.euro,
+                  color: onSurfaceVariant,
+                  size: AppDimensions.iconSmall,
+                ),
+                const SizedBox(width: AppDimensions.paddingSmall),
+                Text(
+                  // Currency symbol + amount is locale-neutral; drop a trailing
+                  // ".0" so a whole-euro fare reads "45", not "45.0".
+                  '€${ride.price! == ride.price!.roundToDouble() ? ride.price!.toStringAsFixed(0) : ride.price}',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+
           if (ride.etaMinutes != null) ...[
             const SizedBox(height: AppDimensions.paddingSmall),
             Row(

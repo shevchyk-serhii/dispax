@@ -154,6 +154,17 @@ class NotesChanged extends CreateRideFormEvent {
   List<Object?> get props => [notes];
 }
 
+/// Emitted when the operator types or clears the ride price. A null/empty input
+/// clears the price (the ride is then created without one).
+class RidePriceChanged extends CreateRideFormEvent {
+  final double? price;
+
+  const RidePriceChanged(this.price);
+
+  @override
+  List<Object?> get props => [price];
+}
+
 class SpecialRequirementToggled extends CreateRideFormEvent {
   final String requirement;
 

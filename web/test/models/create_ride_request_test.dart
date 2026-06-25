@@ -35,6 +35,20 @@ void main() {
       expect(json['isAirportTransfer'], false);
     });
 
+    test('toJson includes price when set', () {
+      final request = TestFixtures.createRideRequest(price: 45.5);
+      final json = request.toJson();
+
+      expect(json['price'], 45.5);
+    });
+
+    test('toJson omits price when not set', () {
+      final request = TestFixtures.createRideRequest();
+      final json = request.toJson();
+
+      expect(json.containsKey('price'), isFalse);
+    });
+
     test('toJson serializes from/to locations correctly', () {
       final request = TestFixtures.createRideRequest();
       final json = request.toJson();

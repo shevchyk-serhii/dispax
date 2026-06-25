@@ -39,6 +39,11 @@ class CreateRideFormState extends Equatable {
   final String baselineClientName;
   final String? baselineDriverId;
 
+  /// Operator-supplied ride price (€). Optional — when null the ride is created
+  /// without a price and it can be set later. Independent of the auto-computed
+  /// estimate ([estimateBusiness]/[estimateVan]): the operator types it manually.
+  final double? price;
+
   // ─── Client booking extensions ───
   /// Selected vehicle class for the client booking flow.
   final VehicleClass selectedVehicleClass;
@@ -80,6 +85,7 @@ class CreateRideFormState extends Equatable {
     this.baselineClientId,
     this.baselineClientName = '',
     this.baselineDriverId,
+    this.price,
     this.selectedVehicleClass = VehicleClass.business,
     this.isScheduled = true,
     this.estimateBusiness,
@@ -143,6 +149,8 @@ class CreateRideFormState extends Equatable {
     String? baselineClientName,
     String? baselineDriverId,
     bool clearBaselineDriverId = false,
+    double? price,
+    bool clearPrice = false,
     VehicleClass? selectedVehicleClass,
     bool? isScheduled,
     RideEstimate? estimateBusiness,
@@ -186,6 +194,7 @@ class CreateRideFormState extends Equatable {
       baselineDriverId: clearBaselineDriverId
           ? null
           : (baselineDriverId ?? this.baselineDriverId),
+      price: clearPrice ? null : (price ?? this.price),
       selectedVehicleClass: selectedVehicleClass ?? this.selectedVehicleClass,
       isScheduled: isScheduled ?? this.isScheduled,
       estimateBusiness: clearEstimateBusiness
@@ -231,7 +240,8 @@ class CreateRideFormState extends Equatable {
       toAddress.trim().isNotEmpty ||
       flightNumber.trim().isNotEmpty ||
       notes.trim().isNotEmpty ||
-      specialRequirements.isNotEmpty;
+      specialRequirements.isNotEmpty ||
+      price != null;
 
   @override
   List<Object?> get props => [
@@ -257,6 +267,7 @@ class CreateRideFormState extends Equatable {
     baselineClientId,
     baselineClientName,
     baselineDriverId,
+    price,
     selectedVehicleClass,
     isScheduled,
     estimateBusiness,
