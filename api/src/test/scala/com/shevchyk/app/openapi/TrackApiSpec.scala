@@ -1,8 +1,13 @@
 package com.shevchyk.app.openapi
 
 import com.shevchyk.core.domain.*
+import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.ride.application.service.LocationWithTimestamp
 import com.shevchyk.ride.domain.{Ride, RideStatus}
+import sttp.tapir.server.ziohttp.ZioHttpInterpreter
+import sttp.tapir.ztapir.*
+import zio.*
+import zio.http.*
 import zio.json.*
 import zio.test.*
 
@@ -66,5 +71,16 @@ object TrackApiSpec extends ZIOSpecDefault:
           !json.contains("clientId"),
           !json.contains("driverId")
         )
+      },
+      test("GET /api/track/{token} maps a failure to 404, not 400 (no existence leak, page treats 404 as expired)") {
+        // Interpret the real endpoint description with a logic that always fails — the status comes from the
+        // endpoint's errorOut declaration. A regression to the default public 400 would turn this red.
+        val failing = TrackApi.getTrackedRideEndpoint.zServerLogic[Any](_ =>
+          ZIO.fail(ApiError("Tracking link not found or expired"))
+        )
+        val routes  = ZioHttpInterpreter().toHttp(List(failing))
+        for {
+          resp <- routes.runZIO(Request.get(URL.decode("/api/track/whatever").toOption.get))
+        } yield assertTrue(resp.status == Status.NotFound)
       }
     )

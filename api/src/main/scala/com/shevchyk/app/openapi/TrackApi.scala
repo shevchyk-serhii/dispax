@@ -1,10 +1,11 @@
 package com.shevchyk.app.openapi
 
-import com.shevchyk.core.openapi.{ApiError, BaseEndpoint}
+import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.driver.application.{DriverLocationService, EtaService}
 import com.shevchyk.ride.application.service.{LocationWithTimestamp, RideService, RideShareTokenService}
 import com.shevchyk.ride.domain.RideError
 import com.shevchyk.ride.openapi.RideSecure.{checkRole, fromRideError, parseRideId, requireCompanyId, secureEndpoint}
+import sttp.model.StatusCode
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
@@ -57,14 +58,20 @@ object TrackApi:
     .tag(trackTag)
     .summary("Create (or reuse) a public guest tracking link for a ride")
 
-  val getTrackedRideEndpoint = BaseEndpoint.publicEndpoint.get
+  // Override the default public error-out (which would render 400) with 404: an invalid/expired/unknown token must be
+  // indistinguishable and must not leak existence — the page treats 404 as "link expired".
+  private val notFoundError = statusCode(StatusCode.NotFound).and(jsonBody[ApiError])
+
+  val getTrackedRideEndpoint = endpoint.get
     .in("api" / "track" / path[String]("token"))
+    .errorOut(notFoundError)
     .out(jsonBody[PublicRideDto])
     .tag(trackTag)
     .summary("Public ride state for a guest tracking token (no auth)")
 
-  val getTrackedLocationsEndpoint = BaseEndpoint.publicEndpoint.get
+  val getTrackedLocationsEndpoint = endpoint.get
     .in("api" / "track" / path[String]("token") / "locations")
+    .errorOut(notFoundError)
     .out(jsonBody[PublicLocationsResponse])
     .tag(trackTag)
     .summary("Public driver location for a guest tracking token (no auth)")
