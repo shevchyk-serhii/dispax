@@ -75,8 +75,9 @@ export function NavBar({ variant = "dark" }: { variant?: Variant }) {
             <div className="relative" ref={solutionsRef}>
               <button
                 type="button"
-                aria-haspopup="menu"
+                aria-haspopup="true"
                 aria-expanded={solutionsOpen}
+                aria-controls="solutions-menu"
                 onClick={() => setSolutionsOpen((v) => !v)}
                 className={`flex items-center gap-1.5 ${linkClass}`}
               >
@@ -89,14 +90,13 @@ export function NavBar({ variant = "dark" }: { variant?: Variant }) {
               </button>
               {solutionsOpen && (
                 <div
-                  role="menu"
+                  id="solutions-menu"
                   className="absolute left-0 top-full mt-3 w-60 overflow-hidden rounded-xl border border-line bg-surface p-1.5 shadow-[0_20px_50px_rgba(9,9,11,0.15)]"
                 >
                   {solutions.map((s) => (
                     <Link
                       key={s.href}
                       href={s.href}
-                      role="menuitem"
                       onClick={() => setSolutionsOpen(false)}
                       className="block rounded-lg px-3 py-2.5 text-sm font-medium text-graphite-800 transition-colors hover:bg-surface-variant"
                     >
@@ -128,6 +128,7 @@ export function NavBar({ variant = "dark" }: { variant?: Variant }) {
             type="button"
             aria-label="Menu"
             aria-expanded={open}
+            aria-controls="mobile-menu"
             onClick={() => setOpen((v) => !v)}
             className={`flex h-10 w-10 items-center justify-center lg:hidden ${
               dark ? "text-white" : "text-ink"
@@ -138,7 +139,7 @@ export function NavBar({ variant = "dark" }: { variant?: Variant }) {
         </nav>
 
         {open && (
-          <div className="flex flex-col gap-1 pb-6 lg:hidden">
+          <div id="mobile-menu" className="flex flex-col gap-1 pb-6 lg:hidden">
             <p
               className={`pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider ${
                 dark ? "text-faint" : "text-faint"

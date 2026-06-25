@@ -169,6 +169,17 @@ export const Icons = {
       <path d="M8.5 19H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5" />
     </Base>
   ),
+  mail: (p: IconProps) => (
+    <Base {...p}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3.5 6.5 8.5 6 8.5-6" />
+    </Base>
+  ),
+  phone: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M5 3.5h3l1.5 4.5-2 1.5a11 11 0 0 0 5 5l1.5-2 4.5 1.5v3a2 2 0 0 1-2 2A16 16 0 0 1 3 5.5a2 2 0 0 1 2-2Z" />
+    </Base>
+  ),
 };
 
 export type IconName = keyof typeof Icons;

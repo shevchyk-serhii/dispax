@@ -52,7 +52,7 @@ function ContactBody() {
                 className="flex items-center gap-3 text-[15px] text-graphite-800 hover:text-accent-dark"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent-dark">
-                  <Icons.receipt className="h-4 w-4" />
+                  <Icons.mail className="h-4 w-4" />
                 </span>
                 {t("email")}
               </a>
@@ -61,7 +61,7 @@ function ContactBody() {
                 className="flex items-center gap-3 text-[15px] text-graphite-800 hover:text-accent-dark"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent-dark">
-                  <Icons.clock className="h-4 w-4" />
+                  <Icons.phone className="h-4 w-4" />
                 </span>
                 {t("phone")}
               </a>
