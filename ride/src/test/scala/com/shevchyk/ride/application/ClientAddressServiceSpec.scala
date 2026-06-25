@@ -53,7 +53,7 @@ object ClientAddressServiceSpec extends ZIOSpecDefault {
             svc  <- ZIO.service[ClientAddressService]
             _    <- svc.saveAddress(clientId, req("Repeated Street"))
             _    <- svc.saveAddress(clientId, req("Repeated Street"))
-            list  <- svc.getAddresses(clientId)
+            list <- svc.getAddresses(clientId)
           } yield assertTrue(
             list.length == 1,
             list.head.useCount == 2
