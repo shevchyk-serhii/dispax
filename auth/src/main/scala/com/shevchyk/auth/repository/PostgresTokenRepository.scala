@@ -5,7 +5,6 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
-import cats.effect.IO
 import zio.interop.catz.*
 import java.time.Instant
 import java.util.UUID

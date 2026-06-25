@@ -68,7 +68,7 @@ object PostgresGeofenceRepositorySpec extends ZIOSpecDefault {
       geofenceId: GeofenceId,
       driver: PersonId = driverId,
       company: CompanyId = testCompanyId,
-      timestamp: Instant = Instant.now()
+      timestamp: Instant
   ): GeofenceAlert = GeofenceAlert(
     id = UUID.randomUUID(),
     geofenceId = geofenceId,

@@ -1,17 +1,14 @@
 package com.shevchyk.ride.openapi
 
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.CreatePartnerCompanyRequest
 import com.shevchyk.ride.infrastructure.http.dto.{CreatePartnerCompanyApiRequest, PartnerCompanyDto, given}
-import com.shevchyk.ride.openapi.RideSchemas.given
 import com.shevchyk.ride.openapi.RideSecure.*
 import sttp.model.StatusCode
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
-import java.time.Instant
 
 /**
  * Tapir descriptions and server logic for the partner-company directory endpoints. Per-tenant: all queries and

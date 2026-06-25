@@ -6,7 +6,7 @@ import com.shevchyk.ride.domain.RepositoryExtensions.*
 import com.shevchyk.ride.repository.{RideRepository, RideShareTokenRepository}
 import zio.*
 
-import java.time.{Duration, Instant}
+import java.time.Duration
 
 /**
  * The ride a resolved guest token grants tracking access to. Carries only ids — the public DTO (with ETA and driver

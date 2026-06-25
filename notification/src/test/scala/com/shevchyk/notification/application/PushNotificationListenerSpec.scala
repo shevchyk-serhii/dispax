@@ -386,16 +386,16 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       test("AirportCheckpointReached does NOT send duplicate push when same checkpointType sent twice") {
         ZIO.scoped {
           for {
-            _              <- PushNotificationListener.start
-            eventHub       <- ZIO.service[EventHub]
-            notifRepo      <- ZIO.service[com.shevchyk.notification.repository.NotificationRepository]
-            checkpointRepo <- ZIO.service[com.shevchyk.notification.repository.CheckpointNotificationRepository]
-            event           = WebSocketEvent.AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId)
-            _              <- eventHub.publish(event)
-            _              <- TestClock.adjust(200.millis)
-            _              <- eventHub.publish(event)
-            _              <- TestClock.adjust(200.millis)
-            notifs         <- notifRepo.findByPersonId(PersonId(driverId), limit = 10, offset = 0)
+            _         <- PushNotificationListener.start
+            eventHub  <- ZIO.service[EventHub]
+            notifRepo <- ZIO.service[com.shevchyk.notification.repository.NotificationRepository]
+            _         <- ZIO.service[com.shevchyk.notification.repository.CheckpointNotificationRepository]
+            event      = WebSocketEvent.AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId)
+            _         <- eventHub.publish(event)
+            _         <- TestClock.adjust(200.millis)
+            _         <- eventHub.publish(event)
+            _         <- TestClock.adjust(200.millis)
+            notifs    <- notifRepo.findByPersonId(PersonId(driverId), limit = 10, offset = 0)
           } yield assertTrue(
             notifs.count(_.notificationType == "airport_checkpoint") == 1
           )

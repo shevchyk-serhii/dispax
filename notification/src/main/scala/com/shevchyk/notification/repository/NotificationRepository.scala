@@ -1,6 +1,6 @@
 package com.shevchyk.notification.repository
 
-import com.shevchyk.core.domain.{PersonId, CompanyId}
+import com.shevchyk.core.domain.PersonId
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId}
 import zio.*
 import java.util.concurrent.ConcurrentHashMap

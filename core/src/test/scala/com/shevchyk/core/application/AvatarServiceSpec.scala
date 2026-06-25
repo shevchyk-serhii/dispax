@@ -97,7 +97,7 @@ object AvatarServiceSpec extends ZIOSpecDefault:
           result  <- service.uploadAvatar(testPersonId, companyId, smallBytes, invalidMimeType).either
         } yield assertTrue(
           result.isLeft,
-          result.left.get.isInstanceOf[AvatarError.InvalidContentType]
+          result.swap.toOption.get.isInstanceOf[AvatarError.InvalidContentType]
         )
       },
       test("uploadAvatar with image/bmp (not in allowed set) fails with InvalidContentType") {
@@ -107,7 +107,7 @@ object AvatarServiceSpec extends ZIOSpecDefault:
           result  <- service.uploadAvatar(testPersonId, companyId, smallBytes, "image/bmp").either
         } yield assertTrue(
           result.isLeft,
-          result.left.get.isInstanceOf[AvatarError.InvalidContentType]
+          result.swap.toOption.get.isInstanceOf[AvatarError.InvalidContentType]
         )
       },
       test("uploadAvatar with 6 MB bytes fails with FileTooLarge") {
@@ -117,7 +117,7 @@ object AvatarServiceSpec extends ZIOSpecDefault:
           result  <- service.uploadAvatar(testPersonId, companyId, largeBytes, validJpegType).either
         } yield assertTrue(
           result.isLeft,
-          result.left.get == AvatarError.FileTooLarge
+          result.swap.toOption.get == AvatarError.FileTooLarge
         )
       },
       test("uploadAvatar with exactly 5 MB succeeds (at the limit)") {
@@ -136,7 +136,7 @@ object AvatarServiceSpec extends ZIOSpecDefault:
           result  <- service.uploadAvatar(testPersonId, companyId, overLimitBytes, validJpegType).either
         } yield assertTrue(
           result.isLeft,
-          result.left.get == AvatarError.FileTooLarge
+          result.swap.toOption.get == AvatarError.FileTooLarge
         )
       },
       test("getAvatar returns None when no avatar has been uploaded") {

@@ -176,7 +176,7 @@ object UserApi:
         case _: InvalidTokenError | _: ExpiredTokenError =>
           (StatusCode.Unauthorized, ApiError("Invalid or expired token"))
         case _: JwtError                                 => (StatusCode.Unauthorized, ApiError("Authentication failed"))
-        case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
+        case null                                        => (StatusCode.InternalServerError, ApiError("Internal server error"))
       },
       payload =>
         val wireRoles = payload.roles
@@ -715,7 +715,8 @@ object UserApi:
   /**
    * Generic mapping of any throwable to a 500 (matches the `other` branch of `handleAuthError`).
    */
-  private def internal(t: Throwable): Err = (StatusCode.InternalServerError, ApiError("Internal server error"))
+  private def internal(@annotation.unused t: Throwable): Err =
+    (StatusCode.InternalServerError, ApiError("Internal server error"))
 
   /**
    * All server endpoints, interpreted into zio-http Routes by the api module.

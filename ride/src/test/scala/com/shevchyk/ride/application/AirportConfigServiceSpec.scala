@@ -5,7 +5,6 @@ import com.shevchyk.ride.domain.{Airport, AirportCheckpoint, AirportCheckpointZo
 import com.shevchyk.ride.repository.InMemoryAirportConfigRepository
 import zio.*
 import zio.test.*
-import zio.test.Assertion.*
 
 import java.time.Instant
 import java.util.UUID

@@ -1,7 +1,6 @@
 package com.shevchyk.auth.infrastructure.http
 
 import com.shevchyk.auth.config.JwtConfig
-import com.shevchyk.auth.middleware.{AuthMiddleware, AuthenticatedUser}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
 import zio.*

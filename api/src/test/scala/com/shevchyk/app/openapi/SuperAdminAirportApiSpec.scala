@@ -9,10 +9,8 @@ import com.shevchyk.ride.repository.AirportConfigRepository
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
 import zio.*
 import zio.http.*
-import zio.json.*
 import zio.test.*
 
-import java.time.Instant
 import java.util.UUID
 
 /**

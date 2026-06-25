@@ -21,7 +21,6 @@ import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, I
 import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.test.*
 import zio.*
-import java.time.Instant
 import java.util.UUID
 
 object RideServiceExtendedSpec extends ZIOSpecDefault {
@@ -174,17 +173,6 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
 
   // ── Helpers ───────────────────────────────────────────────────────────
   private def mkRide(clientId: PersonId = testClientId, companyId: CompanyId = testCompanyId) = CreateRideRequest(
-    clientId = clientId,
-    companyId = companyId,
-    pickupLocation = Location("A"),
-    dropoffLocation = Location("B")
-  )
-
-  private def mkRideWithPrice(
-      price: BigDecimal,
-      clientId: PersonId = testClientId,
-      companyId: CompanyId = testCompanyId
-  ) = CreateRideRequest(
     clientId = clientId,
     companyId = companyId,
     pickupLocation = Location("A"),
@@ -806,7 +794,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                            CancelRideRequest("client_request"),
                            testCompanyId
                          )
-              event   <- dequeue.take // RideCreated (from createRide)
+              _       <- dequeue.take // RideCreated (from createRide)
               event2  <- dequeue.take // RideStatusChanged (from cancelRideWithReason)
             } yield {
               val changed = event2.asInstanceOf[WebSocketEvent.RideStatusChanged]

@@ -217,15 +217,6 @@ object RideServiceStatusSpec extends ZIOSpecDefault {
       confirmed <- service.confirmRide(assigned.id, driverId)
     } yield confirmed
 
-  /**
-   * Create a ride, assign, confirm, and start it
-   */
-  private def createInProgressRide(service: RideService, clientId: PersonId = testClientId) =
-    for {
-      confirmed <- createConfirmedRide(service, clientId)
-      started   <- service.startRide(confirmed.id, testDriverId)
-    } yield started
-
   // ── Spec ──────────────────────────────────────────────────────────────
   def spec =
     suite("RideServiceStatus")(

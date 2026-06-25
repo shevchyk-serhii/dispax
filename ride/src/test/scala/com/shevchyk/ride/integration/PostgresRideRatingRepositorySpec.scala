@@ -60,7 +60,7 @@ object PostgresRideRatingRepositorySpec extends ZIOSpecDefault {
   private def makeRating(
       ride: RideId,
       driver: PersonId = driverId,
-      rating: Int = 5,
+      rating: Int,
       comment: Option[String] = Some("great"),
       createdAt: Instant = Instant.now().truncatedTo(ChronoUnit.MICROS)
   ): RideRating = RideRating(

@@ -2,7 +2,6 @@ package com.shevchyk.app.openapi
 
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.NotificationPreferenceRepository
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*

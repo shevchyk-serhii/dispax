@@ -2,7 +2,6 @@ package com.shevchyk
 
 import io.cucumber.junit.{Cucumber, CucumberOptions}
 import org.junit.runner.RunWith
-import zio.*
 
 @RunWith(classOf[Cucumber])
 @CucumberOptions(

@@ -186,7 +186,7 @@ object GeofenceServiceSpec extends ZIOSpecDefault {
         test("saves alert to repository") {
           for {
             repo    <- ZIO.service[GeofenceRepository]
-            gf      <- createGeofence(repo)
+            _       <- createGeofence(repo)
             service <- ZIO.service[GeofenceService]
             _       <- service.checkDriverLocation(testDriverId, testCompanyId, insideLat, insideLng)
             saved   <- repo.findAlertsByDriver(testDriverId, 10)

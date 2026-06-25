@@ -3,7 +3,6 @@ package com.shevchyk.core.repository
 import com.shevchyk.core.domain.*
 import zio.*
 import zio.test.*
-import java.time.Instant
 
 object RidePoolRepositorySpec extends ZIOSpecDefault {
 
