@@ -46,7 +46,7 @@ void main() {
 
     expect(find.text('Kreditkarte'), findsWidgets);
     expect(find.text('Bar'), findsWidgets);
-    expect(find.text('Payment'), findsWidgets);
+    expect(find.text('Zahlung'), findsWidgets);
   });
 
   testWidgets('selecting a method dispatches PaymentMethodSelected', (

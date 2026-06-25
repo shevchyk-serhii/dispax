@@ -7,6 +7,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/models/user_requests.dart';
 import '../../../modules/core/services/user_service.dart';
+import '../../../modules/ride_management/models/payment_method.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../screens/create_ride_screen.dart';
@@ -368,6 +369,27 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                           color: AppColors.success,
                         ),
                       ),
+                  ],
+                ),
+              ],
+              if (PaymentMethod.labelForWire(ride.paymentMethod, l10n) !=
+                  null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.payments_outlined,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      PaymentMethod.labelForWire(ride.paymentMethod, l10n)!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ],

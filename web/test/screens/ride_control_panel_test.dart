@@ -157,6 +157,32 @@ void main() {
     });
   });
 
+  group('RideControlPanel payment method', () {
+    testWidgets('shows the localized payment label when present', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        status: RideStatus.assigned,
+        paymentMethod: 'Invoice',
+      );
+      await pumpPanel(tester, theme: AppTheme.theme, ride: ride);
+
+      expect(find.text('Invoice'), findsOneWidget);
+    });
+
+    testWidgets('shows no payment row when the ride has no method', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(status: RideStatus.assigned);
+      await pumpPanel(tester, theme: AppTheme.theme, ride: ride);
+
+      // No method-name labels for any of the four offered methods.
+      for (final label in ['Invoice', 'Cash', 'Credit Card', 'Payment']) {
+        expect(find.text(label), findsNothing);
+      }
+    });
+  });
+
   group('RideControlPanel actions', () {
     testWidgets('assigned ride shows Start Ride and fires callback', (
       tester,

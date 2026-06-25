@@ -259,6 +259,46 @@ object ExportApiSpec extends ZIOSpecDefault {
             lines(2).contains(";S;EUR;")
           )
         },
+        test("Payment method books to the cashless counter account 12000 (like Card/Bank)") {
+          val ride  = makeCompletedRide(
+            estimatedPrice = Some(BigDecimal("60.00")),
+            paymentMethod = Some(PaymentMethod.Payment)
+          )
+          val bytes = ExportApi.buildExtf(
+            rides = List(ride),
+            expenses = Nil,
+            clientNames = Map(clientA1 -> "Test Client"),
+            month = may2025,
+            beraternummer = "",
+            mandantennummer = "",
+            sachkontenlaenge = 4,
+            now = fixedNow
+          )
+          val text  = new String(bytes, win1252)
+          val book  = text.split("\r\n", -1)(2)
+          // Mutation guard: Cash → 10000, so finding 12000 (not 10000) proves the
+          // new Payment value is mapped to the cashless account, not the catch-all default.
+          assertTrue(book.contains("12000"), !book.contains("10000"))
+        },
+        test("Cash method books to the cash counter account 10000") {
+          val ride  = makeCompletedRide(
+            estimatedPrice = Some(BigDecimal("60.00")),
+            paymentMethod = Some(PaymentMethod.Cash)
+          )
+          val bytes = ExportApi.buildExtf(
+            rides = List(ride),
+            expenses = Nil,
+            clientNames = Map(clientA1 -> "Test Client"),
+            month = may2025,
+            beraternummer = "",
+            mandantennummer = "",
+            sachkontenlaenge = 4,
+            now = fixedNow
+          )
+          val text  = new String(bytes, win1252)
+          val book  = text.split("\r\n", -1)(2)
+          assertTrue(book.contains("10000"), !book.contains("12000"))
+        },
         test("booking row amounts use German comma not dot") {
           val ride     = makeCompletedRide(estimatedPrice = Some(BigDecimal("99.50")))
           val bytes    = ExportApi.buildExtf(

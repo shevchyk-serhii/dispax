@@ -53,8 +53,16 @@ Ride _ride({required String? paymentMethod, String paymentStatus = 'Pending'}) {
     creatorId: 'creator-1',
     companyId: 'company-1',
     pickupDateTime: DateTime(2026, 3, 15, 10, 0),
-    from: const Location(address: 'Pickup St 1', latitude: 48.1, longitude: 11.5),
-    to: const Location(address: 'Dropoff St 2', latitude: 48.2, longitude: 11.6),
+    from: const Location(
+      address: 'Pickup St 1',
+      latitude: 48.1,
+      longitude: 11.5,
+    ),
+    to: const Location(
+      address: 'Dropoff St 2',
+      latitude: 48.2,
+      longitude: 11.6,
+    ),
     status: RideStatus.assigned,
     clientName: 'Test Client',
     paymentStatus: paymentStatus,
@@ -120,9 +128,7 @@ void main() {
     'RideDetailsScreen shows "Credit Card" in payment banner when paymentMethod is Card',
     (tester) async {
       useTallViewport(tester);
-      await tester.pumpWidget(
-        buildSubject(_ride(paymentMethod: 'Card')),
-      );
+      await tester.pumpWidget(buildSubject(_ride(paymentMethod: 'Card')));
       await tester.pump(); // settle post-frame callback
 
       expect(
@@ -138,9 +144,7 @@ void main() {
     'RideDetailsScreen does not show "(Credit Card)" in banner when paymentMethod is null',
     (tester) async {
       useTallViewport(tester);
-      await tester.pumpWidget(
-        buildSubject(_ride(paymentMethod: null)),
-      );
+      await tester.pumpWidget(buildSubject(_ride(paymentMethod: null)));
       await tester.pump();
 
       expect(

@@ -85,12 +85,12 @@ void main() {
     authBloc = _MockAuthBloc();
     rideBloc = _MockRideBloc();
     when(() => authBloc.apiClient).thenReturn(api);
-    when(() => authBloc.state)
-        .thenReturn(AuthState.authenticated(_client()));
+    when(() => authBloc.state).thenReturn(AuthState.authenticated(_client()));
     when(() => rideBloc.state).thenReturn(RideState.loaded(const []));
     when(() => rideBloc.add(any())).thenAnswer((_) {});
-    when(() => api.put(any(), any()))
-        .thenAnswer((_) async => http.Response('{}', 200));
+    when(
+      () => api.put(any(), any()),
+    ).thenAnswer((_) async => http.Response('{}', 200));
   });
 
   Widget host({String? paymentMethod}) {

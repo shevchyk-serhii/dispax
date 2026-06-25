@@ -60,10 +60,11 @@ object ExportRoutes:
    */
   private def counterAccountForPayment(paymentMethod: Option[PaymentMethod]): String =
     paymentMethod match
-      case Some(PaymentMethod.Cash)                                     => "10000"
-      case Some(PaymentMethod.Card) | Some(PaymentMethod.Bank)          => "12000"
-      case Some(PaymentMethod.Invoice) | Some(PaymentMethod.Receivable) => "14000"
-      case _                                                            => "10000" // default to cash
+      case Some(PaymentMethod.Cash)                                                          => "10000"
+      // Payment is a cashless electronic/online payment, booked like Card/Bank.
+      case Some(PaymentMethod.Card) | Some(PaymentMethod.Bank) | Some(PaymentMethod.Payment) => "12000"
+      case Some(PaymentMethod.Invoice) | Some(PaymentMethod.Receivable)                      => "14000"
+      case _                                                                                 => "10000" // default to cash
 
   /**
    * DATEV expense account by category

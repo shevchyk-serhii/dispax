@@ -34,10 +34,12 @@ void main() {
     mockScheduleService = MockScheduleService();
     mockApiClient = MockApiClient();
 
-    when(() => mockScheduleService.getScheduleForDate(any()))
-        .thenAnswer((_) async => []);
-    when(() => mockApiClient.get(any()))
-        .thenAnswer((_) async => http.Response('{}', 200));
+    when(
+      () => mockScheduleService.getScheduleForDate(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockApiClient.get(any()),
+    ).thenAnswer((_) async => http.Response('{}', 200));
   });
 
   tearDown(() {
@@ -47,8 +49,9 @@ void main() {
   });
 
   Widget buildPanel(Ride ride) {
-    when(() => mockRideService.getPendingRides())
-        .thenAnswer((_) async => [ride]);
+    when(
+      () => mockRideService.getPendingRides(),
+    ).thenAnswer((_) async => [ride]);
     when(() => mockRideService.dispose()).thenReturn(null);
 
     rideBloc = RideBloc(rideService: mockRideService);

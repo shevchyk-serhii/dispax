@@ -3140,7 +3140,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get paymentMethodSelectLabel => 'Zahlungsart';
 
   @override
-  String get paymentMethodPayment => 'Payment';
+  String get paymentMethodPayment => 'Zahlung';
 
   @override
   String get paymentMethodCash => 'Bar';

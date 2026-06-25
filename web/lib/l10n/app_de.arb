@@ -1422,7 +1422,7 @@
   "markAsPaidDialogTitle": "Als bezahlt markieren",
   "paymentMethodLabel": "Zahlungsart:",
   "paymentMethodSelectLabel": "Zahlungsart",
-  "paymentMethodPayment": "Payment",
+  "paymentMethodPayment": "Zahlung",
   "paymentMethodCash": "Bar",
   "paymentMethodCard": "Kreditkarte",
   "paymentMethodInvoice": "Rechnung",

@@ -406,6 +406,31 @@ object RideServiceSpec extends ZIOSpecDefault {
             service <- ZIO.service[RideService]
             ride    <- service.createRide(request)
           } yield assertTrue(ride.estimatedPrice.isEmpty)
+        }.provide(standardLayers),
+        test("should persist the supplied paymentMethod") {
+          val request = CreateRideRequest(
+            clientId = testClientId,
+            companyId = testCompanyId,
+            pickupLocation = Location("Start Point"),
+            dropoffLocation = Location("End Point"),
+            paymentMethod = Some(PaymentMethod.Payment)
+          )
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(request)
+          } yield assertTrue(ride.paymentMethod.contains(PaymentMethod.Payment))
+        }.provide(standardLayers),
+        test("should leave paymentMethod None when none is supplied") {
+          val request = CreateRideRequest(
+            clientId = testClientId,
+            companyId = testCompanyId,
+            pickupLocation = Location("Start Point"),
+            dropoffLocation = Location("End Point")
+          )
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(request)
+          } yield assertTrue(ride.paymentMethod.isEmpty)
         }.provide(standardLayers)
       ),
       suite("getRidesForUser")(
