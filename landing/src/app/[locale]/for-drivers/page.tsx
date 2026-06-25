@@ -9,8 +9,10 @@ import {
   AirportMock,
   PoolsMock,
 } from "@/components/sections/marketing/mocks";
+import { localeAlternates } from "@/lib/site";
 
 const NS = "forDrivers";
+const PATH = "/for-drivers";
 const icons: IconName[] = ["steering", "planeLand", "pin", "calendarCheck", "users"];
 
 export function generateStaticParams() {
@@ -24,7 +26,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: `${NS}.meta` });
-  return { title: t("title"), description: t("description") };
+  return {
+    title: t("title"),
+    description: t("description"),
+    alternates: localeAlternates(locale, PATH),
+  };
 }
 
 export default async function ForDriversPage({

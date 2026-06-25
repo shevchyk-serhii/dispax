@@ -1,4 +1,8 @@
 {
+  "siteMeta": {
+    "title": "Dispax — Ride dispatch for Munich & surroundings",
+    "description": "The dispatch platform for taxi and transfer businesses where punctuality matters. Assign rides, track drivers in real time, and coordinate airport pickups."
+  },
   "nav": {
     "features": "Features",
     "how": "How it works",

@@ -7,8 +7,10 @@ import { PageHero } from "@/components/sections/marketing/PageHero";
 import { Container } from "@/components/ui/Container";
 import { StatusBadge, FeatureStatus } from "@/components/ui/StatusBadge";
 import { Reveal } from "@/components/ui/Reveal";
+import { localeAlternates } from "@/lib/site";
 
 const NS = "featuresPage";
+const PATH = "/features";
 
 type Item = { title: string; desc: string; status?: FeatureStatus };
 type Group = { title: string; items: Item[] };
@@ -24,7 +26,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: `${NS}.meta` });
-  return { title: t("title"), description: t("description") };
+  return {
+    title: t("title"),
+    description: t("description"),
+    alternates: localeAlternates(locale, PATH),
+  };
 }
 
 function FeatureGroups() {

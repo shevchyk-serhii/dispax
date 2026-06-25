@@ -8,8 +8,10 @@ import { Container } from "@/components/ui/Container";
 import { Reveal } from "@/components/ui/Reveal";
 import { Icons } from "@/components/ui/icons";
 import { Link } from "@/i18n/navigation";
+import { localeAlternates } from "@/lib/site";
 
 const NS = "about";
+const PATH = "/about";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -22,7 +24,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: `${NS}.meta` });
-  return { title: t("title"), description: t("description") };
+  return {
+    title: t("title"),
+    description: t("description"),
+    alternates: localeAlternates(locale, PATH),
+  };
 }
 
 function AboutBody() {

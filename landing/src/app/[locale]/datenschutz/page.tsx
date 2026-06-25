@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { LegalPage, LegalBlock } from "@/components/sections/LegalPage";
+import { localeAlternates } from "@/lib/site";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -14,7 +15,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "legal.privacy" });
-  return { title: `${t("title")} — Dispax` };
+  return {
+    title: `${t("title")} — Dispax`,
+    alternates: localeAlternates(locale, "/datenschutz"),
+  };
 }
 
 export default async function DatenschutzPage({

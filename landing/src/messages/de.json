@@ -1,4 +1,8 @@
 {
+  "siteMeta": {
+    "title": "Dispax — Ride-Dispatch für München & Umgebung",
+    "description": "Die Dispatch-Plattform für Taxi- und Transferunternehmen, bei denen Pünktlichkeit zählt. Fahrten zuweisen, Fahrer in Echtzeit verfolgen, Flughafen-Abholungen koordinieren."
+  },
   "nav": {
     "features": "Funktionen",
     "how": "So funktioniert's",
