@@ -147,7 +147,9 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                     icon: const Icon(Icons.swap_vert),
                     tooltip: 'Swap From / To',
                     style: IconButton.styleFrom(
-                      foregroundColor: AppColors.secretaryColor,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

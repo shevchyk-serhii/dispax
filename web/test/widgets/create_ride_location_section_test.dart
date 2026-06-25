@@ -3,9 +3,11 @@ import 'package:dispax/blocs/auth/auth_bloc.dart';
 import 'package:dispax/blocs/auth/auth_event.dart';
 import 'package:dispax/blocs/auth/auth_state.dart';
 import 'package:dispax/blocs/create_ride_form/create_ride_form_bloc.dart';
+import 'package:dispax/constants/app_colors.dart';
 import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/ride_management/widgets/sections/create_ride_location_section.dart';
+import 'package:dispax/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,5 +85,54 @@ void main() {
     expect(formBloc.state.toAddress, 'Flughafen Muenchen Terminal 2');
     expect(_textOf(tester, 'From'), 'Leopoldstrasse 42, Muenchen');
     expect(_textOf(tester, 'To'), 'Flughafen Muenchen Terminal 2');
+  });
+
+  // Dark-mode regression: the ↕ swap icon used a hardcoded graphite foreground
+  // (AppColors.secretaryColor == AppColors.primary == surfaceDark), so in dark
+  // mode it was a dark icon on an identically dark surface — invisible. The
+  // fix reads the theme's onSurfaceVariant instead. This asserts the resolved
+  // foreground color is visible against the dark surface.
+  testWidgets('swap button icon is visible (not the dark surface color) in '
+      'dark theme', (tester) async {
+    final authBloc = _MockAuthBloc();
+    final formBloc = CreateRideFormBloc();
+    when(() => authBloc.apiClient).thenReturn(_MockApiClient());
+    when(
+      () => authBloc.state,
+    ).thenReturn(AuthState.authenticated(_dispatcher()));
+    addTearDown(formBloc.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(
+          body: MultiBlocProvider(
+            providers: [
+              BlocProvider<AuthBloc>.value(value: authBloc),
+              BlocProvider<CreateRideFormBloc>.value(value: formBloc),
+            ],
+            child: const CreateRideLocationSection(),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final button = tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byTooltip('Swap From / To'),
+        matching: find.byType(IconButton),
+      ),
+    );
+
+    // Resolve the button's foreground color the way the framework does, against
+    // the default (enabled) state.
+    final resolved = button.style!.foregroundColor!.resolve(<WidgetState>{});
+
+    // It must adapt to the dark theme and stay visible on the dark surface —
+    // i.e. NOT the graphite that matches surfaceDark.
+    expect(resolved, AppColors.textSecondaryDark); // onSurfaceVariant (dark)
+    expect(resolved, isNot(AppColors.surfaceDark));
+    expect(resolved, isNot(AppColors.primary));
   });
 }
