@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 enum CalendarViewType { month, week, day, multiColumn }
 
@@ -20,6 +21,8 @@ class CalendarControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
@@ -27,17 +30,21 @@ class CalendarControls extends StatelessWidget {
         children: [
           IconButton(
             onPressed: onPrevious,
-            icon: const Icon(Icons.chevron_left, color: Colors.white, size: 28),
-            tooltip: 'Previous',
+            icon: Icon(
+              Icons.chevron_left,
+              color: colorScheme.onSurfaceVariant,
+              size: 28,
+            ),
+            tooltip: MaterialLocalizations.of(context).previousMonthTooltip,
             visualDensity: VisualDensity.compact,
           ),
           Expanded(
             child: GestureDetector(
               onTap: onDatePickerTap,
               child: Text(
-                _getFormattedDate(selectedDay),
-                style: const TextStyle(
-                  color: Colors.white,
+                _getFormattedDate(selectedDay, locale),
+                style: TextStyle(
+                  color: colorScheme.onSurface,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -49,12 +56,12 @@ class CalendarControls extends StatelessWidget {
           ),
           IconButton(
             onPressed: onNext,
-            icon: const Icon(
+            icon: Icon(
               Icons.chevron_right,
-              color: Colors.white,
+              color: colorScheme.onSurfaceVariant,
               size: 28,
             ),
-            tooltip: 'Next',
+            tooltip: MaterialLocalizations.of(context).nextMonthTooltip,
             visualDensity: VisualDensity.compact,
           ),
         ],
@@ -62,54 +69,24 @@ class CalendarControls extends StatelessWidget {
     );
   }
 
-  String _getFormattedDate(DateTime date) {
+  String _getFormattedDate(DateTime date, String locale) {
     switch (viewType) {
       case CalendarViewType.month:
-        return '${_getMonthName(date.month)} ${date.year}';
+        return DateFormat.yMMMM(locale).format(date);
       case CalendarViewType.week:
         final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
         final endOfWeek = startOfWeek.add(const Duration(days: 6));
         if (startOfWeek.month == endOfWeek.month) {
-          return '${_getMonthName(startOfWeek.month)} ${startOfWeek.day}-${endOfWeek.day}, ${startOfWeek.year}';
+          final monthYear = DateFormat.yMMMM(locale).format(startOfWeek);
+          return '$monthYear (${startOfWeek.day}–${endOfWeek.day})';
         } else {
-          return '${_getMonthName(startOfWeek.month)} ${startOfWeek.day} - ${_getMonthName(endOfWeek.month)} ${endOfWeek.day}, ${startOfWeek.year}';
+          final start = DateFormat.MMMd(locale).format(startOfWeek);
+          final end = DateFormat.yMMMd(locale).format(endOfWeek);
+          return '$start – $end';
         }
       case CalendarViewType.day:
       case CalendarViewType.multiColumn:
-        return '${_getDayName(date.weekday)}, ${_getMonthName(date.month)} ${date.day}, ${date.year}';
+        return DateFormat.yMMMMEEEEd(locale).format(date);
     }
-  }
-
-  String _getMonthName(int month) {
-    const monthNames = [
-      '',
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return monthNames[month];
-  }
-
-  String _getDayName(int weekday) {
-    const dayNames = [
-      '',
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    return dayNames[weekday];
   }
 }
