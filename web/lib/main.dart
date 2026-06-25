@@ -16,7 +16,6 @@ import 'locale_notifier.dart';
 import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
 import 'dashboard/dashboard_screen.dart';
-import 'screens/guest_tracking_screen.dart';
 import 'modules/ride_management/services/ride_service.dart';
 import 'modules/ride_management/models/ride.dart';
 import 'modules/schedule_management/services/schedule_service.dart';
@@ -75,14 +74,6 @@ ThemeMode themeFromString(String? value) => switch (value) {
   _ => ThemeMode.system,
 };
 
-/// Extracts the guest tracking token from a `/track/<token>` URL, or null when the current URL is not a tracking link.
-/// Exposed for testing the route-matching in isolation.
-@visibleForTesting
-String? guestTrackingTokenFromPath(String path) {
-  final match = RegExp(r'^/track/([^/?#]+)').firstMatch(path);
-  return match?.group(1);
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -90,16 +81,9 @@ void main() async {
   themeModeNotifier.value = themeFromString(prefs.getString('theme_mode'));
   localeNotifier.value = localeFromString(prefs.getString('language'));
 
-  // Public guest tracking link: `/track/<token>` opens a standalone, auth-free page (no AuthBloc, no login). Only
-  // meaningful on web, where the browser URL carries the path; on mobile `Uri.base.path` is "/" so this is skipped.
-  final guestToken = guestTrackingTokenFromPath(Uri.base.path);
-  if (kIsWeb && guestToken != null) {
-    if (MapboxService.accessTokenOrEmpty.isNotEmpty) {
-      MapboxOptions.setAccessToken(MapboxService.accessTokenOrEmpty);
-    }
-    runApp(GuestTrackingApp(token: guestToken));
-    return;
-  }
+  // Note: the public guest tracking link `/track/<token>` is served as a standalone server-rendered HTML page
+  // (Mapbox GL JS) by the backend, NOT by this Flutter app — mapbox_maps_flutter does not render on web. So there is
+  // no in-app route for it here.
 
   // Mapbox Maps is not supported on web; its initializer calls
   // bool.fromEnvironment non-const, which throws on the DDC/web compiler
@@ -163,39 +147,6 @@ class MyApp extends StatelessWidget {
             supportedLocales: AppLocalizations.supportedLocales,
             home: const AppRoot(),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Standalone app shell for a public guest tracking link. No BLoC providers, no auth — just a localized MaterialApp
-/// hosting the [GuestTrackingScreen] for the given token.
-class GuestTrackingApp extends StatelessWidget {
-  final String token;
-
-  const GuestTrackingApp({super.key, required this.token});
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeModeNotifier,
-      builder: (context, themeMode, _) => ValueListenableBuilder<Locale?>(
-        valueListenable: localeNotifier,
-        builder: (context, locale, _) => MaterialApp(
-          title: 'Dispax',
-          theme: AppTheme.theme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: themeMode,
-          locale: locale,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: GuestTrackingScreen(token: token),
         ),
       ),
     );

@@ -1605,20 +1605,6 @@
   "corporateInvoiceLabel": "Корпоративний рахунок",
   "addPaymentMethodButton": "Додати спосіб оплати",
 
-  "guestTrackingTitle": "Відстеження поїздки",
-  "guestFindingDriver": "Шукаємо водія",
-  "guestDriverOnTheWay": "Водій у дорозі",
-  "guestOnTrip": "У дорозі",
-  "guestTripCompleted": "Поїздку завершено",
-  "guestTripCancelled": "Поїздку скасовано",
-  "guestDriverApproaching": "Ваш водій під'їжджає",
-  "guestPickup": "Подача",
-  "guestDropoff": "Призначення",
-  "guestLinkExpired": "Це посилання для відстеження більше недоступне.",
-  "guestEtaMinutes": "{minutes} хв",
-  "@guestEtaMinutes": {
-    "placeholders": { "minutes": { "type": "int" } }
-  },
   "shareRideLink": "Поділитися посиланням",
   "trackingLinkCopied": "Посилання скопійовано в буфер обміну"
 }
