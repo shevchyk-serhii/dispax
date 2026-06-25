@@ -169,11 +169,31 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     emit(state.copyWith(status: RideStateStatus.loading));
 
     try {
-      final rides = await privateRideService.getPendingRides();
-      emit(RideState.loaded(rides));
+      final pending = await privateRideService.getPendingRides();
+      emit(RideState.loaded(_mergePending(pending)));
     } catch (e) {
       emit(RideState.error('Failed to load pending rides: $e'));
     }
+  }
+
+  /// Merges a freshly fetched pending list (`GET /rides/pending`, which returns
+  /// ONLY [RideStatus.requested] rides) into the current `state.rides` WITHOUT
+  /// discarding the non-pending rides already held.
+  ///
+  /// The shared [RideBloc] backs both the dispatcher pending/assigned panels and
+  /// the driver "My Rides" screen, and every consumer filters the FULL list by
+  /// status (Assigned tab → assigned/confirmed/handedOff, My Rides → driverId,
+  /// stats → assigned/inProgress/completed). Previously this handler did
+  /// `emit(RideState.loaded(pending))`, replacing the whole list with pending
+  /// only, so a driver-dispatcher confirming their own ride (which fires a
+  /// WebSocket `RideConfirmed` → `RideLoadPendingRequested`) saw their just
+  /// confirmed ride vanish from My Rides until a manual full reload. Keeping the
+  /// non-requested rides and only refreshing the requested subset fixes that.
+  List<Ride> _mergePending(List<Ride> pending) {
+    final nonPending = state.rides
+        .where((r) => r.status != RideStatus.requested)
+        .toList();
+    return [...nonPending, ...pending];
   }
 
   Future<void> onAssignRequested(
@@ -250,9 +270,13 @@ class RideBloc extends Bloc<RideEvent, RideState> {
   /// Refreshes the pending list after a stale-state rejection, keeping the
   /// current rides if the reload itself fails (best effort — the goal is to drop
   /// the now-assigned ride from the pending tab, not to surface a load error).
+  ///
+  /// Merges via [_mergePending] so the refreshed pending (requested-only) subset
+  /// replaces the stale requested rows while the non-pending rides the other
+  /// consumers depend on are preserved.
   Future<List<Ride>> _reloadPendingSilently() async {
     try {
-      return await privateRideService.getPendingRides();
+      return _mergePending(await privateRideService.getPendingRides());
     } catch (_) {
       return state.rides;
     }
