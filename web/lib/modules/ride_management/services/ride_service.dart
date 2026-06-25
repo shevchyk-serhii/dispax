@@ -87,6 +87,31 @@ class RideService {
     }
   }
 
+  /// All rides assigned to [driverId], scoped to the caller's company by the
+  /// backend. Used by the dispatcher calendar to show a colleague's schedule
+  /// without disturbing the shared RideBloc (which is loaded for the logged-in
+  /// user and feeds the other dashboard tabs).
+  Future<List<Ride>> getDriverRides(String driverId) async {
+    try {
+      final response = await privateApiClient.get('/rides/driver/$driverId');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList
+            .map((json) => Ride.fromJson(json as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw ApiException(
+          'Failed to fetch driver rides: ${response.statusCode}',
+        );
+      }
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error fetching driver rides: $e');
+    }
+  }
+
   Future<Ride?> getRideById(String id) async {
     try {
       final response = await privateApiClient.get('/rides/$id');

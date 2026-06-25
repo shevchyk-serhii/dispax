@@ -92,8 +92,8 @@ void main() {
     when(() => authBloc.apiClient).thenReturn(apiClient);
 
     // Route GETs by path: visibility reflects [canViewOthers], drivers returns
-    // one colleague, everything else returns an empty list to keep the calendar
-    // widgets happy.
+    // one colleague, the colleague's rides endpoint returns one ride, and
+    // everything else returns an empty list to keep the calendar widgets happy.
     when(() => apiClient.get(any())).thenAnswer((invocation) async {
       final path = invocation.positionalArguments.first as String;
       if (path == '/schedules/visibility/me') {
@@ -103,6 +103,20 @@ void main() {
         return http.Response(
           '[{"id":"colleague-1","name":"Hans Weber",'
           '"email":"hans.weber@example.com","role":"DRIVER"}]',
+          200,
+        );
+      }
+      if (path == '/rides/driver/colleague-1') {
+        // One ride assigned to the selected colleague on 2026-03-15.
+        return http.Response(
+          '[{"id":"col-ride-1","clientId":"client-1","creatorId":"creator-1",'
+          '"companyId":"company-1","driverId":"colleague-1",'
+          '"pickupDateTime":"2026-03-15T10:00:00.000",'
+          '"from":{"address":"Pickup St","latitude":48.1,"longitude":11.5},'
+          '"to":{"address":"Dropoff St","latitude":48.2,"longitude":11.6},'
+          '"status":"Assigned","clientName":"Colleague Client",'
+          '"isAirportTransfer":false,"isArrival":false,'
+          '"driverApproaching":false}]',
           200,
         );
       }
@@ -120,6 +134,11 @@ void main() {
     // order-independent.
     CalendarScheduleScreen.viewTypeNotifierForTest.value =
         CalendarViewType.month;
+    CalendarScheduleScreen.selectedDayNotifierForTest.value = DateTime(
+      2026,
+      3,
+      15,
+    );
   });
 
   Widget buildApp(Person user) {
@@ -220,6 +239,52 @@ void main() {
 
       expect(find.byType(DropdownButton<String?>), findsNothing);
       expect(find.text('My Schedule'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'selecting a colleague loads and renders THEIR rides, not the shared '
+    'RideBloc',
+    (tester) async {
+      // A roomy viewport so the day-view ride card's action row lays out
+      // without a RenderFlex overflow (unrelated to what we assert).
+      tester.view.physicalSize = const Size(1000, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // The shared RideBloc holds NO rides for the logged-in dispatcher — this
+      // is the bug scenario: before the fix the grid read this empty list and
+      // stayed blank when a colleague was picked.
+      when(() => rideBloc.state).thenReturn(RideState.loaded(const []));
+
+      await tester.pumpWidget(buildApp(_selfDriver()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Switch to the day view so individual ride cards (with the client name)
+      // are rendered rather than month markers.
+      CalendarScheduleScreen.viewTypeNotifierForTest.value =
+          CalendarViewType.day;
+      await tester.pump();
+
+      // Open the driver picker and choose the colleague.
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hans Weber').last);
+      await tester.pump(); // dropdown closes, _loadDriverRides starts
+      await tester.pump(const Duration(milliseconds: 50)); // load resolves
+      await tester.pumpAndSettle();
+
+      // The colleague's rides endpoint was hit...
+      verify(() => apiClient.get('/rides/driver/colleague-1')).called(1);
+      // ...and their ride is rendered even though the shared RideBloc is empty.
+      expect(
+        find.text('Colleague Client'),
+        findsOneWidget,
+        reason:
+            'the selected colleague\'s ride must show, sourced from '
+            '/rides/driver/{id}, not the empty shared RideBloc',
+      );
     },
   );
 
