@@ -148,8 +148,10 @@ class RideService {
     }
   }
 
-  /// Create (or reuse) a public guest tracking link for a ride. Returns the absolute URL to share. The backend
-  /// returns a relative `path` (`/track/<token>`); we prefix the current web origin so the link is shareable as-is.
+  /// Create (or reuse) a public guest tracking link for a ride. Returns an absolute URL to share.
+  ///
+  /// Prefers the absolute `url` the backend builds from PUBLIC_BASE_URL. When the backend has no base URL configured
+  /// (url == path, i.e. relative), prefix the current web origin so the link is still shareable as-is.
   Future<String> createShareLink(String rideId) async {
     final response = await privateApiClient.post(
       '/rides/$rideId/share-link',
@@ -158,13 +160,17 @@ class RideService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> json = jsonDecode(response.body);
       final path = json['path'] as String? ?? '/track/${json['token']}';
-      // Prefix the web origin so the link is shareable as-is. `Uri.base.origin` only works for http/https (on web);
-      // off-web (or in tests) it throws, so fall back to the relative path.
+      final url = json['url'] as String? ?? path;
+      // If the backend already returned an absolute URL, use it verbatim.
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      // Otherwise build one from the page origin (web only; off-web Uri.base.origin throws → fall back to path).
       final base = Uri.base;
       if (base.scheme == 'http' || base.scheme == 'https') {
-        return '${base.origin}$path';
+        return '${base.origin}$url';
       }
-      return path;
+      return url;
     }
     throw ApiException.fromResponse(response, 'Failed to create tracking link');
   }
