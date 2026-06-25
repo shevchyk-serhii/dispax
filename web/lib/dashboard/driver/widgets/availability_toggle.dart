@@ -18,6 +18,12 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
   bool _isAvailable = false;
   bool _isUpdating = false;
 
+  // Once the driver has changed availability themselves, the in-flight initial
+  // load (or any later reload) must not overwrite that choice with the stale
+  // server value it captured before the toggle. This guard makes the user's
+  // action win the race and prevents the Switch from snapping back.
+  bool _userHasToggled = false;
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +37,9 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
       context.read<AuthBloc>().apiClient,
     );
     final available = await service.isAvailable(user.id.toString());
-    if (mounted) {
+    // Drop a load that resolved after the user already toggled — its value is
+    // stale and would snap the Switch back to the pre-toggle state.
+    if (mounted && !_userHasToggled) {
       setState(() => _isAvailable = available);
     }
   }
@@ -41,7 +49,10 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
     final user = context.read<AuthBloc>().state.user;
     if (user == null) return;
 
-    setState(() => _isUpdating = true);
+    setState(() {
+      _isUpdating = true;
+      _userHasToggled = true;
+    });
 
     try {
       final service = DriverAvailabilityService(
