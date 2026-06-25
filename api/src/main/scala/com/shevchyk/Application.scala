@@ -35,6 +35,7 @@ import com.shevchyk.ride.repository.{
 }
 import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.core.config.HereConfig
+import com.shevchyk.core.config.MapboxConfig
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.schedule.application.{
@@ -53,7 +54,7 @@ import com.shevchyk.billing.repository.{
   ClientCompanyRepository => BillingClientCompanyRepository,
   CompanyBillingProfileRepository
 }
-import com.shevchyk.app.routes.{WebSocketRoutes, DevRoutes, HealthRoutes}
+import com.shevchyk.app.routes.{WebSocketRoutes, DevRoutes, HealthRoutes, TrackPageRoutes}
 import com.shevchyk.core.repository.{
   PersonRepository,
   CompanyRepository,
@@ -177,6 +178,9 @@ object Application extends ZIOAppDefault:
 
   private val wsRoutes = WebSocketRoutes.wsRoutes
 
+  // Public server-rendered guest tracking page (GET /track/{token}) — plain HTML + Mapbox GL JS, no app/login.
+  private val trackPageRoutes = TrackPageRoutes.routes
+
   def run: ZIO[Any, Throwable, Nothing] = ZIO
     .serviceWithZIO[ServerConfig] { serverConfig =>
       PushNotificationListener.start *>
@@ -206,7 +210,7 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + schedule + notification + PostgreSQL repositories") *>
         ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
         Server.serve(
-          (publicRoutes ++ openApiRoutes ++ devRoutes ++ wsRoutes)
+          (publicRoutes ++ openApiRoutes ++ devRoutes ++ wsRoutes ++ trackPageRoutes)
             .handleErrorCauseZIO { cause =>
               ZIO
                 .logErrorCause("Unhandled server error", cause)
@@ -289,6 +293,7 @@ object Application extends ZIOAppDefault:
       InvoiceService.layerWithLanguage(sys.env.getOrElse("EMAIL_DEFAULT_LANG", "de")),
       PaymentChecker.mockLayer,
       HereConfig.liveLayer,
+      MapboxConfig.liveLayer,
       AirportPickupConfig.liveLayer,
       GeocodingService.layer,
       HereRoutingService.layer,
