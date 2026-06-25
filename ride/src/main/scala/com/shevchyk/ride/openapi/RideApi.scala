@@ -358,7 +358,7 @@ object RideApi:
               service
                 .assignDriver(ride0.id, driverPid)
                 .catchSome {
-                  case RideError.ScheduleConflict(_)                           => ZIO.succeed(ride0)
+                  case _: RideError.ScheduleConflict                           => ZIO.succeed(ride0)
                   case RideError.BusinessRuleViolation("company_isolation", _) => ZIO.succeed(ride0)
                 }
                 .mapError(fromRideError)

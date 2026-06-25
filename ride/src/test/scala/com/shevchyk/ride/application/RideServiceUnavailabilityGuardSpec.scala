@@ -238,8 +238,8 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
             } yield assertTrue(result match {
               case Exit.Failure(cause) =>
                 cause.failureOption.exists {
-                  case RideError.ScheduleConflict(_) => true
-                  case _                             => false
+                  case RideError.ScheduleConflict(_, _, _, _, _, _) => true
+                  case _                                            => false
                 }
               case _                   => false
             })).provideEnvironment(env)
@@ -322,8 +322,8 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
             } yield assertTrue(result match {
               case Exit.Failure(cause) =>
                 cause.failureOption.exists {
-                  case RideError.ScheduleConflict(msg) => msg.contains("Lunch")
-                  case _                               => false
+                  case RideError.ScheduleConflict(msg, _, _, _, _, _) => msg.contains("Lunch")
+                  case _                                              => false
                 }
               case _                   => false
             })).provideEnvironment(env)
@@ -348,8 +348,8 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.ScheduleConflict(_) => true
-                case _                             => false
+                case RideError.ScheduleConflict(_, _, _, _, _, _) => true
+                case _                                            => false
               }
             case _                   => false
           })
@@ -366,8 +366,8 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.ScheduleConflict(_) => true
-                case _                             => false
+                case RideError.ScheduleConflict(_, _, _, _, _, _) => true
+                case _                                            => false
               }
             case _                   => false
           })

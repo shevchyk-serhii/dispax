@@ -4,7 +4,7 @@ import com.shevchyk.auth.domain.{ExpiredTokenError, InvalidTokenError, JwtError}
 import com.shevchyk.auth.middleware.AuthenticatedUser
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.{CompanyId, PersonId, PersonRole, RideId}
-import com.shevchyk.core.openapi.ApiError
+import com.shevchyk.core.openapi.{ApiError, ScheduleConflictDetails}
 import sttp.model.StatusCode
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
@@ -87,20 +87,33 @@ object RideSecure:
   def fromRideError(ex: Throwable): Err =
     import com.shevchyk.ride.domain.RideError
     ex match
-      case RideError.ValidationError(msg)              => (StatusCode.BadRequest, ApiError(s"Validation error: $msg"))
-      case RideError.RideNotFound(id)                  => (StatusCode.NotFound, ApiError(s"Ride not found: ${id.value}"))
-      case RideError.PersonNotFound(id)                => (StatusCode.NotFound, ApiError(s"Person not found: ${id.value}"))
-      case RideError.DriverNotFound(id)                => (StatusCode.NotFound, ApiError(s"Driver not found: ${id.value}"))
-      case RideError.UnauthorizedAccess(_, _)          => (StatusCode.Forbidden, ApiError("Access denied"))
-      case RideError.InvalidStatusTransition(from, to) =>
+      case RideError.ValidationError(msg)                                        => (StatusCode.BadRequest, ApiError(s"Validation error: $msg"))
+      case RideError.RideNotFound(id)                                            => (StatusCode.NotFound, ApiError(s"Ride not found: ${id.value}"))
+      case RideError.PersonNotFound(id)                                          => (StatusCode.NotFound, ApiError(s"Person not found: ${id.value}"))
+      case RideError.DriverNotFound(id)                                          => (StatusCode.NotFound, ApiError(s"Driver not found: ${id.value}"))
+      case RideError.UnauthorizedAccess(_, _)                                    => (StatusCode.Forbidden, ApiError("Access denied"))
+      case RideError.InvalidStatusTransition(from, to)                           =>
         (StatusCode.Conflict, ApiError(s"Cannot transition from $from to $to"))
-      case RideError.RideAlreadyAssigned(_, _)         => (StatusCode.Conflict, ApiError("Ride already assigned"))
-      case RideError.ScheduleConflict(msg)             => (StatusCode.Conflict, ApiError(msg))
-      case RideError.BusinessRuleViolation(_, msg)     => (StatusCode.BadRequest, ApiError(msg))
-      case RideError.InvalidOperation(msg)             => (StatusCode.UnprocessableEntity, ApiError(msg))
-      case RideError.ExternalDriverNotFound(id)        =>
+      case RideError.RideAlreadyAssigned(_, _)                                   => (StatusCode.Conflict, ApiError("Ride already assigned"))
+      case RideError.ScheduleConflict(msg, rideId, clientId, from, to, pickupAt) =>
+        val details =
+          if rideId.isEmpty && from.isEmpty then None
+          else
+            Some(
+              ScheduleConflictDetails(
+                rideId = rideId.map(_.value.toString),
+                clientId = clientId.map(_.value.toString),
+                from = from,
+                to = to,
+                pickupAt = pickupAt.map(_.toString)
+              )
+            )
+        (StatusCode.Conflict, ApiError(msg, scheduleConflict = details))
+      case RideError.BusinessRuleViolation(_, msg)                               => (StatusCode.BadRequest, ApiError(msg))
+      case RideError.InvalidOperation(msg)                                       => (StatusCode.UnprocessableEntity, ApiError(msg))
+      case RideError.ExternalDriverNotFound(id)                                  =>
         (StatusCode.NotFound, ApiError(s"External driver not found: ${id.value}"))
-      case RideError.PartnerCompanyNotFound(id)        =>
+      case RideError.PartnerCompanyNotFound(id)                                  =>
         (StatusCode.NotFound, ApiError(s"Partner company not found: ${id.value}"))
-      case RideError.DatabaseError(_)                  => (StatusCode.InternalServerError, ApiError("Internal server error"))
-      case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
+      case RideError.DatabaseError(_)                                            => (StatusCode.InternalServerError, ApiError("Internal server error"))
+      case _                                                                     => (StatusCode.InternalServerError, ApiError("Internal server error"))

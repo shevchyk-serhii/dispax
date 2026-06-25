@@ -1322,7 +1322,12 @@ class RideServiceImpl(
    * CompanyId is taken from the candidate ride — never caller-supplied — to preserve tenant isolation.
    */
   private def checkScheduleConflict(driverId: PersonId, candidateRide: Ride): IO[RideError, Unit] =
-    val candidateTime = candidateRide.scheduledTime.getOrElse(candidateRide.requestTime)
+    // The real "when the driver is occupied" time is the pickup time, which is
+    // always present in pickupDateTime. scheduledTime is only set for airport
+    // departures (the flight time) and is None for ordinary rides — falling back
+    // to requestTime there compared *request creation* times, so two rides
+    // created at about the same moment but on different days collided falsely.
+    val candidateTime = candidateRide.pickupDateTime
     val windowSeconds = (DefaultRideDurationMinutes + MinBufferMinutes) * 60
     val windowFrom    = candidateTime.minusSeconds(MinBufferMinutes * 60)
     val windowTo      = candidateTime.plusSeconds(windowSeconds)
@@ -1333,19 +1338,30 @@ class RideServiceImpl(
                               r.status == RideStatus.InProgress) &&
                               r.id != candidateRide.id // exclude self (relevant for reassign)
                           )
-      conflict          = activeRides.find { existing =>
-                            val existingTime = existing.scheduledTime.getOrElse(existing.requestTime)
-                            ridesOverlap(candidateTime, existingTime)
-                          }
+      conflict          = activeRides.find(existing => ridesOverlap(candidateTime, existing.pickupDateTime))
       _                <-
         conflict match
           case Some(conflicting) =>
-            val conflictTime = conflicting.scheduledTime.getOrElse(conflicting.requestTime)
-            val msg          =
-              s"Driver already has ride ${conflicting.id.value} " +
-                s"at ${conflictTime} — time windows overlap (buffer ${MinBufferMinutes} min)"
-            ZIO.logWarning(s"assignDriver rejected: rule=schedule_conflict msg=$msg") *>
-              ZIO.fail(RideError.ScheduleConflict(msg))
+            // Human-readable fallback message (route + pickup time). The
+            // structured fields let the client render a localized dialog with
+            // the client name and the dispatcher's local time.
+            val msg =
+              s"Driver already has a ride from ${conflicting.pickupLocation.address} " +
+                s"to ${conflicting.dropoffLocation.address} at ${conflicting.pickupDateTime} " +
+                s"— time windows overlap (buffer ${MinBufferMinutes} min)"
+            ZIO.logWarning(
+              s"assignDriver rejected: rule=schedule_conflict rideId=${conflicting.id.value} msg=$msg"
+            ) *>
+              ZIO.fail(
+                RideError.ScheduleConflict(
+                  message = msg,
+                  conflictingRideId = Some(conflicting.id),
+                  conflictingClientId = Some(conflicting.clientId),
+                  conflictingFrom = Some(conflicting.pickupLocation.address),
+                  conflictingTo = Some(conflicting.dropoffLocation.address),
+                  conflictingPickupAt = Some(conflicting.pickupDateTime)
+                )
+              )
           case None              => ZIO.unit
       // Check manual unavailability windows (uses the candidateRide's companyId for tenant safety).
       unavailableSlots <- availabilityChecker
