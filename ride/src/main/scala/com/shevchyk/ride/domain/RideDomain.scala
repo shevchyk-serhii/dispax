@@ -164,7 +164,7 @@ enum PaymentStatus:
   case Unpaid, Pending, Paid
 
 enum PaymentMethod:
-  case Cash, Card, Invoice, Bank, Receivable
+  case Cash, Card, Invoice, Bank, Receivable, Payment
 
 sealed trait RideSpecifics
 
@@ -298,6 +298,8 @@ final case class CreateRideRequest(
     specifics: Option[RideSpecifics] = None,
     specialRequirements: Option[String] = None,
     vehicleClass: VehicleClass = VehicleClass.Default,
+    // Operator-selected payment method chosen at ride creation. None leaves it unset.
+    paymentMethod: Option[PaymentMethod] = None,
     // Client/operator-supplied fare estimate. Stored on the ride as estimatedPrice when present;
     // None leaves the ride unpriced (RideEstimateService is invoked separately, not here).
     estimatedPrice: Option[BigDecimal] = None,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:dispax/l10n/app_localizations.dart';
+import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../modules/core/widgets/ride_info_row.dart';
 
@@ -48,6 +50,21 @@ class RideAssignedDetails extends StatelessWidget {
           icon: Icons.euro,
           label: 'Price',
           text: '€${r.price!.toStringAsFixed(2)}',
+        ),
+      );
+    }
+
+    final paymentLabel = PaymentMethod.labelForWire(
+      r.paymentMethod,
+      AppLocalizations.of(context)!,
+    );
+    if (paymentLabel != null) {
+      rows.add(const SizedBox(height: 12));
+      rows.add(
+        RideInfoRow(
+          icon: Icons.payments_outlined,
+          label: AppLocalizations.of(context)!.paymentMethodSelectLabel,
+          text: paymentLabel,
         ),
       );
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import '../../../modules/ride_management/models/payment_method.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
@@ -146,6 +147,21 @@ class AssignmentDialog extends StatelessWidget {
                               value: '€${ride.price!.toStringAsFixed(2)}',
                               isDark: isDark,
                               accent: true,
+                            ),
+                          if (PaymentMethod.labelForWire(
+                                ride.paymentMethod,
+                                l10n,
+                              ) !=
+                              null)
+                            _infoRow(
+                              context,
+                              icon: Icons.payments_outlined,
+                              label: l10n.paymentMethodSelectLabel,
+                              value: PaymentMethod.labelForWire(
+                                ride.paymentMethod,
+                                l10n,
+                              )!,
+                              isDark: isDark,
                             ),
                         ],
                       ),

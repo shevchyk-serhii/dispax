@@ -114,7 +114,9 @@ case class CreateRideApiRequest(
     notes: Option[String] = None,
     specialRequirements: Option[String] = None,
     driverId: Option[String] = None,
-    vehicleClass: Option[String] = None
+    vehicleClass: Option[String] = None,
+    // Operator-selected payment method (wire enum name, e.g. "Invoice"). Absent leaves it unset.
+    paymentMethod: Option[String] = None
 ) derives JsonCodec
 
 case class UpdateRideApiRequest(
@@ -455,6 +457,11 @@ object CreateRideApiRequest:
 
     val parsedVehicleClass = request.vehicleClass.flatMap(VehicleClass.fromString).getOrElse(VehicleClass.Default)
 
+    // paymentMethod: parse the wire enum name (e.g. "Invoice"); unknown/absent values stay None.
+    val parsedPaymentMethod: Option[PaymentMethod] = request.paymentMethod.flatMap(s =>
+      scala.util.Try(PaymentMethod.valueOf(s)).toOption
+    )
+
     // pickupDateTime: parse the operator-supplied value when present; pass None otherwise.
     // A None signals "compute automatically" for airport departure rides.
     val parsedPickupDateTime: Option[Instant] = request.pickupDateTime.flatMap(parseInstantOpt)
@@ -474,6 +481,7 @@ object CreateRideApiRequest:
         specifics = specifics,
         specialRequirements = request.specialRequirements,
         vehicleClass = parsedVehicleClass,
+        paymentMethod = parsedPaymentMethod,
         // Convert the wire Double price into the domain BigDecimal estimate (None stays None).
         estimatedPrice = request.price.map(BigDecimal(_)),
         pickupDateTime = parsedPickupDateTime

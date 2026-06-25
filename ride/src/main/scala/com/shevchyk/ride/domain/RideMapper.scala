@@ -22,5 +22,7 @@ object RideMapper:
     notes = request.notes,
     specifics = request.specifics,
     specialRequirements = request.specialRequirements,
-    vehicleClass = request.vehicleClass
+    vehicleClass = request.vehicleClass,
+    // Operator-selected payment method carried from the create request (None leaves it unset).
+    paymentMethod = request.paymentMethod
   )

@@ -3122,10 +3122,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentMethodLabel => 'Payment Method:';
 
   @override
+  String get paymentMethodSelectLabel => 'Payment Method';
+
+  @override
+  String get paymentMethodPayment => 'Payment';
+
+  @override
   String get paymentMethodCash => 'Cash';
 
   @override
-  String get paymentMethodCard => 'Card';
+  String get paymentMethodCard => 'Credit Card';
 
   @override
   String get paymentMethodInvoice => 'Invoice';

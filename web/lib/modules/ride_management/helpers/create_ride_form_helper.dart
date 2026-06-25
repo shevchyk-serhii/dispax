@@ -144,6 +144,7 @@ class CreateRideFormHelper {
           : null,
       driverId: formState.selectedDriverId,
       vehicleClass: formState.selectedVehicleClass,
+      paymentMethod: formState.selectedPaymentMethod,
       price: formState.price,
     );
 

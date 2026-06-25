@@ -1503,8 +1503,10 @@
   "allRidesPaidLabel": "All rides are paid",
   "markAsPaidDialogTitle": "Mark as Paid",
   "paymentMethodLabel": "Payment Method:",
+  "paymentMethodSelectLabel": "Payment Method",
+  "paymentMethodPayment": "Payment",
   "paymentMethodCash": "Cash",
-  "paymentMethodCard": "Card",
+  "paymentMethodCard": "Credit Card",
   "paymentMethodInvoice": "Invoice",
   "amountLabel": "Amount: {amount} EUR",
   "@amountLabel": {

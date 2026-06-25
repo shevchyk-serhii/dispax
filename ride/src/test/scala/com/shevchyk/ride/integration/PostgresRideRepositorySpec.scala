@@ -51,7 +51,8 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
       driver: Option[PersonId] = None,
       scheduledTime: Option[Instant] = None,
       notes: Option[String] = None,
-      specifics: Option[RideSpecifics] = None
+      specifics: Option[RideSpecifics] = None,
+      paymentMethod: Option[PaymentMethod] = None
   ): Ride = Ride(
     id = id,
     clientId = clientId,
@@ -65,7 +66,8 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     scheduledTime = scheduledTime,
     requestTime = Instant.now(),
     notes = notes,
-    specifics = specifics
+    specifics = specifics,
+    paymentMethod = paymentMethod
   )
 
   def spec =
@@ -88,6 +90,22 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           found.get.pickupLocation.address == "Munich Airport",
           found.get.dropoffLocation.address == "Marienplatz",
           found.get.status == RideStatus.Requested
+        )
+      },
+      // Round-trips the new 'Payment' enum value through a real PostgreSQL column. This proves the
+      // V16 migration added the value to the payment_method type — without it the INSERT would fail.
+      test("create and findById round-trip the new Payment payment method") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          ride   = makeRide(paymentMethod = Some(PaymentMethod.Payment))
+          _     <- repo.create(ride)
+          found <- repo.findById(ride.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.paymentMethod.contains(PaymentMethod.Payment)
         )
       },
       test("create with AirportTransfer specifics") {

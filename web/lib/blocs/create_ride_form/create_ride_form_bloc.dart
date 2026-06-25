@@ -33,6 +33,7 @@ class CreateRideFormBloc
     on<NewClientModeToggled>(_onNewClientModeToggled);
     on<NewClientPhoneChanged>(_onNewClientPhoneChanged);
     on<VehicleClassSelected>(_onVehicleClassSelected);
+    on<PaymentMethodSelected>(_onPaymentMethodSelected);
     on<ScheduleModeToggled>(_onScheduleModeToggled);
     on<EstimateReceived>(_onEstimateReceived);
   }
@@ -329,6 +330,13 @@ class CreateRideFormBloc
     Emitter<CreateRideFormState> emit,
   ) {
     emit(state.copyWith(selectedVehicleClass: event.vehicleClass));
+  }
+
+  void _onPaymentMethodSelected(
+    PaymentMethodSelected event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    emit(state.copyWith(selectedPaymentMethod: event.paymentMethod));
   }
 
   void _onScheduleModeToggled(

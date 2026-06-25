@@ -1,4 +1,5 @@
 import '../../core/models/location.dart';
+import 'payment_method.dart';
 import 'vehicle_class.dart';
 
 /// Request model for creating a ride.
@@ -36,6 +37,10 @@ class CreateRideRequest {
   final String? newClientPhone;
   final VehicleClass vehicleClass;
 
+  /// Operator-selected payment method. Defaults to [PaymentMethod.invoice]
+  /// (Rechnung) and is always sent to the backend.
+  final PaymentMethod paymentMethod;
+
   /// Operator-supplied ride price (€). Optional — omitted from the payload when
   /// null, in which case the backend creates the ride without a price.
   final double? price;
@@ -57,6 +62,7 @@ class CreateRideRequest {
     this.driverId,
     this.newClientPhone,
     this.vehicleClass = VehicleClass.business,
+    this.paymentMethod = PaymentMethod.invoice,
     this.price,
   });
 
@@ -87,6 +93,7 @@ class CreateRideRequest {
       if (newClientPhone != null && newClientPhone!.isNotEmpty)
         'clientPhone': newClientPhone,
       'vehicleClass': vehicleClass.wire,
+      'paymentMethod': paymentMethod.wire,
       if (price != null) 'price': price,
     };
   }
