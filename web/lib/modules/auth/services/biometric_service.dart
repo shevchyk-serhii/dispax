@@ -81,16 +81,25 @@ class BiometricService {
   }
 
   /// Authenticates the user using biometric authentication
+  /// Prompts the platform biometric check.
+  ///
+  /// [requireEnabled] guards the "biometric login is turned on" precondition.
+  /// It must stay true for the login flow (don't prompt if the user never opted
+  /// in), but the SETUP flow passes false: setup is the act of enabling
+  /// biometrics, so the enabled flag is still false at that point and requiring
+  /// it would make enabling impossible ("Biometrics is disabled in app
+  /// settings" on every attempt).
   Future<BiometricAuthResult> authenticate({
     String? reason,
     bool stickyAuth = true,
+    bool requireEnabled = true,
   }) async {
     try {
       if (!await isAvailable) {
         return BiometricAuthResult.unavailable;
       }
 
-      if (!await isBiometricEnabled) {
+      if (requireEnabled && !await isBiometricEnabled) {
         return BiometricAuthResult.disabled;
       }
 

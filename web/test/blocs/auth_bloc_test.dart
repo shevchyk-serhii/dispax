@@ -81,6 +81,38 @@ void main() {
       ],
     );
 
+    // Regression: a password login must carry the biometric flags from
+    // BiometricService into the authenticated state. Previously the login
+    // handler emitted AuthState.authenticated(user) without them, so they
+    // defaulted to false and the Face ID button stayed hidden after login even
+    // when biometrics were already enabled (until the next session restore).
+    blocTest<AuthBloc, AuthState>(
+      'AuthLoginRequested success propagates biometric flags into authenticated',
+      build: () {
+        final person = TestFixtures.person();
+        when(() => mockApiClient.login(any(), any())).thenAnswer(
+          (_) async => {'person': person.toJson(), 'token': 'test-token'},
+        );
+        when(
+          () => mockBiometricService.isAvailable,
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockBiometricService.isBiometricEnabled,
+        ).thenAnswer((_) async => true);
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
+      ),
+      expect: () => [
+        AuthState.loading(),
+        isA<AuthState>()
+            .having((s) => s.status, 'status', AuthStatus.authenticated)
+            .having((s) => s.biometricAvailable, 'biometricAvailable', true)
+            .having((s) => s.biometricEnabled, 'biometricEnabled', true),
+      ],
+    );
+
     blocTest<AuthBloc, AuthState>(
       'AuthLoginRequested null response emits error',
       build: () {
@@ -227,10 +259,17 @@ void main() {
         when(
           () => mockBiometricService.isAvailable,
         ).thenAnswer((_) async => true);
+        // Regression: at setup time biometrics are NOT yet enabled. The setup
+        // path must call authenticate with requireEnabled:false, otherwise the
+        // service short-circuits to "disabled" and enabling is impossible.
+        when(
+          () => mockBiometricService.isBiometricEnabled,
+        ).thenAnswer((_) async => false);
         when(
           () => mockBiometricService.authenticate(
             reason: any(named: 'reason'),
             stickyAuth: any(named: 'stickyAuth'),
+            requireEnabled: any(named: 'requireEnabled'),
           ),
         ).thenAnswer((_) async => BiometricAuthResult.success);
         when(
@@ -252,6 +291,16 @@ void main() {
           true,
         ),
       ],
+      verify: (_) {
+        // Setup must bypass the "enabled" precondition.
+        verify(
+          () => mockBiometricService.authenticate(
+            reason: any(named: 'reason'),
+            stickyAuth: any(named: 'stickyAuth'),
+            requireEnabled: false,
+          ),
+        ).called(1);
+      },
     );
 
     test('apiClient is the same instance after repeated logins', () async {

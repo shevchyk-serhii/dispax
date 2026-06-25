@@ -235,7 +235,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           }
         }
 
-        emit(AuthState.authenticated(user));
+        // Carry the biometric flags into the authenticated state so the Face ID
+        // login button (gated on biometricAvailable && biometricEnabled) shows
+        // immediately after a password login when biometrics are already set up,
+        // and so the Settings toggle reflects availability. Mirrors
+        // _onInitializeRequested; without this they defaulted to false and the
+        // button stayed hidden until the next app launch / session restore.
+        bool biometricAvailable = false;
+        bool biometricEnabled = false;
+        try {
+          biometricAvailable = await privateBiometricService.isAvailable;
+          biometricEnabled = await privateBiometricService.isBiometricEnabled;
+        } catch (_) {
+          // Biometric not available on this platform
+        }
+
+        emit(
+          AuthState.authenticated(
+            user,
+            biometricEnabled: biometricEnabled,
+            biometricAvailable: biometricAvailable,
+          ),
+        );
       } else {
         emit(AuthState.error('Invalid email or password'));
       }
@@ -393,8 +414,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       if (event.enabled) {
+        // requireEnabled:false — this IS the enable step, so the persisted
+        // flag is still false here; gating on it would make setup impossible.
         final result = await privateBiometricService.authenticate(
           reason: 'Confirm biometric login setup',
+          requireEnabled: false,
         );
 
         if (result.isSuccess) {
