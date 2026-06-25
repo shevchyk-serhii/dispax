@@ -30,6 +30,7 @@ import com.shevchyk.ride.repository.{
 import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.core.config.HereConfig
 import com.shevchyk.core.config.MapboxConfig
+import com.shevchyk.core.config.PublicLinkConfig
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.schedule.application.{
@@ -275,6 +276,7 @@ object Application extends ZIOAppDefault:
       PaymentChecker.mockLayer,
       HereConfig.liveLayer,
       MapboxConfig.liveLayer,
+      PublicLinkConfig.liveLayer,
       AirportPickupConfig.liveLayer,
       GeocodingService.layer,
       HereRoutingService.layer,

@@ -594,14 +594,27 @@ load-test:
 
 # ─── Deploy ─────────────────────────────────────────────────────────────────
 
-# Build and push Docker image, then deploy to Cloud Run
+# Build and push Docker image, then deploy to Cloud Run.
+#
+# --update-env-vars (not --set-env-vars) merges values in without wiping the
+# service's other env (DATABASE_URL, JWT_SECRET, …):
+#   PUBLIC_BASE_URL    — base for absolute guest tracking links (<base>/track/<token>)
+#   MAPBOX_ACCESS_TOKEN — public pk.* token for the server-rendered /track map page
+# PUBLIC_BASE_URL is always set (= PROD_URL). MAPBOX_ACCESS_TOKEN is only sent when
+# non-empty (it comes from .env.dev), so a deploy without .env.dev never clobbers a
+# token already configured on the service. Both degrade gracefully if unset
+# (relative link / no map) rather than break.
 deploy:
 	sbt assembly
 	docker buildx build --platform linux/amd64 --provenance=false --sbom=false -t $(GCP_IMAGE) --push .
+	@ENV_VARS="PUBLIC_BASE_URL=$(PROD_URL)"; \
+	if [ -n "$(MAPBOX_ACCESS_TOKEN)" ]; then ENV_VARS="$$ENV_VARS,MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)"; \
+	else echo "⚠️  MAPBOX_ACCESS_TOKEN empty (no .env.dev?) — leaving the service's existing value unchanged"; fi; \
 	gcloud run services update $(GCP_SERVICE) \
 		--project $(GCP_PROJECT) \
 		--region $(GCP_REGION) \
-		--image $(GCP_IMAGE)
+		--image $(GCP_IMAGE) \
+		--update-env-vars "$$ENV_VARS"
 	@echo "✅ Deployed to $(PROD_URL)"
 
 # Tail Cloud Run logs

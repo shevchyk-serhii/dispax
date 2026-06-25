@@ -251,7 +251,8 @@ class DayViewWidget extends StatelessWidget {
                 tooltip: l10n.callClient,
               ),
               IconButton(
-                onPressed: () => _handleNavigation(context, ride),
+                onPressed: () =>
+                    NavigationUtils.showNavigateToDialog(context, ride),
                 icon: const Icon(Icons.navigation, color: AppColors.info),
                 tooltip: l10n.startNavigation,
               ),
@@ -339,56 +340,6 @@ class DayViewWidget extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _handleNavigation(BuildContext context, Ride ride) async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final choice = await showAdaptiveDialog<String>(
-        context: context,
-        builder: (ctx) => SimpleDialog(
-          title: Text(l10n.navigateTo),
-          children: [
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, 'pickup'),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.location_on,
-                  color: AppColors.success,
-                ),
-                title: Text(ride.from.address),
-                subtitle: Text(l10n.pickupLocation),
-              ),
-            ),
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, 'dropoff'),
-              child: ListTile(
-                leading: const Icon(Icons.flag, color: AppColors.error),
-                title: Text(ride.to.address),
-                subtitle: Text(l10n.dropoffLocation),
-              ),
-            ),
-          ],
-        ),
-      );
-
-      if (choice == null) return;
-
-      switch (choice) {
-        case 'pickup':
-          await NavigationUtils.openGoogleMapsNavigation(ride.from);
-        case 'dropoff':
-          await NavigationUtils.openGoogleMapsNavigation(ride.to);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        NavigationHelper.showSnackBar(
-          context,
-          l10n.couldNotOpenNavigation(e.toString()),
-          isError: true,
-        );
-      }
-    }
   }
 
   Widget buildTravelTimeIndicator(BuildContext context, int minutes) {

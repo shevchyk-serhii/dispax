@@ -11,6 +11,7 @@ import '../../modules/driver_management/services/driver_availability_service.dar
 import '../../modules/driver_management/widgets/widgets.dart';
 import '../../modules/core/widgets/widgets.dart';
 import '../../modules/core/navigation_helper.dart';
+import '../../modules/core/navigation_utils.dart';
 import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/location_service.dart';
 import '../../widgets/common/notification_bell.dart';
@@ -1104,7 +1105,8 @@ class _LiveRideCard extends StatelessWidget {
             DriverRideActionsRow(
               ride: ride,
               isDark: isDark,
-              onNavigate: () => _handleNavigate(context, ride),
+              onNavigate: () =>
+                  NavigationUtils.showNavigateToDialog(context, ride),
               onCallClient: onCallClient,
               onConfirmRide: onConfirmRide,
               onRejectRide: onRejectRide,
@@ -1115,70 +1117,6 @@ class _LiveRideCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static void _handleNavigate(BuildContext context, Ride ride) async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final choice = await showAdaptiveDialog<String>(
-        context: context,
-        builder: (BuildContext ctx) => SimpleDialog(
-          title: Text(l10n.navigateTo),
-          children: [
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(ctx).pop('pickup'),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.location_on,
-                  color: AppColors.success,
-                ),
-                title: Text(ride.from.address),
-                subtitle: Text(l10n.googleMapsPickup),
-              ),
-            ),
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(ctx).pop('destination'),
-              child: ListTile(
-                leading: const Icon(Icons.flag, color: AppColors.error),
-                title: Text(ride.to.address),
-                subtitle: Text(l10n.googleMapsDropoff),
-              ),
-            ),
-          ],
-        ),
-      );
-
-      if (choice == null || !context.mounted) return;
-
-      final loc = choice == 'pickup' ? ride.from : ride.to;
-      final Uri mapsUrl;
-      if (loc.latitude != null && loc.longitude != null) {
-        mapsUrl = Uri.parse(
-          'https://www.google.com/maps/dir/?api=1'
-          '&destination=${loc.latitude},${loc.longitude}'
-          '&travelmode=driving',
-        );
-      } else {
-        mapsUrl = Uri.parse(
-          'https://www.google.com/maps/dir/?api=1'
-          '&destination=${Uri.encodeComponent(loc.address)}'
-          '&travelmode=driving',
-        );
-      }
-      await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
-
-      if (context.mounted) {
-        NavigationHelper.showSnackBar(context, l10n.openingNavigation);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        NavigationHelper.showSnackBar(
-          context,
-          l10n.couldNotOpenNavigation(e.toString()),
-          isError: true,
-        );
-      }
-    }
   }
 }
 

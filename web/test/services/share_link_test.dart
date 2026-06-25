@@ -31,6 +31,26 @@ void main() {
       expect(url, endsWith('/track/tok42'));
     });
 
+    test('uses the absolute url from the backend verbatim when present', () async {
+      final client = MockClient(
+        (req) async => http.Response(
+          jsonEncode({
+            'token': 'tok42',
+            'path': '/track/tok42',
+            'url': 'https://track.dispax.de/track/tok42',
+          }),
+          200,
+        ),
+      );
+      final service = RideService(
+        apiClient: ApiClient(client: client, baseUrl: 'http://x/api'),
+      );
+
+      final url = await service.createShareLink('ride-1');
+
+      expect(url, 'https://track.dispax.de/track/tok42');
+    });
+
     test('throws on a non-200 response', () async {
       final client = MockClient(
         (req) async => http.Response('{"error":"nope"}', 404),

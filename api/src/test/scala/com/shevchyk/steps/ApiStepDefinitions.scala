@@ -455,6 +455,13 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     )
   }
 
+  Then("""^the response should not contain "(.+)"$""") { (unexpectedContent: String) =>
+    assert(
+      !lastResponseBody.contains(unexpectedContent),
+      s"Response body '$lastResponseBody' should NOT contain '$unexpectedContent'"
+    )
+  }
+
   // Tenant isolation: a company-B DATEV/EXTF export must never leak company-A ride data.
   // "Viktualienmarkt München" is the dropoff of company A's completed ride (testRideCompleted),
   // a marker unique to company A's exportable data.

@@ -48,7 +48,9 @@ object TrackApi:
 
   final case class PublicLocationsResponse(driverLocation: Option[LocationWithTimestamp]) derives JsonCodec
 
-  final case class ShareLinkResponse(token: String, path: String) derives JsonCodec
+  // `url` is the absolute, shareable link (built from PUBLIC_BASE_URL); `path` and `token` are kept for backward
+  // compatibility. When no base URL is configured, `url` equals `path`.
+  final case class ShareLinkResponse(token: String, path: String, url: String) derives JsonCodec
 
   // -- Endpoint descriptions ----------------------------------------------
 
@@ -81,7 +83,8 @@ object TrackApi:
   // -- Server logic --------------------------------------------------------
 
   type TrackEnv =
-    com.shevchyk.auth.service.JwtService & RideShareTokenService & RideService & DriverLocationService & EtaService
+    com.shevchyk.auth.service.JwtService & RideShareTokenService & RideService & DriverLocationService & EtaService &
+      com.shevchyk.core.config.PublicLinkConfig
 
   // The public read endpoints map every failure to a generic 404 ApiError — a guest must not be able to tell a wrong
   // token from an expired one from a missing ride (no existence leak).
@@ -132,10 +135,12 @@ object TrackApi:
         parsedId  <- parseRideId(rideId)
         companyId <- requireCompanyId(user.companyId)
         service   <- ZIO.service[RideShareTokenService]
+        linkConf  <- ZIO.service[com.shevchyk.core.config.PublicLinkConfig]
         // Tenant gate lives in the service (ride.companyId == companyId). Map any ride error to its status; an
         // UnauthorizedAccess (cross-tenant) collapses to 403 there, RideNotFound to 404.
         token     <- service.generateForRide(parsedId, companyId).mapError(fromRideError)
-      } yield ShareLinkResponse(token = token, path = s"/track/$token")
+        path       = s"/track/$token"
+      } yield ShareLinkResponse(token = token, path = path, url = linkConf.absoluteUrl(path))
   }
 
   private val getTrackedRideServer: ZServerEndpoint[TrackEnv, Any] = getTrackedRideEndpoint.zServerLogic { token =>
