@@ -153,6 +153,281 @@
     "errorGeneric": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
     "sending": "Wird gesendet…"
   },
+  "forDispatchers": {
+    "meta": {
+      "title": "Dispax für Disponenten — Fahrten pünktlich zuteilen",
+      "description": "Offene Anfragen im Blick, Zuteilung per Klick mit Fahrzeitprüfung, vorausschauende ETA-Warnungen und DATEV-fähige Abrechnung — für Disponenten gebaut."
+    },
+    "hero": {
+      "eyebrow": "FÜR DISPONENTEN",
+      "title": "Den gesamten Betrieb von einem Board steuern",
+      "subtitle": "Jede offene Anfrage, jede Fahrerschicht und jede gefährdete Abholung in einer Ansicht. Per Klick zuteilen — das System prüft Fahrzeit und Konflikte für Sie.",
+      "ctaPrimary": "Demo anfragen",
+      "ctaSecondary": "Alle Funktionen ansehen"
+    },
+    "rows": [
+      {
+        "title": "Zuteilung per Klick",
+        "desc": "Offene Anfragen liegen in einer Warteschlange. Den passenden Fahrer per Klick zuteilen — Dispax prüft die echte Fahrzeit und meldet Terminkonflikte, bevor Sie bestätigen.",
+        "status": "live",
+        "bullets": [
+          "Warteschlange offener Anfragen mit Dringlichkeit",
+          "Fahrzeitprüfung über Routing-API bei jeder Zuteilung",
+          "Konflikterkennung gegen die bestehende Schicht des Fahrers"
+        ]
+      },
+      {
+        "title": "Vorausschauende ETA-Warnungen",
+        "desc": "Ein Hintergrund-Monitor berechnet jede zugeteilte Fahrt jede Minute neu. Ist eine Abholung gefährdet, werden Sie 5+ Minuten gewarnt, bevor der Kunde je anruft — mit den nächsten Ersatzfahrern bereit.",
+        "status": "live",
+        "bullets": [
+          "Live-ETA jede Minute neu berechnet",
+          "Warnung, wenn der Puffer unter 5 Minuten fällt",
+          "Nächste verfügbare Fahrer sofort vorgeschlagen"
+        ]
+      },
+      {
+        "title": "Übergabe & Notfall-Umverteilung",
+        "desc": "Ein Fahrer fällt mitten in der Schicht aus? Geben Sie die Fahrt in Sekunden an einen anderen Fahrer ab. Live-Status über WebSocket hält jeden Bildschirm synchron — ohne Neuladen.",
+        "status": "live",
+        "bullets": [
+          "Fahrt in Sekunden an einen anderen Fahrer übergeben",
+          "Live-Status-Sync über WebSocket",
+          "Nächster-Fahrer-Vorschlag bei Notfall-Umverteilung"
+        ]
+      },
+      {
+        "title": "Abrechnung & DATEV-Export",
+        "desc": "Rechnungen füllen sich automatisch aus abgeschlossenen Fahrten und exportieren im Format, das die deutsche Buchhaltung erwartet — ohne Doppelerfassung.",
+        "status": "soon",
+        "bullets": [
+          "Automatisch befüllte Rechnungen aus abgeschlossenen Fahrten",
+          "PDF-Erzeugung und E-Mail-Versand",
+          "DATEV-fähiger CSV-Export"
+        ]
+      }
+    ],
+    "cta": {
+      "title": "Geben Sie Ihrer Disposition einen Pünktlichkeits-Motor",
+      "subtitle": "Sehen Sie Dispax mit Ihren eigenen Routen und Fahrern. Wir melden uns innerhalb eines Werktags."
+    }
+  },
+  "forDrivers": {
+    "meta": {
+      "title": "Dispax für Fahrer — klare Fahrten, weniger Telefonieren",
+      "description": "Die heutigen Fahrten, Live-Status, Flughafen-Checkpoints und ein klarer Schichtplan — auf Deutsch, Englisch oder Ukrainisch."
+    },
+    "hero": {
+      "eyebrow": "FÜR FAHRER",
+      "title": "Genau wissen, wo Sie wann sein müssen",
+      "subtitle": "Ihre Fahrten des Tages, der Treffpunkt am Terminal und Live-Status, der den Disponenten auf dem Laufenden hält — ohne endlose Anrufe.",
+      "ctaPrimary": "Demo anfragen",
+      "ctaSecondary": "Alle Funktionen ansehen"
+    },
+    "rows": [
+      {
+        "title": "Flughafen ganz einfach",
+        "desc": "Eine Checkpoint-Kette führt den Kunden von der Landung bis zum Ausgang und sagt Ihnen den optimalen Moment zur Einfahrt — damit Sie keine teuren Parkminuten verbrennen.",
+        "status": "live",
+        "bullets": [
+          "Checkpoint-Kette: gelandet → Gepäck → Ausgang T1/T2",
+          "Beidseitige Live-Position mit dem Kunden",
+          "Optimales Einfahrtstiming gegen Parkkosten"
+        ]
+      },
+      {
+        "title": "Live-Status statt Telefonieren",
+        "desc": "Fahrten mit einem Tipp annehmen, starten und abschließen. Der Status fließt in Echtzeit an Disponent und Kunde — keine Anrufe zur Bestätigung.",
+        "status": "live",
+        "bullets": [
+          "Annehmen, starten, abschließen mit einem Tipp",
+          "Live-Position mit dem Kunden geteilt",
+          "Echtzeit-Status-Sync zum Disponenten"
+        ]
+      },
+      {
+        "title": "Ihre Schicht auf einen Blick",
+        "desc": "Heutige und kommende Fahrten auf einem klaren Schichtboard. Das System bucht nie eine unmögliche Abfolge — die Fahrzeit wird zuerst geprüft.",
+        "status": "live",
+        "bullets": [
+          "Heutige und kommende Fahrten auf einem Board",
+          "Unmögliche Abfolgen automatisch verhindert",
+          "Verfügbar auf Deutsch, Englisch und Ukrainisch"
+        ]
+      }
+    ],
+    "cta": {
+      "title": "Weniger Rätselraten, mehr pünktliche Fahrten",
+      "subtitle": "Neugierig, wie sich Dispax am Steuer anfühlt? Fragen Sie eine Vorführung an."
+    }
+  },
+  "forClients": {
+    "meta": {
+      "title": "Dispax für Kunden — sehen Sie Ihre Fahrt kommen",
+      "description": "Live-Fahrerverfolgung, eine echte Ankunftszeit und reibungslose Flughafenabholungen. Wissen Sie genau, wann Ihr Wagen da ist."
+    },
+    "hero": {
+      "eyebrow": "FÜR KUNDEN",
+      "title": "Nie wieder rätseln, wo Ihre Fahrt bleibt",
+      "subtitle": "Verfolgen Sie den Fahrer in Echtzeit, sehen Sie eine echte Ankunftszeit und treffen Sie sich am richtigen Ort am Flughafen — jedes Mal.",
+      "ctaPrimary": "Demo anfragen",
+      "ctaSecondary": "Alle Funktionen ansehen"
+    },
+    "rows": [
+      {
+        "title": "Live-Verfolgung & echte ETA",
+        "desc": "Sehen Sie Ihren Fahrer auf der Karte auf sich zukommen und eine Live-Ankunftszeit, der Sie vertrauen können — laufend neu berechnet, keine statische Schätzung.",
+        "status": "live",
+        "bullets": [
+          "Fahrerposition live auf der Karte",
+          "Ankunftszeit jede Minute neu berechnet",
+          "Hinweis, wenn der Wagen nah ist"
+        ]
+      },
+      {
+        "title": "Flughafenabholungen, die funktionieren",
+        "desc": "Vom Moment der Landung an ein klarer Weg zum Treffpunkt — und der Wagen kommt, wenn Sie wirklich am Ausgang sind, nicht beim Kreisen ums Terminal.",
+        "status": "live",
+        "bullets": [
+          "Geführter Treffpunkt am Terminal",
+          "Beidseitige Live-Position mit dem Fahrer",
+          "Wagen auf Ihren echten Ausgang getaktet"
+        ]
+      },
+      {
+        "title": "Pünktlichkeit, auf die Verlass ist",
+        "desc": "Im Hintergrund werden Disponenten gewarnt, bevor eine Abholung je gefährdet ist — bei zeitkritischen Transfers ist der Wagen einfach da.",
+        "status": "live",
+        "bullets": [
+          "Proaktive Verspätungs-Überwachung",
+          "Fahrerdaten und Live-Status mit Ihnen geteilt",
+          "Für zeitkritische Geschäftstransfers gebaut"
+        ]
+      }
+    ],
+    "cta": {
+      "title": "Bereit, nicht mehr zu warten und zu rätseln?",
+      "subtitle": "Fragen Sie Ihren Transferanbieter nach Dispax oder kontaktieren Sie uns direkt."
+    }
+  },
+  "featuresPage": {
+    "meta": {
+      "title": "Funktionen — alles für den pünktlichen Transfer | Dispax",
+      "description": "Disposition, Live-Verfolgung, vorausschauende ETA, Flughafen-Koordination, Abrechnung/DATEV und Multi-Rollen-Zugang — der volle Funktionsumfang von Dispax."
+    },
+    "hero": {
+      "eyebrow": "FUNKTIONEN",
+      "title": "Alles für den pünktlichen Transfer",
+      "subtitle": "Von der ersten Anfrage bis zur letzten Rechnung — der komplette Werkzeugkasten für kleine und mittlere Transportunternehmen.",
+      "ctaPrimary": "Demo anfragen",
+      "ctaSecondary": "Sprechen Sie uns an"
+    },
+    "groups": [
+      {
+        "title": "Disposition & Zuteilung",
+        "items": [
+          { "title": "Zuteilung per Klick", "desc": "Offene Anfragen in einer Warteschlange; den passenden Fahrer per Klick zuteilen.", "status": "live" },
+          { "title": "Fahrzeitprüfung", "desc": "Jede Zuteilung wird gegen echte Routing-Zeit geprüft, bevor sie bestätigt.", "status": "live" },
+          { "title": "Konflikterkennung", "desc": "Überlappende Schichten werden automatisch gemeldet — keine unmöglichen Buchungen.", "status": "live" },
+          { "title": "Übergabe & Umverteilung", "desc": "Eine Fahrt in Sekunden an einen anderen Fahrer geben, wenn sich Pläne ändern.", "status": "live" }
+        ]
+      },
+      {
+        "title": "Verfolgung & ETA",
+        "items": [
+          { "title": "Live-Fahrerverfolgung", "desc": "Fahrerposition in Echtzeit auf der Karte für Disponent und Kunde.", "status": "live" },
+          { "title": "Vorausschauende ETA-Überwachung", "desc": "Ankunftszeit jede Minute neu; Warnungen 5+ Minuten im Voraus.", "status": "live" },
+          { "title": "Annäherungs-Hinweise", "desc": "Der Kunde wird benachrichtigt, sobald der Wagen nah ist.", "status": "live" }
+        ]
+      },
+      {
+        "title": "Flughafen-Koordination",
+        "items": [
+          { "title": "Checkpoint-Kette", "desc": "Führt den Kunden von der Landung zum Treffpunkt am Ausgang.", "status": "live" },
+          { "title": "Beidseitige Live-Position", "desc": "Fahrer und Kunde sehen sich in Echtzeit.", "status": "live" },
+          { "title": "Optimales Einfahrtstiming", "desc": "Hält den Wagen aus teurem Parken, bis der Kunde am Ausgang ist.", "status": "live" }
+        ]
+      },
+      {
+        "title": "Abrechnung & Finanzen",
+        "items": [
+          { "title": "Automatisch befüllte Rechnungen", "desc": "Rechnungen bauen sich aus abgeschlossenen Fahrten selbst.", "status": "soon" },
+          { "title": "PDF- & E-Mail-Versand", "desc": "Rechnungen per Klick als PDF erzeugen und senden.", "status": "soon" },
+          { "title": "DATEV-Export", "desc": "Fahrten und Auslagen im Format der deutschen Buchhaltung exportieren.", "status": "soon" }
+        ]
+      },
+      {
+        "title": "Rollen & Sicherheit",
+        "items": [
+          { "title": "Multi-Rollen-Plattform", "desc": "Disponent, Fahrer, Kunde, Sekretariat und Admin — je mit eigener Ansicht.", "status": "live" },
+          { "title": "Mandantentrennung", "desc": "Jedes Unternehmen sieht nur eigene Daten — strikte Trennung pro Firma.", "status": "live" },
+          { "title": "Mehrsprachig", "desc": "Deutsch, Englisch und Ukrainisch, pro Nutzer.", "status": "live" }
+        ]
+      }
+    ]
+  },
+  "about": {
+    "meta": {
+      "title": "Über Dispax — pünktliche Transfers für München",
+      "description": "Dispax ist eine Ride-Dispatch-Plattform für kleine und mittlere Transportunternehmen rund um München, wo Pünktlichkeit entscheidet."
+    },
+    "hero": {
+      "eyebrow": "ÜBER UNS",
+      "title": "Gebaut, damit der Kunde nie wartet",
+      "subtitle": "Dispax ist eine Ride-Dispatch-Plattform für Taxi- und Transferunternehmen rund um München, wo Minuten entscheiden und der Kunde nicht wartet.",
+      "ctaPrimary": "Kontakt aufnehmen",
+      "ctaSecondary": "Funktionen ansehen"
+    },
+    "story": {
+      "title": "Warum Dispax",
+      "body": "Bei zeitkritischen Geschäftstransfers kostet Disposition mit Zettel, Telefon und Chat Kunden. Wir haben Dispax gebaut, um jede Anfrage, jeden Fahrer und jede Abholung an einem Ort zu bündeln — mit Live-Verfolgung, vorausschauender ETA und Flughafen-Koordination — damit kleine und mittlere Betriebe Pünktlichkeit versprechen und halten können."
+    },
+    "market": {
+      "title": "Fokus auf München",
+      "body": "Die Plattform richtet sich auf München und Umgebung, bis zu einem Radius von 100 km, wo Flughafentransfers und Geschäftsfahrten Alltag sind. Eng zu starten erlaubt uns, die schweren Teile — Flughafenabholungen, Pünktlichkeitsgarantien — richtig zu lösen."
+    },
+    "identity": {
+      "title": "Wer dahintersteht",
+      "provider": "Vitaliia Shevchyk",
+      "legalForm": "Einzelunternehmen (nicht eingetragen), München",
+      "duns": "D-U-N-S 317214244",
+      "note": "Vollständige rechtliche Angaben finden Sie im Impressum."
+    }
+  },
+  "kontakt": {
+    "meta": {
+      "title": "Kontakt Dispax — Demo anfragen",
+      "description": "Fragen Sie eine Demo oder frühen Zugang zu Dispax an. Wir antworten innerhalb eines Werktags."
+    },
+    "hero": {
+      "eyebrow": "KONTAKT",
+      "title": "Bringen wir Ihre Transfers auf die Minute",
+      "subtitle": "Fragen Sie eine Demo an, stellen Sie eine Frage oder sichern Sie sich frühen Zugang. Wir melden uns innerhalb eines Werktags."
+    },
+    "form": {
+      "nameLabel": "Name",
+      "namePlaceholder": "Ihr Name",
+      "emailLabel": "E-Mail",
+      "emailPlaceholder": "ihre@firma.de",
+      "companyLabel": "Unternehmen",
+      "companyPlaceholder": "Ihr Unternehmen (optional)",
+      "messageLabel": "Nachricht",
+      "messagePlaceholder": "Wie können wir helfen?",
+      "submit": "Nachricht senden",
+      "sending": "Wird gesendet…",
+      "success": "Danke! Wir melden uns innerhalb eines Werktags.",
+      "errorEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+      "errorRequired": "Bitte geben Sie Name und Nachricht an.",
+      "errorGeneric": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "note": "Keine Weitergabe Ihrer Daten. Jederzeit abbestellbar."
+    },
+    "direct": {
+      "title": "Oder erreichen Sie uns direkt",
+      "email": "hallo@dispax.de",
+      "phone": "+49 176 48733359",
+      "city": "München, Deutschland"
+    }
+  },
   "footer": {
     "tagline": "Ride-Dispatch für Taxi- und Transferunternehmen. München & Umgebung.",
     "solutions": "Lösungen",
