@@ -1009,7 +1009,10 @@ class _LiveRideCard extends StatelessWidget {
       brightness: brightness,
     );
     final statusDotColor = RideStatusStyles.getStatusColor(ride.status);
-    final statusLabel = RideStatusStyles.getStatusDisplayName(ride.status);
+    final statusLabel = RideStatusStyles.getStatusDisplayName(
+      ride.status,
+      AppLocalizations.of(context)!,
+    );
 
     return Container(
       decoration: AppStyles.primaryCardDecorationOf(context).copyWith(
@@ -1459,7 +1462,10 @@ class _NextRideCard extends StatelessWidget {
       brightness: brightness,
     );
     final statusDotColor = RideStatusStyles.getStatusColor(ride.status);
-    final statusLabel = RideStatusStyles.getStatusDisplayName(ride.status);
+    final statusLabel = RideStatusStyles.getStatusDisplayName(
+      ride.status,
+      AppLocalizations.of(context)!,
+    );
 
     return Container(
       decoration: AppStyles.primaryCardDecorationOf(context).copyWith(

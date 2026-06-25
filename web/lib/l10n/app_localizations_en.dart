@@ -103,6 +103,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectDriver => 'Select Driver';
 
   @override
+  String get reassignDriver => 'Reassign Driver';
+
+  @override
+  String get noDriversFound => 'No drivers found';
+
+  @override
   String get reassignRide => 'Reassign Ride';
 
   @override
@@ -113,6 +119,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assign => 'Assign';
+
+  @override
+  String get driverDashboardTitle => 'Driver Dashboard';
+
+  @override
+  String get secretaryDashboardTitle => 'Secretary Dashboard';
+
+  @override
+  String get dispatcherDashboardTitle => 'Dispatcher Dashboard';
+
+  @override
+  String get adminDashboardTitle => 'Admin Dashboard';
+
+  @override
+  String get platformAdminTitle => 'Platform Admin';
 
   @override
   String get cancel => 'Cancel';

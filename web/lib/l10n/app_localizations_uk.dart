@@ -103,6 +103,12 @@ class AppLocalizationsUk extends AppLocalizations {
   String get selectDriver => 'Обрати водія';
 
   @override
+  String get reassignDriver => 'Перепризначити водія';
+
+  @override
+  String get noDriversFound => 'Водіїв не знайдено';
+
+  @override
   String get reassignRide => 'Перепризначити поїздку';
 
   @override
@@ -113,6 +119,21 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get assign => 'Призначити';
+
+  @override
+  String get driverDashboardTitle => 'Панель водія';
+
+  @override
+  String get secretaryDashboardTitle => 'Панель секретаря';
+
+  @override
+  String get dispatcherDashboardTitle => 'Панель диспетчера';
+
+  @override
+  String get adminDashboardTitle => 'Панель адміністратора';
+
+  @override
+  String get platformAdminTitle => 'Адміністратор платформи';
 
   @override
   String get cancel => 'Скасувати';

@@ -280,6 +280,18 @@ abstract class AppLocalizations {
   /// **'Select Driver'**
   String get selectDriver;
 
+  /// No description provided for @reassignDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Reassign Driver'**
+  String get reassignDriver;
+
+  /// No description provided for @noDriversFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No drivers found'**
+  String get noDriversFound;
+
   /// No description provided for @reassignRide.
   ///
   /// In en, this message translates to:
@@ -303,6 +315,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Assign'**
   String get assign;
+
+  /// No description provided for @driverDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Dashboard'**
+  String get driverDashboardTitle;
+
+  /// No description provided for @secretaryDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Secretary Dashboard'**
+  String get secretaryDashboardTitle;
+
+  /// No description provided for @dispatcherDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatcher Dashboard'**
+  String get dispatcherDashboardTitle;
+
+  /// No description provided for @adminDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Dashboard'**
+  String get adminDashboardTitle;
+
+  /// No description provided for @platformAdminTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform Admin'**
+  String get platformAdminTitle;
 
   /// No description provided for @cancel.
   ///

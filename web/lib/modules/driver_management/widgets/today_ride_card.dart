@@ -5,6 +5,7 @@ import '../../ride_management/models/ride.dart';
 import '../../../screens/ride_details_screen.dart';
 import '../../core/widgets/ride_info_row.dart';
 import 'ride_quick_actions.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
@@ -245,7 +246,10 @@ class TodayRideCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              RideStatusStyles.getStatusLabel(ride.status),
+              RideStatusStyles.getStatusLabel(
+                ride.status,
+                AppLocalizations.of(context)!,
+              ),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,

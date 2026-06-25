@@ -588,11 +588,11 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           const SizedBox(height: 6),
           Row(
             children: [
-              _buildFilterChip('All', _FilterMode.all),
+              _buildFilterChip(l10n.all, _FilterMode.all),
               const SizedBox(width: 6),
-              _buildFilterChip('Today', _FilterMode.today),
+              _buildFilterChip(l10n.today, _FilterMode.today),
               const SizedBox(width: 6),
-              _buildFilterChip('Airport', _FilterMode.airport),
+              _buildFilterChip(l10n.airport, _FilterMode.airport),
               const Spacer(),
               PopupMenuButton<_SortMode>(
                 icon: Icon(
@@ -1154,6 +1154,7 @@ class _RideRow extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (isReassign) {
       // Soft-red "Reassign" button — full width
       return SizedBox(
@@ -1173,7 +1174,7 @@ class _RideRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          child: const Text('Reassign'),
+          child: Text(l10n.reassign),
         ),
       );
     } else {
@@ -1198,7 +1199,7 @@ class _RideRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('Close'),
+                child: Text(l10n.closeRide),
               ),
             ),
           if (onClose != null && onHandOff != null) const SizedBox(width: 6),
@@ -1219,7 +1220,7 @@ class _RideRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('Hand off'),
+                child: Text(l10n.handOffButton),
               ),
             ),
           if (onAction != null) ...[
@@ -1241,7 +1242,7 @@ class _RideRow extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('Assign'),
+                  child: Text(l10n.assign),
                 ),
               ),
             ),
@@ -1310,6 +1311,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
       minChildSize: 0.3,
@@ -1342,7 +1344,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  widget.isReassign ? 'Reassign Driver' : 'Select Driver',
+                  widget.isReassign ? l10n.reassignDriver : l10n.selectDriver,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: 18,
@@ -1369,6 +1371,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
   }
 
   Widget _buildBody(ScrollController scrollController) {
+    final l10n = AppLocalizations.of(context)!;
     if (_error != null) {
       return Center(
         child: Text(
@@ -1381,7 +1384,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
     if (_drivers!.isEmpty) {
-      return const Center(child: Text('No drivers found'));
+      return Center(child: Text(l10n.noDriversFound));
     }
 
     final drivers = List<Person>.from(_drivers!)
@@ -1454,9 +1457,9 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                         color: AppColors.success.withAlpha(80),
                       ),
                     ),
-                    child: const Text(
-                      'Scheduled',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.scheduled,
+                      style: const TextStyle(
                         color: AppColors.success,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,

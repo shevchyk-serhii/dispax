@@ -32,7 +32,7 @@ class RideStatusCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Status: ${RideStatusStyles.getStatusDisplayName(ride.status)}',
+                  'Status: ${RideStatusStyles.getStatusDisplayName(ride.status, l10n)}',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: RideStatusStyles.getStatusColor(ride.status),
                     fontWeight: FontWeight.bold,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../modules/ride_management/models/ride.dart';
 import '../constants/app_colors.dart';
 
@@ -166,8 +167,32 @@ class RideStatusStyles {
     }
   }
 
-  /// Gets the display name for the given ride status
-  static String getStatusDisplayName(RideStatus status) {
+  /// Gets the display name for the given ride status.
+  ///
+  /// Pass [l10n] to get the localized label; when omitted the English fallback
+  /// is returned (for callers without a [BuildContext]).
+  static String getStatusDisplayName(
+    RideStatus status, [
+    AppLocalizations? l10n,
+  ]) {
+    if (l10n != null) {
+      switch (status) {
+        case RideStatus.requested:
+          return l10n.requestedLabel;
+        case RideStatus.assigned:
+          return l10n.assignedLabel;
+        case RideStatus.confirmed:
+          return l10n.statusConfirmed;
+        case RideStatus.inProgress:
+          return l10n.inProgressLabel;
+        case RideStatus.completed:
+          return l10n.completed;
+        case RideStatus.cancelled:
+          return l10n.cancelled;
+        case RideStatus.handedOff:
+          return l10n.rideStatusHandedOff;
+      }
+    }
     switch (status) {
       case RideStatus.requested:
         return 'Requested';
@@ -186,9 +211,9 @@ class RideStatusStyles {
     }
   }
 
-  /// Gets the uppercase label for the given ride status
-  static String getStatusLabel(RideStatus status) =>
-      getStatusDisplayName(status).toUpperCase();
+  /// Gets the uppercase label for the given ride status.
+  static String getStatusLabel(RideStatus status, [AppLocalizations? l10n]) =>
+      getStatusDisplayName(status, l10n).toUpperCase();
 
   /// Creates a status badge widget for the given ride status.
   ///
@@ -205,6 +230,7 @@ class RideStatusStyles {
     final brightness = context != null
         ? Theme.of(context).brightness
         : Brightness.light;
+    final l10n = context != null ? AppLocalizations.of(context) : null;
     final textColor = getStatusTextColor(status, brightness: brightness);
     return Container(
       padding:
@@ -223,7 +249,7 @@ class RideStatusStyles {
           Icon(getStatusIcon(status), size: iconSize ?? 16, color: textColor),
           const SizedBox(width: 4),
           Text(
-            getStatusDisplayName(status),
+            getStatusDisplayName(status, l10n),
             style: TextStyle(
               color: textColor,
               fontWeight: FontWeight.w600,

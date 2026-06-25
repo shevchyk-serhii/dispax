@@ -103,6 +103,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get selectDriver => 'Fahrer auswählen';
 
   @override
+  String get reassignDriver => 'Fahrer neu zuweisen';
+
+  @override
+  String get noDriversFound => 'Keine Fahrer gefunden';
+
+  @override
   String get reassignRide => 'Fahrt neu zuweisen';
 
   @override
@@ -113,6 +119,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get assign => 'Zuweisen';
+
+  @override
+  String get driverDashboardTitle => 'Fahrer-Dashboard';
+
+  @override
+  String get secretaryDashboardTitle => 'Sekretariat-Dashboard';
+
+  @override
+  String get dispatcherDashboardTitle => 'Dispatcher-Dashboard';
+
+  @override
+  String get adminDashboardTitle => 'Admin-Dashboard';
+
+  @override
+  String get platformAdminTitle => 'Plattform-Admin';
 
   @override
   String get cancel => 'Abbrechen';

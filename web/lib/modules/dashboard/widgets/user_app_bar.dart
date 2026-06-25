@@ -4,6 +4,7 @@ import '../../core/models/person.dart';
 import '../../core/widgets/avatar_circle.dart';
 import '../../../blocs/auth/auth_bloc.dart';
 import '../../../constants/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Person user;
@@ -22,12 +23,13 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AppBar(
       title: Row(
         children: [
           const Icon(Icons.local_taxi, size: 32),
           const SizedBox(width: 12),
-          Text(getAppBarTitle(user.role)),
+          Text(getAppBarTitle(l10n, user.role)),
         ],
       ),
       actions: [
@@ -53,13 +55,16 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'logout',
               child: Row(
                 children: [
-                  Icon(Icons.logout, color: AppColors.error),
-                  SizedBox(width: 8),
-                  Text('Logout', style: TextStyle(color: AppColors.error)),
+                  const Icon(Icons.logout, color: AppColors.error),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.logout,
+                    style: const TextStyle(color: AppColors.error),
+                  ),
                 ],
               ),
             ),
@@ -77,21 +82,21 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  String getAppBarTitle(PersonRole role) {
+  String getAppBarTitle(AppLocalizations l10n, PersonRole role) {
     switch (role) {
       case PersonRole.driver:
-        return 'Driver Dashboard';
+        return l10n.driverDashboardTitle;
       case PersonRole.client:
-        return 'My Rides';
+        return l10n.myRides;
       case PersonRole.secretary:
       case PersonRole.clientSecretary:
-        return 'Secretary Dashboard';
+        return l10n.secretaryDashboardTitle;
       case PersonRole.dispatcher:
-        return 'Dispatcher Dashboard';
+        return l10n.dispatcherDashboardTitle;
       case PersonRole.admin:
-        return 'Admin Dashboard';
+        return l10n.adminDashboardTitle;
       case PersonRole.superAdmin:
-        return 'Platform Admin';
+        return l10n.platformAdminTitle;
     }
   }
 }

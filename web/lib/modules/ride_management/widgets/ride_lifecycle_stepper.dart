@@ -219,7 +219,7 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          RideStatusStyles.getStatusDisplayName(status),
+          RideStatusStyles.getStatusDisplayName(status, l10n),
           style: AppStyles.labelLarge.copyWith(
             color: labelColor,
             fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,

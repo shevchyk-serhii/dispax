@@ -119,7 +119,7 @@ class RideCalendarCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
-    final statusText = RideStatusStyles.getStatusLabel(ride.status);
+    final statusText = RideStatusStyles.getStatusLabel(ride.status, l10n);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
