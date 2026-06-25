@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-integration test-bdd test-bdd-port test-all clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-integration test-bdd test-bdd-port test-all test-everything clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android flutter-prod-ios \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -393,6 +393,36 @@ test-all:
 	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test; billing/test"
 	@echo "▶ Running Cucumber BDD tests..."
 	sbt cucumber
+
+# Run ABSOLUTELY EVERYTHING that gates CI: the whole backend (unit + integration
+# via Testcontainers + the api ZIO specs), Cucumber BDD, and the full Flutter
+# unit/widget suite. Requires Docker for the integration/BDD tiers.
+#
+# Each tier runs even if an earlier one fails, so one command gives the complete
+# picture; the target exits non-zero if any tier failed.
+#
+# NOT included: the Patrol / live-backend e2e suites (make e2e-test, e2e-fast,
+# flutter-test-integration, e2e-notif-http, e2e-ride-rules). Those need a booted
+# Android emulator / iOS sim and the test backend on $(TEST_PORT), are gated on a
+# device toolchain, and don't gate CI — run them explicitly when needed.
+test-everything:
+	@echo "════════════════════════════════════════════════════════"
+	@echo " Running ALL gating tests: backend + BDD + Flutter"
+	@echo "════════════════════════════════════════════════════════"
+	@STATUS=0 ; \
+	echo "▶ [1/3] Backend unit + integration (Scala/ZIO, Testcontainers)..." ; \
+	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test; billing/test; root/testOnly *Spec" || STATUS=1 ; \
+	echo "▶ [2/3] Cucumber BDD scenarios..." ; \
+	sbt cucumber || STATUS=1 ; \
+	echo "▶ [3/3] Flutter unit/widget suite..." ; \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) test test/ ) || STATUS=1 ; \
+	echo "════════════════════════════════════════════════════════" ; \
+	if [ $$STATUS -eq 0 ]; then \
+	  echo "✅ test-everything: ALL tiers passed." ; \
+	else \
+	  echo "❌ test-everything: one or more tiers FAILED (see output above)." ; \
+	fi ; \
+	exit $$STATUS
 
 # Format all Scala + Dart code. Dart is rewritten first via $(DART) (FVM-pinned
 # to web/.fvmrc 3.44.2 when FVM is installed, matching CI), then `sbt fmtAll`
