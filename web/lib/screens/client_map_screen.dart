@@ -1163,8 +1163,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         FloatingActionButton(
           heroTag: 'center_location',
           onPressed: _centerOnCurrentLocation,
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
           child: const Icon(Icons.my_location),
         ),
 

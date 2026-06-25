@@ -289,7 +289,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    style: AppStyles.textButtonStyle,
+                    style: AppStyles.textButtonStyleOf(context),
                     onPressed: _isReassigning
                         ? null
                         : () => Navigator.pop(context),

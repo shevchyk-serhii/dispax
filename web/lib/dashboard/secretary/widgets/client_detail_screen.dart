@@ -81,7 +81,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.secretaryColor,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         onPressed: () async {
           final rideBloc = context.read<RideBloc>();
           final authBloc = context.read<AuthBloc>();
@@ -133,7 +134,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         ? _client.name[0].toUpperCase()
                         : '?',
                     style: TextStyle(
-                      color: AppColors.secretaryColor,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 22,
                     ),
@@ -193,7 +194,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                 Text(
                   '${_rides!.length}',
                   style: AppStyles.headlineMedium.copyWith(
-                    color: AppColors.secretaryColor,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 Text(l10n.ridesCountLabel, style: AppStyles.labelSmall),

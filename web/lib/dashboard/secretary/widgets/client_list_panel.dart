@@ -193,7 +193,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
               : Text(
                   client.name.isNotEmpty ? client.name[0].toUpperCase() : '?',
                   style: TextStyle(
-                    color: AppColors.secretaryColor,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

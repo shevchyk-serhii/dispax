@@ -134,7 +134,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
       children: [
         Icon(
           Icons.flight_land,
-          color: AppColors.driverColor,
+          color: AppColors.textOnPrimary,
           size: AppDimensions.iconMedium,
         ),
         const SizedBox(width: AppDimensions.paddingSmall),

@@ -346,7 +346,9 @@ class MyRidesTab extends StatelessWidget {
                                   icon: const Icon(Icons.location_on, size: 16),
                                   label: Text(l10n.trackDriver),
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.clientColor,
+                                    foregroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                                 ),
                               ),

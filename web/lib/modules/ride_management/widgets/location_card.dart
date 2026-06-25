@@ -57,7 +57,7 @@ class LocationCard extends StatelessWidget {
                 hintText: 'Pick-up location',
                 prefixIcon: Icon(
                   Icons.trip_origin,
-                  color: AppColors.secretaryColor,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(
@@ -81,7 +81,7 @@ class LocationCard extends StatelessWidget {
                 hintText: 'Drop-off location',
                 prefixIcon: Icon(
                   Icons.location_on,
-                  color: AppColors.secretaryColor,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(
