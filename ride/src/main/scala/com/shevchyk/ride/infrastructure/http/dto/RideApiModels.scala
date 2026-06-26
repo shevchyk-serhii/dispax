@@ -50,6 +50,9 @@ case class RideDto(
     to: LocationDto,
     status: String,
     clientName: String,
+    // Whether the client has a profile photo, so a driver/dispatcher card can render their avatar.
+    // Derived from the client Person already loaded for clientName; defaults false for backward compatibility.
+    clientHasAvatar: Boolean = false,
     flightNumber: Option[String] = None,
     flightTime: Option[String] = None,
     isAirportTransfer: Boolean = false,
@@ -345,6 +348,7 @@ object RideDto:
       driverLat: Option[Double] = None,
       driverLng: Option[Double] = None,
       clientName: Option[String] = None,
+      clientHasAvatar: Boolean = false,
       driverName: Option[String] = None,
       etaMinutes: Option[Int] = None,
       driverRating: Option[Double] = None,
@@ -393,6 +397,7 @@ object RideDto:
       to = LocationDto.fromDomain(ride.dropoffLocation),
       status = ride.status.toString,
       clientName = clientName.getOrElse("Unknown Client"),
+      clientHasAvatar = clientHasAvatar,
       flightNumber = flightNumber,
       flightTime = ride.scheduledTime.map(_.toString),
       isAirportTransfer = isAirportTransfer,

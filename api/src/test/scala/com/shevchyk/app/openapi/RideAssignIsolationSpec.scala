@@ -291,7 +291,9 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
     role = PersonRole.Client,
     passwordHash = "hash",
     companyId = Some(companyAId),
-    status = UserStatus.ACTIVE
+    status = UserStatus.ACTIVE,
+    // Has a profile photo so the clientHasAvatar enrichment can be asserted.
+    avatarPresent = true
   )
 
   private def makePersonRepo(known: Map[PersonId, Person]): ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
@@ -823,6 +825,47 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           body.contains("\"clientName\":\"Anna Schmidt\""),
           !body.contains("Unknown Client"),
           !body.contains("ignored-by-server")
+        )
+      },
+
+      // ── clientHasAvatar enrichment: GET /rides/{id} surfaces the client's avatar flag ──
+      // The driver/dispatcher card renders the client's photo; the ride DTO must report
+      // whether the client has one, derived from the same Person already loaded for clientName.
+      test("[REGRESSION] GET /rides/{id} reports clientHasAvatar=true when the client has a photo") {
+        val rideA = makeAssignedRide(rideAId, companyAId)
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map(rideAId -> rideA), assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .get(URL.decode(s"/api/rides/${rideAId.value}").toOption.get)
+                             .addHeader(Header.Authorization.Bearer(token))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          body.contains("\"clientHasAvatar\":true")
+        )
+      },
+
+      // ── clientHasAvatar enrichment: absent client → false (never true by accident) ──
+      test("[REGRESSION] GET /rides/{id} reports clientHasAvatar=false when the client is unknown") {
+        val rideA = makeAssignedRide(rideAId, companyAId)
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          // stubPersonRepo knows no persons, so the client lookup returns None.
+          layers         = buildLayers(Map(rideAId -> rideA), assignedRef, reassignedRef)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .get(URL.decode(s"/api/rides/${rideAId.value}").toOption.get)
+                             .addHeader(Header.Authorization.Bearer(token))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          body.contains("\"clientHasAvatar\":false")
         )
       },
 

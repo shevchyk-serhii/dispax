@@ -12,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:dispax/blocs/auth/auth_bloc.dart';
 import 'package:dispax/blocs/ride/ride_bloc.dart';
 import 'package:dispax/blocs/schedule/schedule_bloc.dart';
 import 'package:dispax/dashboard/dispatcher/widgets/pending_rides_panel.dart';
@@ -24,8 +25,10 @@ import '../helpers/test_fixtures.dart';
 void main() {
   late MockRideService mockRideService;
   late MockScheduleService mockScheduleService;
+  late MockApiClient mockApiClient;
   late RideBloc rideBloc;
   late ScheduleBloc scheduleBloc;
+  late AuthBloc authBloc;
 
   final pendingRide = TestFixtures.ride(
     id: 'ride-1',
@@ -36,18 +39,23 @@ void main() {
   setUp(() {
     mockRideService = MockRideService();
     mockScheduleService = MockScheduleService();
+    mockApiClient = MockApiClient();
     when(() => mockRideService.dispose()).thenReturn(null);
     when(
       () => mockScheduleService.getScheduleForDate(any()),
     ).thenAnswer((_) async => [TestFixtures.scheduleDay(driverId: 'driver-1')]);
+    // The client avatar fetches bytes; return null so it falls back to initials.
+    when(() => mockApiClient.getBytes(any())).thenAnswer((_) async => null);
 
     rideBloc = RideBloc(rideService: mockRideService);
     scheduleBloc = ScheduleBloc(scheduleService: mockScheduleService);
+    authBloc = AuthBloc(apiClient: mockApiClient);
   });
 
   tearDown(() {
     rideBloc.close();
     scheduleBloc.close();
+    authBloc.close();
   });
 
   Widget buildPanel() {
@@ -59,6 +67,7 @@ void main() {
           providers: [
             BlocProvider<RideBloc>.value(value: rideBloc),
             BlocProvider<ScheduleBloc>.value(value: scheduleBloc),
+            BlocProvider<AuthBloc>.value(value: authBloc),
           ],
           child: const PendingRidesPanel(),
         ),
