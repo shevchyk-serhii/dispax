@@ -101,6 +101,30 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           );
         }
       }
+      if (event.isFlightStatusUpdated && event.rideId != null) {
+        // Live MUC flight board update (gate/terminal/status/estimated time) for an
+        // airport ride. Patch the matching ride in the shared RideBloc so the
+        // dispatcher's "My Rides" card reflects it without a manual refresh.
+        final rideId = event.rideId!;
+        final existing = _rideBloc.state.rides
+            .where((r) => r.id == rideId)
+            .firstOrNull;
+        if (existing != null) {
+          final estimated = event.flightEstimatedTime != null
+              ? DateTime.tryParse(event.flightEstimatedTime!)?.toLocal()
+              : null;
+          _rideBloc.add(
+            RideUpdated(
+              ride: existing.copyWith(
+                gate: event.flightGate,
+                terminal: event.flightTerminal,
+                flightStatus: event.flightStatus,
+                flightTime: estimated ?? existing.flightTime,
+              ),
+            ),
+          );
+        }
+      }
       if (event.isEtaAtRisk) {
         final rideId = event.rideId ?? '';
         final driverId = event.etaRiskDriverId ?? '';

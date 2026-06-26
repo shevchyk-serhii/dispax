@@ -608,6 +608,9 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
                 flightTime: Option[java.time.Instant]
             ): Task[Boolean] = ZIO.succeed(false)
             def findFlightStatus(id: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]            = ZIO.none
+            def findFlightStatusFor(
+                ids: List[RideId]
+            ): Task[Map[RideId, com.shevchyk.ride.domain.FlightStatusRow]] = ZIO.succeed(Map.empty)
           )
           val layers          =
             InMemoryDriverLocationRepository.layer ++

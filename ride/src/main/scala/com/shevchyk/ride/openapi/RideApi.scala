@@ -18,7 +18,7 @@ import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.infrastructure.http.dto.{*, given}
 import com.shevchyk.ride.openapi.RideSchemas.given
 import com.shevchyk.ride.openapi.RideSecure.*
-import com.shevchyk.ride.repository.{RideRatingRepository, TariffRepository}
+import com.shevchyk.ride.repository.{RideRatingRepository, RideRepository, TariffRepository}
 import com.shevchyk.ride.validation.Validator.validate
 import com.shevchyk.ride.validation.given
 import sttp.model.{MediaType, StatusCode}
@@ -56,7 +56,7 @@ object RideApi:
   type RideEnv =
     RideService & ClientAddressService & ClientLocationService & AirportCheckpointService & ChatService &
       RideRatingRepository & PersonRepository & JwtService & TariffRepository & RideEstimateService & GeocodingService &
-      AirportTimingService
+      AirportTimingService & RideRepository
 
   // ======================================================================
   // Endpoint descriptions
@@ -1057,6 +1057,7 @@ object RideApi:
         service     <- ZIO.service[RideService]
         personRepo  <- ZIO.service[PersonRepository]
         ratingRepo  <- ZIO.service[RideRatingRepository]
+        rideRepo    <- ZIO.service[RideRepository]
         // Business logic (parallel fetch + date-filter) lives in the service layer.
         filtered    <- service.getRidesByDrivers(driverPids, fromDateOpt, toDateOpt, companyId).mapError(fromRideError)
         // DTO enrichment: client names and per-driver rating stats (presentational, not business logic).
@@ -1066,6 +1067,10 @@ object RideApi:
                          .mapError(fromRideError)
         clientMap    = persons.collect { case (id, Some(p)) => id -> p }.toMap
         ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        // Live flight gate/terminal/status (kept fresh by FlightStatusMonitor) for airport rides,
+        // loaded in one bulk query so the dispatcher "My Rides" cards can show it without an N+1.
+        airportIds   = filtered.filter(_.isAirportTransfer).map(_.id)
+        flightMap   <- rideRepo.findFlightStatusFor(airportIds).mapError(fromRideError)
       } yield filtered.map { r =>
         val (rating, count) = r.driverId
           .flatMap(ratingStats.get)
@@ -1076,7 +1081,8 @@ object RideApi:
           clientName = clientMap.get(r.clientId).map(_.name),
           clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
           driverRating = rating,
-          driverRatingCount = count
+          driverRatingCount = count,
+          flight = flightMap.get(r.id)
         )
       }
   }

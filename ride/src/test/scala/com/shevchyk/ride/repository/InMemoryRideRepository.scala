@@ -307,5 +307,9 @@ class InMemoryRideRepository extends RideRepository:
     else flightStatuses.get.map(fs => Some(fs.getOrElse(rideId, FlightStatusRow())))
   }
 
+  override def findFlightStatusFor(rideIds: List[RideId]): Task[Map[RideId, FlightStatusRow]] = flightStatuses.get.map(
+    fs => rideIds.flatMap(id => fs.get(id).map(id -> _)).toMap
+  )
+
 object InMemoryRideRepository:
   val layer: ZLayer[Any, Nothing, RideRepository] = ZLayer.succeed(new InMemoryRideRepository)

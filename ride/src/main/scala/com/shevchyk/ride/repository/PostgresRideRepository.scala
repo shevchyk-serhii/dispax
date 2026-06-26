@@ -759,6 +759,21 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .map(_.map { case (gate, terminal, status, time) => FlightStatusRow(gate, terminal, status, time) })
       .mapError(ex => RideError.DatabaseError(ex))
 
+  override def findFlightStatusFor(rideIds: List[RideId]): Task[Map[RideId, FlightStatusRow]] =
+    rideIds match
+      case Nil          => ZIO.succeed(Map.empty)
+      case head :: tail =>
+        val ids = NonEmptyList(head, tail).map(_.value)
+        (fr"""SELECT id, flight_gate, flight_terminal, flight_status, flight_time
+              FROM rides WHERE""" ++ Fragments.in(fr"id", ids))
+          .query[(UUID, Option[String], Option[String], Option[String], Option[Instant])]
+          .to[List]
+          .transact(xa)
+          .map(_.map { case (id, gate, terminal, status, time) =>
+            RideId(id) -> FlightStatusRow(gate, terminal, status, time)
+          }.toMap)
+          .mapError(ex => RideError.DatabaseError(ex))
+
   override def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++
       fr"""FROM rides

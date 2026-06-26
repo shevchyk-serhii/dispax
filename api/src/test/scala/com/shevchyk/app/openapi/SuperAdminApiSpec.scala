@@ -220,6 +220,9 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
           flightTime: Option[java.time.Instant]
       ): Task[Boolean] = ZIO.succeed(false)
       def findFlightStatus(rideId: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]                 = ZIO.none
+      def findFlightStatusFor(
+          rideIds: List[RideId]
+      ): Task[Map[RideId, com.shevchyk.ride.domain.FlightStatusRow]] = ZIO.succeed(Map.empty)
   )
 
   private val stubSessionRepo: ZLayer[Any, Nothing, SessionRepository] = SessionRepository.inMemory

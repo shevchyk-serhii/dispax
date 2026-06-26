@@ -315,7 +315,8 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
       stubTariffRepo ++
       stubRideEstimateService ++
       GeocodingService.noop ++
-      AirportTimingService.noopLayer
+      AirportTimingService.noopLayer ++
+      StubRideRepository.layer
 
   // ---------------------------------------------------------------------------
   // HTTP runner

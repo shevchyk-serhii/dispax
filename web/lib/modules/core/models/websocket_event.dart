@@ -65,6 +65,7 @@ class WebSocketEvent {
   bool get isRideDetailsUpdated => type == 'RideDetailsUpdated';
   bool get isRideConfirmed => type == 'RideConfirmed';
   bool get isRideRejected => type == 'RideRejected';
+  bool get isFlightStatusUpdated => type == 'FlightStatusUpdated';
 
   String? get geofenceName => data['geofenceName'];
   String? get alertType => data['alertType'];
@@ -81,4 +82,11 @@ class WebSocketEvent {
   int? get etaMinutes => (data['etaMinutes'] as num?)?.toInt();
   int? get pickupInMinutes => (data['minutesUntilPickup'] as num?)?.toInt();
   int? get slackMinutes => (data['slackMinutes'] as num?)?.toInt();
+
+  // FlightStatusUpdated event accessors (live MUC flight board → gate/terminal/status).
+  String? get flightNumber => data['flightNumber'] as String?;
+  String? get flightStatus => data['status'] as String?;
+  String? get flightGate => data['gate'] as String?;
+  String? get flightTerminal => data['terminal'] as String?;
+  String? get flightEstimatedTime => data['estimatedTime'] as String?;
 }
