@@ -1761,68 +1761,57 @@ class DriverRideActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final l10n = AppLocalizations.of(context)!;
+    final iconColor = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    // Row 1: Navigate (flexible) + icon-only Call / Share, plus the single
+    // text action for confirmed/inProgress rides. The two-action `assigned`
+    // case gets its own full-width second row below so the German labels
+    // ("Bestätigen", "Ablehnen") never have to share width with Navigate and
+    // therefore never truncate.
+    final firstRow = Row(
       children: [
         Expanded(
           child: SizedBox(
             height: 40,
-            child: FilledButton.icon(
-              onPressed: onNavigate,
-              icon: const Icon(Icons.map_outlined, size: 16),
-              label: Text(
-                AppLocalizations.of(context)!.navigate,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusButton,
+            child: Tooltip(
+              message: l10n.navigate,
+              child: FilledButton.icon(
+                onPressed: onNavigate,
+                icon: const Icon(Icons.map_outlined, size: 16),
+                label: Text(
+                  l10n.navigate,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                padding: EdgeInsets.zero,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
               ),
             ),
           ),
         ),
         const SizedBox(width: 8),
-        SizedBox(
-          width: 40,
-          height: 40,
-          child: OutlinedButton(
-            onPressed: onCallClient,
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(
-                color: AppColors.borderSecondary,
-                width: 1,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
-              ),
-              padding: EdgeInsets.zero,
-            ),
-            child: Icon(
-              Icons.phone_outlined,
-              size: 18,
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondary,
-            ),
-          ),
-        ),
-        if (onShareRide != null) ...[
-          const SizedBox(width: 8),
-          SizedBox(
+        Tooltip(
+          message: l10n.callClient,
+          child: SizedBox(
             width: 40,
             height: 40,
             child: OutlinedButton(
-              onPressed: onShareRide,
+              onPressed: onCallClient,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(
                   color: AppColors.borderSecondary,
@@ -1835,65 +1824,35 @@ class DriverRideActionsRow extends StatelessWidget {
                 ),
                 padding: EdgeInsets.zero,
               ),
-              child: Icon(
-                Icons.ios_share_rounded,
-                size: 18,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondary,
-              ),
+              child: Icon(Icons.phone_outlined, size: 18, color: iconColor),
             ),
           ),
-        ],
-        if (ride.status == RideStatus.assigned) ...[
+        ),
+        if (onShareRide != null) ...[
           const SizedBox(width: 8),
-          Expanded(
+          Tooltip(
+            message: l10n.shareRideLink,
             child: SizedBox(
+              width: 40,
               height: 40,
-              child: FilledButton.icon(
-                onPressed: onConfirmRide,
-                icon: const Icon(Icons.check_rounded, size: 16),
-                label: const Text(
-                  'Confirm',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusButton,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SizedBox(
-              height: 40,
-              child: OutlinedButton.icon(
-                onPressed: onRejectRide,
-                icon: const Icon(Icons.close_rounded, size: 16),
-                label: const Text(
-                  'Reject',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
+              child: OutlinedButton(
+                onPressed: onShareRide,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.errorBorder),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  side: const BorderSide(
+                    color: AppColors.borderSecondary,
+                    width: 1,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(
                       AppDimensions.radiusButton,
                     ),
                   ),
+                  padding: EdgeInsets.zero,
+                ),
+                child: Icon(
+                  Icons.ios_share_rounded,
+                  size: 18,
+                  color: iconColor,
                 ),
               ),
             ),
@@ -1904,25 +1863,28 @@ class DriverRideActionsRow extends StatelessWidget {
           Expanded(
             child: SizedBox(
               height: 40,
-              child: FilledButton.icon(
-                onPressed: onStartRide,
-                icon: const Icon(Icons.play_circle_rounded, size: 16),
-                label: Text(
-                  AppLocalizations.of(context)!.start,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+              child: Tooltip(
+                message: l10n.start,
+                child: FilledButton.icon(
+                  onPressed: onStartRide,
+                  icon: const Icon(Icons.play_circle_rounded, size: 16),
+                  label: Text(
+                    l10n.start,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusButton,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusButton,
+                      ),
                     ),
                   ),
                 ),
@@ -1935,18 +1897,55 @@ class DriverRideActionsRow extends StatelessWidget {
           Expanded(
             child: SizedBox(
               height: 40,
-              child: FilledButton.icon(
-                onPressed: onCompleteRide,
-                icon: const Icon(Icons.check_rounded, size: 16),
-                label: Text(
-                  AppLocalizations.of(context)!.completeRideButton,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+              child: Tooltip(
+                message: l10n.completeRideButton,
+                child: FilledButton.icon(
+                  onPressed: onCompleteRide,
+                  icon: const Icon(Icons.check_rounded, size: 16),
+                  label: Text(
+                    l10n.completeRideButton,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusButton,
+                      ),
+                    ),
                   ),
                 ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+
+    if (ride.status != RideStatus.assigned) {
+      return firstRow;
+    }
+
+    // Row 2 (assigned only): Confirm + Reject across the full card width.
+    final confirmReject = Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 40,
+            child: Tooltip(
+              message: l10n.confirm,
+              // No leading icon here: at phone width two full-width buttons
+              // already leave little room, and an icon would push the German
+              // "Bestätigen" back into ellipsis territory.
+              child: FilledButton(
+                onPressed: onConfirmRide,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.success,
                   foregroundColor: Colors.white,
@@ -1957,11 +1956,56 @@ class DriverRideActionsRow extends StatelessWidget {
                     ),
                   ),
                 ),
+                child: Text(
+                  l10n.confirm,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           ),
-        ],
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: SizedBox(
+            height: 40,
+            child: Tooltip(
+              message: l10n.rejectButton,
+              child: OutlinedButton(
+                onPressed: onRejectRide,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.errorBorder),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  l10n.rejectButton,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [firstRow, const SizedBox(height: 8), confirmReject],
     );
   }
 }
