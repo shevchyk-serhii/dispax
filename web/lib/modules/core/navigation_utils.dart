@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,8 +9,10 @@ import 'navigation_helper.dart';
 import 'models/location.dart';
 import 'models/person.dart';
 import '../ride_management/models/ride.dart';
+import '../ride_management/services/ride_service.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
+import '../../screens/ride_details_screen.dart';
 
 class NavigationUtils {
   /// Shows the "Navigate to" picker (pickup / drop-off) and opens Google Maps
@@ -216,6 +219,37 @@ class NavigationUtils {
 
   static Future<void> navigateToMap(BuildContext context, Ride ride) async {
     await openGoogleMapsRoute(ride.from, ride.to);
+  }
+
+  /// Opens the full ride details screen. Used by the driver's Today cards (the
+  /// live/next cards have no other entry into details, which is where the
+  /// "Share" tracking-link button lives).
+  static Future<void> navigateToRideDetails(
+    BuildContext context,
+    Ride ride,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => RideDetailsScreen(ride: ride)),
+    );
+  }
+
+  /// Creates (or reuses) a public guest tracking link for [ride] and copies it
+  /// to the clipboard, showing a localized success/error snackbar. Shared by the
+  /// ride details screen and the driver's Today card so the share behaviour
+  /// stays identical everywhere.
+  static Future<void> shareRide(BuildContext context, Ride ride) async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final rideService = RideService(
+      apiClient: context.read<AuthBloc>().apiClient,
+    );
+    try {
+      final url = await rideService.createShareLink(ride.id);
+      await Clipboard.setData(ClipboardData(text: url));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.trackingLinkCopied)));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    }
   }
 }
 

@@ -13,6 +13,7 @@ Future<void> pumpActionsRow(
   WidgetTester tester, {
   required RideStatus status,
   double width = 360,
+  VoidCallback? onShareRide,
 }) async {
   final ride = TestFixtures.ride(driverId: 'driver-1', status: status);
 
@@ -29,6 +30,7 @@ Future<void> pumpActionsRow(
               ride: ride,
               isDark: false,
               onNavigate: () {},
+              onShareRide: onShareRide,
               onCallClient: () {},
               onConfirmRide: () {},
               onRejectRide: () {},
@@ -95,6 +97,33 @@ void main() {
     ) async {
       await pumpActionsRow(tester, status: RideStatus.inProgress, width: 320);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('shows a Share button when onShareRide is provided', (
+      tester,
+    ) async {
+      var shared = false;
+      await pumpActionsRow(
+        tester,
+        status: RideStatus.confirmed,
+        onShareRide: () => shared = true,
+      );
+
+      // The share icon is the only entry point to the guest tracking link from
+      // the driver's live ride card.
+      final shareButton = find.byIcon(Icons.ios_share_rounded);
+      expect(shareButton, findsOneWidget);
+
+      await tester.tap(shareButton);
+      await tester.pump();
+      expect(shared, isTrue);
+    });
+
+    testWidgets('hides the Share button when onShareRide is null', (
+      tester,
+    ) async {
+      await pumpActionsRow(tester, status: RideStatus.confirmed);
+      expect(find.byIcon(Icons.ios_share_rounded), findsNothing);
     });
   });
 }

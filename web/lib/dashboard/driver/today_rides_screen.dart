@@ -1039,87 +1039,96 @@ class _LiveRideCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status badge + pickup time
-            Row(
-              children: [
-                _StatusBadge(
-                  bg: statusBg,
-                  border: statusBorder,
-                  dot: statusDotColor,
-                  textColor: statusTextColor,
-                  label: statusLabel,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Pickup ${DateFormat.Hm().format(ride.pickupDateTime)}',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Client name + fare. The driver needs to know who the ride is for
-            // and how much it is at a glance, without opening the details.
-            DriverClientPriceRow(ride: ride, isDark: isDark),
-
-            const SizedBox(height: 14),
-
-            // Route connector (accent dot → line → primary square)
-            _RouteConnector(ride: ride, isDark: isDark),
-
-            const SizedBox(height: 14),
-
-            // ETA chip + flight badge + approaching chip
-            // ETA is only shown after the driver starts the ride (inProgress)
-            if ((etaMinutes != null && ride.status == RideStatus.inProgress) ||
-                ride.flightNumber != null ||
-                approachingDistanceMeters != null)
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
+      // Tapping the card (outside the action buttons) opens the full ride
+      // details — the only place that exposes the "Share" tracking link.
+      child: InkWell(
+        onTap: () => NavigationUtils.navigateToRideDetails(context, ride),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Status badge + pickup time
+              Row(
                 children: [
-                  if (etaMinutes != null &&
-                      ride.status == RideStatus.inProgress)
-                    _EtaChip(etaMinutes: etaMinutes!),
-                  if (ride.flightNumber != null)
-                    _FlightBadge(flightNumber: ride.flightNumber!),
-                  if (approachingDistanceMeters != null)
-                    _ApproachingChip(
-                      distanceMeters: approachingDistanceMeters!,
+                  _StatusBadge(
+                    bg: statusBg,
+                    border: statusBorder,
+                    dot: statusDotColor,
+                    textColor: statusTextColor,
+                    label: statusLabel,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Pickup ${DateFormat.Hm().format(ride.pickupDateTime)}',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
                     ),
+                  ),
                 ],
               ),
 
-            if ((etaMinutes != null && ride.status == RideStatus.inProgress) ||
-                ride.flightNumber != null ||
-                approachingDistanceMeters != null)
+              const SizedBox(height: 12),
+
+              // Client name + fare. The driver needs to know who the ride is for
+              // and how much it is at a glance, without opening the details.
+              DriverClientPriceRow(ride: ride, isDark: isDark),
+
               const SizedBox(height: 14),
 
-            // Action buttons
-            DriverRideActionsRow(
-              ride: ride,
-              isDark: isDark,
-              onNavigate: () =>
-                  NavigationUtils.showNavigateToDialog(context, ride),
-              onCallClient: onCallClient,
-              onConfirmRide: onConfirmRide,
-              onRejectRide: onRejectRide,
-              onStartRide: onStartRide,
-              onCompleteRide: onCompleteRide,
-            ),
-          ],
+              // Route connector (accent dot → line → primary square)
+              _RouteConnector(ride: ride, isDark: isDark),
+
+              const SizedBox(height: 14),
+
+              // ETA chip + flight badge + approaching chip
+              // ETA is only shown after the driver starts the ride (inProgress)
+              if ((etaMinutes != null &&
+                      ride.status == RideStatus.inProgress) ||
+                  ride.flightNumber != null ||
+                  approachingDistanceMeters != null)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    if (etaMinutes != null &&
+                        ride.status == RideStatus.inProgress)
+                      _EtaChip(etaMinutes: etaMinutes!),
+                    if (ride.flightNumber != null)
+                      _FlightBadge(flightNumber: ride.flightNumber!),
+                    if (approachingDistanceMeters != null)
+                      _ApproachingChip(
+                        distanceMeters: approachingDistanceMeters!,
+                      ),
+                  ],
+                ),
+
+              if ((etaMinutes != null &&
+                      ride.status == RideStatus.inProgress) ||
+                  ride.flightNumber != null ||
+                  approachingDistanceMeters != null)
+                const SizedBox(height: 14),
+
+              // Action buttons
+              DriverRideActionsRow(
+                ride: ride,
+                isDark: isDark,
+                onNavigate: () =>
+                    NavigationUtils.showNavigateToDialog(context, ride),
+                onShareRide: () => NavigationUtils.shareRide(context, ride),
+                onCallClient: onCallClient,
+                onConfirmRide: onConfirmRide,
+                onRejectRide: onRejectRide,
+                onStartRide: onStartRide,
+                onCompleteRide: onCompleteRide,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1509,59 +1518,64 @@ class _NextRideCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header: badge + pickup time
-            Row(
-              children: [
-                _StatusBadge(
-                  bg: statusBg,
-                  border: statusBorder,
-                  dot: statusDotColor,
-                  textColor: statusTextColor,
-                  label: statusLabel,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Pickup ${DateFormat.Hm().format(ride.pickupDateTime)}',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.textSecondary,
+      // Tap opens the full ride details (Edit, Share tracking link, etc.).
+      child: InkWell(
+        onTap: () => NavigationUtils.navigateToRideDetails(context, ride),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: badge + pickup time
+              Row(
+                children: [
+                  _StatusBadge(
+                    bg: statusBg,
+                    border: statusBorder,
+                    dot: statusDotColor,
+                    textColor: statusTextColor,
+                    label: statusLabel,
                   ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            // Route summary
-            Text(
-              '${ride.from.address} → ${ride.to.address}',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: textPrimary,
+                  const SizedBox(width: 10),
+                  Text(
+                    'Pickup ${DateFormat.Hm().format(ride.pickupDateTime)}',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
 
-            const SizedBox(height: 6),
+              const SizedBox(height: 10),
 
-            // Client info
-            Text(
-              ride.clientName,
-              style: TextStyle(fontSize: 11.5, color: textLight),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              // Route summary
+              Text(
+                '${ride.from.address} → ${ride.to.address}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: textPrimary,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(height: 6),
+
+              // Client info
+              Text(
+                ride.clientName,
+                style: TextStyle(fontSize: 11.5, color: textLight),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1664,6 +1678,7 @@ class DriverRideActionsRow extends StatelessWidget {
   final Ride ride;
   final bool isDark;
   final VoidCallback onNavigate;
+  final VoidCallback? onShareRide;
   final VoidCallback? onCallClient;
   final VoidCallback? onConfirmRide;
   final VoidCallback? onRejectRide;
@@ -1675,6 +1690,7 @@ class DriverRideActionsRow extends StatelessWidget {
     required this.ride,
     required this.isDark,
     required this.onNavigate,
+    this.onShareRide,
     this.onCallClient,
     this.onConfirmRide,
     this.onRejectRide,
@@ -1739,6 +1755,35 @@ class DriverRideActionsRow extends StatelessWidget {
             ),
           ),
         ),
+        if (onShareRide != null) ...[
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: OutlinedButton(
+              onPressed: onShareRide,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(
+                  color: AppColors.borderSecondary,
+                  width: 1,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusButton,
+                  ),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: Icon(
+                Icons.ios_share_rounded,
+                size: 18,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
         if (ride.status == RideStatus.assigned) ...[
           const SizedBox(width: 8),
           Expanded(
