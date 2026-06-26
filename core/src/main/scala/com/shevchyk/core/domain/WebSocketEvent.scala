@@ -124,5 +124,22 @@ object WebSocketEvent:
       companyId: UUID
   ) extends WebSocketEvent
 
+  /**
+   * Live flight data for an airport-transfer ride changed (status/gate/terminal/estimated time). Emitted by the
+   * background flight monitor when it detects a change versus what was last persisted, so dispatchers and the client
+   * see the new gate/status without a manual refresh. `status` is the canonical wire string (FlightStatus.toWire);
+   * `estimatedTime` is the ISO instant of the latest known time, when available.
+   */
+  final case class FlightStatusUpdated(
+      rideId: UUID,
+      clientId: UUID,
+      companyId: UUID,
+      flightNumber: String,
+      status: String,
+      gate: Option[String] = None,
+      terminal: Option[String] = None,
+      estimatedTime: Option[String] = None
+  ) extends WebSocketEvent
+
   given JsonEncoder[WebSocketEvent] = DeriveJsonEncoder.gen[WebSocketEvent]
   given JsonDecoder[WebSocketEvent] = DeriveJsonDecoder.gen[WebSocketEvent]

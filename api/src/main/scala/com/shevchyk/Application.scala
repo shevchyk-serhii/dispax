@@ -84,6 +84,7 @@ import com.shevchyk.app.{
   ReminderScheduler,
   InvoiceReminderScheduler,
   PredictiveEtaMonitor,
+  FlightStatusMonitor,
   ConfirmationReminderScheduler,
   SentryInit
 }
@@ -170,6 +171,7 @@ object Application extends ZIOAppDefault:
         ReminderScheduler.start *>
         InvoiceReminderScheduler.start *>
         PredictiveEtaMonitor.start *>
+        FlightStatusMonitor.start *>
         ConfirmationReminderScheduler.start *>
         ZIO.logInfo("Starting Dispax API Server (PostgreSQL)...") *>
         ZIO.logInfo("📋 Available APIs:") *>
@@ -276,6 +278,8 @@ object Application extends ZIOAppDefault:
       InvoiceService.layerWithLanguage(sys.env.getOrElse("EMAIL_DEFAULT_LANG", "de")),
       PaymentChecker.mockLayer,
       HereConfig.liveLayer,
+      com.shevchyk.core.config.MucFlightConfig.liveLayer,
+      com.shevchyk.ride.application.service.MucFlightStatusProvider.layer,
       MapboxConfig.liveLayer,
       PublicLinkConfig.liveLayer,
       AirportPickupConfig.liveLayer,

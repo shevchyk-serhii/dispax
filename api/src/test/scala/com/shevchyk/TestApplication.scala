@@ -781,6 +781,14 @@ object TestApplication extends ZIOAppDefault:
                   (true, m.updated(id, ride.copy(airportCheckpoint = Some(checkpoint))))
                 else (false, m)
           }
+          def updateFlightStatus(
+              rideId: RideId,
+              gate: Option[String],
+              terminal: Option[String],
+              flightStatus: Option[String],
+              flightTime: Option[java.time.Instant]
+          ): Task[Boolean] = ZIO.succeed(false)
+          def findFlightStatus(rideId: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]          = ZIO.none
           private def periodTime(r: Ride): Instant                                                              = r.endTime.getOrElse(r.pickupDateTime)
       }
   )

@@ -4,6 +4,7 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.ride.domain.{
   AirportCheckpoint,
   DriverEarnings,
+  FlightStatusRow,
   Ride,
   RideError,
   RideSpecifics,
@@ -730,6 +731,33 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .map(_ > 0)
       .mapError(ex => RideError.DatabaseError(ex))
   }
+
+  override def updateFlightStatus(
+      rideId: RideId,
+      gate: Option[String],
+      terminal: Option[String],
+      flightStatus: Option[String],
+      flightTime: Option[Instant]
+  ): Task[Boolean] =
+    sql"""UPDATE rides
+          SET flight_gate = $gate,
+              flight_terminal = $terminal,
+              flight_status = $flightStatus,
+              flight_time = $flightTime,
+              updated_at = NOW()
+          WHERE id = ${rideId.value}""".update.run
+      .transact(xa)
+      .map(_ > 0)
+      .mapError(ex => RideError.DatabaseError(ex))
+
+  override def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]] =
+    sql"""SELECT flight_gate, flight_terminal, flight_status, flight_time
+          FROM rides WHERE id = ${rideId.value}"""
+      .query[(Option[String], Option[String], Option[String], Option[Instant])]
+      .option
+      .transact(xa)
+      .map(_.map { case (gate, terminal, status, time) => FlightStatusRow(gate, terminal, status, time) })
+      .mapError(ex => RideError.DatabaseError(ex))
 
   override def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++
