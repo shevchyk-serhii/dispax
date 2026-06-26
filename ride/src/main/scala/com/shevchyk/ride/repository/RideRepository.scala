@@ -1,6 +1,6 @@
 package com.shevchyk.ride.repository
 
-import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, PaymentMethod, Ride, RideStatus}
+import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, FlightStatusRow, PaymentMethod, Ride, RideStatus}
 import com.shevchyk.core.domain.{RideId, PersonId, CompanyId}
 import zio.*
 import java.time.Instant
@@ -108,6 +108,21 @@ trait RideRepository {
   // or a higher level (concurrent race lost). The SQL guard is authoritative; the in-memory pre-check
   // in AirportCheckpointService is a fast-fail optimisation only.
   def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Boolean]
+
+  // Atomic, targeted write of the flight-tracking columns (flight_gate, flight_terminal, flight_status,
+  // flight_time) on a single ride. Used by the background FlightStatusMonitor; kept narrow (like
+  // updateCheckpoint) so it never touches the rest of the row. Returns true if a row was updated.
+  def updateFlightStatus(
+      rideId: RideId,
+      gate: Option[String],
+      terminal: Option[String],
+      flightStatus: Option[String],
+      flightTime: Option[Instant]
+  ): Task[Boolean]
+
+  // Read just the flight-tracking columns for a ride (the DTO surfaces these; they are not part of the
+  // Ride domain object). None when the ride does not exist.
+  def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]]
 }
 
 object RideRepository {

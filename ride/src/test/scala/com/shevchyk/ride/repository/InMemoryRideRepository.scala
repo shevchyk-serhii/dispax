@@ -1,7 +1,15 @@
 package com.shevchyk.ride.repository
 
 import com.shevchyk.core.domain.{RideId, PersonId, CompanyId}
-import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, PaymentMethod, PaymentStatus, Ride, RideStatus}
+import com.shevchyk.ride.domain.{
+  AirportCheckpoint,
+  DriverEarnings,
+  FlightStatusRow,
+  PaymentMethod,
+  PaymentStatus,
+  Ride,
+  RideStatus
+}
 import zio.*
 import java.time.{Instant, ZoneOffset}
 
@@ -276,6 +284,27 @@ class InMemoryRideRepository extends RideRepository:
         if checkpoint.ordinal > currentOrdinal then
           (true, m.updated(rideId, ride.copy(airportCheckpoint = Some(checkpoint))))
         else (false, m)
+  }
+
+  // Flight-tracking columns live outside the Ride domain object; keep them in a side map keyed by ride id.
+  private val flightStatuses = Unsafe.unsafe { implicit unsafe =>
+    Runtime.default.unsafe.run(Ref.Synchronized.make(Map.empty[RideId, FlightStatusRow])).getOrThrowFiberFailure()
+  }
+
+  override def updateFlightStatus(
+      rideId: RideId,
+      gate: Option[String],
+      terminal: Option[String],
+      flightStatus: Option[String],
+      flightTime: Option[Instant]
+  ): Task[Boolean] = rides.get.flatMap { m =>
+    if !m.contains(rideId) then ZIO.succeed(false)
+    else flightStatuses.update(_.updated(rideId, FlightStatusRow(gate, terminal, flightStatus, flightTime))).as(true)
+  }
+
+  override def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]] = rides.get.flatMap { m =>
+    if !m.contains(rideId) then ZIO.none
+    else flightStatuses.get.map(fs => Some(fs.getOrElse(rideId, FlightStatusRow())))
   }
 
 object InMemoryRideRepository:

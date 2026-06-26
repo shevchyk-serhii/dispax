@@ -5,6 +5,7 @@ import com.shevchyk.core.domain.{Location, CompanyId}
 import com.shevchyk.ride.domain.{
   Ride,
   CreateRideRequest,
+  FlightStatusRow,
   RideSpecifics,
   RideStatus,
   PaymentStatus,
@@ -339,7 +340,11 @@ object RideDto:
       driverName: Option[String] = None,
       etaMinutes: Option[Int] = None,
       driverRating: Option[Double] = None,
-      driverRatingCount: Option[Int] = None
+      driverRatingCount: Option[Int] = None,
+      // Live flight-tracking columns (gate/terminal/status/time) are stored outside the Ride domain object;
+      // a caller that has loaded them (RideRepository.findFlightStatus) passes them here so the DTO surfaces
+      // real values instead of None. Defaults to empty → unchanged behaviour for callers that don't.
+      flight: Option[FlightStatusRow] = None
   ): RideDto =
     val (flightNumber, isAirportTransfer, isArrival) =
       ride.specifics match {
@@ -385,12 +390,13 @@ object RideDto:
       status = ride.status.toString,
       clientName = clientName.getOrElse("Unknown Client"),
       flightNumber = flightNumber,
-      flightTime = ride.scheduledTime.map(_.toString),
+      // Prefer the live flight time (when the monitor has fetched one) over the booking's scheduledTime.
+      flightTime = flight.flatMap(_.flightTime).map(_.toString).orElse(ride.scheduledTime.map(_.toString)),
       isAirportTransfer = isAirportTransfer,
       isArrival = isArrival,
-      gate = None,
-      terminal = None,
-      flightStatus = None,
+      gate = flight.flatMap(_.gate),
+      terminal = flight.flatMap(_.terminal),
+      flightStatus = flight.flatMap(_.flightStatus),
       driverName = driverName,
       driverLocation = driverLoc,
       driverApproaching = approaching,

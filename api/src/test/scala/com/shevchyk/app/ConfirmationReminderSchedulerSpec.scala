@@ -101,6 +101,16 @@ object ConfirmationReminderSchedulerSpec extends ZIOSpecDefault:
       def updateCheckpoint(rideId: RideId, cp: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean]         = nope(
         "updateCheckpoint"
       )
+      def updateFlightStatus(
+          rideId: RideId,
+          gate: Option[String],
+          terminal: Option[String],
+          flightStatus: Option[String],
+          flightTime: Option[java.time.Instant]
+      ): Task[Boolean] = nope("updateFlightStatus")
+      def findFlightStatus(rideId: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]                = nope(
+        "findFlightStatus"
+      )
       def markPaidIfCompleted(rideId: RideId, paymentMethod: Option[PaymentMethod]): Task[Boolean]                = ZIO.succeed(false)
 
   // FcmService stub that records (personId, push type) pairs sent.

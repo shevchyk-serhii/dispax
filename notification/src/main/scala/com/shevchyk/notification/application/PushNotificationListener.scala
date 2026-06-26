@@ -409,3 +409,7 @@ object PushNotificationListener:
                 checkpointRepo.markSent(RideId(rideId), PersonId(driverId), checkpointType)
             }
         yield ()
+
+      // Flight-status updates are surfaced live over the WebSocket (dispatcher board / client tracking);
+      // they are not a push-notification trigger, so the FCM listener ignores them.
+      case _: WebSocketEvent.FlightStatusUpdated => ZIO.unit

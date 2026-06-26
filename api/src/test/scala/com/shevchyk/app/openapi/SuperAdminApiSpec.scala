@@ -212,6 +212,14 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
         .succeed(Map.empty)
       def updateCheckpoint(rideId: RideId, checkpoint: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean]  = ZIO
         .succeed(false)
+      def updateFlightStatus(
+          rideId: RideId,
+          gate: Option[String],
+          terminal: Option[String],
+          flightStatus: Option[String],
+          flightTime: Option[java.time.Instant]
+      ): Task[Boolean] = ZIO.succeed(false)
+      def findFlightStatus(rideId: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]                 = ZIO.none
   )
 
   private val stubSessionRepo: ZLayer[Any, Nothing, SessionRepository] = SessionRepository.inMemory
