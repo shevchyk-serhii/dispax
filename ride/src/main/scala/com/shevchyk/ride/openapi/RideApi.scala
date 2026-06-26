@@ -375,7 +375,11 @@ object RideApi:
           .recordUsage(ride.clientId, ride.dropoffLocation.address, "Dropoff", None, None)
           .tapError(e => ZIO.logWarning(s"Failed to record to address: $e"))
           .ignore
-    } yield RideDto.fromDomain(ride, clientName = clientPerson.map(_.name))
+    } yield RideDto.fromDomain(
+      ride,
+      clientName = clientPerson.map(_.name),
+      clientHasAvatar = clientPerson.exists(_.avatarPresent)
+    )
   }
 
   private val getPendingRidesServer: ZServerEndpoint[RideEnv, Any] = getPendingRidesEndpoint.serverLogic { user => _ =>
@@ -390,14 +394,20 @@ object RideApi:
       persons     <- ZIO
                        .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
                        .mapError(fromRideError)
-      clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+      clientMap    = persons.collect { case (id, Some(p)) => id -> p }.toMap
       ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
     } yield rides.map { r =>
       val (rating, count) = r.driverId
         .flatMap(ratingStats.get)
         .map { case (avg, n) => (Some(avg), Some(n)) }
         .getOrElse((None, None))
-      RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+      RideDto.fromDomain(
+        r,
+        clientName = clientMap.get(r.clientId).map(_.name),
+        clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+        driverRating = rating,
+        driverRatingCount = count
+      )
     }
   }
 
@@ -413,14 +423,20 @@ object RideApi:
       persons     <- ZIO
                        .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
                        .mapError(fromRideError)
-      clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+      clientMap    = persons.collect { case (id, Some(p)) => id -> p }.toMap
       ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
     } yield rides.map { r =>
       val (rating, count) = r.driverId
         .flatMap(ratingStats.get)
         .map { case (avg, n) => (Some(avg), Some(n)) }
         .getOrElse((None, None))
-      RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+      RideDto.fromDomain(
+        r,
+        clientName = clientMap.get(r.clientId).map(_.name),
+        clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+        driverRating = rating,
+        driverRatingCount = count
+      )
     }
   }
 
@@ -438,50 +454,57 @@ object RideApi:
         persons     <- ZIO
                          .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
                          .mapError(fromRideError)
-        clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+        clientMap    = persons.collect { case (id, Some(p)) => id -> p }.toMap
         ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
       } yield rides.map { r =>
         val (rating, count) = r.driverId
           .flatMap(ratingStats.get)
           .map { case (avg, n) => (Some(avg), Some(n)) }
           .getOrElse((None, None))
-        RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+        RideDto.fromDomain(
+          r,
+          clientName = clientMap.get(r.clientId).map(_.name),
+          clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+          driverRating = rating,
+          driverRatingCount = count
+        )
       }
   }
 
   private val getClientRidesServer: ZServerEndpoint[RideEnv, Any] = getClientRidesEndpoint.serverLogic {
     user => clientId =>
       for {
-        clientPid   <- parsePersonId(clientId)
-        _           <- checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
-        companyId   <- requireCompanyId(user.companyId)
-        service     <- ZIO.service[RideService]
-        personRepo  <- ZIO.service[PersonRepository]
-        ratingRepo  <- ZIO.service[RideRatingRepository]
-        rides       <- service.getClientRides(clientPid, companyId).mapError(fromRideError)
-        clientName  <- personRepo.findById(clientPid).map(_.map(_.name)).mapError(fromRideError)
+        clientPid    <- parsePersonId(clientId)
+        _            <- checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
+        companyId    <- requireCompanyId(user.companyId)
+        service      <- ZIO.service[RideService]
+        personRepo   <- ZIO.service[PersonRepository]
+        ratingRepo   <- ZIO.service[RideRatingRepository]
+        rides        <- service.getClientRides(clientPid, companyId).mapError(fromRideError)
+        clientPerson <- personRepo.findById(clientPid).mapError(fromRideError)
         // Resolve every distinct driver name once in parallel instead of one sequential
         // findById per ride (was N+1).
-        driverIds    = rides.flatMap(_.driverId).distinct
-        driverNames <- ZIO
-                         .foreachPar(driverIds)(id => personRepo.findById(id).map(p => id -> p.map(_.name)))
-                         .map(_.toMap)
-                         .mapError(fromRideError)
-        ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
-        rideDtos     = rides.map { r =>
-                         val driverName          = r.driverId.flatMap(driverNames.getOrElse(_, None))
-                         val (rating, rateCount) = r.driverId
-                           .flatMap(ratingStats.get)
-                           .map { case (avg, n) => (Some(avg), Some(n)) }
-                           .getOrElse((None, None))
-                         RideDto.fromDomain(
-                           r,
-                           clientName = clientName,
-                           driverName = driverName,
-                           driverRating = rating,
-                           driverRatingCount = rateCount
-                         )
-                       }
+        driverIds     = rides.flatMap(_.driverId).distinct
+        driverNames  <- ZIO
+                          .foreachPar(driverIds)(id => personRepo.findById(id).map(p => id -> p.map(_.name)))
+                          .map(_.toMap)
+                          .mapError(fromRideError)
+        ratingStats  <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        rideDtos      = rides.map { r =>
+                          val driverName          = r.driverId.flatMap(driverNames.getOrElse(_, None))
+                          val (rating, rateCount) = r.driverId
+                            .flatMap(ratingStats.get)
+                            .map { case (avg, n) => (Some(avg), Some(n)) }
+                            .getOrElse((None, None))
+                          RideDto.fromDomain(
+                            r,
+                            clientName = clientPerson.map(_.name),
+                            clientHasAvatar = clientPerson.exists(_.avatarPresent),
+                            driverName = driverName,
+                            driverRating = rating,
+                            driverRatingCount = rateCount
+                          )
+                        }
       } yield rideDtos
   }
 
@@ -501,8 +524,12 @@ object RideApi:
                             toPersonRole(user.role)
                           )
                           .mapError(fromRideError)
-        clientName   <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
-      } yield RideDto.fromDomain(ride, clientName = clientName)
+        clientPerson <- personRepo.findById(ride.clientId).mapError(fromRideError)
+      } yield RideDto.fromDomain(
+        ride,
+        clientName = clientPerson.map(_.name),
+        clientHasAvatar = clientPerson.exists(_.avatarPresent)
+      )
   }
 
   private val assignDriverServer: ZServerEndpoint[RideEnv, Any] = assignDriverEndpoint.serverLogic {
@@ -525,8 +552,12 @@ object RideApi:
         ride           <- service
                             .assignDriver(parsedRideId, parsedDriverId, validated.overrideScheduleConflict)
                             .mapError(fromRideError)
-        clientName     <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
-      } yield RideDto.fromDomain(ride, clientName = clientName)
+        clientPerson   <- personRepo.findById(ride.clientId).mapError(fromRideError)
+      } yield RideDto.fromDomain(
+        ride,
+        clientName = clientPerson.map(_.name),
+        clientHasAvatar = clientPerson.exists(_.avatarPresent)
+      )
   }
 
   private val reassignDriverServer: ZServerEndpoint[RideEnv, Any] = reassignDriverEndpoint.serverLogic {
@@ -548,8 +579,12 @@ object RideApi:
         ride           <- service
                             .reassignDriver(parsedRideId, parsedDriverId, validated.overrideScheduleConflict)
                             .mapError(fromRideError)
-        clientName     <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
-      } yield RideDto.fromDomain(ride, clientName = clientName)
+        clientPerson   <- personRepo.findById(ride.clientId).mapError(fromRideError)
+      } yield RideDto.fromDomain(
+        ride,
+        clientName = clientPerson.map(_.name),
+        clientHasAvatar = clientPerson.exists(_.avatarPresent)
+      )
   }
 
   private val updateRideServer: ZServerEndpoint[RideEnv, Any] = updateRideEndpoint.serverLogic {
@@ -570,8 +605,12 @@ object RideApi:
                             Some(companyId)
                           )
                           .mapError(fromRideError)
-        clientName   <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
-      } yield RideDto.fromDomain(ride, clientName = clientName)
+        clientPerson <- personRepo.findById(ride.clientId).mapError(fromRideError)
+      } yield RideDto.fromDomain(
+        ride,
+        clientName = clientPerson.map(_.name),
+        clientHasAvatar = clientPerson.exists(_.avatarPresent)
+      )
   }
 
   private val getRideServer: ZServerEndpoint[RideEnv, Any] = getRideEndpoint.serverLogic { user => rideId =>
@@ -594,8 +633,12 @@ object RideApi:
                         .fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
                         .when(user.role.toUpperCase == "DRIVER" && !ride.driverId.exists(_.value == user.userId))
                         .mapError(fromRideError)
-      clientName   <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
-    } yield RideDto.fromDomain(ride, clientName = clientName)
+      clientPerson <- personRepo.findById(ride.clientId).mapError(fromRideError)
+    } yield RideDto.fromDomain(
+      ride,
+      clientName = clientPerson.map(_.name),
+      clientHasAvatar = clientPerson.exists(_.avatarPresent)
+    )
   }
 
   private val airportTimingServer: ZServerEndpoint[RideEnv, Any] = airportTimingEndpoint.serverLogic { user => rideId =>
@@ -717,14 +760,20 @@ object RideApi:
         persons     <- ZIO
                          .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
                          .mapError(fromRideError)
-        clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+        clientMap    = persons.collect { case (id, Some(p)) => id -> p }.toMap
         ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
       } yield rides.map { r =>
         val (rating, count) = r.driverId
           .flatMap(ratingStats.get)
           .map { case (avg, n) => (Some(avg), Some(n)) }
           .getOrElse((None, None))
-        RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+        RideDto.fromDomain(
+          r,
+          clientName = clientMap.get(r.clientId).map(_.name),
+          clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+          driverRating = rating,
+          driverRatingCount = count
+        )
       }
   }
 
@@ -1021,14 +1070,20 @@ object RideApi:
         persons     <- ZIO
                          .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
                          .mapError(fromRideError)
-        clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+        clientMap    = persons.collect { case (id, Some(p)) => id -> p }.toMap
         ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
       } yield filtered.map { r =>
         val (rating, count) = r.driverId
           .flatMap(ratingStats.get)
           .map { case (avg, n) => (Some(avg), Some(n)) }
           .getOrElse((None, None))
-        RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+        RideDto.fromDomain(
+          r,
+          clientName = clientMap.get(r.clientId).map(_.name),
+          clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+          driverRating = rating,
+          driverRatingCount = count
+        )
       }
   }
 
