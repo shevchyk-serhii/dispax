@@ -1068,6 +1068,12 @@ class _LiveRideCard extends StatelessWidget {
               ],
             ),
 
+            const SizedBox(height: 12),
+
+            // Client name + fare. The driver needs to know who the ride is for
+            // and how much it is at a glance, without opening the details.
+            DriverClientPriceRow(ride: ride, isDark: isDark),
+
             const SizedBox(height: 14),
 
             // Route connector (accent dot → line → primary square)
@@ -1116,6 +1122,80 @@ class _LiveRideCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Client name + fare row (driver needs both at a glance)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class DriverClientPriceRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  const DriverClientPriceRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+  });
+
+  /// Formats the fare amount, dropping a trailing ".0" so a whole-euro fare
+  /// reads "45", not "45.0". The euro symbol is rendered by the adjacent
+  /// [Icons.euro], so it must NOT be prefixed here (that produced "€ €100").
+  String _formatPrice(double price) {
+    return price == price.roundToDouble()
+        ? price.toStringAsFixed(0)
+        : price.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name = ride.clientName.trim();
+    // 'Unknown Client' is the model's fallback when the server sent no name;
+    // showing it adds noise, so treat it as absent.
+    final hasName = name.isNotEmpty && name != 'Unknown Client';
+    final hasPrice = ride.price != null;
+    if (!hasName && !hasPrice) return const SizedBox.shrink();
+
+    final primary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Row(
+      children: [
+        if (hasName) ...[
+          Icon(Icons.person_outline, size: 16, color: secondary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: primary,
+              ),
+            ),
+          ),
+        ] else
+          const Spacer(),
+        if (hasPrice) ...[
+          const SizedBox(width: 8),
+          Icon(Icons.euro, size: 15, color: secondary),
+          const SizedBox(width: 2),
+          Text(
+            _formatPrice(ride.price!),
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: primary,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
