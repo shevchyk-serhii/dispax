@@ -8,6 +8,7 @@ import '../../../modules/core/models/person.dart';
 import '../../../modules/core/services/user_service.dart';
 import '../../../modules/core/services/api_client.dart'
     show ScheduleConflictInfo;
+import '../../../modules/core/widgets/avatar_circle.dart';
 import '../../../modules/ride_management/helpers/conflict_dialog_text.dart';
 import '../../../modules/ride_management/models/payment_method.dart';
 import '../../../modules/ride_management/models/ride.dart';
@@ -1056,15 +1057,27 @@ class _RideRow extends StatelessWidget {
               address: ride.to.address,
             ),
             const SizedBox(height: 12),
-            // Meta: time · client [· driver] [· ETA]
-            Text(
-              _buildMetaLine(),
-              style: TextStyle(
-                fontSize: 12.5,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            // Meta: client avatar + (time · client [· driver] [· ETA])
+            Row(
+              children: [
+                AvatarCircle(
+                  user: ride.client,
+                  apiClient: context.read<AuthBloc>().apiClient,
+                  radius: 12,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _buildMetaLine(),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
             // Airport / flight info
             if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) ...[

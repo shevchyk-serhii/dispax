@@ -16,6 +16,7 @@ import 'package:dispax/blocs/ride/ride_bloc.dart';
 import 'package:dispax/blocs/schedule/schedule_bloc.dart';
 import 'package:dispax/dashboard/dispatcher/widgets/pending_rides_panel.dart';
 import 'package:dispax/l10n/app_localizations.dart';
+import 'package:dispax/modules/core/widgets/avatar_circle.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 
 import '../helpers/mocks.dart';
@@ -40,6 +41,9 @@ void main() {
     when(
       () => mockApiClient.get(any()),
     ).thenAnswer((_) async => http.Response('{}', 200));
+    // The client avatar widget fetches bytes; return null so it falls back to
+    // initials without a real network call.
+    when(() => mockApiClient.getBytes(any())).thenAnswer((_) async => null);
   });
 
   tearDown(() {
@@ -134,4 +138,24 @@ void main() {
       expect(find.text('Payment'), findsNothing);
     },
   );
+
+  testWidgets('PendingRidesPanel _RideRow renders the client avatar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final ride = TestFixtures.ride(
+      id: 'ride-avatar',
+      status: RideStatus.requested,
+      clientName: 'Anna Schmidt',
+      clientHasAvatar: true,
+    );
+    await tester.pumpWidget(buildPanel(ride));
+    await pumpUntilRideRowVisible(tester, find.byType(AvatarCircle));
+
+    expect(find.byType(AvatarCircle), findsOneWidget);
+  });
 }

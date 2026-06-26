@@ -1,22 +1,34 @@
 import 'package:dispax/dashboard/driver/today_rides_screen.dart';
 import 'package:dispax/l10n/app_localizations.dart';
+import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/modules/core/widgets/avatar_circle.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/test_fixtures.dart';
+
+class _MockApiClient extends Mock implements ApiClient {}
 
 /// Pumps the driver ride card's client-name + fare row in isolation.
 Future<void> pumpRow(
   WidgetTester tester, {
   String clientName = 'Test Client',
   double? price,
+  bool clientHasAvatar = false,
 }) async {
+  final apiClient = _MockApiClient();
+  // The avatar widget fetches bytes when the client has a photo; return null so
+  // it falls back to initials without a real network call.
+  when(() => apiClient.getBytes(any())).thenAnswer((_) async => null);
+
   final Ride ride = TestFixtures.ride(
     driverId: 'driver-1',
     status: RideStatus.assigned,
     clientName: clientName,
     price: price,
+    clientHasAvatar: clientHasAvatar,
   );
   await tester.pumpWidget(
     MaterialApp(
@@ -26,7 +38,11 @@ Future<void> pumpRow(
         body: Center(
           child: SizedBox(
             width: 360,
-            child: DriverClientPriceRow(ride: ride, isDark: false),
+            child: DriverClientPriceRow(
+              ride: ride,
+              isDark: false,
+              apiClient: apiClient,
+            ),
           ),
         ),
       ),
@@ -67,7 +83,8 @@ void main() {
       // 'Unknown Client' is the model fallback and must not be shown.
       expect(find.text('Unknown Client'), findsNothing);
       expect(find.byIcon(Icons.euro), findsNothing);
-      expect(find.byIcon(Icons.person_outline), findsNothing);
+      // No client → no avatar either.
+      expect(find.byType(AvatarCircle), findsNothing);
     });
 
     testWidgets('shows the price even when the client name is unknown', (
@@ -77,6 +94,12 @@ void main() {
       expect(find.text('Unknown Client'), findsNothing);
       expect(find.byIcon(Icons.euro), findsOneWidget);
       expect(find.text('30'), findsOneWidget);
+    });
+
+    testWidgets('renders the client avatar next to the name', (tester) async {
+      await pumpRow(tester, clientName: 'Anna Schmidt', clientHasAvatar: true);
+      expect(find.byType(AvatarCircle), findsOneWidget);
+      expect(find.text('Anna Schmidt'), findsOneWidget);
     });
   });
 }

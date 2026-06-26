@@ -68,6 +68,10 @@ class Ride {
   final Location to;
   final RideStatus status;
   final String clientName;
+
+  /// Whether the client has a profile photo, so cards can render their avatar.
+  /// Sourced from the backend RideDto (derived from the client's Person).
+  final bool clientHasAvatar;
   final String? flightNumber;
   final DateTime? flightTime;
   final bool isAirportTransfer;
@@ -127,6 +131,7 @@ class Ride {
     required this.to,
     this.status = RideStatus.requested,
     required this.clientName,
+    this.clientHasAvatar = false,
     this.flightNumber,
     this.flightTime,
     this.isAirportTransfer = false,
@@ -180,6 +185,7 @@ class Ride {
       to: Location.fromJson(json['to']),
       status: RideStatus.fromString(json['status'] ?? 'Requested'),
       clientName: json['clientName'] ?? 'Unknown Client',
+      clientHasAvatar: json['clientHasAvatar'] as bool? ?? false,
       flightNumber: json['flightNumber'],
       // Convert to local like pickupDateTime, so airport flight times are not
       // shown in UTC while every other time on the ride is local.
@@ -240,6 +246,7 @@ class Ride {
       'to': to.toJson(),
       'status': status.value,
       'clientName': clientName,
+      'clientHasAvatar': clientHasAvatar,
       'flightNumber': flightNumber,
       'flightTime': flightTime?.toUtc().toIso8601String(),
       'isAirportTransfer': isAirportTransfer,
@@ -290,6 +297,7 @@ class Ride {
     Location? to,
     RideStatus? status,
     String? clientName,
+    bool? clientHasAvatar,
     String? flightNumber,
     Object? flightTime = _sentinel,
     bool? isAirportTransfer,
@@ -338,6 +346,7 @@ class Ride {
       to: to ?? this.to,
       status: status ?? this.status,
       clientName: clientName ?? this.clientName,
+      clientHasAvatar: clientHasAvatar ?? this.clientHasAvatar,
       flightNumber: flightNumber ?? this.flightNumber,
       flightTime: flightTime == _sentinel
           ? this.flightTime
@@ -527,6 +536,7 @@ class Ride {
       name: clientName,
       email: '',
       role: PersonRole.client,
+      hasAvatar: clientHasAvatar,
     );
   }
 }

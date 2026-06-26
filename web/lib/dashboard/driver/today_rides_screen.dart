@@ -6,7 +6,10 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
+import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/services/ride_service.dart';
+import '../../modules/core/services/api_client.dart';
+import '../../modules/core/widgets/avatar_circle.dart';
 import '../../modules/driver_management/services/driver_availability_service.dart';
 import '../../modules/driver_management/widgets/widgets.dart';
 import '../../modules/core/widgets/widgets.dart';
@@ -1070,9 +1073,19 @@ class _LiveRideCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Client name + fare. The driver needs to know who the ride is for
-            // and how much it is at a glance, without opening the details.
-            DriverClientPriceRow(ride: ride, isDark: isDark),
+            // Client avatar + name + fare. The driver needs to know who the ride
+            // is for and how much it is at a glance, without opening the details.
+            DriverClientPriceRow(
+              ride: ride,
+              isDark: isDark,
+              apiClient: context.read<AuthBloc>().apiClient,
+            ),
+
+            // Payment method (how the driver will be paid).
+            DriverPaymentRow(ride: ride, isDark: isDark),
+
+            // Full flight info for airport rides (number + gate/terminal + status).
+            DriverFlightInfoRow(ride: ride, isDark: isDark),
 
             const SizedBox(height: 14),
 
@@ -1081,10 +1094,9 @@ class _LiveRideCard extends StatelessWidget {
 
             const SizedBox(height: 14),
 
-            // ETA chip + flight badge + approaching chip
+            // ETA chip + approaching chip (flight moved to its own full-info row above).
             // ETA is only shown after the driver starts the ride (inProgress)
             if ((etaMinutes != null && ride.status == RideStatus.inProgress) ||
-                ride.flightNumber != null ||
                 approachingDistanceMeters != null)
               Wrap(
                 spacing: 8,
@@ -1093,8 +1105,6 @@ class _LiveRideCard extends StatelessWidget {
                   if (etaMinutes != null &&
                       ride.status == RideStatus.inProgress)
                     _EtaChip(etaMinutes: etaMinutes!),
-                  if (ride.flightNumber != null)
-                    _FlightBadge(flightNumber: ride.flightNumber!),
                   if (approachingDistanceMeters != null)
                     _ApproachingChip(
                       distanceMeters: approachingDistanceMeters!,
@@ -1103,7 +1113,6 @@ class _LiveRideCard extends StatelessWidget {
               ),
 
             if ((etaMinutes != null && ride.status == RideStatus.inProgress) ||
-                ride.flightNumber != null ||
                 approachingDistanceMeters != null)
               const SizedBox(height: 14),
 
@@ -1133,11 +1142,13 @@ class _LiveRideCard extends StatelessWidget {
 class DriverClientPriceRow extends StatelessWidget {
   final Ride ride;
   final bool isDark;
+  final ApiClient apiClient;
 
   const DriverClientPriceRow({
     super.key,
     required this.ride,
     required this.isDark,
+    required this.apiClient,
   });
 
   /// Formats the fare amount, dropping a trailing ".0" so a whole-euro fare
@@ -1166,8 +1177,9 @@ class DriverClientPriceRow extends StatelessWidget {
     return Row(
       children: [
         if (hasName) ...[
-          Icon(Icons.person_outline, size: 16, color: secondary),
-          const SizedBox(width: 6),
+          // Client photo (falls back to initials when none is set).
+          AvatarCircle(user: ride.client, apiClient: apiClient, radius: 14),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               name,
@@ -1196,6 +1208,88 @@ class DriverClientPriceRow extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Payment method row (how the driver gets paid for this ride)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class DriverPaymentRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  const DriverPaymentRow({super.key, required this.ride, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = PaymentMethod.labelForWire(
+      ride.paymentMethod,
+      AppLocalizations.of(context)!,
+    );
+    if (label == null) return const SizedBox.shrink();
+
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(Icons.payments_outlined, size: 16, color: secondary),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(fontSize: 12.5, color: secondary)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Full flight info row for airport rides (number + gate/terminal + status)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class DriverFlightInfoRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  const DriverFlightInfoRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!ride.isAirportTransfer || ride.fullFlightInfo.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (ride.flightIconData != null) ...[
+            Icon(ride.flightIconData, size: 15, color: secondary),
+            const SizedBox(width: 6),
+          ],
+          Expanded(
+            child: Text(
+              ride.fullFlightInfo,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12.5, color: secondary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1376,39 +1470,6 @@ class _EtaChip extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Flight badge
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _FlightBadge extends StatelessWidget {
-  final String flightNumber;
-
-  const _FlightBadge({required this.flightNumber});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.accent.withValues(alpha: 0.25),
-          width: 1,
-        ),
-      ),
-      child: Text(
-        '✈ $flightNumber',
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: AppColors.accent,
-        ),
       ),
     );
   }
